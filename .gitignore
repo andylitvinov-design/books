@@ -1,0 +1,9 @@
+.DS_Store
+.next/
+node_modules/
+*.log
+*.swp
+*.tmp
+*.tmp2
+*.tmp3
+*.app/

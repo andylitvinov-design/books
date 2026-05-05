@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ступени Дао Усин</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --paper: #fffdf8;
+      --ink: #221d1a;
+      --muted: #6f6257;
+      --line: #d8c9b7;
+      --accent: #7b3f00;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Verdana, Tahoma, Arial, sans-serif;
+      background: linear-gradient(180deg, #f8f3eb 0%, var(--bg) 100%);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+    main {
+      width: min(1080px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 24px 0 72px;
+    }
+    .card, .hero, .toc {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(68, 45, 25, 0.08);
+    }
+    .hero, .card { padding: 24px; }
+    .hero h1 { margin: 0 0 8px; font-size: clamp(34px, 5vw, 58px); line-height: 1.08; }
+    .lead { color: var(--muted); max-width: 68ch; }
+    .toc-wrap {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 22px;
+    }
+    .toc { padding: 20px 22px; }
+    .toc h2, .card h2 { margin-top: 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+    .step { border-left: 8px solid var(--tone); }
+    .step h3 { margin: 10px 0 6px; font-size: 28px; }
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f7efe6;
+      color: #5c5148;
+      font-size: 14px;
+    }
+    .num {
+      display: inline-flex;
+      width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid var(--tone);
+      color: var(--tone);
+      font-weight: 700;
+    }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .tags span {
+      display: inline-block;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #faf4ec;
+      font-size: 13px;
+    }
+    .scheme {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      align-items: center;
+    }
+    .rail {
+      padding: 18px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, #fffaf3 0%, #f4eadc 100%);
+      border: 1px solid var(--line);
+    }
+    .rail ol { margin: 0; padding-left: 22px; }
+    a { color: var(--accent); }
+    svg { max-width: 100%; height: auto; display: block; }
+    @media (max-width: 900px) {
+      .grid, .toc-wrap, .scheme { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero" id="top">
+      <h1>Ступени Дао Усин</h1>
+      <p class="lead">Схематическая страница по базовой логике пути: от заморозки и утраты опоры к потоку, зрелому управлению и состоянию источника.</p>
+      <div class="scheme">
+        <div class="rail">
+          <ol>
+            <li>Шторм: выживание и первая опора.</li>
+            <li>Снежная королева: оттаивание и тепло.</li>
+            <li>Прометей: первый огонь жизни.</li>
+            <li>Крепость: границы и ось.</li>
+            <li>Король / Королева: ценность и достоинство.</li>
+            <li>Капитан: курс и управление.</li>
+            <li>Ручей: контакт и естественное течение.</li>
+            <li>Источник: присутствие и проводимость.</li>
+          </ol>
+        </div>
+        <div aria-hidden="true">
+          <svg viewBox="0 0 360 300">
+            <rect x="142" y="38" width="76" height="190" rx="26" fill="#ead6ba" stroke="#b98c58" stroke-width="2"/>
+            <rect x="118" y="226" width="124" height="20" rx="10" fill="#9f774c"/>
+            <rect x="150" y="58" width="60" height="22" rx="11" fill="#88abc4"/>
+            <rect x="156" y="92" width="48" height="22" rx="11" fill="#c65f44"/>
+            <rect x="162" y="126" width="36" height="22" rx="11" fill="#baa165"/>
+            <rect x="168" y="160" width="24" height="22" rx="11" fill="#7ca08b"/>
+            <circle cx="180" cy="204" r="20" fill="#7d7997"/>
+            <path d="M66 238c34-54 64-82 106-96" fill="none" stroke="#88abc4" stroke-width="7" stroke-linecap="round"/>
+            <path d="M292 236c-26-38-58-62-104-74" fill="none" stroke="#cbb08f" stroke-width="7" stroke-linecap="round"/>
+            <text x="50" y="272" font-size="18" fill="#5e86a5" font-family="Verdana, Arial, sans-serif">путь ресурса</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <div class="toc-wrap">
+      <nav class="toc" aria-labelledby="toc-main">
+        <h2 id="toc-main">Общее оглавление</h2>
+        <ol>
+          <li><a href="#map">Лента ступеней</a></li>
+          <li><a href="#growth">Что растёт по пути</a></li>
+        </ol>
+      </nav>
+      <nav class="toc" aria-labelledby="toc-detail">
+        <h2 id="toc-detail">Подробное оглавление</h2>
+        <ol>
+          <li><a href="#step-1">1. Шторм</a></li>
+          <li><a href="#step-2">2. Снежная королева</a></li>
+          <li><a href="#step-3">3. Прометей</a></li>
+          <li><a href="#step-4">4. Крепость</a></li>
+          <li><a href="#step-5">5. Король / Королева</a></li>
+          <li><a href="#step-6">6. Капитан</a></li>
+          <li><a href="#step-7">7. Ручей</a></li>
+          <li><a href="#step-8">8. Источник</a></li>
+        </ol>
+      </nav>
+    </div>
+
+    <section class="grid" id="map">
+      <article class="card step" id="step-1" style="--tone:#5f88a8">
+        <span class="num">1</span>
+        <h3>Шторм</h3>
+        <div class="badge">0-2 ед. ресурса</div>
+        <p>Точка распада и перегруза. Главная задача здесь не развитие, а базовое выживание и возврат минимальной опоры.</p>
+        <div class="tags"><span>стабилизация</span><span>безопасность</span><span>собрать себя</span></div>
+      </article>
+      <article class="card step" id="step-2" style="--tone:#7aa3bd">
+        <span class="num">2</span>
+        <h3>Снежная королева</h3>
+        <div class="badge">2-2.5 ед. ресурса</div>
+        <p>Жизнь ещё подо льдом, но уже не исчезает полностью. Задача ступени: мягко вернуть тепло и не перегрузить систему.</p>
+        <div class="tags"><span>оттаивание</span><span>тепло</span><span>бережность</span></div>
+      </article>
+      <article class="card step" id="step-3" style="--tone:#c25a42">
+        <span class="num">3</span>
+        <h3>Прометей</h3>
+        <div class="badge">2.5-3 ед. ресурса</div>
+        <p>Появляются первые искры жизни. Здесь важно не просто зажечь огонь, а научиться его удерживать и защищать.</p>
+        <div class="tags"><span>первый огонь</span><span>право жить</span><span>структура</span></div>
+      </article>
+      <article class="card step" id="step-4" style="--tone:#b28a55">
+        <span class="num">4</span>
+        <h3>Крепость</h3>
+        <div class="badge">3-3.5 ед. ресурса</div>
+        <p>Ресурс собирается в стены и ось. Нужно превратить оборону в опору: выстроить границы и внутренний порядок.</p>
+        <div class="tags"><span>границы</span><span>ось</span><span>устойчивость</span></div>
+      </article>
+      <article class="card step" id="step-5" style="--tone:#8f6242">
+        <span class="num">5</span>
+        <h3>Король / Королева</h3>
+        <div class="badge">3.5-4 ед. ресурса</div>
+        <p>Возвращается чувство собственной ценности. Свет уже есть, но ещё страшно выйти из башни и показать его миру.</p>
+        <div class="tags"><span>достоинство</span><span>ценность</span><span>проявленность</span></div>
+      </article>
+      <article class="card step" id="step-6" style="--tone:#5f8f79">
+        <span class="num">6</span>
+        <h3>Капитан</h3>
+        <div class="badge">4-4.5 ед. ресурса</div>
+        <p>Появляется руль и курс. Сила уже есть, но задача в том, чтобы управлять без жёсткости и не уходить в контроль из страха.</p>
+        <div class="tags"><span>курс</span><span>управление</span><span>мягкая сила</span></div>
+      </article>
+      <article class="card step" id="step-7" style="--tone:#709171">
+        <span class="num">7</span>
+        <h3>Ручей</h3>
+        <div class="badge">4.5-5 ед. ресурса</div>
+        <p>Энергия становится текучей. Начинается живой контакт с миром, где можно делиться ресурсом и не терять себя.</p>
+        <div class="tags"><span>контакт</span><span>текучесть</span><span>естественность</span></div>
+      </article>
+      <article class="card step" id="step-8" style="--tone:#716b8f">
+        <span class="num">8</span>
+        <h3>Источник</h3>
+        <div class="badge">символическая вершина шкалы</div>
+        <p>Ресурс течёт не через усилие, а через присутствие. Человек не только держит форму, но и становится проводником силы.</p>
+        <div class="tags"><span>присутствие</span><span>миссия</span><span>проводимость</span></div>
+      </article>
+    </section>
+
+    <section class="card" id="growth" style="margin-top:24px;">
+      <h2>Что растёт по пути</h2>
+      <p><strong>Тело:</strong> от оцепенения к теплу, оси, мягкому движению и устойчивому ресурсу.</p>
+      <p><strong>Психика:</strong> от хаоса и заморозки к достоинству, курсу, контакту и зрелому присутствию.</p>
+      <p><strong>Путь:</strong> от выживания к потоку и далее к состоянию, где ресурс уже можно проводить в мир.</p>
+    </section>
+  </main>
+</body>
+</html>

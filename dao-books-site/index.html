@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Книги даосской алхимии</title>
+  <style>
+    :root {
+      --bg: #efe6d6;
+      --paper: #fbf7f0;
+      --card: rgba(255, 252, 246, 0.96);
+      --ink: #241b16;
+      --muted: #6d5d51;
+      --line: #d9c7b0;
+      --accent: #8b4513;
+      --accent-soft: #c97d3a;
+      --shadow: 0 18px 42px rgba(77, 49, 26, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Verdana, Tahoma, Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.55), transparent 36%),
+        linear-gradient(180deg, #f6efe4 0%, var(--bg) 100%);
+    }
+    main { max-width: 1200px; margin: 0 auto; padding: 36px 20px 72px; }
+    .hero {
+      background: linear-gradient(135deg, rgba(116, 66, 29, 0.94), rgba(156, 89, 37, 0.88));
+      color: #fff7ee;
+      border-radius: 28px;
+      padding: 32px 28px;
+      box-shadow: var(--shadow);
+    }
+    .hero h1 { margin: 0 0 12px; font-size: clamp(32px, 4vw, 48px); line-height: 1.05; }
+    .hero p { margin: 0; max-width: 820px; line-height: 1.6; color: rgba(255, 247, 238, 0.92); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-top: 28px; }
+    .card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: var(--shadow);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .card:hover { transform: translateY(-3px); border-color: #cba27a; box-shadow: 0 22px 46px rgba(77, 49, 26, 0.16); }
+    .cover { aspect-ratio: 4 / 3; width: 100%; object-fit: cover; display: block; background: #e8dbc8; border-bottom: 1px solid var(--line); }
+    .card-body { padding: 18px 18px 20px; }
+    .eyebrow { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-soft); }
+    .card h2 { margin: 0 0 10px; font-size: 22px; line-height: 1.2; }
+    .meta { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+    .desc { margin: 0; line-height: 1.58; color: #382d26; }
+    .links { margin-top: 36px; padding: 22px 24px; background: var(--paper); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+    .links h2 { margin: 0 0 12px; font-size: 24px; }
+    .links ul { margin: 0; padding-left: 20px; line-height: 1.8; }
+    a { color: var(--accent); }
+    @media (max-width: 720px) {
+      main { padding: 20px 14px 52px; }
+      .hero { padding: 24px 20px; border-radius: 22px; }
+      .card h2 { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>Книги даосской алхимии</h1>
+      <p>Раздел пересобран из широких тематических сборников в более узкие книги-методички. Теперь каждая книга отвечает за отдельную функцию материала: вход в тему, традицию, магию, талисманы, ритуалы, предсказания, целительство, УСИН, модель и практикум.</p>
+    </section>
+    <section class="grid" aria-label="Книги">
+      <a class="card" href="dao_alchemy_intro.html">
+        <img class="cover" src="photos/post_2_1.jpg" alt="1. Введение в даосскую алхимию">
+        <div class="card-body">
+          <div class="eyebrow">Книга 1</div>
+          <h2>1. Введение в даосскую алхимию</h2>
+          <p class="meta">2 поста</p>
+          <p class="desc">Вводные тексты, опорные принципы Пути Дао, базовые ориентиры и материалы для первого входа в корпус.</p>
+        </div>
+      </a>      <a class="card" href="dao_tradition_temples_symbols.html">
+        <img class="cover" src="photos/post_7_1.jpg" alt="2. Даосская традиция, храмы и символический мир">
+        <div class="card-body">
+          <div class="eyebrow">Книга 2</div>
+          <h2>2. Даосская традиция, храмы и символический мир</h2>
+          <p class="meta">19 постов</p>
+          <p class="desc">Даосская традиция как культурный и духовный мир: храмы, божества, священные места, календарные и символические образы.</p>
+        </div>
+      </a>      <a class="card" href="dao_magic_basics.html">
+        <img class="cover" src="photos/post_18_1.jpg" alt="3. Даосская магия: основы">
+        <div class="card-body">
+          <div class="eyebrow">Книга 3</div>
+          <h2>3. Даосская магия: основы</h2>
+          <p class="meta">18 постов</p>
+          <p class="desc">Базовые принципы даосской магии, внутренней силы, обращения с энергией, намерением и сакральным действием.</p>
+        </div>
+      </a>      <a class="card" href="dao_talismans_symbols.html">
+        <img class="cover" src="photos/post_15_1.jpg" alt="4. Талисманы, иероглифы и сакральные знаки">
+        <div class="card-body">
+          <div class="eyebrow">Книга 4</div>
+          <h2>4. Талисманы, иероглифы и сакральные знаки</h2>
+          <p class="meta">26 постов</p>
+          <p class="desc">Тексты о талисманах, иероглифах, символах, сакральных знаках и образах, которые работают как носители смысла и силы.</p>
+        </div>
+      </a>      <a class="card" href="dao_rituals_altars.html">
+        <img class="cover" src="photos/post_129_1.jpg" alt="5. Ритуалы, алтари и обращения">
+        <div class="card-body">
+          <div class="eyebrow">Книга 5</div>
+          <h2>5. Ритуалы, алтари и обращения</h2>
+          <p class="meta">3 поста</p>
+          <p class="desc">Материалы о ритуалах, алтарях, молитвенных настройках, обращениях и последовательности сакральной практики.</p>
+        </div>
+      </a>      <a class="card" href="dao_yijing_predictions.html">
+        <img class="cover" src="photos/post_80_1.jpg" alt="6. Ицзин и даосские предсказания">
+        <div class="card-body">
+          <div class="eyebrow">Книга 6</div>
+          <h2>6. Ицзин и даосские предсказания</h2>
+          <p class="meta">15 постов</p>
+          <p class="desc">Гадание, гексаграммы, Ицзин, чтение знаков и методика получения даосских подсказок.</p>
+        </div>
+      </a>      <a class="card" href="dao_healing_basics.html">
+        <img class="cover" src="photos/post_105_1.jpg" alt="7. Даосское целительство: основы">
+        <div class="card-body">
+          <div class="eyebrow">Книга 7</div>
+          <h2>7. Даосское целительство: основы</h2>
+          <p class="meta">3 поста</p>
+          <p class="desc">Принципы даосского целительства, здоровья, восстановления ресурса и работы с внутренним состоянием человека.</p>
+        </div>
+      </a>      <a class="card" href="dao_wuxing_five_elements.html">
+        <img class="cover" src="photos/post_87_1.jpg" alt="8. УСИН: пять стихий и состояния">
+        <div class="card-body">
+          <div class="eyebrow">Книга 8</div>
+          <h2>8. УСИН: пять стихий и состояния</h2>
+          <p class="meta">39 постов</p>
+          <p class="desc">Практические материалы о пяти стихиях УСИН, связях органов, эмоций, состояний и коррекции дисбалансов.</p>
+        </div>
+      </a>      <a class="card" href="dao_wuxing_model_steps.html">
+        <img class="cover" src="photos/post_117_1.jpg" alt="9. Модель ДАО УСИН и ступени развития">
+        <div class="card-body">
+          <div class="eyebrow">Книга 9</div>
+          <h2>9. Модель ДАО УСИН и ступени развития</h2>
+          <p class="meta">21 пост</p>
+          <p class="desc">Авторская модель ДАО УСИН, уровни, ступени развития, архитектура пути и структурные схемы.</p>
+        </div>
+      </a>      <a class="card" href="dao_practicum_cases_remedies.html">
+        <img class="cover" src="photos/post_65_1.jpg" alt="10. Практикум: диагностика, кейсы, препараты">
+        <div class="card-body">
+          <div class="eyebrow">Книга 10</div>
+          <h2>10. Практикум: диагностика, кейсы, препараты</h2>
+          <p class="meta">25 постов</p>
+          <p class="desc">Разборы состояний, прикладные кейсы, препараты, наблюдения и рабочие заметки по практике.</p>
+        </div>
+      </a>
+    </section>
+    <section class="links">
+      <h2>Дополнительно</h2>
+      <ul>
+        <li><a href="dao_wuxing_steps.html">Ступени Дао Усин</a> — краткая схема.</li>
+        <li><a href="agents_config.html">Инструкции проекта (AGENTS.md)</a></li>
+        <li><a href="dao_model_mini_guide.html">Мини-методичка по модели DAO</a></li>
+        <li><a href="book_build_guide.html">Руководство по сборке книг</a></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

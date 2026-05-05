@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Руководство по сборке книг</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --paper: #fffdf8;
+      --ink: #221d1a;
+      --muted: #6f6257;
+      --line: #d8c9b7;
+      --accent: #7b3f00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Verdana, Tahoma, Arial, sans-serif;
+      background: linear-gradient(180deg, #f8f3eb 0%, var(--bg) 100%);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+    main {
+      width: min(920px, calc(100vw - 24px));
+      margin: 0 auto;
+      padding: 24px 0 72px;
+    }
+    .page {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 18px 40px rgba(68, 45, 25, 0.08);
+    }
+    h1 {
+      margin: 0 0 8px;
+      line-height: 1.12;
+      font-size: clamp(32px, 4vw, 48px);
+    }
+    h2 {
+      margin-top: 34px;
+      font-size: 28px;
+    }
+    h3 {
+      margin-top: 26px;
+      font-size: 22px;
+    }
+    p, li { max-width: 72ch; }
+    .lead {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .nav a {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #f7efe6;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a { color: var(--accent); }
+    code {
+      padding: 0.15em 0.4em;
+      border-radius: 6px;
+      background: #f4ede4;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.95em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      font-size: 15px;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f7efe6; }
+    ul, ol { padding-left: 24px; }
+    .note {
+      margin: 0 0 18px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #faf4eb;
+    }
+    .warning {
+      background: #fff5ea;
+      border-color: #e5c39b;
+    }
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px;
+        border-radius: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="page">
+      <div class="nav">
+        <a href="index.html">Главная</a>
+        <a href="index_daos_books.html">Разделы</a>
+        <a href="agents_config.html">AGENTS</a>
+        <a href="dao_model_mini_guide.html">Методичка DAO</a>
+        <a href="book_build_guide.html">Руководство по сборке</a>
+      </div>
+      <h1>Руководство по сборке книг</h1>
+      <p class="lead">Браузерная версия внешнего Markdown-руководства, на которое ссылается проект.</p>
+      <div class="note warning"><strong>Источник недоступен или пуст.</strong> Файл: <code>/Users/andriilitvinov/projects/knigi-format/РУКОВОДСТВО_ПО_СБОРКЕ_КНИГ_ИЗ_ЗАМЕТОК_И_ПУБЛИКАЦИЙ.md</code></div>
+      
+    </div>
+  </main>
+</body>
+</html>

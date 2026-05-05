@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: Verdana, Tahoma, Arial, sans-serif;
+    --font-serif: "Iowan Old Style", "Baskerville", "Palatino Linotype", serif;
+    --background: 35 41% 89%;
+    --foreground: 20 25% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 214 34% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 214 34% 17%;
+    --primary: 201 60% 22%;
+    --primary-foreground: 45 70% 97%;
+    --secondary: 40 43% 92%;
+    --secondary-foreground: 214 34% 17%;
+    --muted: 42 28% 93%;
+    --muted-foreground: 215 16% 40%;
+    --accent: 27 58% 86%;
+    --accent-foreground: 214 34% 17%;
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 32 24% 84%;
+    --input: 32 24% 84%;
+    --ring: 201 60% 22%;
+    --radius: 1rem;
+    --sidebar-background: 44 38% 96%;
+    --sidebar-foreground: 214 34% 20%;
+    --sidebar-primary: 201 60% 22%;
+    --sidebar-primary-foreground: 45 70% 97%;
+    --sidebar-accent: 35 52% 90%;
+    --sidebar-accent-foreground: 214 34% 17%;
+    --sidebar-border: 36 24% 84%;
+    --sidebar-ring: 201 60% 22%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background:
+      radial-gradient(circle at top, rgba(255, 255, 255, 0.55), transparent 36%),
+      linear-gradient(180deg, #f6efe4 0%, #efe6d6 100%);
+  }
+
+  ::selection {
+    background: hsl(205 72% 86%);
+    color: hsl(222 35% 12%);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .reader-content {
+    color: #382d26;
+    font-size: 15px;
+    line-height: 1.72;
+  }
+
+  .reader-content p + p {
+    @apply mt-5;
+  }
+}
