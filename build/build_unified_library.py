@@ -23,6 +23,9 @@ BOOKS = [
         "description": "Редакционная reading edition 82 сохранённых текстов локального Telegram-экспорта, с видимыми ссылками на первичные посты.",
         "path": SOURCE_ROOT / "book-3-maya-tradition" / "outputs" / "Maya_Tradition_Methodology.html",
         "asset_prefix": "../source-books/book-3-maya-tradition/outputs/",
+        "asset_rewrites": {
+            "../raw/": "../source-books/book-3-maya-tradition/raw/",
+        },
         "cover_image": "../source-books/book-3-maya-tradition/raw/photos/photo_1@07-09-2022_19-37-03.jpg",
         "kind": "Методология",
     },
@@ -320,7 +323,12 @@ def collect_book_data() -> tuple[OrderedDict, list[str]]:
             if attr == "href" and filename in included_html:
                 tag[attr] = f"#{included_html[filename]}"
                 continue
-            tag[attr] = item["asset_prefix"] + value.lstrip("./")
+            for source_prefix, output_prefix in item.get("asset_rewrites", {}).items():
+                if value.startswith(source_prefix):
+                    tag[attr] = output_prefix + value[len(source_prefix):]
+                    break
+            else:
+                tag[attr] = item["asset_prefix"] + value.lstrip("./")
 
         overview_id = f"{item['id']}-overview"
         first_h1 = main.find("h1")
