@@ -1,9 +1,9 @@
 "use client";
 
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Link2, Search } from "lucide-react";
+import { ArrowUpRight, BookOpen, Link2, Search } from "lucide-react";
 
-import { books, getBook, getSection } from "@/data/books";
+import { booksWithPresentation as books, getBook, getSection } from "@/data/books";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
@@ -13,6 +13,7 @@ const ACTIVE_SECTION_KEY = "books-catalog:active-section";
 export function BookCatalog() {
   const initialBook = books[0];
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("Все");
   const deferredQuery = useDeferredValue(query);
   const [activeBookId, setActiveBookId] = useState(initialBook.id);
   const [activeSectionId, setActiveSectionId] = useState(initialBook.sections[0]?.id ?? "");
@@ -21,16 +22,22 @@ export function BookCatalog() {
 
   const filteredBooks = useMemo(() => {
     const value = deferredQuery.trim().toLowerCase();
-    if (!value) return books;
+    const inCategory = (book: (typeof books)[number]) =>
+      category === "Все" ||
+      (category === "Maya Tradition" && book.id === "maya-tradition-methodology") ||
+      (category === "Даосские книги" && /даос|dao/i.test(`${book.author} ${book.title}`)) ||
+      (category === "Алхимия души" && /алхимия души/i.test(`${book.author} ${book.title}`));
+    if (!value) return books.filter(inCategory);
 
     return books.filter((book) =>
+      inCategory(book) &&
       `${book.title} ${book.description} ${book.summary} ${book.author} ${book.sections
         .map((section) => `${section.title} ${section.description} ${section.content}`)
         .join(" ")}`
         .toLowerCase()
         .includes(value),
     );
-  }, [deferredQuery]);
+  }, [category, deferredQuery]);
 
   const activeBook = getBook(activeBookId);
   const activeSection = getSection(activeBook, activeSectionId);
@@ -106,6 +113,22 @@ export function BookCatalog() {
         </div>
       </section>
 
+      <nav className="mt-6 flex flex-wrap gap-2" aria-label="Категории книг">
+        {["Все", "Maya Tradition", "Даосские книги", "Алхимия души"].map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setCategory(item)}
+            className={cn(
+              "rounded-full border px-4 py-2 text-sm transition",
+              category === item ? "border-[#8b4513] bg-[#8b4513] text-[#fff7ee]" : "border-[#d9c7b0] bg-[#fffaf4] text-[#5f3720] hover:border-[#cba27a]",
+            )}
+          >
+            {item}
+          </button>
+        ))}
+      </nav>
+
       <section className="mt-7 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3" aria-label="Книги">
         {filteredBooks.map((book, index) => {
           const selected = book.id === activeBook.id;
@@ -120,8 +143,9 @@ export function BookCatalog() {
                 selected ? "border-[#cba27a]" : "border-[#d9c7b0]",
               )}
             >
-              <div className={cn("aspect-[4/3] w-full border-b border-[#d9c7b0] bg-gradient-to-br", book.theme)}>
-                <div className="flex h-full flex-col justify-between p-5">
+              <div className={cn("relative aspect-[4/3] w-full overflow-hidden border-b border-[#d9c7b0] bg-gradient-to-br", book.theme)}>
+                <img src={book.coverImage} alt={`Обложка: ${book.title}`} className="absolute inset-0 h-full w-full object-cover" />
+                <div className="relative flex h-full flex-col justify-between bg-[linear-gradient(180deg,rgba(28,16,10,0.05),rgba(28,16,10,0.7))] p-5">
                   <div className="flex size-14 items-center justify-center rounded-[18px] border border-[rgba(116,66,29,0.12)] bg-[rgba(255,252,246,0.72)] text-lg font-semibold text-[#5f3720]">
                     {book.coverLabel}
                   </div>
@@ -135,6 +159,11 @@ export function BookCatalog() {
               <div className="p-[18px_18px_20px]">
                 <p className="mb-2 text-sm text-[#6d5d51]">{book.author}</p>
                 <p className="line-clamp-3 text-[15px] leading-[1.58] text-[#382d26]">{book.description}</p>
+                {book.readerUrl && (
+                  <a href={book.readerUrl} onClick={(event) => event.stopPropagation()} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#8b4513] hover:underline">
+                    Читать Maya Tradition <ArrowUpRight className="size-4" />
+                  </a>
+                )}
               </div>
             </button>
           );
