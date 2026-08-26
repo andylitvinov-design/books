@@ -21,6 +21,12 @@ def copy_file(source: Path, destination: Path) -> None:
 
 def publish_maya_reader() -> None:
     html = READER.read_text(encoding="utf-8")
+    # The archival edition labels its provenance for local editorial work. The
+    # public reader keeps the same manuscript but uses reader-facing wording.
+    html = html.replace(
+        "Reading edition · local Telegram export",
+        "Авторская читательская методичка",
+    )
     asset_refs = sorted(set(re.findall(r'(?:\.\./raw/photos|\.\./media/templetherapy)/[^"\']+', html)))
     for ref in asset_refs:
         source = MAYA / ref.removeprefix("../")
