@@ -54,6 +54,9 @@ def verify(root):
         except json.JSONDecodeError as exc:
             errors.append(f"line {line_number}: invalid JSON: {exc.msg}")
             continue
+        if not isinstance(post, dict):
+            errors.append(f"line {line_number}: JSON record must be an object")
+            continue
         missing = REQUIRED - post.keys()
         if missing:
             errors.append(f"line {line_number}: missing required fields: {', '.join(sorted(missing))}")
@@ -118,16 +121,31 @@ def verify(root):
             if not isinstance(entry, dict) or set(("path", "bytes", "sha256")) - entry.keys():
                 errors.append("media manifest entry missing path, bytes, or sha256")
                 continue
-            relative = Path(entry["path"])
+            path_value = entry["path"]
+            bytes_value = entry["bytes"]
+            digest = entry["sha256"]
+            invalid = False
+            if not isinstance(path_value, str) or not path_value.strip():
+                errors.append("media manifest path must be a non-empty relative string")
+                invalid = True
+            if isinstance(bytes_value, bool) or not isinstance(bytes_value, int) or bytes_value < 0:
+                errors.append("media manifest bytes must be a non-negative integer")
+                invalid = True
+            if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", digest):
+                errors.append("media manifest sha256 must be a 64-character hexadecimal digest")
+                invalid = True
+            if invalid:
+                continue
+            relative = Path(path_value)
             asset = root / "raw" / relative
             if relative.is_absolute() or ".." in relative.parts or not asset.is_file():
-                errors.append(f"media manifest path missing from copied archive: {entry['path']}")
+                errors.append(f"media manifest path missing from copied archive: {path_value}")
                 continue
-            manifest_paths.add(entry["path"])
-            if asset.stat().st_size != entry["bytes"]:
-                errors.append(f"media manifest byte count mismatch: {entry['path']}")
-            if hashlib.sha256(asset.read_bytes()).hexdigest() != entry["sha256"]:
-                errors.append(f"media manifest digest mismatch: {entry['path']}")
+            manifest_paths.add(path_value)
+            if asset.stat().st_size != bytes_value:
+                errors.append(f"media manifest byte count mismatch: {path_value}")
+            if hashlib.sha256(asset.read_bytes()).hexdigest() != digest:
+                errors.append(f"media manifest digest mismatch: {path_value}")
         for post in posts:
             for reference in post.get("media_references", []):
                 if reference not in manifest_paths:

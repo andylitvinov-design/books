@@ -67,6 +67,29 @@ class VerifyCorpusTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("non-contiguous next_post_id", result.stderr)
 
+    def test_rejects_non_object_jsonl_record(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "raw").mkdir()
+            (root / "raw" / "messages.html").write_text("", encoding="utf-8")
+            (root / "raw" / "posts.jsonl").write_text("[]\n", encoding="utf-8")
+            (root / "raw" / "media-manifest.json").write_text("[]\n", encoding="utf-8")
+            result = subprocess.run([sys.executable, str(Path(__file__).with_name("verify_corpus.py")), str(root)], text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("JSON record must be an object", result.stderr)
+
+    def test_rejects_manifest_entry_with_non_string_path(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "raw").mkdir()
+            (root / "raw" / "messages.html").write_text("", encoding="utf-8")
+            record = {"channel": "mayaismagic", "post_id": 1, "url": "https://t.me/mayaismagic/1", "date": "2023 UTC", "raw_text": "text", "media_references": [], "media_caption": "", "previous_post_id": None, "next_post_id": None}
+            (root / "raw" / "posts.jsonl").write_text(json.dumps(record) + "\n", encoding="utf-8")
+            (root / "raw" / "media-manifest.json").write_text(json.dumps([{"path": 4, "bytes": True, "sha256": "not-a-digest"}]), encoding="utf-8")
+            result = subprocess.run([sys.executable, str(Path(__file__).with_name("verify_corpus.py")), str(root)], text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("media manifest path must be a non-empty relative string", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
