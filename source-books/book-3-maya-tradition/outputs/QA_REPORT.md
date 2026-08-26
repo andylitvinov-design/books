@@ -1,7 +1,7 @@
 # Maya Tradition editions — output QA
 
-- **Source-photo mapping:** 67 included articles have a primary photograph mapped from the local Telegram export (`raw/messages.html`) to `raw/photos/`; the remaining 15 included articles have no captured primary photo.
-- **DOCX/PDF render:** 98 pages total (cover plus article pages and continuations). Every one of the 82 included articles begins on a new printed page.
-- **Visual inspection:** rendered cover (page 1), opening article (page 2), representative middle article (page 50), and final article (page 98).
-- **Layout checks:** warm compact-reference palette; source post ID, captured date, and Telegram URL are visible on every article; mapped primary photos appear upper-right; HTML uses a responsive stacked-photo layout on narrow screens.
-- **Unified library media:** the unified reading library rewrites this edition's `../raw/photos/...` references to `../source-books/book-3-maya-tradition/raw/photos/...`; all 67 referenced primary photo files were checked as present.
+- **Style token:** `compact_reference_guide` adapted for source reading: 19px HTML desktop / 18px mobile, 1.75 HTML line-height; 13pt DOCX body, 1.35 line spacing.
+- **Reading order:** cited post 2 supplies the concise front description; the clear table of contents follows it; author-framework articles occur only after historical/mythic, ritual, and therapeutic material.
+- **Source-photo mapping:** primary photographs remain mapped only from the local Telegram export (`raw/messages.html`) to `raw/photos/`; any absent photo remains absent.
+- **Layout checks:** source post ID, captured date, and Telegram URL are visible on source text; primary photos occupy the upper-right DOCX cell; HTML stacks them above text below 700px and provides 48–52px table-of-contents touch targets.
+- **DOCX/PDF render:** 122 pages. The rendered front page, first deity article, a representative middle page, and final page were visually inspected; no clipping or misplaced primary image was observed.

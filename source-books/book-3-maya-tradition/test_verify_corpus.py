@@ -14,6 +14,10 @@ SPEC.loader.exec_module(VERIFY)
 
 
 class VerifyCorpusTests(unittest.TestCase):
+    def test_accepts_mobile_reading_order_in_maya_manuscript(self):
+        root = Path(__file__).resolve().parent
+        self.assertEqual(VERIFY.verify_mobile_reading_order(root), [])
+
     def test_extracts_only_numeric_default_message_ids_from_html(self):
         with tempfile.TemporaryDirectory() as temp:
             html = Path(temp) / "messages.html"

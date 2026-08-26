@@ -1,5 +1,9 @@
 # Content map
 
+## Reading order
+
+The manuscript opens with source post 2 as the concise cited description, followed by a generated table of contents. Reader-facing order is: gods and divine forces; calendar/cosmology; places/material culture; ritual/ancestors/Xibalba; therapeutic and author models; comparisons. This is editorial routing only and adds no source content.
+
 Status is an editorial disposition, not a judgment of truth. `Included` means a substantive source text (120+ characters) retained once in the manuscript. `Deferred — exact repost` points to the retained first occurrence. `Deferred — low text` covers captions, short labels, and link-only posts; `Deferred — media only` has no captured text.
 
 ## Requested-theme reconciliation

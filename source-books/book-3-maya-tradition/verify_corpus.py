@@ -23,6 +23,32 @@ INDEX_FIELDS = [
 ]
 
 
+def verify_mobile_reading_order(root):
+    """Check the source-backed manuscript's reader-first chapter sequence."""
+    manuscript_path = root / "manuscript" / "MAYA_TRADITION.md"
+    if not manuscript_path.exists():
+        return []
+    text = manuscript_path.read_text(encoding="utf-8")
+    required = [
+        "# Описание традиции", "# Содержание", "# II. Боги и божественные силы",
+        "# III. Календарь, время и космология", "# IV. Места, предметы и материальная культура",
+        "# V. Ритуал, предки и Шибальба", "# VI. Терапевтические и авторские модели",
+        "# VII. Смежные традиции Мезоамерики и сравнения",
+    ]
+    errors = []
+    positions = [text.find(marker) for marker in required]
+    if -1 in positions or positions != sorted(positions):
+        errors.append("manuscript does not follow the required mobile reading order")
+    description_end = text.find("# Содержание")
+    description = text[:description_end] if description_end >= 0 else ""
+    if "Источник: пост [2]" not in description or description.count("Источник: пост [") != 1:
+        errors.append("front description must contain only the cited framing post")
+    author_marker = "## Авторская рамка, практики и программы"
+    if text.find(author_marker) <= text.find("# VI. Терапевтические и авторские модели"):
+        errors.append("author framework must follow therapeutic material in chapter VI")
+    return errors
+
+
 def html_post_ids(html_path):
     """Extract the numeric IDs from Telegram's ordinary (non-service) messages."""
     soup = BeautifulSoup(html_path.read_bytes(), "html.parser")
@@ -36,6 +62,7 @@ def html_post_ids(html_path):
 
 def verify(root):
     errors = []
+    errors.extend(verify_mobile_reading_order(root))
     posts_path = root / "raw" / "posts.jsonl"
     html_path = root / "raw" / "messages.html"
     if not html_path.exists():
