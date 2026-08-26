@@ -4,10 +4,28 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import importlib.util
 from pathlib import Path
 
 
+SPEC = importlib.util.spec_from_file_location("verify_corpus", Path(__file__).with_name("verify_corpus.py"))
+VERIFY = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(VERIFY)
+
+
 class VerifyCorpusTests(unittest.TestCase):
+    def test_extracts_only_numeric_default_message_ids_from_html(self):
+        with tempfile.TemporaryDirectory() as temp:
+            html = Path(temp) / "messages.html"
+            html.write_text(
+                '<div class="message default" id="message2"></div>'
+                '<div class="message service" id="message-3"></div>'
+                '<div class="message default" id="message004"></div>'
+                '<div class="message default" id="message-not-numeric"></div>',
+                encoding="utf-8",
+            )
+            self.assertEqual(VERIFY.html_post_ids(html), [2, 4])
+
     def test_rejects_unknown_adjacent_post_id(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

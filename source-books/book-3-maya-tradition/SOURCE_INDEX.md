@@ -1,8 +1,35 @@
 # Maya Telegram Export Source Index
 
-Conservative keyword index derived solely from `raw/messages.html`.
+Conservative keyword index derived solely from `raw/messages.html`. Blank fields mean the export does not provide an explicit conservative tag; no factual classification was inferred.
+
+## Schema
+
+| Field | Meaning |
+|---|---|
+| `post_id` | Numeric Telegram export message ID. |
+| `date` | Export timestamp. |
+| `url` | Canonical Telegram post URL. |
+| `title_first_line` | First non-empty line of extracted post text. |
+| `topic` | Explicit high-level keyword topic. |
+| `subtopic` | Explicit narrower keyword topic. |
+| `deity_archetype` | Named deity or archetype terms present in the post. |
+| `place` | Explicit place or culture terms present in the post. |
+| `ritual_practice` | Explicit ritual or practice terminology. |
+| `initiation_stage` | Explicit initiation terminology. |
+| `cosmology` | Explicit cosmology terminology. |
+| `calendar_time` | Explicit calendar terminology. |
+| `historical_material` | Explicit historical terminology. |
+| `mythology` | Explicit mythology terminology. |
+| `author_interpretation` | Explicit first-person interpretive framing. |
+| `therapeutic_archetypal_interpretation` | Explicit therapeutic or archetypal terminology. |
+| `knowledge_level` | Explicit introductory/beginner label. |
+| `duplicate_of` | Reserved; blank unless an exact duplicate is established. |
+| `series_id` | Reserved; blank unless an explicit series is established. |
+| `included_in_chapter` | Reserved; blank because no manuscript classification was performed. |
 
 Posts indexed: 236
+
+## Posts
 
 | Post | Date | First line | Topic |
 |---:|---|---|---|

@@ -2,20 +2,51 @@
 """Verify structural integrity of the Maya Telegram archive and source index."""
 
 import csv
+import hashlib
 import json
+import re
 import sys
 from pathlib import Path
+
+from bs4 import BeautifulSoup
 
 
 REQUIRED = {"channel", "post_id", "url", "date", "raw_text", "media_references", "media_caption", "previous_post_id", "next_post_id"}
 EXPECTED_CHANNEL = "mayaismagic"
+EXPECTED_POST_COUNT = 236
+INDEX_FIELDS = [
+    "post_id", "date", "url", "title_first_line", "topic", "subtopic",
+    "deity_archetype", "place", "ritual_practice", "initiation_stage",
+    "cosmology", "calendar_time", "historical_material", "mythology",
+    "author_interpretation", "therapeutic_archetypal_interpretation",
+    "knowledge_level", "duplicate_of", "series_id", "included_in_chapter",
+]
+
+
+def html_post_ids(html_path):
+    """Extract the numeric IDs from Telegram's ordinary (non-service) messages."""
+    soup = BeautifulSoup(html_path.read_bytes(), "html.parser")
+    ids = []
+    for message in soup.select("div.message.default"):
+        match = re.fullmatch(r"message(\d+)", message.get("id", ""))
+        if match:
+            ids.append(int(match.group(1)))
+    return ids
 
 
 def verify(root):
     errors = []
     posts_path = root / "raw" / "posts.jsonl"
+    html_path = root / "raw" / "messages.html"
+    if not html_path.exists():
+        errors.append(f"missing {html_path}")
+        html_ids = []
+    else:
+        html_ids = html_post_ids(html_path)
+        if len(html_ids) != EXPECTED_POST_COUNT:
+            errors.append(f"raw HTML post count {len(html_ids)} does not equal expected {EXPECTED_POST_COUNT}")
     if not posts_path.exists():
-        return [f"missing {posts_path}"]
+        return errors + [f"missing {posts_path}"]
     posts = []
     for line_number, line in enumerate(posts_path.read_text(encoding="utf-8").splitlines(), 1):
         try:
@@ -34,6 +65,10 @@ def verify(root):
     ids = {post["post_id"] for post in posts if isinstance(post.get("post_id"), int)}
     if len(ids) != len(posts):
         errors.append("duplicate or invalid post IDs")
+    if len(posts) != EXPECTED_POST_COUNT:
+        errors.append(f"JSONL post count {len(posts)} does not equal expected {EXPECTED_POST_COUNT}")
+    if [post.get("post_id") for post in posts] != html_ids:
+        errors.append("raw HTML source IDs do not exactly match JSONL posts")
     for index, post in enumerate(posts):
         for field in ("previous_post_id", "next_post_id"):
             linked = post.get(field)
@@ -49,14 +84,54 @@ def verify(root):
     if not index_path.exists():
         errors.append(f"missing {index_path}")
     else:
-        rows = list(csv.DictReader(index_path.open(encoding="utf-8", newline="")))
+        reader = csv.DictReader(index_path.open(encoding="utf-8", newline=""))
+        if reader.fieldnames != INDEX_FIELDS:
+            errors.append("SOURCE_INDEX.csv headers do not exactly match the required schema")
+        rows = list(reader)
         indexed_ids = {int(row["post_id"]) for row in rows if row.get("post_id", "").isdigit()}
         if len(rows) != len(posts):
             errors.append(f"index row count {len(rows)} does not match raw post count {len(posts)}")
-        if indexed_ids != ids:
+        if indexed_ids != ids or [row.get("post_id") for row in rows] != [str(post.get("post_id")) for post in posts]:
             errors.append("index source IDs do not match raw posts")
-    if not (root / "raw" / "media-manifest.json").exists():
+    markdown_path = root / "SOURCE_INDEX.md"
+    if not markdown_path.exists():
+        errors.append("missing SOURCE_INDEX.md")
+    else:
+        markdown = markdown_path.read_text(encoding="utf-8")
+        undocumented = [field for field in INDEX_FIELDS if f"| `{field}` |" not in markdown]
+        if undocumented:
+            errors.append("SOURCE_INDEX.md does not document schema headings: " + ", ".join(undocumented))
+    manifest_path = root / "raw" / "media-manifest.json"
+    if not manifest_path.exists():
         errors.append("missing raw/media-manifest.json")
+    else:
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            errors.append(f"invalid raw/media-manifest.json: {exc.msg}")
+            manifest = []
+        if not isinstance(manifest, list):
+            errors.append("raw/media-manifest.json must contain a list")
+            manifest = []
+        manifest_paths = set()
+        for entry in manifest:
+            if not isinstance(entry, dict) or set(("path", "bytes", "sha256")) - entry.keys():
+                errors.append("media manifest entry missing path, bytes, or sha256")
+                continue
+            relative = Path(entry["path"])
+            asset = root / "raw" / relative
+            if relative.is_absolute() or ".." in relative.parts or not asset.is_file():
+                errors.append(f"media manifest path missing from copied archive: {entry['path']}")
+                continue
+            manifest_paths.add(entry["path"])
+            if asset.stat().st_size != entry["bytes"]:
+                errors.append(f"media manifest byte count mismatch: {entry['path']}")
+            if hashlib.sha256(asset.read_bytes()).hexdigest() != entry["sha256"]:
+                errors.append(f"media manifest digest mismatch: {entry['path']}")
+        for post in posts:
+            for reference in post.get("media_references", []):
+                if reference not in manifest_paths:
+                    errors.append(f"post {post.get('post_id')}: media reference missing from manifest: {reference}")
     return errors
 
 
