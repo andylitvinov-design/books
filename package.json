@@ -2,11 +2,13 @@
   "name": "books-catalog",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:unit": "node --test tests/**/*.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
