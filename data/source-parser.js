@@ -5,6 +5,7 @@ const allowedTags = new Set([
   'tr', 'ul',
 ])
 
+const allowedMediaSeries = new Set(['alchemy', 'dao', 'maya'])
 const voidTags = new Set(['br', 'hr', 'img'])
 const commonAttributes = new Set(['aria-label', 'class', 'id', 'title'])
 const blockedTagPattern = /<(script|style|iframe|object|embed|form|input|button|textarea|select|option|link|meta|base|svg|math|template|noscript)\b[^>]*>(?:[\s\S]*?<\/\1\s*>)?/gi
@@ -85,6 +86,10 @@ function sanitizeSourceHtml(html, series) {
 }
 
 export function normalizeSourceHtml(html, series) {
+  if (!allowedMediaSeries.has(series)) {
+    throw new TypeError(`Unknown media series: ${series}`)
+  }
+
   const body = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? html
   const normalizedImages = body.replace(sourceImagePattern, (_, __, sourcePath) => {
     const filename = sourcePath.split('/').at(-1)

@@ -33,6 +33,13 @@ test('allowlists presentation markup and rejects executable or local content', (
   assert.doesNotMatch(output, /onerror|onclick|onmouseover|style=|javascript:|data:|localhost|iframe|form|input|steal\(\)/i)
 })
 
+test('rejects an unrecognized media series before constructing public image URLs', () => {
+  assert.throws(
+    () => normalizeSourceHtml('<img src="media/cover.jpg">', 'alchemy/../../private'),
+    /Unknown media series/,
+  )
+})
+
 test('exposes the complete source-backed library and searchable metadata', () => {
   const expectedIds = [
     'alchemy-homeopathy-foundations',
