@@ -54,6 +54,15 @@
 - Привязанные ресурсы:
   - `/Users/andriilitvinov/projects/books/source-books/book-2-dao-books/photos/`
 
+## Книга 3: Maya Tradition
+
+- Первичный источник: локальный экспорт Telegram-канала `mayaismagic`, сохранённый в `source-books/book-3-maya-tradition/raw/`.
+- Канонический экспорт: `raw/messages.html`; изображения: `raw/photos/`; контрольный список ресурсов: `raw/media-manifest.json`.
+- Исходниковая редакционная рукопись: `manuscript/MAYA_TRADITION.md`; карта глав и покрытие: `manuscript/CHAPTER_MAP.md`, `manuscript/COVERAGE.md`.
+- Reading edition: `source-books/book-3-maya-tradition/outputs/Maya_Tradition_Methodology.html`.
+- Печатные издания: `outputs/Maya_Tradition_Methodology.docx` и `outputs/Maya_Tradition_Methodology.pdf`.
+- Сборщик `build_maya_book.py` читает только локальные первичные файлы и не изменяет экспорт или рукопись.
+
 ## Локальная структура работы
 
 - Исходники: `/Users/andriilitvinov/projects/books/source-books/`

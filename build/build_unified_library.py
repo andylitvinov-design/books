@@ -16,6 +16,17 @@ OUTPUT_FILE = FINAL_ROOT / "unified-library.html"
 
 BOOKS = [
     {
+        "group": "Maya Tradition",
+        "group_id": "maya-tradition",
+        "id": "maya-tradition-methodology",
+        "title": "Maya Tradition: методология источникового чтения",
+        "description": "Редакционная reading edition 82 сохранённых текстов локального Telegram-экспорта, с видимыми ссылками на первичные посты.",
+        "path": SOURCE_ROOT / "book-3-maya-tradition" / "outputs" / "Maya_Tradition_Methodology.html",
+        "asset_prefix": "../source-books/book-3-maya-tradition/outputs/",
+        "cover_image": "../source-books/book-3-maya-tradition/raw/photos/photo_1@07-09-2022_19-37-03.jpg",
+        "kind": "Методология",
+    },
+    {
         "group": "Алхимия души",
         "group_id": "alchemy-soul",
         "id": "soul-homeopathy-foundations",
