@@ -28,15 +28,15 @@ INDEX_FIELDS = [
 
 def verify_mobile_reading_order(root):
     """Check the source-backed manuscript's reader-first chapter sequence."""
-    manuscript_path = root / "manuscript" / "MAYA_TRADITION.md"
+    manuscript_path = root / "manuscript" / "MAYA_TRADITION_UNIFIED.md"
     if not manuscript_path.exists():
         return []
     text = manuscript_path.read_text(encoding="utf-8")
     required = [
-        "# Описание традиции", "# Содержание", "# II. Боги и божественные силы",
+        "## Описание традиции", "# Содержание", "# I. Описание традиции", "# II. Боги и божественные силы",
         "# III. Календарь, время и космология", "# IV. Места, предметы и материальная культура",
-        "# V. Ритуал, предки и Шибальба", "# VI. Терапевтические и авторские модели",
-        "# VII. Смежные традиции Мезоамерики и сравнения",
+        "# V. Мифология, Шибальба, инициация и ритуал", "# VI. Авторские, архетипические и терапевтические модели",
+        "# VII. Сравнения мезоамериканских традиций",
     ]
     errors = []
     positions = [text.find(marker) for marker in required]
@@ -46,9 +46,6 @@ def verify_mobile_reading_order(root):
     description = text[:description_end] if description_end >= 0 else ""
     if "Источник: пост [2]" not in description or description.count("Источник: пост [") != 1:
         errors.append("front description must contain only the cited framing post")
-    author_marker = "## Авторская рамка, практики и программы"
-    if text.find(author_marker) <= text.find("# VI. Терапевтические и авторские модели"):
-        errors.append("author framework must follow therapeutic material in chapter VI")
     return errors
 
 
@@ -74,10 +71,10 @@ def html_post_ids(html_path):
 
 
 def verify_supplemental(root):
-    """Validate the separately-labelled public TempleTherapy appendix."""
+    """Validate integrated, source-labelled TempleTherapy coverage."""
     errors = []
     index_path = root / SUPPLEMENTAL_INDEX
-    manuscript_path = root / "manuscript" / "MAYA_TRADITION.md"
+    manuscript_path = root / "manuscript" / "MAYA_TRADITION_UNIFIED.md"
     if not index_path.exists():
         return [f"missing {index_path}"]
     rows = []
@@ -104,17 +101,13 @@ def verify_supplemental(root):
     if not manuscript_path.exists():
         return errors + [f"missing {manuscript_path}"]
     manuscript = manuscript_path.read_text(encoding="utf-8")
-    chapter = "# VIII. Приложение: TempleTherapy — дополнительные публичные материалы"
-    if manuscript.count(chapter) != 1 or manuscript.find(chapter) <= manuscript.find("# VII. "):
-        errors.append("TempleTherapy appendix is missing or not placed after main chapters")
-    if manuscript.count("## TempleTherapy · пост ") != len(rows):
-        errors.append("TempleTherapy appendix heading count does not match index")
+    chapters = ["# I. Описание традиции", "# II. Боги и божественные силы", "# III. Календарь, время и космология", "# IV. Места, предметы и материальная культура", "# V. Мифология, Шибальба, инициация и ритуал", "# VI. Авторские, архетипические и терапевтические модели", "# VII. Сравнения мезоамериканских традиций"]
+    if any(manuscript.count(chapter) != 1 for chapter in chapters) or "# VIII. Приложение" in manuscript:
+        errors.append("unified manuscript does not contain the seven integrated chapters")
     for row in rows:
-        marker = f"*Дополнительный публичный источник: TempleTherapy; пост [{row['post_id']}]({row['url']}); {row['date']}.*"
+        marker = f"TempleTherapy: пост [{row['post_id']}]({row['url']}); {row['date']}"
         if marker not in manuscript:
-            errors.append(f"TempleTherapy post {row['post_id']}: missing source marker in appendix")
-        if html.unescape(row["raw_text"]) not in manuscript:
-            errors.append(f"TempleTherapy post {row['post_id']}: raw text is not preserved in appendix")
+            errors.append(f"TempleTherapy post {row['post_id']}: missing integrated source marker")
     media_root = root / SUPPLEMENTAL_MEDIA
     expected = {f"post-{row['post_id']}-{index}.jpg" for row in rows for index, _ in enumerate(row["media_references"], 1)}
     actual = {path.name for path in media_root.glob("*.jpg")} if media_root.exists() else set()

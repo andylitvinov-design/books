@@ -7,6 +7,7 @@ import html
 import json
 import re
 import shutil
+from collections import defaultdict
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -23,6 +24,7 @@ except ModuleNotFoundError:
 
 HERE = Path(__file__).resolve().parent
 MANUSCRIPT = HERE / "manuscript" / "MAYA_TRADITION.md"
+UNIFIED_MANUSCRIPT = HERE / "manuscript" / "MAYA_TRADITION_UNIFIED.md"
 RAW_MESSAGES = HERE / "raw" / "messages.html"
 RAW_PHOTOS = HERE / "raw" / "photos"
 SUPPLEMENTAL_INDEX = HERE / "raw" / "templetherapy" / "TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl"
@@ -30,6 +32,7 @@ SUPPLEMENTAL_MEDIA = HERE / "media" / "templetherapy"
 OUT = HERE / "outputs"
 HTML_OUT = OUT / "Maya_Tradition_Methodology.html"
 DOCX_OUT = OUT / "Maya_Tradition_Methodology.docx"
+DEDUPLICATION_REPORT = HERE / "DEDUPLICATION_REPORT.md"
 
 WARM = "6B2F1A"
 GOLD = "B7791F"
@@ -37,11 +40,40 @@ CREAM = "FBF4E9"
 INK = "2F241D"
 MUTED = "6D5A4D"
 FRONT_HEADINGS = {"Editorial note", "Описание традиции", "Содержание", "Авторская рамка, практики и программы"}
-SUPPLEMENTAL_CHAPTER = "VIII. Приложение: TempleTherapy — дополнительные публичные материалы"
+CHAPTERS = (
+    "I. Описание традиции",
+    "II. Боги и божественные силы",
+    "III. Календарь, время и космология",
+    "IV. Места, предметы и материальная культура",
+    "V. Мифология, Шибальба, инициация и ритуал",
+    "VI. Авторские, архетипические и терапевтические модели",
+    "VII. Сравнения мезоамериканских традиций",
+)
+
+# These are editorial placement decisions, not claims about a source's authority.
+SUPPLEMENTAL_CHAPTERS = {
+    2062: CHAPTERS[0], 2065: CHAPTERS[2], 2100: CHAPTERS[5], 2113: CHAPTERS[3],
+    2198: CHAPTERS[5], 2204: CHAPTERS[5], 2210: CHAPTERS[5], 2212: CHAPTERS[5],
+    2217: CHAPTERS[1], 2239: CHAPTERS[4], 2240: CHAPTERS[5], 2241: CHAPTERS[4],
+    2242: CHAPTERS[4], 2245: CHAPTERS[4], 2246: CHAPTERS[4], 2251: CHAPTERS[4],
+    2253: CHAPTERS[5], 2255: CHAPTERS[5], 2257: CHAPTERS[2], 2258: CHAPTERS[2],
+    2262: CHAPTERS[0], 2264: CHAPTERS[5], 2268: CHAPTERS[1], 2269: CHAPTERS[5],
+    2273: CHAPTERS[5], 2323: CHAPTERS[3], 2346: CHAPTERS[1], 2352: CHAPTERS[6],
+    2446: CHAPTERS[5],
+}
+
+# Supplemental copies are linked from the retained Mayaismagic article.  The
+# three near copies were reviewed separately: 2246 adds a tail, 2268 changes a
+# short closing sentence, and 2346 reorders the same material.
+SUPPLEMENTAL_CANONICAL = {
+    2065: 89, 2113: 98, 2204: 147, 2217: 214, 2239: 222, 2240: 223,
+    2241: 224, 2242: 225, 2245: 226, 2246: 227, 2251: 153, 2255: 154,
+    2257: 155, 2258: 156, 2268: 161, 2323: 240, 2346: 245,
+}
 
 
 def parse_supplemental_articles() -> list[dict[str, object]]:
-    """Read substantive public TempleTherapy entries without treating them as primary."""
+    """Read substantive public TempleTherapy entries with namespace-safe IDs."""
     articles: list[dict[str, object]] = []
     for line_number, line in enumerate(SUPPLEMENTAL_INDEX.read_text(encoding="utf-8").splitlines(), 1):
         entry = json.loads(line)
@@ -49,10 +81,11 @@ def parse_supplemental_articles() -> list[dict[str, object]]:
         if not raw_text.strip():
             raise ValueError(f"TempleTherapy post at line {line_number} has no substantive text")
         articles.append({
-            "chapter": SUPPLEMENTAL_CHAPTER,
+            "chapter": SUPPLEMENTAL_CHAPTERS[int(entry["post_id"])],
             "channel": "TempleTherapy",
             "title": f"TempleTherapy · пост {entry['post_id']}",
             "post_id": entry["post_id"],
+            "article_id": f"templetherapy-{entry['post_id']}",
             "url": entry["url"],
             "date": entry["date"],
             "text": raw_text,
@@ -60,25 +93,6 @@ def parse_supplemental_articles() -> list[dict[str, object]]:
             "media_root": "media/templetherapy",
         })
     return articles
-
-
-def supplemental_appendix_markdown() -> str:
-    """Render the archival appendix with only HTML entity normalization."""
-    parts = [
-        f"# {SUPPLEMENTAL_CHAPTER}",
-        "",
-        "*Дополнительный публичный источник: TempleTherapy. Это приложение не является первичным источником Mayaismagic и не добавляет фактологических утверждений к основному корпусу.*",
-    ]
-    for article in parse_supplemental_articles():
-        parts.extend([
-            "",
-            f"## {article['title']}",
-            "",
-            f"*Дополнительный публичный источник: TempleTherapy; пост [{article['post_id']}]({article['url']}); {article['date']}.*",
-            "",
-            str(article["text"]),
-        ])
-    return "\n".join(parts) + "\n"
 
 
 def parse_media() -> dict[int, list[str]]:
@@ -157,11 +171,95 @@ def parse_articles() -> list[dict[str, object]]:
             "chapter": current_chapter,
             "title": heading,
             "post_id": post_id,
+            "article_id": f"mayaismagic-{post_id}",
             "url": url,
             "date": date,
             "text": article_text,
         })
     return articles
+
+
+def source_links(article: dict[str, object]) -> list[dict[str, object]]:
+    return list(article.get("source_links", [{key: article[key] for key in ("channel", "post_id", "url", "date")}]))
+
+
+def unify_articles(primary: list[dict[str, object]], supplemental: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Keep a single reader-facing text while preserving every source URL."""
+    canonical = {int(article["post_id"]): article for article in primary}
+    for article in primary:
+        prefix = str(article["chapter"]).split(".", 1)[0]
+        article["chapter"] = next((chapter for chapter in CHAPTERS if chapter.startswith(prefix + ".")), str(article["chapter"]))
+        article["channel"] = "Mayaismagic"
+        article["source_links"] = [{key: article[key] for key in ("channel", "post_id", "url", "date")}]
+    retained = list(primary)
+    for article in supplemental:
+        original = {key: article[key] for key in ("channel", "post_id", "url", "date")}
+        canonical_id = SUPPLEMENTAL_CANONICAL.get(int(article["post_id"]))
+        if canonical_id is not None:
+            canonical[canonical_id]["source_links"].append(original)
+            continue
+        article["source_links"] = [original]
+        retained.append(article)
+    positions = {chapter: index for index, chapter in enumerate(CHAPTERS)}
+    return sorted(retained, key=lambda article: (positions.get(str(article["chapter"]), 99), str(article["date"]), str(article["article_id"])))
+
+
+def source_markdown(article: dict[str, object]) -> str:
+    return " · ".join(
+        f"{source['channel']}: пост [{source['post_id']}]({source['url']}); {source['date']}"
+        for source in source_links(article)
+    )
+
+
+def write_unified_manuscript(articles: list[dict[str, object]], description: dict[str, object]) -> None:
+    """Write the canonical reader manuscript; source archive files are never modified."""
+    parts = ["# Maya Tradition", "", "## Описание традиции", "", f"*Источник: пост [{description['post_id']}]({description['url']}); {description['date']}.*", "", str(description["text"]), "", "# Содержание", ""]
+    parts.extend(f"- {chapter}" for chapter in CHAPTERS)
+    for chapter in CHAPTERS:
+        parts.extend(["", f"# {chapter}"])
+        for article in (item for item in articles if item["chapter"] == chapter):
+            parts.extend(["", f"## {article['title']}", "", f"*Источники: {source_markdown(article)}.*", "", str(article["text"])])
+    UNIFIED_MANUSCRIPT.write_text("\n".join(parts) + "\n", encoding="utf-8")
+
+
+def normalized_text(text: str) -> str:
+    return re.sub(r"[^\w]+", "", html.unescape(text).casefold())
+
+
+def write_supporting_docs(articles: list[dict[str, object]]) -> None:
+    """Regenerate reader-facing maps and the reproducible deduplication audit."""
+    raw_sources = (HERE / "raw" / "posts.jsonl", SUPPLEMENTAL_INDEX)
+    records = []
+    for path in raw_sources:
+        records.extend(json.loads(line) for line in path.read_text(encoding="utf-8").splitlines())
+    exact: dict[str, list[dict[str, object]]] = defaultdict(list)
+    for record in records:
+        key = normalized_text(str(record["raw_text"]))
+        if key:
+            exact[key].append(record)
+    groups = [group for group in exact.values() if len(group) > 1]
+    report = ["# Deduplication report", "", "Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl`. Raw archives were read only.", "", f"- Source records audited: {len(records)}", f"- Normalized exact-duplicate groups: {len(groups)}", "- Cross-source exact relationships: 14", "- Near-duplicate decisions: 3", f"- Canonical reader articles retained: {len(articles)}", "", "## Exact duplicate groups", ""]
+    for group in groups:
+        links = ", ".join(f"[{item['channel']}:{item['post_id']}]({item['url']})" for item in group)
+        report.append(f"- {links}")
+    report.extend(["", "## Cross-source and near-duplicate decisions", "", "| Supplemental source | Canonical retained article | Decision and rationale |", "|---|---|---|"])
+    for supplemental_id, canonical_id in sorted(SUPPLEMENTAL_CANONICAL.items()):
+        kind = "exact copy after whitespace/entity normalization" if supplemental_id not in {2246, 2268, 2346} else {2246: "near copy; TempleTherapy adds a tail", 2268: "near copy; only a short closing sentence changes", 2346: "near copy; same material reordered"}[supplemental_id]
+        report.append(f"| TempleTherapy:{supplemental_id} | Mayaismagic:{canonical_id} | {kind}; retain Mayaismagic text and link both sources. |")
+    report.extend(["", "## Retention rule", "", "Each duplicate is represented once in the unified manuscript and reading editions. The canonical article keeps a link, date, and channel label for every duplicate source. Non-duplicate TempleTherapy entries are placed in the seven shared thematic chapters with their own labels, original URLs, and dates."])
+    DEDUPLICATION_REPORT.write_text("\n".join(report) + "\n", encoding="utf-8")
+
+    chapter_rows = ["# Chapter map", "", "The canonical manuscript is `manuscript/MAYA_TRADITION_UNIFIED.md`; it replaces the former TempleTherapy appendix in reader outputs.", ""]
+    for chapter in CHAPTERS:
+        members = [item for item in articles if item["chapter"] == chapter]
+        chapter_rows.extend([f"## {chapter}", "", f"Articles: {len(members)}", ""])
+        chapter_rows.extend(f"- `{item['article_id']}` — {item['title']}" for item in members)
+        chapter_rows.append("")
+    (HERE / "manuscript" / "CHAPTER_MAP.md").write_text("\n".join(chapter_rows), encoding="utf-8")
+    (HERE / "CONTENT_MAP.md").write_text("\n".join(["# Content map", "", "All reader articles are listed in the chapter map; IDs are namespace-safe (`mayaismagic-<id>` or `templetherapy-<id>`).", "", f"Canonical article count: {len(articles)}."]) + "\n", encoding="utf-8")
+    (HERE / "manuscript" / "COVERAGE.md").write_text(f"# Coverage\n\n- Primary curated articles: 81\n- Supplemental source posts: 29\n- Supplemental duplicates consolidated: 17\n- Final canonical reader articles: {len(articles)}\n", encoding="utf-8")
+    (HERE / "manuscript" / "SOURCE_NOTES.md").write_text("# Source notes\n\nMayaismagic is the primary Telegram export. TempleTherapy is a separately-labelled supplemental public source. Duplicate source URLs are preserved on the canonical retained article; no archive content was altered.\n", encoding="utf-8")
+    (HERE / "FACT_CHECK.md").write_text("# Fact-check boundary\n\nThis is a source-backed reading edition, not an independent historical fact-check. Editorial work is limited to placement, deduplication, and source attribution; claims in posts remain attributed to their original channel.\n", encoding="utf-8")
 
 
 def article_html(article: dict[str, object], primary: str | None) -> str:
@@ -170,10 +268,11 @@ def article_html(article: dict[str, object], primary: str | None) -> str:
         photo = (f'<figure class="post-media"><img class="post-photo-main" src="../{html.escape(primary)}" '
                  f'alt="Источник: пост {article["post_id"]}" loading="lazy"></figure>')
     text = "<br>\\n".join(html.escape(line.rstrip()) for line in str(article["text"]).splitlines())
-    return f'''<article class="post" id="post-{article["post_id"]}">
+    sources = "".join(f'<a href="{html.escape(str(source["url"]))}">{html.escape(str(source["channel"]))} · пост {source["post_id"]}</a>' for source in source_links(article))
+    return f'''<article class="post" id="{html.escape(str(article["article_id"]))}">
   <div class="chapter-token">{html.escape(str(article["chapter"]))}</div>
   <h2>{html.escape(str(article["title"]))}</h2>
-  <div class="meta"><span>Источник: {html.escape(str(article.get("channel", "mayaismagic")))} · пост {article["post_id"]}</span><span>Дата: {html.escape(str(article["date"]))}</span><a href="{article["url"]}">{article["url"]}</a></div>
+  <div class="meta"><span>Источники:</span>{sources}<span>Дата: {html.escape(str(article["date"]))}</span></div>
 {photo}
   <div class="text">{text}</div>
 </article>'''
@@ -265,7 +364,11 @@ def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], d
         table = doc.add_table(rows=1, cols=2); table.autofit = False; table.columns[0].width = Inches(4.3); table.columns[1].width = Inches(2.0)
         left, right = table.rows[0].cells; set_cell_margins(left); set_cell_margins(right); right.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
         p = left.paragraphs[0]; set_paragraph(p, after=7); add_run(p, str(article["title"]), 18, True, WARM)
-        meta = left.add_paragraph(); set_paragraph(meta, after=0); add_run(meta, f"Источник: пост {article['post_id']}\n", 10.5, True, GOLD); add_run(meta, f"Дата: {article['date']}\n", 10.5, False, MUTED); add_run(meta, str(article["url"]), 10.5, False, WARM)
+        meta = left.add_paragraph(); set_paragraph(meta, after=0)
+        for source in source_links(article):
+            add_run(meta, f"Источник: {source['channel']} · пост {source['post_id']}\n", 10.5, True, GOLD)
+            add_run(meta, f"Дата: {source['date']}\n", 10.5, False, MUTED)
+            add_run(meta, str(source["url"]) + "\n", 10.5, False, WARM)
         if article.get("channel") == "TempleTherapy":
             primary_path = next(iter(sorted(SUPPLEMENTAL_MEDIA.glob(f"post-{article['post_id']}-*"))), None)
         else:
@@ -283,12 +386,14 @@ def main() -> None:
     OUT.mkdir(exist_ok=True)
     text = MANUSCRIPT.read_text(encoding="utf-8")
     primary_articles, supplementary_articles = parse_articles(), parse_supplemental_articles()
-    articles, media, description = primary_articles + supplementary_articles, parse_media(), parse_front_description(text)
+    articles, media, description = unify_articles(primary_articles, supplementary_articles), parse_media(), parse_front_description(text)
     if len(primary_articles) != 81 or len(supplementary_articles) != 29:
         raise SystemExit(f"Expected 81 primary and 29 supplemental reading articles, found {len(primary_articles)} and {len(supplementary_articles)}")
+    write_unified_manuscript(articles, description)
+    write_supporting_docs(articles)
     build_html(articles, media, description)
     build_docx(articles, media, description)
-    print(f"wrote {HTML_OUT} and {DOCX_OUT} ({len(primary_articles)} primary and {len(supplementary_articles)} supplemental articles plus front description)")
+    print(f"wrote unified manuscript, maps, {HTML_OUT} and {DOCX_OUT} ({len(articles)} canonical articles)")
 
 
 if __name__ == "__main__":

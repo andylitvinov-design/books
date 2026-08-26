@@ -1,19 +1,20 @@
 # Maya Tradition source corpus
 
-This directory is an editorial working corpus built from the primary `raw/posts.jsonl` / `SOURCE_INDEX.csv` archive and a clearly separated public supplemental archive. The raw archives and indexes were not edited. No external historical text, translations, or fact corrections were introduced.
+This directory is an editorial working corpus built from the primary `raw/posts.jsonl` / `SOURCE_INDEX.csv` archive and a clearly labelled public supplemental archive. The raw archives and indexes were not edited. No external historical text, translations, or fact corrections were introduced.
 
 ## Provenance and editorial rule
 
 - Channel: `mayaismagic`; preserved source URLs use `https://t.me/mayaismagic/<post_id>`.
 - Archive extent: 236 posts, IDs 2–246; numeric gaps: 10, 54, 70, 71, 88, 92, 96, 236, 237.
-- The manuscript reproduces 82 substantive, non-duplicate source texts. Wording is preserved as captured; editorial work is limited to headings, source labels, grouping, and duplicate notes.
+- `manuscript/MAYA_TRADITION_UNIFIED.md` is the canonical manuscript: 93 reader articles in seven shared themes. Wording is preserved as captured; editorial work is limited to headings, source labels, grouping, and duplicate notes.
 - 154 posts are deferred: 121 image/media-only, 19 low-text/link-only, and 14 exact reposts. Media references appear on 197 posts.
 - `FACT_CHECK.md` is a verification queue, not a rewrite or correction of source claims.
-- `raw/templetherapy/` is a supplementary public search archive for `@TempleTherapy`, never a replacement for the primary `mayaismagic` corpus. Its 29 deduplicated substantive Maya/Aztec posts appear verbatim (HTML entities normalized only) in Appendix VIII; no link-only or media-only record was included. Downloaded public image responses remain separately in `media/templetherapy/`.
+- `raw/templetherapy/` is a supplementary public archive for `@TempleTherapy`, never a replacement for the primary `mayaismagic` corpus. All 29 posts are represented either as a separately labelled integrated article or as a retained source link on a canonical duplicate; the former Appendix VIII is not part of the reader edition. Downloaded public image responses remain separately in `media/templetherapy/`.
 
 ## Files
 
-- `CONTENT_MAP.md` — disposition of all 236 archived posts.
+- `DEDUPLICATION_REPORT.md` — exact and near-duplicate audit and canonical-source relationships.
+- `CONTENT_MAP.md` — canonical article ID policy and count.
 - `classification/` — topical map and exact duplicate/series inventory.
 - `corpus/cleaned-corpus.md` — transcription inventory of every text-bearing post.
 - `manuscript/` — source-labelled draft, chapter map, coverage, glossary, and source notes.

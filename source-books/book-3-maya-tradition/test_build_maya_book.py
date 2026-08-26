@@ -15,23 +15,25 @@ VERIFY_SPEC.loader.exec_module(VERIFY)
 
 
 class SupplementalTempleTherapyTests(unittest.TestCase):
-    def test_parses_all_substantive_templetherapy_entries_as_appendix(self):
+    def test_parses_all_substantive_templetherapy_entries_into_shared_chapters(self):
         entries = BUILD.parse_supplemental_articles()
 
         self.assertEqual(len(entries), 29)
         self.assertTrue(all(entry["channel"] == "TempleTherapy" for entry in entries))
-        self.assertTrue(all(entry["chapter"] == "VIII. Приложение: TempleTherapy — дополнительные публичные материалы" for entry in entries))
+        self.assertEqual({entry["chapter"] for entry in entries}, set(BUILD.CHAPTERS))
+        self.assertTrue(all(entry["article_id"].startswith("templetherapy-") for entry in entries))
         self.assertEqual(entries[0]["post_id"], 2062)
 
-    def test_appendix_keeps_supplemental_text_and_source_identity(self):
-        appendix = BUILD.supplemental_appendix_markdown()
+    def test_unification_keeps_one_canonical_text_and_all_source_identities(self):
+        primary = BUILD.parse_articles()
+        unified = BUILD.unify_articles(primary, BUILD.parse_supplemental_articles())
 
-        self.assertIn("# VIII. Приложение: TempleTherapy — дополнительные публичные материалы", appendix)
-        self.assertIn("*Дополнительный публичный источник: TempleTherapy", appendix)
-        self.assertIn("## TempleTherapy · пост 2062", appendix)
-        self.assertIn("Опишу технологии, которым мы исследуем", appendix)
+        self.assertEqual(len(unified), 93)
+        canonical = next(entry for entry in unified if entry["article_id"] == "mayaismagic-89")
+        self.assertEqual([source["channel"] for source in canonical["source_links"]], ["Mayaismagic", "TempleTherapy"])
+        self.assertEqual(sum(entry["article_id"] == "templetherapy-2065" for entry in unified), 0)
 
-    def test_verifier_checks_the_supplemental_index_and_appendix(self):
+    def test_verifier_checks_the_supplemental_index_and_integrated_manuscript(self):
         self.assertEqual(VERIFY.verify_supplemental(ROOT), [])
 
 
