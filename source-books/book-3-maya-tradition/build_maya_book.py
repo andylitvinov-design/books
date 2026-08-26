@@ -4,24 +4,29 @@
 from __future__ import annotations
 
 import html
+import json
 import re
 import shutil
+from html.parser import HTMLParser
 from pathlib import Path
 
-from lxml import html as lxml_html
-from docx import Document
-from docx.enum.section import WD_SECTION
-from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
-from docx.shared import Inches, Pt, RGBColor
+try:
+    from docx import Document
+    from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    from docx.shared import Inches, Pt, RGBColor
+except ModuleNotFoundError:
+    Document = None
 
 
 HERE = Path(__file__).resolve().parent
 MANUSCRIPT = HERE / "manuscript" / "MAYA_TRADITION.md"
 RAW_MESSAGES = HERE / "raw" / "messages.html"
 RAW_PHOTOS = HERE / "raw" / "photos"
+SUPPLEMENTAL_INDEX = HERE / "raw" / "templetherapy" / "TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl"
+SUPPLEMENTAL_MEDIA = HERE / "media" / "templetherapy"
 OUT = HERE / "outputs"
 HTML_OUT = OUT / "Maya_Tradition_Methodology.html"
 DOCX_OUT = OUT / "Maya_Tradition_Methodology.docx"
@@ -32,22 +37,81 @@ CREAM = "FBF4E9"
 INK = "2F241D"
 MUTED = "6D5A4D"
 FRONT_HEADINGS = {"Editorial note", "Описание традиции", "Содержание", "Авторская рамка, практики и программы"}
+SUPPLEMENTAL_CHAPTER = "VIII. Приложение: TempleTherapy — дополнительные публичные материалы"
+
+
+def parse_supplemental_articles() -> list[dict[str, object]]:
+    """Read substantive public TempleTherapy entries without treating them as primary."""
+    articles: list[dict[str, object]] = []
+    for line_number, line in enumerate(SUPPLEMENTAL_INDEX.read_text(encoding="utf-8").splitlines(), 1):
+        entry = json.loads(line)
+        raw_text = html.unescape(str(entry["raw_text"]))
+        if not raw_text.strip():
+            raise ValueError(f"TempleTherapy post at line {line_number} has no substantive text")
+        articles.append({
+            "chapter": SUPPLEMENTAL_CHAPTER,
+            "channel": "TempleTherapy",
+            "title": f"TempleTherapy · пост {entry['post_id']}",
+            "post_id": entry["post_id"],
+            "url": entry["url"],
+            "date": entry["date"],
+            "text": raw_text,
+            "media_references": entry["media_references"],
+            "media_root": "media/templetherapy",
+        })
+    return articles
+
+
+def supplemental_appendix_markdown() -> str:
+    """Render the archival appendix with only HTML entity normalization."""
+    parts = [
+        f"# {SUPPLEMENTAL_CHAPTER}",
+        "",
+        "*Дополнительный публичный источник: TempleTherapy. Это приложение не является первичным источником Mayaismagic и не добавляет фактологических утверждений к основному корпусу.*",
+    ]
+    for article in parse_supplemental_articles():
+        parts.extend([
+            "",
+            f"## {article['title']}",
+            "",
+            f"*Дополнительный публичный источник: TempleTherapy; пост [{article['post_id']}]({article['url']}); {article['date']}.*",
+            "",
+            str(article["text"]),
+        ])
+    return "\n".join(parts) + "\n"
 
 
 def parse_media() -> dict[int, list[str]]:
-    tree = lxml_html.fromstring(RAW_MESSAGES.read_bytes())
-    media: dict[int, list[str]] = {}
-    for message in tree.xpath('//div[contains(concat(" ", normalize-space(@class), " "), " message ") and contains(concat(" ", normalize-space(@class), " "), " default ")]'):
-        matched = re.fullmatch(r"message(\d+)", message.get("id", ""))
-        if not matched:
-            continue
-        refs: list[str] = []
-        for tag in message.xpath('.//a | .//img'):
-            ref = tag.get("href") or tag.get("src")
-            if ref and ref.startswith("photos/") and ref not in refs:
-                refs.append(ref)
-        media[int(matched.group(1))] = refs
-    return media
+    class MediaParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.media: dict[int, list[str]] = {}
+            self.div_stack: list[int | None] = []
+
+        def handle_starttag(self, tag, attrs):
+            attributes = dict(attrs)
+            if tag == "div":
+                classes = set(attributes.get("class", "").split())
+                matched = re.fullmatch(r"message(\d+)", attributes.get("id", ""))
+                post_id = int(matched.group(1)) if {"message", "default"} <= classes and matched else None
+                self.div_stack.append(post_id)
+                if post_id is not None:
+                    self.media[post_id] = []
+                return
+            post_id = next((item for item in reversed(self.div_stack) if item is not None), None)
+            if post_id is None or tag not in {"a", "img"}:
+                return
+            ref = attributes.get("href") or attributes.get("src")
+            if ref and ref.startswith("photos/") and ref not in self.media[post_id]:
+                self.media[post_id].append(ref)
+
+        def handle_endtag(self, tag):
+            if tag == "div" and self.div_stack:
+                self.div_stack.pop()
+
+    parser = MediaParser()
+    parser.feed(RAW_MESSAGES.read_text(encoding="utf-8"))
+    return parser.media
 
 
 def parse_source(body: str) -> tuple[int, str, str, str] | None:
@@ -103,13 +167,13 @@ def parse_articles() -> list[dict[str, object]]:
 def article_html(article: dict[str, object], primary: str | None) -> str:
     photo = ""
     if primary:
-        photo = (f'<figure class="post-media"><img class="post-photo-main" src="../raw/{html.escape(primary)}" '
+        photo = (f'<figure class="post-media"><img class="post-photo-main" src="../{html.escape(primary)}" '
                  f'alt="Источник: пост {article["post_id"]}" loading="lazy"></figure>')
     text = "<br>\\n".join(html.escape(line.rstrip()) for line in str(article["text"]).splitlines())
     return f'''<article class="post" id="post-{article["post_id"]}">
   <div class="chapter-token">{html.escape(str(article["chapter"]))}</div>
   <h2>{html.escape(str(article["title"]))}</h2>
-  <div class="meta"><span>Источник: пост {article["post_id"]}</span><span>Дата: {html.escape(str(article["date"]))}</span><a href="{article["url"]}">{article["url"]}</a></div>
+  <div class="meta"><span>Источник: {html.escape(str(article.get("channel", "mayaismagic")))} · пост {article["post_id"]}</span><span>Дата: {html.escape(str(article["date"]))}</span><a href="{article["url"]}">{article["url"]}</a></div>
 {photo}
   <div class="text">{text}</div>
 </article>'''
@@ -120,7 +184,7 @@ def chapter_id(chapter: str) -> str:
 
 
 def meta_html(item: dict[str, object]) -> str:
-    return (f'<div class="meta"><span>Источник: пост {item["post_id"]}</span><span>Дата: {html.escape(str(item["date"]))}</span>'
+    return (f'<div class="meta"><span>Источник: {html.escape(str(item.get("channel", "mayaismagic")))} · пост {item["post_id"]}</span><span>Дата: {html.escape(str(item["date"]))}</span>'
             f'<a href="{item["url"]}">{item["url"]}</a></div>')
 
 
@@ -133,7 +197,11 @@ def build_html(articles: list[dict[str, object]], media: dict[int, list[str]], d
             chapter = str(article["chapter"])
             chapters.append(chapter)
             sections.append(f'<h1 class="chapter" id="{chapter_id(chapter)}">{html.escape(chapter)}</h1>')
-        primary = (media.get(int(article["post_id"])) or [None])[0]
+        if article.get("channel") == "TempleTherapy":
+            primary = next((f"media/templetherapy/{path.name}" for path in sorted(SUPPLEMENTAL_MEDIA.glob(f"post-{article['post_id']}-*"))), None)
+        else:
+            source_media = (media.get(int(article["post_id"])) or [None])[0]
+            primary = f"raw/{source_media}" if source_media else None
         sections.append(article_html(article, primary))
     toc = "".join(f'<li><a href="#{chapter_id(chapter)}">{html.escape(chapter)}</a></li>' for chapter in chapters)
     description_text = "<br>\n".join(html.escape(line.rstrip()) for line in str(description["text"]).splitlines())
@@ -198,22 +266,29 @@ def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], d
         left, right = table.rows[0].cells; set_cell_margins(left); set_cell_margins(right); right.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
         p = left.paragraphs[0]; set_paragraph(p, after=7); add_run(p, str(article["title"]), 18, True, WARM)
         meta = left.add_paragraph(); set_paragraph(meta, after=0); add_run(meta, f"Источник: пост {article['post_id']}\n", 10.5, True, GOLD); add_run(meta, f"Дата: {article['date']}\n", 10.5, False, MUTED); add_run(meta, str(article["url"]), 10.5, False, WARM)
-        primary = (media.get(int(article["post_id"])) or [None])[0]
-        if primary and (HERE / "raw" / primary).exists():
-            p = right.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT; p.add_run().add_picture(str(HERE / "raw" / primary), width=Inches(1.85))
+        if article.get("channel") == "TempleTherapy":
+            primary_path = next(iter(sorted(SUPPLEMENTAL_MEDIA.glob(f"post-{article['post_id']}-*"))), None)
+        else:
+            primary = (media.get(int(article["post_id"])) or [None])[0]
+            primary_path = HERE / "raw" / primary if primary else None
+        if primary_path and primary_path.exists():
+            p = right.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT; p.add_run().add_picture(str(primary_path), width=Inches(1.85))
         body = doc.add_paragraph(); set_paragraph(body, before=10, after=6); add_run(body, str(article["text"]), 13)
     doc.save(DOCX_OUT)
 
 
 def main() -> None:
+    if Document is None:
+        raise SystemExit("Building the DOCX edition requires python-docx")
     OUT.mkdir(exist_ok=True)
     text = MANUSCRIPT.read_text(encoding="utf-8")
-    articles, media, description = parse_articles(), parse_media(), parse_front_description(text)
-    if len(articles) != 81:
-        raise SystemExit(f"Expected 81 reading articles plus one front description, found {len(articles)}")
+    primary_articles, supplementary_articles = parse_articles(), parse_supplemental_articles()
+    articles, media, description = primary_articles + supplementary_articles, parse_media(), parse_front_description(text)
+    if len(primary_articles) != 81 or len(supplementary_articles) != 29:
+        raise SystemExit(f"Expected 81 primary and 29 supplemental reading articles, found {len(primary_articles)} and {len(supplementary_articles)}")
     build_html(articles, media, description)
     build_docx(articles, media, description)
-    print(f"wrote {HTML_OUT} and {DOCX_OUT} ({len(articles)} reading articles plus front description)")
+    print(f"wrote {HTML_OUT} and {DOCX_OUT} ({len(primary_articles)} primary and {len(supplementary_articles)} supplemental articles plus front description)")
 
 
 if __name__ == "__main__":

@@ -6,6 +6,10 @@ The manuscript opens with source post 2 as the concise cited description, follow
 
 Status is an editorial disposition, not a judgment of truth. `Included` means a substantive source text (120+ characters) retained once in the manuscript. `Deferred — exact repost` points to the retained first occurrence. `Deferred — low text` covers captions, short labels, and link-only posts; `Deferred — media only` has no captured text.
 
+## Supplemental public appendix: TempleTherapy
+
+`raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl` contains 29 deduplicated Maya/Aztec search results. All 29 have substantive captured text and are included once in Appendix VIII under the `TempleTherapy/<ID>` source namespace. The index has no link-only or media-only result to omit. This is a public supplemental archive only, not primary Mayaismagic evidence.
+
 ## Requested-theme reconciliation
 
 | Requested theme | Corpus status | Source-backed reconciliation |

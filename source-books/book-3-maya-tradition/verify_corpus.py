@@ -2,18 +2,21 @@
 """Verify structural integrity of the Maya Telegram archive and source index."""
 
 import csv
+import html
 import hashlib
 import json
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
-
-from bs4 import BeautifulSoup
 
 
 REQUIRED = {"channel", "post_id", "url", "date", "raw_text", "media_references", "media_caption", "previous_post_id", "next_post_id"}
 EXPECTED_CHANNEL = "mayaismagic"
 EXPECTED_POST_COUNT = 236
+SUPPLEMENTAL_INDEX = Path("raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl")
+SUPPLEMENTAL_MEDIA = Path("media/templetherapy")
+EXPECTED_SUPPLEMENTAL_COUNT = 29
 INDEX_FIELDS = [
     "post_id", "date", "url", "title_first_line", "topic", "subtopic",
     "deity_archetype", "place", "ritual_practice", "initiation_stage",
@@ -51,18 +54,82 @@ def verify_mobile_reading_order(root):
 
 def html_post_ids(html_path):
     """Extract the numeric IDs from Telegram's ordinary (non-service) messages."""
-    soup = BeautifulSoup(html_path.read_bytes(), "html.parser")
-    ids = []
-    for message in soup.select("div.message.default"):
-        match = re.fullmatch(r"message(\d+)", message.get("id", ""))
-        if match:
-            ids.append(int(match.group(1)))
-    return ids
+    class MessageIdParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.ids = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag != "div":
+                return
+            attributes = dict(attrs)
+            classes = set(attributes.get("class", "").split())
+            match = re.fullmatch(r"message(\d+)", attributes.get("id", ""))
+            if {"message", "default"} <= classes and match:
+                self.ids.append(int(match.group(1)))
+
+    parser = MessageIdParser()
+    parser.feed(html_path.read_text(encoding="utf-8"))
+    return parser.ids
+
+
+def verify_supplemental(root):
+    """Validate the separately-labelled public TempleTherapy appendix."""
+    errors = []
+    index_path = root / SUPPLEMENTAL_INDEX
+    manuscript_path = root / "manuscript" / "MAYA_TRADITION.md"
+    if not index_path.exists():
+        return [f"missing {index_path}"]
+    rows = []
+    for line_number, line in enumerate(index_path.read_text(encoding="utf-8").splitlines(), 1):
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            errors.append(f"TempleTherapy line {line_number}: invalid JSON: {exc.msg}")
+            continue
+        required = {"channel", "post_id", "url", "date", "raw_text", "media_references", "media_caption"}
+        missing = required - row.keys()
+        if missing:
+            errors.append(f"TempleTherapy line {line_number}: missing fields: {', '.join(sorted(missing))}")
+        elif row["channel"] != "TempleTherapy" or row["url"] != f"https://t.me/TempleTherapy/{row['post_id']}":
+            errors.append(f"TempleTherapy line {line_number}: invalid source identity")
+        elif not isinstance(row["raw_text"], str) or not row["raw_text"].strip():
+            errors.append(f"TempleTherapy line {line_number}: non-substantive included text")
+        rows.append(row)
+    ids = [row.get("post_id") for row in rows]
+    if len(rows) != EXPECTED_SUPPLEMENTAL_COUNT:
+        errors.append(f"TempleTherapy index count {len(rows)} does not equal expected {EXPECTED_SUPPLEMENTAL_COUNT}")
+    if len(ids) != len(set(ids)):
+        errors.append("TempleTherapy index contains duplicate post IDs")
+    if not manuscript_path.exists():
+        return errors + [f"missing {manuscript_path}"]
+    manuscript = manuscript_path.read_text(encoding="utf-8")
+    chapter = "# VIII. Приложение: TempleTherapy — дополнительные публичные материалы"
+    if manuscript.count(chapter) != 1 or manuscript.find(chapter) <= manuscript.find("# VII. "):
+        errors.append("TempleTherapy appendix is missing or not placed after main chapters")
+    if manuscript.count("## TempleTherapy · пост ") != len(rows):
+        errors.append("TempleTherapy appendix heading count does not match index")
+    for row in rows:
+        marker = f"*Дополнительный публичный источник: TempleTherapy; пост [{row['post_id']}]({row['url']}); {row['date']}.*"
+        if marker not in manuscript:
+            errors.append(f"TempleTherapy post {row['post_id']}: missing source marker in appendix")
+        if html.unescape(row["raw_text"]) not in manuscript:
+            errors.append(f"TempleTherapy post {row['post_id']}: raw text is not preserved in appendix")
+    media_root = root / SUPPLEMENTAL_MEDIA
+    expected = {f"post-{row['post_id']}-{index}.jpg" for row in rows for index, _ in enumerate(row["media_references"], 1)}
+    actual = {path.name for path in media_root.glob("*.jpg")} if media_root.exists() else set()
+    unexpected = sorted(actual - expected)
+    if unexpected:
+        errors.append("TempleTherapy media contains unreferenced files: " + ", ".join(unexpected))
+    if any((media_root / name).stat().st_size == 0 for name in actual):
+        errors.append("TempleTherapy media contains an empty downloaded file")
+    return errors
 
 
 def verify(root):
     errors = []
     errors.extend(verify_mobile_reading_order(root))
+    errors.extend(verify_supplemental(root))
     posts_path = root / "raw" / "posts.jsonl"
     html_path = root / "raw" / "messages.html"
     if not html_path.exists():

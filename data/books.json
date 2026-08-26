@@ -445,7 +445,7 @@
   {
     "id": "maya-tradition-methodology",
     "title": "Maya Tradition: методология источникового чтения",
-    "description": "Reading edition 82 сохранённых текстов из локального Telegram-экспорта «Круг Пернатого Змея».",
+    "description": "Reading edition 82 первичных текстов mayaismagic и 29 отдельно маркированных supplemental-постов TempleTherapy.",
     "author": "Круг Пернатого Змея / mayaismagic",
     "coverLabel": "M3",
     "theme": "from-amber-100 via-orange-50 to-white",
@@ -455,13 +455,13 @@
         "id": "overview",
         "title": "О reading edition",
         "description": "Что включено и как читать материалы.",
-        "content": "<p>В издание вошли 82 содержательных уникальных текста из локально сохранённого Telegram-экспорта. Заголовки и главы — редакционная навигация; авторские формулировки не дополнены фактическими сведениями.</p><p>Каждая статья помечена ID поста, исходной датой и кликабельной ссылкой на Telegram.</p>"
+        "content": "<p>В издание вошли 82 содержательных уникальных текста первичного локального Telegram-экспорта mayaismagic. Appendix VIII отдельно включает 29 содержательных публичных постов TempleTherapy; этот источник supplemental и не заменяет primary corpus. Заголовки и главы — редакционная навигация; авторские формулировки не дополнены фактическими сведениями.</p><p>Каждая статья помечена source ID, исходной датой и кликабельной ссылкой на Telegram.</p>"
       },
       {
         "id": "reading-edition",
         "title": "HTML reading edition",
         "description": "Локальная веб-версия с фотографиями экспорта.",
-        "content": "<p><code>source-books/book-3-maya-tradition/outputs/Maya_Tradition_Methodology.html</code></p><p>Первичный источник: локальный экспорт <code>source-books/book-3-maya-tradition/raw/messages.html</code>; связанные фотографии остаются в <code>raw/photos</code>.</p>"
+        "content": "<p><code>source-books/book-3-maya-tradition/outputs/Maya_Tradition_Methodology.html</code></p><p>Первичный источник: локальный экспорт <code>source-books/book-3-maya-tradition/raw/messages.html</code>; связанные фотографии остаются в <code>raw/photos</code>. Дополнительный публичный индекс: <code>raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl</code>; его успешно разрешённые изображения лежат отдельно в <code>media/templetherapy</code>.</p>"
       }
     ]
   }

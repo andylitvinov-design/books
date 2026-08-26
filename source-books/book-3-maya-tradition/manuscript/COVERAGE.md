@@ -17,3 +17,17 @@
 | Identified corpus-derived series | 6 |
 
 The totals partition all 236 posts: 82 included + 154 deferred = 236. A deferred post is preserved in the archive and content map; it is not deleted or treated as evidence absent from the source.
+
+## Supplemental public appendix: TempleTherapy
+
+| Measure | Count / value |
+| --- | --- |
+| Source role | Supplemental public source only; never primary Mayaismagic evidence or scholarly authority. |
+| Deduplicated relevant search records | 29 |
+| Included substantive texts | 29 |
+| Link-only / media-only omitted | 0 / 0 |
+| Referenced public image URLs | 37 |
+| Successfully downloaded image responses | 37 |
+| Unavailable referenced media | 0 at retrieval |
+
+The appendix preserves each indexed `raw_text` verbatim after HTML entity normalization. Source IDs use the separate `TempleTherapy/<ID>` namespace, so they cannot be conflated with `mayaismagic` IDs.

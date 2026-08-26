@@ -11,6 +11,10 @@ Every manuscript article names its post ID, stable archive URL, and captured dat
 - Short text/link-only and media-only records are deferred, with their IDs retained in `../CONTENT_MAP.md`.
 - A chapter heading is an editorial locator, not a statement that its sources agree with one another.
 
+## Supplemental public appendix: TempleTherapy
+
+Appendix VIII is a separately-labelled public supplemental archive drawn from `../raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl`. It does not change the primary-source rule above: `mayaismagic` remains the sole primary corpus. Every included supplemental text preserves the indexed raw text after HTML entity normalization and carries its own `TempleTherapy/<ID>` URL and timestamp. Referenced public images that resolved at retrieval are stored only in `../media/templetherapy/`; none was substituted into `raw/`.
+
 ## Source post register
 
 - Post [2](https://t.me/mayaismagic/2) — 07.09.2022 19:22:05 UTC-05:00 — included
