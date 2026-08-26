@@ -15,6 +15,34 @@ VERIFY_SPEC.loader.exec_module(VERIFY)
 
 
 class SupplementalTempleTherapyTests(unittest.TestCase):
+    def test_article_html_renders_newlines_without_literal_escape_sequences(self):
+        article = {
+            "article_id": "templetherapy-regression",
+            "chapter": BUILD.CHAPTERS[0],
+            "channel": "TempleTherapy",
+            "title": "Проверка переноса",
+            "post_id": 9999,
+            "url": "https://t.me/TempleTherapy/9999",
+            "date": "01.01.2026",
+            "text": "Первая строка\n\n1. Первый пункт\n2. Второй пункт",
+        }
+
+        rendered = BUILD.article_html(article, None)
+
+        self.assertNotIn("\\\\n", rendered)
+        self.assertIn("<p>Первая строка</p>", rendered)
+        self.assertIn("<ol><li>Первый пункт</li><li>Второй пункт</li></ol>", rendered)
+
+        serialized = BUILD.render_text_html("Первая строка\\n\\n1. Первый пункт\\n2. Второй пункт")
+        self.assertNotIn("\\\\n", serialized)
+        self.assertIn("<p>Первая строка</p>", serialized)
+        self.assertIn("<ol><li>Первый пункт</li><li>Второй пункт</li></ol>", serialized)
+
+    def test_reader_preserves_fenced_code_without_decoding_it(self):
+        rendered = BUILD.render_text_html("Текст\n\n```\npath = r'C:\\\\new'\n```")
+
+        self.assertIn("<pre><code>path = r&#x27;C:\\\\new&#x27;</code></pre>", rendered)
+
     def test_parses_all_substantive_templetherapy_entries_into_shared_chapters(self):
         entries = BUILD.parse_supplemental_articles()
 

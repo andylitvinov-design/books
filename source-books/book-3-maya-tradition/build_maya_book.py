@@ -262,12 +262,79 @@ def write_supporting_docs(articles: list[dict[str, object]]) -> None:
     (HERE / "FACT_CHECK.md").write_text("# Fact-check boundary\n\nThis is a source-backed reading edition, not an independent historical fact-check. Editorial work is limited to placement, deduplication, and source attribution; claims in posts remain attributed to their original channel.\n", encoding="utf-8")
 
 
+ORDERED_ITEM = re.compile(r"^\s*\d+[.)]\s+(.+?)\s*$")
+CODE_FENCE = re.compile(r"(```.*?```)", re.DOTALL)
+SERIALIZED_NEWLINE = re.compile(r"(?<!\\)\\n")
+
+
+def normalize_reader_text(text: str) -> str:
+    """Normalize source line endings and decode an evidently serialized payload once.
+
+    JSONL is decoded by ``json.loads`` at import time.  This fallback is only
+    for a whole prose segment that still contains multiple literal ``\\n``
+    tokens and no physical newline; fenced code is deliberately left intact.
+    """
+    def normalize_prose(segment: str) -> str:
+        segment = segment.replace("\r\n", "\n").replace("\r", "\n")
+        if "\n" not in segment and len(SERIALIZED_NEWLINE.findall(segment)) >= 2:
+            return SERIALIZED_NEWLINE.sub("\n", segment)
+        return segment
+
+    parts = CODE_FENCE.split(text)
+    return "".join(part if part.startswith("```") else normalize_prose(part) for part in parts)
+
+
+def render_text_html(text: str) -> str:
+    """Render readable paragraphs and ordered lists from a source text block."""
+    normalized = normalize_reader_text(text)
+    rendered: list[str] = []
+
+    def render_prose(prose: str) -> None:
+        for block in re.split(r"\n\s*\n+", prose.strip()):
+            paragraph_lines: list[str] = []
+            list_items: list[str] = []
+
+            def flush_paragraph() -> None:
+                if paragraph_lines:
+                    rendered.append(f"<p>{html.escape(' '.join(paragraph_lines))}</p>")
+                    paragraph_lines.clear()
+
+            def flush_list() -> None:
+                if list_items:
+                    rendered.append("<ol>" + "".join(f"<li>{html.escape(item)}</li>" for item in list_items) + "</ol>")
+                    list_items.clear()
+
+            for line in block.splitlines():
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                item = ORDERED_ITEM.match(stripped)
+                if item:
+                    flush_paragraph()
+                    list_items.append(item.group(1))
+                else:
+                    flush_list()
+                    paragraph_lines.append(stripped)
+            flush_paragraph()
+            flush_list()
+
+    for part in CODE_FENCE.split(normalized):
+        if not part:
+            continue
+        if part.startswith("```"):
+            rendered.append(f"<pre><code>{html.escape(part[3:-3].strip())}</code></pre>")
+        else:
+            render_prose(part)
+
+    return "\n".join(rendered)
+
+
 def article_html(article: dict[str, object], primary: str | None) -> str:
     photo = ""
     if primary:
         photo = (f'<figure class="post-media"><img class="post-photo-main" src="../{html.escape(primary)}" '
                  f'alt="Источник: пост {article["post_id"]}" loading="lazy"></figure>')
-    text = "<br>\\n".join(html.escape(line.rstrip()) for line in str(article["text"]).splitlines())
+    text = render_text_html(str(article["text"]))
     sources = "".join(f'<a href="{html.escape(str(source["url"]))}">{html.escape(str(source["channel"]))} · пост {source["post_id"]}</a>' for source in source_links(article))
     return f'''<article class="post" id="{html.escape(str(article["article_id"]))}">
   <div class="chapter-token">{html.escape(str(article["chapter"]))}</div>
@@ -303,7 +370,7 @@ def build_html(articles: list[dict[str, object]], media: dict[int, list[str]], d
             primary = f"raw/{source_media}" if source_media else None
         sections.append(article_html(article, primary))
     toc = "".join(f'<li><a href="#{chapter_id(chapter)}">{html.escape(chapter)}</a></li>' for chapter in chapters)
-    description_text = "<br>\n".join(html.escape(line.rstrip()) for line in str(description["text"]).splitlines())
+    description_text = render_text_html(str(description["text"]))
     document = "\n".join(sections)
     HTML_OUT.write_text(f'''<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
