@@ -20,6 +20,19 @@ test('normalizes source images and removes local-only links', () => {
   assert.doesNotMatch(output, /<script|<style|file:\/\/|localhost|127\.0\.0\.1|\/Users/)
 })
 
+test('allowlists presentation markup and rejects executable or local content', () => {
+  const output = normalizeSourceHtml(
+    '<body><article class="post" onclick="steal()"><p style="color:red" onmouseover="steal()">Safe <strong>author text</strong></p><img src="../../media/cover.jpg" alt="Cover" onerror="steal()"><a href="https://example.com/source">Safe link</a><a href="javascript:steal()">JavaScript</a><a href="data:text/html,boom">Data</a><a href="http://user@localhost:3000/private">Loopback</a><iframe src="https://evil.example">Frame</iframe><form action="https://evil.example"><input name="secret"></form></article></body>',
+    'alchemy',
+  )
+
+  assert.match(output, /<article class="post">/)
+  assert.match(output, /<p>Safe <strong>author text<\/strong><\/p>/)
+  assert.match(output, /<img src="\/media\/alchemy\/cover\.jpg" alt="Cover">/)
+  assert.match(output, /<a href="https:\/\/example\.com\/source">Safe link<\/a>/)
+  assert.doesNotMatch(output, /onerror|onclick|onmouseover|style=|javascript:|data:|localhost|iframe|form|input|steal\(\)/i)
+})
+
 test('exposes the complete source-backed library and searchable metadata', () => {
   const expectedIds = [
     'alchemy-homeopathy-foundations',
@@ -67,7 +80,6 @@ test('exposes the complete source-backed library and searchable metadata', () =>
 })
 
 test('points every canonical record to an exact source file and existing cover', () => {
-  const originalCheckout = process.env.BOOKS_ORIGINAL_CHECKOUT ?? '/Users/andriilitvinov/projects/books'
   const expectedSourceFiles = [
     'source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html',
     'source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html',
@@ -104,6 +116,13 @@ test('points every canonical record to an exact source file and existing cover',
     ])),
     { Alchemy: 9, Dao: 10, Maya: 1 },
   )
+
+  for (const book of books) {
+    assert.ok(existsSync(book.originalSourceFile), `missing current-worktree source for ${book.id}`)
+  }
+
+  const originalCheckout = process.env.BOOKS_ORIGINAL_CHECKOUT
+  if (!originalCheckout) return
 
   for (const book of books) {
     assert.ok(existsSync(path.join(originalCheckout, book.originalSourceFile)), `missing source for ${book.id}`)
