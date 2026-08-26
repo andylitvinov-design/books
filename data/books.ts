@@ -20,7 +20,29 @@ export type Book = {
   sections: BookSection[];
 };
 
-export const books = booksData as Book[];
+const sourceBooks = booksData as Book[];
+
+// The JSON archive also serves the editorial toolchain and includes source-tree
+// labels. A reader should see bibliographic context, never local project paths.
+export const books = sourceBooks.map((book) => ({
+  ...book,
+  sections: book.sections.map((section) =>
+    section.id === "source"
+      ? {
+          ...section,
+          title: "Источник",
+          description: "Библиографическая запись материала в библиотеке.",
+          content: `<p>Исходный материал сохранён в архиве библиотеки.</p><p>Заголовок: «${book.title}».</p>`,
+        }
+      : {
+          ...section,
+          content: section.content
+            .replace(/<code>source-books[^<]*<\/code>/g, "архиве библиотеки")
+            .replace(/Источник расположен локально[^<]*<\/p>/g, "Материал сохранён в архиве библиотеки.</p>")
+            .replace(/Книга найдена в локальной папке[^<]*<\/p>/g, "Материал включён в общую библиотеку как самостоятельная книга.</p>"),
+        },
+  ),
+}));
 
 const coverExtensions: Record<string, string> = {
   "maya-tradition-methodology": ".jpg",
