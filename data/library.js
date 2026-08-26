@@ -328,7 +328,7 @@ export const books = [
     ...maya,
     id: 'maya-tradition-methodology',
     title: 'Maya Tradition: методология источникового чтения',
-    description: 'Reading edition 82 первичных текстов mayaismagic и 29 отдельно маркированных supplemental-постов TempleTherapy.',
+    description: 'Reading edition 81 первичных текстов mayaismagic и 29 отдельно маркированных supplemental-постов TempleTherapy.',
     cover: 'photo_100@06-01-2025_09-34-15.jpg',
     summary: 'Источниковая редакционная компоновка: каждый текст сохраняет ID поста, дату и ссылку Telegram.',
     originalSourceFile: 'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
