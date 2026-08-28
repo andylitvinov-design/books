@@ -354,11 +354,19 @@ export function getBooksByCategory(category) {
   return books.filter((book) => book.category === category)
 }
 
-export function searchBooks(query) {
-  const normalizedQuery = query.trim().toLocaleLowerCase()
-  if (!normalizedQuery) return books
+export function getPopulatedCategories(records = books) {
+  return [...new Set(records.map((book) => book.category).filter(Boolean))]
+}
 
-  return books.filter((book) => {
+export function filterLibraryBooks(records = books, { category, query } = {}) {
+  const normalizedQuery = query?.trim().toLocaleLowerCase() ?? ''
+
+  return records.filter((book) => {
+    const matchesCategory = !category || category === 'all' || book.category === category
+    if (!matchesCategory) return false
+
+    if (!normalizedQuery) return true
+
     const searchableText = [
       book.title,
       book.description,
@@ -369,4 +377,8 @@ export function searchBooks(query) {
 
     return searchableText.includes(normalizedQuery)
   })
+}
+
+export function searchBooks(query) {
+  return filterLibraryBooks(books, { query })
 }

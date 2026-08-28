@@ -20,4 +20,9 @@ export type Book = {
 export const books: Book[];
 export function getBookById(bookId: string): Book | undefined;
 export function getBooksByCategory(category: string): Book[];
+export function getPopulatedCategories(records?: Book[]): string[];
+export function filterLibraryBooks(
+  records: Book[] | undefined,
+  filters?: { category?: string; query?: string },
+): Book[];
 export function searchBooks(query: string): Book[];

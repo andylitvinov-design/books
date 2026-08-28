@@ -4,7 +4,14 @@ import path from 'node:path'
 import test from 'node:test'
 
 import { normalizeSourceHtml } from '../data/source-parser.js'
-import { books, getBookById, getBooksByCategory, searchBooks } from '../data/library.js'
+import {
+  books,
+  filterLibraryBooks,
+  getBookById,
+  getBooksByCategory,
+  getPopulatedCategories,
+  searchBooks,
+} from '../data/library.js'
 
 test('normalizes source images and removes local-only links', () => {
   const output = normalizeSourceHtml(
@@ -84,6 +91,17 @@ test('exposes the complete source-backed library and searchable metadata', () =>
   assert.equal(getBookById('missing'), undefined)
   assert.equal(getBooksByCategory('Даосская традиция').length, 10)
   assert.deepEqual(searchBooks('врата').map((book) => book.id), ['alchemy-brain-protocols'])
+})
+
+test('filters canonical books by chapter title and only exposes populated categories', () => {
+  const categoryNames = getPopulatedCategories(books)
+
+  assert.deepEqual(categoryNames, ['Алхимия души', 'Даосская традиция', 'Традиция Майя'])
+  assert.ok(!categoryNames.includes('Несуществующая традиция'))
+  assert.deepEqual(
+    filterLibraryBooks(books, { query: 'Снежная Королева' }).map((book) => book.id),
+    ['dao-wuxing-model-steps'],
+  )
 })
 
 test('points every canonical record to an exact source file and existing cover', () => {
