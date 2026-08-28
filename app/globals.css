@@ -47,9 +47,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background:
-      radial-gradient(circle at top, rgba(255, 255, 255, 0.55), transparent 36%),
-      linear-gradient(180deg, #f6efe4 0%, #efe6d6 100%);
+    background: #f6efe4;
   }
 
   ::selection {
@@ -72,4 +70,120 @@
   .reader-content p + p {
     @apply mt-5;
   }
+
+  .reader-shell {
+    @apply mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12;
+  }
+
+  .reader-header {
+    @apply max-w-3xl;
+  }
+
+  .reader-eyebrow,
+  .reader-toc-title,
+  .reader-supplemental-label {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-[#8b4513];
+  }
+
+  .reader-header h1,
+  .reader-not-found h1 {
+    @apply mt-3 font-serif text-4xl leading-tight text-[#241b16] sm:text-5xl;
+  }
+
+  .reader-summary {
+    @apply mt-4 max-w-2xl text-base leading-7 text-[#6d5d51];
+  }
+
+  .reader-back-link {
+    @apply inline-flex text-sm font-semibold text-[#7c3f1f] underline decoration-[#cba27a] underline-offset-4;
+  }
+
+  .reader-facts {
+    @apply mt-6 flex flex-wrap gap-3;
+  }
+
+  .reader-facts div {
+    @apply rounded-full border border-[#d9c7b0] bg-[#fffaf3] px-4 py-2 text-sm;
+  }
+
+  .reader-facts dt {
+    @apply text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8b4513];
+  }
+
+  .reader-facts dd {
+    @apply mt-1 text-[#382d26];
+  }
+
+  .reader-cover {
+    @apply mt-8 overflow-hidden rounded-2xl border border-[#d9c7b0] bg-[#fffaf3];
+  }
+
+  .reader-cover img {
+    @apply block aspect-[16/7] w-full object-cover;
+  }
+
+  .reader-layout {
+    @apply mt-10 grid gap-8 lg:grid-cols-[15rem_minmax(0,42rem)] lg:justify-center;
+  }
+
+  .reader-toc {
+    @apply h-fit rounded-xl border border-[#d9c7b0] bg-[#fffaf3] p-5 lg:sticky lg:top-6;
+  }
+
+  .reader-toc ol {
+    @apply mt-3 space-y-2 pl-5 text-sm leading-5 text-[#5e493b];
+  }
+
+  .reader-toc a {
+    @apply underline decoration-[#d5b28d] underline-offset-4;
+  }
+
+  .reader-article {
+    @apply min-w-0;
+  }
+
+  .reader-content {
+    @apply font-serif text-[17px] leading-8 text-[#382d26];
+  }
+
+  .reader-content h1,
+  .reader-content h2,
+  .reader-content h3,
+  .reader-content h4,
+  .reader-content h5,
+  .reader-content h6 {
+    @apply scroll-mt-8 font-serif font-semibold leading-tight text-[#241b16];
+  }
+
+  .reader-content h1 { @apply mt-12 text-4xl; }
+  .reader-content h2 { @apply mt-10 text-3xl; }
+  .reader-content h3 { @apply mt-8 text-2xl; }
+  .reader-content h4,
+  .reader-content h5,
+  .reader-content h6 { @apply mt-6 text-xl; }
+
+  .reader-content a {
+    @apply text-[#7c3f1f] underline decoration-[#d5b28d] underline-offset-4;
+  }
+
+  .reader-content figure { @apply my-8; }
+  .reader-content img { @apply h-auto max-w-full rounded-xl; }
+  .reader-content table { @apply my-6 w-full border-collapse text-sm; }
+  .reader-content th,
+  .reader-content td { @apply border border-[#d9c7b0] p-3 text-left align-top; }
+  .reader-content ul,
+  .reader-content ol { @apply my-5 space-y-2 pl-6; }
+
+  .reader-source-label {
+    @apply mt-6 border-l-2 border-[#cba27a] pl-4 text-sm italic leading-6 text-[#6d5d51];
+  }
+
+  .reader-supplemental {
+    @apply mt-8 border-t border-[#d9c7b0] pt-5;
+  }
+
+  .reader-supplemental-label { @apply mb-2; }
+  .reader-not-found { @apply max-w-2xl; }
+  .reader-not-found p { @apply mt-4 text-[#6d5d51]; }
+  .reader-not-found .reader-back-link { @apply mt-6; }
 }
