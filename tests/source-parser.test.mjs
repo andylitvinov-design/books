@@ -88,6 +88,8 @@ test('exposes the complete source-backed library and searchable metadata', () =>
     'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
   )
   assert.match(getBookById('maya-tradition-methodology').description, /81 первичных текстов/)
+  assert.equal(getBookById('alchemy-bach-foundations').cover, 'post_855_01.jpg')
+  assert.equal(getBookById('alchemy-services-workflow').cover, 'post_997_01.jpg')
   assert.equal(getBookById('missing'), undefined)
   assert.equal(getBooksByCategory('Даосская традиция').length, 10)
   assert.deepEqual(searchBooks('врата').map((book) => book.id), ['alchemy-brain-protocols'])
