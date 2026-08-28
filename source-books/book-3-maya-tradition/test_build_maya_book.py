@@ -35,6 +35,12 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertEqual(reader[0]["article_id"], "mayaismagic-145")
         self.assertEqual(reader[4]["chapter"], "II. Боги и божественные силы Майя и Ацтеков")
         self.assertEqual(reader[4]["article_id"], "mayaismagic-142")
+        tonatiuh = next(index for index, article in enumerate(reader) if article["article_id"] == "mayaismagic-214")
+        first_setting = next(index for index, article in enumerate(reader) if article["chapter"] == "III. Настройки и энергии Майя и Ацтеков")
+        self.assertEqual(tonatiuh, first_setting + 1)
+        mystery_and_twins = {"mayaismagic-224", "mayaismagic-225", "mayaismagic-143", "mayaismagic-144"}
+        self.assertTrue(all(reader[index]["chapter"] == "VI. Мистерии, двойники и авторские модели" for index, article in enumerate(reader) if article["article_id"] in mystery_and_twins))
+        self.assertLess(max(index for index, article in enumerate(reader) if article["article_id"] in mystery_and_twins), min(index for index, article in enumerate(reader) if article["chapter"] == BUILD.READER_CHAPTERS[-1]))
         self.assertEqual({article["chapter"] for article in reader}, set(BUILD.READER_CHAPTERS))
         self.assertTrue(all(article["article_id"] not in BUILD.READER_EXCLUDED_ARTICLE_IDS for article in reader))
         self.assertTrue(all(article["chapter"] == BUILD.READER_CHAPTERS[-1] for article in reader[-8:]))
@@ -43,6 +49,10 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
             "templetherapy-2253", "mayaismagic-46", "mayaismagic-226",
         }
         self.assertTrue(excluded_cross_tradition <= BUILD.READER_EXCLUDED_ARTICLE_IDS)
+
+    def test_mobile_reader_uses_larger_type(self):
+        self.assertGreaterEqual(BUILD.MOBILE_READER_FONT_SIZE, 20)
+        self.assertGreater(BUILD.DESKTOP_READER_FONT_SIZE, BUILD.MOBILE_READER_FONT_SIZE)
 
     def test_reader_merges_repeated_editions_and_preserves_their_sources(self):
         canonical = BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
