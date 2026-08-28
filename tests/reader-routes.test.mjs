@@ -100,6 +100,7 @@ test('provides the server reader, not-found, and strict media route modules', as
     access('app/media/[series]/[file]/route.ts'),
   ])
   assert.match(readerPage, /generateMetadata/)
+  assert.match(readerPage, /metadataBase/)
   assert.match(readerPage, /notFound\(\)/)
   assert.match(readerPage, /loadReaderDocument/)
   assert.match(readerPage, /\/media\/\$\{book\.mediaSeries\}/)
@@ -108,4 +109,22 @@ test('provides the server reader, not-found, and strict media route modules', as
   assert.match(notFoundPage, /Библиотек/)
   assert.match(mediaRoute, /Cache-Control/)
   assert.match(mediaRoute, /image\//)
+})
+
+test('uses an absolute deployable metadata base with a Vercel fallback', async () => {
+  const modulePath = 'data/site-metadata.js'
+  const moduleExists = await access(modulePath).then(() => true, () => false)
+
+  assert.equal(moduleExists, true)
+
+  const { metadataBaseFor } = await import('../data/site-metadata.js')
+
+  assert.equal(
+    metadataBaseFor(undefined).href,
+    'https://andylitvinov-books.vercel.app/',
+  )
+  assert.equal(
+    metadataBaseFor('https://books.example.test/library').href,
+    'https://books.example.test/library',
+  )
 })

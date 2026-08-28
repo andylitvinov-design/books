@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { books, getBookById } from "@/data/library";
 import { loadReaderDocument } from "@/data/reader-content";
+import { metadataBaseFor } from "@/data/site-metadata";
 
 type PageProps = {
   params: Promise<{ bookId: string }>;
@@ -78,12 +79,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!book) return { title: "Книга не найдена" };
 
-  const coverUrl = `/media/${book.mediaSeries}/${book.cover}`;
+  const metadataBase = metadataBaseFor();
+  const canonicalUrl = new URL(`/books/${book.id}`, metadataBase);
+  const coverUrl = new URL(`/media/${book.mediaSeries}/${book.cover}`, metadataBase);
 
   return {
+    metadataBase,
     title: book.title,
     description: book.description,
-    alternates: { canonical: `/books/${book.id}` },
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       title: book.title,
       description: book.description,
