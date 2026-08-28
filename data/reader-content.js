@@ -1,6 +1,5 @@
 function plainMarkdown(text) {
   return text
-    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
     .replace(/^\*([^*]+)\*$/, '$1')
     .trim()
 }
@@ -34,6 +33,7 @@ function addChapterAnchors(html, chapters) {
 export function parseMayaManuscript(markdown) {
   const blocks = []
   let paragraph = []
+  let list
 
   const flushParagraph = () => {
     if (!paragraph.length) return
@@ -49,10 +49,21 @@ export function parseMayaManuscript(markdown) {
     paragraph = []
   }
 
+  const flushList = () => {
+    if (!list) return
+
+    blocks.push(list)
+    list = undefined
+  }
+
   for (const line of markdown.split(/\r?\n/)) {
     const heading = line.match(/^(#{1,6})\s*(.+)$/)
+    const orderedListItem = line.match(/^\s*\d+[.)]\s+(.+)$/)
+    const unorderedListItem = line.match(/^\s*[-+*]\s+(.+)$/)
+
     if (heading) {
       flushParagraph()
+      flushList()
       const text = plainMarkdown(heading[2])
       blocks.push({
         type: 'heading',
@@ -60,14 +71,27 @@ export function parseMayaManuscript(markdown) {
         text,
         supplemental: /^TempleTherapy\b/i.test(text),
       })
+    } else if (orderedListItem || unorderedListItem) {
+      flushParagraph()
+      const ordered = Boolean(orderedListItem)
+
+      if (!list || list.ordered !== ordered) {
+        flushList()
+        list = { type: 'list', ordered, items: [] }
+      }
+
+      list.items.push(plainMarkdown((orderedListItem ?? unorderedListItem)[1]))
     } else if (line.trim()) {
+      flushList()
       paragraph.push(line)
     } else {
       flushParagraph()
+      flushList()
     }
   }
 
   flushParagraph()
+  flushList()
   return blocks
 }
 

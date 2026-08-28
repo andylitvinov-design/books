@@ -49,8 +49,23 @@ test('parses Maya manuscript source labels and supplemental TempleTherapy headin
   assert.deepEqual(blocks, [
     { type: 'heading', level: 1, text: 'I. Описание традиции', supplemental: false },
     { type: 'heading', level: 2, text: 'TempleTherapy · пост 2062', supplemental: true },
-    { type: 'paragraph', text: 'Источники: TempleTherapy: пост 2062; 2024-10-24.', sourceLabel: true },
+    { type: 'paragraph', text: 'Источники: TempleTherapy: пост [2062](https://t.me/TempleTherapy/2062); 2024-10-24.', sourceLabel: true },
     { type: 'paragraph', text: 'Сохранённый авторский текст.', sourceLabel: false },
+  ])
+})
+
+test('parses consecutive Maya source lists as ordered and unordered semantic blocks', () => {
+  const blocks = parseMayaManuscript([
+    '1. Первый сохранённый пункт',
+    '2. Второй сохранённый пункт',
+    '',
+    '- Первый маркированный пункт',
+    '- Второй маркированный пункт',
+  ].join('\n'))
+
+  assert.deepEqual(blocks, [
+    { type: 'list', ordered: true, items: ['Первый сохранённый пункт', 'Второй сохранённый пункт'] },
+    { type: 'list', ordered: false, items: ['Первый маркированный пункт', 'Второй маркированный пункт'] },
   ])
 })
 
@@ -73,7 +88,9 @@ test('loads Maya as semantic manuscript blocks with supplemental source labels',
 
   assert.equal(document.type, 'maya')
   assert.ok(document.blocks.some((block) => block.type === 'heading' && block.supplemental))
-  assert.ok(document.blocks.some((block) => block.type === 'paragraph' && block.sourceLabel))
+  assert.ok(document.blocks.some((block) => block.type === 'paragraph' && block.sourceLabel && block.text.includes('https://t.me/TempleTherapy/2062')))
+  assert.ok(document.blocks.some((block) => block.type === 'list' && block.ordered && block.items.includes('Энергетическая практика.')))
+  assert.ok(document.blocks.some((block) => block.type === 'list' && !block.ordered))
 })
 
 test('reads known image assets with a cacheable MIME type only', async () => {
@@ -106,6 +123,7 @@ test('provides the server reader, not-found, and strict media route modules', as
   assert.match(readerPage, /\/media\/\$\{book\.mediaSeries\}/)
   assert.match(readerPage, /Источник/)
   assert.match(readerPage, /Статус/)
+  assert.match(readerPage, /target="_blank"/)
   assert.match(notFoundPage, /Библиотек/)
   assert.match(mediaRoute, /Cache-Control/)
   assert.match(mediaRoute, /image\//)

@@ -1,12 +1,22 @@
 import type { Book } from "./library";
 
-export type MayaBlock = {
-  type: "heading" | "paragraph";
-  level?: number;
-  text: string;
-  sourceLabel?: boolean;
-  supplemental?: boolean;
-};
+export type MayaBlock =
+  | {
+      type: "heading";
+      level: number;
+      text: string;
+      supplemental: boolean;
+    }
+  | {
+      type: "paragraph";
+      text: string;
+      sourceLabel: boolean;
+    }
+  | {
+      type: "list";
+      ordered: boolean;
+      items: string[];
+    };
 
 export type ReaderDocument =
   | { type: "html"; content: string }
