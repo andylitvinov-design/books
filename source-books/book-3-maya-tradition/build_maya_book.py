@@ -50,6 +50,65 @@ CHAPTERS = (
     "VII. Сравнения мезоамериканских традиций",
 )
 
+# ``CHAPTERS`` preserves the recovered source taxonomy.  The reader has a
+# different, deliberate order: it is scoped to Maya and Aztec material only.
+READER_CHAPTERS = (
+    "I. Эгрегор Майя",
+    "II. Настройки и энергии Майя и Ацтеков",
+    "III. Боги и божественные силы Майя и Ацтеков",
+    "IV. Мифология, Шибальба, инициация и ритуал",
+    "V. Места, храмы и материальная культура",
+    "VI. Авторские и архетипические модели",
+    "VII. Календарь и энергия дней",
+)
+
+# These records remain intact in the raw archive and source index.  They are
+# deliberately omitted from the Maya/Aztec reader because their primary topic
+# is another tradition, a multi-tradition programme, or a general travel note.
+READER_EXCLUDED_ARTICLE_IDS = frozenset({
+    "templetherapy-2062", "templetherapy-2100", "templetherapy-2198",
+    "templetherapy-2210", "templetherapy-2212", "templetherapy-2253",
+    "templetherapy-2269", "templetherapy-2352", "templetherapy-2446",
+    "mayaismagic-14", "mayaismagic-50", "mayaismagic-51", "mayaismagic-53",
+    "mayaismagic-55", "mayaismagic-65", "mayaismagic-69", "mayaismagic-74",
+    "mayaismagic-105", "mayaismagic-114", "mayaismagic-121", "mayaismagic-125",
+    "mayaismagic-148", "mayaismagic-149", "mayaismagic-150", "mayaismagic-151",
+    "mayaismagic-157", "mayaismagic-158", "mayaismagic-160", "mayaismagic-226",
+    "mayaismagic-230", "mayaismagic-46",
+})
+
+EGREGORE_ARTICLE_IDS = frozenset({
+    "mayaismagic-145", "mayaismagic-32", "mayaismagic-34", "mayaismagic-36",
+})
+SETTING_ARTICLE_IDS = frozenset({
+    "templetherapy-2262", "mayaismagic-146", "mayaismagic-147", "mayaismagic-154",
+    "mayaismagic-155", "mayaismagic-156", "mayaismagic-159", "mayaismagic-212",
+    "mayaismagic-214", "mayaismagic-216", "mayaismagic-217", "mayaismagic-17",
+    "mayaismagic-86", "mayaismagic-87", "mayaismagic-91", "mayaismagic-93",
+})
+GOD_ARTICLE_IDS = frozenset({
+    "mayaismagic-4", "mayaismagic-5", "mayaismagic-16", "mayaismagic-142",
+    "mayaismagic-161", "mayaismagic-213", "mayaismagic-218", "mayaismagic-243",
+    "mayaismagic-245",
+})
+RITUAL_ARTICLE_IDS = frozenset({"mayaismagic-3", "mayaismagic-7", "mayaismagic-25"})
+CALENDAR_ARTICLE_IDS = frozenset({
+    "mayaismagic-78", "mayaismagic-79", "mayaismagic-80", "mayaismagic-81",
+    "mayaismagic-82", "mayaismagic-85", "mayaismagic-89", "mayaismagic-94",
+})
+READER_ARTICLE_PRIORITY = (
+    "mayaismagic-145", "mayaismagic-32", "mayaismagic-34", "mayaismagic-36",
+    "templetherapy-2262", "mayaismagic-146", "mayaismagic-147", "mayaismagic-154",
+    "mayaismagic-155", "mayaismagic-156", "mayaismagic-159", "mayaismagic-212",
+    "mayaismagic-214", "mayaismagic-216", "mayaismagic-217", "mayaismagic-17",
+    "mayaismagic-86", "mayaismagic-87", "mayaismagic-91", "mayaismagic-93",
+    "mayaismagic-142", "mayaismagic-4", "mayaismagic-5", "mayaismagic-161",
+    "mayaismagic-213", "mayaismagic-218", "mayaismagic-243", "mayaismagic-245",
+    "mayaismagic-16", "mayaismagic-79", "mayaismagic-80", "mayaismagic-89",
+    "mayaismagic-81", "mayaismagic-82", "mayaismagic-94", "mayaismagic-78",
+    "mayaismagic-85",
+)
+
 # These are editorial placement decisions, not claims about a source's authority.
 SUPPLEMENTAL_CHAPTERS = {
     2062: CHAPTERS[0], 2065: CHAPTERS[2], 2100: CHAPTERS[5], 2113: CHAPTERS[3],
@@ -146,7 +205,14 @@ def parse_front_description(text: str) -> dict[str, object]:
     if not source:
         raise ValueError("Missing front description citation")
     post_id, url, date, body = source
-    return {"title": heading.group(1), "post_id": post_id, "url": url, "date": date, "text": body}
+    # The source post introduces a broader course catalogue.  The reader keeps
+    # only the source sentences that frame its Maya/Aztec scope; the complete,
+    # unedited post remains in the raw archive.
+    scoped_lines = [
+        line for line in body.splitlines()
+        if not re.search(r"\bтолтек", line, flags=re.IGNORECASE)
+    ]
+    return {"title": heading.group(1), "post_id": post_id, "url": url, "date": date, "text": "\n".join(scoped_lines).strip()}
 
 
 def parse_articles() -> list[dict[str, object]]:
@@ -204,6 +270,44 @@ def unify_articles(primary: list[dict[str, object]], supplemental: list[dict[str
     return sorted(retained, key=lambda article: (positions.get(str(article["chapter"]), 99), str(article["date"]), str(article["article_id"])))
 
 
+def reader_chapter(article: dict[str, object]) -> str:
+    """Assign a retained Maya/Aztec article to its reader-facing chapter."""
+    article_id = str(article["article_id"])
+    if article_id in EGREGORE_ARTICLE_IDS:
+        return READER_CHAPTERS[0]
+    if article_id in SETTING_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[0]:
+        return READER_CHAPTERS[1]
+    if article_id in GOD_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[1]:
+        return READER_CHAPTERS[2]
+    if article_id in RITUAL_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[4]:
+        return READER_CHAPTERS[3]
+    if article_id in CALENDAR_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[2]:
+        return READER_CHAPTERS[6]
+    if str(article["chapter"]) == CHAPTERS[3]:
+        return READER_CHAPTERS[4]
+    return READER_CHAPTERS[5]
+
+
+def curate_reader_articles(canonical_articles: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Return the Maya/Aztec-only edition without modifying the raw corpus."""
+    retained = [
+        {**article, "chapter": reader_chapter(article)}
+        for article in canonical_articles
+        if str(article["article_id"]) not in READER_EXCLUDED_ARTICLE_IDS
+    ]
+    chapter_positions = {chapter: index for index, chapter in enumerate(READER_CHAPTERS)}
+    priority_positions = {article_id: index for index, article_id in enumerate(READER_ARTICLE_PRIORITY)}
+    return sorted(
+        retained,
+        key=lambda article: (
+            chapter_positions[str(article["chapter"])],
+            priority_positions.get(str(article["article_id"]), len(priority_positions)),
+            str(article["date"]),
+            str(article["article_id"]),
+        ),
+    )
+
+
 def source_markdown(article: dict[str, object]) -> str:
     return " · ".join(
         f"{source['channel']}: пост [{source['post_id']}]({source['url']}); {source['date']}"
@@ -214,8 +318,8 @@ def source_markdown(article: dict[str, object]) -> str:
 def write_unified_manuscript(articles: list[dict[str, object]], description: dict[str, object]) -> None:
     """Write the canonical reader manuscript; source archive files are never modified."""
     parts = ["# Maya Tradition", "", "## Описание традиции", "", f"*Источник: пост [{description['post_id']}]({description['url']}); {description['date']}.*", "", str(description["text"]), "", "# Содержание", ""]
-    parts.extend(f"- {chapter}" for chapter in CHAPTERS)
-    for chapter in CHAPTERS:
+    parts.extend(f"- {chapter}" for chapter in READER_CHAPTERS)
+    for chapter in READER_CHAPTERS:
         parts.extend(["", f"# {chapter}"])
         for article in (item for item in articles if item["chapter"] == chapter):
             parts.extend(["", f"## {article['title']}", "", f"*Источники: {source_markdown(article)}.*", "", str(article["text"])])
@@ -226,7 +330,7 @@ def normalized_text(text: str) -> str:
     return re.sub(r"[^\w]+", "", html.unescape(text).casefold())
 
 
-def write_supporting_docs(articles: list[dict[str, object]]) -> None:
+def write_supporting_docs(articles: list[dict[str, object]], canonical_count: int) -> None:
     """Regenerate reader-facing maps and the reproducible deduplication audit."""
     raw_sources = (HERE / "raw" / "posts.jsonl", SUPPLEMENTAL_INDEX)
     records = []
@@ -238,7 +342,7 @@ def write_supporting_docs(articles: list[dict[str, object]]) -> None:
         if key:
             exact[key].append(record)
     groups = [group for group in exact.values() if len(group) > 1]
-    report = ["# Deduplication report", "", "Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl`. Raw archives were read only.", "", f"- Source records audited: {len(records)}", f"- Normalized exact-duplicate groups: {len(groups)}", "- Cross-source exact relationships: 14", "- Near-duplicate decisions: 3", f"- Canonical reader articles retained: {len(articles)}", "", "## Exact duplicate groups", ""]
+    report = ["# Deduplication report", "", "Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl`. Raw archives were read only.", "", f"- Source records audited: {len(records)}", f"- Normalized exact-duplicate groups: {len(groups)}", "- Cross-source exact relationships: 14", "- Near-duplicate decisions: 3", f"- Canonical articles after deduplication: {canonical_count}", f"- Maya/Aztec reader articles retained: {len(articles)}", f"- Outside-reader-scope articles kept only in raw archive: {canonical_count - len(articles)}", "", "## Exact duplicate groups", ""]
     for group in groups:
         links = ", ".join(f"[{item['channel']}:{item['post_id']}]({item['url']})" for item in group)
         report.append(f"- {links}")
@@ -246,18 +350,18 @@ def write_supporting_docs(articles: list[dict[str, object]]) -> None:
     for supplemental_id, canonical_id in sorted(SUPPLEMENTAL_CANONICAL.items()):
         kind = "exact copy after whitespace/entity normalization" if supplemental_id not in {2246, 2268, 2346} else {2246: "near copy; TempleTherapy adds a tail", 2268: "near copy; only a short closing sentence changes", 2346: "near copy; same material reordered"}[supplemental_id]
         report.append(f"| TempleTherapy:{supplemental_id} | Mayaismagic:{canonical_id} | {kind}; retain Mayaismagic text and link both sources. |")
-    report.extend(["", "## Retention rule", "", "Each duplicate is represented once in the unified manuscript and reading editions. The canonical article keeps a link, date, and channel label for every duplicate source. Non-duplicate TempleTherapy entries are placed in the seven shared thematic chapters with their own labels, original URLs, and dates."])
+    report.extend(["", "## Reader scope", "", "The raw archive and source index preserve every recovered source. The public Maya/Aztec reader retains only articles whose primary subject is Maya or Aztec material; other traditions and multi-tradition programme posts are not rendered there."])
     DEDUPLICATION_REPORT.write_text("\n".join(report) + "\n", encoding="utf-8")
 
     chapter_rows = ["# Chapter map", "", "The canonical manuscript is `manuscript/MAYA_TRADITION_UNIFIED.md`; it replaces the former TempleTherapy appendix in reader outputs.", ""]
-    for chapter in CHAPTERS:
+    for chapter in READER_CHAPTERS:
         members = [item for item in articles if item["chapter"] == chapter]
         chapter_rows.extend([f"## {chapter}", "", f"Articles: {len(members)}", ""])
         chapter_rows.extend(f"- `{item['article_id']}` — {item['title']}" for item in members)
         chapter_rows.append("")
     (HERE / "manuscript" / "CHAPTER_MAP.md").write_text("\n".join(chapter_rows), encoding="utf-8")
-    (HERE / "CONTENT_MAP.md").write_text("\n".join(["# Content map", "", "All reader articles are listed in the chapter map; IDs are namespace-safe (`mayaismagic-<id>` or `templetherapy-<id>`).", "", f"Canonical article count: {len(articles)}."]) + "\n", encoding="utf-8")
-    (HERE / "manuscript" / "COVERAGE.md").write_text(f"# Coverage\n\n- Primary curated articles: 81\n- Supplemental source posts: 29\n- Supplemental duplicates consolidated: 17\n- Final canonical reader articles: {len(articles)}\n", encoding="utf-8")
+    (HERE / "CONTENT_MAP.md").write_text("\n".join(["# Content map", "", "All reader articles are listed in the chapter map; IDs are namespace-safe (`mayaismagic-<id>` or `templetherapy-<id>`).", "", f"Canonical articles after deduplication: {canonical_count}.", f"Maya/Aztec reader articles: {len(articles)}."]) + "\n", encoding="utf-8")
+    (HERE / "manuscript" / "COVERAGE.md").write_text(f"# Coverage\n\n- Primary curated articles: 81\n- Supplemental source posts: 29\n- Supplemental duplicates consolidated: 17\n- Canonical articles after deduplication: {canonical_count}\n- Maya/Aztec reader articles: {len(articles)}\n- Outside-reader-scope articles retained only in raw archive: {canonical_count - len(articles)}\n", encoding="utf-8")
     (HERE / "manuscript" / "SOURCE_NOTES.md").write_text("# Source notes\n\nMayaismagic is the primary Telegram export. TempleTherapy is a separately-labelled supplemental public source. Duplicate source URLs are preserved on the canonical retained article; no archive content was altered.\n", encoding="utf-8")
     (HERE / "FACT_CHECK.md").write_text("# Fact-check boundary\n\nThis is a source-backed reading edition, not an independent historical fact-check. Editorial work is limited to placement, deduplication, and source attribution; claims in posts remain attributed to their original channel.\n", encoding="utf-8")
 
@@ -453,14 +557,15 @@ def main() -> None:
     OUT.mkdir(exist_ok=True)
     text = MANUSCRIPT.read_text(encoding="utf-8")
     primary_articles, supplementary_articles = parse_articles(), parse_supplemental_articles()
-    articles, media, description = unify_articles(primary_articles, supplementary_articles), parse_media(), parse_front_description(text)
+    canonical_articles = unify_articles(primary_articles, supplementary_articles)
+    articles, media, description = curate_reader_articles(canonical_articles), parse_media(), parse_front_description(text)
     if len(primary_articles) != 81 or len(supplementary_articles) != 29:
         raise SystemExit(f"Expected 81 primary and 29 supplemental reading articles, found {len(primary_articles)} and {len(supplementary_articles)}")
     write_unified_manuscript(articles, description)
-    write_supporting_docs(articles)
+    write_supporting_docs(articles, len(canonical_articles))
     build_html(articles, media, description)
     build_docx(articles, media, description)
-    print(f"wrote unified manuscript, maps, {HTML_OUT} and {DOCX_OUT} ({len(articles)} canonical articles)")
+    print(f"wrote Maya/Aztec manuscript, maps, {HTML_OUT} and {DOCX_OUT} ({len(articles)} reader articles from {len(canonical_articles)} canonical articles)")
 
 
 if __name__ == "__main__":

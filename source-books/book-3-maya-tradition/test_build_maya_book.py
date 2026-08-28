@@ -15,6 +15,38 @@ VERIFY_SPEC.loader.exec_module(VERIFY)
 
 
 class SupplementalTempleTherapyTests(unittest.TestCase):
+    def test_unified_manuscript_starts_with_maya_egregore_and_excludes_other_traditions(self):
+        manuscript = BUILD.UNIFIED_MANUSCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("# I. Эгрегор Майя", manuscript)
+        self.assertLess(manuscript.index("# I. Эгрегор Майя"), manuscript.index("# II. Настройки и энергии Майя и Ацтеков"))
+        self.assertLess(manuscript.index("# II. Настройки и энергии Майя и Ацтеков"), manuscript.index("# III. Боги и божественные силы Майя и Ацтеков"))
+        self.assertLess(manuscript.index("# III. Боги и божественные силы Майя и Ацтеков"), manuscript.index("# VII. Календарь и энергия дней"))
+        self.assertLess(manuscript.index("## ЭГРЕГОР МАЙЯ."), manuscript.index("## НАСТРОЙКА."))
+        self.assertNotIn("## #2. ГРЕЧЕСКАЯ ТРАДИЦИЯ.", manuscript)
+        self.assertNotIn("## #3. СКАНДИНАВСКАЯ ТРАДИЦИЯ.", manuscript)
+        self.assertNotIn("## #4. ДАОССКАЯ ТРАДИЦИЯ.", manuscript)
+        self.assertNotIn("## ИССЛЕДОВАНИЕ: ИНКИ.", manuscript)
+
+    def test_reader_curation_keeps_maya_aztec_scope_and_calendar_last(self):
+        canonical = BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        reader = BUILD.curate_reader_articles(canonical)
+
+        self.assertEqual(reader[0]["article_id"], "mayaismagic-145")
+        self.assertEqual({article["chapter"] for article in reader}, set(BUILD.READER_CHAPTERS))
+        self.assertTrue(all(article["article_id"] not in BUILD.READER_EXCLUDED_ARTICLE_IDS for article in reader))
+        self.assertTrue(all(article["chapter"] == BUILD.READER_CHAPTERS[-1] for article in reader[-8:]))
+        excluded_cross_tradition = {
+            "templetherapy-2100", "templetherapy-2198", "templetherapy-2210",
+            "templetherapy-2253", "mayaismagic-46", "mayaismagic-226",
+        }
+        self.assertTrue(excluded_cross_tradition <= BUILD.READER_EXCLUDED_ARTICLE_IDS)
+
+    def test_front_description_omits_the_outside_reader_scope_course_label(self):
+        source = BUILD.MANUSCRIPT.read_text(encoding="utf-8")
+        description = BUILD.parse_front_description(source)
+        self.assertNotIn("толтек", str(description["text"]).casefold())
+
     def test_article_html_renders_newlines_without_literal_escape_sequences(self):
         article = {
             "article_id": "templetherapy-regression",

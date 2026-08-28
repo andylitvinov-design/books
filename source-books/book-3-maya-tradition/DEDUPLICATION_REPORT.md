@@ -6,7 +6,9 @@ Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.j
 - Normalized exact-duplicate groups: 26
 - Cross-source exact relationships: 14
 - Near-duplicate decisions: 3
-- Canonical reader articles retained: 93
+- Canonical articles after deduplication: 93
+- Maya/Aztec reader articles retained: 62
+- Outside-reader-scope articles kept only in raw archive: 31
 
 ## Exact duplicate groups
 
@@ -59,6 +61,6 @@ Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.j
 | TempleTherapy:2323 | Mayaismagic:240 | exact copy after whitespace/entity normalization; retain Mayaismagic text and link both sources. |
 | TempleTherapy:2346 | Mayaismagic:245 | near copy; same material reordered; retain Mayaismagic text and link both sources. |
 
-## Retention rule
+## Reader scope
 
-Each duplicate is represented once in the unified manuscript and reading editions. The canonical article keeps a link, date, and channel label for every duplicate source. Non-duplicate TempleTherapy entries are placed in the seven shared thematic chapters with their own labels, original URLs, and dates.
+The raw archive and source index preserve every recovered source. The public Maya/Aztec reader retains only articles whose primary subject is Maya or Aztec material; other traditions and multi-tradition programme posts are not rendered there.

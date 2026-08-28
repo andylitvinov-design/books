@@ -17,6 +17,20 @@ EXPECTED_POST_COUNT = 236
 SUPPLEMENTAL_INDEX = Path("raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl")
 SUPPLEMENTAL_MEDIA = Path("media/templetherapy")
 EXPECTED_SUPPLEMENTAL_COUNT = 29
+# These TempleTherapy records remain in the traceable raw archive but are not
+# part of the focused Maya/Aztec reader: they are either multi-tradition course
+# announcements, a Toltec post, an unrelated general programme post, or a
+# duplicate whose canonical Mayaismagic article is outside the reader scope.
+READER_EXCLUDED_SUPPLEMENTAL_IDS = {2062, 2100, 2198, 2210, 2212, 2245, 2253, 2269, 2352, 2446}
+READER_CHAPTERS = [
+    "# I. Эгрегор Майя",
+    "# II. Настройки и энергии Майя и Ацтеков",
+    "# III. Боги и божественные силы Майя и Ацтеков",
+    "# IV. Мифология, Шибальба, инициация и ритуал",
+    "# V. Места, храмы и материальная культура",
+    "# VI. Авторские и архетипические модели",
+    "# VII. Календарь и энергия дней",
+]
 INDEX_FIELDS = [
     "post_id", "date", "url", "title_first_line", "topic", "subtopic",
     "deity_archetype", "place", "ritual_practice", "initiation_stage",
@@ -32,12 +46,7 @@ def verify_mobile_reading_order(root):
     if not manuscript_path.exists():
         return []
     text = manuscript_path.read_text(encoding="utf-8")
-    required = [
-        "## Описание традиции", "# Содержание", "# I. Описание традиции", "# II. Боги и божественные силы",
-        "# III. Календарь, время и космология", "# IV. Места, предметы и материальная культура",
-        "# V. Мифология, Шибальба, инициация и ритуал", "# VI. Авторские, архетипические и терапевтические модели",
-        "# VII. Сравнения мезоамериканских традиций",
-    ]
+    required = ["## Описание традиции", "# Содержание", *READER_CHAPTERS]
     errors = []
     positions = [text.find(marker) for marker in required]
     if -1 in positions or positions != sorted(positions):
@@ -101,12 +110,14 @@ def verify_supplemental(root):
     if not manuscript_path.exists():
         return errors + [f"missing {manuscript_path}"]
     manuscript = manuscript_path.read_text(encoding="utf-8")
-    chapters = ["# I. Описание традиции", "# II. Боги и божественные силы", "# III. Календарь, время и космология", "# IV. Места, предметы и материальная культура", "# V. Мифология, Шибальба, инициация и ритуал", "# VI. Авторские, архетипические и терапевтические модели", "# VII. Сравнения мезоамериканских традиций"]
-    if any(manuscript.count(chapter) != 1 for chapter in chapters) or "# VIII. Приложение" in manuscript:
+    if any(manuscript.count(chapter) != 1 for chapter in READER_CHAPTERS) or "# VIII. Приложение" in manuscript:
         errors.append("unified manuscript does not contain the seven integrated chapters")
     for row in rows:
         marker = f"TempleTherapy: пост [{row['post_id']}]({row['url']}); {row['date']}"
-        if marker not in manuscript:
+        if row["post_id"] in READER_EXCLUDED_SUPPLEMENTAL_IDS:
+            if marker in manuscript:
+                errors.append(f"TempleTherapy post {row['post_id']}: outside reader scope")
+        elif marker not in manuscript:
             errors.append(f"TempleTherapy post {row['post_id']}: missing integrated source marker")
     media_root = root / SUPPLEMENTAL_MEDIA
     expected = {f"post-{row['post_id']}-{index}.jpg" for row in rows for index, _ in enumerate(row["media_references"], 1)}
