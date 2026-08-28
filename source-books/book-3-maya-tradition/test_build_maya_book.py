@@ -19,10 +19,10 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         manuscript = BUILD.UNIFIED_MANUSCRIPT.read_text(encoding="utf-8")
 
         self.assertIn("# I. Эгрегор Майя", manuscript)
-        self.assertLess(manuscript.index("# I. Эгрегор Майя"), manuscript.index("# II. Настройки и энергии Майя и Ацтеков"))
-        self.assertLess(manuscript.index("# II. Настройки и энергии Майя и Ацтеков"), manuscript.index("# III. Боги и божественные силы Майя и Ацтеков"))
-        self.assertLess(manuscript.index("# III. Боги и божественные силы Майя и Ацтеков"), manuscript.index("# VII. Календарь и энергия дней"))
-        self.assertLess(manuscript.index("## ЭГРЕГОР МАЙЯ."), manuscript.index("## НАСТРОЙКА."))
+        self.assertLess(manuscript.index("# I. Эгрегор Майя"), manuscript.index("# II. Боги и божественные силы Майя и Ацтеков"))
+        self.assertLess(manuscript.index("# II. Боги и божественные силы Майя и Ацтеков"), manuscript.index("# III. Настройки и энергии Майя и Ацтеков"))
+        self.assertLess(manuscript.index("# III. Настройки и энергии Майя и Ацтеков"), manuscript.index("# VII. Календарь и энергия дней"))
+        self.assertLess(manuscript.index("## ЭГРЕГОР МАЙЯ."), manuscript.index("## КИНИЧ АХАУ."))
         self.assertNotIn("## #2. ГРЕЧЕСКАЯ ТРАДИЦИЯ.", manuscript)
         self.assertNotIn("## #3. СКАНДИНАВСКАЯ ТРАДИЦИЯ.", manuscript)
         self.assertNotIn("## #4. ДАОССКАЯ ТРАДИЦИЯ.", manuscript)
@@ -33,6 +33,8 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         reader = BUILD.curate_reader_articles(canonical)
 
         self.assertEqual(reader[0]["article_id"], "mayaismagic-145")
+        self.assertEqual(reader[4]["chapter"], "II. Боги и божественные силы Майя и Ацтеков")
+        self.assertEqual(reader[4]["article_id"], "mayaismagic-142")
         self.assertEqual({article["chapter"] for article in reader}, set(BUILD.READER_CHAPTERS))
         self.assertTrue(all(article["article_id"] not in BUILD.READER_EXCLUDED_ARTICLE_IDS for article in reader))
         self.assertTrue(all(article["chapter"] == BUILD.READER_CHAPTERS[-1] for article in reader[-8:]))
@@ -41,6 +43,17 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
             "templetherapy-2253", "mayaismagic-46", "mayaismagic-226",
         }
         self.assertTrue(excluded_cross_tradition <= BUILD.READER_EXCLUDED_ARTICLE_IDS)
+
+    def test_reader_merges_repeated_editions_and_preserves_their_sources(self):
+        canonical = BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        reader = {article["article_id"]: article for article in BUILD.curate_reader_articles(canonical)}
+
+        self.assertFalse({"mayaismagic-17", "mayaismagic-152", "mayaismagic-159", "mayaismagic-220"} & reader.keys())
+        self.assertTrue({17, 147} <= {source["post_id"] for source in reader["mayaismagic-147"]["source_links"]})
+        self.assertTrue({152, 212} <= {source["post_id"] for source in reader["mayaismagic-212"]["source_links"]})
+        self.assertTrue({217, 220} <= {source["post_id"] for source in reader["mayaismagic-217"]["source_links"]})
+        self.assertTrue({159, 2262} <= {source["post_id"] for source in reader["templetherapy-2262"]["source_links"]})
+        self.assertIn("Света Сознания", reader["templetherapy-2262"]["text"])
 
     def test_front_description_omits_the_outside_reader_scope_course_label(self):
         source = BUILD.MANUSCRIPT.read_text(encoding="utf-8")

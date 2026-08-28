@@ -54,13 +54,25 @@ CHAPTERS = (
 # different, deliberate order: it is scoped to Maya and Aztec material only.
 READER_CHAPTERS = (
     "I. Эгрегор Майя",
-    "II. Настройки и энергии Майя и Ацтеков",
-    "III. Боги и божественные силы Майя и Ацтеков",
+    "II. Боги и божественные силы Майя и Ацтеков",
+    "III. Настройки и энергии Майя и Ацтеков",
     "IV. Мифология, Шибальба, инициация и ритуал",
     "V. Места, храмы и материальная культура",
     "VI. Авторские и архетипические модели",
     "VII. Календарь и энергия дней",
 )
+
+# These transitions only describe the editorial order of source material. They
+# do not assert historical facts or alter the wording of the recovered posts.
+READER_CHAPTER_INTROS = {
+    READER_CHAPTERS[0]: "Сначала — авторские тексты об эгрегоре, к'ух и накоплении силы.",
+    READER_CHAPTERS[1]: "Далее собраны описания божественных сил Майя, затем — связанные с ними ацтекские образы.",
+    READER_CHAPTERS[2]: "После образов богов идут тексты о настройках, центрах, помощниках и каналах.",
+    READER_CHAPTERS[3]: "Этот блок соединяет исходные материалы о мифологии, Шибальбе, посвящении и ритуале.",
+    READER_CHAPTERS[4]: "Здесь собраны заметки о храмах, местах, предметах и материальных образах традиций.",
+    READER_CHAPTERS[5]: "В этом разделе размещены авторские архетипические и терапевтические модели.",
+    READER_CHAPTERS[6]: "В завершении — материалы о календаре Хааб и энергии отдельных периодов.",
+}
 
 # These records remain intact in the raw archive and source index.  They are
 # deliberately omitted from the Maya/Aztec reader because their primary topic
@@ -76,6 +88,18 @@ READER_EXCLUDED_ARTICLE_IDS = frozenset({
     "mayaismagic-157", "mayaismagic-158", "mayaismagic-160", "mayaismagic-226",
     "mayaismagic-230", "mayaismagic-46",
 })
+
+# Later versions retain every source link from the earlier source text.  The
+# discarded reader editions remain untouched and traceable in the raw archive.
+READER_MERGED_ARTICLE_IDS = {
+    "mayaismagic-17": "mayaismagic-147",
+    "mayaismagic-152": "mayaismagic-212",
+    "mayaismagic-159": "templetherapy-2262",
+    "mayaismagic-220": "mayaismagic-217",
+}
+READER_MERGE_EXTRA_HEADINGS = {
+    "mayaismagic-159": "Дополнительный перечень энергий:",
+}
 
 EGREGORE_ARTICLE_IDS = frozenset({
     "mayaismagic-145", "mayaismagic-32", "mayaismagic-34", "mayaismagic-36",
@@ -98,13 +122,13 @@ CALENDAR_ARTICLE_IDS = frozenset({
 })
 READER_ARTICLE_PRIORITY = (
     "mayaismagic-145", "mayaismagic-32", "mayaismagic-34", "mayaismagic-36",
-    "templetherapy-2262", "mayaismagic-146", "mayaismagic-147", "mayaismagic-154",
-    "mayaismagic-155", "mayaismagic-156", "mayaismagic-159", "mayaismagic-212",
-    "mayaismagic-214", "mayaismagic-216", "mayaismagic-217", "mayaismagic-17",
+    "mayaismagic-142", "mayaismagic-213", "mayaismagic-161", "mayaismagic-218",
+    "mayaismagic-4", "mayaismagic-5", "mayaismagic-16", "mayaismagic-243",
+    "mayaismagic-245", "templetherapy-2262", "mayaismagic-146", "mayaismagic-147",
+    "mayaismagic-154", "mayaismagic-155", "mayaismagic-156", "mayaismagic-159",
+    "mayaismagic-212", "mayaismagic-214", "mayaismagic-216", "mayaismagic-217",
     "mayaismagic-86", "mayaismagic-87", "mayaismagic-91", "mayaismagic-93",
-    "mayaismagic-142", "mayaismagic-4", "mayaismagic-5", "mayaismagic-161",
-    "mayaismagic-213", "mayaismagic-218", "mayaismagic-243", "mayaismagic-245",
-    "mayaismagic-16", "mayaismagic-79", "mayaismagic-80", "mayaismagic-89",
+    "mayaismagic-79", "mayaismagic-80", "mayaismagic-89",
     "mayaismagic-81", "mayaismagic-82", "mayaismagic-94", "mayaismagic-78",
     "mayaismagic-85",
 )
@@ -275,9 +299,9 @@ def reader_chapter(article: dict[str, object]) -> str:
     article_id = str(article["article_id"])
     if article_id in EGREGORE_ARTICLE_IDS:
         return READER_CHAPTERS[0]
-    if article_id in SETTING_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[0]:
-        return READER_CHAPTERS[1]
     if article_id in GOD_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[1]:
+        return READER_CHAPTERS[1]
+    if article_id in SETTING_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[0]:
         return READER_CHAPTERS[2]
     if article_id in RITUAL_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[4]:
         return READER_CHAPTERS[3]
@@ -288,13 +312,36 @@ def reader_chapter(article: dict[str, object]) -> str:
     return READER_CHAPTERS[5]
 
 
+def append_unique_merge_text(retained_article: dict[str, object], duplicate_article: dict[str, object], heading: str) -> None:
+    """Append only source lines not already present in the retained edition."""
+    existing = {
+        normalized_text(line)
+        for line in str(retained_article["text"]).splitlines()
+        if normalized_text(line)
+    }
+    unique_lines = [
+        line for line in str(duplicate_article["text"]).splitlines()
+        if not line.startswith("#") and normalized_text(line) and normalized_text(line) not in existing
+    ]
+    if unique_lines:
+        retained_article["text"] = f"{retained_article['text']}\n\n{heading}\n" + "\n".join(unique_lines)
+
+
 def curate_reader_articles(canonical_articles: list[dict[str, object]]) -> list[dict[str, object]]:
     """Return the Maya/Aztec-only edition without modifying the raw corpus."""
     retained = [
-        {**article, "chapter": reader_chapter(article)}
+        {**article, "chapter": reader_chapter(article), "source_links": [dict(source) for source in source_links(article)]}
         for article in canonical_articles
         if str(article["article_id"]) not in READER_EXCLUDED_ARTICLE_IDS
     ]
+    by_id = {str(article["article_id"]): article for article in retained}
+    for duplicate_id, retained_id in READER_MERGED_ARTICLE_IDS.items():
+        duplicate = by_id.pop(duplicate_id)
+        retained_article = by_id[retained_id]
+        retained_article["source_links"].extend(duplicate["source_links"])
+        if heading := READER_MERGE_EXTRA_HEADINGS.get(duplicate_id):
+            append_unique_merge_text(retained_article, duplicate, heading)
+    retained = list(by_id.values())
     chapter_positions = {chapter: index for index, chapter in enumerate(READER_CHAPTERS)}
     priority_positions = {article_id: index for index, article_id in enumerate(READER_ARTICLE_PRIORITY)}
     return sorted(
@@ -320,7 +367,7 @@ def write_unified_manuscript(articles: list[dict[str, object]], description: dic
     parts = ["# Maya Tradition", "", "## Описание традиции", "", f"*Источник: пост [{description['post_id']}]({description['url']}); {description['date']}.*", "", str(description["text"]), "", "# Содержание", ""]
     parts.extend(f"- {chapter}" for chapter in READER_CHAPTERS)
     for chapter in READER_CHAPTERS:
-        parts.extend(["", f"# {chapter}"])
+        parts.extend(["", f"# {chapter}", "", f"> {READER_CHAPTER_INTROS[chapter]}"])
         for article in (item for item in articles if item["chapter"] == chapter):
             parts.extend(["", f"## {article['title']}", "", f"*Источники: {source_markdown(article)}.*", "", str(article["text"])])
     UNIFIED_MANUSCRIPT.write_text("\n".join(parts) + "\n", encoding="utf-8")
@@ -342,7 +389,8 @@ def write_supporting_docs(articles: list[dict[str, object]], canonical_count: in
         if key:
             exact[key].append(record)
     groups = [group for group in exact.values() if len(group) > 1]
-    report = ["# Deduplication report", "", "Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl`. Raw archives were read only.", "", f"- Source records audited: {len(records)}", f"- Normalized exact-duplicate groups: {len(groups)}", "- Cross-source exact relationships: 14", "- Near-duplicate decisions: 3", f"- Canonical articles after deduplication: {canonical_count}", f"- Maya/Aztec reader articles retained: {len(articles)}", f"- Outside-reader-scope articles kept only in raw archive: {canonical_count - len(articles)}", "", "## Exact duplicate groups", ""]
+    outside_scope_count = canonical_count - len(articles) - len(READER_MERGED_ARTICLE_IDS)
+    report = ["# Deduplication report", "", "Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl`. Raw archives were read only.", "", f"- Source records audited: {len(records)}", f"- Normalized exact-duplicate groups: {len(groups)}", "- Cross-source exact relationships: 14", "- Near-duplicate decisions: 3", f"- Canonical articles after deduplication: {canonical_count}", f"- Maya/Aztec reader articles retained: {len(articles)}", f"- Reader duplicate editions merged into retained sources: {len(READER_MERGED_ARTICLE_IDS)}", f"- Outside-reader-scope articles kept only in raw archive: {outside_scope_count}", "", "## Exact duplicate groups", ""]
     for group in groups:
         links = ", ".join(f"[{item['channel']}:{item['post_id']}]({item['url']})" for item in group)
         report.append(f"- {links}")
@@ -361,7 +409,7 @@ def write_supporting_docs(articles: list[dict[str, object]], canonical_count: in
         chapter_rows.append("")
     (HERE / "manuscript" / "CHAPTER_MAP.md").write_text("\n".join(chapter_rows), encoding="utf-8")
     (HERE / "CONTENT_MAP.md").write_text("\n".join(["# Content map", "", "All reader articles are listed in the chapter map; IDs are namespace-safe (`mayaismagic-<id>` or `templetherapy-<id>`).", "", f"Canonical articles after deduplication: {canonical_count}.", f"Maya/Aztec reader articles: {len(articles)}."]) + "\n", encoding="utf-8")
-    (HERE / "manuscript" / "COVERAGE.md").write_text(f"# Coverage\n\n- Primary curated articles: 81\n- Supplemental source posts: 29\n- Supplemental duplicates consolidated: 17\n- Canonical articles after deduplication: {canonical_count}\n- Maya/Aztec reader articles: {len(articles)}\n- Outside-reader-scope articles retained only in raw archive: {canonical_count - len(articles)}\n", encoding="utf-8")
+    (HERE / "manuscript" / "COVERAGE.md").write_text(f"# Coverage\n\n- Primary curated articles: 81\n- Supplemental source posts: 29\n- Supplemental duplicates consolidated: 17\n- Canonical articles after deduplication: {canonical_count}\n- Maya/Aztec reader articles: {len(articles)}\n- Reader duplicate editions merged into retained sources: {len(READER_MERGED_ARTICLE_IDS)}\n- Outside-reader-scope articles retained only in raw archive: {outside_scope_count}\n", encoding="utf-8")
     (HERE / "manuscript" / "SOURCE_NOTES.md").write_text("# Source notes\n\nMayaismagic is the primary Telegram export. TempleTherapy is a separately-labelled supplemental public source. Duplicate source URLs are preserved on the canonical retained article; no archive content was altered.\n", encoding="utf-8")
     (HERE / "FACT_CHECK.md").write_text("# Fact-check boundary\n\nThis is a source-backed reading edition, not an independent historical fact-check. Editorial work is limited to placement, deduplication, and source attribution; claims in posts remain attributed to their original channel.\n", encoding="utf-8")
 
@@ -467,6 +515,7 @@ def build_html(articles: list[dict[str, object]], media: dict[int, list[str]], d
             chapter = str(article["chapter"])
             chapters.append(chapter)
             sections.append(f'<h1 class="chapter" id="{chapter_id(chapter)}">{html.escape(chapter)}</h1>')
+            sections.append(f'<p class="chapter-intro">{html.escape(READER_CHAPTER_INTROS[chapter])}</p>')
         if article.get("channel") == "TempleTherapy":
             primary = next((f"media/templetherapy/{path.name}" for path in sorted(SUPPLEMENTAL_MEDIA.glob(f"post-{article['post_id']}-*"))), None)
         else:
@@ -484,7 +533,7 @@ def build_html(articles: list[dict[str, object]], media: dict[int, list[str]], d
 body{{margin:0;background:#efe5d8;color:var(--ink);font:19px/1.75 Georgia,"Times New Roman",serif}} main{{max-width:980px;margin:auto;padding:36px 20px 80px}}
 .cover{{background:linear-gradient(135deg,#4d2117,var(--wine));color:#fff7ec;border-radius:18px;padding:42px 38px;margin-bottom:28px}} .eyebrow,.chapter-token{{font:700 12px/1.2 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}} .cover .eyebrow{{color:#f2c979}} .cover h1{{font-size:clamp(34px,5vw,54px);line-height:1.08;margin:.3em 0}} .cover p{{max-width:720px;line-height:1.75;margin:0}}
 .front-card,.toc{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:24px 26px;margin:18px 0}} .front-card h2,.toc h2{{font-size:28px;line-height:1.25;margin:0 0 10px;color:var(--wine)}} .toc ol{{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}} .toc a{{display:block;min-height:48px;padding:11px 14px;border-radius:9px;background:#f8eee2;color:var(--wine);font:700 17px/1.35 Arial,sans-serif;text-decoration:none}}
-.chapter{{scroll-margin-top:16px;font-size:29px;line-height:1.25;color:var(--wine);margin:48px 0 16px;padding-bottom:9px;border-bottom:2px solid var(--gold)}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:23px 25px;margin:18px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:27px;line-height:1.27;margin:7px 0 11px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:14px/1.5 Arial,sans-serif;color:#{MUTED};padding:10px 0 14px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:16px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{float:right;width:min(36%,310px);margin:0 0 15px 24px}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1rem;line-height:1.75}}
+.chapter{{scroll-margin-top:16px;font-size:29px;line-height:1.25;color:var(--wine);margin:48px 0 10px;padding-bottom:9px;border-bottom:2px solid var(--gold)}} .chapter-intro{{margin:0 0 16px;padding:12px 15px;background:#f8eee2;border-left:3px solid var(--gold);font-size:17px;line-height:1.55;color:#{MUTED}}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:23px 25px;margin:18px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:27px;line-height:1.27;margin:7px 0 11px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:14px/1.5 Arial,sans-serif;color:#{MUTED};padding:10px 0 14px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:16px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{float:right;width:min(36%,310px);margin:0 0 15px 24px}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1rem;line-height:1.75}}
 @media(max-width:700px){{body{{font-size:18px;line-height:1.75}}main{{padding:18px 12px 48px}}.cover{{padding:29px 22px}}.front-card,.toc,.post{{padding:19px 17px}}.toc ol{{grid-template-columns:1fr;gap:9px}}.toc a{{min-height:52px;font-size:17px;padding:13px 14px}}.post-media{{float:none;width:100%;margin:0 0 15px}}.post h2{{font-size:25px}}}} @media print{{body{{background:#fff}}main{{max-width:none;padding:0}}.cover{{border-radius:0;break-after:page}}.toc{{break-after:page}}.post{{border-radius:0;margin:0;min-height:92vh}}}}
 </style></head><body><main><header class="cover"><div class="eyebrow">Авторская читательская методичка</div><h1>Maya Tradition</h1><p>Методология источникового чтения. Редакционная компоновка сохранённых текстов без фактологического дополнения.</p></header><section class="front-card"><h2>Описание традиции</h2>{meta_html(description)}<div class="text">{description_text}</div></section><nav class="toc" aria-label="Содержание"><h2>Содержание</h2><ol>{toc}</ol></nav>{document}</main></body></html>''', encoding="utf-8")
 
@@ -529,7 +578,10 @@ def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], d
     for article in articles:
         if article["chapter"] != chapter:
             chapter = article["chapter"]
-        doc.add_page_break()
+            doc.add_page_break()
+            chapter_intro = doc.add_paragraph(); set_paragraph(chapter_intro, before=12, after=9); add_run(chapter_intro, READER_CHAPTER_INTROS[str(chapter)], 11.5, False, MUTED)
+        else:
+            doc.add_page_break()
         token = doc.add_table(rows=1, cols=1); token.autofit = False; cell = token.cell(0,0); shade(cell, CREAM); set_cell_margins(cell); cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
         p = cell.paragraphs[0]; set_paragraph(p, after=0); add_run(p, str(chapter).upper(), 10, True, GOLD)
         table = doc.add_table(rows=1, cols=2); table.autofit = False; table.columns[0].width = Inches(4.3); table.columns[1].width = Inches(2.0)

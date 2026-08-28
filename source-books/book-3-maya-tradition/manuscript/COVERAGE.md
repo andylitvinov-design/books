@@ -4,5 +4,6 @@
 - Supplemental source posts: 29
 - Supplemental duplicates consolidated: 17
 - Canonical articles after deduplication: 93
-- Maya/Aztec reader articles: 62
+- Maya/Aztec reader articles: 58
+- Reader duplicate editions merged into retained sources: 4
 - Outside-reader-scope articles retained only in raw archive: 31
