@@ -289,12 +289,30 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
             for volume_id, articles in BUILD.volume_articles(reader).items()
         }
 
-        self.assertTrue({"mayaismagic-214", "templetherapy-2262"} <= volumes["maya-egregor-gods"])
+        self.assertTrue({"mayaismagic-214"} <= volumes["maya-egregor-gods"])
         self.assertTrue({"mayaismagic-154", "mayaismagic-156"} <= volumes["maya-calendar"])
         self.assertFalse(
-            {"mayaismagic-214", "templetherapy-2262", "mayaismagic-154", "mayaismagic-156"}
+            {"mayaismagic-214", "mayaismagic-154", "mayaismagic-156"}
             & volumes["maya-exorcism"]
         )
+
+    def test_latest_requested_articles_are_routed_to_their_named_volumes(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+        volumes = {
+            volume_id: {article["article_id"]: article["chapter"] for article in articles}
+            for volume_id, articles in BUILD.volume_articles(reader).items()
+        }
+
+        self.assertTrue({"templetherapy-116", "templetherapy-2262", "mayaismagic-227", "mayaismagic-41", "mayaismagic-219"} <= volumes["maya-exorcism"].keys())
+        self.assertTrue({"mayaismagic-161"} <= volumes["maya-calendar"].keys())
+        self.assertTrue({"mayaismagic-3", "templetherapy-229", "templetherapy-589", "templetherapy-624"} <= volumes["maya-egregor-gods"].keys())
+        self.assertTrue(all(
+            volumes["maya-exorcism"][article_id] == BUILD.READER_CHAPTERS[2]
+            for article_id in {"templetherapy-116", "templetherapy-2262", "mayaismagic-227", "mayaismagic-41", "mayaismagic-219"}
+        ))
+        self.assertEqual(volumes["maya-calendar"]["mayaismagic-161"], BUILD.READER_CHAPTERS[6])
 
     def test_cross_volume_material_is_grouped_by_calendar_gods_and_practices(self):
         reader = BUILD.curate_reader_articles(

@@ -132,9 +132,18 @@ VOLUMES = (
 # An override changes placement only; it never duplicates or rewrites a post.
 VOLUME_ARTICLE_OVERRIDES = {
     "mayaismagic-214": "maya-egregor-gods",
-    "templetherapy-2262": "maya-egregor-gods",
+    "templetherapy-116": "maya-exorcism",
+    "templetherapy-2262": "maya-exorcism",
     "mayaismagic-154": "maya-calendar",
     "mayaismagic-156": "maya-calendar",
+    "mayaismagic-161": "maya-calendar",
+    "mayaismagic-3": "maya-egregor-gods",
+    "mayaismagic-227": "maya-exorcism",
+    "mayaismagic-41": "maya-exorcism",
+    "mayaismagic-219": "maya-exorcism",
+    "templetherapy-229": "maya-egregor-gods",
+    "templetherapy-589": "maya-egregor-gods",
+    "templetherapy-624": "maya-egregor-gods",
     # Source posts in the former Mysteries edition whose primary subject is a
     # deity or deity channel belong with the other god descriptions.
     "templetherapy-48": "maya-egregor-gods",
@@ -177,10 +186,19 @@ PROMOTIONAL_ARTICLE_IDS = frozenset({
 # each book's chapter sequence continuous even when an article originated in a
 # broader recovered reader chapter.
 ARTICLE_PRESENTATION_CHAPTERS = {
-    "templetherapy-2262": READER_CHAPTERS[0],
+    "templetherapy-116": READER_CHAPTERS[2],
+    "templetherapy-2262": READER_CHAPTERS[2],
     "mayaismagic-214": READER_CHAPTERS[1],
     "mayaismagic-154": READER_CHAPTERS[6],
     "mayaismagic-156": READER_CHAPTERS[6],
+    "mayaismagic-161": READER_CHAPTERS[6],
+    "mayaismagic-3": READER_CHAPTERS[0],
+    "mayaismagic-227": READER_CHAPTERS[2],
+    "mayaismagic-41": READER_CHAPTERS[2],
+    "mayaismagic-219": READER_CHAPTERS[2],
+    "templetherapy-229": READER_CHAPTERS[0],
+    "templetherapy-589": READER_CHAPTERS[0],
+    "templetherapy-624": READER_CHAPTERS[0],
 }
 ARTICLE_PRESENTATION_CHAPTERS.update({
     article_id: READER_CHAPTERS[1]
