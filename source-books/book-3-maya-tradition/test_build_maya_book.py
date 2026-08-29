@@ -67,9 +67,9 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         }
         self.assertTrue(excluded_cross_tradition <= BUILD.READER_EXCLUDED_ARTICLE_IDS)
 
-    def test_mobile_reader_uses_large_compact_type(self):
-        self.assertGreaterEqual(BUILD.MOBILE_READER_FONT_SIZE, 22)
-        self.assertLessEqual(BUILD.MOBILE_READER_LINE_HEIGHT, 1.6)
+    def test_mobile_reader_uses_compact_legible_type(self):
+        self.assertGreaterEqual(BUILD.MOBILE_READER_FONT_SIZE, 20)
+        self.assertLessEqual(BUILD.MOBILE_READER_LINE_HEIGHT, 1.5)
         self.assertLess(BUILD.MOBILE_READER_LINE_HEIGHT, BUILD.DESKTOP_READER_LINE_HEIGHT)
 
     def test_docx_article_and_cover_images_are_aligned_to_the_right_edge(self):
@@ -215,6 +215,27 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertIn("width:min(36%,315px)", BUILD.READER_MEDIA_CSS)
         self.assertEqual(BUILD.DOCX_MEDIA_WIDTH_INCHES, 3.65)
         self.assertGreaterEqual(BUILD.DOCX_MEDIA_COLUMN_WIDTH_INCHES, BUILD.DOCX_MEDIA_WIDTH_INCHES)
+
+    def test_reader_typography_uses_a_compact_mobile_reading_scale(self):
+        self.assertEqual(BUILD.DESKTOP_READER_FONT_SIZE, 19)
+        self.assertEqual(BUILD.MOBILE_READER_FONT_SIZE, 20)
+        self.assertEqual(BUILD.DESKTOP_READER_LINE_HEIGHT, 1.58)
+        self.assertEqual(BUILD.MOBILE_READER_LINE_HEIGHT, 1.48)
+        self.assertEqual(BUILD.DOCX_READER_FONT_SIZE, 13.5)
+        self.assertEqual(BUILD.DOCX_READER_LINE_SPACING, 1.1)
+        self.assertEqual(BUILD.DOCX_ARTICLE_BODY_SPACE_BEFORE, 9)
+        self.assertEqual(BUILD.DOCX_ARTICLE_BODY_SPACE_AFTER, 5)
+        self.assertEqual(BUILD.PROMOTION_DOCX_FONT_SIZE, 12.5)
+        self.assertEqual(BUILD.PROMOTION_DOCX_LINE_SPACING, 1.05)
+        source = (BUILD.HERE / "build_maya_book.py").read_text(encoding="utf-8")
+        self.assertIn(
+            "set_paragraph(body, before=DOCX_ARTICLE_BODY_SPACE_BEFORE, after=DOCX_ARTICLE_BODY_SPACE_AFTER, line_spacing=body_line_spacing)",
+            source,
+        )
+        self.assertIn(
+            'body_font_size = PROMOTION_DOCX_FONT_SIZE if article["chapter"] == PROMOTIONS_CHAPTER else DOCX_READER_FONT_SIZE',
+            source,
+        )
 
     def test_documented_adjacent_series_media_is_available_for_reader_articles(self):
         expected = {
