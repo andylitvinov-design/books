@@ -166,6 +166,27 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertIn("МИСТЕРИИ КАК МЕТОД ОБОЖЕСТВЛЕНИЯ", by_id["templetherapy-226"]["text"])
         self.assertIn("ИшМук'ане", by_id["templetherapy-2223"]["text"])
 
+    def test_reader_groups_deity_channels_and_restored_media_without_empty_posts(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+        by_id = {entry["article_id"]: entry for entry in reader}
+
+        self.assertFalse({"templetherapy-15", "templetherapy-25", "templetherapy-91", "templetherapy-228"} & by_id.keys())
+        self.assertEqual(by_id["templetherapy-26"]["chapter"], BUILD.READER_CHAPTERS[1])
+        self.assertEqual(by_id["templetherapy-74"]["chapter"], BUILD.READER_CHAPTERS[1])
+        self.assertEqual(by_id["templetherapy-80"]["chapter"], BUILD.READER_CHAPTERS[1])
+        self.assertEqual(by_id["templetherapy-2361"]["chapter"], BUILD.READER_CHAPTERS[1])
+        self.assertEqual(by_id["templetherapy-143"]["chapter"], BUILD.READER_CHAPTERS[-1])
+        self.assertNotIn("templetherapy-73", by_id)
+        self.assertTrue({73, 243} <= {source["post_id"] for source in by_id["mayaismagic-243"]["source_links"]})
+        self.assertIn("Взвиваясь, возносит истомы круженье", by_id["mayaismagic-243"]["text"])
+        self.assertIn("Бог кукурузы, Ишиим", by_id["templetherapy-26"]["text"])
+        self.assertIn("Тлалок - один из ключевых Богов", by_id["templetherapy-2361"]["text"])
+        self.assertIn("ЧААК", by_id["templetherapy-80"]["text"])
+        for filename in ("post-80-1.jpg", "post-103-1.jpg", "post-154-1.jpg", "post-2361-1.jpg"):
+            self.assertTrue((BUILD.SUPPLEMENTAL_MEDIA / filename).is_file(), filename)
+
     def test_verifier_checks_the_supplemental_index_and_integrated_manuscript(self):
         self.assertEqual(VERIFY.verify_supplemental(ROOT), [])
 

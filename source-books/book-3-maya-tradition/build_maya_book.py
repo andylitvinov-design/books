@@ -69,7 +69,7 @@ READER_CHAPTERS = (
 # do not assert historical facts or alter the wording of the recovered posts.
 READER_CHAPTER_INTROS = {
     READER_CHAPTERS[0]: "Открывающая глава собирает авторскую рамку традиции: образ эгрегора, язык Солнца и ключевые понятия Кин, Кинич, Ах-Кин и Кинич Ахау. Затем эта рамка разворачивается в тексты о к'ух и накоплении силы.",
-    READER_CHAPTERS[1]: "После общей рамки идут образы божественных сил: сначала Кинич Ахау и связанные с ним авторские описания, затем другие майяские и ацтекские фигуры. Исторические и авторские высказывания сохраняют источник каждого поста.",
+    READER_CHAPTERS[1]: "После общей рамки собраны божественные силы и их каналы: Кинич Ахау, Бог Жизни Ишиим, Эхекатль и Ик, Чаак, Тлалок и другие майяские и ацтекские фигуры. Описание и настройка одного канала стоят рядом; исторические и авторские высказывания сохраняют источник каждого поста.",
     READER_CHAPTERS[2]: "От образов богов читатель переходит к настройкам, каналам, помощникам и практическим формам работы с энергиями. Это авторские практические описания, а не историческая реконструкция.",
     READER_CHAPTERS[3]: "Далее собраны исходные материалы о мифологии, Шибальбе, посвящении и ритуале — от описаний образов к способам прохождения мистерии.",
     READER_CHAPTERS[4]: "Здесь внимание возвращается к местам, храмам, предметам и материальным образам традиций; они дают контекст предыдущим мифологическим и ритуальным сюжетам.",
@@ -81,6 +81,7 @@ READER_CHAPTER_INTROS = {
 # deliberately omitted from the Maya/Aztec reader because their primary topic
 # is another tradition, a multi-tradition programme, or a general travel note.
 READER_EXCLUDED_ARTICLE_IDS = frozenset({
+    "templetherapy-15", "templetherapy-25", "templetherapy-91", "templetherapy-228",
     "templetherapy-2062", "templetherapy-2100", "templetherapy-2198",
     "templetherapy-2210", "templetherapy-2212",
     "templetherapy-2269", "templetherapy-2352", "templetherapy-2446",
@@ -95,16 +96,18 @@ READER_EXCLUDED_ARTICLE_IDS = frozenset({
 # Later versions retain every source link from the earlier source text.  The
 # discarded reader editions remain untouched and traceable in the raw archive.
 READER_MERGED_ARTICLE_IDS = {
+    "templetherapy-73": "mayaismagic-243",
     "mayaismagic-17": "mayaismagic-147",
     "mayaismagic-152": "mayaismagic-212",
     "mayaismagic-159": "templetherapy-2262",
     "mayaismagic-220": "mayaismagic-217",
 }
 READER_MERGE_EXTRA_HEADINGS = {
+    "templetherapy-73": "Настройка Эхекатля:",
     "mayaismagic-159": "Дополнительный перечень энергий:",
 }
 
-AUDITED_READER_INCLUSIONS = frozenset({8, 116, 226, 2223, 2226, 2253})
+AUDITED_READER_INCLUSIONS = frozenset({8, 116, 226, 2223, 2226, 2253, 2361})
 
 # These source posts were initially kept only in the supplemental archive. A
 # complete local-export audit established that they add distinct Maya/Aztec
@@ -117,12 +120,17 @@ READER_TITLE_OVERRIDES = {
     2226: "Кинич Ахау: авторская модель канала",
     2253: "Кинич Ахау: послание Великого Отца",
     226: "Мистерия как авторская модель обожествления",
+    26: "Ишиим (Юм Кааш): Бог Жизни и кукурузы",
+    74: "Ик (Иик): Бог Ветра Майя — настройка",
+    80: "Чаак: Бог Дождя Майя — настройка",
+    2361: "Тлалок: канал воды, дождя и молнии — настройка",
 }
 READER_EXCERPT_BOUNDARIES = {
     8: ("Эгрегор майянских богов", None),
     116: ("Давайте попробуем прислушаться к Голосу Майя", "ПРОГРАММА ОБУЧЕНИЯ:"),
     2226: ("3. КИНИЧ АХАУ", "4. ЯРИЛО"),
     2253: ("1. Кинич Ахау", "2. Зевс"),
+    2361: ("3. ТЛАЛОК.", "4. УИЦИЛОПОЧТЛИ."),
 }
 
 EGREGORE_ARTICLE_IDS = frozenset({
@@ -138,7 +146,8 @@ SETTING_ARTICLE_IDS = frozenset({
 GOD_ARTICLE_IDS = frozenset({
     "mayaismagic-4", "mayaismagic-5", "mayaismagic-16", "mayaismagic-142",
     "mayaismagic-161", "mayaismagic-213", "mayaismagic-218", "mayaismagic-243",
-    "mayaismagic-245", "templetherapy-2226", "templetherapy-2253",
+    "mayaismagic-245", "templetherapy-26", "templetherapy-74",
+    "templetherapy-80", "templetherapy-2226", "templetherapy-2253", "templetherapy-2361",
 })
 RITUAL_ARTICLE_IDS = frozenset({"mayaismagic-3", "mayaismagic-7", "mayaismagic-25"})
 MYSTERY_AND_TWIN_ARTICLE_IDS = frozenset({
@@ -149,19 +158,22 @@ AUTHOR_MODEL_ARTICLE_IDS = frozenset({"templetherapy-2223"})
 CALENDAR_ARTICLE_IDS = frozenset({
     "mayaismagic-78", "mayaismagic-79", "mayaismagic-80", "mayaismagic-81",
     "mayaismagic-82", "mayaismagic-85", "mayaismagic-89", "mayaismagic-94",
+    "templetherapy-103", "templetherapy-143", "templetherapy-154",
 })
 READER_ARTICLE_PRIORITY = (
     "mayaismagic-145", "templetherapy-8", "templetherapy-116", "mayaismagic-32",
     "mayaismagic-34", "mayaismagic-36",
-    "mayaismagic-142", "mayaismagic-213", "mayaismagic-161", "mayaismagic-218",
-    "templetherapy-2226", "templetherapy-2253", "mayaismagic-4", "mayaismagic-5",
-    "mayaismagic-16", "mayaismagic-243",
+    "mayaismagic-142", "mayaismagic-213", "mayaismagic-161",
+    "mayaismagic-218", "templetherapy-2226", "templetherapy-2253", "mayaismagic-4",
+    "mayaismagic-5", "mayaismagic-16", "mayaismagic-243", "templetherapy-74",
+    "templetherapy-26", "templetherapy-80", "templetherapy-2361",
     "mayaismagic-245", "templetherapy-2262", "mayaismagic-214", "mayaismagic-146",
     "mayaismagic-147", "mayaismagic-154", "mayaismagic-155", "mayaismagic-156",
     "mayaismagic-159", "mayaismagic-212", "mayaismagic-216", "mayaismagic-217",
     "mayaismagic-86", "mayaismagic-87", "mayaismagic-91", "mayaismagic-93",
     "mayaismagic-224", "mayaismagic-225", "templetherapy-226", "mayaismagic-143",
     "mayaismagic-144", "templetherapy-2223", "mayaismagic-219", "mayaismagic-223",
+    "templetherapy-103", "templetherapy-143", "templetherapy-154",
     "mayaismagic-79", "mayaismagic-80", "mayaismagic-89",
     "mayaismagic-81", "mayaismagic-82", "mayaismagic-94", "mayaismagic-78",
     "mayaismagic-85",
@@ -359,7 +371,11 @@ def reader_chapter(article: dict[str, object]) -> str:
     article_id = str(article["article_id"])
     if article_id in EGREGORE_ARTICLE_IDS:
         return READER_CHAPTERS[0]
-    if article_id in GOD_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[1]:
+    if article_id in GOD_ARTICLE_IDS:
+        return READER_CHAPTERS[1]
+    if article_id in CALENDAR_ARTICLE_IDS:
+        return READER_CHAPTERS[6]
+    if str(article["chapter"]) == CHAPTERS[1]:
         return READER_CHAPTERS[1]
     if article_id in AUTHOR_MODEL_ARTICLE_IDS:
         return READER_CHAPTERS[5]
@@ -369,7 +385,7 @@ def reader_chapter(article: dict[str, object]) -> str:
         return READER_CHAPTERS[5]
     if article_id in RITUAL_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[4]:
         return READER_CHAPTERS[3]
-    if article_id in CALENDAR_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[2]:
+    if str(article["chapter"]) == CHAPTERS[2]:
         return READER_CHAPTERS[6]
     if str(article["chapter"]) == CHAPTERS[3]:
         return READER_CHAPTERS[4]

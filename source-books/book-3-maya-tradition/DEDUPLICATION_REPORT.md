@@ -7,9 +7,9 @@ Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.j
 - Cross-source exact duplicate groups: 35
 - Explicit near-duplicate decisions: 3
 - Canonical articles after deduplication: 199
-- Maya/Aztec reader articles retained: 126
-- Reader duplicate editions merged into retained sources: 4
-- Outside-reader-scope articles kept only in raw archive: 69
+- Maya/Aztec reader articles retained: 122
+- Reader duplicate editions merged into retained sources: 5
+- Outside-reader-scope articles kept only in raw archive: 72
 
 ## Exact duplicate groups
 

@@ -17,11 +17,19 @@ EXPECTED_POST_COUNT = 236
 SUPPLEMENTAL_INDEX = Path("raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl")
 SUPPLEMENTAL_MEDIA = Path("media/templetherapy")
 EXPECTED_SUPPLEMENTAL_COUNT = 158
+# These files were copied unchanged from the read-only local Telegram export
+# after their adjacent message sequence was checked. They intentionally do not
+# masquerade as direct URL downloads in the supplemental JSONL source index.
+RESTORED_LOCAL_MEDIA = {
+    "post-80-1.jpg",
+    "post-103-1.jpg",
+    "post-154-1.jpg",
+}
 # These TempleTherapy records remain in the traceable raw archive but are not
 # part of the focused Maya/Aztec reader: they are either multi-tradition course
 # announcements, a Toltec post, an unrelated general programme post, or a
 # duplicate whose canonical Mayaismagic article is outside the reader scope.
-READER_EXCLUDED_SUPPLEMENTAL_IDS = {2062, 2100, 2198, 2210, 2212, 2245, 2253, 2269, 2352, 2446}
+READER_EXCLUDED_SUPPLEMENTAL_IDS = {15, 25, 91, 228, 2062, 2100, 2198, 2210, 2212, 2245, 2253, 2269, 2352, 2446}
 READER_CHAPTERS = [
     "# I. Эгрегор Майя",
     "# II. Боги и божественные силы Майя и Ацтеков",
@@ -114,14 +122,17 @@ def verify_supplemental(root):
         errors.append("unified manuscript does not contain the seven integrated chapters")
     for row in rows:
         marker = f"TempleTherapy: пост [{row['post_id']}]({row['url']}); {row['date']}"
-        if row["reader_include"] and marker not in manuscript:
+        if row["reader_include"] and row["post_id"] not in READER_EXCLUDED_SUPPLEMENTAL_IDS and marker not in manuscript:
             errors.append(f"TempleTherapy post {row['post_id']}: missing integrated source marker")
     media_root = root / SUPPLEMENTAL_MEDIA
     expected = {f"post-{row['post_id']}-{index}.jpg" for row in rows for index, _ in enumerate(row["media_references"], 1)}
     actual = {path.name for path in media_root.glob("*.jpg")} if media_root.exists() else set()
-    unexpected = sorted(actual - expected)
+    unexpected = sorted(actual - expected - RESTORED_LOCAL_MEDIA)
     if unexpected:
         errors.append("TempleTherapy media contains unreferenced files: " + ", ".join(unexpected))
+    missing_restored = sorted(RESTORED_LOCAL_MEDIA - actual)
+    if missing_restored:
+        errors.append("TempleTherapy media is missing documented local-export files: " + ", ".join(missing_restored))
     if any((media_root / name).stat().st_size == 0 for name in actual):
         errors.append("TempleTherapy media contains an empty downloaded file")
     return errors

@@ -20,7 +20,7 @@ BOOKS = [
         "group_id": "maya-tradition",
         "id": "maya-tradition-methodology",
         "title": "Maya Tradition: методология источникового чтения",
-        "description": "Единая reading edition: 93 канонических материала в семи тематических главах, с сохранёнными ссылками на первичные Telegram-источники.",
+        "description": "Единая reading edition: 122 источниково размеченных материала в семи тематических главах, с сохранёнными ссылками на Telegram-источники.",
         "path": SOURCE_ROOT / "book-3-maya-tradition" / "outputs" / "Maya_Tradition_Methodology.html",
         "asset_prefix": "../source-books/book-3-maya-tradition/outputs/",
         "asset_rewrites": {
