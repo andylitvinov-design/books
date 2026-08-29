@@ -257,6 +257,37 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
 
         self.assertEqual(missing, [])
 
+    def test_four_volume_manifest_partitions_every_reader_article_once(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+
+        volumes = BUILD.volume_articles(reader)
+        article_ids = [
+            article["article_id"]
+            for articles in volumes.values()
+            for article in articles
+        ]
+
+        self.assertEqual(tuple(volumes), tuple(volume["id"] for volume in BUILD.VOLUMES))
+        self.assertEqual(set(article_ids), {article["article_id"] for article in reader})
+        self.assertEqual(len(article_ids), len(set(article_ids)))
+
+    def test_each_volume_has_reader_html_and_illustrates_every_article(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+        media = BUILD.parse_media()
+
+        for volume in BUILD.VOLUMES:
+            with self.subTest(volume=volume["id"]):
+                self.assertTrue(BUILD.volume_output_path(volume, "html").is_file())
+                self.assertTrue(BUILD.volume_output_path(volume, "docx").is_file())
+                self.assertTrue(all(
+                    BUILD.reader_media_path(article, media) is not None
+                    for article in BUILD.volume_articles(reader)[volume["id"]]
+                ))
+
     def test_docx_has_extended_hyperlinked_contents_and_running_furniture(self):
         with ZipFile(BUILD.DOCX_OUT) as document:
             document_xml = document.read("word/document.xml").decode("utf-8")

@@ -84,6 +84,43 @@ READER_CHAPTER_INTROS = {
     READER_CHAPTERS[6]: "В завершении — материалы о календаре Хааб и энергии отдельных периодов: после общей карты традиции они читаются как самостоятельный цикл практических текстов.",
 }
 
+# The four editions are an editorial partition of the already curated reader.
+# They do not alter the raw archive or duplicate an article between volumes.
+VOLUMES = (
+    {
+        "id": "maya-egregor-gods",
+        "title": "Традиция Майя и Ацтеков. Эгрегор и Боги",
+        "subtitle": "Источник-ориентированная читательская методичка",
+        "chapters": READER_CHAPTERS[:2],
+        "output_stem": "Maya_Aztec_Egregor_Gods",
+        "cover_source": "raw/photos/photo_1@07-09-2022_19-37-03.jpg",
+    },
+    {
+        "id": "maya-calendar",
+        "title": "Энергии Календаря Майя",
+        "subtitle": "Источник-ориентированная читательская методичка",
+        "chapters": READER_CHAPTERS[6:],
+        "output_stem": "Maya_Calendar_Energies",
+        "cover_source": "media/templetherapy/post-103-1.jpg",
+    },
+    {
+        "id": "maya-exorcism",
+        "title": "Экзорцизм в Традиции Майя. Настройки и энергии",
+        "subtitle": "Источник-ориентированная читательская методичка",
+        "chapters": READER_CHAPTERS[2:3],
+        "output_stem": "Maya_Exorcism_Settings_Energies",
+        "cover_source": "media/templetherapy/post-58-1.jpg",
+    },
+    {
+        "id": "maya-mysteries",
+        "title": "Мистерии Майя",
+        "subtitle": "Источник-ориентированная читательская методичка",
+        "chapters": READER_CHAPTERS[3:6],
+        "output_stem": "Maya_Mysteries",
+        "cover_source": "raw/photos/photo_178@11-02-2025_21-03-16.jpg",
+    },
+)
+
 # These records remain intact in the raw archive and source index.  They are
 # deliberately omitted from the Maya/Aztec reader because their primary topic
 # is another tradition, a multi-tradition programme, or a general travel note.
@@ -539,6 +576,16 @@ def curate_reader_articles(canonical_articles: list[dict[str, object]]) -> list[
     )
 
 
+def volume_articles(articles: list[dict[str, object]]) -> dict[str, list[dict[str, object]]]:
+    """Partition the curated reader into the four published editions."""
+    return {
+        str(volume["id"]): [
+            article for article in articles if article["chapter"] in volume["chapters"]
+        ]
+        for volume in VOLUMES
+    }
+
+
 def source_markdown(article: dict[str, object]) -> str:
     return " · ".join(
         f"{source['channel']}: пост [{source['post_id']}]({source['url']}); {source['date']}"
@@ -714,7 +761,32 @@ def meta_html(item: dict[str, object]) -> str:
             f'<a href="{item["url"]}">{item["url"]}</a></div>')
 
 
-def build_html(articles: list[dict[str, object]], media: dict[int, list[str]], description: dict[str, object]) -> None:
+def volume_output_path(volume: dict[str, object], extension: str) -> Path:
+    """Return the stable output name for one published volume."""
+    return OUT / f"{volume['output_stem']}.{extension.lstrip('.')}"
+
+
+def edition_details(volume: dict[str, object] | None) -> dict[str, object]:
+    if volume is None:
+        return {
+            "title": "Maya Tradition",
+            "subtitle": "Методология источникового чтения",
+            "cover_source": None,
+            "include_description": True,
+        }
+    return {
+        **volume,
+        "include_description": volume["id"] == "maya-egregor-gods",
+    }
+
+
+def build_html(
+    articles: list[dict[str, object]],
+    media: dict[int, list[str]],
+    description: dict[str, object],
+    volume: dict[str, object] | None = None,
+) -> None:
+    edition = edition_details(volume)
     sections: list[str] = []
     chapters: list[str] = []
     chapter = None
@@ -729,17 +801,25 @@ def build_html(articles: list[dict[str, object]], media: dict[int, list[str]], d
     toc = "".join(f'<li><a href="#{chapter_id(chapter)}">{html.escape(chapter)}</a></li>' for chapter in chapters)
     description_text = render_text_html(str(description["text"]))
     document = "\n".join(sections)
-    HTML_OUT.write_text(f'''<!doctype html>
+    cover_photo = ""
+    if edition["cover_source"]:
+        cover_photo = (f'<img class="cover-photo" src="../{html.escape(str(edition["cover_source"]))}" '
+                       f'alt="Обложка: {html.escape(str(edition["title"]))}">')
+    description_card = ""
+    if edition["include_description"]:
+        description_card = f'<section class="front-card"><h2>Описание традиции</h2>{meta_html(description)}<div class="text">{description_text}</div></section>'
+    output = HTML_OUT if volume is None else volume_output_path(volume, "html")
+    output.write_text(f'''<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Maya Tradition: методология источникового чтения</title>
+<title>{html.escape(str(edition["title"]))}</title>
 <style>
 :root{{--ink:#{INK};--wine:#{WARM};--gold:#{GOLD};--paper:#{CREAM};--line:#ddc9b6}} *{{box-sizing:border-box}}
 body{{margin:0;background:#efe5d8;color:var(--ink);font:{DESKTOP_READER_FONT_SIZE}px/1.8 Georgia,"Times New Roman",serif}} main{{max-width:980px;margin:auto;padding:36px 20px 80px}}
-.cover{{background:linear-gradient(135deg,#4d2117,var(--wine));color:#fff7ec;border-radius:18px;padding:42px 38px;margin-bottom:28px}} .eyebrow,.chapter-token{{font:700 12px/1.2 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}} .cover .eyebrow{{color:#f2c979}} .cover h1{{font-size:clamp(34px,5vw,54px);line-height:1.08;margin:.3em 0}} .cover p{{max-width:720px;line-height:1.75;margin:0}}
+.cover{{background:linear-gradient(135deg,#4d2117,var(--wine));color:#fff7ec;border-radius:18px;padding:42px 38px;margin-bottom:28px;display:flow-root}} .eyebrow,.chapter-token{{font:700 12px/1.2 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}} .cover .eyebrow{{color:#f2c979}} .cover h1{{font-size:clamp(34px,5vw,54px);line-height:1.08;margin:.3em 0}} .cover p{{max-width:720px;line-height:1.75;margin:0}} .cover-photo{{float:right;width:min(38%,300px);max-height:280px;object-fit:cover;border-radius:11px;border:1px solid rgba(255,247,236,.5);margin:0 0 16px 26px}}
 .front-card,.toc{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0}} .front-card h2,.toc h2{{font-size:30px;line-height:1.25;margin:0 0 12px;color:var(--wine)}} .toc ol{{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}} .toc a{{display:block;min-height:54px;padding:13px 16px;border-radius:9px;background:#f8eee2;color:var(--wine);font:700 19px/1.35 Arial,sans-serif;text-decoration:none}}
 .chapter{{scroll-margin-top:16px;font-size:32px;line-height:1.25;color:var(--wine);margin:52px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--gold)}} .chapter-intro{{margin:0 0 19px;padding:14px 17px;background:#f8eee2;border-left:3px solid var(--gold);font-size:19px;line-height:1.6;color:#{MUTED}}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:30px;line-height:1.3;margin:7px 0 13px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:16px/1.55 Arial,sans-serif;color:#{MUTED};padding:11px 0 15px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:18px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{{READER_MEDIA_CSS}}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1.05rem;line-height:1.8}} .text .verse{{margin:1.05em 0;padding-left:1em;border-left:2px solid #d8b879;line-height:1.65}}
-@media(max-width:700px){{body{{font-size:{MOBILE_READER_FONT_SIZE}px;line-height:1.82}}main{{padding:20px 13px 52px}}.cover{{padding:30px 22px}}.front-card,.toc,.post{{padding:22px 19px}}.front-card h2,.toc h2{{font-size:29px}}.toc ol{{grid-template-columns:1fr;gap:10px}}.toc a{{min-height:58px;font-size:19px;padding:15px 16px}}.chapter{{font-size:30px;margin-top:44px}}.chapter-intro{{font-size:18px;padding:14px 16px}}.post-media{{float:none;width:100%;margin:0 0 17px}}.post h2{{font-size:28px}}.meta{{font-size:15px}}.text{{font-size:1rem;line-height:1.82}}}} @media print{{body{{background:#fff}}main{{max-width:none;padding:0}}.cover{{border-radius:0;break-after:page}}.toc{{break-after:page}}.post{{border-radius:0;margin:0;min-height:92vh}}}}
-</style></head><body><main><header class="cover"><div class="eyebrow">Авторская читательская методичка</div><h1>Maya Tradition</h1><p>Методология источникового чтения. Редакционная компоновка сохранённых текстов без фактологического дополнения.</p></header><section class="front-card"><h2>Описание традиции</h2>{meta_html(description)}<div class="text">{description_text}</div></section><nav class="toc" aria-label="Содержание"><h2>Содержание</h2><ol>{toc}</ol></nav>{document}</main></body></html>''', encoding="utf-8")
+@media(max-width:700px){{body{{font-size:{MOBILE_READER_FONT_SIZE}px;line-height:1.82}}main{{padding:20px 13px 52px}}.cover{{padding:30px 22px}}.cover-photo{{float:none;width:100%;max-width:none;margin:0 0 18px}}.front-card,.toc,.post{{padding:22px 19px}}.front-card h2,.toc h2{{font-size:29px}}.toc ol{{grid-template-columns:1fr;gap:10px}}.toc a{{min-height:58px;font-size:19px;padding:15px 16px}}.chapter{{font-size:30px;margin-top:44px}}.chapter-intro{{font-size:18px;padding:14px 16px}}.post-media{{float:none;width:100%;margin:0 0 17px}}.post h2{{font-size:28px}}.meta{{font-size:15px}}.text{{font-size:1rem;line-height:1.82}}}} @media print{{body{{background:#fff}}main{{max-width:none;padding:0}}.cover{{border-radius:0;break-after:page}}.toc{{break-after:page}}.post{{border-radius:0;margin:0;min-height:92vh}}}}
+</style></head><body><main><header class="cover">{cover_photo}<div class="eyebrow">Авторская читательская методичка</div><h1>{html.escape(str(edition["title"]))}</h1><p>{html.escape(str(edition["subtitle"]))}. Редакционная компоновка сохранённых текстов без фактологического дополнения.</p></header>{description_card}<nav class="toc" aria-label="Содержание"><h2>Содержание</h2><ol>{toc}</ol></nav>{document}</main></body></html>''', encoding="utf-8")
 
 def shade(cell, value: str) -> None:
     tc_pr = cell._tc.get_or_add_tcPr(); shd = OxmlElement("w:shd"); shd.set(qn("w:fill"), value); tc_pr.append(shd)
@@ -804,27 +884,39 @@ def add_page_number(paragraph) -> None:
     paragraph._p.append(field)
 
 
-def add_running_furniture(section) -> None:
+def add_running_furniture(section, title: str = "MAYA TRADITION · Методология источникового чтения") -> None:
     header = section.header.paragraphs[0]
     header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     set_paragraph(header, after=0)
-    add_run(header, "MAYA TRADITION · Методология источникового чтения", 9.5, True, MUTED)
+    add_run(header, title, 9.5, True, MUTED)
     footer = section.footer.paragraphs[0]
     footer.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     set_paragraph(footer, after=0)
     add_page_number(footer)
 
 
-def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], description: dict[str, object]) -> None:
+def build_docx(
+    articles: list[dict[str, object]],
+    media: dict[int, list[str]],
+    description: dict[str, object],
+    volume: dict[str, object] | None = None,
+) -> None:
+    edition = edition_details(volume)
     doc = Document(); sec = doc.sections[0]; sec.top_margin = Inches(.68); sec.bottom_margin = Inches(.65); sec.left_margin = Inches(.72); sec.right_margin = Inches(.72)
-    add_running_furniture(sec)
+    add_running_furniture(sec, f"MAYA TRADITION · {edition['title']}")
     styles = doc.styles; styles["Normal"].font.name = "Georgia"; styles["Normal"]._element.rPr.rFonts.set(qn("w:hAnsi"), "Georgia"); styles["Normal"].font.size = Pt(DOCX_READER_FONT_SIZE); styles["Normal"].paragraph_format.line_spacing = 1.4
-    title = doc.add_paragraph(); title.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(title, after=7); add_run(title, "MAYA TRADITION", 28, True, WARM)
-    subtitle = doc.add_paragraph(); subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(subtitle, after=7); add_run(subtitle, "Методология источникового чтения", 15, True, GOLD)
+    title = doc.add_paragraph(); title.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(title, after=7); add_run(title, str(edition["title"]), 28, True, WARM)
+    subtitle = doc.add_paragraph(); subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(subtitle, after=7); add_run(subtitle, str(edition["subtitle"]), 15, True, GOLD)
     note = doc.add_paragraph(); note.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(note, after=15); add_run(note, "Локальный Telegram-экспорт · источник-ориентированная редакционная компоновка", 10.5, False, MUTED)
-    heading = doc.add_paragraph(); set_paragraph(heading, after=6); add_run(heading, "Описание традиции", 18, True, WARM)
-    meta = doc.add_paragraph(); set_paragraph(meta, after=6); add_run(meta, f"Источник: пост {description['post_id']} · {description['date']}\n", 10.5, True, GOLD); add_run(meta, str(description["url"]), 10.5, False, WARM)
-    desc = doc.add_paragraph(); set_paragraph(desc, after=14, line_spacing=1.4); add_run(desc, str(description["text"]), DOCX_READER_FONT_SIZE)
+    if edition["cover_source"]:
+        cover = HERE / str(edition["cover_source"])
+        if cover.is_file():
+            cover_paragraph = doc.add_paragraph(); cover_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            cover_paragraph.add_run().add_picture(str(cover), width=Inches(4.4))
+    if edition["include_description"]:
+        heading = doc.add_paragraph(); set_paragraph(heading, after=6); add_run(heading, "Описание традиции", 18, True, WARM)
+        meta = doc.add_paragraph(); set_paragraph(meta, after=6); add_run(meta, f"Источник: пост {description['post_id']} · {description['date']}\n", 10.5, True, GOLD); add_run(meta, str(description["url"]), 10.5, False, WARM)
+        desc = doc.add_paragraph(); set_paragraph(desc, after=14, line_spacing=1.4); add_run(desc, str(description["text"]), DOCX_READER_FONT_SIZE)
     toc_heading = doc.add_paragraph(); set_paragraph(toc_heading, after=6); add_run(toc_heading, "Содержание", 18, True, WARM)
     seen: list[str] = []
     for article in articles:
@@ -867,7 +959,7 @@ def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], d
         if primary_path and primary_path.exists():
             p = right.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT; p.add_run().add_picture(str(primary_path), width=Inches(DOCX_MEDIA_WIDTH_INCHES))
         body = doc.add_paragraph(); set_paragraph(body, before=12, after=7, line_spacing=1.4); add_run(body, str(article["text"]), DOCX_READER_FONT_SIZE)
-    doc.save(DOCX_OUT)
+    doc.save(DOCX_OUT if volume is None else volume_output_path(volume, "docx"))
 
 
 def main() -> None:
@@ -884,7 +976,20 @@ def main() -> None:
     write_supporting_docs(articles, len(canonical_articles), len(supplementary_articles))
     build_html(articles, media, description)
     build_docx(articles, media, description)
-    print(f"wrote Maya/Aztec manuscript, maps, {HTML_OUT} and {DOCX_OUT} ({len(articles)} reader articles from {len(canonical_articles)} canonical articles)")
+    for volume in VOLUMES:
+        edition_articles = volume_articles(articles)[str(volume["id"])]
+        if not edition_articles:
+            raise SystemExit(f"Volume {volume['id']} has no reader articles")
+        missing_media = [
+            str(article["article_id"])
+            for article in edition_articles
+            if reader_media_path(article, media) is None
+        ]
+        if missing_media:
+            raise SystemExit(f"Volume {volume['id']} has articles without local media: {', '.join(missing_media)}")
+        build_html(edition_articles, media, description, volume)
+        build_docx(edition_articles, media, description, volume)
+    print(f"wrote Maya/Aztec manuscript, maps, archival edition and {len(VOLUMES)} volumes ({len(articles)} reader articles from {len(canonical_articles)} canonical articles)")
 
 
 if __name__ == "__main__":

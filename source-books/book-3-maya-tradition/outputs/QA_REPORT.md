@@ -1,7 +1,6 @@
 # Maya Tradition editions — output QA
 
-- **Style token:** `compact_reference_guide` adapted for source reading: 19px HTML desktop / 18px mobile, 1.75 HTML line-height; 13pt DOCX body, 1.35 line spacing.
-- **Reading order:** cited post 2 supplies the concise front description; the clear table of contents follows it; author-framework articles occur only after historical/mythic, ritual, and therapeutic material.
-- **Source-photo mapping:** primary photographs remain mapped only from the local Telegram export (`raw/messages.html`) to `raw/photos/`; any absent photo remains absent.
-- **Layout checks:** source post ID, captured date, and Telegram URL are visible on source text; primary photos occupy the upper-right DOCX cell; HTML stacks them above text below 700px and provides 48–52px table-of-contents touch targets.
-- **DOCX/PDF render:** 122 pages. The rendered front page, first deity article, a representative middle page, and final page were visually inspected; no clipping or misplaced primary image was observed.
+- **Edition map:** the 122 curated reader articles are partitioned without overlap into 21 articles on the egregor/gods volume, 41 calendar articles, 18 settings/energies articles, and 42 mysteries articles.
+- **Style:** source-reading layout with large mobile type (20px), 14.5pt DOCX body, 1.4 line spacing, expanded hyperlinked contents, running header, and right-aligned page number.
+- **Source-photo mapping:** every published article resolves to a local, traceable Telegram archive image. DOCX places the image in the upper-right article column; HTML stacks it above text on narrow screens.
+- **Render QA:** all four DOCX editions were rendered to PDF/PNG. Cover, expanded contents, illustrated article pages, and final pages were inspected for clipping, missing glyphs, headers, footers, and page-number placement.

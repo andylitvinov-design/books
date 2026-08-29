@@ -11,7 +11,28 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "public" / "library"
 MAYA = ROOT / "source-books" / "book-3-maya-tradition"
-READER = MAYA / "outputs" / "Maya_Tradition_Methodology.html"
+MAYA_READERS = {
+    "maya-egregor-gods": "Maya_Aztec_Egregor_Gods.html",
+    "maya-calendar": "Maya_Calendar_Energies.html",
+    "maya-exorcism": "Maya_Exorcism_Settings_Energies.html",
+    "maya-mysteries": "Maya_Mysteries.html",
+}
+# The Next.js catalog predates the unified-library identifiers for the Alchemy
+# series. Keep those established public card ids while publishing their real
+# source covers under both names.
+CATALOG_COVER_ALIASES = {
+    "alchemy-homeopathy-foundations": "soul-homeopathy-foundations",
+    "alchemy-homeopathy-remedies": "soul-homeopathy-remedies",
+    "alchemy-naturopathy-hormones": "soul-naturopathy-hormones",
+    "alchemy-naturopathy-oils": "soul-naturopathy-oils",
+    "alchemy-bach-foundations": "soul-bach-foundations",
+    "alchemy-bach-cards": "soul-bach-cards",
+    "alchemy-brain-theory": "soul-brain-theory",
+    "alchemy-brain-protocols": "soul-brain-protocols",
+}
+CATALOG_COVER_SOURCES = {
+    "alchemy-services-workflow": ROOT / "source-books" / "book-1-alchemy-soul" / "media" / "post_185_01.jpg",
+}
 
 
 def copy_file(source: Path, destination: Path) -> None:
@@ -19,8 +40,8 @@ def copy_file(source: Path, destination: Path) -> None:
     shutil.copy2(source, destination)
 
 
-def publish_maya_reader() -> None:
-    html = READER.read_text(encoding="utf-8")
+def publish_maya_reader(reader_id: str, reader: Path) -> None:
+    html = reader.read_text(encoding="utf-8")
     # The archival edition labels its provenance for local editorial work. The
     # public reader keeps the same manuscript but uses reader-facing wording.
     html = html.replace(
@@ -32,13 +53,18 @@ def publish_maya_reader() -> None:
         source = MAYA / ref.removeprefix("../")
         if not source.is_file():
             raise FileNotFoundError(f"Maya reader asset missing: {source}")
-        destination = PUBLIC / "maya" / "media" / source.name
+        destination = PUBLIC / reader_id / "media" / source.name
         copy_file(source, destination)
-        html = html.replace(ref, f"/library/maya/media/{source.name}")
+        html = html.replace(ref, f"/library/{reader_id}/media/{source.name}")
 
-    destination = PUBLIC / "maya" / "index.html"
+    destination = PUBLIC / reader_id / "index.html"
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(html, encoding="utf-8")
+
+
+def publish_maya_readers() -> None:
+    for reader_id, filename in MAYA_READERS.items():
+        publish_maya_reader(reader_id, MAYA / "outputs" / filename)
 
 
 def publish_covers() -> None:
@@ -49,10 +75,19 @@ def publish_covers() -> None:
         source_path = (ROOT / raw_path.removeprefix("../")).resolve()
         if source_path.is_file():
             copy_file(source_path, PUBLIC / "covers" / f"{book_id}{source_path.suffix.lower()}")
+    for catalog_id, source_id in CATALOG_COVER_ALIASES.items():
+        source = PUBLIC / "covers" / f"{source_id}.jpg"
+        if not source.is_file():
+            raise FileNotFoundError(f"Published cover alias source missing: {source}")
+        copy_file(source, PUBLIC / "covers" / f"{catalog_id}.jpg")
+    for catalog_id, source in CATALOG_COVER_SOURCES.items():
+        if not source.is_file():
+            raise FileNotFoundError(f"Catalog cover source missing: {source}")
+        copy_file(source, PUBLIC / "covers" / f"{catalog_id}{source.suffix.lower()}")
 
 
 def main() -> None:
-    publish_maya_reader()
+    publish_maya_readers()
     publish_covers()
 
 

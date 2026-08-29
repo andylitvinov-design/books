@@ -45,13 +45,23 @@ export const books = sourceBooks.map((book) => ({
 }));
 
 const coverExtensions: Record<string, string> = {
-  "maya-tradition-methodology": ".jpg",
+  "maya-egregor-gods": ".jpg",
+  "maya-calendar": ".jpg",
+  "maya-exorcism": ".jpg",
+  "maya-mysteries": ".jpg",
+};
+
+const mayaReaderUrls: Record<string, string> = {
+  "maya-egregor-gods": "/library/maya-egregor-gods/",
+  "maya-calendar": "/library/maya-calendar/",
+  "maya-exorcism": "/library/maya-exorcism/",
+  "maya-mysteries": "/library/maya-mysteries/",
 };
 
 export const booksWithPresentation = books.map((book) => ({
   ...book,
   coverImage: book.coverImage ?? `/library/covers/${book.id}${coverExtensions[book.id] ?? ".jpg"}`,
-  readerUrl: book.readerUrl ?? (book.id === "maya-tradition-methodology" ? "/library/maya/" : undefined),
+  readerUrl: book.readerUrl ?? mayaReaderUrls[book.id],
 }));
 
 export function getBook(bookId?: string) {

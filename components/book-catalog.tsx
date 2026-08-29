@@ -24,7 +24,7 @@ export function BookCatalog() {
     const value = deferredQuery.trim().toLowerCase();
     const inCategory = (book: (typeof books)[number]) =>
       category === "Все" ||
-      (category === "Maya Tradition" && book.id === "maya-tradition-methodology") ||
+      (category === "Maya Tradition" && book.id.startsWith("maya-")) ||
       (category === "Даосские книги" && /даос|dao/i.test(`${book.author} ${book.title}`)) ||
       (category === "Алхимия души" && /алхимия души/i.test(`${book.author} ${book.title}`));
     if (!value) return books.filter(inCategory);
@@ -161,7 +161,7 @@ export function BookCatalog() {
                 <p className="line-clamp-3 text-[15px] leading-[1.58] text-[#382d26]">{book.description}</p>
                 {book.readerUrl && (
                   <a href={book.readerUrl} onClick={(event) => event.stopPropagation()} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#8b4513] hover:underline">
-                    Читать Maya Tradition <ArrowUpRight className="size-4" />
+                    Читать книгу <ArrowUpRight className="size-4" />
                   </a>
                 )}
               </div>
