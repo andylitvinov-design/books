@@ -13,7 +13,7 @@ from pathlib import Path
 
 try:
     from docx import Document
-    from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
+    from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
@@ -40,8 +40,11 @@ CREAM = "FBF4E9"
 INK = "2F241D"
 MUTED = "6D5A4D"
 DESKTOP_READER_FONT_SIZE = 21
-MOBILE_READER_FONT_SIZE = 20
-DOCX_READER_FONT_SIZE = 14.5
+DESKTOP_READER_LINE_HEIGHT = 1.68
+MOBILE_READER_FONT_SIZE = 22
+MOBILE_READER_LINE_HEIGHT = 1.58
+DOCX_READER_FONT_SIZE = 15
+DOCX_READER_LINE_SPACING = 1.25
 READER_IMAGE_SCALE = 1.9
 HTML_MEDIA_WIDTH_PERCENT = 72
 HTML_MEDIA_MAX_WIDTH_PX = 630
@@ -814,11 +817,11 @@ def build_html(
 <title>{html.escape(str(edition["title"]))}</title>
 <style>
 :root{{--ink:#{INK};--wine:#{WARM};--gold:#{GOLD};--paper:#{CREAM};--line:#ddc9b6}} *{{box-sizing:border-box}}
-body{{margin:0;background:#efe5d8;color:var(--ink);font:{DESKTOP_READER_FONT_SIZE}px/1.8 Georgia,"Times New Roman",serif}} main{{max-width:980px;margin:auto;padding:36px 20px 80px}}
-.cover{{background:linear-gradient(135deg,#4d2117,var(--wine));color:#fff7ec;border-radius:18px;padding:42px 38px;margin-bottom:28px;display:flow-root}} .eyebrow,.chapter-token{{font:700 12px/1.2 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}} .cover .eyebrow{{color:#f2c979}} .cover h1{{font-size:clamp(34px,5vw,54px);line-height:1.08;margin:.3em 0}} .cover p{{max-width:720px;line-height:1.75;margin:0}} .cover-photo{{float:right;width:min(38%,300px);max-height:280px;object-fit:cover;border-radius:11px;border:1px solid rgba(255,247,236,.5);margin:0 0 16px 26px}}
+body{{margin:0;background:#efe5d8;color:var(--ink);font:{DESKTOP_READER_FONT_SIZE}px/{DESKTOP_READER_LINE_HEIGHT} Georgia,"Times New Roman",serif}} main{{max-width:980px;margin:auto;padding:36px 20px 80px}}
+.cover{{background:linear-gradient(135deg,#4d2117,var(--wine));color:#fff7ec;border-radius:18px;padding:42px 38px;margin-bottom:28px;display:flow-root}} .eyebrow,.chapter-token{{font:700 12px/1.2 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}} .cover .eyebrow{{color:#f2c979}} .cover h1{{font-size:clamp(34px,5vw,54px);line-height:1.08;margin:.3em 0}} .cover p{{max-width:720px;line-height:1.55;margin:0}} .cover-photo{{display:block;float:right;width:min(38%,300px);max-height:280px;object-fit:cover;border-radius:11px;border:1px solid rgba(255,247,236,.5);margin:0 0 16px 26px}}
 .front-card,.toc{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0}} .front-card h2,.toc h2{{font-size:30px;line-height:1.25;margin:0 0 12px;color:var(--wine)}} .toc ol{{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}} .toc a{{display:block;min-height:54px;padding:13px 16px;border-radius:9px;background:#f8eee2;color:var(--wine);font:700 19px/1.35 Arial,sans-serif;text-decoration:none}}
-.chapter{{scroll-margin-top:16px;font-size:32px;line-height:1.25;color:var(--wine);margin:52px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--gold)}} .chapter-intro{{margin:0 0 19px;padding:14px 17px;background:#f8eee2;border-left:3px solid var(--gold);font-size:19px;line-height:1.6;color:#{MUTED}}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:30px;line-height:1.3;margin:7px 0 13px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:16px/1.55 Arial,sans-serif;color:#{MUTED};padding:11px 0 15px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:18px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{{READER_MEDIA_CSS}}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1.05rem;line-height:1.8}} .text .verse{{margin:1.05em 0;padding-left:1em;border-left:2px solid #d8b879;line-height:1.65}}
-@media(max-width:700px){{body{{font-size:{MOBILE_READER_FONT_SIZE}px;line-height:1.82}}main{{padding:20px 13px 52px}}.cover{{padding:30px 22px}}.cover-photo{{float:none;width:100%;max-width:none;margin:0 0 18px}}.front-card,.toc,.post{{padding:22px 19px}}.front-card h2,.toc h2{{font-size:29px}}.toc ol{{grid-template-columns:1fr;gap:10px}}.toc a{{min-height:58px;font-size:19px;padding:15px 16px}}.chapter{{font-size:30px;margin-top:44px}}.chapter-intro{{font-size:18px;padding:14px 16px}}.post-media{{float:none;width:100%;margin:0 0 17px}}.post h2{{font-size:28px}}.meta{{font-size:15px}}.text{{font-size:1rem;line-height:1.82}}}} @media print{{body{{background:#fff}}main{{max-width:none;padding:0}}.cover{{border-radius:0;break-after:page}}.toc{{break-after:page}}.post{{border-radius:0;margin:0;min-height:92vh}}}}
+.chapter{{scroll-margin-top:16px;font-size:32px;line-height:1.25;color:var(--wine);margin:52px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--gold)}} .chapter-intro{{margin:0 0 19px;padding:14px 17px;background:#f8eee2;border-left:3px solid var(--gold);font-size:19px;line-height:1.52;color:#{MUTED}}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:30px;line-height:1.3;margin:7px 0 13px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:16px/1.45 Arial,sans-serif;color:#{MUTED};padding:11px 0 15px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:18px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{{READER_MEDIA_CSS}}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1.05rem;line-height:1.64}} .text .verse{{margin:1.05em 0;padding-left:1em;border-left:2px solid #d8b879;line-height:1.52}}
+@media(max-width:700px){{body{{font-size:{MOBILE_READER_FONT_SIZE}px;line-height:{MOBILE_READER_LINE_HEIGHT}}}main{{padding:20px 13px 52px}}.cover{{padding:30px 22px}}.cover-photo{{display:block;float:right;width:min(48%,260px);max-height:230px;margin:0 0 15px 17px}}.front-card,.toc,.post{{padding:22px 19px}}.front-card h2,.toc h2{{font-size:29px}}.toc ol{{grid-template-columns:1fr;gap:10px}}.toc a{{min-height:58px;font-size:19px;padding:15px 16px}}.chapter{{font-size:30px;margin-top:44px}}.chapter-intro{{font-size:19px;line-height:1.48;padding:14px 16px}}.post-media{{float:none;width:100%;margin:0 0 17px}}.post h2{{font-size:28px}}.meta{{font-size:15px;line-height:1.4}}.text{{font-size:1rem;line-height:{MOBILE_READER_LINE_HEIGHT}}}}} @media print{{body{{background:#fff}}main{{max-width:none;padding:0}}.cover{{border-radius:0;break-after:page}}.toc{{break-after:page}}.post{{border-radius:0;margin:0;min-height:92vh}}}}
 </style></head><body><main><header class="cover">{cover_photo}<div class="eyebrow">Авторская читательская методичка</div><h1>{html.escape(str(edition["title"]))}</h1><p>{html.escape(str(edition["subtitle"]))}. Редакционная компоновка сохранённых текстов без фактологического дополнения.</p></header>{description_card}<nav class="toc" aria-label="Содержание"><h2>Содержание</h2><ol>{toc}</ol></nav>{document}</main></body></html>''', encoding="utf-8")
 
 def shade(cell, value: str) -> None:
@@ -904,19 +907,19 @@ def build_docx(
     edition = edition_details(volume)
     doc = Document(); sec = doc.sections[0]; sec.top_margin = Inches(.68); sec.bottom_margin = Inches(.65); sec.left_margin = Inches(.72); sec.right_margin = Inches(.72)
     add_running_furniture(sec, f"MAYA TRADITION · {edition['title']}")
-    styles = doc.styles; styles["Normal"].font.name = "Georgia"; styles["Normal"]._element.rPr.rFonts.set(qn("w:hAnsi"), "Georgia"); styles["Normal"].font.size = Pt(DOCX_READER_FONT_SIZE); styles["Normal"].paragraph_format.line_spacing = 1.4
+    styles = doc.styles; styles["Normal"].font.name = "Georgia"; styles["Normal"]._element.rPr.rFonts.set(qn("w:hAnsi"), "Georgia"); styles["Normal"].font.size = Pt(DOCX_READER_FONT_SIZE); styles["Normal"].paragraph_format.line_spacing = DOCX_READER_LINE_SPACING
     title = doc.add_paragraph(); title.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(title, after=7); add_run(title, str(edition["title"]), 28, True, WARM)
     subtitle = doc.add_paragraph(); subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(subtitle, after=7); add_run(subtitle, str(edition["subtitle"]), 15, True, GOLD)
     note = doc.add_paragraph(); note.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(note, after=15); add_run(note, "Локальный Telegram-экспорт · источник-ориентированная редакционная компоновка", 10.5, False, MUTED)
     if edition["cover_source"]:
         cover = HERE / str(edition["cover_source"])
         if cover.is_file():
-            cover_paragraph = doc.add_paragraph(); cover_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            cover_paragraph = doc.add_paragraph(); cover_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
             cover_paragraph.add_run().add_picture(str(cover), width=Inches(4.4))
     if edition["include_description"]:
         heading = doc.add_paragraph(); set_paragraph(heading, after=6); add_run(heading, "Описание традиции", 18, True, WARM)
         meta = doc.add_paragraph(); set_paragraph(meta, after=6); add_run(meta, f"Источник: пост {description['post_id']} · {description['date']}\n", 10.5, True, GOLD); add_run(meta, str(description["url"]), 10.5, False, WARM)
-        desc = doc.add_paragraph(); set_paragraph(desc, after=14, line_spacing=1.4); add_run(desc, str(description["text"]), DOCX_READER_FONT_SIZE)
+        desc = doc.add_paragraph(); set_paragraph(desc, after=14, line_spacing=DOCX_READER_LINE_SPACING); add_run(desc, str(description["text"]), DOCX_READER_FONT_SIZE)
     toc_heading = doc.add_paragraph(); set_paragraph(toc_heading, after=6); add_run(toc_heading, "Содержание", 18, True, WARM)
     seen: list[str] = []
     for article in articles:
@@ -938,14 +941,14 @@ def build_docx(
         if article["chapter"] != chapter:
             chapter = article["chapter"]
             doc.add_page_break()
-            chapter_intro = doc.add_paragraph(); set_paragraph(chapter_intro, before=12, after=10, line_spacing=1.4); add_run(chapter_intro, READER_CHAPTER_INTROS[str(chapter)], 13, False, MUTED)
+            chapter_intro = doc.add_paragraph(); set_paragraph(chapter_intro, before=12, after=10, line_spacing=DOCX_READER_LINE_SPACING); add_run(chapter_intro, READER_CHAPTER_INTROS[str(chapter)], 13, False, MUTED)
             add_bookmark(chapter_intro, chapter_bookmarks[str(chapter)], bookmark_id)
             bookmark_id += 1
         else:
             doc.add_page_break()
         token = doc.add_table(rows=1, cols=1); token.autofit = False; cell = token.cell(0,0); shade(cell, CREAM); set_cell_margins(cell); cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
         p = cell.paragraphs[0]; set_paragraph(p, after=0); add_run(p, str(chapter).upper(), 10, True, GOLD)
-        table = doc.add_table(rows=1, cols=2); table.autofit = False; table.columns[0].width = Inches(DOCX_TEXT_COLUMN_WIDTH_INCHES); table.columns[1].width = Inches(DOCX_MEDIA_COLUMN_WIDTH_INCHES)
+        table = doc.add_table(rows=1, cols=2); table.alignment = WD_TABLE_ALIGNMENT.RIGHT; table.autofit = False; table.columns[0].width = Inches(DOCX_TEXT_COLUMN_WIDTH_INCHES); table.columns[1].width = Inches(DOCX_MEDIA_COLUMN_WIDTH_INCHES)
         left, right = table.rows[0].cells; set_cell_margins(left); set_cell_margins(right); right.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
         p = left.paragraphs[0]; set_paragraph(p, after=8); add_run(p, str(article["title"]), 20, True, WARM)
         add_bookmark(p, article_bookmark(article), bookmark_id)
@@ -958,7 +961,7 @@ def build_docx(
         primary_path = reader_media_path(article, media)
         if primary_path and primary_path.exists():
             p = right.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT; p.add_run().add_picture(str(primary_path), width=Inches(DOCX_MEDIA_WIDTH_INCHES))
-        body = doc.add_paragraph(); set_paragraph(body, before=12, after=7, line_spacing=1.4); add_run(body, str(article["text"]), DOCX_READER_FONT_SIZE)
+        body = doc.add_paragraph(); set_paragraph(body, before=12, after=7, line_spacing=DOCX_READER_LINE_SPACING); add_run(body, str(article["text"]), DOCX_READER_FONT_SIZE)
     doc.save(DOCX_OUT if volume is None else volume_output_path(volume, "docx"))
 
 

@@ -67,9 +67,16 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         }
         self.assertTrue(excluded_cross_tradition <= BUILD.READER_EXCLUDED_ARTICLE_IDS)
 
-    def test_mobile_reader_uses_larger_type(self):
-        self.assertGreaterEqual(BUILD.MOBILE_READER_FONT_SIZE, 20)
-        self.assertGreater(BUILD.DESKTOP_READER_FONT_SIZE, BUILD.MOBILE_READER_FONT_SIZE)
+    def test_mobile_reader_uses_large_compact_type(self):
+        self.assertGreaterEqual(BUILD.MOBILE_READER_FONT_SIZE, 22)
+        self.assertLessEqual(BUILD.MOBILE_READER_LINE_HEIGHT, 1.6)
+        self.assertLess(BUILD.MOBILE_READER_LINE_HEIGHT, BUILD.DESKTOP_READER_LINE_HEIGHT)
+
+    def test_docx_article_and_cover_images_are_aligned_to_the_right_edge(self):
+        source = (BUILD.HERE / "build_maya_book.py").read_text(encoding="utf-8")
+
+        self.assertIn("cover_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT", source)
+        self.assertIn("table.alignment = WD_TABLE_ALIGNMENT.RIGHT", source)
 
     def test_reader_merges_repeated_editions_and_preserves_their_sources(self):
         canonical = BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
