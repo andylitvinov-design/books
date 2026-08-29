@@ -14,11 +14,55 @@ export type Book = {
   author: string;
   coverLabel: string;
   theme: string;
+  coverImage?: string;
+  readerUrl?: string;
   summary: string;
   sections: BookSection[];
 };
 
-export const books = booksData as Book[];
+const sourceBooks = booksData as Book[];
+
+// The JSON archive also serves the editorial toolchain and includes source-tree
+// labels. A reader should see bibliographic context, never local project paths.
+export const books = sourceBooks.map((book) => ({
+  ...book,
+  sections: book.sections.map((section) =>
+    section.id === "source"
+      ? {
+          ...section,
+          title: "Источник",
+          description: "Библиографическая запись материала в библиотеке.",
+          content: `<p>Исходный материал сохранён в архиве библиотеки.</p><p>Заголовок: «${book.title}».</p>`,
+        }
+      : {
+          ...section,
+          content: section.content
+            .replace(/<code>source-books[^<]*<\/code>/g, "архиве библиотеки")
+            .replace(/Источник расположен локально[^<]*<\/p>/g, "Материал сохранён в архиве библиотеки.</p>")
+            .replace(/Книга найдена в локальной папке[^<]*<\/p>/g, "Материал включён в общую библиотеку как самостоятельная книга.</p>"),
+        },
+  ),
+}));
+
+const coverExtensions: Record<string, string> = {
+  "maya-egregor-gods": ".jpg",
+  "maya-calendar": ".jpg",
+  "maya-exorcism": ".jpg",
+  "maya-mysteries": ".jpg",
+};
+
+const mayaReaderUrls: Record<string, string> = {
+  "maya-egregor-gods": "/library/maya-egregor-gods/",
+  "maya-calendar": "/library/maya-calendar/",
+  "maya-exorcism": "/library/maya-exorcism/",
+  "maya-mysteries": "/library/maya-mysteries/",
+};
+
+export const booksWithPresentation = books.map((book) => ({
+  ...book,
+  coverImage: book.coverImage ?? `/library/covers/${book.id}${coverExtensions[book.id] ?? ".jpg"}`,
+  readerUrl: book.readerUrl ?? mayaReaderUrls[book.id],
+}));
 
 export function getBook(bookId?: string) {
   return books.find((book) => book.id === bookId) ?? books[0];

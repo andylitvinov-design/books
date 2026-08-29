@@ -1,5 +1,7 @@
 .DS_Store
 .next/
+__pycache__/
+source-books/book-3-maya-tradition/raw/templetherapy/public-pages/
 node_modules/
 *.log
 *.swp
@@ -7,3 +9,4 @@ node_modules/
 *.tmp2
 *.tmp3
 *.app/
+.vercel

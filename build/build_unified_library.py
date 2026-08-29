@@ -16,6 +16,66 @@ OUTPUT_FILE = FINAL_ROOT / "unified-library.html"
 
 BOOKS = [
     {
+        "group": "Maya Tradition",
+        "group_id": "maya-tradition",
+        "id": "maya-egregor-gods",
+        "title": "Традиция Майя и Ацтеков. Эгрегор и Боги",
+        "description": "Эгрегор традиции, божественные силы, их каналы и авторские настройки в источниковой редакционной компоновке.",
+        "path": SOURCE_ROOT / "book-3-maya-tradition" / "outputs" / "Maya_Aztec_Egregor_Gods.html",
+        "asset_prefix": "../source-books/book-3-maya-tradition/outputs/",
+        "asset_rewrites": {
+            "../raw/": "../source-books/book-3-maya-tradition/raw/",
+            "../media/": "../source-books/book-3-maya-tradition/media/",
+        },
+        "cover_image": "../source-books/book-3-maya-tradition/raw/photos/photo_1@07-09-2022_19-37-03.jpg",
+        "kind": "Книга",
+    },
+    {
+        "group": "Maya Tradition",
+        "group_id": "maya-tradition",
+        "id": "maya-calendar",
+        "title": "Энергии Календаря Майя",
+        "description": "Отдельный цикл материалов о календаре, времени, периодах и энергии дней Майя.",
+        "path": SOURCE_ROOT / "book-3-maya-tradition" / "outputs" / "Maya_Calendar_Energies.html",
+        "asset_prefix": "../source-books/book-3-maya-tradition/outputs/",
+        "asset_rewrites": {
+            "../raw/": "../source-books/book-3-maya-tradition/raw/",
+            "../media/": "../source-books/book-3-maya-tradition/media/",
+        },
+        "cover_image": "../source-books/book-3-maya-tradition/media/templetherapy/post-103-1.jpg",
+        "kind": "Книга",
+    },
+    {
+        "group": "Maya Tradition",
+        "group_id": "maya-tradition",
+        "id": "maya-exorcism",
+        "title": "Экзорцизм в Традиции Майя. Настройки и энергии",
+        "description": "Настройки, каналы, помощники и практические авторские формы работы с энергиями Майя и Ацтеков.",
+        "path": SOURCE_ROOT / "book-3-maya-tradition" / "outputs" / "Maya_Exorcism_Settings_Energies.html",
+        "asset_prefix": "../source-books/book-3-maya-tradition/outputs/",
+        "asset_rewrites": {
+            "../raw/": "../source-books/book-3-maya-tradition/raw/",
+            "../media/": "../source-books/book-3-maya-tradition/media/",
+        },
+        "cover_image": "../source-books/book-3-maya-tradition/media/templetherapy/post-58-1.jpg",
+        "kind": "Книга",
+    },
+    {
+        "group": "Maya Tradition",
+        "group_id": "maya-tradition",
+        "id": "maya-mysteries",
+        "title": "Мистерии Майя",
+        "description": "Мифология, Шибальба, инициация, ритуал, священные места, двойники и авторские архетипические модели.",
+        "path": SOURCE_ROOT / "book-3-maya-tradition" / "outputs" / "Maya_Mysteries.html",
+        "asset_prefix": "../source-books/book-3-maya-tradition/outputs/",
+        "asset_rewrites": {
+            "../raw/": "../source-books/book-3-maya-tradition/raw/",
+            "../media/": "../source-books/book-3-maya-tradition/media/",
+        },
+        "cover_image": "../source-books/book-3-maya-tradition/raw/photos/photo_178@11-02-2025_21-03-16.jpg",
+        "kind": "Книга",
+    },
+    {
         "group": "Алхимия души",
         "group_id": "alchemy-soul",
         "id": "soul-homeopathy-foundations",
@@ -309,7 +369,12 @@ def collect_book_data() -> tuple[OrderedDict, list[str]]:
             if attr == "href" and filename in included_html:
                 tag[attr] = f"#{included_html[filename]}"
                 continue
-            tag[attr] = item["asset_prefix"] + value.lstrip("./")
+            for source_prefix, output_prefix in item.get("asset_rewrites", {}).items():
+                if value.startswith(source_prefix):
+                    tag[attr] = output_prefix + value[len(source_prefix):]
+                    break
+            else:
+                tag[attr] = item["asset_prefix"] + value.lstrip("./")
 
         overview_id = f"{item['id']}-overview"
         first_h1 = main.find("h1")
