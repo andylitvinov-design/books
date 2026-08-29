@@ -72,6 +72,22 @@ test('renders each Maya volume from its complete sanitized source HTML with safe
   }
 })
 
+test('maps every Maya catalog chapter link to its rendered source H1 anchor', async () => {
+  for (const expected of mayaVolumes) {
+    const book = getBookById(expected.id)
+    assert.ok(book)
+    const document = await loadReaderDocument(book)
+
+    for (const chapter of book.chapters) {
+      assert.match(
+        document.content,
+        new RegExp(`<h1[^>]*\\bid="${chapter.id}"[^>]*>${chapter.title}</h1>`),
+        `${book.id} TOC link #${chapter.id} should target its source H1`,
+      )
+    }
+  }
+})
+
 test('serves every rewritten Maya image from a fixed public root without traversal', async () => {
   for (const expected of mayaVolumes) {
     const book = getBookById(expected.id)

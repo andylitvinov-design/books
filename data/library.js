@@ -335,8 +335,8 @@ export const books = [
     status: 'published',
     tags: ['Эгрегор Майя', 'Боги Майя и Ацтеков', 'Каналы Богов'],
     chapters: [
-      chapter('egregor', 'I. Эгрегор Майя'),
-      chapter('gods', 'II. Боги и божественные силы Майя и Ацтеков'),
+      chapter('chapter-i', 'I. Эгрегор Майя'),
+      chapter('chapter-ii', 'II. Боги и божественные силы Майя и Ацтеков'),
     ],
   },
   {
@@ -350,7 +350,7 @@ export const books = [
     status: 'published',
     tags: ['Календарь', 'время', 'энергия дней'],
     chapters: [
-      chapter('calendar', 'VII. Календарь и энергия дней'),
+      chapter('chapter-vii', 'VII. Календарь и энергия дней'),
     ],
   },
   {
@@ -364,7 +364,7 @@ export const books = [
     status: 'published',
     tags: ['Настройки', 'энергии Майя и Ацтеков', 'каналы', 'помощники'],
     chapters: [
-      chapter('settings', 'III. Настройки и энергии Майя и Ацтеков'),
+      chapter('chapter-iii', 'III. Настройки и энергии Майя и Ацтеков'),
     ],
   },
   {
@@ -378,9 +378,9 @@ export const books = [
     status: 'published',
     tags: ['Мифология', 'Шибальба', 'инициация', 'ритуал', 'двойники', 'авторские модели'],
     chapters: [
-      chapter('mythology', 'IV. Мифология, Шибальба, инициация и ритуал'),
-      chapter('places', 'V. Места, храмы и материальная культура'),
-      chapter('mysteries', 'VI. Мистерии, двойники и авторские модели'),
+      chapter('chapter-iv', 'IV. Мифология, Шибальба, инициация и ритуал'),
+      chapter('chapter-v', 'V. Места, храмы и материальная культура'),
+      chapter('chapter-vi', 'VI. Мистерии, двойники и авторские модели'),
     ],
   },
 ]
