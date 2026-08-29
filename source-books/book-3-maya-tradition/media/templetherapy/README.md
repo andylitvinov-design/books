@@ -2,8 +2,9 @@
 
 This directory contains image responses downloaded from the `media_references` recorded in `../../raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl`, plus a small set of images restored from the read-only local Telegram export. It is separate from the immutable primary `raw/` archive.
 
-- Referenced public image URLs: 37
-- Successfully resolved and stored as images: 37
+- Initially resolved public image URLs: 37
+- Additional reader images restored from recorded Telegram CDN links: 2
+- Successfully stored reader-facing images: 39
 - Unavailable / non-image responses: 0 at retrieval
 - Naming: `post-<TempleTherapy post ID>-<reference ordinal>.jpg`
 
@@ -17,3 +18,8 @@ The following images were copied without alteration from `/Users/andriilitvinov/
 - `post-103-1.jpg` — `photo_53@06-04-2021_23-54-48.jpg`; accompanies the Manik calendar sequence.
 - `post-154-1.jpg` — `photo_56@26-04-2021_14-36-04.jpg`; accompanies the Кетцалькоатль calendar sequence.
 - `post-2361-1.jpg` — `photo_1571@02-04-2025_02-01-39.jpg`; image attached to the Tula / Tlalok source post itself.
+
+## Restored from recorded Telegram CDN links
+
+- `post-2223-1.jpg` — the image URL recorded on TempleTherapy post 2223 (ИшМук'ане).
+- `post-2226-1.jpg` — the image URL recorded on TempleTherapy post 2226 (Кинич Ахау).

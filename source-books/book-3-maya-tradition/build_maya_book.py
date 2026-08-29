@@ -42,6 +42,13 @@ MUTED = "6D5A4D"
 DESKTOP_READER_FONT_SIZE = 21
 MOBILE_READER_FONT_SIZE = 20
 DOCX_READER_FONT_SIZE = 14.5
+READER_IMAGE_SCALE = 1.5
+HTML_MEDIA_WIDTH_PERCENT = 57
+HTML_MEDIA_MAX_WIDTH_PX = 495
+DOCX_MEDIA_WIDTH_INCHES = 2.775
+DOCX_MEDIA_COLUMN_WIDTH_INCHES = 3.0
+DOCX_TEXT_COLUMN_WIDTH_INCHES = 3.1
+READER_MEDIA_CSS = f"float:right;width:min({HTML_MEDIA_WIDTH_PERCENT}%,{HTML_MEDIA_MAX_WIDTH_PX}px);margin:0 0 17px 26px"
 FRONT_HEADINGS = {"Editorial note", "Описание традиции", "Содержание", "Авторская рамка, практики и программы"}
 CHAPTERS = (
     "I. Описание традиции",
@@ -637,7 +644,7 @@ def build_html(articles: list[dict[str, object]], media: dict[int, list[str]], d
 body{{margin:0;background:#efe5d8;color:var(--ink);font:{DESKTOP_READER_FONT_SIZE}px/1.8 Georgia,"Times New Roman",serif}} main{{max-width:980px;margin:auto;padding:36px 20px 80px}}
 .cover{{background:linear-gradient(135deg,#4d2117,var(--wine));color:#fff7ec;border-radius:18px;padding:42px 38px;margin-bottom:28px}} .eyebrow,.chapter-token{{font:700 12px/1.2 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}} .cover .eyebrow{{color:#f2c979}} .cover h1{{font-size:clamp(34px,5vw,54px);line-height:1.08;margin:.3em 0}} .cover p{{max-width:720px;line-height:1.75;margin:0}}
 .front-card,.toc{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0}} .front-card h2,.toc h2{{font-size:30px;line-height:1.25;margin:0 0 12px;color:var(--wine)}} .toc ol{{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}} .toc a{{display:block;min-height:54px;padding:13px 16px;border-radius:9px;background:#f8eee2;color:var(--wine);font:700 19px/1.35 Arial,sans-serif;text-decoration:none}}
-.chapter{{scroll-margin-top:16px;font-size:32px;line-height:1.25;color:var(--wine);margin:52px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--gold)}} .chapter-intro{{margin:0 0 19px;padding:14px 17px;background:#f8eee2;border-left:3px solid var(--gold);font-size:19px;line-height:1.6;color:#{MUTED}}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:30px;line-height:1.3;margin:7px 0 13px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:16px/1.55 Arial,sans-serif;color:#{MUTED};padding:11px 0 15px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:18px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{float:right;width:min(38%,330px);margin:0 0 17px 26px}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1.05rem;line-height:1.8}} .text .verse{{margin:1.05em 0;padding-left:1em;border-left:2px solid #d8b879;line-height:1.65}}
+.chapter{{scroll-margin-top:16px;font-size:32px;line-height:1.25;color:var(--wine);margin:52px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--gold)}} .chapter-intro{{margin:0 0 19px;padding:14px 17px;background:#f8eee2;border-left:3px solid var(--gold);font-size:19px;line-height:1.6;color:#{MUTED}}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:30px;line-height:1.3;margin:7px 0 13px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:16px/1.55 Arial,sans-serif;color:#{MUTED};padding:11px 0 15px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:18px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{{READER_MEDIA_CSS}}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1.05rem;line-height:1.8}} .text .verse{{margin:1.05em 0;padding-left:1em;border-left:2px solid #d8b879;line-height:1.65}}
 @media(max-width:700px){{body{{font-size:{MOBILE_READER_FONT_SIZE}px;line-height:1.82}}main{{padding:20px 13px 52px}}.cover{{padding:30px 22px}}.front-card,.toc,.post{{padding:22px 19px}}.front-card h2,.toc h2{{font-size:29px}}.toc ol{{grid-template-columns:1fr;gap:10px}}.toc a{{min-height:58px;font-size:19px;padding:15px 16px}}.chapter{{font-size:30px;margin-top:44px}}.chapter-intro{{font-size:18px;padding:14px 16px}}.post-media{{float:none;width:100%;margin:0 0 17px}}.post h2{{font-size:28px}}.meta{{font-size:15px}}.text{{font-size:1rem;line-height:1.82}}}} @media print{{body{{background:#fff}}main{{max-width:none;padding:0}}.cover{{border-radius:0;break-after:page}}.toc{{break-after:page}}.post{{border-radius:0;margin:0;min-height:92vh}}}}
 </style></head><body><main><header class="cover"><div class="eyebrow">Авторская читательская методичка</div><h1>Maya Tradition</h1><p>Методология источникового чтения. Редакционная компоновка сохранённых текстов без фактологического дополнения.</p></header><section class="front-card"><h2>Описание традиции</h2>{meta_html(description)}<div class="text">{description_text}</div></section><nav class="toc" aria-label="Содержание"><h2>Содержание</h2><ol>{toc}</ol></nav>{document}</main></body></html>''', encoding="utf-8")
 
@@ -688,7 +695,7 @@ def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], d
             doc.add_page_break()
         token = doc.add_table(rows=1, cols=1); token.autofit = False; cell = token.cell(0,0); shade(cell, CREAM); set_cell_margins(cell); cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
         p = cell.paragraphs[0]; set_paragraph(p, after=0); add_run(p, str(chapter).upper(), 10, True, GOLD)
-        table = doc.add_table(rows=1, cols=2); table.autofit = False; table.columns[0].width = Inches(4.3); table.columns[1].width = Inches(2.0)
+        table = doc.add_table(rows=1, cols=2); table.autofit = False; table.columns[0].width = Inches(DOCX_TEXT_COLUMN_WIDTH_INCHES); table.columns[1].width = Inches(DOCX_MEDIA_COLUMN_WIDTH_INCHES)
         left, right = table.rows[0].cells; set_cell_margins(left); set_cell_margins(right); right.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
         p = left.paragraphs[0]; set_paragraph(p, after=8); add_run(p, str(article["title"]), 20, True, WARM)
         meta = left.add_paragraph(); set_paragraph(meta, after=0)
@@ -702,7 +709,7 @@ def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], d
             primary = (media.get(int(article["post_id"])) or [None])[0]
             primary_path = HERE / "raw" / primary if primary else None
         if primary_path and primary_path.exists():
-            p = right.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT; p.add_run().add_picture(str(primary_path), width=Inches(1.85))
+            p = right.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT; p.add_run().add_picture(str(primary_path), width=Inches(DOCX_MEDIA_WIDTH_INCHES))
         body = doc.add_paragraph(); set_paragraph(body, before=12, after=7, line_spacing=1.4); add_run(body, str(article["text"]), DOCX_READER_FONT_SIZE)
     doc.save(DOCX_OUT)
 

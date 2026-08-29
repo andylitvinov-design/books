@@ -187,6 +187,27 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         for filename in ("post-80-1.jpg", "post-103-1.jpg", "post-154-1.jpg", "post-2361-1.jpg"):
             self.assertTrue((BUILD.SUPPLEMENTAL_MEDIA / filename).is_file(), filename)
 
+    def test_every_reader_article_with_a_templetherapy_photo_reference_has_local_media(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+
+        missing = [
+            article["article_id"]
+            for article in reader
+            if article["channel"] == "TempleTherapy" and article["media_references"]
+            and not list(BUILD.SUPPLEMENTAL_MEDIA.glob(f"post-{article['post_id']}-*"))
+        ]
+
+        self.assertEqual(missing, [])
+
+    def test_reader_media_is_scaled_by_one_and_a_half_across_html_and_docx(self):
+        self.assertEqual(BUILD.READER_IMAGE_SCALE, 1.5)
+        self.assertEqual(BUILD.HTML_MEDIA_MAX_WIDTH_PX, 495)
+        self.assertIn("width:min(57%,495px)", BUILD.READER_MEDIA_CSS)
+        self.assertEqual(BUILD.DOCX_MEDIA_WIDTH_INCHES, 2.775)
+        self.assertGreaterEqual(BUILD.DOCX_MEDIA_COLUMN_WIDTH_INCHES, BUILD.DOCX_MEDIA_WIDTH_INCHES)
+
     def test_verifier_checks_the_supplemental_index_and_integrated_manuscript(self):
         self.assertEqual(VERIFY.verify_supplemental(ROOT), [])
 
