@@ -210,7 +210,7 @@
   .catalog-filter { @apply rounded-full px-4 py-2 text-sm text-[#6e5746] transition hover:bg-[#e6d8c5] hover:text-[#3d2c21]; }
   .catalog-filter[aria-pressed="true"] { @apply bg-[#4f3829] text-[#fffaf2]; }
 
-  .catalog-grid { @apply mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3; }
+  .catalog-grid { @apply mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4; }
 
   .catalog-card {
     @apply flex min-w-0 flex-col overflow-hidden border border-[#d5c5b0] bg-[#fffaf2] text-inherit shadow-[0_12px_28px_rgba(81,57,36,0.08)] transition duration-200 hover:-translate-y-1 hover:border-[#a77b5d] hover:shadow-[0_18px_36px_rgba(81,57,36,0.15)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#714d37];

@@ -68,7 +68,10 @@ test('exposes the complete source-backed library and searchable metadata', () =>
     'dao-wuxing-five-elements',
     'dao-wuxing-model-steps',
     'dao-practicum-cases-remedies',
-    'maya-tradition-methodology',
+    'maya-tradition-description-deities',
+    'maya-tradition-calendar-cosmology',
+    'maya-aztec-culture-ritual',
+    'maya-tradition-models-comparisons',
   ]
   const requiredFields = [
     'id', 'title', 'description', 'sourceSeries', 'category', 'culture', 'cover',
@@ -76,18 +79,43 @@ test('exposes the complete source-backed library and searchable metadata', () =>
   ]
 
   assert.deepEqual(books.map((book) => book.id), expectedIds)
+  assert.equal(books.length, 23)
   assert.equal(new Set(books.map((book) => book.originalSourceFile)).size, 20)
   for (const book of books) {
-    assert.deepEqual(Object.keys(book).sort(), requiredFields.sort())
+    assert.deepEqual(
+      Object.keys(book).sort(),
+      [...requiredFields, ...(book.mediaSeries === 'maya' ? ['sourceSectionStart', 'sourceSectionEnd'] : [])].sort(),
+    )
     assert.ok(book.cover)
     assert.ok(book.chapters.length)
   }
 
-  assert.equal(
-    getBookById('maya-tradition-methodology').originalSourceFile,
-    'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
+  const mayaVolumes = books.filter((book) => book.mediaSeries === 'maya')
+  assert.deepEqual(
+    mayaVolumes.map(({ sourceSectionStart, sourceSectionEnd }) => [sourceSectionStart, sourceSectionEnd]),
+    [
+      ['I. Описание традиции', 'II. Боги и божественные силы'],
+      ['III. Календарь, время и космология', 'III. Календарь, время и космология'],
+      ['IV. Места, предметы и материальная культура', 'V. Мифология, Шибальба, инициация и ритуал'],
+      ['VI. Авторские, архетипические и терапевтические модели', 'VII. Сравнения мезоамериканских традиций'],
+    ],
   )
-  assert.match(getBookById('maya-tradition-methodology').description, /81 первичных текстов/)
+  assert.equal(new Set(mayaVolumes.map((book) => book.cover)).size, 4)
+  assert.ok(mayaVolumes.every((book) => book.originalSourceFile === 'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md'))
+  const sourceSections = [
+    'I. Описание традиции',
+    'II. Боги и божественные силы',
+    'III. Календарь, время и космология',
+    'IV. Места, предметы и материальная культура',
+    'V. Мифология, Шибальба, инициация и ритуал',
+    'VI. Авторские, архетипические и терапевтические модели',
+    'VII. Сравнения мезоамериканских традиций',
+  ]
+  const assignedSections = mayaVolumes.flatMap(({ sourceSectionStart, sourceSectionEnd }) => (
+    sourceSections.slice(sourceSections.indexOf(sourceSectionStart), sourceSections.indexOf(sourceSectionEnd) + 1)
+  ))
+  assert.deepEqual(assignedSections, sourceSections)
+  assert.equal(new Set(assignedSections).size, sourceSections.length)
   assert.equal(getBookById('alchemy-bach-foundations').cover, 'post_855_01.jpg')
   assert.equal(getBookById('alchemy-services-workflow').cover, 'post_997_01.jpg')
   assert.equal(getBookById('missing'), undefined)
@@ -128,6 +156,9 @@ test('points every canonical record to an exact source file and existing cover',
     'source-books/book-2-dao-books/dao_wuxing_model_steps.html',
     'source-books/book-2-dao-books/dao_practicum_cases_remedies.html',
     'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
+    'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
+    'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
+    'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
   ]
   const mediaRoots = {
     alchemy: 'source-books/book-1-alchemy-soul/media',
@@ -141,7 +172,7 @@ test('points every canonical record to an exact source file and existing cover',
       culture,
       books.filter((book) => book.culture === culture).length,
     ])),
-    { Alchemy: 9, Dao: 10, Maya: 1 },
+    { Alchemy: 9, Dao: 10, Maya: 4 },
   )
 
   for (const book of books) {

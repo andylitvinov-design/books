@@ -57,7 +57,7 @@ export function parseMayaManuscript(markdown) {
   }
 
   for (const line of markdown.split(/\r?\n/)) {
-    const heading = line.match(/^(#{1,6})\s*(.+)$/)
+    const heading = line.match(/^(#{1,6})\s+(.+)$/)
     const orderedListItem = line.match(/^\s*\d+[.)]\s+(.+)$/)
     const unorderedListItem = line.match(/^\s*[-+*]\s+(.+)$/)
 
@@ -95,11 +95,39 @@ export function parseMayaManuscript(markdown) {
   return blocks
 }
 
+function mayaBlocksForSectionRange(blocks, sourceSectionStart, sourceSectionEnd) {
+  if (!sourceSectionStart && !sourceSectionEnd) return blocks
+
+  const startIndex = blocks.findIndex((block) => (
+    block.type === 'heading' && block.level === 1 && block.text === sourceSectionStart
+  ))
+  const endIndex = blocks.findIndex((block, index) => (
+    index >= startIndex && block.type === 'heading' && block.level === 1 && block.text === sourceSectionEnd
+  ))
+
+  if (startIndex === -1 || endIndex === -1) {
+    throw new Error(`Maya section range not found: ${sourceSectionStart}–${sourceSectionEnd}`)
+  }
+
+  const nextSectionIndex = blocks.findIndex((block, index) => (
+    index > endIndex && block.type === 'heading' && block.level === 1
+  ))
+
+  return blocks.slice(startIndex, nextSectionIndex === -1 ? undefined : nextSectionIndex)
+}
+
 export async function loadReaderDocument(book) {
   const source = await readFile(path.join(process.cwd(), book.originalSourceFile), 'utf8')
 
   if (book.mediaSeries === 'maya') {
-    return { type: 'maya', blocks: parseMayaManuscript(source) }
+    return {
+      type: 'maya',
+      blocks: mayaBlocksForSectionRange(
+        parseMayaManuscript(source),
+        book.sourceSectionStart,
+        book.sourceSectionEnd,
+      ),
+    }
   }
 
   return {

@@ -2,17 +2,20 @@ import assert from 'node:assert/strict'
 import { access, readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-import { getBookById } from '../data/library.js'
+import { books, getBookById } from '../data/library.js'
 import * as media from '../data/media.js'
 import * as readerContent from '../data/reader-content.js'
 
 const { mediaPathFor, validateMediaRequest } = media
 const { parseMayaManuscript } = readerContent
 
-test('maps canonical cover media to one of the fixed source roots', () => {
-  const maya = getBookById('maya-tradition-methodology')
+test('maps every Maya volume cover media to one of the fixed source roots', () => {
+  const mayaVolumes = books.filter((book) => book.mediaSeries === 'maya')
 
-  assert.equal(mediaPathFor(maya.mediaSeries, maya.cover), 'source-books/book-3-maya-tradition/raw/photos/photo_100@06-01-2025_09-34-15.jpg')
+  assert.equal(mayaVolumes.length, 4)
+  for (const book of mayaVolumes) {
+    assert.match(mediaPathFor(book.mediaSeries, book.cover), /^source-books\/book-3-maya-tradition\/raw\/photos\/.+\.jpg$/)
+  }
 })
 
 test('rejects unknown series and unsafe media filenames', () => {
@@ -81,16 +84,25 @@ test('loads original HTML reader content through the safe source parser', async 
   assert.doesNotMatch(document.content, /<script\b/i)
 })
 
-test('loads Maya as semantic manuscript blocks with supplemental source labels', async () => {
+test('loads each Maya reader volume only within its assigned inclusive H1 range', async () => {
   assert.equal(typeof readerContent.loadReaderDocument, 'function')
 
-  const document = await readerContent.loadReaderDocument(getBookById('maya-tradition-methodology'))
+  const expectedSections = new Map([
+    ['maya-tradition-description-deities', ['I. Описание традиции', 'II. Боги и божественные силы']],
+    ['maya-tradition-calendar-cosmology', ['III. Календарь, время и космология']],
+    ['maya-aztec-culture-ritual', ['IV. Места, предметы и материальная культура', 'V. Мифология, Шибальба, инициация и ритуал']],
+    ['maya-tradition-models-comparisons', ['VI. Авторские, архетипические и терапевтические модели', 'VII. Сравнения мезоамериканских традиций']],
+  ])
 
-  assert.equal(document.type, 'maya')
-  assert.ok(document.blocks.some((block) => block.type === 'heading' && block.supplemental))
-  assert.ok(document.blocks.some((block) => block.type === 'paragraph' && block.sourceLabel && block.text.includes('https://t.me/TempleTherapy/2062')))
-  assert.ok(document.blocks.some((block) => block.type === 'list' && block.ordered && block.items.includes('Энергетическая практика.')))
-  assert.ok(document.blocks.some((block) => block.type === 'list' && !block.ordered))
+  for (const [bookId, expectedHeadings] of expectedSections) {
+    const document = await readerContent.loadReaderDocument(getBookById(bookId))
+
+    assert.equal(document.type, 'maya')
+    assert.deepEqual(
+      document.blocks.filter((block) => block.type === 'heading' && block.level === 1).map((block) => block.text),
+      expectedHeadings,
+    )
+  }
 })
 
 test('reads known image assets with a cacheable MIME type only', async () => {
