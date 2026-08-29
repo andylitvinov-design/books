@@ -280,6 +280,22 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertEqual(set(article_ids), {article["article_id"] for article in reader})
         self.assertEqual(len(article_ids), len(set(article_ids)))
 
+    def test_requested_articles_are_assigned_to_their_reading_volumes(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+        volumes = {
+            volume_id: {article["article_id"] for article in articles}
+            for volume_id, articles in BUILD.volume_articles(reader).items()
+        }
+
+        self.assertTrue({"mayaismagic-214", "templetherapy-2262"} <= volumes["maya-egregor-gods"])
+        self.assertTrue({"mayaismagic-154", "mayaismagic-156"} <= volumes["maya-calendar"])
+        self.assertFalse(
+            {"mayaismagic-214", "templetherapy-2262", "mayaismagic-154", "mayaismagic-156"}
+            & volumes["maya-exorcism"]
+        )
+
     def test_each_volume_has_reader_html_and_illustrates_every_article(self):
         reader = BUILD.curate_reader_articles(
             BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
@@ -313,6 +329,13 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertIn('w:hyperlink w:anchor="article_', document_xml)
         self.assertIn("MAYA TRADITION", header_xml)
         self.assertIn('w:instr="PAGE"', footer_xml)
+
+    def test_docx_flows_content_without_forced_blank_page_breaks(self):
+        with ZipFile(BUILD.DOCX_OUT) as document:
+            document_xml = document.read("word/document.xml").decode("utf-8")
+
+        self.assertNotIn('w:br w:type="page"', document_xml)
+        self.assertEqual(document_xml.count("<w:pageBreakBefore/>"), 0)
 
     def test_verifier_checks_the_supplemental_index_and_integrated_manuscript(self):
         self.assertEqual(VERIFY.verify_supplemental(ROOT), [])

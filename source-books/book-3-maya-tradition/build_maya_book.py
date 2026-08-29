@@ -124,6 +124,16 @@ VOLUMES = (
     },
 )
 
+# These four source-backed articles stay in their recovered reader chapters,
+# but belong to a different published volume for a more coherent reading path.
+# An override changes placement only; it never duplicates or rewrites a post.
+VOLUME_ARTICLE_OVERRIDES = {
+    "mayaismagic-214": "maya-egregor-gods",
+    "templetherapy-2262": "maya-egregor-gods",
+    "mayaismagic-154": "maya-calendar",
+    "mayaismagic-156": "maya-calendar",
+}
+
 # These records remain intact in the raw archive and source index.  They are
 # deliberately omitted from the Maya/Aztec reader because their primary topic
 # is another tradition, a multi-tradition programme, or a general travel note.
@@ -583,7 +593,12 @@ def volume_articles(articles: list[dict[str, object]]) -> dict[str, list[dict[st
     """Partition the curated reader into the four published editions."""
     return {
         str(volume["id"]): [
-            article for article in articles if article["chapter"] in volume["chapters"]
+            article for article in articles
+            if VOLUME_ARTICLE_OVERRIDES.get(str(article["article_id"])) == volume["id"]
+            or (
+                str(article["article_id"]) not in VOLUME_ARTICLE_OVERRIDES
+                and article["chapter"] in volume["chapters"]
+            )
         ]
         for volume in VOLUMES
     }
@@ -938,14 +953,12 @@ def build_docx(
     chapter = None
     bookmark_id = 1
     for article in articles:
-        if article["chapter"] != chapter:
+        starts_chapter = article["chapter"] != chapter
+        if starts_chapter:
             chapter = article["chapter"]
-            doc.add_page_break()
             chapter_intro = doc.add_paragraph(); set_paragraph(chapter_intro, before=12, after=10, line_spacing=DOCX_READER_LINE_SPACING); add_run(chapter_intro, READER_CHAPTER_INTROS[str(chapter)], 13, False, MUTED)
             add_bookmark(chapter_intro, chapter_bookmarks[str(chapter)], bookmark_id)
             bookmark_id += 1
-        else:
-            doc.add_page_break()
         token = doc.add_table(rows=1, cols=1); token.autofit = False; cell = token.cell(0,0); shade(cell, CREAM); set_cell_margins(cell); cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
         p = cell.paragraphs[0]; set_paragraph(p, after=0); add_run(p, str(chapter).upper(), 10, True, GOLD)
         table = doc.add_table(rows=1, cols=2); table.alignment = WD_TABLE_ALIGNMENT.RIGHT; table.autofit = False; table.columns[0].width = Inches(DOCX_TEXT_COLUMN_WIDTH_INCHES); table.columns[1].width = Inches(DOCX_MEDIA_COLUMN_WIDTH_INCHES)
