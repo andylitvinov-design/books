@@ -47,6 +47,22 @@ test('rejects an unrecognized media series before constructing public image URLs
   )
 })
 
+test('rewrites TempleTherapy media only into an explicit Maya volume public root', () => {
+  const knownVolume = normalizeSourceHtml(
+    '<img src="../media/templetherapy/post-2226-1.jpg" alt="Источник">',
+    'maya',
+    'maya-egregor-gods',
+  )
+  const unknownVolume = normalizeSourceHtml(
+    '<img src="../media/templetherapy/post-2226-1.jpg" alt="Источник">',
+    'maya',
+    'maya-untrusted',
+  )
+
+  assert.match(knownVolume, /src="\/library\/maya-egregor-gods\/media\/post-2226-1\.jpg"/)
+  assert.doesNotMatch(unknownVolume, /src=|templetherapy|\.\.\//i)
+})
+
 test('exposes the complete source-backed library and searchable metadata', () => {
   const expectedIds = [
     'alchemy-homeopathy-foundations',
@@ -68,10 +84,10 @@ test('exposes the complete source-backed library and searchable metadata', () =>
     'dao-wuxing-five-elements',
     'dao-wuxing-model-steps',
     'dao-practicum-cases-remedies',
-    'maya-tradition-description-deities',
-    'maya-tradition-calendar-cosmology',
-    'maya-aztec-culture-ritual',
-    'maya-tradition-models-comparisons',
+    'maya-egregor-gods',
+    'maya-calendar',
+    'maya-exorcism',
+    'maya-mysteries',
   ]
   const requiredFields = [
     'id', 'title', 'description', 'sourceSeries', 'category', 'culture', 'cover',
@@ -80,42 +96,20 @@ test('exposes the complete source-backed library and searchable metadata', () =>
 
   assert.deepEqual(books.map((book) => book.id), expectedIds)
   assert.equal(books.length, 23)
-  assert.equal(new Set(books.map((book) => book.originalSourceFile)).size, 20)
+  assert.equal(new Set(books.map((book) => book.originalSourceFile)).size, 23)
   for (const book of books) {
     assert.deepEqual(
       Object.keys(book).sort(),
-      [...requiredFields, ...(book.mediaSeries === 'maya' ? ['sourceSectionStart', 'sourceSectionEnd'] : [])].sort(),
+      requiredFields.slice().sort(),
     )
     assert.ok(book.cover)
     assert.ok(book.chapters.length)
   }
 
   const mayaVolumes = books.filter((book) => book.mediaSeries === 'maya')
-  assert.deepEqual(
-    mayaVolumes.map(({ sourceSectionStart, sourceSectionEnd }) => [sourceSectionStart, sourceSectionEnd]),
-    [
-      ['I. Описание традиции', 'II. Боги и божественные силы'],
-      ['III. Календарь, время и космология', 'III. Календарь, время и космология'],
-      ['IV. Места, предметы и материальная культура', 'V. Мифология, Шибальба, инициация и ритуал'],
-      ['VI. Авторские, архетипические и терапевтические модели', 'VII. Сравнения мезоамериканских традиций'],
-    ],
-  )
   assert.equal(new Set(mayaVolumes.map((book) => book.cover)).size, 4)
-  assert.ok(mayaVolumes.every((book) => book.originalSourceFile === 'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md'))
-  const sourceSections = [
-    'I. Описание традиции',
-    'II. Боги и божественные силы',
-    'III. Календарь, время и космология',
-    'IV. Места, предметы и материальная культура',
-    'V. Мифология, Шибальба, инициация и ритуал',
-    'VI. Авторские, архетипические и терапевтические модели',
-    'VII. Сравнения мезоамериканских традиций',
-  ]
-  const assignedSections = mayaVolumes.flatMap(({ sourceSectionStart, sourceSectionEnd }) => (
-    sourceSections.slice(sourceSections.indexOf(sourceSectionStart), sourceSections.indexOf(sourceSectionEnd) + 1)
-  ))
-  assert.deepEqual(assignedSections, sourceSections)
-  assert.equal(new Set(assignedSections).size, sourceSections.length)
+  assert.ok(mayaVolumes.every((book) => book.originalSourceFile.endsWith('.html')))
+  assert.ok(mayaVolumes.every((book) => !('sourceSectionStart' in book) && !('sourceSectionEnd' in book)))
   assert.equal(getBookById('alchemy-bach-foundations').cover, 'post_855_01.jpg')
   assert.equal(getBookById('alchemy-services-workflow').cover, 'post_997_01.jpg')
   assert.equal(getBookById('missing'), undefined)
@@ -155,10 +149,10 @@ test('points every canonical record to an exact source file and existing cover',
     'source-books/book-2-dao-books/dao_wuxing_five_elements.html',
     'source-books/book-2-dao-books/dao_wuxing_model_steps.html',
     'source-books/book-2-dao-books/dao_practicum_cases_remedies.html',
-    'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
-    'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
-    'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
-    'source-books/book-3-maya-tradition/manuscript/MAYA_TRADITION_UNIFIED.md',
+    'source-books/book-3-maya-tradition/outputs/Maya_Aztec_Egregor_Gods.html',
+    'source-books/book-3-maya-tradition/outputs/Maya_Calendar_Energies.html',
+    'source-books/book-3-maya-tradition/outputs/Maya_Exorcism_Settings_Energies.html',
+    'source-books/book-3-maya-tradition/outputs/Maya_Mysteries.html',
   ]
   const mediaRoots = {
     alchemy: 'source-books/book-1-alchemy-soul/media',

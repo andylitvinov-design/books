@@ -1,9 +1,3 @@
-function plainMarkdown(text) {
-  return text
-    .replace(/^\*([^*]+)\*$/, '$1')
-    .trim()
-}
-
 function plainHtml(text) {
   return text
     .replace(/<[^>]+>/g, '')
@@ -30,109 +24,12 @@ function addChapterAnchors(html, chapters) {
   })
 }
 
-export function parseMayaManuscript(markdown) {
-  const blocks = []
-  let paragraph = []
-  let list
-
-  const flushParagraph = () => {
-    if (!paragraph.length) return
-
-    const text = plainMarkdown(paragraph.join('\n'))
-    if (text) {
-      blocks.push({
-        type: 'paragraph',
-        text,
-        sourceLabel: /^(Источник|Источники):/i.test(text),
-      })
-    }
-    paragraph = []
-  }
-
-  const flushList = () => {
-    if (!list) return
-
-    blocks.push(list)
-    list = undefined
-  }
-
-  for (const line of markdown.split(/\r?\n/)) {
-    const heading = line.match(/^(#{1,6})\s+(.+)$/)
-    const orderedListItem = line.match(/^\s*\d+[.)]\s+(.+)$/)
-    const unorderedListItem = line.match(/^\s*[-+*]\s+(.+)$/)
-
-    if (heading) {
-      flushParagraph()
-      flushList()
-      const text = plainMarkdown(heading[2])
-      blocks.push({
-        type: 'heading',
-        level: heading[1].length,
-        text,
-        supplemental: /^TempleTherapy\b/i.test(text),
-      })
-    } else if (orderedListItem || unorderedListItem) {
-      flushParagraph()
-      const ordered = Boolean(orderedListItem)
-
-      if (!list || list.ordered !== ordered) {
-        flushList()
-        list = { type: 'list', ordered, items: [] }
-      }
-
-      list.items.push(plainMarkdown((orderedListItem ?? unorderedListItem)[1]))
-    } else if (line.trim()) {
-      flushList()
-      paragraph.push(line)
-    } else {
-      flushParagraph()
-      flushList()
-    }
-  }
-
-  flushParagraph()
-  flushList()
-  return blocks
-}
-
-function mayaBlocksForSectionRange(blocks, sourceSectionStart, sourceSectionEnd) {
-  if (!sourceSectionStart && !sourceSectionEnd) return blocks
-
-  const startIndex = blocks.findIndex((block) => (
-    block.type === 'heading' && block.level === 1 && block.text === sourceSectionStart
-  ))
-  const endIndex = blocks.findIndex((block, index) => (
-    index >= startIndex && block.type === 'heading' && block.level === 1 && block.text === sourceSectionEnd
-  ))
-
-  if (startIndex === -1 || endIndex === -1) {
-    throw new Error(`Maya section range not found: ${sourceSectionStart}–${sourceSectionEnd}`)
-  }
-
-  const nextSectionIndex = blocks.findIndex((block, index) => (
-    index > endIndex && block.type === 'heading' && block.level === 1
-  ))
-
-  return blocks.slice(startIndex, nextSectionIndex === -1 ? undefined : nextSectionIndex)
-}
-
 export async function loadReaderDocument(book) {
   const source = await readFile(path.join(process.cwd(), book.originalSourceFile), 'utf8')
 
-  if (book.mediaSeries === 'maya') {
-    return {
-      type: 'maya',
-      blocks: mayaBlocksForSectionRange(
-        parseMayaManuscript(source),
-        book.sourceSectionStart,
-        book.sourceSectionEnd,
-      ),
-    }
-  }
-
   return {
     type: 'html',
-    content: addChapterAnchors(normalizeSourceHtml(source, book.mediaSeries), book.chapters),
+    content: addChapterAnchors(normalizeSourceHtml(source, book.mediaSeries, book.id), book.chapters),
   }
 }
 import { readFile } from 'node:fs/promises'

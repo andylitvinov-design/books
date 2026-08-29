@@ -7,7 +7,6 @@ import * as media from '../data/media.js'
 import * as readerContent from '../data/reader-content.js'
 
 const { mediaPathFor, validateMediaRequest } = media
-const { parseMayaManuscript } = readerContent
 
 test('maps every Maya volume cover media to one of the fixed source roots', () => {
   const mayaVolumes = books.filter((book) => book.mediaSeries === 'maya')
@@ -38,40 +37,6 @@ test('keeps reader metadata complete for canonical book records', () => {
   )
 })
 
-test('parses Maya manuscript source labels and supplemental TempleTherapy headings', () => {
-  const blocks = parseMayaManuscript([
-    '# I. Описание традиции',
-    '',
-    '## TempleTherapy · пост 2062',
-    '',
-    '*Источники: TempleTherapy: пост [2062](https://t.me/TempleTherapy/2062); 2024-10-24.*',
-    '',
-    'Сохранённый авторский текст.',
-  ].join('\n'))
-
-  assert.deepEqual(blocks, [
-    { type: 'heading', level: 1, text: 'I. Описание традиции', supplemental: false },
-    { type: 'heading', level: 2, text: 'TempleTherapy · пост 2062', supplemental: true },
-    { type: 'paragraph', text: 'Источники: TempleTherapy: пост [2062](https://t.me/TempleTherapy/2062); 2024-10-24.', sourceLabel: true },
-    { type: 'paragraph', text: 'Сохранённый авторский текст.', sourceLabel: false },
-  ])
-})
-
-test('parses consecutive Maya source lists as ordered and unordered semantic blocks', () => {
-  const blocks = parseMayaManuscript([
-    '1. Первый сохранённый пункт',
-    '2. Второй сохранённый пункт',
-    '',
-    '- Первый маркированный пункт',
-    '- Второй маркированный пункт',
-  ].join('\n'))
-
-  assert.deepEqual(blocks, [
-    { type: 'list', ordered: true, items: ['Первый сохранённый пункт', 'Второй сохранённый пункт'] },
-    { type: 'list', ordered: false, items: ['Первый маркированный пункт', 'Второй маркированный пункт'] },
-  ])
-})
-
 test('loads original HTML reader content through the safe source parser', async () => {
   assert.equal(typeof readerContent.loadReaderDocument, 'function')
 
@@ -82,27 +47,6 @@ test('loads original HTML reader content through the safe source parser', async 
   assert.match(document.content, /<h2 id="introduction">Введение в метод<\/h2>/)
   assert.match(document.content, /src="\/media\/alchemy\/post_10_01\.jpg"/)
   assert.doesNotMatch(document.content, /<script\b/i)
-})
-
-test('loads each Maya reader volume only within its assigned inclusive H1 range', async () => {
-  assert.equal(typeof readerContent.loadReaderDocument, 'function')
-
-  const expectedSections = new Map([
-    ['maya-tradition-description-deities', ['I. Описание традиции', 'II. Боги и божественные силы']],
-    ['maya-tradition-calendar-cosmology', ['III. Календарь, время и космология']],
-    ['maya-aztec-culture-ritual', ['IV. Места, предметы и материальная культура', 'V. Мифология, Шибальба, инициация и ритуал']],
-    ['maya-tradition-models-comparisons', ['VI. Авторские, архетипические и терапевтические модели', 'VII. Сравнения мезоамериканских традиций']],
-  ])
-
-  for (const [bookId, expectedHeadings] of expectedSections) {
-    const document = await readerContent.loadReaderDocument(getBookById(bookId))
-
-    assert.equal(document.type, 'maya')
-    assert.deepEqual(
-      document.blocks.filter((block) => block.type === 'heading' && block.level === 1).map((block) => block.text),
-      expectedHeadings,
-    )
-  }
 })
 
 test('reads known image assets with a cacheable MIME type only', async () => {
@@ -135,7 +79,6 @@ test('provides the server reader, not-found, and strict media route modules', as
   assert.match(readerPage, /\/media\/\$\{book\.mediaSeries\}/)
   assert.match(readerPage, /Источник/)
   assert.match(readerPage, /Статус/)
-  assert.match(readerPage, /target="_blank"/)
   assert.match(notFoundPage, /Библиотек/)
   assert.match(mediaRoute, /Cache-Control/)
   assert.match(mediaRoute, /image\//)

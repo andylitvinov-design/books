@@ -4,114 +4,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { books, getBookById } from "@/data/library";
-import { loadReaderDocument, type MayaBlock } from "@/data/reader-content";
+import { loadReaderDocument } from "@/data/reader-content";
 import { metadataBaseFor } from "@/data/site-metadata";
 
 type PageProps = {
   params: Promise<{ bookId: string }>;
 };
-
-function chapterIdForHeading(text: string, chapters: Array<{ id: string; title: string }>) {
-  const normalized = text.trim().toLocaleLowerCase();
-  return chapters.find((chapter) => chapter.title.toLocaleLowerCase() === normalized)?.id;
-}
-
-function isSafeCitationHref(value: string) {
-  try {
-    const url = new URL(value);
-    const hostname = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
-
-    return (
-      (url.protocol === "http:" || url.protocol === "https:")
-      && !url.username
-      && !url.password
-      && hostname !== "localhost"
-      && hostname !== "::1"
-      && !hostname.startsWith("127.")
-    );
-  } catch {
-    return false;
-  }
-}
-
-function MayaInlineText({ text }: { text: string }) {
-  const nodes = [];
-  const markdownLink = /\[([^\]]+)\]\(([^\s)]+)\)/g;
-  let cursor = 0;
-
-  for (const match of text.matchAll(markdownLink)) {
-    const [source, label, href] = match;
-    const index = match.index ?? 0;
-
-    nodes.push(text.slice(cursor, index));
-    nodes.push(
-      isSafeCitationHref(href) ? (
-        <a href={href} key={`${href}-${index}`} rel="noopener noreferrer" target="_blank">
-          {label}
-        </a>
-      ) : label,
-    );
-    cursor = index + source.length;
-  }
-
-  nodes.push(text.slice(cursor));
-  return <>{nodes}</>;
-}
-
-function MayaHeading({ block, chapterId }: { block: Extract<MayaBlock, { type: "heading" }>; chapterId?: string }) {
-  const className = `reader-maya-heading reader-maya-heading-${block.level ?? 2}`;
-
-  switch (block.level) {
-    case 1:
-      return <h1 id={chapterId} className={className}><MayaInlineText text={block.text} /></h1>;
-    case 3:
-      return <h3 id={chapterId} className={className}><MayaInlineText text={block.text} /></h3>;
-    case 4:
-      return <h4 id={chapterId} className={className}><MayaInlineText text={block.text} /></h4>;
-    case 5:
-      return <h5 id={chapterId} className={className}><MayaInlineText text={block.text} /></h5>;
-    case 6:
-      return <h6 id={chapterId} className={className}><MayaInlineText text={block.text} /></h6>;
-    default:
-      return <h2 id={chapterId} className={className}><MayaInlineText text={block.text} /></h2>;
-  }
-}
-
-function MayaReader({ blocks, chapters }: { blocks: MayaBlock[]; chapters: Array<{ id: string; title: string }> }) {
-  return (
-    <div className="reader-content reader-maya-content" id="reader-content">
-      {blocks.map((block, index) => {
-        if (block.type === "heading") {
-          return (
-            <section
-              className={block.supplemental ? "reader-supplemental" : undefined}
-              key={`${block.type}-${index}`}
-            >
-              {block.supplemental && <p className="reader-supplemental-label">Дополнительный источник TempleTherapy</p>}
-              <MayaHeading block={block} chapterId={chapterIdForHeading(block.text, chapters)} />
-            </section>
-          );
-        }
-
-        if (block.type === "list") {
-          const List = block.ordered ? "ol" : "ul";
-
-          return (
-            <List key={`${block.type}-${index}`}>
-              {block.items.map((item, itemIndex) => <li key={itemIndex}><MayaInlineText text={item} /></li>)}
-            </List>
-          );
-        }
-
-        return (
-          <p className={block.sourceLabel ? "reader-source-label" : undefined} key={`${block.type}-${index}`}>
-            <MayaInlineText text={block.text} />
-          </p>
-        );
-      })}
-    </div>
-  );
-}
 
 export function generateStaticParams() {
   return books.map((book) => ({ bookId: book.id }));
@@ -180,15 +78,11 @@ export default async function BookReaderPage({ params }: PageProps) {
         </aside>
 
         <article className="reader-article">
-          {document.type === "maya" ? (
-            <MayaReader blocks={document.blocks} chapters={book.chapters} />
-          ) : (
-            <div
-              className="reader-content"
-              id="reader-content"
-              dangerouslySetInnerHTML={{ __html: document.content }}
-            />
-          )}
+          <div
+            className="reader-content"
+            id="reader-content"
+            dangerouslySetInnerHTML={{ __html: document.content }}
+          />
         </article>
       </div>
     </main>
