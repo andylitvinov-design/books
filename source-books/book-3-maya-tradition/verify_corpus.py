@@ -16,7 +16,7 @@ EXPECTED_CHANNEL = "mayaismagic"
 EXPECTED_POST_COUNT = 236
 SUPPLEMENTAL_INDEX = Path("raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl")
 SUPPLEMENTAL_MEDIA = Path("media/templetherapy")
-EXPECTED_SUPPLEMENTAL_COUNT = 29
+EXPECTED_SUPPLEMENTAL_COUNT = 158
 # These TempleTherapy records remain in the traceable raw archive but are not
 # part of the focused Maya/Aztec reader: they are either multi-tradition course
 # announcements, a Toltec post, an unrelated general programme post, or a
@@ -93,7 +93,7 @@ def verify_supplemental(root):
         except json.JSONDecodeError as exc:
             errors.append(f"TempleTherapy line {line_number}: invalid JSON: {exc.msg}")
             continue
-        required = {"channel", "post_id", "url", "date", "raw_text", "media_references", "media_caption"}
+        required = {"channel", "post_id", "url", "date", "raw_text", "media_references", "media_caption", "chapter", "reader_include"}
         missing = required - row.keys()
         if missing:
             errors.append(f"TempleTherapy line {line_number}: missing fields: {', '.join(sorted(missing))}")
@@ -114,10 +114,7 @@ def verify_supplemental(root):
         errors.append("unified manuscript does not contain the seven integrated chapters")
     for row in rows:
         marker = f"TempleTherapy: пост [{row['post_id']}]({row['url']}); {row['date']}"
-        if row["post_id"] in READER_EXCLUDED_SUPPLEMENTAL_IDS:
-            if marker in manuscript:
-                errors.append(f"TempleTherapy post {row['post_id']}: outside reader scope")
-        elif marker not in manuscript:
+        if row["reader_include"] and marker not in manuscript:
             errors.append(f"TempleTherapy post {row['post_id']}: missing integrated source marker")
     media_root = root / SUPPLEMENTAL_MEDIA
     expected = {f"post-{row['post_id']}-{index}.jpg" for row in rows for index, _ in enumerate(row["media_references"], 1)}

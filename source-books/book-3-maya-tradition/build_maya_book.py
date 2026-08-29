@@ -171,10 +171,11 @@ def parse_supplemental_articles() -> list[dict[str, object]]:
         raw_text = html.unescape(str(entry["raw_text"]))
         if not raw_text.strip():
             raise ValueError(f"TempleTherapy post at line {line_number} has no substantive text")
+        chapter = entry.get("chapter") or SUPPLEMENTAL_CHAPTERS[int(entry["post_id"])]
         articles.append({
-            "chapter": SUPPLEMENTAL_CHAPTERS[int(entry["post_id"])],
+            "chapter": str(chapter),
             "channel": "TempleTherapy",
-            "title": f"TempleTherapy · пост {entry['post_id']}",
+            "title": str(entry.get("title", f"TempleTherapy · пост {entry['post_id']}")),
             "post_id": entry["post_id"],
             "article_id": f"templetherapy-{entry['post_id']}",
             "url": entry["url"],
@@ -182,6 +183,7 @@ def parse_supplemental_articles() -> list[dict[str, object]]:
             "text": raw_text,
             "media_references": entry["media_references"],
             "media_root": "media/templetherapy",
+            "reader_include": bool(entry.get("reader_include", True)),
         })
     return articles
 
@@ -290,14 +292,22 @@ def unify_articles(primary: list[dict[str, object]], supplemental: list[dict[str
         article["channel"] = "Mayaismagic"
         article["source_links"] = [{key: article[key] for key in ("channel", "post_id", "url", "date")}]
     retained = list(primary)
+    by_normalized_text = {normalized_text(str(article["text"])): article for article in primary}
     for article in supplemental:
         original = {key: article[key] for key in ("channel", "post_id", "url", "date")}
+        text_key = normalized_text(str(article["text"]))
+        exact_match = by_normalized_text.get(text_key) if text_key else None
         canonical_id = SUPPLEMENTAL_CANONICAL.get(int(article["post_id"]))
+        if exact_match is not None:
+            exact_match["source_links"].append(original)
+            continue
         if canonical_id is not None:
             canonical[canonical_id]["source_links"].append(original)
             continue
         article["source_links"] = [original]
         retained.append(article)
+        if text_key:
+            by_normalized_text[text_key] = article
     positions = {chapter: index for index, chapter in enumerate(CHAPTERS)}
     return sorted(retained, key=lambda article: (positions.get(str(article["chapter"]), 99), str(article["date"]), str(article["article_id"])))
 
@@ -342,7 +352,7 @@ def curate_reader_articles(canonical_articles: list[dict[str, object]]) -> list[
     retained = [
         {**article, "chapter": reader_chapter(article), "source_links": [dict(source) for source in source_links(article)]}
         for article in canonical_articles
-        if str(article["article_id"]) not in READER_EXCLUDED_ARTICLE_IDS
+        if str(article["article_id"]) not in READER_EXCLUDED_ARTICLE_IDS and article.get("reader_include", True)
     ]
     by_id = {str(article["article_id"]): article for article in retained}
     for duplicate_id, retained_id in READER_MERGED_ARTICLE_IDS.items():
@@ -387,7 +397,7 @@ def normalized_text(text: str) -> str:
     return re.sub(r"[^\w]+", "", html.unescape(text).casefold())
 
 
-def write_supporting_docs(articles: list[dict[str, object]], canonical_count: int) -> None:
+def write_supporting_docs(articles: list[dict[str, object]], canonical_count: int, supplemental_count: int) -> None:
     """Regenerate reader-facing maps and the reproducible deduplication audit."""
     raw_sources = (HERE / "raw" / "posts.jsonl", SUPPLEMENTAL_INDEX)
     records = []
@@ -399,8 +409,11 @@ def write_supporting_docs(articles: list[dict[str, object]], canonical_count: in
         if key:
             exact[key].append(record)
     groups = [group for group in exact.values() if len(group) > 1]
+    cross_source_exact_groups = sum(
+        1 for group in groups if {str(record.get("channel")) for record in group} >= {"mayaismagic", "TempleTherapy"}
+    )
     outside_scope_count = canonical_count - len(articles) - len(READER_MERGED_ARTICLE_IDS)
-    report = ["# Deduplication report", "", "Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl`. Raw archives were read only.", "", f"- Source records audited: {len(records)}", f"- Normalized exact-duplicate groups: {len(groups)}", "- Cross-source exact relationships: 14", "- Near-duplicate decisions: 3", f"- Canonical articles after deduplication: {canonical_count}", f"- Maya/Aztec reader articles retained: {len(articles)}", f"- Reader duplicate editions merged into retained sources: {len(READER_MERGED_ARTICLE_IDS)}", f"- Outside-reader-scope articles kept only in raw archive: {outside_scope_count}", "", "## Exact duplicate groups", ""]
+    report = ["# Deduplication report", "", "Scope: `raw/posts.jsonl` and `raw/templetherapy/TEMPLETHERAPY_MAYA_AZTEC_INDEX.jsonl`. Raw archives were read only.", "", f"- Source records audited: {len(records)}", f"- Normalized exact-duplicate groups: {len(groups)}", f"- Cross-source exact duplicate groups: {cross_source_exact_groups}", "- Explicit near-duplicate decisions: 3", f"- Canonical articles after deduplication: {canonical_count}", f"- Maya/Aztec reader articles retained: {len(articles)}", f"- Reader duplicate editions merged into retained sources: {len(READER_MERGED_ARTICLE_IDS)}", f"- Outside-reader-scope articles kept only in raw archive: {outside_scope_count}", "", "## Exact duplicate groups", ""]
     for group in groups:
         links = ", ".join(f"[{item['channel']}:{item['post_id']}]({item['url']})" for item in group)
         report.append(f"- {links}")
@@ -419,7 +432,8 @@ def write_supporting_docs(articles: list[dict[str, object]], canonical_count: in
         chapter_rows.append("")
     (HERE / "manuscript" / "CHAPTER_MAP.md").write_text("\n".join(chapter_rows), encoding="utf-8")
     (HERE / "CONTENT_MAP.md").write_text("\n".join(["# Content map", "", "All reader articles are listed in the chapter map; IDs are namespace-safe (`mayaismagic-<id>` or `templetherapy-<id>`).", "", f"Canonical articles after deduplication: {canonical_count}.", f"Maya/Aztec reader articles: {len(articles)}."]) + "\n", encoding="utf-8")
-    (HERE / "manuscript" / "COVERAGE.md").write_text(f"# Coverage\n\n- Primary curated articles: 81\n- Supplemental source posts: 29\n- Supplemental duplicates consolidated: 17\n- Canonical articles after deduplication: {canonical_count}\n- Maya/Aztec reader articles: {len(articles)}\n- Reader duplicate editions merged into retained sources: {len(READER_MERGED_ARTICLE_IDS)}\n- Outside-reader-scope articles retained only in raw archive: {outside_scope_count}\n", encoding="utf-8")
+    supplemental_merged = len(parse_articles()) + supplemental_count - canonical_count
+    (HERE / "manuscript" / "COVERAGE.md").write_text(f"# Coverage\n\n- Primary curated articles: 81\n- Supplemental Maya/Aztec source records: {supplemental_count}\n- Supplemental entries merged into canonical texts: {supplemental_merged}\n- Canonical articles after deduplication: {canonical_count}\n- Maya/Aztec reader articles: {len(articles)}\n- Reader duplicate editions merged into retained sources: {len(READER_MERGED_ARTICLE_IDS)}\n- Outside-reader-scope articles retained only in raw archive: {outside_scope_count}\n", encoding="utf-8")
     (HERE / "manuscript" / "SOURCE_NOTES.md").write_text("# Source notes\n\nMayaismagic is the primary Telegram export. TempleTherapy is a separately-labelled supplemental public source. Duplicate source URLs are preserved on the canonical retained article; no archive content was altered.\n", encoding="utf-8")
     (HERE / "FACT_CHECK.md").write_text("# Fact-check boundary\n\nThis is a source-backed reading edition, not an independent historical fact-check. Editorial work is limited to placement, deduplication, and source attribution; claims in posts remain attributed to their original channel.\n", encoding="utf-8")
 
@@ -455,6 +469,18 @@ def render_text_html(text: str) -> str:
         for block in re.split(r"\n\s*\n+", prose.strip()):
             paragraph_lines: list[str] = []
             list_items: list[str] = []
+            block_lines = [line.strip() for line in block.splitlines() if line.strip()]
+
+            # Telegram authors often use one physical line per verse. Preserve
+            # compact multi-line stanzas, while regular prose still joins
+            # single source line breaks into readable paragraphs.
+            if (
+                len(block_lines) >= 3
+                and not any(ORDERED_ITEM.match(line) for line in block_lines)
+                and sum(len(line) for line in block_lines) / len(block_lines) <= 90
+            ):
+                rendered.append('<p class="verse">' + "<br>".join(html.escape(line) for line in block_lines) + "</p>")
+                continue
 
             def flush_paragraph() -> None:
                 if paragraph_lines:
@@ -543,7 +569,7 @@ def build_html(articles: list[dict[str, object]], media: dict[int, list[str]], d
 body{{margin:0;background:#efe5d8;color:var(--ink);font:{DESKTOP_READER_FONT_SIZE}px/1.8 Georgia,"Times New Roman",serif}} main{{max-width:980px;margin:auto;padding:36px 20px 80px}}
 .cover{{background:linear-gradient(135deg,#4d2117,var(--wine));color:#fff7ec;border-radius:18px;padding:42px 38px;margin-bottom:28px}} .eyebrow,.chapter-token{{font:700 12px/1.2 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}} .cover .eyebrow{{color:#f2c979}} .cover h1{{font-size:clamp(34px,5vw,54px);line-height:1.08;margin:.3em 0}} .cover p{{max-width:720px;line-height:1.75;margin:0}}
 .front-card,.toc{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0}} .front-card h2,.toc h2{{font-size:30px;line-height:1.25;margin:0 0 12px;color:var(--wine)}} .toc ol{{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}} .toc a{{display:block;min-height:54px;padding:13px 16px;border-radius:9px;background:#f8eee2;color:var(--wine);font:700 19px/1.35 Arial,sans-serif;text-decoration:none}}
-.chapter{{scroll-margin-top:16px;font-size:32px;line-height:1.25;color:var(--wine);margin:52px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--gold)}} .chapter-intro{{margin:0 0 19px;padding:14px 17px;background:#f8eee2;border-left:3px solid var(--gold);font-size:19px;line-height:1.6;color:#{MUTED}}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:30px;line-height:1.3;margin:7px 0 13px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:16px/1.55 Arial,sans-serif;color:#{MUTED};padding:11px 0 15px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:18px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{float:right;width:min(38%,330px);margin:0 0 17px 26px}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1.05rem;line-height:1.8}}
+.chapter{{scroll-margin-top:16px;font-size:32px;line-height:1.25;color:var(--wine);margin:52px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--gold)}} .chapter-intro{{margin:0 0 19px;padding:14px 17px;background:#f8eee2;border-left:3px solid var(--gold);font-size:19px;line-height:1.6;color:#{MUTED}}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:30px;line-height:1.3;margin:7px 0 13px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:16px/1.55 Arial,sans-serif;color:#{MUTED};padding:11px 0 15px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:18px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{float:right;width:min(38%,330px);margin:0 0 17px 26px}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1.05rem;line-height:1.8}} .text .verse{{margin:1.05em 0;padding-left:1em;border-left:2px solid #d8b879;line-height:1.65}}
 @media(max-width:700px){{body{{font-size:{MOBILE_READER_FONT_SIZE}px;line-height:1.82}}main{{padding:20px 13px 52px}}.cover{{padding:30px 22px}}.front-card,.toc,.post{{padding:22px 19px}}.front-card h2,.toc h2{{font-size:29px}}.toc ol{{grid-template-columns:1fr;gap:10px}}.toc a{{min-height:58px;font-size:19px;padding:15px 16px}}.chapter{{font-size:30px;margin-top:44px}}.chapter-intro{{font-size:18px;padding:14px 16px}}.post-media{{float:none;width:100%;margin:0 0 17px}}.post h2{{font-size:28px}}.meta{{font-size:15px}}.text{{font-size:1rem;line-height:1.82}}}} @media print{{body{{background:#fff}}main{{max-width:none;padding:0}}.cover{{border-radius:0;break-after:page}}.toc{{break-after:page}}.post{{border-radius:0;margin:0;min-height:92vh}}}}
 </style></head><body><main><header class="cover"><div class="eyebrow">Авторская читательская методичка</div><h1>Maya Tradition</h1><p>Методология источникового чтения. Редакционная компоновка сохранённых текстов без фактологического дополнения.</p></header><section class="front-card"><h2>Описание традиции</h2>{meta_html(description)}<div class="text">{description_text}</div></section><nav class="toc" aria-label="Содержание"><h2>Содержание</h2><ol>{toc}</ol></nav>{document}</main></body></html>''', encoding="utf-8")
 
@@ -621,10 +647,10 @@ def main() -> None:
     primary_articles, supplementary_articles = parse_articles(), parse_supplemental_articles()
     canonical_articles = unify_articles(primary_articles, supplementary_articles)
     articles, media, description = curate_reader_articles(canonical_articles), parse_media(), parse_front_description(text)
-    if len(primary_articles) != 81 or len(supplementary_articles) != 29:
-        raise SystemExit(f"Expected 81 primary and 29 supplemental reading articles, found {len(primary_articles)} and {len(supplementary_articles)}")
+    if len(primary_articles) != 81 or not supplementary_articles:
+        raise SystemExit(f"Expected 81 primary articles and a non-empty TempleTherapy selection, found {len(primary_articles)} and {len(supplementary_articles)}")
     write_unified_manuscript(articles, description)
-    write_supporting_docs(articles, len(canonical_articles))
+    write_supporting_docs(articles, len(canonical_articles), len(supplementary_articles))
     build_html(articles, media, description)
     build_docx(articles, media, description)
     print(f"wrote Maya/Aztec manuscript, maps, {HTML_OUT} and {DOCX_OUT} ({len(articles)} reader articles from {len(canonical_articles)} canonical articles)")

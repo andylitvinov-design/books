@@ -15,6 +15,22 @@ VERIFY_SPEC.loader.exec_module(VERIFY)
 
 
 class SupplementalTempleTherapyTests(unittest.TestCase):
+    def test_exact_supplemental_copy_merges_without_a_handwritten_post_map(self):
+        primary = [{
+            "article_id": "mayaismagic-900", "post_id": 900, "chapter": BUILD.CHAPTERS[1],
+            "channel": "Mayaismagic", "url": "https://t.me/mayaismagic/900", "date": "2025-01-01", "text": "Бог ветра\nНастройка",
+        }]
+        supplemental = [{
+            "article_id": "templetherapy-73", "post_id": 73, "chapter": BUILD.CHAPTERS[1],
+            "channel": "TempleTherapy", "url": "https://t.me/TempleTherapy/73", "date": "2021-03-19", "text": "Бог ветра\nНастройка",
+        }]
+
+        unified = BUILD.unify_articles(primary, supplemental)
+
+        self.assertEqual(len(unified), 1)
+        self.assertEqual(unified[0]["article_id"], "mayaismagic-900")
+        self.assertEqual({source["post_id"] for source in unified[0]["source_links"]}, {73, 900})
+
     def test_unified_manuscript_starts_with_maya_egregore_and_excludes_other_traditions(self):
         manuscript = BUILD.UNIFIED_MANUSCRIPT.read_text(encoding="utf-8")
 
@@ -93,6 +109,19 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertIn("<p>Первая строка</p>", serialized)
         self.assertIn("<ol><li>Первый пункт</li><li>Второй пункт</li></ol>", serialized)
 
+    def test_reader_preserves_a_source_stanza_as_visible_lines(self):
+        rendered = BUILD.render_text_html(
+            "НАСТРОЙКА. Бог Ветра. Эхекатль.\n\n"
+            "Взвиваясь, возносит истомы круженье\n"
+            "Спадает вуалью бытийности плен\n"
+            "Мерцают, лаская Иного знамения\n"
+            "Клубясь, увлекая в грядущего день.\n\n"
+            "ПРИМЕЧАНИЕ.\nБог ветра несёт потенцию изменений."
+        )
+
+        self.assertIn('<p class="verse">Взвиваясь, возносит истомы круженье<br>Спадает вуалью бытийности плен<br>Мерцают, лаская Иного знамения<br>Клубясь, увлекая в грядущего день.</p>', rendered)
+        self.assertIn("<p>ПРИМЕЧАНИЕ. Бог ветра несёт потенцию изменений.</p>", rendered)
+
     def test_reader_preserves_fenced_code_without_decoding_it(self):
         rendered = BUILD.render_text_html("Текст\n\n```\npath = r'C:\\\\new'\n```")
 
@@ -101,17 +130,18 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
     def test_parses_all_substantive_templetherapy_entries_into_shared_chapters(self):
         entries = BUILD.parse_supplemental_articles()
 
-        self.assertEqual(len(entries), 29)
+        self.assertEqual(len(entries), 158)
         self.assertTrue(all(entry["channel"] == "TempleTherapy" for entry in entries))
-        self.assertEqual({entry["chapter"] for entry in entries}, set(BUILD.CHAPTERS))
+        self.assertTrue({entry["chapter"] for entry in entries} <= set(BUILD.CHAPTERS))
         self.assertTrue(all(entry["article_id"].startswith("templetherapy-") for entry in entries))
-        self.assertEqual(entries[0]["post_id"], 2062)
+        self.assertEqual(entries[0]["post_id"], 4)
+        self.assertTrue(any(entry["post_id"] == 73 and entry["reader_include"] for entry in entries))
 
     def test_unification_keeps_one_canonical_text_and_all_source_identities(self):
         primary = BUILD.parse_articles()
         unified = BUILD.unify_articles(primary, BUILD.parse_supplemental_articles())
 
-        self.assertEqual(len(unified), 93)
+        self.assertEqual(len(unified), 199)
         canonical = next(entry for entry in unified if entry["article_id"] == "mayaismagic-89")
         self.assertEqual([source["channel"] for source in canonical["source_links"]], ["Mayaismagic", "TempleTherapy"])
         self.assertEqual(sum(entry["article_id"] == "templetherapy-2065" for entry in unified), 0)
