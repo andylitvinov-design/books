@@ -202,11 +202,24 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertEqual(missing, [])
 
     def test_reader_media_is_scaled_by_one_and_a_half_across_html_and_docx(self):
-        self.assertEqual(BUILD.READER_IMAGE_SCALE, 1.5)
-        self.assertEqual(BUILD.HTML_MEDIA_MAX_WIDTH_PX, 495)
-        self.assertIn("width:min(57%,495px)", BUILD.READER_MEDIA_CSS)
-        self.assertEqual(BUILD.DOCX_MEDIA_WIDTH_INCHES, 2.775)
+        self.assertEqual(BUILD.READER_IMAGE_SCALE, 1.9)
+        self.assertEqual(BUILD.HTML_MEDIA_MAX_WIDTH_PX, 630)
+        self.assertIn("width:min(72%,630px)", BUILD.READER_MEDIA_CSS)
+        self.assertEqual(BUILD.DOCX_MEDIA_WIDTH_INCHES, 3.5)
         self.assertGreaterEqual(BUILD.DOCX_MEDIA_COLUMN_WIDTH_INCHES, BUILD.DOCX_MEDIA_WIDTH_INCHES)
+
+    def test_documented_adjacent_series_media_is_available_for_reader_articles(self):
+        expected = {
+            "post-8-1.jpg", "post-26-1.jpg", "post-48-1.jpg", "post-58-1.jpg",
+            "post-74-1.jpg", "post-79-1.jpg", "post-143-1.jpg", "post-203-1.jpg",
+            "post-209-1.jpg", "post-217-1.jpg", "post-226-1.jpg", "post-229-1.jpg",
+            "post-233-1.jpg", "post-244-1.jpg", "post-249-1.jpg", "post-573-1.jpg",
+            "post-577-1.jpg", "post-589-1.jpg", "post-600-1.jpg", "post-609-1.jpg",
+            "post-616-1.jpg", "post-624-1.jpg", "post-663-1.jpg",
+        }
+
+        self.assertTrue(expected <= VERIFY.ADJACENT_SERIES_MEDIA)
+        self.assertTrue(all((BUILD.SUPPLEMENTAL_MEDIA / filename).is_file() for filename in expected))
 
     def test_verifier_checks_the_supplemental_index_and_integrated_manuscript(self):
         self.assertEqual(VERIFY.verify_supplemental(ROOT), [])

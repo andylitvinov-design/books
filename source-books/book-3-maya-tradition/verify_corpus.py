@@ -25,6 +25,14 @@ RESTORED_LOCAL_MEDIA = {
     "post-103-1.jpg",
     "post-154-1.jpg",
 }
+ADJACENT_SERIES_MEDIA = {
+    "post-8-1.jpg", "post-26-1.jpg", "post-48-1.jpg", "post-58-1.jpg",
+    "post-74-1.jpg", "post-79-1.jpg", "post-143-1.jpg", "post-203-1.jpg",
+    "post-209-1.jpg", "post-217-1.jpg", "post-226-1.jpg", "post-229-1.jpg",
+    "post-233-1.jpg", "post-244-1.jpg", "post-249-1.jpg", "post-573-1.jpg",
+    "post-577-1.jpg", "post-589-1.jpg", "post-600-1.jpg", "post-609-1.jpg",
+    "post-616-1.jpg", "post-624-1.jpg", "post-663-1.jpg",
+}
 # These TempleTherapy records remain in the traceable raw archive but are not
 # part of the focused Maya/Aztec reader: they are either multi-tradition course
 # announcements, a Toltec post, an unrelated general programme post, or a
@@ -127,12 +135,15 @@ def verify_supplemental(root):
     media_root = root / SUPPLEMENTAL_MEDIA
     expected = {f"post-{row['post_id']}-{index}.jpg" for row in rows for index, _ in enumerate(row["media_references"], 1)}
     actual = {path.name for path in media_root.glob("*.jpg")} if media_root.exists() else set()
-    unexpected = sorted(actual - expected - RESTORED_LOCAL_MEDIA)
+    unexpected = sorted(actual - expected - RESTORED_LOCAL_MEDIA - ADJACENT_SERIES_MEDIA)
     if unexpected:
         errors.append("TempleTherapy media contains unreferenced files: " + ", ".join(unexpected))
     missing_restored = sorted(RESTORED_LOCAL_MEDIA - actual)
     if missing_restored:
         errors.append("TempleTherapy media is missing documented local-export files: " + ", ".join(missing_restored))
+    missing_adjacent = sorted(ADJACENT_SERIES_MEDIA - actual)
+    if missing_adjacent:
+        errors.append("TempleTherapy media is missing documented adjacent-series files: " + ", ".join(missing_adjacent))
     if any((media_root / name).stat().st_size == 0 for name in actual):
         errors.append("TempleTherapy media contains an empty downloaded file")
     return errors
