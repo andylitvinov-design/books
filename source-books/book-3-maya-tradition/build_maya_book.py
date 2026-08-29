@@ -762,8 +762,62 @@ def set_paragraph(paragraph, before=0, after=6, line_spacing=1.35):
     fmt = paragraph.paragraph_format; fmt.space_before = Pt(before); fmt.space_after = Pt(after); fmt.line_spacing = line_spacing
 
 
+def article_bookmark(article: dict[str, object]) -> str:
+    """Return a Word-safe bookmark name for an article's internal TOC link."""
+    return "article_" + re.sub(r"[^A-Za-z0-9_]", "_", str(article["article_id"]))
+
+
+def add_bookmark(paragraph, name: str, bookmark_id: int) -> None:
+    start = OxmlElement("w:bookmarkStart")
+    start.set(qn("w:id"), str(bookmark_id))
+    start.set(qn("w:name"), name)
+    end = OxmlElement("w:bookmarkEnd")
+    end.set(qn("w:id"), str(bookmark_id))
+    paragraph._p.insert(0, start)
+    paragraph._p.append(end)
+
+
+def add_internal_hyperlink(paragraph, text: str, anchor: str) -> None:
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("w:anchor"), anchor)
+    run = OxmlElement("w:r")
+    properties = OxmlElement("w:rPr")
+    color = OxmlElement("w:color"); color.set(qn("w:val"), WARM); properties.append(color)
+    underline = OxmlElement("w:u"); underline.set(qn("w:val"), "single"); properties.append(underline)
+    run.append(properties)
+    text_node = OxmlElement("w:t"); text_node.text = text
+    run.append(text_node)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+
+
+def add_page_number(paragraph) -> None:
+    field = OxmlElement("w:fldSimple")
+    field.set(qn("w:instr"), "PAGE")
+    run = OxmlElement("w:r")
+    properties = OxmlElement("w:rPr")
+    color = OxmlElement("w:color"); color.set(qn("w:val"), MUTED); properties.append(color)
+    run.append(properties)
+    text = OxmlElement("w:t"); text.text = "1"
+    run.append(text)
+    field.append(run)
+    paragraph._p.append(field)
+
+
+def add_running_furniture(section) -> None:
+    header = section.header.paragraphs[0]
+    header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    set_paragraph(header, after=0)
+    add_run(header, "MAYA TRADITION · Методология источникового чтения", 9.5, True, MUTED)
+    footer = section.footer.paragraphs[0]
+    footer.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    set_paragraph(footer, after=0)
+    add_page_number(footer)
+
+
 def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], description: dict[str, object]) -> None:
     doc = Document(); sec = doc.sections[0]; sec.top_margin = Inches(.68); sec.bottom_margin = Inches(.65); sec.left_margin = Inches(.72); sec.right_margin = Inches(.72)
+    add_running_furniture(sec)
     styles = doc.styles; styles["Normal"].font.name = "Georgia"; styles["Normal"]._element.rPr.rFonts.set(qn("w:hAnsi"), "Georgia"); styles["Normal"].font.size = Pt(DOCX_READER_FONT_SIZE); styles["Normal"].paragraph_format.line_spacing = 1.4
     title = doc.add_paragraph(); title.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(title, after=7); add_run(title, "MAYA TRADITION", 28, True, WARM)
     subtitle = doc.add_paragraph(); subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER; set_paragraph(subtitle, after=7); add_run(subtitle, "Методология источникового чтения", 15, True, GOLD)
@@ -778,12 +832,23 @@ def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], d
         if chapter_name not in seen:
             seen.append(chapter_name)
             toc_line = doc.add_paragraph(); set_paragraph(toc_line, after=5); add_run(toc_line, chapter_name, 14, True, WARM)
+    detail_heading = doc.add_paragraph(); set_paragraph(detail_heading, before=10, after=6); add_run(detail_heading, "Подробное содержание", 18, True, WARM)
+    chapter_bookmarks = {chapter: f"chapter_{index + 1}" for index, chapter in enumerate(seen)}
+    for chapter_name in seen:
+        chapter_line = doc.add_paragraph(); set_paragraph(chapter_line, before=6, after=3)
+        add_internal_hyperlink(chapter_line, chapter_name, chapter_bookmarks[chapter_name])
+        for article in (item for item in articles if item["chapter"] == chapter_name):
+            entry = doc.add_paragraph(); entry.paragraph_format.left_indent = Inches(.22); set_paragraph(entry, after=2, line_spacing=1.15)
+            add_internal_hyperlink(entry, str(article["title"]), article_bookmark(article))
     chapter = None
+    bookmark_id = 1
     for article in articles:
         if article["chapter"] != chapter:
             chapter = article["chapter"]
             doc.add_page_break()
             chapter_intro = doc.add_paragraph(); set_paragraph(chapter_intro, before=12, after=10, line_spacing=1.4); add_run(chapter_intro, READER_CHAPTER_INTROS[str(chapter)], 13, False, MUTED)
+            add_bookmark(chapter_intro, chapter_bookmarks[str(chapter)], bookmark_id)
+            bookmark_id += 1
         else:
             doc.add_page_break()
         token = doc.add_table(rows=1, cols=1); token.autofit = False; cell = token.cell(0,0); shade(cell, CREAM); set_cell_margins(cell); cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
@@ -791,6 +856,8 @@ def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], d
         table = doc.add_table(rows=1, cols=2); table.autofit = False; table.columns[0].width = Inches(DOCX_TEXT_COLUMN_WIDTH_INCHES); table.columns[1].width = Inches(DOCX_MEDIA_COLUMN_WIDTH_INCHES)
         left, right = table.rows[0].cells; set_cell_margins(left); set_cell_margins(right); right.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
         p = left.paragraphs[0]; set_paragraph(p, after=8); add_run(p, str(article["title"]), 20, True, WARM)
+        add_bookmark(p, article_bookmark(article), bookmark_id)
+        bookmark_id += 1
         meta = left.add_paragraph(); set_paragraph(meta, after=0)
         for source in source_links(article):
             add_run(meta, f"Источник: {source['channel']} · пост {source['post_id']}\n", 10.5, True, GOLD)

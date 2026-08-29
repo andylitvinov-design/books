@@ -1,6 +1,7 @@
 import importlib.util
 import unittest
 from pathlib import Path
+from zipfile import ZipFile
 
 
 ROOT = Path(__file__).resolve().parent
@@ -255,6 +256,25 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         ]
 
         self.assertEqual(missing, [])
+
+    def test_docx_has_extended_hyperlinked_contents_and_running_furniture(self):
+        with ZipFile(BUILD.DOCX_OUT) as document:
+            document_xml = document.read("word/document.xml").decode("utf-8")
+            header_xml = "".join(
+                document.read(name).decode("utf-8")
+                for name in document.namelist()
+                if name.startswith("word/header")
+            )
+            footer_xml = "".join(
+                document.read(name).decode("utf-8")
+                for name in document.namelist()
+                if name.startswith("word/footer")
+            )
+
+        self.assertIn("Подробное содержание", document_xml)
+        self.assertIn('w:hyperlink w:anchor="article_', document_xml)
+        self.assertIn("MAYA TRADITION", header_xml)
+        self.assertIn('w:instr="PAGE"', footer_xml)
 
     def test_verifier_checks_the_supplemental_index_and_integrated_manuscript(self):
         self.assertEqual(VERIFY.verify_supplemental(ROOT), [])
