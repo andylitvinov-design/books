@@ -49,8 +49,8 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         reader = BUILD.curate_reader_articles(canonical)
 
         self.assertEqual(reader[0]["article_id"], "mayaismagic-145")
-        self.assertEqual(reader[4]["chapter"], "II. Боги и божественные силы Майя и Ацтеков")
-        self.assertEqual(reader[4]["article_id"], "mayaismagic-142")
+        first_god = next(index for index, article in enumerate(reader) if article["chapter"] == BUILD.READER_CHAPTERS[1])
+        self.assertEqual(reader[first_god]["article_id"], "mayaismagic-142")
         tonatiuh = next(index for index, article in enumerate(reader) if article["article_id"] == "mayaismagic-214")
         first_setting = next(index for index, article in enumerate(reader) if article["chapter"] == "III. Настройки и энергии Майя и Ацтеков")
         self.assertEqual(tonatiuh, first_setting + 1)
@@ -62,7 +62,7 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertTrue(all(article["chapter"] == BUILD.READER_CHAPTERS[-1] for article in reader[-8:]))
         excluded_cross_tradition = {
             "templetherapy-2100", "templetherapy-2198", "templetherapy-2210",
-            "templetherapy-2253", "mayaismagic-46", "mayaismagic-226",
+            "mayaismagic-46", "mayaismagic-226",
         }
         self.assertTrue(excluded_cross_tradition <= BUILD.READER_EXCLUDED_ARTICLE_IDS)
 
@@ -146,8 +146,34 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertEqual([source["channel"] for source in canonical["source_links"]], ["Mayaismagic", "TempleTherapy"])
         self.assertEqual(sum(entry["article_id"] == "templetherapy-2065" for entry in unified), 0)
 
+    def test_reader_includes_the_audited_maya_and_aztec_source_gaps_in_coherent_chapters(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+        by_id = {entry["article_id"]: entry for entry in reader}
+
+        self.assertEqual(by_id["templetherapy-8"]["chapter"], BUILD.READER_CHAPTERS[0])
+        self.assertEqual(by_id["templetherapy-116"]["chapter"], BUILD.READER_CHAPTERS[0])
+        self.assertEqual(by_id["templetherapy-2226"]["chapter"], BUILD.READER_CHAPTERS[1])
+        self.assertEqual(by_id["templetherapy-2253"]["chapter"], BUILD.READER_CHAPTERS[1])
+        self.assertEqual(by_id["templetherapy-226"]["chapter"], BUILD.READER_CHAPTERS[5])
+        self.assertEqual(by_id["templetherapy-2223"]["chapter"], BUILD.READER_CHAPTERS[5])
+
+        self.assertIn("Эгрегор майянских богов", by_id["templetherapy-8"]["text"])
+        self.assertIn("Давайте попробуем прислушаться к Голосу Майя", by_id["templetherapy-116"]["text"])
+        self.assertIn("КИНИЧ АХАУ", by_id["templetherapy-2226"]["text"])
+        self.assertIn("Кинич Ахау", by_id["templetherapy-2253"]["text"])
+        self.assertIn("МИСТЕРИИ КАК МЕТОД ОБОЖЕСТВЛЕНИЯ", by_id["templetherapy-226"]["text"])
+        self.assertIn("ИшМук'ане", by_id["templetherapy-2223"]["text"])
+
     def test_verifier_checks_the_supplemental_index_and_integrated_manuscript(self):
         self.assertEqual(VERIFY.verify_supplemental(ROOT), [])
+
+    def test_fact_check_labels_the_new_authorial_and_historical_boundary(self):
+        fact_check = (ROOT / "FACT_CHECK.md").read_text(encoding="utf-8")
+
+        self.assertIn("TempleTherapy:226", fact_check)
+        self.assertIn("authorial interpretation", fact_check)
 
 
 if __name__ == "__main__":

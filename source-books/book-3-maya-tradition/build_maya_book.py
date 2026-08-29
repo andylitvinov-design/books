@@ -68,13 +68,13 @@ READER_CHAPTERS = (
 # These transitions only describe the editorial order of source material. They
 # do not assert historical facts or alter the wording of the recovered posts.
 READER_CHAPTER_INTROS = {
-    READER_CHAPTERS[0]: "Сначала — авторские тексты об эгрегоре, к'ух и накоплении силы.",
-    READER_CHAPTERS[1]: "Далее собраны описания божественных сил Майя, затем — связанные с ними ацтекские образы.",
-    READER_CHAPTERS[2]: "После образов богов идут тексты о настройках, центрах, помощниках и каналах.",
-    READER_CHAPTERS[3]: "Этот блок соединяет исходные материалы о мифологии, Шибальбе, посвящении и ритуале.",
-    READER_CHAPTERS[4]: "Здесь собраны заметки о храмах, местах, предметах и материальных образах традиций.",
-    READER_CHAPTERS[5]: "Перед календарём собраны мистерии, двойники и связанные с ними авторские модели.",
-    READER_CHAPTERS[6]: "В завершении — материалы о календаре Хааб и энергии отдельных периодов.",
+    READER_CHAPTERS[0]: "Открывающая глава собирает авторскую рамку традиции: образ эгрегора, язык Солнца и ключевые понятия Кин, Кинич, Ах-Кин и Кинич Ахау. Затем эта рамка разворачивается в тексты о к'ух и накоплении силы.",
+    READER_CHAPTERS[1]: "После общей рамки идут образы божественных сил: сначала Кинич Ахау и связанные с ним авторские описания, затем другие майяские и ацтекские фигуры. Исторические и авторские высказывания сохраняют источник каждого поста.",
+    READER_CHAPTERS[2]: "От образов богов читатель переходит к настройкам, каналам, помощникам и практическим формам работы с энергиями. Это авторские практические описания, а не историческая реконструкция.",
+    READER_CHAPTERS[3]: "Далее собраны исходные материалы о мифологии, Шибальбе, посвящении и ритуале — от описаний образов к способам прохождения мистерии.",
+    READER_CHAPTERS[4]: "Здесь внимание возвращается к местам, храмам, предметам и материальным образам традиций; они дают контекст предыдущим мифологическим и ритуальным сюжетам.",
+    READER_CHAPTERS[5]: "Перед календарём собраны мистерии, двойники и авторские архетипические модели. Там, где пост переносит традиционный образ в терапевтическую работу, это остаётся авторской интерпретацией, а не историческим утверждением.",
+    READER_CHAPTERS[6]: "В завершении — материалы о календаре Хааб и энергии отдельных периодов: после общей карты традиции они читаются как самостоятельный цикл практических текстов.",
 }
 
 # These records remain intact in the raw archive and source index.  They are
@@ -82,7 +82,7 @@ READER_CHAPTER_INTROS = {
 # is another tradition, a multi-tradition programme, or a general travel note.
 READER_EXCLUDED_ARTICLE_IDS = frozenset({
     "templetherapy-2062", "templetherapy-2100", "templetherapy-2198",
-    "templetherapy-2210", "templetherapy-2212", "templetherapy-2253",
+    "templetherapy-2210", "templetherapy-2212",
     "templetherapy-2269", "templetherapy-2352", "templetherapy-2446",
     "mayaismagic-14", "mayaismagic-50", "mayaismagic-51", "mayaismagic-53",
     "mayaismagic-55", "mayaismagic-65", "mayaismagic-69", "mayaismagic-74",
@@ -104,8 +104,30 @@ READER_MERGE_EXTRA_HEADINGS = {
     "mayaismagic-159": "Дополнительный перечень энергий:",
 }
 
+AUDITED_READER_INCLUSIONS = frozenset({8, 116, 226, 2223, 2226, 2253})
+
+# These source posts were initially kept only in the supplemental archive. A
+# complete local-export audit established that they add distinct Maya/Aztec
+# material needed for the reader. The raw post remains unchanged; excerpts only
+# omit course logistics or descriptions of unrelated traditions.
+READER_TITLE_OVERRIDES = {
+    8: "Эгрегор майянских богов — авторская заметка",
+    116: "Голос Майя: Кин, Кинич, Ах-Кин и Кинич Ахау",
+    2223: "ИшМук'ане: авторская архетипическая модель",
+    2226: "Кинич Ахау: авторская модель канала",
+    2253: "Кинич Ахау: послание Великого Отца",
+    226: "Мистерия как авторская модель обожествления",
+}
+READER_EXCERPT_BOUNDARIES = {
+    8: ("Эгрегор майянских богов", None),
+    116: ("Давайте попробуем прислушаться к Голосу Майя", "ПРОГРАММА ОБУЧЕНИЯ:"),
+    2226: ("3. КИНИЧ АХАУ", "4. ЯРИЛО"),
+    2253: ("1. Кинич Ахау", "2. Зевс"),
+}
+
 EGREGORE_ARTICLE_IDS = frozenset({
     "mayaismagic-145", "mayaismagic-32", "mayaismagic-34", "mayaismagic-36",
+    "templetherapy-8", "templetherapy-116",
 })
 SETTING_ARTICLE_IDS = frozenset({
     "templetherapy-2262", "mayaismagic-146", "mayaismagic-147", "mayaismagic-154",
@@ -116,26 +138,30 @@ SETTING_ARTICLE_IDS = frozenset({
 GOD_ARTICLE_IDS = frozenset({
     "mayaismagic-4", "mayaismagic-5", "mayaismagic-16", "mayaismagic-142",
     "mayaismagic-161", "mayaismagic-213", "mayaismagic-218", "mayaismagic-243",
-    "mayaismagic-245",
+    "mayaismagic-245", "templetherapy-2226", "templetherapy-2253",
 })
 RITUAL_ARTICLE_IDS = frozenset({"mayaismagic-3", "mayaismagic-7", "mayaismagic-25"})
 MYSTERY_AND_TWIN_ARTICLE_IDS = frozenset({
     "mayaismagic-143", "mayaismagic-144", "mayaismagic-224", "mayaismagic-225",
+    "templetherapy-226",
 })
+AUTHOR_MODEL_ARTICLE_IDS = frozenset({"templetherapy-2223"})
 CALENDAR_ARTICLE_IDS = frozenset({
     "mayaismagic-78", "mayaismagic-79", "mayaismagic-80", "mayaismagic-81",
     "mayaismagic-82", "mayaismagic-85", "mayaismagic-89", "mayaismagic-94",
 })
 READER_ARTICLE_PRIORITY = (
-    "mayaismagic-145", "mayaismagic-32", "mayaismagic-34", "mayaismagic-36",
+    "mayaismagic-145", "templetherapy-8", "templetherapy-116", "mayaismagic-32",
+    "mayaismagic-34", "mayaismagic-36",
     "mayaismagic-142", "mayaismagic-213", "mayaismagic-161", "mayaismagic-218",
-    "mayaismagic-4", "mayaismagic-5", "mayaismagic-16", "mayaismagic-243",
+    "templetherapy-2226", "templetherapy-2253", "mayaismagic-4", "mayaismagic-5",
+    "mayaismagic-16", "mayaismagic-243",
     "mayaismagic-245", "templetherapy-2262", "mayaismagic-214", "mayaismagic-146",
     "mayaismagic-147", "mayaismagic-154", "mayaismagic-155", "mayaismagic-156",
     "mayaismagic-159", "mayaismagic-212", "mayaismagic-216", "mayaismagic-217",
     "mayaismagic-86", "mayaismagic-87", "mayaismagic-91", "mayaismagic-93",
-    "mayaismagic-224", "mayaismagic-225", "mayaismagic-143", "mayaismagic-144",
-    "mayaismagic-219", "mayaismagic-223",
+    "mayaismagic-224", "mayaismagic-225", "templetherapy-226", "mayaismagic-143",
+    "mayaismagic-144", "templetherapy-2223", "mayaismagic-219", "mayaismagic-223",
     "mayaismagic-79", "mayaismagic-80", "mayaismagic-89",
     "mayaismagic-81", "mayaismagic-82", "mayaismagic-94", "mayaismagic-78",
     "mayaismagic-85",
@@ -163,6 +189,21 @@ SUPPLEMENTAL_CANONICAL = {
 }
 
 
+def reader_source_text(post_id: int, raw_text: str) -> str:
+    """Return an explicitly bounded, source-verbatim reader excerpt when needed."""
+    boundaries = READER_EXCERPT_BOUNDARIES.get(post_id)
+    if boundaries is None:
+        return raw_text
+    start_marker, end_marker = boundaries
+    start = raw_text.find(start_marker)
+    if start < 0:
+        raise ValueError(f"Missing reader excerpt start marker for TempleTherapy post {post_id}")
+    end = raw_text.find(end_marker, start) if end_marker else len(raw_text)
+    if end < 0:
+        raise ValueError(f"Missing reader excerpt end marker for TempleTherapy post {post_id}")
+    return raw_text[start:end].strip()
+
+
 def parse_supplemental_articles() -> list[dict[str, object]]:
     """Read substantive public TempleTherapy entries with namespace-safe IDs."""
     articles: list[dict[str, object]] = []
@@ -171,19 +212,20 @@ def parse_supplemental_articles() -> list[dict[str, object]]:
         raw_text = html.unescape(str(entry["raw_text"]))
         if not raw_text.strip():
             raise ValueError(f"TempleTherapy post at line {line_number} has no substantive text")
-        chapter = entry.get("chapter") or SUPPLEMENTAL_CHAPTERS[int(entry["post_id"])]
+        post_id = int(entry["post_id"])
+        chapter = entry.get("chapter") or SUPPLEMENTAL_CHAPTERS[post_id]
         articles.append({
             "chapter": str(chapter),
             "channel": "TempleTherapy",
-            "title": str(entry.get("title", f"TempleTherapy · пост {entry['post_id']}")),
-            "post_id": entry["post_id"],
-            "article_id": f"templetherapy-{entry['post_id']}",
+            "title": READER_TITLE_OVERRIDES.get(post_id, str(entry.get("title", f"TempleTherapy · пост {post_id}"))),
+            "post_id": post_id,
+            "article_id": f"templetherapy-{post_id}",
             "url": entry["url"],
             "date": entry["date"],
-            "text": raw_text,
+            "text": reader_source_text(post_id, raw_text),
             "media_references": entry["media_references"],
             "media_root": "media/templetherapy",
-            "reader_include": bool(entry.get("reader_include", True)),
+            "reader_include": bool(entry.get("reader_include", True)) or post_id in AUDITED_READER_INCLUSIONS,
         })
     return articles
 
@@ -319,6 +361,8 @@ def reader_chapter(article: dict[str, object]) -> str:
         return READER_CHAPTERS[0]
     if article_id in GOD_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[1]:
         return READER_CHAPTERS[1]
+    if article_id in AUTHOR_MODEL_ARTICLE_IDS:
+        return READER_CHAPTERS[5]
     if article_id in SETTING_ARTICLE_IDS or str(article["chapter"]) == CHAPTERS[0]:
         return READER_CHAPTERS[2]
     if article_id in MYSTERY_AND_TWIN_ARTICLE_IDS:
@@ -435,7 +479,15 @@ def write_supporting_docs(articles: list[dict[str, object]], canonical_count: in
     supplemental_merged = len(parse_articles()) + supplemental_count - canonical_count
     (HERE / "manuscript" / "COVERAGE.md").write_text(f"# Coverage\n\n- Primary curated articles: 81\n- Supplemental Maya/Aztec source records: {supplemental_count}\n- Supplemental entries merged into canonical texts: {supplemental_merged}\n- Canonical articles after deduplication: {canonical_count}\n- Maya/Aztec reader articles: {len(articles)}\n- Reader duplicate editions merged into retained sources: {len(READER_MERGED_ARTICLE_IDS)}\n- Outside-reader-scope articles retained only in raw archive: {outside_scope_count}\n", encoding="utf-8")
     (HERE / "manuscript" / "SOURCE_NOTES.md").write_text("# Source notes\n\nMayaismagic is the primary Telegram export. TempleTherapy is a separately-labelled supplemental public source. Duplicate source URLs are preserved on the canonical retained article; no archive content was altered.\n", encoding="utf-8")
-    (HERE / "FACT_CHECK.md").write_text("# Fact-check boundary\n\nThis is a source-backed reading edition, not an independent historical fact-check. Editorial work is limited to placement, deduplication, and source attribution; claims in posts remain attributed to their original channel.\n", encoding="utf-8")
+    (HERE / "FACT_CHECK.md").write_text(
+        "# Fact-check boundary\n\n"
+        "This is a source-backed reading edition, not an independent historical fact-check. Editorial work is limited to placement, deduplication, and source attribution; claims in posts remain attributed to their original channel.\n\n"
+        "## Reader labels\n\n"
+        "- TempleTherapy:8 and TempleTherapy:116 are authorial framing of the Maya tradition.\n"
+        "- TempleTherapy:2223, TempleTherapy:2226, and TempleTherapy:2253 are authorial archetypal or therapeutic models; they are not presented as historical reconstruction.\n"
+        "- TempleTherapy:226 includes claims about sacrifice, the ball game, and deification. It is retained as authorial interpretation and requires independent historical verification before being cited as fact.\n",
+        encoding="utf-8",
+    )
 
 
 ORDERED_ITEM = re.compile(r"^\s*\d+[.)]\s+(.+?)\s*$")
