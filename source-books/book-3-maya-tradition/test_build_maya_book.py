@@ -221,6 +221,41 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertTrue(expected <= VERIFY.ADJACENT_SERIES_MEDIA)
         self.assertTrue(all((BUILD.SUPPLEMENTAL_MEDIA / filename).is_file() for filename in expected))
 
+    def test_calendar_day_cycle_is_complete_and_is_the_final_reader_section(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+        by_id = {article["article_id"]: article for article in reader}
+        expected_day_articles = {
+            "templetherapy-103", "templetherapy-104", "templetherapy-109", "templetherapy-110",
+            "templetherapy-111", "templetherapy-113", "templetherapy-117", "templetherapy-119",
+            "templetherapy-121", "templetherapy-122", "templetherapy-124", "templetherapy-125",
+            "templetherapy-127", "templetherapy-128", "templetherapy-129", "templetherapy-130",
+            "templetherapy-132", "templetherapy-133", "templetherapy-135", "templetherapy-136",
+            "templetherapy-143", "templetherapy-146", "templetherapy-147", "templetherapy-149",
+            "templetherapy-151", "templetherapy-154", "templetherapy-156", "templetherapy-158",
+            "templetherapy-163",
+        }
+
+        self.assertTrue(expected_day_articles <= BUILD.CALENDAR_DAY_ARTICLE_IDS)
+        self.assertTrue(expected_day_articles <= by_id.keys())
+        self.assertTrue(all(by_id[article_id]["chapter"] == BUILD.READER_CHAPTERS[-1] for article_id in expected_day_articles))
+        self.assertEqual(reader[-1]["chapter"], BUILD.READER_CHAPTERS[-1])
+
+    def test_every_reader_article_has_a_traceable_local_illustration(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+        media = BUILD.parse_media()
+
+        missing = [
+            article["article_id"]
+            for article in reader
+            if BUILD.reader_media_path(article, media) is None
+        ]
+
+        self.assertEqual(missing, [])
+
     def test_verifier_checks_the_supplemental_index_and_integrated_manuscript(self):
         self.assertEqual(VERIFY.verify_supplemental(ROOT), [])
 

@@ -9,7 +9,19 @@ This directory contains image responses downloaded from the `media_references` r
 - Unavailable / non-image responses: 0 at retrieval
 - Naming: `post-<TempleTherapy post ID>-<reference ordinal>.jpg`
 
-The builder maps the first locally available image for a supplemental post to its upper-right reading-edition position; no image is invented or substituted when unavailable.
+The builder first uses an image attached to the source post. For the 43 reader
+articles that have no direct attachment, it uses an explicit, source-traceable
+illustration from an adjacent or thematically matched Maya/Aztec series in the
+two local Telegram exports. This makes every one
+of the 122 reader articles illustrated while leaving raw post text and source
+links unchanged. The mapping lives in `SERIES_ILLUSTRATIONS` in
+`../../build_maya_book.py`; it is intentionally explicit rather than a
+runtime "nearest image" guess.
+
+For the final calendar section, the shared Maya calendar image from the
+documented Manik sequence is used only as a labelled series illustration where
+the individual day post itself has no image. It is not represented as a direct
+attachment to that day post.
 
 ## Restored from the local Telegram export
 

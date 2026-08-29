@@ -165,8 +165,71 @@ AUTHOR_MODEL_ARTICLE_IDS = frozenset({"templetherapy-2223"})
 CALENDAR_ARTICLE_IDS = frozenset({
     "mayaismagic-78", "mayaismagic-79", "mayaismagic-80", "mayaismagic-81",
     "mayaismagic-82", "mayaismagic-85", "mayaismagic-89", "mayaismagic-94",
-    "templetherapy-103", "templetherapy-143", "templetherapy-154",
+    "templetherapy-100", "templetherapy-103", "templetherapy-143", "templetherapy-154",
 })
+CALENDAR_DAY_ARTICLE_IDS = frozenset({
+    # The complete recovered daily cycle.  Several of these source posts had
+    # previously inherited a broad source chapter; they belong together in the
+    # final, reader-facing calendar section.
+    "templetherapy-103", "templetherapy-104", "templetherapy-109", "templetherapy-110",
+    "templetherapy-111", "templetherapy-113", "templetherapy-117", "templetherapy-119",
+    "templetherapy-121", "templetherapy-122", "templetherapy-124", "templetherapy-125",
+    "templetherapy-127", "templetherapy-128", "templetherapy-129", "templetherapy-130",
+    "templetherapy-132", "templetherapy-133", "templetherapy-135", "templetherapy-136",
+    "templetherapy-143", "templetherapy-146", "templetherapy-147", "templetherapy-149",
+    "templetherapy-151", "templetherapy-154", "templetherapy-156", "templetherapy-158",
+    "templetherapy-163",
+})
+# A reader illustration can be either media attached to its original post or a
+# source photo from a documented adjacent or thematically matched Maya/Aztec
+# sequence in the local archive. These fallbacks are intentionally explicit:
+# they improve the reading edition without claiming that a photo-only message
+# was attached to the text.
+SERIES_ILLUSTRATIONS = {
+    "mayaismagic-25": "raw/photos/photo_19@30-12-2022_01-26-25.jpg",
+    "mayaismagic-32": "raw/photos/photo_21@14-03-2023_10-47-06.jpg",
+    "mayaismagic-34": "raw/photos/photo_22@14-03-2023_10-47-06.jpg",
+    "mayaismagic-36": "raw/photos/photo_23@14-03-2023_10-47-06.jpg",
+    "mayaismagic-41": "raw/photos/photo_27@14-03-2023_10-47-07.jpg",
+    "mayaismagic-93": "raw/photos/photo_64@24-10-2024_19-38-49.jpg",
+    "mayaismagic-223": "raw/photos/photo_178@11-02-2025_21-03-16.jpg",
+    "mayaismagic-228": "raw/photos/photo_22@14-03-2023_10-47-06.jpg",
+    "templetherapy-57": "media/templetherapy/post-58-1.jpg",
+    "templetherapy-67": "media/templetherapy/post-58-1.jpg",
+    "templetherapy-81": "media/templetherapy/post-80-1.jpg",
+    "templetherapy-100": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-104": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-109": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-110": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-111": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-113": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-116": "media/templetherapy/post-8-1.jpg",
+    "templetherapy-117": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-119": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-121": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-122": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-124": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-125": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-127": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-128": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-129": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-130": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-132": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-133": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-135": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-136": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-146": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-147": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-149": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-151": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-156": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-158": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-163": "media/templetherapy/post-103-1.jpg",
+    "templetherapy-246": "media/templetherapy/post-244-1.jpg",
+    "templetherapy-574": "media/templetherapy/post-8-1.jpg",
+    "templetherapy-942": "media/templetherapy/post-80-1.jpg",
+    "templetherapy-2040": "media/templetherapy/post-58-1.jpg",
+}
 READER_ARTICLE_PRIORITY = (
     "mayaismagic-145", "templetherapy-8", "templetherapy-116", "mayaismagic-32",
     "mayaismagic-34", "mayaismagic-36",
@@ -180,10 +243,17 @@ READER_ARTICLE_PRIORITY = (
     "mayaismagic-86", "mayaismagic-87", "mayaismagic-91", "mayaismagic-93",
     "mayaismagic-224", "mayaismagic-225", "templetherapy-226", "mayaismagic-143",
     "mayaismagic-144", "templetherapy-2223", "mayaismagic-219", "mayaismagic-223",
-    "templetherapy-103", "templetherapy-143", "templetherapy-154",
+    "templetherapy-573", "templetherapy-574", "templetherapy-100",
     "mayaismagic-79", "mayaismagic-80", "mayaismagic-89",
     "mayaismagic-81", "mayaismagic-82", "mayaismagic-94", "mayaismagic-78",
-    "mayaismagic-85",
+    "mayaismagic-85", "templetherapy-57", "templetherapy-103", "templetherapy-104",
+    "templetherapy-109", "templetherapy-110", "templetherapy-111", "templetherapy-113",
+    "templetherapy-117", "templetherapy-119", "templetherapy-121", "templetherapy-122",
+    "templetherapy-124", "templetherapy-125", "templetherapy-127", "templetherapy-128",
+    "templetherapy-129", "templetherapy-130", "templetherapy-132", "templetherapy-133",
+    "templetherapy-135", "templetherapy-136", "templetherapy-143", "templetherapy-146",
+    "templetherapy-147", "templetherapy-149", "templetherapy-151", "templetherapy-154",
+    "templetherapy-156", "templetherapy-158", "templetherapy-163",
 )
 
 # These are editorial placement decisions, not claims about a source's authority.
@@ -280,6 +350,33 @@ def parse_media() -> dict[int, list[str]]:
     parser = MediaParser()
     parser.feed(RAW_MESSAGES.read_text(encoding="utf-8"))
     return parser.media
+
+
+def reader_media_path(article: dict[str, object], media: dict[int, list[str]]) -> Path | None:
+    """Resolve a locally stored, source-traceable image for a reader article."""
+    if article.get("channel") == "TempleTherapy":
+        direct = next(iter(sorted(SUPPLEMENTAL_MEDIA.glob(f"post-{article['post_id']}-*"))), None)
+        if direct is not None and direct.is_file():
+            return direct
+    else:
+        direct_reference = (media.get(int(article["post_id"])) or [None])[0]
+        if direct_reference:
+            direct = HERE / "raw" / direct_reference
+            if direct.is_file():
+                return direct
+
+    fallback = SERIES_ILLUSTRATIONS.get(str(article["article_id"]))
+    if fallback:
+        path = HERE / fallback
+        if path.is_file():
+            return path
+    return None
+
+
+def reader_media_reference(article: dict[str, object], media: dict[int, list[str]]) -> str | None:
+    """Return the reader-relative path for a resolved local illustration."""
+    path = reader_media_path(article, media)
+    return path.relative_to(HERE).as_posix() if path else None
 
 
 def parse_source(body: str) -> tuple[int, str, str, str] | None:
@@ -380,7 +477,7 @@ def reader_chapter(article: dict[str, object]) -> str:
         return READER_CHAPTERS[0]
     if article_id in GOD_ARTICLE_IDS:
         return READER_CHAPTERS[1]
-    if article_id in CALENDAR_ARTICLE_IDS:
+    if article_id in CALENDAR_DAY_ARTICLE_IDS or article_id in CALENDAR_ARTICLE_IDS:
         return READER_CHAPTERS[6]
     if str(article["chapter"]) == CHAPTERS[1]:
         return READER_CHAPTERS[1]
@@ -627,11 +724,7 @@ def build_html(articles: list[dict[str, object]], media: dict[int, list[str]], d
             chapters.append(chapter)
             sections.append(f'<h1 class="chapter" id="{chapter_id(chapter)}">{html.escape(chapter)}</h1>')
             sections.append(f'<p class="chapter-intro">{html.escape(READER_CHAPTER_INTROS[chapter])}</p>')
-        if article.get("channel") == "TempleTherapy":
-            primary = next((f"media/templetherapy/{path.name}" for path in sorted(SUPPLEMENTAL_MEDIA.glob(f"post-{article['post_id']}-*"))), None)
-        else:
-            source_media = (media.get(int(article["post_id"])) or [None])[0]
-            primary = f"raw/{source_media}" if source_media else None
+        primary = reader_media_reference(article, media)
         sections.append(article_html(article, primary))
     toc = "".join(f'<li><a href="#{chapter_id(chapter)}">{html.escape(chapter)}</a></li>' for chapter in chapters)
     description_text = render_text_html(str(description["text"]))
@@ -703,11 +796,7 @@ def build_docx(articles: list[dict[str, object]], media: dict[int, list[str]], d
             add_run(meta, f"Источник: {source['channel']} · пост {source['post_id']}\n", 10.5, True, GOLD)
             add_run(meta, f"Дата: {source['date']}\n", 10.5, False, MUTED)
             add_run(meta, str(source["url"]) + "\n", 10.5, False, WARM)
-        if article.get("channel") == "TempleTherapy":
-            primary_path = next(iter(sorted(SUPPLEMENTAL_MEDIA.glob(f"post-{article['post_id']}-*"))), None)
-        else:
-            primary = (media.get(int(article["post_id"])) or [None])[0]
-            primary_path = HERE / "raw" / primary if primary else None
+        primary_path = reader_media_path(article, media)
         if primary_path and primary_path.exists():
             p = right.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT; p.add_run().add_picture(str(primary_path), width=Inches(DOCX_MEDIA_WIDTH_INCHES))
         body = doc.add_paragraph(); set_paragraph(body, before=12, after=7, line_spacing=1.4); add_run(body, str(article["text"]), DOCX_READER_FONT_SIZE)
