@@ -43,6 +43,16 @@ class UnifiedLibraryRenderingTests(unittest.TestCase):
                 self.assertIn(f'"/library/{book_id}"', config)
                 self.assertIn(f'"/library/{book_id}/index.html"', config)
 
+    def test_every_maya_reader_publishes_its_current_pdf_download(self):
+        for book_id in ("maya-egregor-gods", "maya-calendar", "maya-exorcism", "maya-mysteries"):
+            with self.subTest(book_id=book_id):
+                reader = ROOT / "public" / "library" / book_id / "index.html"
+                pdf = ROOT / "public" / "library" / book_id / "book.pdf"
+
+                self.assertTrue(pdf.is_file())
+                self.assertTrue(pdf.read_bytes().startswith(b"%PDF"))
+                self.assertIn(f'/library/{book_id}/book.pdf', reader.read_text(encoding="utf-8"))
+
     def test_public_catalog_contains_the_four_maya_reading_volumes(self):
         ids = {book["id"] for book in BUILD.BOOKS}
 

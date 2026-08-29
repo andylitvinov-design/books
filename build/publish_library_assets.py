@@ -17,6 +17,12 @@ MAYA_READERS = {
     "maya-exorcism": "Maya_Exorcism_Settings_Energies.html",
     "maya-mysteries": "Maya_Mysteries.html",
 }
+MAYA_PDFS = {
+    "maya-egregor-gods": "Maya_Aztec_Egregor_Gods.pdf",
+    "maya-calendar": "Maya_Calendar_Energies.pdf",
+    "maya-exorcism": "Maya_Exorcism_Settings_Energies.pdf",
+    "maya-mysteries": "Maya_Mysteries.pdf",
+}
 # The Next.js catalog predates the unified-library identifiers for the Alchemy
 # series. Keep those established public card ids while publishing their real
 # source covers under both names.
@@ -56,6 +62,21 @@ def publish_maya_reader(reader_id: str, reader: Path) -> None:
         destination = PUBLIC / reader_id / "media" / source.name
         copy_file(source, destination)
         html = html.replace(ref, f"/library/{reader_id}/media/{source.name}")
+
+    pdf = MAYA / "outputs" / MAYA_PDFS[reader_id]
+    if not pdf.is_file():
+        raise FileNotFoundError(f"Maya reader PDF missing: {pdf}")
+    copy_file(pdf, PUBLIC / reader_id / "book.pdf")
+    html = html.replace(
+        "</header>",
+        f'</header><p class="download-pdf"><a href="/library/{reader_id}/book.pdf" download>Скачать PDF</a></p>',
+        1,
+    )
+    html = html.replace(
+        "</style>",
+        ".download-pdf{margin:0 0 20px;text-align:right}.download-pdf a{display:inline-block;padding:10px 15px;border:1px solid #caa37b;border-radius:10px;background:#fffdf9;color:#6b2f1a;font:700 16px/1 Arial,sans-serif;text-decoration:none}</style>",
+        1,
+    )
 
     destination = PUBLIC / reader_id / "index.html"
     destination.parent.mkdir(parents=True, exist_ok=True)
