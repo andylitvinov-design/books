@@ -46,12 +46,13 @@ MOBILE_READER_LINE_HEIGHT = 1.58
 DOCX_READER_FONT_SIZE = 15
 DOCX_READER_LINE_SPACING = 1.25
 READER_IMAGE_SCALE = 1.9
-HTML_MEDIA_WIDTH_PERCENT = 72
-HTML_MEDIA_MAX_WIDTH_PX = 630
-DOCX_MEDIA_WIDTH_INCHES = 3.5
-DOCX_MEDIA_COLUMN_WIDTH_INCHES = 3.7
-DOCX_TEXT_COLUMN_WIDTH_INCHES = 2.4
-READER_MEDIA_CSS = f"float:right;width:min({HTML_MEDIA_WIDTH_PERCENT}%,{HTML_MEDIA_MAX_WIDTH_PX}px);margin:0 0 17px 26px"
+HTML_MEDIA_WIDTH_PERCENT = 36
+HTML_MEDIA_MAX_WIDTH_PX = 315
+MOBILE_HTML_MEDIA_WIDTH_PERCENT = 50
+DOCX_MEDIA_WIDTH_INCHES = 3.65
+DOCX_MEDIA_COLUMN_WIDTH_INCHES = 3.85
+DOCX_TEXT_COLUMN_WIDTH_INCHES = 3.05
+READER_MEDIA_CSS = f"float:right;width:min({HTML_MEDIA_WIDTH_PERCENT}%,{HTML_MEDIA_MAX_WIDTH_PX}px);margin:0 0 14px 20px"
 FRONT_HEADINGS = {"Editorial note", "Описание традиции", "Содержание", "Авторская рамка, практики и программы"}
 CHAPTERS = (
     "I. Описание традиции",
@@ -86,6 +87,8 @@ READER_CHAPTER_INTROS = {
     READER_CHAPTERS[5]: "Перед календарём собраны мистерии, двойники и авторские архетипические модели. Там, где пост переносит традиционный образ в терапевтическую работу, это остаётся авторской интерпретацией, а не историческим утверждением.",
     READER_CHAPTERS[6]: "В завершении — материалы о календаре Хааб и энергии отдельных периодов: после общей карты традиции они читаются как самостоятельный цикл практических текстов.",
 }
+PROMOTIONS_CHAPTER = "VIII. Анонсы и предложения"
+READER_CHAPTER_INTROS[PROMOTIONS_CHAPTER] = "Собранные здесь исходные анонсы и предложения сохранены для полноты корпуса. Они не являются частью исторического или традиционного материала."
 
 # The four editions are an editorial partition of the already curated reader.
 # They do not alter the raw archive or duplicate an article between volumes.
@@ -132,7 +135,61 @@ VOLUME_ARTICLE_OVERRIDES = {
     "templetherapy-2262": "maya-egregor-gods",
     "mayaismagic-154": "maya-calendar",
     "mayaismagic-156": "maya-calendar",
+    # Source posts in the former Mysteries edition whose primary subject is a
+    # deity or deity channel belong with the other god descriptions.
+    "templetherapy-48": "maya-egregor-gods",
+    "templetherapy-79": "maya-egregor-gods",
+    "templetherapy-203": "maya-egregor-gods",
+    "templetherapy-233": "maya-egregor-gods",
+    "templetherapy-246": "maya-egregor-gods",
+    "templetherapy-249": "maya-egregor-gods",
+    "templetherapy-600": "maya-egregor-gods",
+    "templetherapy-609": "maya-egregor-gods",
+    "templetherapy-616": "maya-egregor-gods",
+    # Practice instructions are collected in the Exorcism/settings edition.
+    "templetherapy-58": "maya-exorcism",
+    "templetherapy-67": "maya-exorcism",
+    "templetherapy-2040": "maya-exorcism",
+    "templetherapy-2273": "maya-exorcism",
 }
+
+# These sets document the source-backed editorial routing above.  The original
+# messages, their source links, and their recovered reader chapters remain
+# untouched in the archive and unified manuscript.
+MYSTERIES_GOD_ARTICLE_IDS = frozenset({
+    "templetherapy-48", "templetherapy-79", "templetherapy-203",
+    "templetherapy-233", "templetherapy-246", "templetherapy-249",
+    "templetherapy-600", "templetherapy-609", "templetherapy-616",
+})
+MYSTERIES_SETTING_ARTICLE_IDS = frozenset({
+    "templetherapy-58", "templetherapy-67", "templetherapy-2040", "templetherapy-2273",
+})
+
+# These are article-level advertising announcements rather than source posts
+# that merely contain a closing invitation. They stay complete and traceable,
+# but render only in the final section of their assigned edition.
+PROMOTIONAL_ARTICLE_IDS = frozenset({
+    "mayaismagic-91", "mayaismagic-93", "mayaismagic-153", "mayaismagic-154",
+    "templetherapy-573", "templetherapy-574", "templetherapy-2040",
+})
+
+# Placement labels are applied only while rendering a split volume. This keeps
+# each book's chapter sequence continuous even when an article originated in a
+# broader recovered reader chapter.
+ARTICLE_PRESENTATION_CHAPTERS = {
+    "templetherapy-2262": READER_CHAPTERS[0],
+    "mayaismagic-214": READER_CHAPTERS[1],
+    "mayaismagic-154": READER_CHAPTERS[6],
+    "mayaismagic-156": READER_CHAPTERS[6],
+}
+ARTICLE_PRESENTATION_CHAPTERS.update({
+    article_id: READER_CHAPTERS[1]
+    for article_id in MYSTERIES_GOD_ARTICLE_IDS
+})
+ARTICLE_PRESENTATION_CHAPTERS.update({
+    article_id: READER_CHAPTERS[2]
+    for article_id in MYSTERIES_SETTING_ARTICLE_IDS
+})
 
 # These records remain intact in the raw archive and source index.  They are
 # deliberately omitted from the Maya/Aztec reader because their primary topic
@@ -591,8 +648,9 @@ def curate_reader_articles(canonical_articles: list[dict[str, object]]) -> list[
 
 def volume_articles(articles: list[dict[str, object]]) -> dict[str, list[dict[str, object]]]:
     """Partition the curated reader into the four published editions."""
-    return {
-        str(volume["id"]): [
+    editions: dict[str, list[dict[str, object]]] = {}
+    for volume in VOLUMES:
+        selected = [
             article for article in articles
             if VOLUME_ARTICLE_OVERRIDES.get(str(article["article_id"])) == volume["id"]
             or (
@@ -600,8 +658,26 @@ def volume_articles(articles: list[dict[str, object]]) -> dict[str, list[dict[st
                 and article["chapter"] in volume["chapters"]
             )
         ]
-        for volume in VOLUMES
-    }
+        regular = [
+            {**article, "chapter": ARTICLE_PRESENTATION_CHAPTERS.get(str(article["article_id"]), article["chapter"])}
+            for article in selected
+            if str(article["article_id"]) not in PROMOTIONAL_ARTICLE_IDS
+        ]
+        chapter_positions = {chapter: index for index, chapter in enumerate(READER_CHAPTERS)}
+        priority_positions = {article_id: index for index, article_id in enumerate(READER_ARTICLE_PRIORITY)}
+        regular.sort(key=lambda article: (
+            chapter_positions.get(str(article["chapter"]), len(chapter_positions)),
+            priority_positions.get(str(article["article_id"]), len(priority_positions)),
+            str(article["date"]),
+            str(article["article_id"]),
+        ))
+        announcements = [
+            {**article, "chapter": PROMOTIONS_CHAPTER}
+            for article in selected
+            if str(article["article_id"]) in PROMOTIONAL_ARTICLE_IDS
+        ]
+        editions[str(volume["id"])] = regular + announcements
+    return editions
 
 
 def source_markdown(article: dict[str, object]) -> str:
@@ -836,7 +912,7 @@ body{{margin:0;background:#efe5d8;color:var(--ink);font:{DESKTOP_READER_FONT_SIZ
 .cover{{background:linear-gradient(135deg,#4d2117,var(--wine));color:#fff7ec;border-radius:18px;padding:42px 38px;margin-bottom:28px;display:flow-root}} .eyebrow,.chapter-token{{font:700 12px/1.2 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}} .cover .eyebrow{{color:#f2c979}} .cover h1{{font-size:clamp(34px,5vw,54px);line-height:1.08;margin:.3em 0}} .cover p{{max-width:720px;line-height:1.55;margin:0}} .cover-photo{{display:block;float:right;width:min(38%,300px);max-height:280px;object-fit:cover;border-radius:11px;border:1px solid rgba(255,247,236,.5);margin:0 0 16px 26px}}
 .front-card,.toc{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0}} .front-card h2,.toc h2{{font-size:30px;line-height:1.25;margin:0 0 12px;color:var(--wine)}} .toc ol{{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}} .toc a{{display:block;min-height:54px;padding:13px 16px;border-radius:9px;background:#f8eee2;color:var(--wine);font:700 19px/1.35 Arial,sans-serif;text-decoration:none}}
 .chapter{{scroll-margin-top:16px;font-size:32px;line-height:1.25;color:var(--wine);margin:52px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--gold)}} .chapter-intro{{margin:0 0 19px;padding:14px 17px;background:#f8eee2;border-left:3px solid var(--gold);font-size:19px;line-height:1.52;color:#{MUTED}}} .post{{background:#fffdf9;border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:20px 0;display:flow-root;break-before:page;page-break-before:always}} .post h2{{font-size:30px;line-height:1.3;margin:7px 0 13px;color:var(--wine)}} .meta{{display:flex;gap:8px 13px;flex-wrap:wrap;font:16px/1.45 Arial,sans-serif;color:#{MUTED};padding:11px 0 15px;border-top:1px solid #eadacc;border-bottom:1px solid #eadacc;margin-bottom:18px}} .meta a{{color:var(--wine);overflow-wrap:anywhere}} .post-media{{{READER_MEDIA_CSS}}} .post-photo-main{{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #d4b89e}} .text{{white-space:normal;font-size:1.05rem;line-height:1.64}} .text .verse{{margin:1.05em 0;padding-left:1em;border-left:2px solid #d8b879;line-height:1.52}}
-@media(max-width:700px){{body{{font-size:{MOBILE_READER_FONT_SIZE}px;line-height:{MOBILE_READER_LINE_HEIGHT}}}main{{padding:20px 13px 52px}}.cover{{padding:30px 22px}}.cover-photo{{display:block;float:right;width:min(48%,260px);max-height:230px;margin:0 0 15px 17px}}.front-card,.toc,.post{{padding:22px 19px}}.front-card h2,.toc h2{{font-size:29px}}.toc ol{{grid-template-columns:1fr;gap:10px}}.toc a{{min-height:58px;font-size:19px;padding:15px 16px}}.chapter{{font-size:30px;margin-top:44px}}.chapter-intro{{font-size:19px;line-height:1.48;padding:14px 16px}}.post-media{{float:none;width:100%;margin:0 0 17px}}.post h2{{font-size:28px}}.meta{{font-size:15px;line-height:1.4}}.text{{font-size:1rem;line-height:{MOBILE_READER_LINE_HEIGHT}}}}} @media print{{body{{background:#fff}}main{{max-width:none;padding:0}}.cover{{border-radius:0;break-after:page}}.toc{{break-after:page}}.post{{border-radius:0;margin:0;min-height:92vh}}}}
+@media(max-width:700px){{body{{font-size:{MOBILE_READER_FONT_SIZE}px;line-height:{MOBILE_READER_LINE_HEIGHT}}}main{{padding:20px 13px 52px}}.cover{{padding:30px 22px}}.cover-photo{{display:block;float:right;width:min(48%,260px);max-height:230px;margin:0 0 15px 17px}}.front-card,.toc,.post{{padding:22px 19px}}.front-card h2,.toc h2{{font-size:29px}}.toc ol{{grid-template-columns:1fr;gap:10px}}.toc a{{min-height:58px;font-size:19px;padding:15px 16px}}.chapter{{font-size:30px;margin-top:44px}}.chapter-intro{{font-size:19px;line-height:1.48;padding:14px 16px}}.post-media{{float:right;width:{MOBILE_HTML_MEDIA_WIDTH_PERCENT}%;margin:0 0 14px 18px}}.post h2{{font-size:28px}}.meta{{font-size:15px;line-height:1.4}}.text{{font-size:1rem;line-height:{MOBILE_READER_LINE_HEIGHT}}}}} @media print{{body{{background:#fff}}main{{max-width:none;padding:0}}.cover{{border-radius:0;break-after:page}}.toc{{break-after:page}}.post{{border-radius:0;margin:0;min-height:92vh}}}}
 </style></head><body><main><header class="cover">{cover_photo}<div class="eyebrow">Авторская читательская методичка</div><h1>{html.escape(str(edition["title"]))}</h1><p>{html.escape(str(edition["subtitle"]))}. Редакционная компоновка сохранённых текстов без фактологического дополнения.</p></header>{description_card}<nav class="toc" aria-label="Содержание"><h2>Содержание</h2><ol>{toc}</ol></nav>{document}</main></body></html>''', encoding="utf-8")
 
 def shade(cell, value: str) -> None:
@@ -962,7 +1038,7 @@ def build_docx(
         token = doc.add_table(rows=1, cols=1); token.autofit = False; cell = token.cell(0,0); shade(cell, CREAM); set_cell_margins(cell); cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
         p = cell.paragraphs[0]; set_paragraph(p, after=0); add_run(p, str(chapter).upper(), 10, True, GOLD)
         table = doc.add_table(rows=1, cols=2); table.alignment = WD_TABLE_ALIGNMENT.RIGHT; table.autofit = False; table.columns[0].width = Inches(DOCX_TEXT_COLUMN_WIDTH_INCHES); table.columns[1].width = Inches(DOCX_MEDIA_COLUMN_WIDTH_INCHES)
-        left, right = table.rows[0].cells; set_cell_margins(left); set_cell_margins(right); right.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+        left, right = table.rows[0].cells; left.width = Inches(DOCX_TEXT_COLUMN_WIDTH_INCHES); right.width = Inches(DOCX_MEDIA_COLUMN_WIDTH_INCHES); set_cell_margins(left); set_cell_margins(right); right.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
         p = left.paragraphs[0]; set_paragraph(p, after=8); add_run(p, str(article["title"]), 20, True, WARM)
         add_bookmark(p, article_bookmark(article), bookmark_id)
         bookmark_id += 1

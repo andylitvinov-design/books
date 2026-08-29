@@ -209,11 +209,11 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
 
         self.assertEqual(missing, [])
 
-    def test_reader_media_is_scaled_by_one_and_a_half_across_html_and_docx(self):
+    def test_reader_media_uses_compact_web_images_and_full_width_docx_header(self):
         self.assertEqual(BUILD.READER_IMAGE_SCALE, 1.9)
-        self.assertEqual(BUILD.HTML_MEDIA_MAX_WIDTH_PX, 630)
-        self.assertIn("width:min(72%,630px)", BUILD.READER_MEDIA_CSS)
-        self.assertEqual(BUILD.DOCX_MEDIA_WIDTH_INCHES, 3.5)
+        self.assertEqual(BUILD.HTML_MEDIA_MAX_WIDTH_PX, 315)
+        self.assertIn("width:min(36%,315px)", BUILD.READER_MEDIA_CSS)
+        self.assertEqual(BUILD.DOCX_MEDIA_WIDTH_INCHES, 3.65)
         self.assertGreaterEqual(BUILD.DOCX_MEDIA_COLUMN_WIDTH_INCHES, BUILD.DOCX_MEDIA_WIDTH_INCHES)
 
     def test_documented_adjacent_series_media_is_available_for_reader_articles(self):
@@ -294,6 +294,68 @@ class SupplementalTempleTherapyTests(unittest.TestCase):
         self.assertFalse(
             {"mayaismagic-214", "templetherapy-2262", "mayaismagic-154", "mayaismagic-156"}
             & volumes["maya-exorcism"]
+        )
+
+    def test_cross_volume_material_is_grouped_by_calendar_gods_and_practices(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+        volumes = {
+            volume_id: {article["article_id"] for article in articles}
+            for volume_id, articles in BUILD.volume_articles(reader).items()
+        }
+
+        self.assertTrue(BUILD.CALENDAR_DAY_ARTICLE_IDS <= volumes["maya-calendar"])
+        self.assertTrue(BUILD.MYSTERIES_GOD_ARTICLE_IDS <= volumes["maya-egregor-gods"])
+        self.assertTrue(BUILD.MYSTERIES_SETTING_ARTICLE_IDS <= volumes["maya-exorcism"])
+
+        presented = {
+            volume_id: {article["article_id"]: article["chapter"] for article in articles}
+            for volume_id, articles in BUILD.volume_articles(reader).items()
+        }
+        self.assertTrue(all(
+            presented["maya-egregor-gods"][article_id] == BUILD.READER_CHAPTERS[1]
+            for article_id in BUILD.MYSTERIES_GOD_ARTICLE_IDS
+        ))
+        self.assertTrue(all(
+            presented["maya-exorcism"][article_id] == BUILD.READER_CHAPTERS[2]
+            for article_id in BUILD.MYSTERIES_SETTING_ARTICLE_IDS - BUILD.PROMOTIONAL_ARTICLE_IDS
+        ))
+        self.assertEqual(presented["maya-calendar"]["mayaismagic-156"], BUILD.READER_CHAPTERS[-1])
+
+    def test_promotional_announcements_are_the_final_volume_section(self):
+        reader = BUILD.curate_reader_articles(
+            BUILD.unify_articles(BUILD.parse_articles(), BUILD.parse_supplemental_articles())
+        )
+
+        for articles in BUILD.volume_articles(reader).values():
+            promotional_ids = [
+                article["article_id"]
+                for article in articles
+                if article["article_id"] in BUILD.PROMOTIONAL_ARTICLE_IDS
+            ]
+            if not promotional_ids:
+                continue
+            first_promotion = next(
+                index for index, article in enumerate(articles)
+                if article["article_id"] in BUILD.PROMOTIONAL_ARTICLE_IDS
+            )
+            self.assertTrue(all(
+                article["article_id"] in BUILD.PROMOTIONAL_ARTICLE_IDS
+                for article in articles[first_promotion:]
+            ))
+            self.assertTrue(all(
+                article["chapter"] == BUILD.PROMOTIONS_CHAPTER
+                for article in articles[first_promotion:]
+            ))
+
+    def test_web_article_photos_are_half_sized_and_docx_top_block_uses_full_width(self):
+        self.assertEqual(BUILD.HTML_MEDIA_WIDTH_PERCENT, 36)
+        self.assertEqual(BUILD.HTML_MEDIA_MAX_WIDTH_PX, 315)
+        self.assertEqual(BUILD.MOBILE_HTML_MEDIA_WIDTH_PERCENT, 50)
+        self.assertGreaterEqual(
+            BUILD.DOCX_TEXT_COLUMN_WIDTH_INCHES + BUILD.DOCX_MEDIA_COLUMN_WIDTH_INCHES,
+            6.9,
         )
 
     def test_each_volume_has_reader_html_and_illustrates_every_article(self):
