@@ -1,0 +1,16 @@
+---
+locale: ru
+slug: avena-sativa
+canonical_latin_name: Avena Sativa
+russian_common_name: энергия овса
+aliases: Avena Sativa; энергия овса
+source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
+source_heading: Avena Sativa (энергия овса)
+source_author: Andrii Litvinov
+source_status: primary-source-excerpt
+related_slugs:
+translation_provenance: original-ru-source
+en_source_exists: no
+---
+
+Это еще один препарат, который меня увлек. Работая с клиентами мне понравилось, какую он дает стремительность двигаться вперед. Он несет увлеченность, интерес, желание что-то созидать. В нем сладкая сила пробуждающегося ростка.
