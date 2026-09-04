@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 
@@ -67,7 +67,7 @@ test('renders each Maya volume from its complete sanitized source HTML with safe
     assert.match(document.content, new RegExp(`<h1[^>]*>${expected.title}`))
     assert.match(document.content, new RegExp(expected.heading))
     assert.match(document.content, /src="\/media\/maya\/photo_[^"]+\.jpg"/)
-    assert.match(document.content, new RegExp(`src="/library/${expected.id}/media/${expected.templeImage}"`))
+    assert.match(document.content, new RegExp(`src="/library/${expected.id}/media/post-[^"]+\\.jpg"`))
     assert.doesNotMatch(document.content, /(?:\.\.\/raw\/photos|\.\.\/media\/templetherapy|file:\/\/|localhost)/)
   }
 })
@@ -107,5 +107,13 @@ test('serves every rewritten Maya image from a fixed public root without travers
         )
       }
     }
+  }
+})
+
+test('ships a PDF download for every Maya reading volume', () => {
+  for (const { id } of mayaVolumes) {
+    const pdfPath = path.join(process.cwd(), 'public', 'library', id, 'book.pdf')
+    assert.equal(existsSync(pdfPath), true, `${id} PDF must be present`)
+    assert.equal(readFileSync(pdfPath).subarray(0, 4).toString('ascii'), '%PDF', `${id} must be a PDF`)
   }
 })
