@@ -1,6 +1,6 @@
 # Supergoal state
 
-**Status:** VERIFIED_LOCALLY_PENDING_PREVIEW
+**Status:** PREVIEW_READY_PR_OPEN
 **Goal:** Bilingual Homeopathy implementation for Issue #3.
 **Branch:** `codex/issue-3-library-integration`
 **Base:** `codex/public-book-library`
@@ -26,3 +26,6 @@
 - `test:unit`: 29 passing tests.
 - `lint` and `build`: passing; build statically generated 76 remedy routes and retained 23 book routes.
 - Local HTTP verifier: 4 localized indexes, 76 remedy routes, 23 book routes, sitemap, robots, and 404 all passed.
+- Preview deployment: `https://codex-public-book-library-2nox5uf9l-super10.vercel.app` (`dpl_FkV85DZR3knwGVnX2osYQktayojj`, target `preview`, Ready).
+- Pull request: `https://github.com/andylitvinov-design/books/pull/4`, base `codex/public-book-library`.
+- No production promotion, merge, or production deployment was performed.
