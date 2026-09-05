@@ -264,6 +264,9 @@
   .remedy-page-actions a:first-child { @apply underline decoration-[#bf9473] underline-offset-4; }
   .remedy-common-name { @apply mt-4 text-base italic text-[#6d5d51]; }
   .remedy-author-description { @apply mt-10 border-y border-[#cdbda5] py-8 font-serif text-xl leading-9 text-[#382d26] sm:text-2xl sm:leading-10; }
+  .remedy-author-description h2 { @apply mt-8 text-2xl font-semibold first:mt-0 sm:text-3xl; }
+  .remedy-author-description h3 { @apply mt-6 text-lg font-semibold tracking-wide sm:text-xl; }
+  .remedy-author-description p { @apply mt-5 first:mt-0; }
   .remedy-source-reference { @apply mt-8 grid gap-1 border-l-2 border-[#cba27a] pl-4 text-sm leading-6 text-[#6d5d51]; }
   .remedy-source-reference p { @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8b4513]; }
   .remedy-source-reference span { @apply break-words; }
