@@ -1,4 +1,4 @@
-# Psychic Alchemy — proposed four-book resort (Phase K)
+# Psychic Alchemy — four-book resort and Book 02 publication plan (Phase L)
 
 ## Source boundary
 
@@ -42,15 +42,15 @@ Use the `content_type`, `book_assignment`, `source_anchor`, and `photo_assets` c
 
 ## Proposed Book 02 TOC
 
-### Part I — established canonical cards (38)
+### Part I — established canonical cards (38 retained)
 
 Keep the existing 38 confirmed cards and their stable slugs unchanged. Their original Telegram primary-card anchors are recorded in the index; the current source book remains the source of truth for the already-published descriptions.
 
-Five existing cards are marked **existing_to_enrich** from clearly richer or later Telegram card material: Natrum Muriaticum (`message49`, `message165`), Sulphur (`message113`, `message198–200`), Kalium Sulphuricum (`message217`, `message218`), Baryta Carbonica (`message114`, `message481`), and Testosteronum (`message838`, `message842`, `message866`). This is an editorial source flag only; no existing public page is changed in Phase K.
+Five existing cards are enriched from clearly richer or later Telegram material: Natrum Muriaticum (`message49`, `message165`), Sulphur (`message113`, `message198–200`), Kalium Sulphuricum (`message217`, `message218`), Baryta Carbonica (`message114`, `message481`), and Testosteronum (`message838`, `message842`, `message866`).
 
-### Part II — new full-card proposals (54)
+### Part II — new Telegram full cards (54 published)
 
-Add only after review, alphabetically by the author-source name:
+Published alphabetically under their canonical names; source spellings remain aliases/provenance:
 
 1. Aethusa Cynapium
 2. Alumina
@@ -65,7 +65,7 @@ Add only after review, alphabetically by the author-source name:
 11. Bryonia
 12. Camphora
 13. Carbo Animalis
-14. Carbo Vegetables
+14. Carbo vegetabilis (source spelling: Carbo Vegetables)
 15. Cinchona
 16. Cobaltum Metallicum
 17. Cocculus Indicus
@@ -84,7 +84,7 @@ Add only after review, alphabetically by the author-source name:
 30. Magnesia Phosphorica
 31. Magnesium Carbonicum
 32. Magnesium Muriaticum
-33. Mercurious Solubilis
+33. Mercurius solubilis (source spelling: Mercurious Solubilis)
 34. Natrum Carbonicum
 35. Natrum Sulfuricum
 36. Nitricum Acidum
@@ -102,29 +102,29 @@ Add only after review, alphabetically by the author-source name:
 48. Silicea
 49. Spongia Tosta
 50. Staphysagria
-51. Syzygiun Jambolanum
+51. Syzygium jambolanum (source spelling: Syzygiun Jambolanum)
 52. Teucrium
 53. Thuja
 54. Veratrum Album
 
-The list has 54 addable cards. The definitive machine-readable count and source anchors are in [`data/remedy-source-inventory.csv`](../data/remedy-source-inventory.csv).
+The list has 54 published cards. The definitive machine-readable count and source anchors are in [`data/remedy-source-inventory.csv`](../data/remedy-source-inventory.csv).
 
-### Appendix — hold for author decision (2 groups)
+### Part III — author-resolved canonical cards (2 published)
 
-- **Aurum / Aurum Metallicum** — full source card exists, but its two source forms are not auto-normalized.
-- **Carsinosinum / Carcinosinum** — two full cards use conflicting forms; preserve all three related posts, but do not create a slug.
+- **Aurum metallicum** (`aurum-metallicum`) — source forms Аурум / Aurum / Aurum Metallicum are retained as aliases. `message37` is the primary card and `message1059` is attached as a comparison/source supplement.
+- **Carcinosinum** (`carcinosinum`) — source spelling Carsinosinum remains an alias. `message429` and `message1053` are primary source cards; `message430` is attached as a supporting post.
 
 ### Mention-only appendix (22)
 
-These source labels are useful for cross-references but do not yet have a standalone card: Aconitum, Medorrhinum, Aqua Marina, Luna, Anandamide, Cineraria, Amniotic Fluid, Placenta, Lac Amnioticum, Aquamarinus, Lac Caninum, Berberis, Plumbum Metallicum, Helium, Dolphin Milk, Crocus Sativus, Tuberculinum, Moschus, Anacardium, Magnesium Sulphiricum, Aspen, and White Chestnut.
+These source labels are useful for cross-references but do not have a standalone card: Aconitum, Medorrhinum, Aqua Marina, Luna, Anandamide, Cineraria, Amniotic Fluid, Placenta, Lac Amnioticum, Aquamarinus, Lac Caninum, Berberis, Plumbum Metallicum, Helium, Dolphin Milk, Crocus Sativus, Tuberculinum, Moschus, Anacardium, Magnesium sulphuricum (source spelling: Magnesium Sulphiricum), Aspen, and White Chestnut.
 
 ## Editorial assembly rules
 
 1. One future remedy page is assembled from its primary-card post plus its explicit supporting posts; source text is not silently paraphrased.
 2. Promotional calls to action and repeated boilerplate are removed from the book layer, but their source messages remain in the index.
 3. Every card retains its source message ID, date, and non-thumbnail photo paths in its editorial provenance record.
-4. The 38 current public pages remain stable. The 54 new full-card rows are proposals only; no public route is created in this phase.
-5. A source-name conflict, group heading, or mention-only label never becomes a canonical card without an author decision.
+4. The 38 existing public cards are retained and five are enriched with explicitly mapped Telegram supplements. The 54 approved full-card rows and two author-resolved cards yield 94 canonical cards.
+5. The disputed source distinctions `Aqua Marina` / `Aquamarinus` and `Lac Humanum` / `Lac maternum` remain separate; mention-only labels do not become pages.
 
 ## Image mapping summary
 
@@ -132,4 +132,4 @@ These source labels are useful for cross-references but do not yet have a standa
 
 ## Review decision needed
 
-Approve or amend the two unresolved source-name groups, then review the 54 proposed full-card rows. On approval, the next phase can create a 92-page target (38 current + 54 new) while keeping the two disputed groups outside the route set.
+Phase L implementation creates the 94-card review set (38 retained + 54 full-card additions + Aurum metallicum + Carcinosinum). The 22 mention-only labels remain outside the route set; no production deployment is part of this plan.

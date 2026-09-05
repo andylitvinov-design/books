@@ -85,7 +85,9 @@ test('contains exactly one source-backed Russian and translated English file for
     assert.equal(ru.slug, remedy.slug)
     assert.equal(ru.source_file, remedy.source_file)
     assert.equal(ru.source_heading, remedy.source_section_heading)
-    assert.equal(readFileSync(sourcePath, 'utf8').includes(remedy.source_section_heading), true)
+    const source = readFileSync(sourcePath, 'utf8')
+    const headings = remedy.source_section_heading.split(';').map((value) => value.trim()).filter(Boolean)
+    assert.equal(headings.every((heading) => source.includes(heading)), true)
     assert.equal(en.slug, remedy.slug)
     assert.equal(en.translation_provenance, 'translated-from-ru')
     assert.equal(en.translation_source, `content/remedies/ru/${remedy.slug}.md`)
@@ -93,12 +95,12 @@ test('contains exactly one source-backed Russian and translated English file for
   }
 })
 
-test('remedy content validator reports paired 38/38 source-backed pages', () => {
+test('remedy content validator reports paired 94/94 source-backed pages', () => {
   const result = spawnSync(process.execPath, ['scripts/validate-remedy-content.mjs'], {
     cwd: projectRoot,
     encoding: 'utf8',
   })
 
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /ru=38 en=38 pairs=38 source_refs=38/)
+  assert.match(result.stdout, /ru=94 en=94 pairs=94 source_refs=94/)
 })

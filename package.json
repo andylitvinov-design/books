@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "test:unit": "node --test tests/**/*.test.mjs",
     "validate:remedy-inventory": "node scripts/validate-remedy-source-inventory.mjs",
-    "generate:remedy-content": "node scripts/generate-remedy-content.mjs",
+    "generate:remedy-content": "node scripts/generate-phase-l-remedy-content.mjs",
     "validate:remedy-content": "node scripts/validate-remedy-content.mjs",
     "verify:homeopathy-routes": "node scripts/verify-homeopathy-routes.mjs"
   },

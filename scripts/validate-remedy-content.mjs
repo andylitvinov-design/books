@@ -85,9 +85,13 @@ for (const remedy of confirmed) {
   if (ru.metadata.slug !== remedy.slug || en.metadata.slug !== remedy.slug) fail(`${remedy.slug} pair has a mismatched slug`)
   if (ru.metadata.locale !== 'ru' || en.metadata.locale !== 'en') fail(`${remedy.slug} pair has incorrect locales`)
   if (ru.metadata.source_file !== remedy.source_file || ru.metadata.source_heading !== remedy.source_section_heading) fail(`${remedy.slug} Russian source metadata is broken`)
-  if (!source.includes(remedy.source_section_heading)) fail(`${remedy.slug} source heading no longer exists`)
-  if (!normaliseSourceText(source).includes(normaliseSourceText(ru.body))) {
-    fail(`${remedy.slug} Russian description is not an exact source excerpt`)
+  const headings = remedy.source_section_heading.split(';').map((value) => value.trim()).filter(Boolean)
+  if (!headings.every((heading) => source.includes(heading))) fail(`${remedy.slug} source heading no longer exists`)
+  if (remedy.source_file !== 'data/telegram-psychic-alchemy-index.csv') {
+    const manualExcerpt = ru.body.split('\n\n## Дополнительные авторские материалы из Telegram\n\n')[0]
+    if (!normaliseSourceText(source).includes(normaliseSourceText(manualExcerpt))) {
+      fail(`${remedy.slug} Russian manual excerpt is not traceable to its source`)
+    }
   }
   if (en.metadata.translation_provenance !== 'translated-from-ru') fail(`${remedy.slug} English provenance is missing`)
   if (en.metadata.translation_source !== `content/remedies/ru/${remedy.slug}.md`) fail(`${remedy.slug} English source pair is broken`)

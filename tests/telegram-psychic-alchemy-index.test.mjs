@@ -46,23 +46,26 @@ test('Phase K Telegram index preserves every export message and asset reference'
   assert.equal(new Set(rows.map(({ message_id }) => message_id)).size, rows.length)
 })
 
-test('Phase K keeps Book 02 cards, source variants, and unresolved names distinct', () => {
+test('Phase L keeps Book 02 cards, source variants, and approved canonical names traceable', () => {
   const rows = readIndex()
   const books = Object.groupBy(rows, ({ book_assignment }) => book_assignment)
-  assert.equal(books.book_01.length, 253)
-  assert.equal(books.book_02.length, 110)
+  assert.equal(books.book_01.length, 252)
+  assert.equal(books.book_02.length, 111)
   assert.equal(books.book_03.length, 133)
   assert.equal(books.book_04.length, 278)
   assert.equal(rows.filter(({ remedy_focus }) => remedy_focus === 'full_card').length, 95)
-  assert.equal(rows.filter(({ remedy_focus }) => remedy_focus === 'supporting_post').length, 15)
+  assert.equal(rows.filter(({ remedy_focus }) => remedy_focus === 'supporting_post').length, 16)
   assert.equal(rows.filter(({ duplicate_of_message_id }) => duplicate_of_message_id).length, 2)
 
   const aurum = rows.find(({ message_id }) => message_id === 'message37')
-  assert.equal(aurum.canonical_remedy, 'Aurum / Aurum Metallicum')
-  assert.equal(aurum.remedy_slug, '')
+  assert.equal(aurum.canonical_remedy, 'Aurum metallicum')
+  assert.equal(aurum.remedy_slug, 'aurum-metallicum')
   const carsinosinum = rows.find(({ message_id }) => message_id === 'message1053')
-  assert.equal(carsinosinum.canonical_remedy, 'Carsinosinum / Carcinosinum')
-  assert.equal(carsinosinum.remedy_slug, '')
+  assert.equal(carsinosinum.canonical_remedy, 'Carcinosinum')
+  assert.equal(carsinosinum.remedy_slug, 'carcinosinum')
+  const aurumComparison = rows.find(({ message_id }) => message_id === 'message1059')
+  assert.equal(aurumComparison.remedy_focus, 'supporting_post')
+  assert.equal(aurumComparison.canonical_card_message_id, 'message37')
 })
 
 test('Phase K image map preserves Book 02 photo provenance without auto-publishing images', () => {
@@ -75,7 +78,7 @@ test('Phase K image map preserves Book 02 photo provenance without auto-publishi
   const imageRows = imageLines.map((line) => Object.fromEntries(imageHeader.map((column, index) => [column, parseCsvLine(line)[index] ?? ''])))
   const indexedMessageIds = new Set(indexRows.map(({ message_id }) => message_id))
 
-  assert.equal(imageRows.length, 109)
+  assert.equal(imageRows.length, 110)
   assert.equal(imageRows.every(({ message_id }) => indexedMessageIds.has(message_id)), true)
   assert.equal(imageRows.every(({ source_image_exists }) => source_image_exists === 'yes'), true)
   assert.equal(imageRows.every(({ publication_status }) => publication_status === 'editorial_visual_review_required'), true)

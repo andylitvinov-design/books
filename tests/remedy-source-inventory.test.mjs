@@ -56,7 +56,7 @@ function readInventory() {
   }
 }
 
-test('retains the audited Book 02 baseline and records Telegram proposals without inventing English content', () => {
+test('publishes the approved 94-card Book 02 inventory without promoting mention-only entries', () => {
   assert.equal(existsSync(inventoryPath), true, 'remedy source inventory must exist')
   if (!existsSync(inventoryPath)) return
 
@@ -65,16 +65,16 @@ test('retains the audited Book 02 baseline and records Telegram proposals withou
   assert.equal(rows.length, 125)
 
   const counts = Object.groupBy(rows, ({ candidate_status }) => candidate_status)
-  assert.equal(counts.confirmed.length, 38)
+  assert.equal(counts.confirmed.length, 94)
   assert.equal(counts.duplicate.length, 8)
   assert.equal(counts.grouped.length, 1)
-  assert.equal(counts.proposed_full_card.length, 54)
   assert.equal(counts.mention_only.length, 22)
-  assert.equal(counts.needs_resolution.length, 2)
+  assert.equal(counts.proposed_full_card, undefined)
+  assert.equal(counts.needs_resolution, undefined)
 
   const confirmed = counts.confirmed
-  assert.equal(new Set(confirmed.map(({ slug }) => slug)).size, 38)
-  assert.equal(confirmed.every(({ source_file }) => source_file === sourceFile), true)
+  assert.equal(new Set(confirmed.map(({ slug }) => slug)).size, 94)
+  assert.equal(confirmed.every(({ slug }) => slug), true)
   assert.equal(confirmed.every(({ ru_source_exists }) => ru_source_exists === 'yes'), true)
   assert.equal(confirmed.every(({ en_source_exists }) => en_source_exists === 'no'), true)
   assert.equal(confirmed.every(({ needs_translation }) => needs_translation === 'yes'), true)
@@ -83,21 +83,21 @@ test('retains the audited Book 02 baseline and records Telegram proposals withou
     [...readFileSync(path.join(projectRoot, sourceFile), 'utf8').matchAll(/<h4[^>]*>([\s\S]*?)<\/h4>/gi)]
       .map(([, heading]) => heading.replace(/<[^>]+>/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim()),
   )
-  assert.equal(
-    rows.filter(({ source_file: file }) => file === sourceFile).every(({ source_section_heading }) => headings.has(source_section_heading)),
-    true,
-  )
+  assert.equal(rows.filter(({ source_file: file }) => file === sourceFile).every(({ source_section_heading }) => headings.has(source_section_heading)), true)
+  assert.equal(confirmed.filter(({ source_file: file }) => file === sourceFile).length, 38)
+  assert.equal(confirmed.filter(({ source_file: file }) => file === 'data/telegram-psychic-alchemy-index.csv').length, 56)
 
   const confirmedSlugs = new Set(confirmed.map(({ slug }) => slug))
   assert.equal(counts.duplicate.every(({ slug }) => confirmedSlugs.has(slug)), true)
   assert.equal(counts.grouped[0].slug, '')
-  assert.equal(counts.proposed_full_card.every(({ source_file: file, ru_source_exists, en_source_exists, needs_translation }) => (
-    file === 'data/telegram-psychic-alchemy-index.csv'
-      && ru_source_exists === 'yes'
-      && en_source_exists === 'no'
-      && needs_translation === 'yes'
-  )), true)
-  assert.equal(counts.needs_resolution.every(({ slug }) => slug === ''), true)
+  assert.equal(confirmed.find(({ slug }) => slug === 'aurum-metallicum').canonical_latin_name, 'Aurum metallicum')
+  assert.match(confirmed.find(({ slug }) => slug === 'aurum-metallicum').aliases_abbreviations, /Аурум; Aurum/)
+  assert.equal(confirmed.find(({ slug }) => slug === 'carcinosinum').canonical_latin_name, 'Carcinosinum')
+  assert.match(confirmed.find(({ slug }) => slug === 'carcinosinum').aliases_abbreviations, /Carsinosinum/)
+  assert.equal(counts.mention_only.some(({ slug }) => slug === 'aqua-marina'), true)
+  assert.equal(counts.mention_only.some(({ slug }) => slug === 'aquamarinus'), true)
+  assert.equal(confirmed.some(({ slug }) => slug === 'lac-humanum'), true)
+  assert.equal(confirmed.some(({ aliases_abbreviations = '' }) => /Lac maternum/i.test(aliases_abbreviations)), false)
 })
 
 test('validates the audited remedy counts from the CSV source of truth', () => {
@@ -107,5 +107,5 @@ test('validates the audited remedy counts from the CSV source of truth', () => {
   })
 
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /confirmed=38 duplicates=8 grouped=1 proposed_full_card=54 mention_only=22 needs_resolution=2 en_missing=38/)
+  assert.match(result.stdout, /confirmed=94 duplicates=8 grouped=1 mention_only=22 en_missing=94/)
 })

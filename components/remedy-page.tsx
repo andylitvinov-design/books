@@ -23,8 +23,8 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
         <p className="homeopathy-kicker">{locale === "ru" ? "Гомеопатия · источник" : "Homeopathy · source"}</p>
         <h1>{remedy.canonical_latin_name}</h1>
         {remedy.russian_common_name ? <p className="remedy-common-name">{labels.sourceName}: {remedy.russian_common_name}</p> : null}
-        <div className="remedy-author-description"><p>{remedy.description}</p></div>
-        <footer className="remedy-source-reference"><p>{labels.source}</p><strong>{remedy.source_author}</strong><span>{remedy.source_file}</span><span>{remedy.source_heading}</span>{locale === "en" ? <span>Translation provenance: {remedy.translation_provenance}; EN source: {remedy.en_source_exists}.</span> : null}</footer>
+        <div className="remedy-author-description whitespace-pre-line"><p>{remedy.description}</p></div>
+        <footer className="remedy-source-reference"><p>{labels.source}</p><strong>{remedy.source_author}</strong><span>{remedy.source_file}</span><span>{remedy.source_heading}</span>{remedy.source_messages ? <span>Messages: {remedy.source_messages}</span> : null}{locale === "en" ? <span>Translation provenance: {remedy.translation_provenance}; EN source: {remedy.en_source_exists}.</span> : null}</footer>
         {related.length ? <section className="remedy-related"><h2>{labels.related}</h2><ul>{related.map((item) => <li key={item.slug}><Link href={`/${locale}/homeopathy/remedies/${item.slug}`}>{item.canonical_latin_name}</Link></li>)}</ul></section> : null}
         <p className="remedy-disclaimer">{labels.disclaimer}</p>
       </article>

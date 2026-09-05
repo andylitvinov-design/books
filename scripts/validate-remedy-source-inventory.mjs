@@ -16,7 +16,7 @@ const expectedColumns = [
   'candidate_status',
   'notes',
 ]
-const allowedStatuses = new Set(['confirmed', 'duplicate', 'grouped', 'proposed_full_card', 'mention_only', 'needs_resolution'])
+const allowedStatuses = new Set(['confirmed', 'duplicate', 'grouped', 'mention_only'])
 const telegramIndexFile = 'data/telegram-psychic-alchemy-index.csv'
 
 function fail(message) {
@@ -87,8 +87,8 @@ function readInventory() {
 const rows = readInventory()
 const headingsByFile = new Map()
 const confirmedSlugs = new Set()
-const proposedSlugs = new Set()
-const counts = { confirmed: 0, duplicate: 0, grouped: 0, proposed_full_card: 0, mention_only: 0, needs_resolution: 0 }
+const unpublishedSlugs = new Set()
+const counts = { confirmed: 0, duplicate: 0, grouped: 0, mention_only: 0 }
 const telegramIds = telegramMessageIds()
 
 for (const [index, row] of rows.entries()) {
@@ -117,20 +117,12 @@ for (const [index, row] of rows.entries()) {
     if (!row.canonical_latin_name || !row.slug || row.needs_translation !== 'yes') fail(`line ${line} duplicate row is incomplete`)
   } else if (row.candidate_status === 'grouped' && (row.canonical_latin_name || row.slug || row.needs_translation !== 'no')) {
     fail(`line ${line} grouped row must not infer an individual remedy`)
-  } else if (row.candidate_status === 'proposed_full_card') {
-    if (!row.canonical_latin_name || !row.slug || row.ru_source_exists !== 'yes' || row.en_source_exists !== 'no' || row.needs_translation !== 'yes') {
-      fail(`line ${line} proposed full-card row is incomplete`)
-    }
-    if (confirmedSlugs.has(row.slug) || proposedSlugs.has(row.slug)) fail(`line ${line} duplicates a future or confirmed slug: ${row.slug}`)
-    proposedSlugs.add(row.slug)
   } else if (row.candidate_status === 'mention_only') {
     if (!row.canonical_latin_name || !row.slug || row.ru_source_exists !== 'yes' || row.en_source_exists !== 'no' || row.needs_translation !== 'yes') {
       fail(`line ${line} mention-only row is incomplete`)
     }
-    if (confirmedSlugs.has(row.slug) || proposedSlugs.has(row.slug)) fail(`line ${line} reuses a future or confirmed slug: ${row.slug}`)
-    proposedSlugs.add(row.slug)
-  } else if (row.candidate_status === 'needs_resolution' && (!row.canonical_latin_name || row.slug || row.ru_source_exists !== 'yes' || row.en_source_exists !== 'no' || row.needs_translation !== 'yes')) {
-    fail(`line ${line} needs-resolution row must preserve a source name without proposing a slug`)
+    if (confirmedSlugs.has(row.slug) || unpublishedSlugs.has(row.slug)) fail(`line ${line} reuses a published or mention-only slug: ${row.slug}`)
+    unpublishedSlugs.add(row.slug)
   }
 
   counts[row.candidate_status] += 1
@@ -141,4 +133,8 @@ for (const row of rows.filter(({ candidate_status }) => candidate_status === 'du
 }
 
 const enMissing = rows.filter(({ candidate_status, needs_translation }) => candidate_status === 'confirmed' && needs_translation === 'yes').length
-console.log(`confirmed=${counts.confirmed} duplicates=${counts.duplicate} grouped=${counts.grouped} proposed_full_card=${counts.proposed_full_card} mention_only=${counts.mention_only} needs_resolution=${counts.needs_resolution} en_missing=${enMissing}`)
+if (counts.confirmed !== 94 || counts.duplicate !== 8 || counts.grouped !== 1 || counts.mention_only !== 22) {
+  fail(`unexpected Phase L inventory counts: confirmed=${counts.confirmed} duplicates=${counts.duplicate} grouped=${counts.grouped} mention_only=${counts.mention_only}`)
+}
+
+console.log(`confirmed=${counts.confirmed} duplicates=${counts.duplicate} grouped=${counts.grouped} mention_only=${counts.mention_only} en_missing=${enMissing}`)

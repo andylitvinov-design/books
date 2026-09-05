@@ -13,7 +13,27 @@ export type Remedy = {
   related_slugs: string;
   translation_provenance: string;
   translation_source?: string;
+  translation_method?: string;
   en_source_exists: "no";
+  source_substance?: string;
+  key_image?: string;
+  main_state?: string;
+  observed_effect?: string;
+  archetype?: string;
+  shadow?: string;
+  resource?: string;
+  internal_conflict?: string;
+  developmental_stage?: string;
+  subpersonality?: string;
+  transformation?: string;
+  meanings_lessons?: string;
+  alchemical_interpretation?: string;
+  practical_observations?: string;
+  cases?: string;
+  comparisons?: string;
+  source_messages?: string;
+  source_images?: string;
+  provenance?: string;
   description: string;
 };
 

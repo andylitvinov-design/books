@@ -8,9 +8,9 @@ const exportRoot = process.env.TELEGRAM_PSYCHIC_ALCHEMY_EXPORT
 const sourceFile = path.join(exportRoot, 'messages.html')
 const outputFile = path.join(projectRoot, 'data', 'telegram-psychic-alchemy-index.csv')
 
-// These are source labels copied from complete, structured remedy posts in the
-// Telegram export. They deliberately preserve the author's spelling; this is a
-// proposal inventory, not a silently normalised materia medica catalogue.
+// These are complete, structured remedy posts in the Telegram export. Canonical
+// names follow the approved Phase L normalization; the source spelling remains
+// in the inventory aliases/provenance rather than being discarded.
 const NEW_FULL_CARDS = [
   ['Nitricum Acidum', 'nitricum-acidum', 'message162'],
   ['Arnica', 'arnica', 'message168'],
@@ -18,7 +18,7 @@ const NEW_FULL_CARDS = [
   ['Kalium Arsenicosum', 'kalium-arsenicosum', 'message222'],
   ['Spongia Tosta', 'spongia-tosta', 'message230'],
   ['Lycopodium', 'lycopodium', 'message240'],
-  ['Carbo Vegetables', 'carbo-vegetables', 'message244'],
+  ['Carbo vegetabilis', 'carbo-vegetabilis', 'message244'],
   ['Sepia', 'sepia', 'message247'],
   ['Staphysagria', 'staphysagria', 'message277'],
   ['Secale Cornutum', 'secale-cornutum', 'message285'],
@@ -37,7 +37,7 @@ const NEW_FULL_CARDS = [
   ['Magnesium Muriaticum', 'magnesium-muriaticum', 'message487'],
   ['Borax', 'borax', 'message496'],
   ['Cinchona', 'cinchona', 'message565'],
-  ['Mercurious Solubilis', 'mercurious-solubilis', 'message570'],
+  ['Mercurius solubilis', 'mercurius-solubilis', 'message570'],
   ['Phytolacca Decandra', 'phytolacca-decandra', 'message575'],
   ['Kali Muriaticum', 'kali-muriaticum', 'message601'],
   ['Hydrogenium', 'hydrogenium', 'message606'],
@@ -63,7 +63,7 @@ const NEW_FULL_CARDS = [
   ['Magnesium Carbonicum', 'magnesium-carbonicum', 'message802'],
   ['Saccharum Officinale', 'saccharum-officinale', 'message806'],
   ['Cyclamen Europaeum', 'cyclamen-europaeum', 'message819'],
-  ['Syzygiun Jambolanum', 'syzygiun-jambolanum', 'message826'],
+  ['Syzygium jambolanum', 'syzygium-jambolanum', 'message826'],
   ['Rock Water', 'rock-water', 'message848'],
   ['Saccharum Lactis', 'saccharum-lactis', 'message1025'],
 ]
@@ -91,23 +91,23 @@ const LEGACY_FULL_CARD_ANCHORS = [
 // index and have a merge target; unlike exact duplicates, their text is not
 // discarded.
 const SUPPORTING_CARD_POSTS = [
+  ['message1059', 'Aurum metallicum', 'aurum-metallicum', 'message37'],
   ['message165', 'Natrum Muriaticum', 'natrum-muriaticum', 'message49'],
   ['message198', 'Sulphur', 'sulphur', 'message113'], ['message199', 'Sulphur', 'sulphur', 'message113'],
   ['message200', 'Sulphur', 'sulphur', 'message113'], ['message218', 'Kalium Sulphuricum', 'kalium-sulphuricum', 'message217'],
-  ['message245', 'Carbo Vegetables', 'carbo-vegetables', 'message244'], ['message249', 'Sepia', 'sepia', 'message247'],
+  ['message245', 'Carbo vegetabilis', 'carbo-vegetabilis', 'message244'], ['message249', 'Sepia', 'sepia', 'message247'],
   ['message258', 'Kalium Phosphoricum', 'kalium-phosphoricum', 'message257'],
-  ['message283', 'Staphysagria', 'staphysagria', 'message277'], ['message430', 'Carsinosinum / Carcinosinum', '', 'message429'],
+  ['message283', 'Staphysagria', 'staphysagria', 'message277'], ['message430', 'Carcinosinum', 'carcinosinum', 'message429'],
   ['message481', 'Baryta Carbonica', 'baryta-carbonica', 'message114'], ['message566', 'Cinchona', 'cinchona', 'message565'],
   ['message752', 'Ambra Grisea', 'ambra-grisea', 'message751'], ['message842', 'Testosteronum', 'testosteronum', 'message838'],
   ['message866', 'Testosteronum', 'testosteronum', 'message838'],
 ]
 
-// Complete source posts with internally inconsistent names. They are not
-// assigned future page slugs until the author confirms whether the labels name
-// the same remedy. The evidence is kept together, not silently normalised.
-const DISPUTED_FULL_CARDS = [
-  ['Aurum / Aurum Metallicum', '', ['message37']],
-  ['Carsinosinum / Carcinosinum', '', ['message429', 'message1053']],
+// The author approved these two names for publication in Phase L. Original
+// spellings are kept in the source aliases and mapping notes.
+const RESOLVED_FULL_CARDS = [
+  ['Aurum metallicum', 'aurum-metallicum', ['message37']],
+  ['Carcinosinum', 'carcinosinum', ['message429', 'message1053']],
 ]
 
 // Explicit source mentions not represented by one of the complete cards above.
@@ -132,7 +132,7 @@ const MENTION_ONLY = [
   ['Tuberculinum', 'tuberculinum', ['message757']],
   ['Moschus', 'moschus', ['message757']],
   ['Anacardium', 'anacardium', ['message757']],
-  ['Magnesium Sulphiricum', 'magnesium-sulphiricum', ['message757']],
+  ['Magnesium sulphuricum', 'magnesium-sulphuricum', ['message757']],
   ['Aspen', 'aspen', ['message1026']],
   ['White Chestnut', 'white-chestnut', ['message1026']],
 ]
@@ -330,7 +330,7 @@ const proposalCards = NEW_FULL_CARDS.map(([canonical_latin_name, slug, message_i
   message_id,
   names: [canonical_latin_name],
 }))
-const disputedCards = DISPUTED_FULL_CARDS.map(([canonical_latin_name, slug, message_ids]) => ({
+const resolvedCards = RESOLVED_FULL_CARDS.map(([canonical_latin_name, slug, message_ids]) => ({
   canonical_latin_name,
   slug,
   message_ids,
@@ -341,7 +341,7 @@ const disputedCards = DISPUTED_FULL_CARDS.map(([canonical_latin_name, slug, mess
 const fullByMessage = new Map([
   ...legacyCards.map((card) => [card.message_id, card]),
   ...proposalCards.map((card) => [card.message_id, card]),
-  ...disputedCards.flatMap((card) => card.message_ids.map((messageId) => [messageId, card])),
+  ...resolvedCards.flatMap((card) => card.message_ids.map((messageId) => [messageId, card])),
 ])
 const supportingByMessage = new Map(SUPPORTING_CARD_POSTS.map(([message_id, canonical_latin_name, slug, canonical_card_message_id]) => [
   message_id,
@@ -355,7 +355,7 @@ for (const record of mentionRecords) {
     mentionByMessage.get(messageId).push(record)
   }
 }
-const allNames = [...current, ...proposalCards, ...disputedCards, ...mentionRecords]
+const allNames = [...current, ...proposalCards, ...resolvedCards, ...mentionRecords]
 
 const hashes = new Map()
 for (const record of records.filter(({ message_type, text }) => message_type === 'default' && text.length >= 40)) {

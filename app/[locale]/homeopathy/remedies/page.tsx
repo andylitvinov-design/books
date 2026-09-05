@@ -11,8 +11,8 @@ import { metadataBaseFor } from "@/data/site-metadata";
 type PageProps = { params: Promise<{ locale: string }> };
 
 const copy = {
-  ru: { title: "Препараты — Гомеопатия", description: "Поисковый и алфавитный указатель 38 подтверждённых препаратов из авторских материалов.", kicker: "Гомеопатия", heading: "Препараты", lead: "Ищите по латинскому названию, русскому исходному имени, алиасам или сокращению.", switch: "EN" },
-  en: { title: "Remedies — Homeopathy", description: "A searchable and alphabetical directory of 38 confirmed remedies from author-source materials.", kicker: "Homeopathy", heading: "Remedies", lead: "Search by Latin name, Russian/source name, aliases, or abbreviation.", switch: "RU" },
+  ru: { title: "Препараты — Гомеопатия", description: "Поисковый и алфавитный указатель 94 подтверждённых препаратов из авторских материалов.", kicker: "Гомеопатия", heading: "Препараты", lead: "Ищите по латинскому названию, русскому исходному имени, алиасам или сокращению.", switch: "EN" },
+  en: { title: "Remedies — Homeopathy", description: "A searchable and alphabetical directory of 94 confirmed remedies from author-source materials.", kicker: "Homeopathy", heading: "Remedies", lead: "Search by Latin name, Russian/source name, aliases, or abbreviation.", switch: "RU" },
 } as const;
 
 export function generateStaticParams() { return getHomeopathyLocaleParams(); }
