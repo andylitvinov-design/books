@@ -1,0 +1,164 @@
+---
+locale: ru
+slug: saccharum-lactis
+canonical_latin_name: Saccharum Lactis
+russian_common_name: Молочный сахар
+source_substance: Молочный сахар
+aliases: Saccharum Lactis
+key_image:
+main_state:
+observed_effect:
+archetype:
+shadow:
+resource:
+internal_conflict:
+developmental_stage:
+subpersonality:
+transformation:
+meanings_lessons:
+alchemical_interpretation:
+practical_observations:
+cases:
+comparisons:
+source_messages: message1025 (01.05.2026 23:33:31 UTC-05:00)
+source_images: /media/remedies/saccharum-lactis/message1025-1.jpg
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Saccharum Lactis.
+source_file: data/telegram-psychic-alchemy-index.csv
+source_heading: message1025
+source_author: Andrii Litvinov
+source_status: telegram-primary-source
+related_slugs:
+translation_provenance: original-ru-source
+en_source_exists: no
+primary_image: /media/remedies/saccharum-lactis/message1025-1.jpg
+supporting_images:
+source_message_id: message1025
+source_date: 01.05.2026 23:33:31 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Saccharum Lactis, message1025.
+---
+
+### message1025
+
+🧪 SACCHARUM LACTIS (Молочный сахар)
+
+НАБЛЮДЕНИЯ.
+
+По моему опыту работы, препарат хорошо себя показал на ранних стадиях терапии или в сложных ситуациях:
+
+- в моментах душевного бессилия, когда хочется свернуться калачиком и даже ни с кем не разговаривать,
+
+- в ситуациях телесной болезни и бессилия, когда нужна поддержка, но ее сложно принять.
+
+ОСНОВА:
+
+Молочный сахар (компонент молока).
+
+Символизирует:
+
+- чувство базовой принадлежности и поддержки, которую ощущают грудные дети
+
+– чувство «я нужен - меня кормят»
+
+Это не просто питание.
+
+Это первый опыт любви через тело.
+
+Он даёт состояние мягкой наполненности:
+
+«меня держат - значит, я могу расслабиться - значит, я живу»
+
+🌙 АРХЕТИП
+
+Архетип Младенца / Принятого.
+
+Препарат помогает взять состояние, где не нужно бороться. Где мир приходит к тебе сам.
+
+💥 ПОКАЗАНИЯ:
+
+- Чувство внутренней пустоты
+
+- Чувство отсутствия поддержки
+
+- Зависимость от одобрения
+
+- Истощение
+
+- Трудность принимать помощь
+
+ИСТОЧНИК
+
+- 0–1.5 года — контакт и питание
+
+Стресс: Мне не дадут/ мне нельзя получать.
+
+💡 ИДЕЯ
+
+Жизнь может приходить к тебе.
+
+Тебе не нужно всё заслуживать.
+
+✨ Послание
+
+Ты имеешь право получать.
+
+Ты можешь быть поддержан.
+
+Ты не обязан выживать в одиночку.
+
+🖼 ОБРАЗЫ
+
+- Тёплое молоко в чаше
+
+- Руки, которые держат
+
+- Мягкий золотистый свет
+
+- Тело, укутанное в тепло
+
+- Тихое дыхание рядом
+
+🌺 Аффирмации
+
+Я принимаю.
+
+Мне можно получать.
+
+Меня поддерживают.
+
+Мне достаточно.
+
+🌸 Эффект
+
+Даёт ощущение: «мне хватает»
+
+Убирает внутреннюю пустоту
+
+Смягчает зависимость
+
+Возвращает контакт с телом
+
+Учит принимать без напряжения
+
+Даёт базовое чувство безопасности.
+
+🖌 Образ / Медитация
+
+Ты лежишь в тепле.
+
+Тебя держат.
+
+Ничего не нужно делать
+
+и при этом всё приходит.
+
+🔮 Ритуал
+
+Сделай себе тёплый напиток.
+
+Окутай тело теплом
+
+Положи руку на живот и скажи:
+
+«Мне можно получать. Я в безопасности»
