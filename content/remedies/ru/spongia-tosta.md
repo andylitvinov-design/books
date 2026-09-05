@@ -1,0 +1,102 @@
+---
+locale: ru
+slug: spongia-tosta
+canonical_latin_name: Spongia Tosta
+russian_common_name: Морская губка
+source_substance: Морская губка
+aliases: Spongia Tosta
+key_image:
+main_state:
+observed_effect:
+archetype:
+shadow:
+resource:
+internal_conflict:
+developmental_stage:
+subpersonality:
+transformation:
+meanings_lessons:
+alchemical_interpretation:
+practical_observations:
+cases:
+comparisons:
+source_messages: message230 (15.12.2024 00:06:39 UTC-05:00)
+source_images: /media/remedies/spongia-tosta/message230-1.jpg
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Spongia Tosta.
+source_file: data/telegram-psychic-alchemy-index.csv
+source_heading: message230
+source_author: Andrii Litvinov
+source_status: telegram-primary-source
+related_slugs:
+translation_provenance: original-ru-source
+en_source_exists: no
+primary_image: /media/remedies/spongia-tosta/message230-1.jpg
+supporting_images:
+source_message_id: message230
+source_date: 15.12.2024 00:06:39 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Spongia Tosta, message230.
+---
+
+### message230
+
+Препарат Spongia Tosta
+
+(Морская губка).
+
+- Мягкая нежная морская губка сушится, обжигается огнем. Она становится твердой и колючей.
+
+Это символ человека, который пережил душевную травму. Препарат помогает вернуть человека в мягкое, живое, естественное состояние.
+
+Этот препарат, по принципу подобия, помогает в ситуациях личного бессилия, контроля другими, чувстве подавленности, страхе за жизнь, трудностях в дыхании.
+
+ПОКАЗАНИЯ/ ТЕНЬ:
+
+1) страх быть ненужным, выброшенным из воды, иссушение личных ресурсов,
+
+/ отражает высушивание губки /;
+
+2) отсутствие свободы, страх сверх-контроля, давления других людей и обстоятельств, которые лишают выбора /потеря кислорода при высушивании/.
+
+3) нет места для жизни, роста и самовыражения /обжигание губки/.
+
+ЭТАП: СЕПАРАЦИЯ (2-4 года).
+
+- помогает ощутить себя отдельной личностью, ощутить свои границы, начать дышать.
+
+ЭФФЕКТ.
+
+Особенность Spongia в том, что препарат не только дает поддержку человеку в самых стрессовых ситуациях, но препарат позволяет вернуть жизнь.
+
+Т.е. при работе с очень травмированными субличностями, они начинают выходить из воронки травмы.
+
+ОБРАЗ
+
+- Человек, освободившийся от плотной сети, которая сжимала его тело и не давала дышать.
+
+- Зажатый цветок, который постепенно распускается.
+
+АРХЕТИП
+
+- Дыхание жизни
+
+- Целитель голоса
+
+ИДЕЯ.
+
+- Жесткость границ - это тюрьма, попробуйте расслабиться.
+
+- Позвольте себе отпустить напряжение и задышать.
+
+- Вернуть легкость дыхания - значит вернуть жизнь.
+
+ТРАНСФОРМАЦИЯ:
+
+- вспомнить свою естественную мягкую природу,
+
+- из сдавленности, колючести, чувства ограничения обстоятельствами перейти в легкость, текучесть и свободу жизни.
+
+НАБЛЮДЕНИЯ
+
+Препарат вытаскивает из ямы ранней травмы, возвращает энергию для жизни.

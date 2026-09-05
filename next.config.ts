@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
       "./source-books/book-2-dao-books/photos/**/*",
       "./source-books/book-3-maya-tradition/raw/photos/**/*",
     ],
+    "/[locale]/homeopathy/remedies/[slug]": ["./content/remedies/**/*.md"],
   },
 };
 

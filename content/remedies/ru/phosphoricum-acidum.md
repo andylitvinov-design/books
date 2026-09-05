@@ -1,0 +1,136 @@
+---
+locale: ru
+slug: phosphoricum-acidum
+canonical_latin_name: Phosphoricum Acidum
+russian_common_name:
+source_substance:
+aliases: Phosphoricum Acidum
+key_image:
+main_state:
+observed_effect:
+archetype:
+shadow:
+resource:
+internal_conflict:
+developmental_stage:
+subpersonality:
+transformation:
+meanings_lessons:
+alchemical_interpretation:
+practical_observations:
+cases:
+comparisons:
+source_messages: message169 (21.11.2024 14:26:29 UTC-05:00)
+source_images: /media/remedies/phosphoricum-acidum/message169-1.jpg
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Phosphoricum Acidum.
+source_file: data/telegram-psychic-alchemy-index.csv
+source_heading: message169
+source_author: Andrii Litvinov
+source_status: telegram-primary-source
+related_slugs:
+translation_provenance: original-ru-source
+en_source_exists: no
+primary_image: /media/remedies/phosphoricum-acidum/message169-1.jpg
+supporting_images:
+source_message_id: message169
+source_date: 21.11.2024 14:26:29 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Phosphoricum Acidum, message169.
+---
+
+### message169
+
+PHOSPHORICUM ACIDUM
+
+Ценный препарат, который я  прописываю на начальных стадиях работы с травмой.
+
+Он помогает, когда уже нет сил, когда истощается душа и тело. Когда есть аппатия и опустошение после стрессов и утрат.
+
+Препарат возвращает силу и надежду.
+
+ПОКАЗАНИЯ:
+
+- хроническая усталость, апатия
+
+- эмоциональное выгорание
+
+- потеря мотивации, концентрации
+
+- истощение, ослабление иммунитета.
+
+ЭФФЕКТ
+
+Препарат возвращает баланс сил, интерес к жизни.
+
+ОБРАЗ:
+
+- Засохшее дерево в пустыне, которое когда-то было зелёным и сильным, но потеряло свои соки из-за долгой засухи.
+
+- Человек, отрешенно сидящий на пустынной равнине под серым небом, но вдали виднеется свет – символ надежды и возрождения.
+
+ОСНОВА
+
+Фосфорная кислота – слегка разрушает металлы, хорошо впитывает влагу.
+
+Символизирует растворение старого для рождения нового.
+
+В организме участвует в энергетическом обмене.
+
+Мягко убирает утечки, восстанавливает баланс энергии.
+
+АРХЕТИП
+
+- Уставший путник
+
+- Опустошённый странник
+
+- Сожженная душа.
+
+ИДЕЯ АРХЕТИПА:
+
+- утрата (ресурсов, смыслов)
+
+и восстановление через связь с глубинными источниками жизненной силы.
+
+ТЕНЬ АРХЕТИПА
+
+- нежелание признать усталость, попытка "держаться", несмотря на истощение.
+
+РЕСУРС АРХЕТИПА
+
+- повышенная чувствительность к красоте и интуиции,
+
+- возможность восстановиться и наполниться через соединение с собой и источниками силы,
+
+- нахождение новых смыслов после кризиса.
+
+СТРЕСС/ УРОК
+
+- утрата энергии при желании жить активно
+
+- принять свои слабости и ограничения
+
+- заботиться о себе
+
+ТРАНСФОРМАЦИЯ
+
+(Смыслы, задачи):
+
+1. Осознать, что кризис – это не конец, а возможность для нового начала.
+
+2. Восстановить энергию и веру в себя, внутренний свет через принятие прошлого опыта.
+
+3. Нахождение новых источников энергии и вдохновения.
+
+АЛХИМИЯ
+
+- Nigredo (чёрная стадия алхимии): состояние упадка, которое предшествует возрождению.
+
+- Фосфор символизирует "огонь", который исчерпан, но может быть возрождён.
+
+PHOSPHORICUM ACIDUM
+
+Препарат мягко восстанавливает силы, возвращает радость и увлечённость жизнью.
+
+Он помогает человеку преодолеть глубокую апатию, увидеть новые перспективы и снова почувствовать себя живым.

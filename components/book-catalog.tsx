@@ -5,6 +5,7 @@ import Image from "next/image";
 import { BookOpen, Search } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 
+import { SiteNavigation } from "@/components/site-navigation";
 import { filterLibraryBooks, getPopulatedCategories } from "@/data/library";
 import type { Book } from "@/data/library";
 
@@ -26,6 +27,7 @@ export function BookCatalog({ books }: BookCatalogProps) {
 
   return (
     <main className="catalog-shell">
+      <SiteNavigation />
       <header className="catalog-header">
         <div className="catalog-header-copy">
           <p className="catalog-kicker">Собрание текстов</p>
