@@ -96,7 +96,11 @@ async function translateChunk(chunk) {
     if (response.ok) {
       const payload = await response.json()
       const translation = payload?.[0]?.map(([part]) => part).join('').trim()
-      if (translation) return translation.replace(/\bdrug\b/gi, 'remedy')
+      if (translation) {
+        return translation
+          .replace(/\bdrugs\b/gi, 'remedies')
+          .replace(/\bdrug\b/gi, 'remedy')
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)))
   }
@@ -107,7 +111,7 @@ async function translate(body) {
   const chunks = splitTranslation(body)
   const output = []
   for (const chunk of chunks) output.push(await translateChunk(chunk))
-  return output.join('\n\n')
+  return output.join('\n\n').replaceAll('Additional copyright materials from Telegram', 'Additional author materials from Telegram')
 }
 
 async function mapLimit(values, limit, iteratee) {

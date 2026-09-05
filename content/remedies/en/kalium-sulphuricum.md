@@ -36,7 +36,7 @@ en_source_exists: no
 
 This is the remedy that helps you get out of the “swamp” of life, old unnecessary connections and restrictions. The remedy is suitable in situations where you feel limited, isolated, lacking warmth and love, and you do not have the strength to change anything in your life.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message218
 

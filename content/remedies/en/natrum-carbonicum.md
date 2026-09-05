@@ -38,7 +38,7 @@ en_source_exists: no
 
 NATRUM CARBONICUM (soda)
 
-This is a new remedy in my practice, but it proved to be so effective that I included it in the group of my key drugs.
+This is a new remedy in my practice, but it proved to be so effective that I included it in the group of my key remedies.
 
 This remedy quickly softens internal tension and opens a person to soft, pleasant connections.
 

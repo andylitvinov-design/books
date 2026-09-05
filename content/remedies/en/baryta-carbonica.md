@@ -36,7 +36,7 @@ en_source_exists: no
 
 The remedy turned out to be very effective for working through early childhood traumas.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message481
 

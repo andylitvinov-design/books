@@ -124,7 +124,7 @@ Setting:
 
 https://t.me/psychic_alchemy/249
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message249
 

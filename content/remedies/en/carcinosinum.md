@@ -44,7 +44,7 @@ He brings back life.
 
 Adhesions, blocks, and stupors begin to dissolve.
 
-This is one of the most profound drugs that allows you to release internal tension, depression and shame, the desire to be good for others.
+This is one of the most profound remedies that allows you to release internal tension, depression and shame, the desire to be good for others.
 
 RATIONALE.
 
@@ -298,7 +298,7 @@ Tell yourself:
 
 "I can go my own way."
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message430
 

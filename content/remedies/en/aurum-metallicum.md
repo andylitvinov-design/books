@@ -60,11 +60,11 @@ By integrating vibrations of iron, silver, mercury and other substances into the
 
 This is how work works in metaphysical homeopathy.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message1059
 
-There are 2 drugs that are often prescribed for
+There are 2 remedies that are often prescribed for
 
 confidence: gold and platinum.
 
@@ -78,4 +78,4 @@ Adds a vibration of pride: I am valuable and more valuable than others.
 
 It's a small difference, but it's there!
 
-This is how, working through drugs, you can prescribe the necessary personality traits.
+This is how, working through remedies, you can prescribe the necessary personality traits.

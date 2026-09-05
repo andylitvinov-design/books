@@ -110,7 +110,7 @@ humiliation.
 
 It teaches us to express our feelings, protect our boundaries, and regain our inner balance and dignity.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message283
 

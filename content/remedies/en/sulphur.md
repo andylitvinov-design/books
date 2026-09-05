@@ -36,7 +36,7 @@ en_source_exists: no
 
 It has an interesting effect. It stabilizes when everything is boiling inside. Especially thoughts. Useful when there is chaos and disorder inside and outside. When you want more, but it doesn’t work out. When a person lives in his head, in thoughts, worries.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message198
 

@@ -220,7 +220,7 @@ Smile.
 
 Feel the world becoming brighter.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ###message752
 

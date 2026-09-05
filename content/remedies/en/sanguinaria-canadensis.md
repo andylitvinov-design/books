@@ -52,7 +52,7 @@ It helps when a man feels that he has no right to take his place. Or he has lost
 
 In fact, experience, this remedy brings back the connection with the archetypal figures of male power. Gives a sense of belonging.
 
-This is a unique effect that is difficult to achieve with other drugs and techniques.
+This is a unique effect that is difficult to achieve with other remedies and techniques.
 
 This is a remedy of memory of the family and internal fire. When the call of your ancestors sounds within you, but you don’t know how to take this gift. When the wound of the family burns, and the pain is hereditary.
 

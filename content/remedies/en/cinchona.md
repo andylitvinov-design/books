@@ -146,7 +146,7 @@ RITUAL:
 
 Take an empty cup (that’s you), pour water into it with the attitude: “I fill myself with life. I'm getting my strength back. I give myself permission to be complete." Thank yourself.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message566
 

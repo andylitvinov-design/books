@@ -38,7 +38,7 @@ en_source_exists: no
 
 ARNICA
 
-One of the basic drugs.
+One of the basic remedies.
 
 It is suitable for people who are full of deep emotional wounds and pain, but they suppress it.
 

@@ -36,7 +36,7 @@ en_source_exists: no
 
 I am starting to work with a testosterone-based homeopathy remedy - Testosteronum.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message842
 

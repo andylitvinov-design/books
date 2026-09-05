@@ -44,7 +44,7 @@ Another remedy that works wonders.
 
 It gives freedom, strength, courage to those early parts of the soul that have been imprisoned for a long time.
 
-It allows you to do what other drugs often cannot do - throw off the covering of fear, guilt and begin to radiate the power of life.
+It allows you to do what other remedies often cannot do - throw off the covering of fear, guilt and begin to radiate the power of life.
 
 His archetype is a depressed personality, dissolved in the expectations of others.
 

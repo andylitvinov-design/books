@@ -36,7 +36,7 @@ en_source_exists: no
 
 In essence, this is a vibration of simple salt. Salt has a drying effect. This remedy helps well when a person “dries out from the inside.” Effective for feelings of spleen, sadness, uselessness, abandonment.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ###message165
 

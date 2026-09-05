@@ -104,7 +104,7 @@ Carbo Vegetabilis
 
 helps restore balance, going from extreme exhaustion to restoration of energy and life.
 
-## Additional copyright materials from Telegram
+## Additional author materials from Telegram
 
 ### message245
 
