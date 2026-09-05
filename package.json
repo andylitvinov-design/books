@@ -12,6 +12,8 @@
     "validate:remedy-inventory": "node scripts/validate-remedy-source-inventory.mjs",
     "generate:remedy-content": "node scripts/generate-phase-l-remedy-content.mjs",
     "validate:remedy-content": "node scripts/validate-remedy-content.mjs",
+    "build:remedy-images": "node scripts/build-remedy-image-layer.mjs",
+    "validate:remedy-images": "node scripts/validate-remedy-images.mjs",
     "verify:homeopathy-routes": "node scripts/verify-homeopathy-routes.mjs"
   },
   "dependencies": {

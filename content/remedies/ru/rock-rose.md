@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message1007 (29.03.2026 21:56:49 UTC-05:00)
-source_images: photos/photo_602@29-03-2026_21-56-49.jpg
+source_images: /media/remedies/rock-rose/message1007-1.jpg
 provenance: Source heading omits a Bach prefix; none was added.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Препарат ROCK ROSE
@@ -30,6 +30,13 @@ source_status: manual-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/rock-rose/message1007-1.jpg
+supporting_images:
+source_message_id: message1007
+source_date: 29.03.2026 21:56:49 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Rock Rose, message1007.
 ---
 
 СУТЬ Это энергия скального цветка. Маленькое растение, которое растёт в суровых условиях — на камнях, под солнцем и ветром. Хрупкое снаружи, но внутри — чистая сила жизни и мгновенная мобилизация.

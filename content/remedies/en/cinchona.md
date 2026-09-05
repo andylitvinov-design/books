@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message565 (23.05.2025 18:05:35 UTC-05:00); message566 (23.05.2025 18:29:58 UTC-05:00)
-source_images: photos/photo_362@23-05-2025_18-05-35.jpg; photos/photo_363@23-05-2025_18-29-58.jpg
+source_images: /media/remedies/cinchona/message565-1.jpg; /media/remedies/cinchona/message566-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cinchona.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message565
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/cinchona.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/cinchona/message565-1.jpg
+supporting_images: /media/remedies/cinchona/message566-1.jpg
+source_message_id: message565
+source_date: 23.05.2025 18:05:35 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Cinchona, message565.
 ---
 
 ### message565

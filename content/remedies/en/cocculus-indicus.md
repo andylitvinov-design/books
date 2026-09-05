@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message725 (05.07.2025 16:19:12 UTC-05:00)
-source_images: photos/photo_475@05-07-2025_16-19-12.jpg
+source_images: /media/remedies/cocculus-indicus/message725-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cocculus Indicus.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message725
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/cocculus-indicus.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/cocculus-indicus/message725-1.jpg
+supporting_images:
+source_message_id: message725
+source_date: 05.07.2025 16:19:12 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Cocculus Indicus, message725.
 ---
 
 ###message725

@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message49 (07.09.2024 13:53:33 UTC-05:00); message165 (19.11.2024 11:32:53 UTC-05:00)
-source_images: photos/photo_39@07-09-2024_13-53-33.jpg; photos/photo_111@19-11-2024_11-32-53.jpg
+source_images: /media/remedies/natrum-muriaticum/message49-1.jpg; /media/remedies/natrum-muriaticum/message165-1.jpg
 provenance: Canonical spelling follows the source heading.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Расскажу вам про один интересный препарат - Natrum Muriaticum
@@ -30,6 +30,13 @@ source_status: manual-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/natrum-muriaticum/message49-1.jpg
+supporting_images: /media/remedies/natrum-muriaticum/message165-1.jpg
+source_message_id: message49
+source_date: 07.09.2024 13:53:33 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Natrum Muriaticum, message49.
 ---
 
 По сути, это виврация простой соли. Соль имеет эффект ссушивания. Этот препарат хорошо помогает, когда человек "иссыхается изнутри". Эффективен при чувствах cплина, грусти, ненужности, покинутости.

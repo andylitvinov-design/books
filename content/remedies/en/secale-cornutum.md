@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message285 (09.01.2025 17:33:42 UTC-05:00)
-source_images: photos/photo_186@09-01-2025_17-33-42.jpg
+source_images: /media/remedies/secale-cornutum/message285-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Secale Cornutum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message285
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/secale-cornutum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/secale-cornutum/message285-1.jpg
+supporting_images:
+source_message_id: message285
+source_date: 09.01.2025 17:33:42 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Secale Cornutum, message285.
 ---
 
 ### message285

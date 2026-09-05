@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message162 (18.11.2024 08:03:11 UTC-05:00)
-source_images: photos/photo_108@18-11-2024_08-03-11.jpg
+source_images: /media/remedies/nitricum-acidum/message162-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Nitricum Acidum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message162
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/nitricum-acidum/message162-1.jpg
+supporting_images:
+source_message_id: message162
+source_date: 18.11.2024 08:03:11 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Nitricum Acidum, message162.
 ---
 
 ### message162

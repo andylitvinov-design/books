@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message429 (13.04.2025 16:29:13 UTC-05:00); message1053 (23.08.2026 09:22:00 UTC-05:00); message430 (13.04.2025 16:57:35 UTC-05:00)
-source_images: photos/photo_269@13-04-2025_16-29-13.jpg; photos/photo_626@23-08-2026_09-22-00.jpg; photos/photo_270@13-04-2025_16-57-35.jpg
+source_images: /media/remedies/carcinosinum/message429-1.jpg; /media/remedies/carcinosinum/message430-1.jpg; /media/remedies/carcinosinum/message1053-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carsinosinum; Carcinosinum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message429; message1053
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/carcinosinum/message429-1.jpg
+supporting_images: /media/remedies/carcinosinum/message430-1.jpg; /media/remedies/carcinosinum/message1053-1.jpg
+source_message_id: message429
+source_date: 13.04.2025 16:29:13 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Carcinosinum, message429.
 ---
 
 ### message429

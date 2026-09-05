@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message806 (14.08.2025 10:59:36 UTC-05:00)
-source_images: photos/photo_510@14-08-2025_10-59-36.jpg
+source_images: /media/remedies/saccharum-officinale/message806-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Saccharum Officinale.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message806
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/saccharum-officinale.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/saccharum-officinale/message806-1.jpg
+supporting_images:
+source_message_id: message806
+source_date: 14.08.2025 10:59:36 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Saccharum Officinale, message806.
 ---
 
 ### message806

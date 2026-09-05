@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message754 (19.07.2025 01:05:11 UTC-05:00)
-source_images: photos/photo_496@19-07-2025_01-05-11.jpg
+source_images: /media/remedies/cenchris-contortrix/message754-1.jpg
 provenance: Source spelling is retained pending owner decision.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: CENCHRIS CONTORTRIX (Медноголовая змея)
@@ -30,6 +30,13 @@ source_status: manual-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/cenchris-contortrix/message754-1.jpg
+supporting_images:
+source_message_id: message754
+source_date: 19.07.2025 01:05:11 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Cenchris Contortrix, message754.
 ---
 
 Этот препарат - как пробуждение вулкана. Он запускает внутри огненную энергию, которая наполняет, напитывает

@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message487 (01.05.2025 22:44:19 UTC-05:00)
-source_images: photos/photo_306@01-05-2025_22-44-19.jpg
+source_images: /media/remedies/magnesium-muriaticum/message487-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesium Muriaticum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message487
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/magnesium-muriaticum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/magnesium-muriaticum/message487-1.jpg
+supporting_images:
+source_message_id: message487
+source_date: 01.05.2025 22:44:19 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Magnesium Muriaticum, message487.
 ---
 
 ### message487

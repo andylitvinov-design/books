@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message240 (16.12.2024 17:54:26 UTC-05:00)
-source_images: photos/photo_164@16-12-2024_17-54-26.jpg
+source_images: /media/remedies/lycopodium/message240-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Lycopodium.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message240
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/lycopodium/message240-1.jpg
+supporting_images:
+source_message_id: message240
+source_date: 16.12.2024 17:54:26 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Lycopodium, message240.
 ---
 
 ### message240

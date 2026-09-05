@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message244 (19.12.2024 19:58:03 UTC-05:00); message245 (20.12.2024 16:12:36 UTC-05:00)
-source_images: photos/photo_165@19-12-2024_19-58-03.jpg; photos/photo_166@20-12-2024_16-12-36.jpg
+source_images: /media/remedies/carbo-vegetabilis/message244-1.jpg; /media/remedies/carbo-vegetabilis/message245-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carbo Vegetables; Carbo vegetabilis.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message244
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/carbo-vegetabilis.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/carbo-vegetabilis/message244-1.jpg
+supporting_images: /media/remedies/carbo-vegetabilis/message245-1.jpg
+source_message_id: message244
+source_date: 19.12.2024 19:58:03 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Carbo vegetabilis, message244.
 ---
 
 ### message244

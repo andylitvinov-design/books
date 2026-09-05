@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message630 (11.06.2025 23:32:58 UTC-05:00)
-source_images: photos/photo_409@11-06-2025_23-32-58.jpg
+source_images: /media/remedies/kali-carbonicum/message630-1.jpg
 provenance: Canonical spelling follows the source label.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: KALI CARBONICUM
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/kali-carbonicum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/kali-carbonicum/message630-1.jpg
+supporting_images:
+source_message_id: message630
+source_date: 11.06.2025 23:32:58 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Kali Carbonicum, message630.
 ---
 
 This is described as a remedy that adds social courage.

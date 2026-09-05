@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message1011 (06.04.2026 15:28:00 UTC-05:00)
-source_images: photos/photo_605@06-04-2026_15-28-00.jpg
+source_images: /media/remedies/bach-cerato/message1011-1.jpg
 provenance: Source heading includes Bach prefix.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Препарат BACH CERATO
@@ -30,6 +30,13 @@ source_status: manual-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/bach-cerato/message1011-1.jpg
+supporting_images:
+source_message_id: message1011
+source_date: 06.04.2026 15:28:00 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Bach Cerato, message1011.
 ---
 
 СУТЬ Это энергия церато — растения с тонкими, устремлёнными вверх цветами. Оно тянется к свету, но при этом как будто не до конца удерживает свою ось.

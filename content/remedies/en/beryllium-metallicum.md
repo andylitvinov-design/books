@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message735 (07.07.2025 00:44:57 UTC-05:00)
-source_images: photos/photo_482@07-07-2025_00-44-57.jpg
+source_images: /media/remedies/beryllium-metallicum/message735-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Beryllium Metallicum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message735
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/beryllium-metallicum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/beryllium-metallicum/message735-1.jpg
+supporting_images:
+source_message_id: message735
+source_date: 07.07.2025 00:44:57 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Beryllium Metallicum, message735.
 ---
 
 ### message735

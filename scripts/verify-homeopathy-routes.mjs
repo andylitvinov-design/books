@@ -32,8 +32,9 @@ for (const book of books) {
 await request('/ru/homeopathy/remedies/not-a-remedy', 404)
 const sitemap = await (await request('/sitemap.xml')).text()
 const remedyLocations = [...sitemap.matchAll(/<loc>[^<]+\/homeopathy\/remedies\/[^<]+<\/loc>/g)]
-if (remedyLocations.length !== 76) throw new Error(`sitemap contains ${remedyLocations.length} remedy URLs, expected 76`)
+const expectedRemedyRoutes = getRemedyRouteParams().length
+if (remedyLocations.length !== expectedRemedyRoutes) throw new Error(`sitemap contains ${remedyLocations.length} remedy URLs, expected ${expectedRemedyRoutes}`)
 const robots = await (await request('/robots.txt')).text()
 if (!robots.includes('Sitemap:')) throw new Error('robots.txt does not advertise sitemap.xml')
 
-console.log(`homeopathy_indexes=4 remedy_routes=76 books=23 sitemap_remedies=${remedyLocations.length} not_found=404 robots=ok`)
+console.log(`homeopathy_indexes=4 remedy_routes=${expectedRemedyRoutes} books=23 sitemap_remedies=${remedyLocations.length} not_found=404 robots=ok`)

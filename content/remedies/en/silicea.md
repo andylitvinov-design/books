@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message390 (22.03.2025 01:45:13 UTC-05:00)
-source_images: photos/photo_246@22-03-2025_01-45-13.jpg
+source_images: /media/remedies/silicea/message390-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Silicea.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message390
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/silicea.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/silicea/message390-1.jpg
+supporting_images:
+source_message_id: message390
+source_date: 22.03.2025 01:45:13 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Silicea, message390.
 ---
 
 ### message390

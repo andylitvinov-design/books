@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message449 (19.04.2025 22:15:21 UTC-05:00)
-source_images: photos/photo_281@19-04-2025_22-15-21.jpg
+source_images: /media/remedies/natrum-sulfuricum/message449-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Natrum Sulfuricum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message449
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/natrum-sulfuricum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/natrum-sulfuricum/message449-1.jpg
+supporting_images:
+source_message_id: message449
+source_date: 19.04.2025 22:15:21 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Natrum Sulfuricum, message449.
 ---
 
 ### message449

@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message217 (11.12.2024 17:57:00 UTC-05:00); message218 (11.12.2024 18:16:01 UTC-05:00)
-source_images: photos/photo_147@11-12-2024_17-57-00.jpg; photos/photo_148@11-12-2024_18-16-01.jpg
+source_images: /media/remedies/kalium-sulphuricum/message217-1.jpg; /media/remedies/kalium-sulphuricum/message218-1.jpg
 provenance: The second source heading is recorded as a duplicate.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: KALIUM SULPHURICUM
@@ -30,6 +30,13 @@ source_status: manual-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/kalium-sulphuricum/message217-1.jpg
+supporting_images: /media/remedies/kalium-sulphuricum/message218-1.jpg
+source_message_id: message217
+source_date: 11.12.2024 17:57:00 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Kalium Sulphuricum, message217.
 ---
 
 Это тот препарат, который помогает выйти из "болота" жизни, старых ненужных связей и ограничений. Пепарат подходит в ситуациях, когда вы чувствуете себя ограниченными, изолированными, с недостатком тепла и любви, и у вас нет сил что-то изменить в жизни.

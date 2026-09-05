@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message147 (08.11.2024 10:04:09 UTC-05:00)
-source_images: photos/photo_99@08-11-2024_10-04-09.jpg
+source_images: /media/remedies/ferrum-phosphoricum/message147-1.jpg
 provenance: Canonical capitalization is normalized from the source spelling only.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Препарат FERRUM PHOSPHORICUM (железо)
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/ferrum-phosphoricum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/ferrum-phosphoricum/message147-1.jpg
+supporting_images:
+source_message_id: message147
+source_date: 08.11.2024 10:04:09 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Ferrum Phosphoricum, message147.
 ---
 
 The constellation showed a cause: fear of control and responsibility. It was important to strengthen the inner core, yet the standard remedies did not give the desired effect and activity remained low.

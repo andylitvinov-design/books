@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message681 (27.06.2025 21:28:51 UTC-05:00)
-source_images: photos/photo_449@27-06-2025_21-28-51.jpg
+source_images: /media/remedies/hydrastis-canadensis/message681-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Hydrastis Canadensis.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message681
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/hydrastis-canadensis/message681-1.jpg
+supporting_images:
+source_message_id: message681
+source_date: 27.06.2025 21:28:51 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Hydrastis Canadensis, message681.
 ---
 
 ### message681

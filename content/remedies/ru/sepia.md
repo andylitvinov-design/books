@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message247 (20.12.2024 18:22:07 UTC-05:00); message249 (21.12.2024 16:33:16 UTC-05:00)
-source_images: photos/photo_167@20-12-2024_18-22-07.jpg; photos/photo_168@21-12-2024_16-33-16.jpg
+source_images: /media/remedies/sepia/message247-1.jpg; /media/remedies/sepia/message249-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Sepia.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message247
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/sepia/message247-1.jpg
+supporting_images: /media/remedies/sepia/message249-1.jpg
+source_message_id: message247
+source_date: 20.12.2024 18:22:07 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Sepia, message247.
 ---
 
 ### message247

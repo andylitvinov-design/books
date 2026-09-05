@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message168 (20.11.2024 10:49:37 UTC-05:00)
-source_images: photos/photo_112@20-11-2024_10-49-37.jpg
+source_images: /media/remedies/arnica/message168-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Arnica.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message168
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/arnica.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/arnica/message168-1.jpg
+supporting_images:
+source_message_id: message168
+source_date: 20.11.2024 10:49:37 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Arnica, message168.
 ---
 
 ###message168

@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message570 (24.05.2025 22:06:42 UTC-05:00)
-source_images: photos/photo_365@24-05-2025_22-06-42.jpg
+source_images: /media/remedies/mercurius-solubilis/message570-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Mercurious Solubilis; Mercurius solubilis.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message570
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/mercurius-solubilis.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/mercurius-solubilis/message570-1.jpg
+supporting_images:
+source_message_id: message570
+source_date: 24.05.2025 22:06:42 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Mercurius solubilis, message570.
 ---
 
 ### message570

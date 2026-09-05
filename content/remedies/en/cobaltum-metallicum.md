@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message682 (28.06.2025 14:19:27 UTC-05:00)
-source_images: photos/photo_450@28-06-2025_14-19-27.jpg
+source_images: /media/remedies/cobaltum-metallicum/message682-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cobaltum Metallicum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message682
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/cobaltum-metallicum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/cobaltum-metallicum/message682-1.jpg
+supporting_images:
+source_message_id: message682
+source_date: 28.06.2025 14:19:27 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Cobaltum Metallicum, message682.
 ---
 
 ### message682

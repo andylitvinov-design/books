@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message737 (07.07.2025 15:22:26 UTC-05:00)
-source_images: photos/photo_484@07-07-2025_15-22-26.jpg
+source_images: /media/remedies/bovista-lycoperdon/message737-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Bovista Lycoperdon.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message737
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/bovista-lycoperdon.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/bovista-lycoperdon/message737-1.jpg
+supporting_images:
+source_message_id: message737
+source_date: 07.07.2025 15:22:26 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Bovista Lycoperdon, message737.
 ---
 
 ### message737

@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message704 (02.07.2025 21:30:16 UTC-05:00)
-source_images: photos/photo_460@02-07-2025_21-30-16.jpg
+source_images: /media/remedies/colchicum-autumnale/message704-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Colchicum Autumnale.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message704
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/colchicum-autumnale/message704-1.jpg
+supporting_images:
+source_message_id: message704
+source_date: 02.07.2025 21:30:16 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Colchicum Autumnale, message704.
 ---
 
 ### message704

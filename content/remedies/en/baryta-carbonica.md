@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message114 (27.09.2024 08:46:07 UTC-05:00); message481 (29.04.2025 17:23:46 UTC-05:00)
-source_images: photos/photo_80@27-09-2024_08-46-07.jpg; photos/photo_301@29-04-2025_17-23-46.jpg
+source_images: /media/remedies/baryta-carbonica/message481-1.jpg
 provenance: A later source heading is recorded as a duplicate.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Baryta Carbonica (карбонат бария). #препараты
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/baryta-carbonica.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image:
+supporting_images: /media/remedies/baryta-carbonica/message481-1.jpg
+source_message_id: message481
+source_date: 29.04.2025 17:23:46 UTC-05:00
+image_classification: supporting_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Baryta Carbonica, message481.
 ---
 
 The remedy turned out to be very effective for working through early childhood traumas.

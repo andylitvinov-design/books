@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message755 (20.07.2025 00:56:16 UTC-05:00)
-source_images: photos/photo_497@20-07-2025_00-56-16.jpg
+source_images: /media/remedies/folliculinum/message755-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Folliculinum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message755
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/folliculinum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/folliculinum/message755-1.jpg
+supporting_images:
+source_message_id: message755
+source_date: 20.07.2025 00:56:16 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Folliculinum, message755.
 ---
 
 ###message755

@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message838 (29.09.2025 16:41:52 UTC-05:00); message842 (02.10.2025 15:10:46 UTC-05:00); message866 (28.10.2025 11:34:18 UTC-05:00)
-source_images: photos/photo_516@29-09-2025_16-41-52.jpg; photos/photo_520@02-10-2025_15-10-46.jpg; photos/photo_532@28-10-2025_11-34-18.jpg
+source_images: /media/remedies/testosteronum/message838-1.jpg; /media/remedies/testosteronum/message842-1.jpg
 provenance: Two later source headings are recorded as duplicates.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Начинаю работать с препаратом гомеопатии на основе тестостерона - Testosteronum
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/testosteronum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/testosteronum/message838-1.jpg
+supporting_images: /media/remedies/testosteronum/message842-1.jpg
+source_message_id: message838
+source_date: 29.09.2025 16:41:52 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Testosteronum, message838.
 ---
 
 I am starting to work with a testosterone-based homeopathy remedy - Testosteronum.

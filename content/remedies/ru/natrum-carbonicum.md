@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message398 (29.03.2025 16:07:52 UTC-05:00)
-source_images: photos/photo_251@29-03-2025_16-07-52.jpg
+source_images: /media/remedies/natrum-carbonicum/message398-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Natrum Carbonicum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message398
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/natrum-carbonicum/message398-1.jpg
+supporting_images:
+source_message_id: message398
+source_date: 29.03.2025 16:07:52 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Natrum Carbonicum, message398.
 ---
 
 ### message398

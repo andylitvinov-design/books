@@ -263,6 +263,13 @@
   .remedy-page-actions { @apply mb-12 flex items-center justify-between gap-4 text-sm font-semibold text-[#70442d]; }
   .remedy-page-actions a:first-child { @apply underline decoration-[#bf9473] underline-offset-4; }
   .remedy-common-name { @apply mt-4 text-base italic text-[#6d5d51]; }
+  .remedy-images { @apply mt-8; }
+  .remedy-primary-image { @apply overflow-hidden rounded-sm border border-[#cdbda5] bg-[#f6f0e7] p-2; }
+  .remedy-primary-image img { @apply mx-auto block max-h-[34rem] w-full object-contain; }
+  .remedy-supporting-gallery { @apply mt-5 border-t border-[#cdbda5] pt-4; }
+  .remedy-supporting-gallery > p { @apply text-sm text-[#6d5d51]; }
+  .remedy-supporting-gallery > div { @apply mt-3 grid gap-3 sm:grid-cols-2; }
+  .remedy-supporting-gallery img { @apply h-56 w-full rounded-sm border border-[#d9cab7] bg-[#f6f0e7] object-contain p-1; }
   .remedy-author-description { @apply mt-10 border-y border-[#cdbda5] py-8 font-serif text-xl leading-9 text-[#382d26] sm:text-2xl sm:leading-10; }
   .remedy-author-description h2 { @apply mt-8 text-2xl font-semibold first:mt-0 sm:text-3xl; }
   .remedy-author-description h3 { @apply mt-6 text-lg font-semibold tracking-wide sm:text-xl; }

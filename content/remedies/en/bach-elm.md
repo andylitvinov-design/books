@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message1006 (21.03.2026 15:27:07 UTC-05:00)
-source_images: photos/photo_601@21-03-2026_15-27-07.jpg
+source_images: /media/remedies/bach-elm/message1006-1.jpg
 provenance: Source heading includes Bach prefix.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Препарат BACH ELM
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/bach-elm.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/bach-elm/message1006-1.jpg
+supporting_images:
+source_message_id: message1006
+source_date: 21.03.2026 15:27:07 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Bach Elm, message1006.
 ---
 
 ESSENCE: this is the energy of elm, a strong, mature tree that holds space and withstands great loads. It is the energy of responsibility, scale, and support.

@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message826 (14.09.2025 19:17:12 UTC-05:00)
-source_images: photos/photo_514@14-09-2025_19-17-12.jpg
+source_images: /media/remedies/syzygium-jambolanum/message826-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Syzygiun Jambolanum; Syzygium jambolanum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message826
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/syzygium-jambolanum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/syzygium-jambolanum/message826-1.jpg
+supporting_images:
+source_message_id: message826
+source_date: 14.09.2025 19:17:12 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Syzygium jambolanum, message826.
 ---
 
 ### message826

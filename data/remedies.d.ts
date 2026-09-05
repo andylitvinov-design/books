@@ -32,7 +32,14 @@ export type Remedy = {
   cases?: string;
   comparisons?: string;
   source_messages?: string;
+  primary_image?: string;
   source_images?: string;
+  supporting_images?: string;
+  source_message_id?: string;
+  source_date?: string;
+  image_classification?: "primary_remedy_image" | "supporting_image";
+  image_review_status?: "approved_for_publication";
+  primary_image_alt?: string;
   provenance?: string;
   description: string;
 };

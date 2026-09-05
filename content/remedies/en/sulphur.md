@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message113 (26.09.2024 20:41:07 UTC-05:00); message198 (03.12.2024 21:47:26 UTC-05:00); message199 (03.12.2024 21:54:01 UTC-05:00); message200 (03.12.2024 22:16:52 UTC-05:00)
-source_images: photos/photo_79@26-09-2024_20-41-07.jpg; photos/photo_132@03-12-2024_21-47-26.jpg; photos/photo_133@03-12-2024_21-54-01.jpg; photos/photo_134@03-12-2024_22-16-52.jpg
+source_images: /media/remedies/sulphur/message113-1.jpg; /media/remedies/sulphur/message198-1.jpg; /media/remedies/sulphur/message199-1.jpg; /media/remedies/sulphur/message200-1.jpg
 provenance: Three later source headings are recorded as duplicates.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Препарат Sulphur (сера)
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/sulphur.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/sulphur/message113-1.jpg
+supporting_images: /media/remedies/sulphur/message198-1.jpg; /media/remedies/sulphur/message199-1.jpg; /media/remedies/sulphur/message200-1.jpg
+source_message_id: message113
+source_date: 26.09.2024 20:41:07 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Sulphur, message113.
 ---
 
 It has an interesting effect. It stabilizes when everything is boiling inside. Especially thoughts. Useful when there is chaos and disorder inside and outside. When you want more, but it doesn’t work out. When a person lives in his head, in thoughts, worries.

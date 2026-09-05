@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message134 (28.10.2024 16:46:56 UTC-05:00)
-source_images: photos/photo_93@28-10-2024_16-46-56.jpg
+source_images: /media/remedies/urtica-urens/message134-1.jpg
 provenance: Russian wording is copied from the source heading.
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Urtica Urens - препарат на основе энергии крапивы
@@ -30,6 +30,13 @@ source_status: manual-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/urtica-urens/message134-1.jpg
+supporting_images:
+source_message_id: message134
+source_date: 28.10.2024 16:46:56 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Urtica Urens, message134.
 ---
 
 Архетип: Огненный Страж, Чувствительный Борец.

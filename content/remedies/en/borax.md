@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message496 (04.05.2025 15:55:49 UTC-05:00)
-source_images: photos/photo_312@04-05-2025_15-55-49.jpg
+source_images: /media/remedies/borax/message496-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Borax.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message496
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/borax.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/borax/message496-1.jpg
+supporting_images:
+source_message_id: message496
+source_date: 04.05.2025 15:55:49 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Borax, message496.
 ---
 
 ### message496

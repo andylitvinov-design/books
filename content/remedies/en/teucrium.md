@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message609 (05.06.2025 14:44:50 UTC-05:00)
-source_images: photos/photo_396@05-06-2025_14-44-50.jpg
+source_images: /media/remedies/teucrium/message609-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Teucrium.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message609
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/teucrium.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/teucrium/message609-1.jpg
+supporting_images:
+source_message_id: message609
+source_date: 05.06.2025 14:44:50 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Teucrium, message609.
 ---
 
 ### message609

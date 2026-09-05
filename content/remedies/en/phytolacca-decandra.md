@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message575 (26.05.2025 21:01:52 UTC-05:00)
-source_images: photos/photo_369@26-05-2025_21-01-52.jpg
+source_images: /media/remedies/phytolacca-decandra/message575-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Phytolacca Decandra.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message575
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/phytolacca-decandra.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/phytolacca-decandra/message575-1.jpg
+supporting_images:
+source_message_id: message575
+source_date: 26.05.2025 21:01:52 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Phytolacca Decandra, message575.
 ---
 
 ### message575

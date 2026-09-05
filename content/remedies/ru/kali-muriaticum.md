@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message601 (02.06.2025 19:30:01 UTC-05:00)
-source_images: photos/photo_389@02-06-2025_19-30-01.jpg
+source_images: /media/remedies/kali-muriaticum/message601-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Kali Muriaticum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message601
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/kali-muriaticum/message601-1.jpg
+supporting_images:
+source_message_id: message601
+source_date: 02.06.2025 19:30:01 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Kali Muriaticum, message601.
 ---
 
 ### message601

@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message277 (06.01.2025 20:16:59 UTC-05:00); message283 (08.01.2025 21:06:55 UTC-05:00)
-source_images: photos/photo_183@06-01-2025_20-16-59.jpg
+source_images: /media/remedies/staphysagria/message277-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Staphysagria.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message277
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/staphysagria/message277-1.jpg
+supporting_images:
+source_message_id: message277
+source_date: 06.01.2025 20:16:59 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Staphysagria, message277.
 ---
 
 ### message277

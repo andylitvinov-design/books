@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message1025 (01.05.2026 23:33:31 UTC-05:00)
-source_images: photos/photo_613@01-05-2026_23-33-31.jpg
+source_images: /media/remedies/saccharum-lactis/message1025-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Saccharum Lactis.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message1025
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/saccharum-lactis.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/saccharum-lactis/message1025-1.jpg
+supporting_images:
+source_message_id: message1025
+source_date: 01.05.2026 23:33:31 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Saccharum Lactis, message1025.
 ---
 
 ### message1025

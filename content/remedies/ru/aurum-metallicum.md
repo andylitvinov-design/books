@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message37 (02.09.2024 17:39:42 UTC-05:00); message1059 (29.08.2026 23:19:02 UTC-05:00)
-source_images: photos/photo_31@02-09-2024_17-39-42.jpg; photos/photo_627@29-08-2026_23-19-02.jpg
+source_images: /media/remedies/aurum-metallicum/message37-1.jpg; /media/remedies/aurum-metallicum/message1059-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Аурум; Aurum; Aurum Metallicum; Aurum metallicum.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message37
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/aurum-metallicum/message37-1.jpg
+supporting_images: /media/remedies/aurum-metallicum/message1059-1.jpg
+source_message_id: message37
+source_date: 02.09.2024 17:39:42 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Aurum metallicum, message37.
 ---
 
 ### message37

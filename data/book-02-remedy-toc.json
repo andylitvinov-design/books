@@ -9,658 +9,940 @@
       "canonical_latin_name": "Aethusa Cynapium",
       "russian_common_name": "Собачья петрушка",
       "aliases": "Aethusa Cynapium",
-      "source_messages": "message733 (05.07.2025 20:20:10 UTC-05:00)"
+      "source_messages": "message733 (05.07.2025 20:20:10 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/aethusa-cynapium/message733-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "alumina",
       "canonical_latin_name": "Alumina",
       "russian_common_name": "Оксид алюминия",
       "aliases": "Alumina",
-      "source_messages": "message450 (20.04.2025 09:47:39 UTC-05:00)"
+      "source_messages": "message450 (20.04.2025 09:47:39 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/alumina/message450-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "ambra-grisea",
       "canonical_latin_name": "Ambra Grisea",
       "russian_common_name": "",
       "aliases": "Ambra Grisea",
-      "source_messages": "message751 (18.07.2025 00:42:30 UTC-05:00); message752 (18.07.2025 01:08:36 UTC-05:00)"
+      "source_messages": "message751 (18.07.2025 00:42:30 UTC-05:00); message752 (18.07.2025 01:08:36 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/ambra-grisea/message751-1.jpg",
+      "supporting_image_count": 1
     },
     {
       "slug": "antimonium-crudum",
       "canonical_latin_name": "Antimonium Crudum",
       "russian_common_name": "Висмут",
       "aliases": "ANTIMONIUM CRUDUM; Висмут",
-      "source_messages": "message329 (12.02.2025 13:28:56 UTC-05:00)"
+      "source_messages": "message329 (12.02.2025 13:28:56 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/antimonium-crudum/message329-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "apis",
       "canonical_latin_name": "Apis",
       "russian_common_name": "пчелиный яд",
       "aliases": "Apis",
-      "source_messages": "message387 (17.03.2025 17:49:18 UTC-05:00)"
+      "source_messages": "message387 (17.03.2025 17:49:18 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/apis/message387-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "argentum-nitricum",
       "canonical_latin_name": "Argentum Nitricum",
       "russian_common_name": "Нитрат серебра",
       "aliases": "ARGENTUM NITRICUM; Нитрат серебра",
-      "source_messages": "message419 (10.04.2025 18:30:56 UTC-05:00)"
+      "source_messages": "message419 (10.04.2025 18:30:56 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/argentum-nitricum/message419-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "arnica",
       "canonical_latin_name": "Arnica",
       "russian_common_name": "",
       "aliases": "Arnica",
-      "source_messages": "message168 (20.11.2024 10:49:37 UTC-05:00)"
+      "source_messages": "message168 (20.11.2024 10:49:37 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/arnica/message168-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "arsenicum-album",
       "canonical_latin_name": "Arsenicum Album",
       "russian_common_name": "",
       "aliases": "ARSENICUM ALBUM; Arsenicum Album",
-      "source_messages": "message188 (29.11.2024 01:56:37 UTC-05:00)"
+      "source_messages": "message188 (29.11.2024 01:56:37 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/arsenicum-album/message188-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "aurum-metallicum",
       "canonical_latin_name": "Aurum metallicum",
       "russian_common_name": "золото",
       "aliases": "Аурум; Aurum; Aurum Metallicum; Aurum metallicum",
-      "source_messages": "message37 (02.09.2024 17:39:42 UTC-05:00); message1059 (29.08.2026 23:19:02 UTC-05:00)"
+      "source_messages": "message37 (02.09.2024 17:39:42 UTC-05:00); message1059 (29.08.2026 23:19:02 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/aurum-metallicum/message37-1.jpg",
+      "supporting_image_count": 1
     },
     {
       "slug": "avena-sativa",
       "canonical_latin_name": "Avena Sativa",
       "russian_common_name": "энергия овса",
       "aliases": "Avena Sativa; энергия овса",
-      "source_messages": "message228 (14.12.2024 18:40:46 UTC-05:00)"
+      "source_messages": "message228 (14.12.2024 18:40:46 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/avena-sativa/message228-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bach-cerato",
       "canonical_latin_name": "Bach Cerato",
       "russian_common_name": "",
       "aliases": "BACH CERATO; Cerato",
-      "source_messages": "message1011 (06.04.2026 15:28:00 UTC-05:00)"
+      "source_messages": "message1011 (06.04.2026 15:28:00 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bach-cerato/message1011-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bach-crab-apple",
       "canonical_latin_name": "Bach Crab Apple",
       "russian_common_name": "",
       "aliases": "BACH CRAB APPLE; Crab Apple",
-      "source_messages": "message1000 (18.03.2026 14:01:52 UTC-05:00)"
+      "source_messages": "message1000 (18.03.2026 14:01:52 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bach-crab-apple/message1000-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bach-elm",
       "canonical_latin_name": "Bach Elm",
       "russian_common_name": "",
       "aliases": "BACH ELM; Elm",
-      "source_messages": "message1006 (21.03.2026 15:27:07 UTC-05:00)"
+      "source_messages": "message1006 (21.03.2026 15:27:07 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bach-elm/message1006-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bach-hornbeam",
       "canonical_latin_name": "Bach Hornbeam",
       "russian_common_name": "",
       "aliases": "BACH HORNBEAM; Hornbeam",
-      "source_messages": "message1002 (18.03.2026 14:39:34 UTC-05:00)"
+      "source_messages": "message1002 (18.03.2026 14:39:34 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bach-hornbeam/message1002-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bach-oak",
       "canonical_latin_name": "Bach Oak",
       "russian_common_name": "",
       "aliases": "BACH OAK; Oak",
-      "source_messages": "message1001 (18.03.2026 14:18:46 UTC-05:00)"
+      "source_messages": "message1001 (18.03.2026 14:18:46 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bach-oak/message1001-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bach-sweet-chestnut",
       "canonical_latin_name": "Bach Sweet Chestnut",
       "russian_common_name": "",
       "aliases": "BACH SWEET CHESTNUT; Sweet Chestnut",
-      "source_messages": "message1009 (01.04.2026 20:31:20 UTC-05:00)"
+      "source_messages": "message1009 (01.04.2026 20:31:20 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bach-sweet-chestnut/message1009-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bach-vine",
       "canonical_latin_name": "Bach Vine",
       "russian_common_name": "",
       "aliases": "BACH VINE; Vine",
-      "source_messages": "message881 (17.11.2025 16:26:47 UTC-05:00)"
+      "source_messages": "message881 (17.11.2025 16:26:47 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bach-vine/message881-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bach-wild-oat",
       "canonical_latin_name": "Bach Wild Oat",
       "russian_common_name": "",
       "aliases": "BACH WILD OAT; Wild Oat",
-      "source_messages": "message1005 (21.03.2026 15:00:50 UTC-05:00)"
+      "source_messages": "message1005 (21.03.2026 15:00:50 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bach-wild-oat/message1005-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "baptisia-tinctoria",
       "canonical_latin_name": "Baptisia Tinctoria",
       "russian_common_name": "",
       "aliases": "Baptisia Tinctoria",
-      "source_messages": "message670 (25.06.2025 00:31:04 UTC-05:00)"
+      "source_messages": "message670 (25.06.2025 00:31:04 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/baptisia-tinctoria/message670-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "baryta-carbonica",
       "canonical_latin_name": "Baryta Carbonica",
       "russian_common_name": "карбонат бария",
       "aliases": "Baryta Carbonica; карбонат бария",
-      "source_messages": "message114 (27.09.2024 08:46:07 UTC-05:00); message481 (29.04.2025 17:23:46 UTC-05:00)"
+      "source_messages": "message114 (27.09.2024 08:46:07 UTC-05:00); message481 (29.04.2025 17:23:46 UTC-05:00)",
+      "image_status": "supporting_gallery",
+      "primary_image": "",
+      "supporting_image_count": 1
     },
     {
       "slug": "beryllium-metallicum",
       "canonical_latin_name": "Beryllium Metallicum",
       "russian_common_name": "Бериллий / бериллий металл",
       "aliases": "Beryllium Metallicum",
-      "source_messages": "message735 (07.07.2025 00:44:57 UTC-05:00)"
+      "source_messages": "message735 (07.07.2025 00:44:57 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/beryllium-metallicum/message735-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "borax",
       "canonical_latin_name": "Borax",
       "russian_common_name": "",
       "aliases": "Borax",
-      "source_messages": "message496 (04.05.2025 15:55:49 UTC-05:00)"
+      "source_messages": "message496 (04.05.2025 15:55:49 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/borax/message496-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bothrops-lanceolatus",
       "canonical_latin_name": "Bothrops Lanceolatus",
       "russian_common_name": "Ботропс, копьеголовая змея",
       "aliases": "Bothrops Lanceolatus",
-      "source_messages": "message749 (16.07.2025 22:39:34 UTC-05:00)"
+      "source_messages": "message749 (16.07.2025 22:39:34 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bothrops-lanceolatus/message749-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bovista-lycoperdon",
       "canonical_latin_name": "Bovista Lycoperdon",
       "russian_common_name": "гриб пылевик",
       "aliases": "Bovista Lycoperdon",
-      "source_messages": "message737 (07.07.2025 15:22:26 UTC-05:00)"
+      "source_messages": "message737 (07.07.2025 15:22:26 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bovista-lycoperdon/message737-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "bryonia",
       "canonical_latin_name": "Bryonia",
       "russian_common_name": "",
       "aliases": "Bryonia",
-      "source_messages": "message417 (08.04.2025 13:05:18 UTC-05:00)"
+      "source_messages": "message417 (08.04.2025 13:05:18 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/bryonia/message417-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "calcarea-carbonica",
       "canonical_latin_name": "Calcarea Carbonica",
       "russian_common_name": "",
       "aliases": "Calcarea Carbonica",
-      "source_messages": "message205 (05.12.2024 21:06:34 UTC-05:00)"
+      "source_messages": "message205 (05.12.2024 21:06:34 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/calcarea-carbonica/message205-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "camphora",
       "canonical_latin_name": "Camphora",
       "russian_common_name": "камфора",
       "aliases": "Camphora",
-      "source_messages": "message622 (09.06.2025 22:47:20 UTC-05:00)"
+      "source_messages": "message622 (09.06.2025 22:47:20 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/camphora/message622-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "cantharis",
       "canonical_latin_name": "Cantharis",
       "russian_common_name": "Шпанская мушка",
       "aliases": "Cantharis; Шпанская мушка",
-      "source_messages": "message70 (12.09.2024 19:14:04 UTC-05:00)"
+      "source_messages": "message70 (12.09.2024 19:14:04 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/cantharis/message70-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "carbo-animalis",
       "canonical_latin_name": "Carbo Animalis",
       "russian_common_name": "",
       "aliases": "Carbo Animalis",
-      "source_messages": "message317 (03.02.2025 14:32:41 UTC-05:00)"
+      "source_messages": "message317 (03.02.2025 14:32:41 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/carbo-animalis/message317-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "carbo-vegetabilis",
       "canonical_latin_name": "Carbo vegetabilis",
       "russian_common_name": "",
       "aliases": "Carbo Vegetables; Carbo vegetabilis",
-      "source_messages": "message244 (19.12.2024 19:58:03 UTC-05:00); message245 (20.12.2024 16:12:36 UTC-05:00)"
+      "source_messages": "message244 (19.12.2024 19:58:03 UTC-05:00); message245 (20.12.2024 16:12:36 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/carbo-vegetabilis/message244-1.jpg",
+      "supporting_image_count": 1
     },
     {
       "slug": "carcinosinum",
       "canonical_latin_name": "Carcinosinum",
       "russian_common_name": "",
       "aliases": "Carsinosinum; Carcinosinum",
-      "source_messages": "message429 (13.04.2025 16:29:13 UTC-05:00); message1053 (23.08.2026 09:22:00 UTC-05:00); message430 (13.04.2025 16:57:35 UTC-05:00)"
+      "source_messages": "message429 (13.04.2025 16:29:13 UTC-05:00); message1053 (23.08.2026 09:22:00 UTC-05:00); message430 (13.04.2025 16:57:35 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/carcinosinum/message429-1.jpg",
+      "supporting_image_count": 2
     },
     {
       "slug": "causticum",
       "canonical_latin_name": "Causticum",
       "russian_common_name": "",
       "aliases": "CAUSTICUM; Causticum",
-      "source_messages": "message448 (19.04.2025 08:43:52 UTC-05:00)"
+      "source_messages": "message448 (19.04.2025 08:43:52 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/causticum/message448-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "cenchris-contortrix",
       "canonical_latin_name": "Cenchris Contortrix",
       "russian_common_name": "Медноголовая змея",
       "aliases": "CENCHRIS CONTORTRIX; Медноголовая змея",
-      "source_messages": "message754 (19.07.2025 01:05:11 UTC-05:00)"
+      "source_messages": "message754 (19.07.2025 01:05:11 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/cenchris-contortrix/message754-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "cinchona",
       "canonical_latin_name": "Cinchona",
       "russian_common_name": "хинна",
       "aliases": "Cinchona",
-      "source_messages": "message565 (23.05.2025 18:05:35 UTC-05:00); message566 (23.05.2025 18:29:58 UTC-05:00)"
+      "source_messages": "message565 (23.05.2025 18:05:35 UTC-05:00); message566 (23.05.2025 18:29:58 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/cinchona/message565-1.jpg",
+      "supporting_image_count": 1
     },
     {
       "slug": "cobaltum-metallicum",
       "canonical_latin_name": "Cobaltum Metallicum",
       "russian_common_name": "Кобальт",
       "aliases": "Cobaltum Metallicum",
-      "source_messages": "message682 (28.06.2025 14:19:27 UTC-05:00)"
+      "source_messages": "message682 (28.06.2025 14:19:27 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/cobaltum-metallicum/message682-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "cocculus-indicus",
       "canonical_latin_name": "Cocculus Indicus",
       "russian_common_name": "Коккулюс, ядовитая лиана из Индии",
       "aliases": "Cocculus Indicus",
-      "source_messages": "message725 (05.07.2025 16:19:12 UTC-05:00)"
+      "source_messages": "message725 (05.07.2025 16:19:12 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/cocculus-indicus/message725-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "coccus-cacti",
       "canonical_latin_name": "Coccus Cacti",
       "russian_common_name": "",
       "aliases": "Coccus Cacti",
-      "source_messages": "message614 (06.06.2025 19:03:09 UTC-05:00)"
+      "source_messages": "message614 (06.06.2025 19:03:09 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/coccus-cacti/message614-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "coffea-cruda",
       "canonical_latin_name": "Coffea Cruda",
       "russian_common_name": "",
       "aliases": "Coffea Cruda",
-      "source_messages": "message219 (12.12.2024 09:55:24 UTC-05:00)"
+      "source_messages": "message219 (12.12.2024 09:55:24 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/coffea-cruda/message219-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "colchicum-autumnale",
       "canonical_latin_name": "Colchicum Autumnale",
       "russian_common_name": "Безвременник",
       "aliases": "Colchicum Autumnale",
-      "source_messages": "message704 (02.07.2025 21:30:16 UTC-05:00)"
+      "source_messages": "message704 (02.07.2025 21:30:16 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/colchicum-autumnale/message704-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "cyclamen-europaeum",
       "canonical_latin_name": "Cyclamen Europaeum",
       "russian_common_name": "Цикламен / альпийская фиалка",
       "aliases": "Cyclamen Europaeum",
-      "source_messages": "message819 (05.09.2025 10:00:34 UTC-05:00)"
+      "source_messages": "message819 (05.09.2025 10:00:34 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/cyclamen-europaeum/message819-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "ferrum-phosphoricum",
       "canonical_latin_name": "Ferrum Phosphoricum",
       "russian_common_name": "железо",
       "aliases": "FERRUM PHOSPHORICUM; железо",
-      "source_messages": "message147 (08.11.2024 10:04:09 UTC-05:00)"
+      "source_messages": "message147 (08.11.2024 10:04:09 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/ferrum-phosphoricum/message147-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "folliculinum",
       "canonical_latin_name": "Folliculinum",
       "russian_common_name": "Женский половой гармон экстраген",
       "aliases": "Folliculinum",
-      "source_messages": "message755 (20.07.2025 00:56:16 UTC-05:00)"
+      "source_messages": "message755 (20.07.2025 00:56:16 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/folliculinum/message755-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "gelsemium",
       "canonical_latin_name": "Gelsemium",
       "russian_common_name": "",
       "aliases": "GELSEMIUM; Gelsemium",
-      "source_messages": "message158 (15.11.2024 09:15:57 UTC-05:00)"
+      "source_messages": "message158 (15.11.2024 09:15:57 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/gelsemium/message158-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "helleborus-niger",
       "canonical_latin_name": "Helleborus Niger",
       "russian_common_name": "Черный морозник",
       "aliases": "Helleborus Niger",
-      "source_messages": "message760 (21.07.2025 00:16:11 UTC-05:00)"
+      "source_messages": "message760 (21.07.2025 00:16:11 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/helleborus-niger/message760-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "hydrastis-canadensis",
       "canonical_latin_name": "Hydrastis Canadensis",
       "russian_common_name": "Гидрастис, Золотарник канадский",
       "aliases": "Hydrastis Canadensis",
-      "source_messages": "message681 (27.06.2025 21:28:51 UTC-05:00)"
+      "source_messages": "message681 (27.06.2025 21:28:51 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/hydrastis-canadensis/message681-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "hydrogenium",
       "canonical_latin_name": "Hydrogenium",
       "russian_common_name": "водород",
       "aliases": "Hydrogenium",
-      "source_messages": "message606 (03.06.2025 19:57:34 UTC-05:00)"
+      "source_messages": "message606 (03.06.2025 19:57:34 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/hydrogenium/message606-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "hypericum-perforatum",
       "canonical_latin_name": "Hypericum Perforatum",
       "russian_common_name": "",
       "aliases": "Hypericum Perforatum",
-      "source_messages": "message294 (16.01.2025 17:54:19 UTC-05:00)"
+      "source_messages": "message294 (16.01.2025 17:54:19 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/hypericum-perforatum/message294-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "ignatia-amara",
       "canonical_latin_name": "Ignatia Amara",
       "russian_common_name": "",
       "aliases": "Ignatia Amara",
-      "source_messages": "message54 (08.09.2024 15:54:00 UTC-05:00)"
+      "source_messages": "message54 (08.09.2024 15:54:00 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/ignatia-amara/message54-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "kali-carbonicum",
       "canonical_latin_name": "Kali Carbonicum",
       "russian_common_name": "",
       "aliases": "KALI CARBONICUM; Kali Carbonicum",
-      "source_messages": "message630 (11.06.2025 23:32:58 UTC-05:00)"
+      "source_messages": "message630 (11.06.2025 23:32:58 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/kali-carbonicum/message630-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "kali-muriaticum",
       "canonical_latin_name": "Kali Muriaticum",
       "russian_common_name": "",
       "aliases": "Kali Muriaticum",
-      "source_messages": "message601 (02.06.2025 19:30:01 UTC-05:00)"
+      "source_messages": "message601 (02.06.2025 19:30:01 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/kali-muriaticum/message601-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "kalium-arsenicosum",
       "canonical_latin_name": "Kalium Arsenicosum",
       "russian_common_name": "",
       "aliases": "Kalium Arsenicosum",
-      "source_messages": "message222 (13.12.2024 17:57:04 UTC-05:00)"
+      "source_messages": "message222 (13.12.2024 17:57:04 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/kalium-arsenicosum/message222-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "kalium-iodatum",
       "canonical_latin_name": "Kalium Iodatum",
       "russian_common_name": "Иодистый калий",
       "aliases": "Kalium Iodatum",
-      "source_messages": "message696 (30.06.2025 20:30:35 UTC-05:00)"
+      "source_messages": "message696 (30.06.2025 20:30:35 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/kalium-iodatum/message696-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "kalium-phosphoricum",
       "canonical_latin_name": "Kalium Phosphoricum",
       "russian_common_name": "",
       "aliases": "KALIUM PHOSPHORICUM; Kalium Phosphoricum",
-      "source_messages": "message257 (25.12.2024 23:39:56 UTC-05:00); message258 (26.12.2024 00:37:11 UTC-05:00)"
+      "source_messages": "message257 (25.12.2024 23:39:56 UTC-05:00); message258 (26.12.2024 00:37:11 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/kalium-phosphoricum/message257-1.jpg",
+      "supporting_image_count": 1
     },
     {
       "slug": "kalium-sulphuricum",
       "canonical_latin_name": "Kalium Sulphuricum",
       "russian_common_name": "",
       "aliases": "KALIUM SULPHURICUM; Kalium sulphuricum",
-      "source_messages": "message217 (11.12.2024 17:57:00 UTC-05:00); message218 (11.12.2024 18:16:01 UTC-05:00)"
+      "source_messages": "message217 (11.12.2024 17:57:00 UTC-05:00); message218 (11.12.2024 18:16:01 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/kalium-sulphuricum/message217-1.jpg",
+      "supporting_image_count": 1
     },
     {
       "slug": "lac-asinum",
       "canonical_latin_name": "Lac Asinum",
       "russian_common_name": "Ослиное молоко",
       "aliases": "LAC ASINUM; Lac ac.; Ослиное молоко",
-      "source_messages": "message552 (19.05.2025 17:01:35 UTC-05:00)"
+      "source_messages": "message552 (19.05.2025 17:01:35 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/lac-asinum/message552-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "lac-humanum",
       "canonical_latin_name": "Lac Humanum",
       "russian_common_name": "материнское молоко",
       "aliases": "LAC HUMANUM; материнское молоко",
-      "source_messages": "message534 (13.05.2025 16:57:55 UTC-05:00)"
+      "source_messages": "message534 (13.05.2025 16:57:55 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/lac-humanum/message534-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "lachesis",
       "canonical_latin_name": "Lachesis",
       "russian_common_name": "яд змеи",
       "aliases": "LACHESIS; яд змеи",
-      "source_messages": "message153 (12.11.2024 09:39:11 UTC-05:00)"
+      "source_messages": "message153 (12.11.2024 09:39:11 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/lachesis/message153-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "lycopodium",
       "canonical_latin_name": "Lycopodium",
       "russian_common_name": "",
       "aliases": "Lycopodium",
-      "source_messages": "message240 (16.12.2024 17:54:26 UTC-05:00)"
+      "source_messages": "message240 (16.12.2024 17:54:26 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/lycopodium/message240-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "magnesia-phosphorica",
       "canonical_latin_name": "Magnesia Phosphorica",
       "russian_common_name": "",
       "aliases": "Magnesia Phosphorica",
-      "source_messages": "message408 (04.04.2025 23:30:17 UTC-05:00)"
+      "source_messages": "message408 (04.04.2025 23:30:17 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/magnesia-phosphorica/message408-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "magnesium-carbonicum",
       "canonical_latin_name": "Magnesium Carbonicum",
       "russian_common_name": "",
       "aliases": "Magnesium Carbonicum",
-      "source_messages": "message802 (11.08.2025 15:38:34 UTC-05:00)"
+      "source_messages": "message802 (11.08.2025 15:38:34 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/magnesium-carbonicum/message802-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "magnesium-muriaticum",
       "canonical_latin_name": "Magnesium Muriaticum",
       "russian_common_name": "",
       "aliases": "Magnesium Muriaticum",
-      "source_messages": "message487 (01.05.2025 22:44:19 UTC-05:00)"
+      "source_messages": "message487 (01.05.2025 22:44:19 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/magnesium-muriaticum/message487-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "mercurius-solubilis",
       "canonical_latin_name": "Mercurius solubilis",
       "russian_common_name": "",
       "aliases": "Mercurious Solubilis; Mercurius solubilis",
-      "source_messages": "message570 (24.05.2025 22:06:42 UTC-05:00)"
+      "source_messages": "message570 (24.05.2025 22:06:42 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/mercurius-solubilis/message570-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "mezereum",
       "canonical_latin_name": "Mezereum",
       "russian_common_name": "Вольчье лыко, кустарник",
       "aliases": "MEZEREUM; Вольчье лыко; кустарник",
-      "source_messages": "message456 (23.04.2025 09:03:52 UTC-05:00)"
+      "source_messages": "message456 (23.04.2025 09:03:52 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/mezereum/message456-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "natrum-carbonicum",
       "canonical_latin_name": "Natrum Carbonicum",
       "russian_common_name": "сода",
       "aliases": "Natrum Carbonicum",
-      "source_messages": "message398 (29.03.2025 16:07:52 UTC-05:00)"
+      "source_messages": "message398 (29.03.2025 16:07:52 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/natrum-carbonicum/message398-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "natrum-muriaticum",
       "canonical_latin_name": "Natrum Muriaticum",
       "russian_common_name": "",
       "aliases": "Natrum Muriaticum; Natrum",
-      "source_messages": "message49 (07.09.2024 13:53:33 UTC-05:00); message165 (19.11.2024 11:32:53 UTC-05:00)"
+      "source_messages": "message49 (07.09.2024 13:53:33 UTC-05:00); message165 (19.11.2024 11:32:53 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/natrum-muriaticum/message49-1.jpg",
+      "supporting_image_count": 1
     },
     {
       "slug": "natrum-sulfuricum",
       "canonical_latin_name": "Natrum Sulfuricum",
       "russian_common_name": "Сульфат натрия, глауберова соль",
       "aliases": "Natrum Sulfuricum",
-      "source_messages": "message449 (19.04.2025 22:15:21 UTC-05:00)"
+      "source_messages": "message449 (19.04.2025 22:15:21 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/natrum-sulfuricum/message449-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "nitricum-acidum",
       "canonical_latin_name": "Nitricum Acidum",
       "russian_common_name": "Азотная кислота",
       "aliases": "Nitricum Acidum",
-      "source_messages": "message162 (18.11.2024 08:03:11 UTC-05:00)"
+      "source_messages": "message162 (18.11.2024 08:03:11 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/nitricum-acidum/message162-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "oophorinum",
       "canonical_latin_name": "Oophorinum",
       "russian_common_name": "",
       "aliases": "OOPHORINUM; Oophorinum",
-      "source_messages": "message840 (30.09.2025 14:56:07 UTC-05:00)"
+      "source_messages": "message840 (30.09.2025 14:56:07 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/oophorinum/message840-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "opium",
       "canonical_latin_name": "Opium",
       "russian_common_name": "",
       "aliases": "OPIUM; Opium",
-      "source_messages": "message112 (25.09.2024 16:47:01 UTC-05:00)"
+      "source_messages": "message112 (25.09.2024 16:47:01 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/opium/message112-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "phosphoricum-acidum",
       "canonical_latin_name": "Phosphoricum Acidum",
       "russian_common_name": "",
       "aliases": "Phosphoricum Acidum",
-      "source_messages": "message169 (21.11.2024 14:26:29 UTC-05:00)"
+      "source_messages": "message169 (21.11.2024 14:26:29 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/phosphoricum-acidum/message169-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "phytolacca-decandra",
       "canonical_latin_name": "Phytolacca Decandra",
       "russian_common_name": "Фитолакка",
       "aliases": "Phytolacca Decandra",
-      "source_messages": "message575 (26.05.2025 21:01:52 UTC-05:00)"
+      "source_messages": "message575 (26.05.2025 21:01:52 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/phytolacca-decandra/message575-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "platina-metallicum",
       "canonical_latin_name": "Platina Metallicum",
       "russian_common_name": "",
       "aliases": "Platina Metallicum",
-      "source_messages": "message667 (23.06.2025 20:53:44 UTC-05:00)"
+      "source_messages": "message667 (23.06.2025 20:53:44 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/platina-metallicum/message667-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "psorinum",
       "canonical_latin_name": "Psorinum",
       "russian_common_name": "",
       "aliases": "Psorinum",
-      "source_messages": "message470 (27.04.2025 12:33:31 UTC-05:00)"
+      "source_messages": "message470 (27.04.2025 12:33:31 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/psorinum/message470-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "pulsatilla",
       "canonical_latin_name": "Pulsatilla",
       "russian_common_name": "",
       "aliases": "PULSATILLA; Pulsatilla",
-      "source_messages": "message164 (19.11.2024 10:42:17 UTC-05:00)"
+      "source_messages": "message164 (19.11.2024 10:42:17 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/pulsatilla/message164-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "rhus-toxicodendron",
       "canonical_latin_name": "Rhus Toxicodendron",
       "russian_common_name": "",
       "aliases": "RHUS TOXICODENDRON; Rhus Toxicodendron",
-      "source_messages": "message180 (25.11.2024 23:39:46 UTC-05:00)"
+      "source_messages": "message180 (25.11.2024 23:39:46 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/rhus-toxicodendron/message180-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "rock-rose",
       "canonical_latin_name": "Rock Rose",
       "russian_common_name": "",
       "aliases": "ROCK ROSE",
-      "source_messages": "message1007 (29.03.2026 21:56:49 UTC-05:00)"
+      "source_messages": "message1007 (29.03.2026 21:56:49 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/rock-rose/message1007-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "rock-water",
       "canonical_latin_name": "Rock Water",
       "russian_common_name": "",
       "aliases": "Rock Water",
-      "source_messages": "message848 (05.10.2025 18:30:33 UTC-05:00)"
+      "source_messages": "message848 (05.10.2025 18:30:33 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/rock-water/message848-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "ruta-graveolens",
       "canonical_latin_name": "Ruta Graveolens",
       "russian_common_name": "Рута душистая",
       "aliases": "Ruta Graveolens",
-      "source_messages": "message425 (12.04.2025 17:43:15 UTC-05:00)"
+      "source_messages": "message425 (12.04.2025 17:43:15 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/ruta-graveolens/message425-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "saccharum-lactis",
       "canonical_latin_name": "Saccharum Lactis",
       "russian_common_name": "Молочный сахар",
       "aliases": "Saccharum Lactis",
-      "source_messages": "message1025 (01.05.2026 23:33:31 UTC-05:00)"
+      "source_messages": "message1025 (01.05.2026 23:33:31 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/saccharum-lactis/message1025-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "saccharum-officinale",
       "canonical_latin_name": "Saccharum Officinale",
       "russian_common_name": "Тростниковый сахар",
       "aliases": "Saccharum Officinale",
-      "source_messages": "message806 (14.08.2025 10:59:36 UTC-05:00)"
+      "source_messages": "message806 (14.08.2025 10:59:36 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/saccharum-officinale/message806-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "sanguinaria-canadensis",
       "canonical_latin_name": "Sanguinaria Canadensis",
       "russian_common_name": "Сангвинария, кровавый корень",
       "aliases": "Sanguinaria Canadensis",
-      "source_messages": "message678 (26.06.2025 20:00:40 UTC-05:00)"
+      "source_messages": "message678 (26.06.2025 20:00:40 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/sanguinaria-canadensis/message678-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "secale-cornutum",
       "canonical_latin_name": "Secale Cornutum",
       "russian_common_name": "",
       "aliases": "Secale Cornutum",
-      "source_messages": "message285 (09.01.2025 17:33:42 UTC-05:00)"
+      "source_messages": "message285 (09.01.2025 17:33:42 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/secale-cornutum/message285-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "sepia",
       "canonical_latin_name": "Sepia",
       "russian_common_name": "",
       "aliases": "Sepia",
-      "source_messages": "message247 (20.12.2024 18:22:07 UTC-05:00); message249 (21.12.2024 16:33:16 UTC-05:00)"
+      "source_messages": "message247 (20.12.2024 18:22:07 UTC-05:00); message249 (21.12.2024 16:33:16 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/sepia/message247-1.jpg",
+      "supporting_image_count": 1
     },
     {
       "slug": "silicea",
       "canonical_latin_name": "Silicea",
       "russian_common_name": "кремень",
       "aliases": "Silicea",
-      "source_messages": "message390 (22.03.2025 01:45:13 UTC-05:00)"
+      "source_messages": "message390 (22.03.2025 01:45:13 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/silicea/message390-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "spongia-tosta",
       "canonical_latin_name": "Spongia Tosta",
       "russian_common_name": "Морская губка",
       "aliases": "Spongia Tosta",
-      "source_messages": "message230 (15.12.2024 00:06:39 UTC-05:00)"
+      "source_messages": "message230 (15.12.2024 00:06:39 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/spongia-tosta/message230-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "staphysagria",
       "canonical_latin_name": "Staphysagria",
       "russian_common_name": "",
       "aliases": "Staphysagria",
-      "source_messages": "message277 (06.01.2025 20:16:59 UTC-05:00); message283 (08.01.2025 21:06:55 UTC-05:00)"
+      "source_messages": "message277 (06.01.2025 20:16:59 UTC-05:00); message283 (08.01.2025 21:06:55 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/staphysagria/message277-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "star-of-bethlehem",
       "canonical_latin_name": "Star of Bethlehem",
       "russian_common_name": "",
       "aliases": "STAR OF BETHLEHEM",
-      "source_messages": "message1008 (01.04.2026 11:02:05 UTC-05:00)"
+      "source_messages": "message1008 (01.04.2026 11:02:05 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/star-of-bethlehem/message1008-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "sulphur",
       "canonical_latin_name": "Sulphur",
       "russian_common_name": "сера",
       "aliases": "Sulphur; сера; Мудрец огня",
-      "source_messages": "message113 (26.09.2024 20:41:07 UTC-05:00); message198 (03.12.2024 21:47:26 UTC-05:00); message199 (03.12.2024 21:54:01 UTC-05:00); message200 (03.12.2024 22:16:52 UTC-05:00)"
+      "source_messages": "message113 (26.09.2024 20:41:07 UTC-05:00); message198 (03.12.2024 21:47:26 UTC-05:00); message199 (03.12.2024 21:54:01 UTC-05:00); message200 (03.12.2024 22:16:52 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/sulphur/message113-1.jpg",
+      "supporting_image_count": 3
     },
     {
       "slug": "syzygium-jambolanum",
       "canonical_latin_name": "Syzygium jambolanum",
       "russian_common_name": "",
       "aliases": "Syzygiun Jambolanum; Syzygium jambolanum",
-      "source_messages": "message826 (14.09.2025 19:17:12 UTC-05:00)"
+      "source_messages": "message826 (14.09.2025 19:17:12 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/syzygium-jambolanum/message826-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "testosteronum",
       "canonical_latin_name": "Testosteronum",
       "russian_common_name": "Тестостерон",
       "aliases": "Testosteronum; Тестостерон; Тестостеронум",
-      "source_messages": "message838 (29.09.2025 16:41:52 UTC-05:00); message842 (02.10.2025 15:10:46 UTC-05:00); message866 (28.10.2025 11:34:18 UTC-05:00)"
+      "source_messages": "message838 (29.09.2025 16:41:52 UTC-05:00); message842 (02.10.2025 15:10:46 UTC-05:00); message866 (28.10.2025 11:34:18 UTC-05:00)",
+      "image_status": "primary_with_supporting_gallery",
+      "primary_image": "/media/remedies/testosteronum/message838-1.jpg",
+      "supporting_image_count": 1
     },
     {
       "slug": "teucrium",
       "canonical_latin_name": "Teucrium",
       "russian_common_name": "чабрец",
       "aliases": "Teucrium",
-      "source_messages": "message609 (05.06.2025 14:44:50 UTC-05:00)"
+      "source_messages": "message609 (05.06.2025 14:44:50 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/teucrium/message609-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "thuja",
       "canonical_latin_name": "Thuja",
       "russian_common_name": "Туя западная",
       "aliases": "Thuja",
-      "source_messages": "message452 (21.04.2025 16:19:15 UTC-05:00)"
+      "source_messages": "message452 (21.04.2025 16:19:15 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/thuja/message452-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "urtica-urens",
       "canonical_latin_name": "Urtica Urens",
       "russian_common_name": "энергия крапивы",
       "aliases": "Urtica Urens; энергия крапивы",
-      "source_messages": "message134 (28.10.2024 16:46:56 UTC-05:00)"
+      "source_messages": "message134 (28.10.2024 16:46:56 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/urtica-urens/message134-1.jpg",
+      "supporting_image_count": 0
     },
     {
       "slug": "veratrum-album",
       "canonical_latin_name": "Veratrum Album",
       "russian_common_name": "",
       "aliases": "Veratrum Album",
-      "source_messages": "message680 (27.06.2025 20:52:50 UTC-05:00)"
+      "source_messages": "message680 (27.06.2025 20:52:50 UTC-05:00)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/veratrum-album/message680-1.jpg",
+      "supporting_image_count": 0
     }
   ]
 }

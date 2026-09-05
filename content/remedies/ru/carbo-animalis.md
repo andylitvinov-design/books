@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message317 (03.02.2025 14:32:41 UTC-05:00)
-source_images: photos/photo_200@03-02-2025_14-32-41.jpg
+source_images: /media/remedies/carbo-animalis/message317-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carbo Animalis.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message317
@@ -30,6 +30,13 @@ source_status: telegram-primary-source
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
+primary_image: /media/remedies/carbo-animalis/message317-1.jpg
+supporting_images:
+source_message_id: message317
+source_date: 03.02.2025 14:32:41 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Исходное изображение, прикреплённое к Carbo Animalis, message317.
 ---
 
 ### message317

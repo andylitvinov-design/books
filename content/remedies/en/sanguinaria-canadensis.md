@@ -21,7 +21,7 @@ practical_observations:
 cases:
 comparisons:
 source_messages: message678 (26.06.2025 20:00:40 UTC-05:00)
-source_images: photos/photo_447@26-06-2025_20-00-40.jpg
+source_images: /media/remedies/sanguinaria-canadensis/message678-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Sanguinaria Canadensis.
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message678
@@ -32,6 +32,13 @@ translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/sanguinaria-canadensis.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
+primary_image: /media/remedies/sanguinaria-canadensis/message678-1.jpg
+supporting_images:
+source_message_id: message678
+source_date: 26.06.2025 20:00:40 UTC-05:00
+image_classification: primary_remedy_image
+image_review_status: approved_for_publication
+primary_image_alt: Source image attached to Sanguinaria Canadensis, message678.
 ---
 
 ### message678

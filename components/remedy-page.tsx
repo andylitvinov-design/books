@@ -23,6 +23,35 @@ function AuthorDescription({ description }: { description: string }) {
   );
 }
 
+function RemedyImages({ locale, remedy }: RemedyPageProps) {
+  const supportingImages = (remedy.supporting_images || "").split(";").map((image) => image.trim()).filter(Boolean);
+  if (!remedy.primary_image && !supportingImages.length) return null;
+  const sourceAlt = remedy.primary_image_alt || (locale === "ru"
+    ? `Исходное изображение, прикреплённое к ${remedy.canonical_latin_name}.`
+    : `Source image attached to ${remedy.canonical_latin_name}.`);
+
+  return (
+    <section className="remedy-images" aria-label={locale === "ru" ? "Изображения из источника" : "Source images"}>
+      {remedy.primary_image ? <figure className="remedy-primary-image">
+        {/* Source image files are intentionally rendered as-is; the contextual alt does not infer their unseen visual content. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={remedy.primary_image} alt={sourceAlt} decoding="async" />
+      </figure> : null}
+      {supportingImages.length ? (
+        <div className="remedy-supporting-gallery">
+          <p>{locale === "ru" ? "Дополнительные изображения из связанных сообщений" : "Additional images from linked source messages"}</p>
+          <div>
+            {supportingImages.map((image, index) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={image} src={image} alt={`${sourceAlt} ${index + (remedy.primary_image ? 2 : 1)}.`} loading="lazy" decoding="async" />
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 export function RemedyPage({ locale, remedy }: RemedyPageProps) {
   const labels = copy[locale];
   const otherLocale: Locale = locale === "ru" ? "en" : "ru";
@@ -35,6 +64,7 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
         <p className="homeopathy-kicker">{locale === "ru" ? "Гомеопатия · источник" : "Homeopathy · source"}</p>
         <h1>{remedy.canonical_latin_name}</h1>
         {remedy.russian_common_name ? <p className="remedy-common-name">{labels.sourceName}: {remedy.russian_common_name}</p> : null}
+        <RemedyImages locale={locale} remedy={remedy} />
         <AuthorDescription description={remedy.description} />
         <footer className="remedy-source-reference"><p>{labels.source}</p><strong>{remedy.source_author}</strong><span>{remedy.source_file}</span><span>{remedy.source_heading}</span>{remedy.source_messages ? <span>Messages: {remedy.source_messages}</span> : null}{locale === "en" ? <span>Translation provenance: {remedy.translation_provenance}; EN source: {remedy.en_source_exists}.</span> : null}</footer>
         {related.length ? <section className="remedy-related"><h2>{labels.related}</h2><ul>{related.map((item) => <li key={item.slug}><Link href={`/${locale}/homeopathy/remedies/${item.slug}`}>{item.canonical_latin_name}</Link></li>)}</ul></section> : null}
