@@ -16,7 +16,8 @@ const expectedColumns = [
   'candidate_status',
   'notes',
 ]
-const allowedStatuses = new Set(['confirmed', 'duplicate', 'grouped'])
+const allowedStatuses = new Set(['confirmed', 'duplicate', 'grouped', 'proposed_full_card', 'mention_only', 'needs_resolution'])
+const telegramIndexFile = 'data/telegram-psychic-alchemy-index.csv'
 
 function fail(message) {
   throw new Error(`remedy-source-inventory: ${message}`)
@@ -59,6 +60,16 @@ function sourceHeadings(sourceFile) {
   )
 }
 
+function telegramMessageIds() {
+  const indexPath = path.join(projectRoot, telegramIndexFile)
+  if (!existsSync(indexPath)) fail(`Telegram index is missing: ${telegramIndexFile}`)
+  const lines = readFileSync(indexPath, 'utf8').trim().split('\n')
+  const header = parseCsvLine(lines.shift())
+  const messageIdColumn = header.indexOf('message_id')
+  if (messageIdColumn < 0) fail('Telegram index has no message_id column')
+  return new Set(lines.map((line) => parseCsvLine(line)[messageIdColumn]))
+}
+
 function readInventory() {
   if (!existsSync(inventoryPath)) fail('CSV file is missing')
   const lines = readFileSync(inventoryPath, 'utf8').trim().split('\n')
@@ -76,15 +87,24 @@ function readInventory() {
 const rows = readInventory()
 const headingsByFile = new Map()
 const confirmedSlugs = new Set()
-const counts = { confirmed: 0, duplicate: 0, grouped: 0 }
+const proposedSlugs = new Set()
+const counts = { confirmed: 0, duplicate: 0, grouped: 0, proposed_full_card: 0, mention_only: 0, needs_resolution: 0 }
+const telegramIds = telegramMessageIds()
 
 for (const [index, row] of rows.entries()) {
   const line = index + 2
   if (!allowedStatuses.has(row.candidate_status)) fail(`line ${line} has invalid status ${row.candidate_status}`)
   if (!row.source_file || !row.source_section_heading) fail(`line ${line} is missing source traceability`)
 
-  if (!headingsByFile.has(row.source_file)) headingsByFile.set(row.source_file, sourceHeadings(row.source_file))
-  if (!headingsByFile.get(row.source_file).has(row.source_section_heading)) fail(`line ${line} heading was not found in ${row.source_file}`)
+  if (row.source_file === telegramIndexFile) {
+    const anchors = row.source_section_heading.split(';').map((anchor) => anchor.trim()).filter(Boolean)
+    if (anchors.length === 0 || !anchors.every((anchor) => telegramIds.has(anchor))) {
+      fail(`line ${line} references a Telegram message not found in ${telegramIndexFile}`)
+    }
+  } else {
+    if (!headingsByFile.has(row.source_file)) headingsByFile.set(row.source_file, sourceHeadings(row.source_file))
+    if (!headingsByFile.get(row.source_file).has(row.source_section_heading)) fail(`line ${line} heading was not found in ${row.source_file}`)
+  }
 
   if (row.candidate_status === 'confirmed') {
     if (!row.canonical_latin_name || !row.slug) fail(`line ${line} confirmed row is missing name or slug`)
@@ -95,8 +115,22 @@ for (const [index, row] of rows.entries()) {
     confirmedSlugs.add(row.slug)
   } else if (row.candidate_status === 'duplicate') {
     if (!row.canonical_latin_name || !row.slug || row.needs_translation !== 'yes') fail(`line ${line} duplicate row is incomplete`)
-  } else if (row.canonical_latin_name || row.slug || row.needs_translation !== 'no') {
+  } else if (row.candidate_status === 'grouped' && (row.canonical_latin_name || row.slug || row.needs_translation !== 'no')) {
     fail(`line ${line} grouped row must not infer an individual remedy`)
+  } else if (row.candidate_status === 'proposed_full_card') {
+    if (!row.canonical_latin_name || !row.slug || row.ru_source_exists !== 'yes' || row.en_source_exists !== 'no' || row.needs_translation !== 'yes') {
+      fail(`line ${line} proposed full-card row is incomplete`)
+    }
+    if (confirmedSlugs.has(row.slug) || proposedSlugs.has(row.slug)) fail(`line ${line} duplicates a future or confirmed slug: ${row.slug}`)
+    proposedSlugs.add(row.slug)
+  } else if (row.candidate_status === 'mention_only') {
+    if (!row.canonical_latin_name || !row.slug || row.ru_source_exists !== 'yes' || row.en_source_exists !== 'no' || row.needs_translation !== 'yes') {
+      fail(`line ${line} mention-only row is incomplete`)
+    }
+    if (confirmedSlugs.has(row.slug) || proposedSlugs.has(row.slug)) fail(`line ${line} reuses a future or confirmed slug: ${row.slug}`)
+    proposedSlugs.add(row.slug)
+  } else if (row.candidate_status === 'needs_resolution' && (!row.canonical_latin_name || row.slug || row.ru_source_exists !== 'yes' || row.en_source_exists !== 'no' || row.needs_translation !== 'yes')) {
+    fail(`line ${line} needs-resolution row must preserve a source name without proposing a slug`)
   }
 
   counts[row.candidate_status] += 1
@@ -107,4 +141,4 @@ for (const row of rows.filter(({ candidate_status }) => candidate_status === 'du
 }
 
 const enMissing = rows.filter(({ candidate_status, needs_translation }) => candidate_status === 'confirmed' && needs_translation === 'yes').length
-console.log(`confirmed=${counts.confirmed} duplicates=${counts.duplicate} grouped=${counts.grouped} en_missing=${enMissing}`)
+console.log(`confirmed=${counts.confirmed} duplicates=${counts.duplicate} grouped=${counts.grouped} proposed_full_card=${counts.proposed_full_card} mention_only=${counts.mention_only} needs_resolution=${counts.needs_resolution} en_missing=${enMissing}`)
