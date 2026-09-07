@@ -49,6 +49,7 @@ export const supportedLocales: Locale[];
 export function isSupportedLocale(locale: string): locale is Locale;
 export function getRemedy(locale: string, slug: string): Remedy | undefined;
 export function getRemedyDirectory(locale: string): RemedyDirectoryEntry[];
+export function getBook02Remedies(locale: string): Remedy[];
 export function getRemedyRouteParams(): Array<{ locale: Locale; slug: string }>;
 export function getHomeopathyLocaleParams(): Array<{ locale: Locale }>;
 export function getAlphabeticalRemedies(locale: string): Array<{ letter: string; remedies: RemedyDirectoryEntry[] }>;

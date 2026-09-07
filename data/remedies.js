@@ -96,6 +96,11 @@ export function getRemedyDirectory(locale) {
   return remediesByLocale[locale].map(directoryEntry).sort((left, right) => left.title.localeCompare(right.title, 'en'))
 }
 
+export function getBook02Remedies(locale) {
+  if (!isSupportedLocale(locale)) return []
+  return getRemedyDirectory(locale).map(({ slug }) => getRemedy(locale, slug))
+}
+
 export function getRemedyRouteParams() {
   return supportedLocales.flatMap((locale) => remediesByLocale[locale].map(({ slug }) => ({ locale, slug })))
 }
