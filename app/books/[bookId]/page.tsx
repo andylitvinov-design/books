@@ -3,12 +3,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { Book02Reference } from "@/components/book-02-reference";
 import { books, getBookById } from "@/data/library";
 import { loadReaderDocument } from "@/data/reader-content";
+import { getBook02Remedies, getRemedyDirectory } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 
 type PageProps = {
   params: Promise<{ bookId: string }>;
+  searchParams: Promise<{ lang?: string | string[] }>;
 };
 
 export function generateStaticParams() {
@@ -39,11 +42,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function BookReaderPage({ params }: PageProps) {
+export default async function BookReaderPage({ params, searchParams }: PageProps) {
   const { bookId } = await params;
   const book = getBookById(bookId);
 
   if (!book) notFound();
+
+  if (book.id === "alchemy-homeopathy-remedies") {
+    const { lang } = await searchParams;
+    const locale = lang === "en" ? "en" : "ru";
+
+    return <Book02Reference locale={locale} remedies={getBook02Remedies(locale)} entries={getRemedyDirectory(locale)} />;
+  }
 
   const document = await loadReaderDocument(book);
   const coverUrl = `/media/${book.mediaSeries}/${book.cover}`;
