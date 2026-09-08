@@ -21,8 +21,12 @@ test('PDF route only renders the public projection with a safe attachment header
   assert.match(route, /getClientPrescription/)
   assert.match(route, /buildPrescriptionPdf/)
   assert.match(route, /application\/pdf/)
-  assert.match(route, /Content-Disposition/)
+  assert.match(route, /filename="homeopathic-prescription\.pdf"/)
+  assert.match(route, /Cache-Control': 'private, no-store'/)
+  assert.match(route, /X-Robots-Tag': 'noindex, nofollow, noarchive'/)
+  assert.match(route, /X-Content-Type-Options': 'nosniff'/)
   assert.doesNotMatch(route, /internalNotes/)
+  assert.doesNotMatch(route, /publicId.*filename/)
 })
 
 test('print stylesheet removes interactive controls and uses A4 sizing', async () => {

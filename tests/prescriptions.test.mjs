@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { randomBytes } from 'node:crypto'
 import test from 'node:test'
 
 import {
@@ -24,6 +25,30 @@ const baseInput = {
     { remedySlug: 'natrum-muriaticum', potency: '200C' },
     { displayNameOverride: 'Custom unlinked item', potency: '30C' },
   ],
+}
+
+function createRestKvHarness() {
+  const values = new Map()
+  const commands = []
+  return {
+    commands,
+    environment: {
+      NODE_ENV: 'production',
+      PRESCRIPTIONS_DATA_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
+      PRESCRIPTIONS_KV_REST_API_TOKEN: 'fixture-only-token',
+      PRESCRIPTIONS_KV_REST_API_URL: 'https://kv.example.test',
+    },
+    fetchFn: async (_url, request) => {
+      const [operation, key, value] = JSON.parse(request.body)
+      commands.push([operation, key, value])
+      let result
+      if (operation === 'GET') result = values.get(key) ?? null
+      if (operation === 'SET') { values.set(key, value); result = 'OK' }
+      if (operation === 'DEL') { result = values.delete(key) ? 1 : 0 }
+      return { ok: true, json: async () => ({ result }) }
+    },
+    values,
+  }
 }
 
 test('creates non-sequential internal and public identifiers', () => {
@@ -87,10 +112,71 @@ test('rejects an insecure REST-KV endpoint before patient data can be sent', () 
       environment: {
         PRESCRIPTIONS_KV_REST_API_URL: 'http://kv.example.test',
         PRESCRIPTIONS_KV_REST_API_TOKEN: 'fixture-only-token',
+        PRESCRIPTIONS_DATA_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
       },
     }),
     /HTTPS/,
   )
+})
+
+test('encrypts sensitive prescription records before REST-KV persistence and decrypts them server-side', async () => {
+  const harness = createRestKvHarness()
+  const store = createPrescriptionStore(harness)
+  const record = createPrescription({
+    ...baseInput,
+    patientName: 'Synthetic Patient Encryption Check',
+    patientDob: '1990-01-02',
+    practitionerName: 'Synthetic Practitioner Encryption Check',
+    generalInstructions: 'Synthetic instructions encryption check',
+    internalNotes: 'Synthetic internal notes encryption check',
+    status: 'active',
+  })
+
+  await store.save(record)
+  const raw = harness.values.get(`prescription:record:${record.id}`)
+  assert.match(raw, /"version":1/)
+  assert.match(raw, /"algorithm":"AES-256-GCM"/)
+  for (const privateValue of [record.patientName, record.patientDob, record.practitionerName, record.generalInstructions, record.internalNotes]) {
+    assert.equal(raw.includes(privateValue), false)
+  }
+  const restored = await store.findByPublicId(record.publicId)
+  assert.equal(restored?.patientName, record.patientName)
+  assert.equal(restored?.patientDob, record.patientDob)
+  assert.equal(restored?.practitionerName, record.practitionerName)
+  assert.equal(restored?.generalInstructions, record.generalInstructions)
+  assert.equal(restored?.internalNotes, record.internalNotes)
+})
+
+test('fails closed for a missing, malformed, or tampered REST-KV encryption envelope', async () => {
+  const harness = createRestKvHarness()
+  assert.equal(createPrescriptionStore({ environment: { ...harness.environment, PRESCRIPTIONS_DATA_ENCRYPTION_KEY: undefined }, fetchFn: harness.fetchFn }), undefined)
+  assert.equal(createPrescriptionStore({ environment: { ...harness.environment, PRESCRIPTIONS_DATA_ENCRYPTION_KEY: 'not-a-256-bit-key' }, fetchFn: harness.fetchFn }), undefined)
+  assert.equal(createPrescriptionStore({ environment: { ...harness.environment, PRESCRIPTIONS_DATA_ENCRYPTION_KEY: `!${harness.environment.PRESCRIPTIONS_DATA_ENCRYPTION_KEY}` }, fetchFn: harness.fetchFn }), undefined)
+  assert.equal(createPrescriptionStore({ environment: { ...harness.environment, PRESCRIPTIONS_DATA_ENCRYPTION_KEY: `${harness.environment.PRESCRIPTIONS_DATA_ENCRYPTION_KEY}=` }, fetchFn: harness.fetchFn }), undefined)
+
+  const store = createPrescriptionStore(harness)
+  const record = createPrescription({ ...baseInput, status: 'active' })
+  await store.save(record)
+  const key = `prescription:record:${record.id}`
+  const envelope = JSON.parse(harness.values.get(key))
+  envelope.ciphertext = `${envelope.ciphertext.slice(0, -2)}AA`
+  harness.values.set(key, JSON.stringify(envelope))
+  assert.equal(await store.findByPublicId(record.publicId), undefined)
+})
+
+test('revoking an active prescription removes the public mapping but retains only encrypted internal storage', async () => {
+  const harness = createRestKvHarness()
+  const store = createPrescriptionStore(harness)
+  const active = createPrescription({ ...baseInput, status: 'active' })
+  await store.save(active)
+  assert.equal((await store.findByPublicId(active.publicId))?.id, active.id)
+
+  const revoked = { ...active, status: 'revoked', updatedAt: '2026-09-08T00:00:00.000Z' }
+  await store.save(revoked)
+  assert.equal(await store.findByPublicId(active.publicId), undefined)
+  assert.equal(harness.values.has(`prescription:public:${active.publicId}`), false)
+  assert.match(harness.values.get(`prescription:record:${active.id}`), /"algorithm":"AES-256-GCM"/)
+  assert.ok(harness.commands.some(([operation, key]) => operation === 'DEL' && key === `prescription:public:${active.publicId}`))
 })
 
 test('generates a download-safe PDF without internal notes or IDs and keeps remedy hyperlinks', () => {
@@ -122,4 +208,29 @@ test('keeps the PDF footer below general instructions instead of overlapping it'
   const updatedY = Number(source.match(/1 0 0 1 52 (\d+(?:\.\d+)?) Tm \(Updated:/)?.[1])
 
   assert.ok(updatedY <= instructionY - 20)
+})
+
+test('paginates a long bilingual-safe prescription without dropping items or instructions', () => {
+  const items = Array.from({ length: 28 }, (_, index) => ({
+    displayNameOverride: index === 0 ? 'FIRST-SYNTHETIC-REMEDY' : index === 27 ? 'FINAL-SYNTHETIC-REMEDY' : `SYNTHETIC-REMEDY-${index + 1}`,
+    potency: '30C',
+    dosage: 'Long synthetic dosage text '.repeat(10),
+    notes: 'Long synthetic note text '.repeat(10),
+  }))
+  const record = createPrescription({
+    ...baseInput,
+    generalInstructions: `GENERAL-INSTRUCTIONS-FIRST ${'Long instruction text '.repeat(260)} GENERAL-INSTRUCTIONS-FINAL`,
+    items,
+    status: 'active',
+  })
+  const enSource = buildPrescriptionPdf(getClientPrescription(record, 'en'), 'en', 'https://books.example.test').toString('latin1')
+  const ruSource = buildPrescriptionPdf(getClientPrescription(record, 'ru'), 'ru', 'https://books.example.test').toString('latin1')
+
+  assert.ok((enSource.match(/\/Type \/Page\b/g) ?? []).length > 1)
+  assert.match(enSource, /FIRST-SYNTHETIC-REMEDY/)
+  assert.match(enSource, /FINAL-SYNTHETIC-REMEDY/)
+  assert.match(enSource, /GENERAL-INSTRUCTIONS-FIRST/)
+  assert.match(enSource, /GENERAL-INSTRUCTIONS-FINAL/)
+  assert.match(ruSource, /\/Encoding \/Identity-H/)
+  assert.match(ruSource, /\/ToUnicode/)
 })

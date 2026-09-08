@@ -22,9 +22,10 @@ export async function GET(request, { params }) {
   return new NextResponse(pdf, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="homeopathic-recommendation-${document.dateIssued}.pdf"`,
+      'Content-Disposition': 'attachment; filename="homeopathic-prescription.pdf"',
       'Cache-Control': 'private, no-store',
-      'X-Robots-Tag': 'noindex, nofollow',
+      'X-Robots-Tag': 'noindex, nofollow, noarchive',
+      'X-Content-Type-Options': 'nosniff',
     },
   })
 }
