@@ -15,6 +15,7 @@ import { createPrescription, getClientPrescription } from '../lib/prescriptions/
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 import {
   authorizePrescription,
+  closePrescriptionSession,
   exchangePrescriptionAccess,
   prescriptionAccessFailure,
 } from '../lib/prescriptions/session.js'
@@ -156,4 +157,51 @@ test('rate limits repeated access exchanges without revealing credential validit
     body: JSON.stringify({ selector: issued.selector, secret: issued.secret }),
   })
   assert.equal(await exchangePrescriptionAccess({ request: validRequest, store, ip: '192.0.2.30' }), prescriptionAccessFailure)
+})
+
+test('rejects malformed credentials before allocating a rate-limit key', async () => {
+  let calls = 0
+  const store = { async consumeAccessAttempt() { calls += 1; return true } }
+  const request = new Request('https://books.example.test/api/prescription-access', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://books.example.test' },
+    body: JSON.stringify({ selector: 'malformed', secret: 'A'.repeat(43) }),
+  })
+
+  assert.equal(await exchangePrescriptionAccess({ request, store, ip: '192.0.2.40' }), prescriptionAccessFailure)
+  assert.equal(calls, 0)
+})
+
+test('applies an IP limit across distinct valid selectors', async () => {
+  const buckets = new Map()
+  const store = {
+    async consumeAccessAttempt(digest, limit) {
+      const count = (buckets.get(digest) ?? 0) + 1
+      buckets.set(digest, count)
+      return count <= limit
+    },
+    async findBySelector() { return undefined },
+  }
+
+  for (let attempt = 0; attempt < 31; attempt += 1) {
+    const selector = `${String(attempt).padStart(2, '0')}${'A'.repeat(20)}`
+    const request = new Request('https://books.example.test/api/prescription-access', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://books.example.test' },
+      body: JSON.stringify({ selector, secret: 'A'.repeat(43) }),
+    })
+    assert.equal(await exchangePrescriptionAccess({ request, store, ip: '192.0.2.50' }), prescriptionAccessFailure)
+  }
+
+  assert.equal([...buckets.values()].some((count) => count === 31), true)
+})
+
+test('expires the browser cookie even when Redis session deletion fails', async () => {
+  let deletedCookie
+  const cookieStore = {
+    get() { return { value: 'A'.repeat(43) } },
+    delete(name) { deletedCookie = name },
+  }
+  const store = { async deleteAccessSession() { throw new Error('synthetic storage outage') } }
+
+  await closePrescriptionSession({ cookieStore, store, name: 'prescription_access_test' })
+  assert.equal(deletedCookie, 'prescription_access_test')
 })

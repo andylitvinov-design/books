@@ -5,6 +5,7 @@ import test from 'node:test'
 import {
   createPrescription,
   getClientPrescription,
+  updatePrescription,
   validatePrescriptionInput,
 } from '../lib/prescriptions/service.js'
 import { createPrescriptionSession, issuePrescriptionAccess } from '../lib/prescriptions/access.js'
@@ -47,8 +48,11 @@ function createRestKvHarness() {
       if (operation === 'GET') result = values.get(key) ?? null
       if (operation === 'SET') { values.set(key, value); result = 'OK' }
       if (operation === 'DEL') { result = values.delete(key) ? 1 : 0 }
-      if (operation === 'INCR') { result = Number(values.get(key) ?? 0) + 1; values.set(key, String(result)) }
-      if (operation === 'EXPIRE') result = values.has(key) ? 1 : 0
+      if (operation === 'EVAL') {
+        const rateKey = args[3]
+        result = Number(values.get(rateKey) ?? 0) + 1
+        values.set(rateKey, String(result))
+      }
       return { ok: true, json: async () => ({ result }) }
     },
     values,
@@ -186,6 +190,20 @@ test('revoking an active prescription removes selector and legacy mappings but r
   assert.ok(harness.commands.some(([operation, key]) => operation === 'DEL' && key === `prescription:public:${legacyPublicId}`))
 })
 
+test('reactivating a revoked prescription requires freshly issued access', async () => {
+  const store = createMemoryPrescriptionStore()
+  const issued = issuePrescriptionAccess(createPrescription({ ...baseInput, status: 'active' }))
+  await store.save(issued.record)
+
+  const revoked = updatePrescription(issued.record, { ...baseInput, status: 'revoked' })
+  await store.save(revoked, issued.record)
+  const reactivated = updatePrescription(revoked, { ...baseInput, status: 'active' })
+  await store.save(reactivated, revoked)
+
+  assert.equal(reactivated.access, undefined)
+  assert.equal(await store.findBySelector(issued.selector), undefined)
+})
+
 test('persists opaque expiring access sessions and bounded rate counters in REST KV', async () => {
   const harness = createRestKvHarness()
   const store = createPrescriptionStore(harness)
@@ -203,7 +221,8 @@ test('persists opaque expiring access sessions and bounded rate counters in REST
   assert.equal(await store.consumeAccessAttempt('a'.repeat(64), 2, 300), true)
   assert.equal(await store.consumeAccessAttempt('a'.repeat(64), 2, 300), false)
   assert.ok(harness.commands.some((args) => args[0] === 'SET' && args[1] === `prescription:session:${session.digest}` && args[3] === 'EX' && args[4] === 900))
-  assert.ok(harness.commands.some((args) => args[0] === 'EXPIRE' && args[2] === 300))
+  assert.ok(harness.commands.some((args) => args[0] === 'EVAL' && args[3] === `prescription:rate:${'a'.repeat(64)}` && args[4] === 300))
+  assert.equal(harness.commands.some((args) => args[0] === 'INCR' || args[0] === 'EXPIRE'), false)
 
   await store.deleteAccessSession(session.digest)
   assert.equal(await store.findAccessSession(session.digest), undefined)

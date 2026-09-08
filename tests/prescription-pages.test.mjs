@@ -28,7 +28,13 @@ test('access exchange and logout use short HttpOnly same-site sessions', async (
   assert.match(exchange, /secure: process\.env\.NODE_ENV === 'production'/)
   assert.doesNotMatch(exchange, /console\./)
   assert.match(logout, /deletePrescriptionRequestSession/)
-  assert.match(logout, /cookieStore/)
+  assert.doesNotMatch(logout, /cookieStore\.delete/)
+})
+
+test('PDF font tracing follows the selector route', async () => {
+  const config = await readFile('next.config.ts', 'utf8')
+  assert.match(config, /\/api\/prescriptions\/\[selector\]\/pdf/)
+  assert.doesNotMatch(config, /\/api\/prescriptions\/\[publicId\]\/pdf/)
 })
 
 test('client prescription route is dynamic, session-authorized, neutral, and noindex', async () => {
