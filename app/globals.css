@@ -112,7 +112,7 @@
   .prescription-admin-item-fields { @apply mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }
   .prescription-admin-actions { @apply flex flex-wrap gap-3; }
   .prescription-admin-actions button, .prescription-admin-login button { @apply min-h-11 border border-[#563b2a] bg-[#563b2a] px-4 text-sm font-semibold text-white; }
-  .prescription-admin-actions button:last-child { @apply border-[#8c2f24] bg-white text-[#8c2f24]; }
+  .prescription-admin-actions button[value="revoked"] { @apply border-[#8c2f24] bg-white text-[#8c2f24]; }
   .prescription-admin-link { @apply grid gap-1 text-sm; }
   .prescription-admin-link a { @apply font-semibold text-[#70442d] underline; }
   .prescription-admin-login { @apply mx-auto mt-16 grid max-w-md gap-5 border border-[#d6c5b4] bg-[#fffaf3] p-7; }

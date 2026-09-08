@@ -67,6 +67,7 @@ export function PrescriptionForm({ action, prescription, remedies, clientPath })
         <button type="submit" name="status" value="draft">Save draft</button>
         <button type="submit" name="status" value="active">Activate private link</button>
         {prescription && <button type="submit" name="status" value="revoked">Revoke link</button>}
+        {prescription && <button type="submit" name="status" value="archived">Archive</button>}
       </div>
       {clientPath && <div className="prescription-admin-link">
         <a href={clientPath}>Open client page</a><span>{clientPath}</span>

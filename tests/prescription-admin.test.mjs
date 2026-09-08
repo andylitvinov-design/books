@@ -22,6 +22,7 @@ test('admin form submits canonical remedy slugs and supports the status lifecycl
   assert.match(form, /Save draft/)
   assert.match(form, /Activate private link/)
   assert.match(form, /Revoke link/)
+  assert.match(form, /Archive/)
   assert.match(form, /Unlinked item/)
   assert.match(form, /Copy client link/)
   assert.match(form, /Download PDF/)
