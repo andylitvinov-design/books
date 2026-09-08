@@ -16,14 +16,14 @@ test('keeps the primary remedy image in the reading flow and defers supporting i
 
 test('uses an editorial float on desktop and a stacked image on mobile', () => {
   assert.match(styles, /@media \(min-width: 768px\)[\s\S]*?\.remedy-primary-image[\s\S]*?float:\s*right/)
-  assert.match(styles, /@media \(min-width: 768px\)[\s\S]*?\.remedy-primary-image[\s\S]*?width:\s*clamp\(16\.25rem, 22vw, 18\.75rem\)/)
+  assert.match(styles, /@media \(min-width: 768px\)[\s\S]*?\.remedy-primary-image[\s\S]*?width:\s*clamp\(16\.25rem, 20vw, 17\.5rem\)/)
   assert.match(styles, /@media \(max-width: 767px\)[\s\S]*?\.remedy-primary-image[\s\S]*?float:\s*none/)
   assert.match(styles, /@media \(max-width: 767px\)[\s\S]*?\.remedy-primary-image img[\s\S]*?max-height:\s*22rem/)
 })
 
 test('keeps reading typography comfortably sized and compactly spaced', () => {
   assert.match(styles, /\.remedy-page h1\s*\{[^}]*text-\[30px\][^}]*sm:text-\[38px\][^}]*lg:text-\[42px\]/)
-  assert.match(styles, /\.remedy-content-body\s*\{[^}]*font-size:\s*18px[^}]*line-height:\s*1\.52/)
-  assert.match(styles, /\.remedy-content-body p\s*\{[^}]*margin:\s*0\.55em 0 0/)
+  assert.match(styles, /\.remedy-content-body\s*\{[^}]*font-size:\s*18px[^}]*line-height:\s*1\.5/)
+  assert.match(styles, /\.remedy-content-body p\s*\{[^}]*margin:\s*0\.5em 0 0/)
   assert.match(styles, /\.remedy-source-reference\s*\{[^}]*clear:\s*both/)
 })

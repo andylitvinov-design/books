@@ -29,8 +29,10 @@ test('keeps the compact section grid desktop-only and restores a readable one-co
 
   assert.match(styles, /@media \(min-width: 900px\)[\s\S]*?\.remedy-content-pair\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/)
   assert.match(styles, /@media \(max-width: 899px\)[\s\S]*?\.remedy-content-pair[\s\S]*?grid-template-columns:\s*1fr/)
-  assert.match(styles, /\.remedy-content-body\s*\{[^}]*font-size:\s*18px[^}]*line-height:\s*1\.52/)
+  assert.match(styles, /\.remedy-content-body\s*\{[^}]*font-size:\s*18px[^}]*line-height:\s*1\.5/)
   assert.match(styles, /\.remedy-content-body li\s*\{[^}]*margin-bottom:\s*0\.28em/)
+  assert.match(styles, /\.remedy-page\s*\{[^}]*max-width:\s*56rem/)
+  assert.match(styles, /\.book-reference-layout\s*\{[^}]*minmax\(0,56rem\)/)
 })
 
 test('makes source and supplementary material secondary without dropping canonical body content', () => {
