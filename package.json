@@ -16,9 +16,21 @@
     "build:remedy-images": "node scripts/build-remedy-image-layer.mjs",
     "validate:remedy-images": "node scripts/validate-remedy-images.mjs",
     "verify:homeopathy-routes": "node scripts/verify-homeopathy-routes.mjs",
-    "pwa:check": "node --test tests/psialchemy-pwa.test.mjs"
+    "pwa:check": "node --test tests/psialchemy-pwa.test.mjs",
+    "native:check": "node --test tests/native-*.test.mjs",
+    "native:sync": "cap sync",
+    "native:ios:simulator": "cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build",
+    "native:android:debug": "cap sync android && cd android && ./gradlew assembleDebug --stacktrace"
   },
   "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/browser": "^7.0.5",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/ios": "^7.6.9",
+    "@capacitor/preferences": "^7.0.4",
+    "@capacitor/share": "^7.0.4",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-separator": "^1.1.8",
