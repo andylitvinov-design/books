@@ -98,6 +98,11 @@
   .prescription-unavailable p { @apply mt-4 text-lg leading-7 text-[#5d5249]; }
   .prescription-admin-shell { @apply mx-auto max-w-5xl px-5 py-10 sm:px-8; }
   .prescription-admin-shell > h1 { @apply font-serif text-4xl; }
+  .prescription-admin-header { @apply flex flex-wrap items-start justify-between gap-5 border-b border-[#cdbca8] pb-7; }
+  .prescription-admin-header > div > p:first-child, .prescription-owner-actions > div > p { @apply text-xs font-semibold uppercase tracking-[0.14em] text-[#765d4a]; }
+  .prescription-admin-header h1 { @apply mt-2 font-serif text-4xl; }
+  .prescription-admin-description { @apply mt-3 max-w-2xl text-base leading-6 text-[#5d5046]; }
+  .prescription-admin-header button { @apply min-h-11 border border-[#8b664c] bg-[#fffaf3] px-4 text-sm font-semibold text-[#563b2a]; }
   .prescription-admin-form { @apply mt-7 grid gap-7; }
   .prescription-admin-form fieldset { @apply grid gap-4 border border-[#d6c5b4] bg-[#fffaf3] p-5 sm:grid-cols-2; }
   .prescription-admin-form legend { @apply px-2 font-serif text-xl; }
@@ -112,9 +117,15 @@
   .prescription-admin-item-fields { @apply mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }
   .prescription-admin-actions { @apply flex flex-wrap gap-3; }
   .prescription-admin-actions button, .prescription-admin-login button { @apply min-h-11 border border-[#563b2a] bg-[#563b2a] px-4 text-sm font-semibold text-white; }
-  .prescription-admin-actions button[value="revoked"] { @apply border-[#8c2f24] bg-white text-[#8c2f24]; }
-  .prescription-admin-link { @apply grid gap-1 text-sm; }
-  .prescription-admin-link a { @apply font-semibold text-[#70442d] underline; }
+  .prescription-owner-actions { @apply mt-7 border border-[#b99a7e] bg-[#fffaf3] p-5 sm:p-6; }
+  .prescription-owner-actions h2 { @apply mt-2 font-serif text-3xl; }
+  .prescription-owner-action-grid { @apply mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }
+  .prescription-owner-action-grid > a, .prescription-owner-action-grid button { @apply flex min-h-14 w-full items-center justify-center border border-[#70442d] bg-white px-4 text-center text-sm font-semibold text-[#563b2a] hover:bg-[#f1e3d0]; }
+  .prescription-owner-action-grid > a:first-child, .prescription-owner-action-grid > button:first-child { @apply bg-[#563b2a] text-white hover:bg-[#3f291d]; }
+  .prescription-owner-action-grid form:last-child button { @apply border-[#8c2f24] text-[#8c2f24] hover:bg-[#fff1ee]; }
+  .prescription-owner-unavailable { @apply mt-7 border border-[#d6c5b4] bg-[#fffaf3] p-5; }
+  .prescription-owner-unavailable h2 { @apply font-serif text-2xl; }
+  .prescription-owner-unavailable p { @apply mt-2 text-[#5d5046]; }
   .prescription-admin-login { @apply mx-auto mt-16 grid max-w-md gap-5 border border-[#d6c5b4] bg-[#fffaf3] p-7; }
   .prescription-admin-login h1 { @apply font-serif text-3xl; }
 

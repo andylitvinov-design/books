@@ -4,12 +4,13 @@ Client records are held only in the configured server-side REST KV store. Do not
 
 ## Required deployment variables
 
-- `PRESCRIPTIONS_ADMIN_TOKEN`: a long random access code for `/admin/login`.
+- `PRESCRIPTIONS_ADMIN_PIN`: the short owner PIN shown in `/admin/login` as “PIN / Access code”.
+- `PRESCRIPTIONS_ADMIN_TOKEN`: the existing long random access code; it remains accepted as a compatibility fallback.
 - `PRESCRIPTIONS_KV_REST_API_URL`: Vercel/Upstash-compatible REST KV endpoint.
 - `PRESCRIPTIONS_KV_REST_API_TOKEN`: server-side bearer token for that endpoint.
 - `PRESCRIPTIONS_DATA_ENCRYPTION_KEY`: a separate, freshly generated 32-byte AES key encoded as base64 or base64url. For example, generate it locally with `openssl rand -base64 32`; store it only as a Vercel server-side environment variable.
 
-Production requires all four variables. If any KV or encryption variable is missing or malformed, production routes fail closed and do not disclose a record. A Vercel Preview (or local development) can render only the non-sensitive `Test Client` fixture, using a fixed test-only public token. It cannot create or persist records unless the admin, KV, and encryption variables are explicitly configured for that environment.
+Production requires the three KV/encryption variables plus either `PRESCRIPTIONS_ADMIN_PIN` or the legacy `PRESCRIPTIONS_ADMIN_TOKEN`. If any KV or encryption variable is missing or malformed, production routes fail closed and do not disclose a record. A Vercel Preview (or local development) can render only the non-sensitive `Test Client` fixture, using a fixed test-only public token. It cannot create or persist records unless the admin, KV, and encryption variables are explicitly configured for that environment.
 
 ## Storage model
 
@@ -27,6 +28,6 @@ Russian PDFs embed the bundled `assets/fonts/NotoSans-Regular.ttf` as a Unicode 
 
 - The REST adapter rejects non-HTTPS endpoints before any record is sent. Deploy only against an HTTPS endpoint.
 - Application-level AES-256-GCM protects every prescription payload before it reaches KV. Keep `PRESCRIPTIONS_DATA_ENCRYPTION_KEY` independent from the admin token, Upstash token, and all public IDs; never log, return, or commit it. Provider-side encryption remains useful as defence in depth but is not relied on for plaintext protection.
-- The admin form is protected by a server-side `PRESCRIPTIONS_ADMIN_TOKEN` and a signed, `HttpOnly`, `SameSite=Strict` session cookie scoped to `/admin`.
+- The admin form accepts the server-side owner PIN (or the legacy token) and uses a signed, `HttpOnly`, `Secure`, `SameSite=Strict` session cookie scoped to `/admin` for 30 days.
 - Public lookup accepts only the random `publicId`; `draft`, `revoked`, and `archived` records resolve as unavailable. Revoking a record therefore stops the existing public URL from returning client data.
 - Client pages and PDF responses use a restrictive noindex policy; prescription routes are dynamic and absent from the sitemap. The module does not add client-side analytics or prescription-detail logging.
