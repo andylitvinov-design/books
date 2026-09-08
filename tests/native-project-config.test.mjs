@@ -42,3 +42,18 @@ test('keeps association documents empty and native CI explicitly unsigned', () =
   assert.match(workflow, /actions\/upload-artifact@v4/)
   assert.match(read('components/native-external-links.tsx'), /private-blocked/)
 })
+
+test('ships disabled per-platform private-session containers without registering private app links', () => {
+  const iosGate = read('ios/App/App/NativePrivatePrescriptionGate.swift')
+  const iosSession = read('ios/App/App/PrivatePrescriptionSessionViewController.swift')
+  const androidGate = read('android/app/src/main/java/app/psialchemy/mobile/NativePrivatePrescriptionGate.java')
+  const androidSession = read('android/app/src/main/java/app/psialchemy/mobile/PrivatePrescriptionActivity.java')
+  const manifest = read('android/app/src/main/AndroidManifest.xml')
+  assert.match(iosGate, /isEnabled = false/)
+  assert.match(iosSession, /WKWebsiteDataStore\.nonPersistent\(\)/)
+  assert.match(androidGate, /ENABLED = false/)
+  assert.match(androidSession, /setDataDirectorySuffix\("private-prescription"\)/)
+  assert.match(androidSession, /Process\.killProcess\(Process\.myPid\(\)\)/)
+  assert.match(manifest, /android:process=":private"/)
+  assert.doesNotMatch(manifest, /pathPrefix="\/(ru|en)\/prescriptions/)
+})
