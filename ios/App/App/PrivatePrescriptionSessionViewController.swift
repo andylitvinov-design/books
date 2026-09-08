@@ -19,7 +19,7 @@ final class PrivatePrescriptionSessionViewController: UIViewController {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
-        nil
+        return nil
     }
 
     override func viewDidLoad() {
