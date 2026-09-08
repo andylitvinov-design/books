@@ -28,7 +28,13 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="psialchemy" />
+                <data android:scheme="psialchemy" android:host="ru" android:pathPrefix="/homeopathy/remedies" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="psialchemy" android:host="en" android:pathPrefix="/homeopathy/remedies" />
             </intent-filter>
 
             <!-- autoVerify remains false until a final signing fingerprint and
