@@ -106,6 +106,15 @@ test('generates a download-safe PDF without internal notes or IDs and keeps reme
   assert.equal(source.includes(record.id), false)
 })
 
+test('embeds a Unicode Cyrillic font for Russian prescriptions instead of transliterating labels', () => {
+  const record = createPrescription({ ...baseInput, status: 'active' })
+  const source = buildPrescriptionPdf(getClientPrescription(record, 'ru'), 'ru', 'https://books.example.test').toString('latin1')
+
+  assert.match(source, /\/Encoding \/Identity-H/)
+  assert.match(source, /\/ToUnicode/)
+  assert.doesNotMatch(source, /GOMEOPATICHESKOE|Klient|Preparat/)
+})
+
 test('keeps the PDF footer below general instructions instead of overlapping it', () => {
   const record = createPrescription({ ...baseInput, status: 'active' })
   const source = buildPrescriptionPdf(getClientPrescription(record, 'en'), 'en', 'https://books.example.test').toString('latin1')

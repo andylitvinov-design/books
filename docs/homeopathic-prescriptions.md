@@ -16,6 +16,10 @@ Each record has a private UUID `id` and a 256-bit base64url `publicId`. The KV a
 
 Canonical remedy items store only `remedySlug`; client titles and locale-specific routes are resolved at render time from the canonical remedy catalogue. An unlinked item remains plain text and never creates a remedy page.
 
+## PDF font
+
+Russian PDFs embed the bundled `assets/fonts/NotoSans-Regular.ttf` as a Unicode Type0 font with an Identity-H encoding and ToUnicode map. The accompanying `assets/fonts/LICENSE-NotoSans-OFL-1.1.txt` is the SIL Open Font License 1.1 from the Noto project; it permits embedding and redistribution. The explicit Next output-file trace rule keeps this font available in the Vercel serverless PDF route instead of relying on a system font or a remote font request.
+
 ## Security and privacy review
 
 - The REST adapter rejects non-HTTPS endpoints before any record is sent. Upstash Redis documents TLS for data in transit; deploy only against an HTTPS endpoint.
