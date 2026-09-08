@@ -56,7 +56,68 @@
   }
 }
 
+@media print {
+  @page { size: A4 portrait; margin: 14mm; }
+  body { background: #fff !important; }
+  .prescription-toolbar, .prescription-actions { display: none !important; }
+  .prescription-shell { max-width: none; padding: 0; }
+  .prescription-document { max-width: none; padding: 0; box-shadow: none; }
+  .prescription-item { break-inside: avoid; }
+}
+
 @layer utilities {
+  .prescription-shell { @apply mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-10; }
+  .prescription-toolbar { @apply mb-5 flex items-center justify-between gap-3 text-sm font-semibold text-[#70442d]; }
+  .prescription-toolbar > a { @apply min-h-11 border border-[#b99373] px-4 py-3; }
+  .prescription-actions { @apply flex flex-wrap gap-2; }
+  .prescription-actions a, .prescription-actions button { @apply inline-flex min-h-11 items-center border border-[#70442d] bg-[#fffaf3] px-4 text-sm font-semibold text-[#563b2a] hover:bg-[#f1e3d0]; }
+  .prescription-document { @apply mx-auto max-w-[50rem] bg-white px-6 py-8 text-[#252525] shadow-[0_12px_40px_rgba(50,36,24,0.12)] sm:px-12 sm:py-12; }
+  .prescription-header { @apply flex flex-col gap-8 border-b border-[#b9ada2] pb-8 sm:flex-row sm:items-start sm:justify-between; }
+  .prescription-kicker { @apply text-xs font-semibold uppercase tracking-[0.12em] text-[#795b43]; }
+  .prescription-header h1 { @apply mt-2 font-serif text-3xl leading-tight sm:text-4xl; }
+  .prescription-header h2 { @apply max-w-60 font-serif text-xl leading-snug sm:text-right; }
+  .prescription-header p:not(.prescription-kicker) { @apply mt-2 text-sm leading-6 text-[#4c443d]; }
+  .prescription-patient { @apply grid gap-4 border-b border-[#ddd3c9] py-6 sm:grid-cols-3; }
+  .prescription-patient span, .prescription-item-title > span, .prescription-item-details dt { @apply block text-[11px] font-semibold uppercase tracking-[0.11em] text-[#765d4a]; }
+  .prescription-patient strong { @apply mt-1 block text-[17px]; }
+  .prescription-items { @apply divide-y divide-[#ddd3c9]; }
+  .prescription-item { @apply py-6; break-inside: avoid; }
+  .prescription-item-title > a, .prescription-item-title > strong { @apply mt-1 block font-serif text-2xl leading-tight text-[#35261c]; }
+  .prescription-item-title > a { @apply underline decoration-[#bd9270] underline-offset-4; }
+  .prescription-remedy-link { @apply mt-3 inline-block text-sm font-semibold text-[#70442d] underline decoration-[#bd9270] underline-offset-4; }
+  .prescription-item-details { @apply mt-5 grid gap-4 sm:grid-cols-2; }
+  .prescription-item-details dd { @apply mt-1 text-[17px] leading-6 text-[#403a34]; }
+  .prescription-instructions { @apply border-t border-[#b9ada2] py-7; }
+  .prescription-instructions h2 { @apply font-serif text-2xl; }
+  .prescription-instructions p { @apply mt-3 whitespace-pre-wrap text-[17px] leading-7; }
+  .prescription-footer { @apply border-t border-[#b9ada2] pt-6 text-sm leading-6 text-[#57504a]; }
+  .prescription-signature { @apply mt-10 border-b border-[#8f8378] pb-2 text-[#312820]; }
+  .prescription-footer > p:last-child { @apply mt-7 text-xs leading-5 text-[#736961]; }
+  .prescription-unavailable { @apply mx-auto max-w-xl px-6 py-20 text-center; }
+  .prescription-unavailable h1 { @apply font-serif text-4xl; }
+  .prescription-unavailable p { @apply mt-4 text-lg leading-7 text-[#5d5249]; }
+  .prescription-admin-shell { @apply mx-auto max-w-5xl px-5 py-10 sm:px-8; }
+  .prescription-admin-shell > h1 { @apply font-serif text-4xl; }
+  .prescription-admin-form { @apply mt-7 grid gap-7; }
+  .prescription-admin-form fieldset { @apply grid gap-4 border border-[#d6c5b4] bg-[#fffaf3] p-5 sm:grid-cols-2; }
+  .prescription-admin-form legend { @apply px-2 font-serif text-xl; }
+  .prescription-admin-form label { @apply grid gap-1 text-sm font-semibold text-[#513d2e]; }
+  .prescription-admin-form input, .prescription-admin-form select, .prescription-admin-form textarea { @apply w-full border border-[#bda78f] bg-white px-3 py-2 text-base font-normal text-[#2e241d]; }
+  .prescription-admin-form textarea { @apply min-h-28; }
+  .prescription-admin-item { @apply col-span-full border-t border-[#ddcdbd] pt-5 first:border-0 first:pt-0; }
+  .prescription-admin-item > div:first-child { @apply mb-3 flex items-center justify-between; }
+  .prescription-admin-item > div:first-child button, .prescription-admin-form > fieldset > button { @apply mt-3 border border-[#8b664c] px-3 py-2 text-sm; }
+  .prescription-remedy-results { @apply mt-2 grid gap-1 border border-[#d6c5b4] bg-white p-2; }
+  .prescription-remedy-results button { @apply p-2 text-left text-sm hover:bg-[#f4eadc]; }
+  .prescription-admin-item-fields { @apply mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }
+  .prescription-admin-actions { @apply flex flex-wrap gap-3; }
+  .prescription-admin-actions button, .prescription-admin-login button { @apply min-h-11 border border-[#563b2a] bg-[#563b2a] px-4 text-sm font-semibold text-white; }
+  .prescription-admin-actions button:last-child { @apply border-[#8c2f24] bg-white text-[#8c2f24]; }
+  .prescription-admin-link { @apply grid gap-1 text-sm; }
+  .prescription-admin-link a { @apply font-semibold text-[#70442d] underline; }
+  .prescription-admin-login { @apply mx-auto mt-16 grid max-w-md gap-5 border border-[#d6c5b4] bg-[#fffaf3] p-7; }
+  .prescription-admin-login h1 { @apply font-serif text-3xl; }
+
   .text-balance {
     text-wrap: balance;
   }
