@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 
+import { PrescriptionAccessGate } from '@/components/prescription-access-gate'
 import { PrescriptionDocument } from '@/components/prescription-document'
 import { isSupportedLocale } from '@/data/remedies'
 import { getClientPrescription } from '@/lib/prescriptions/service'
-import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { authorizePrescriptionRequest } from '@/lib/prescriptions/session'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,12 +13,11 @@ export async function generateMetadata() {
 }
 
 export default async function ClientPrescriptionPage({ params, searchParams }) {
-  const { locale, publicId } = await params
+  const { locale, selector } = await params
   if (!isSupportedLocale(locale)) notFound()
-  const store = getPrescriptionStore()
-  const record = store ? await store.findByPublicId(publicId) : undefined
+  const record = await authorizePrescriptionRequest(selector)
   const document = getClientPrescription(record, locale)
-  if (!document) notFound()
+  if (!document) return <PrescriptionAccessGate locale={locale} selector={selector} />
   const { print } = await searchParams
-  return <PrescriptionDocument document={document} locale={locale} autoPrint={print === '1'} />
+  return <PrescriptionDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} />
 }
