@@ -7,8 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request) {
   if (!isSameOriginRequest(request)) return new NextResponse(null, { status: 404 })
-  const { cookieStore, name } = await deletePrescriptionRequestSession()
-  cookieStore.delete(name)
+  await deletePrescriptionRequestSession()
   return new NextResponse(null, {
     status: 204,
     headers: {
