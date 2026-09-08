@@ -12,5 +12,5 @@ export const metadata = { robots: { index: false, follow: false }, title: 'New r
 
 export default async function NewPrescriptionPage() {
   if (!await requireAdminRequest()) notFound()
-  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="New prescription" description="Add the client, date, and remedies. The secure client link is ready immediately after save." /><PrescriptionForm action={createPrescriptionAction} remedies={getPrescriptionRemedyOptions()} submitLabel="Create prescription" /></main>
+  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="New prescription" description="Client details, remedies, and instructions — all in one place." /><PrescriptionForm action={createPrescriptionAction} remedies={getPrescriptionRemedyOptions()} /></main>
 }
