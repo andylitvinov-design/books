@@ -1,6 +1,7 @@
 .DS_Store
 .next/
 node_modules/
+node_modules
 *.log
 *.swp
 *.tmp
@@ -8,3 +9,6 @@ node_modules/
 *.tmp3
 *.app/
 .vercel
+
+tmp/
+output/

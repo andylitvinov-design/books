@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 
 import { PrescriptionForm } from '@/components/prescription-form'
+import { AdminDocumentPanels } from '@/components/admin-document-panels'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionRemedyOptions } from '@/lib/prescriptions/service'
@@ -16,7 +17,9 @@ export default async function EditPrescriptionPage({ params }) {
   const { id } = await params
   const store = getPrescriptionStore()
   const prescription = store ? await store.findById(id) : undefined
-  if (!prescription) notFound()
+  if (!prescription || prescription.kind === 'payment') notFound()
+  const candidate = prescription.paymentDocumentId ? await store.findById(prescription.paymentDocumentId) : undefined
+  const payment = candidate?.kind === 'payment' ? candidate : undefined
   const action = updatePrescriptionAction.bind(null, prescription.id)
-  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="Edit prescription" description="Update the details below, then save your changes." /><PrescriptionForm action={action} prescription={prescription} remedies={getPrescriptionRemedyOptions()} /></main>
+  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="Consultation documents" description="Create and share the payment document and recommendation separately." /><AdminDocumentPanels prescription={prescription} payment={payment} /><section id="edit-recommendation"><h2>Edit recommendation</h2><PrescriptionForm action={action} prescription={prescription} remedies={getPrescriptionRemedyOptions()} /></section></main>
 }

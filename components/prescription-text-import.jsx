@@ -19,7 +19,7 @@ export function PrescriptionTextImport({ remedies, onApply, onUndo, canUndo }) {
     {preview && <section className="prescription-import-preview" aria-label="Предпросмотр разбора" aria-live="polite">
       <strong>Распознано препаратов: {preview.items.length}</strong>
       {(preview.patientName || preview.dateIssued) && <p>{preview.patientName} {preview.dateIssued}</p>}
-      {preview.items.length > 0 && <ol>{preview.items.map((item, index) => <li key={index}><strong>{item.query}</strong><span>{[['Потенция', item.potency], ['Доза', item.dosage], ['Частота', item.frequency], ['Курс', item.duration], ['Заметки', item.notes]].filter(([, value]) => value).map(([label, value]) => `${label}: ${value}`).join(' · ') || 'Дозировка не указана'}</span></li>)}</ol>}
+      {preview.items.length > 0 && <ol>{preview.items.map((item, index) => <li key={index}><strong>{item.query}</strong><span>{[['Потенция', item.potency], ['Доза', item.dosage], ['Частота', item.frequency], ['Курс', item.duration], ['Инструкции', item.instructions]].filter(([, value]) => value).map(([label, value]) => `${label}: ${value}`).join(' · ') || 'Дозировка не указана'}</span></li>)}</ol>}
       {preview.generalInstructions && <p>Общие инструкции: {preview.generalInstructions}</p>}
       {preview.warnings.length > 0 && <div className="prescription-import-warnings"><strong>Проверьте перед сохранением</strong><ul>{preview.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></div>}
       <p className="prescription-form-hint">Заполненные строки сохранятся, новые добавятся к ним. Имя и дата заменятся, если они указаны в тексте. Проверьте все дозировки перед сохранением.</p>

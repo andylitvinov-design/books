@@ -4,17 +4,16 @@ import { useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { Plus, X, Check, Loader2 } from 'lucide-react'
 
-import { PrescriptionLinkIssuer } from './prescription-link-issuer'
 import { PrescriptionTextImport } from './prescription-text-import'
 import { initialPrescriptionRows, serializePrescriptionRows } from '@/lib/prescriptions/editor'
 
-const columns = [['potency', 'Potency'], ['dosage', 'Dosage'], ['frequency', 'Frequency'], ['duration', 'Duration'], ['notes', 'Notes']]
+const columns = [['potency', 'Potency'], ['dosage', 'Dosage'], ['frequency', 'Frequency'], ['duration', 'Duration'], ['instructions', 'Instructions']]
 
 function SaveButton({ editing, status }) {
   const { pending } = useFormStatus()
   return <button className="prescription-save" type="submit" name="status" value={status} disabled={pending}>
     {pending ? <Loader2 size={17} className="animate-spin" /> : <Check size={17} />}
-    {pending ? 'Saving…' : editing ? 'Save changes' : 'Create prescription'}
+    {pending ? 'Saving…' : editing ? 'Save changes' : 'Create recommendation'}
   </button>
 }
 
@@ -31,7 +30,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
 
   return (
     <form className="prescription-admin-form" action={action} onSubmit={(event) => {
-      const unresolved = items.findIndex((item) => !item.remedySlug && !item.displayNameOverride && [item.query, ...columns.map(([field]) => item[field]), item.instructions].some((value) => value?.trim()))
+      const unresolved = items.findIndex((item) => !item.remedySlug && !item.displayNameOverride && [item.query, ...columns.map(([field]) => item[field]), item.purpose, item.sequence].some((value) => value?.trim()))
       if (unresolved >= 0 || selectedCount === 0) {
         event.preventDefault()
         setError(unresolved >= 0 ? `Choose a remedy from the suggestions in row ${unresolved + 1}.` : 'Choose at least one remedy to continue.')
@@ -53,6 +52,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
       }} />
       <fieldset className="prescription-client-fields"><legend>Client details</legend>
         <label>Client name<input name="patientName" value={patientName} onChange={(event) => setPatientName(event.target.value)} placeholder="Full name" autoComplete="off" required /></label>
+        <label>Recommendation No.<input name="recommendationNumber" defaultValue={prescription?.recommendationNumber} /></label>
         <label>Date<input name="dateIssued" type="date" value={dateIssued} onChange={(event) => setDateIssued(event.target.value)} required /></label>
       </fieldset>
 
@@ -72,12 +72,13 @@ export function PrescriptionForm({ action, prescription, remedies }) {
                 {matches.length > 0 && <div className="prescription-remedy-results" aria-label="Remedy suggestions">{matches.map((remedy) => <button key={remedy.slug} type="button" onClick={() => { update(index, { remedySlug: remedy.slug, query: remedy.label, displayNameOverride: '' }); setFocused(null); setError('') }}>{remedy.label}</button>)}</div>}
                 {focused === index && !item.remedySlug && item.query.trim().length >= 2 && !matches.length && <p className="prescription-remedy-empty">No match. Try another name or alias.</p>}
               </div>
-              {columns.map(([field, label]) => <label className={`prescription-field-${field}`} key={field}><span>{label}</span><input aria-label={`${label} ${index + 1}`} value={item[field]} onChange={(event) => update(index, { [field]: event.target.value })} placeholder={field === 'notes' ? 'Optional' : '—'} /></label>)}
+              {columns.map(([field, label]) => <label className={`prescription-field-${field}`} key={field}><span>{label}</span><input aria-label={`${label} ${index + 1}`} value={item[field] ?? ''} onChange={(event) => update(index, { [field]: event.target.value })} placeholder={field === 'instructions' ? 'Optional' : '—'} /></label>)}
               <button className="prescription-remove" type="button" aria-label={`Remove remedy ${index + 1}`} disabled={items.length === 1} onClick={() => { setItems((current) => current.filter((_, i) => i !== index)); setFocused(null) }}><X size={16} /></button>
-              {(item.instructions || item.displayNameOverride) && <details className="prescription-legacy-details"><summary>Additional remedy details</summary>
+              <details className="prescription-legacy-details"><summary>Additional remedy details</summary>
                 {item.displayNameOverride && <label>Unlinked item<input value={item.displayNameOverride} onChange={(event) => update(index, { displayNameOverride: event.target.value, query: event.target.value })} /></label>}
-                <label>Instructions<input value={item.instructions} onChange={(event) => update(index, { instructions: event.target.value })} /></label>
-              </details>}
+                <label>Purpose (optional)<input value={item.purpose ?? ''} onChange={(event) => update(index, { purpose: event.target.value })} /></label>
+                <label>Sequence / stage (optional)<input value={item.sequence ?? ''} onChange={(event) => update(index, { sequence: event.target.value })} /></label>
+              </details>
             </section>
           })}
         </div>
@@ -85,20 +86,20 @@ export function PrescriptionForm({ action, prescription, remedies }) {
       </fieldset>
 
       <label className="prescription-instructions">General instructions <span className="prescription-form-hint">Optional · included on the client page and PDF</span><textarea name="generalInstructions" value={generalInstructions} onChange={(event) => setGeneralInstructions(event.target.value)} placeholder="Instructions for the client…" rows={3} /></label>
+      <label className="prescription-instructions">Follow-up<textarea name="followUp" defaultValue={prescription?.followUp} rows={2} /></label>
+      <input type="hidden" name="practitionerName" value="Andrii Litvinov" />
+      <input type="hidden" name="practitionerRole" value="Psychological Consultant · Hypnotherapist · Homeopath" />
+      <input type="hidden" name="practitionerBackground" value="Systemic & Family Constellations Facilitator" />
+      <input type="hidden" name="practitionerContact" value="5 Henuyezka St, Apt. 222V · Odesa, Ukraine · +380 93 478 88 27" />
       <details className="prescription-document-options"><summary>Document settings</summary><div>
         <label>Patient DOB<input name="patientDob" type="date" defaultValue={prescription?.patientDob} /></label>
         <label>Language preference<select name="languagePreference" defaultValue={prescription?.languagePreference ?? 'bilingual'}><option value="bilingual">Bilingual</option><option value="ru">RU</option><option value="en">EN</option></select></label>
-        <label>Practitioner<input name="practitionerName" defaultValue={prescription?.practitionerName ?? 'Andrii Litvinov'} /></label>
-        <label>Role<input name="practitionerRole" defaultValue={prescription?.practitionerRole ?? 'Homeopathy / Integrative Practice'} /></label>
-        <label>Professional background<input name="practitionerBackground" defaultValue={prescription?.practitionerBackground ?? 'Professional background: Ukraine'} /></label>
-        <label>Contact<input name="practitionerContact" defaultValue={prescription?.practitionerContact} /></label>
       </div><div className="prescription-lifecycle">
         <button type="submit" name="status" value="draft">Save draft</button>
         {prescription && <><button type="submit" name="status" value="active">Activate private link</button><button type="submit" name="status" value="revoked">Revoke link</button><button type="submit" name="status" value="archived">Archive</button></>}
       </div></details>
       {error && <p className="prescription-form-error" role="alert">{error}</p>}
-      <div className="prescription-admin-actions"><span>{selectedCount} {selectedCount === 1 ? 'remedy' : 'remedies'} in this prescription</span><SaveButton editing={Boolean(prescription)} status={prescription?.status ?? 'active'} /></div>
-      {prescription?.status === 'active' && <PrescriptionLinkIssuer recordId={prescription.id} hasAccess={Boolean(prescription.access)} />}
+      <div className="prescription-admin-actions"><span>{selectedCount} {selectedCount === 1 ? 'remedy' : 'remedies'} in this recommendation</span><SaveButton editing={Boolean(prescription)} status={prescription?.status ?? 'active'} /></div>
     </form>
   )
 }
