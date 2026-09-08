@@ -1,0 +1,17 @@
+{
+  "appId": "app.psialchemy.mobile",
+  "appName": "PsiAlchemy",
+  "webDir": "native-web",
+  "server": {
+    "url": "https://codex-public-book-library.vercel.app",
+    "cleartext": false,
+    "allowNavigation": ["codex-public-book-library.vercel.app"]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#F3ECDF",
+      "showSpinner": false
+    }
+  }
+}

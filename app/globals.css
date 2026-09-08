@@ -271,6 +271,20 @@
     @apply underline decoration-[#bf9473] underline-offset-4 transition hover:text-[#2c2119];
   }
 
+  .remedy-client-actions { @apply my-4 flex gap-2; }
+  .remedy-client-actions button { @apply min-h-11 rounded-full border border-[#cba27a] bg-[#fffaf3] px-4 text-sm font-semibold text-[#70442d]; }
+
+  .mobile-bottom-navigation { display: none; }
+
+  @media (max-width: 767px) {
+    .homeopathy-shell { padding-top: max(1.25rem, env(safe-area-inset-top)); @apply px-4 pb-24; }
+    .remedy-content-body { font-size: 18px; line-height: 1.5; }
+    .remedy-primary-image { float: none; margin: 1rem 0; max-width: none; width: 100%; }
+    .mobile-bottom-navigation { @apply fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-[#d8c9b5] bg-[#fffaf3] px-1 pb-[max(.45rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(56,45,38,.08)]; display: grid; }
+    .mobile-bottom-navigation a { @apply min-h-11 px-1 text-center text-[10px] font-semibold leading-4 text-[#70442d]; }
+    .mobile-bottom-navigation a[aria-current='page'] { @apply text-[#2c2119] underline decoration-[#cba27a] underline-offset-4; }
+  }
+
   .homeopathy-shell {
     @apply mx-auto min-h-screen max-w-5xl px-5 pb-20 pt-8 sm:px-8 sm:pt-12;
   }
