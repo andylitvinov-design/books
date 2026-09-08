@@ -27,7 +27,7 @@ The shared A4 renderer embeds the approved lighthouse and a bundled Noto Sans fo
 | Hosted synthetic review | PASS | Receipt, Invoice and Recommendation pages inspected in signed-in Vercel browser; native PDF downloads verified |
 | Full hosted admin storage workflow | NOT VERIFIED | This branch has no Preview admin credential or persistent private KV configuration; no production resources were connected |
 | Under-one-minute usability target | NOT TIMED | Single form save plus download/link actions; no formal timed usability session claimed |
-| Production unchanged | PASS | Preview-only branch and draft PR; no merge or production alias/deployment mutation |
+| Production release | IN PROGRESS | Owner approved live release after preview review; current production security and compact editor changes integrated |
 
 ## Visual comparison
 
@@ -47,4 +47,4 @@ Regenerate synthetic PDFs with `node scripts/generate-document-samples.mjs`. No 
 
 `/document-preview/receipt`, `/document-preview/invoice`, and `/document-preview/recommendation` use fixed synthetic fixtures and never read the private store. They are available only in Vercel Preview or local development and return 404 in production. Vercel deployment protection remains enabled. The ordinary admin and client pages retain their existing authentication and session checks.
 
-Before a production release: review visuals, resolve the dependency on PR #16, configure isolated Preview storage/admin access for stateful hosted QA, then explicitly approve production. Existing production settings and patient records were not changed.
+Owner approved production release on 2026-09-08 after visual review. PRs #16, #19 and #20 are integrated; existing production storage and admin configuration were confirmed present. Hosted Preview stateful QA remains unavailable without isolated Preview credentials; verify the authenticated production workflow with a synthetic record after deployment. Existing client records and provider settings remain outside this release.
