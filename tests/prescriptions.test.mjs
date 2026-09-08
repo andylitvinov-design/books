@@ -81,6 +81,18 @@ test('fails closed when the persistent REST-KV configuration is absent outside d
   assert.equal(createPrescriptionStore({ environment: { NODE_ENV: 'production' } }), undefined)
 })
 
+test('rejects an insecure REST-KV endpoint before patient data can be sent', () => {
+  assert.throws(
+    () => createPrescriptionStore({
+      environment: {
+        PRESCRIPTIONS_KV_REST_API_URL: 'http://kv.example.test',
+        PRESCRIPTIONS_KV_REST_API_TOKEN: 'fixture-only-token',
+      },
+    }),
+    /HTTPS/,
+  )
+})
+
 test('generates a download-safe PDF without internal notes or IDs and keeps remedy hyperlinks', () => {
   const record = createPrescription({ ...baseInput, status: 'active' })
   const document = getClientPrescription(record, 'en')
