@@ -17,6 +17,5 @@ export default async function EditPrescriptionPage({ params }) {
   const prescription = store ? await store.findById(id) : undefined
   if (!prescription) notFound()
   const action = updatePrescriptionAction.bind(null, prescription.id)
-  const clientPath = prescription.status === 'active' ? `/en/prescriptions/${prescription.publicId}` : undefined
-  return <main className="prescription-admin-shell"><h1>Edit recommendation</h1><PrescriptionForm action={action} prescription={prescription} remedies={getPrescriptionRemedyOptions()} clientPath={clientPath} /></main>
+  return <main className="prescription-admin-shell"><h1>Edit recommendation</h1><PrescriptionForm action={action} prescription={prescription} remedies={getPrescriptionRemedyOptions()} /></main>
 }

@@ -2,22 +2,20 @@
 
 import { useMemo, useState } from 'react'
 
+import { PrescriptionLinkIssuer } from './prescription-link-issuer'
+
 const blankItem = () => ({ remedySlug: '', displayNameOverride: '', potency: '', dosage: '', frequency: '', duration: '', instructions: '', notes: '', query: '' })
 
 function initialItems(prescription) {
   return prescription?.items?.map((item) => ({ ...blankItem(), ...item, query: item.remedySlug ?? item.displayNameOverride ?? '' })) ?? [blankItem()]
 }
 
-export function PrescriptionForm({ action, prescription, remedies, clientPath }) {
+export function PrescriptionForm({ action, prescription, remedies }) {
   const [items, setItems] = useState(() => initialItems(prescription))
   const [queries, setQueries] = useState(() => initialItems(prescription).map((item) => item.query))
   const update = (index, changes) => setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...changes } : item))
   const matchesFor = (query) => query.trim().length < 2 ? [] : remedies.filter((remedy) => remedy.searchText.includes(query.trim().toLowerCase())).slice(0, 6)
   const serializedItems = useMemo(() => JSON.stringify(items.map(({ query, ...item }) => item)), [items])
-  const publicId = clientPath?.split('/').at(-1)
-  const copyClientLink = async () => {
-    if (navigator.clipboard) await navigator.clipboard.writeText(new URL(clientPath, window.location.origin).toString())
-  }
 
   return (
     <form className="prescription-admin-form" action={action}>
@@ -69,10 +67,7 @@ export function PrescriptionForm({ action, prescription, remedies, clientPath })
         {prescription && <button type="submit" name="status" value="revoked">Revoke link</button>}
         {prescription && <button type="submit" name="status" value="archived">Archive</button>}
       </div>
-      {clientPath && <div className="prescription-admin-link">
-        <a href={clientPath}>Open client page</a><span>{clientPath}</span>
-        <div><button type="button" onClick={copyClientLink}>Copy client link</button><a href={`/api/prescriptions/${publicId}/pdf?locale=en`}>Download PDF</a><button type="button" onClick={() => window.open(`${clientPath}?print=1`, '_blank', 'noopener,noreferrer')}>Print client copy</button></div>
-      </div>}
+      {prescription?.status === 'active' && <PrescriptionLinkIssuer recordId={prescription.id} hasAccess={Boolean(prescription.access)} />}
     </form>
   )
 }

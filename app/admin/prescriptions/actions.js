@@ -22,7 +22,7 @@ async function save(existing, formData) {
   const store = getPrescriptionStore()
   if (!store) throw new Error('Prescription storage is not configured')
   const record = existing ? updatePrescription(existing, formInput(formData)) : createPrescription(formInput(formData))
-  await store.save(record)
+  await store.save(record, existing)
   redirect(`/admin/prescriptions/${record.id}`)
 }
 

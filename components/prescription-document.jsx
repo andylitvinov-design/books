@@ -26,15 +26,15 @@ function ItemDetails({ item, labels }) {
   )
 }
 
-export function PrescriptionDocument({ document, locale, autoPrint = false }) {
+export function PrescriptionDocument({ document, locale, selector, autoPrint = false }) {
   const labels = copy[locale]
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
 
   return (
     <main className="prescription-shell">
       <div className="prescription-toolbar">
-        <Link href={`/${alternateLocale}/prescriptions/${document.publicId}`}>{alternateLocale.toUpperCase()}</Link>
-        <PrescriptionActions locale={locale} publicId={document.publicId} autoPrint={autoPrint} />
+        <Link href={`/${alternateLocale}/prescriptions/${selector}`}>{alternateLocale.toUpperCase()}</Link>
+        <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />
       </div>
       <article className="prescription-document">
         <header className="prescription-header">
