@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom'
 import { Plus, X, Check, Loader2 } from 'lucide-react'
 
 import { PrescriptionLinkIssuer } from './prescription-link-issuer'
+import { PrescriptionTextImport } from './prescription-text-import'
 import { initialPrescriptionRows, serializePrescriptionRows } from '@/lib/prescriptions/editor'
 
 const columns = [['potency', 'Potency'], ['dosage', 'Dosage'], ['frequency', 'Frequency'], ['duration', 'Duration'], ['notes', 'Notes']]
@@ -21,6 +22,10 @@ export function PrescriptionForm({ action, prescription, remedies }) {
   const [items, setItems] = useState(() => initialPrescriptionRows(prescription, remedies))
   const [focused, setFocused] = useState(null)
   const [error, setError] = useState('')
+  const [patientName, setPatientName] = useState(prescription?.patientName ?? '')
+  const [dateIssued, setDateIssued] = useState(prescription?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
+  const [generalInstructions, setGeneralInstructions] = useState(prescription?.generalInstructions ?? '')
+  const [importUndo, setImportUndo] = useState(null)
   const update = (index, changes) => setItems((current) => current.map((item, i) => i === index ? { ...item, ...changes } : item))
   const selectedCount = items.filter((item) => item.remedySlug || item.displayNameOverride).length
 
@@ -34,9 +39,21 @@ export function PrescriptionForm({ action, prescription, remedies }) {
     }}>
       <input type="hidden" name="itemsJson" value={serializePrescriptionRows(items)} />
       <input type="hidden" name="internalNotes" value={prescription?.internalNotes ?? ''} />
+      <PrescriptionTextImport remedies={remedies} canUndo={Boolean(importUndo)} onUndo={() => {
+        setItems(importUndo.items); setPatientName(importUndo.patientName); setDateIssued(importUndo.dateIssued); setGeneralInstructions(importUndo.generalInstructions); setImportUndo(null); setError('')
+      }} onApply={(parsed) => {
+        setImportUndo({ items, patientName, dateIssued, generalInstructions })
+        const retained = items.filter((item) => JSON.parse(serializePrescriptionRows([item])).length)
+        const merged = [...retained, ...initialPrescriptionRows({ items: parsed.items }, remedies)]
+        setItems([...merged, ...initialPrescriptionRows(null, remedies, Math.max(0, 4 - merged.length))])
+        if (parsed.patientName) setPatientName(parsed.patientName)
+        if (parsed.dateIssued) setDateIssued(parsed.dateIssued)
+        if (parsed.generalInstructions) setGeneralInstructions([generalInstructions, parsed.generalInstructions].filter(Boolean).join('\n'))
+        setError(''); setFocused(null)
+      }} />
       <fieldset className="prescription-client-fields"><legend>Client details</legend>
-        <label>Client name<input name="patientName" defaultValue={prescription?.patientName} placeholder="Full name" autoComplete="off" required /></label>
-        <label>Date<input name="dateIssued" type="date" defaultValue={prescription?.dateIssued ?? new Date().toLocaleDateString('en-CA')} required /></label>
+        <label>Client name<input name="patientName" value={patientName} onChange={(event) => setPatientName(event.target.value)} placeholder="Full name" autoComplete="off" required /></label>
+        <label>Date<input name="dateIssued" type="date" value={dateIssued} onChange={(event) => setDateIssued(event.target.value)} required /></label>
       </fieldset>
 
       <fieldset className="prescription-remedies"><legend>Remedies <span>{selectedCount} selected</span></legend>
@@ -67,7 +84,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
         <button className="prescription-add" type="button" onClick={() => setItems((current) => [...current, ...initialPrescriptionRows(null, remedies, 1)])}><Plus size={16} />Add remedy</button>
       </fieldset>
 
-      <label className="prescription-instructions">General instructions <span className="prescription-form-hint">Optional · included on the client page and PDF</span><textarea name="generalInstructions" defaultValue={prescription?.generalInstructions} placeholder="Instructions for the client…" rows={3} /></label>
+      <label className="prescription-instructions">General instructions <span className="prescription-form-hint">Optional · included on the client page and PDF</span><textarea name="generalInstructions" value={generalInstructions} onChange={(event) => setGeneralInstructions(event.target.value)} placeholder="Instructions for the client…" rows={3} /></label>
       <details className="prescription-document-options"><summary>Document settings</summary><div>
         <label>Patient DOB<input name="patientDob" type="date" defaultValue={prescription?.patientDob} /></label>
         <label>Language preference<select name="languagePreference" defaultValue={prescription?.languagePreference ?? 'bilingual'}><option value="bilingual">Bilingual</option><option value="ru">RU</option><option value="en">EN</option></select></label>
