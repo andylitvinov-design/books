@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message37 (02.09.2024 17:39:42 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message1059 (29.08.2026 23:19:02 UTC-05:00)
 source_messages: message37 (02.09.2024 17:39:42 UTC-05:00); message1059 (29.08.2026 23:19:02 UTC-05:00)
 source_images: /media/remedies/aurum-metallicum/message37-1.jpg; /media/remedies/aurum-metallicum/message1059-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Аурум; Aurum; Aurum Metallicum; Aurum metallicum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Аурум; Aurum; Aurum Metallicum; Aurum metallicum.; primary canonical content rebuilt from message37 (02.09.2024 17:39:42 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message37
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Aurum metallicum, message37.
 ---
-
-### message37
 
 Исследовал работу с золотом (препарат Аурум в гомеопатии).
 
@@ -65,9 +68,9 @@ primary_image_alt: Исходное изображение, прикреплён
 
 Так проходит работа в метафизической гомеопатии.
 
-## Дополнительные авторские материалы из Telegram
+## Дополнительные материалы и наблюдения
 
-### message1059
+### message1059 (29.08.2026 23:19:02 UTC-05:00)
 
 Есть 2 препарата, которые часто прописывают для уверенности: золото и платина.
 

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message614 (06.06.2025 19:03:09 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message614 (06.06.2025 19:03:09 UTC-05:00)
 source_images: /media/remedies/coccus-cacti/message614-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Coccus Cacti.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Coccus Cacti.; primary canonical content rebuilt from message614 (06.06.2025 19:03:09 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message614
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Coccus Cacti, message614.
 ---
 
-### message614
-
 COCCUS CACTI
 
 Особенный препарат, который  запускает потоки любви там, где она спит.
@@ -49,7 +52,7 @@ COCCUS CACTI
 
 Выводит из одиночества и зависимости, возвращает опору на себя.
 
-ОСНОВА
+## ОСНОВА
 
 Самка кошенили (паразитирует на кактусах, питается его соками).
 
@@ -57,7 +60,7 @@ COCCUS CACTI
 
 Цепляется за других из страха отвержения.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - Тоска по поддержке, желание прилипнуть к кому-то для безопасности
 
@@ -73,7 +76,7 @@ COCCUS CACTI
 
 - Сжатие в горле и груди
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 - Освобождение от липкой тоски и навязчивой зависимости
 
@@ -123,13 +126,13 @@ COCCUS CACTI
 
 - Я дышу своей жизнью.
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - До: липкая тоска, навязчивая зависимость, страх одиночества.
 
 - После: лёгкость, свобода, дыхание, опора на себя.
 
-РИТУАЛ
+## РИТУАЛ
 
 Закрой глаза и почувствуй внутри липкую паутину.
 

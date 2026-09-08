@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message838 (29.09.2025 16:41:52 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message842 (02.10.2025 15:10:46 UTC-05:00); message866 (28.10.2025 11:34:18 UTC-05:00)
 source_messages: message838 (29.09.2025 16:41:52 UTC-05:00); message842 (02.10.2025 15:10:46 UTC-05:00); message866 (28.10.2025 11:34:18 UTC-05:00)
 source_images: /media/remedies/testosteronum/message838-1.jpg; /media/remedies/testosteronum/message842-1.jpg
-provenance: Two later source headings are recorded as duplicates.
+provenance: Two later source headings are recorded as duplicates.; primary canonical content rebuilt from message838 (29.09.2025 16:41:52 UTC-05:00)
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Начинаю работать с препаратом гомеопатии на основе тестостерона - Testosteronum
 source_author: Andrii Litvinov
-source_status: manual-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/testosteronum.md
@@ -41,87 +46,109 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Testosteronum, message838.
 ---
 
-I am starting to work with a testosterone-based homeopathy remedy - Testosteronum.
+HORMONAL MEDICATIONS
 
-## Additional author materials from Telegram
+Currently, I conduct diagnostics and correction of the neuro-hormonal system through the following medications:
 
-### message842
+Key regulatory medications.
 
-♂️ Testosteronum (Testosterone)
+These are the "conductors," universal entry points through which the system can be tested and balanced:
+
+• Thymuline – regulation of the immune system, thymus
+
+• Adrenalinum, Hydrocartisol – stress level regulation
+
+• Hypophysis / Pituitarium – pituitary gland, main conductor of the endocrine system, overall tuning and regulation.
+
+• Pancreatinum – pancreas, enzymes, metabolism, the most important point for diabetes and digestion.
+
+• Thyroidinum – thyroid, energy, metabolism (key to obesity, fatigue, depression).
+
+• Oophorinum, Folliculinum – estrogens, female hormones, cycle, balance of the female axis.
+
+• Testosteronum, Orchitinum – male hormones, axis, energy, decisiveness.
+
+## Additional materials and observations
+
+### message842 (02.10.2025 15:10:46)
+
+UTC-05:00)
+
+♂️ Testosteron (Testosterone)
 
 1. Brief Introduction / Archetype
 
-Archetype of the Warrior Man, the Sun, the mature Leader. This is the energy of core, clarity and determination. The remedy helps to get out of immaturity, fear and doubt, to regain strength and inner support.
+Archetype of the Man-Warrior, Sun, mature Leader. This is the energy of strength, clarity, and determination. The remedy helps to get out of infantilism, fear, and doubt, restoring power and inner support.
 
-2. Base
+## BASIS
 
-– The hormone testosterone, the key male hormone.
+– Hormone testosterone, the key male hormone.
 
-– Symbolism: solar fire, yang energy, manifestation, strength, power, ability to protect and create.
+– Symbolism: solar fire, yang energy, manifestation, strength, power, the ability to protect and create.
 
-3. Indications
+## INDICATIONS
 
-- Decreased libido,
+- Reduced libido,
 
 - Loss of strength, lethargy, obesity
 
 - Muscle weakness, decreased endurance.
 
-- Uncertainty, fear of showing up.
+- Insecurity, fear of showing oneself.
 
 - Depression in men, loss of life drive.
 
-- Infantility, dependence, lack of will.
+- Infantilism, dependence, lack of will.
 
 4. Archetypes
 
-- Warrior.
+– Warrior.
 
-- Hero.
+– Hero.
 
-- Leader.
+– Leader.
 
-- The sun illuminating the way.
+– Sun, illuminating the path.
 
 5. Images
 
-- A steel sword stuck into the ground.
+– Steel sword embedded in the ground.
 
-- The solar disk rising at the zenith.
+– Solar disk rising at the zenith.
 
-– The straight axis that connects Heaven
+– Straight axis connecting Heaven and Earth.
 
-and the Earth.
+6. Effect of the Remedy
 
-6. Effect of the remedy
+–
 
-– Includes the internal male rod.
+Includes the inner male core.
 
-– Gives clarity, determination and concentration.
+– Provides clarity, decisiveness, and focus.
 
 – Restores sexual and physical energy.
 
-– Removes infantilism and dependence.
+– Removes childishness and dependence.
 
-7. The idea of the remedy
+7. Idea of the supplement
 
-- “Male maturity is born within.”
+– "Male maturity is born within."
 
-- “Strength is calm and clarity.”
+– "Strength is calmness and clarity."
 
-8. Development stage
+## DEVELOPMENT STAGE
 
-– Adolescence (12–25 years): formation of identity, search for a male role, formation of strength.
+– Adolescence (12–25 years): formation of identity, search for the male role, development of strength.
 
-– Conflict: “I am weak” vs “I am the master of my life.”
+– Conflict: "I am weak" vs "I am the master of my life."
 
-9. Message/Lesson
+9. Message / lesson
 
-- “Don’t be afraid to be a man.”
+– "Do not be afraid to be a man."
 
-- “Show yourself clearly and firmly, but without a mask.”
+– "Show yourself clearly and firmly, but without a mask."
 
-“Adulthood is freedom and responsibility.”
+– "Adulthood is freedom and responsibility."
 
 10. Affirmations
 
@@ -129,59 +156,59 @@ and the Earth.
 
 "My strength is clear and calm."
 
-“I show up confident and mature.”
+"I express myself confidently and maturely."
 
-11. Shadow/conflict
+11. Shadow / conflict
 
-- Powerlessness, apathy, infantility.
+– Powerlessness, apathy, childishness.
 
-– In the shadows: aggression, toughness, overcompensation (“man’s mask”).
+– In the shadow: aggression, rigidity, overcompensation ("man's mask").
 
-12. Transformation
+## TRANSFORMATION
 
 Before: weakness, passivity, self-doubt, depression.
 
-After: mature masculine strength, clarity, determination, feeling the Sun inside.
+After:
 
-13.
+mature masculine strength, clarity, determination, the feeling of the Sun within.
 
-Image (visual)
+13. Image (visual)
 
-– A man with the sunshine behind him, holding a sword that does not cut, but illuminates the path.
+– A man with a solar glow behind him, holding a sword that does not cut but illuminates the path.
 
-– The sun at dawn: soft, but inevitably rising.
+– The sunrise: soft but inevitably rising.
 
-14. Ritual
+## RITUAL
 
 – Meditation on sunlight in the center of the chest.
 
-– Contemplation of the sunrise with the intention: “I accept my power.”
+– Contemplation of the sunrise with the intention: "I accept my strength."
 
-– Using the symbol of a sword or candle as a conductor of yang energy.
+– Using the symbol of a sword or a candle as a conductor of yang energy.
 
-### message866
+### message866 (28.10.2025 11:34:18 UTC-05:00)
 
 Testosterone.
 
-I don’t know if this is true, I decided to find out
+I don't know if this is true, decided to figure it out
 
 __
 
 1. Psychological effect
 
-Psychologically, testosterone is associated with an internal sense of worth, direction, and autonomy.
+Psychologically, testosterone is associated with an inner sense of dignity, direction, and autonomy.
 
-When the level drops, apathy, anxiety, uncertainty, and a feeling of powerlessness appear more often.
+When levels drop — apathy, anxiety, insecurity, and a feeling of powerlessness appear more often.
 
-But it’s important: testosterone does not make a man aggressive. It makes him determined, focused and honest with himself.
+But it is important: testosterone does not make a man aggressive. It makes him determined, focused, and honest with himself.
 
-High testosterone in balance with oxytocin and serotonin forms the archetype of a mature man - “quiet strength”.
+High testosterone in
 
-2. Reasons for decreased testosterone
+balance with oxytocin and serotonin forms the archetype of a mature man — 'calm strength'.
 
-- chronic stress and fear (increases cortisol, which suppresses
+2. Causes of decreased testosterone
 
-testosterone);
+- chronic stress and fear (increases cortisol, which suppresses testosterone);
 
 - lack of sleep;
 
@@ -193,26 +220,26 @@ testosterone);
 
 - lack of physical and emotional victories.
 
-3. How to Maintain Testosterone Naturally
+3. How to naturally maintain testosterone
 
-- bodily practices: strength exercises, yoga, breathing, cold, contact with nature;
+- body practices: strength exercises, yoga, breathing, cold exposure, contact with nature;
 
 - emotional expression: anger and passion directed into creativity or action;
 
-- contact with men (healthy competition, respect, joint business);
+- contact with men (healthy competition, respect, joint activities);
 
-- contact with women (
+- contact with women (inspiring);
 
-inspiring);
+- purpose and meaning — testosterone grows when there is something to act for.
 
-- purpose and meaning - testosterone grows when there is something to act for.
+4. Testosterone correction through homeopathy:
 
-4. Correction of testosterone through homeopathy:
+- Testosteronum — for regulating the endocrine axis.
 
-- Testosteronum - to regulate the endocrine axis.
+- Agnus castus — in case of decreased libido and weakness,
 
-- Agnus castus - for loss of libido and weakness associated with fatigue and a feeling of helplessness.
+associated with fatigue and a sense of helplessness.
 
-- Conium maculatum - suppressed vitality, stagnation in the body, suppressed desires.
+- Conium maculatum — suppressed life force, stagnation in the body, suppressed desires.
 
-- Damiana - stimulation of sexual energy and joy.
+- Damiana — stimulation of sexual energy and joy.

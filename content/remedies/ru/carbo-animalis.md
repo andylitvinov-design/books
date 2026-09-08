@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message317 (03.02.2025 14:32:41 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message317 (03.02.2025 14:32:41 UTC-05:00)
 source_images: /media/remedies/carbo-animalis/message317-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carbo Animalis.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carbo Animalis.; primary canonical content rebuilt from message317 (03.02.2025 14:32:41 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message317
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,15 +44,13 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Carbo Animalis, message317.
 ---
 
-### message317
-
 CARBO ANIMALIS
 
 Интересный препарат, который наполняет именно животной силой упругости, проявленности.
 
 Это препарат возрождения.
 
-ОСНОВА:
+## ОСНОВА
 
 Сожженые кости животных, животный уголь.
 
@@ -63,11 +66,11 @@ CARBO ANIMALIS
 
 - травма рождения: чувство ненужности, непринятости, небезопасности.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - застывание в травме/горе, физическое, эмоциональное истощение. Чувство ненужности, старости, депрессия, опустошенность. Ощущение, что жизнь уходит.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - Оживляет поток энергии в теле
 
@@ -79,13 +82,13 @@ CARBO ANIMALIS
 
 - Дает чувство связи с миром, с людьми, своими корнями.
 
-ОБРАЗ:
+## ОБРАЗ
 
 - Феникс восстает из пепла
 
 - Из золы вспыхивает огонь
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Феникс
 
@@ -95,13 +98,13 @@ CARBO ANIMALIS
 
 - Искра жизни.
 
-ИДЕЯ:
+## ИДЕЯ
 
 - Корни - это основа твоей силы, а не ограничения.
 
 - Для возрождения нужно пройти очищение.
 
-ТРАНСФОРМАЦИЯ:
+## ТРАНСФОРМАЦИЯ
 
 1. Сила возрождения.
 

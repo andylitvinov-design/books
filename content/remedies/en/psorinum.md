@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message470 (27.04.2025 12:33:31 UTC-05:00)
+primary_source_sections: ОСНОВА
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message470 (27.04.2025 12:33:31 UTC-05:00)
 source_images: /media/remedies/psorinum/message470-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Psorinum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Psorinum.; primary canonical content rebuilt from message470 (27.04.2025 12:33:31 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message470
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/psorinum.md
@@ -41,150 +46,148 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Psorinum, message470.
 ---
 
-### message470
-
 PSORINUM
 
-A remedy that restores the joy of contact, the desire for intimacy and interest in people.
+A preparation that restores the joy of contact, desire for closeness, and interest in people.
 
-He lets go of the feeling of uselessness and rejection.
+It releases the feeling of unworthiness, rejection.
 
-Returns the desire to live.
+Restores the desire to live.
 
-CONTROL
+ADMINISTRATION
 
-Have you ever felt like your whole being is a mistake?
+Have you ever felt as if your entire being is a mistake?
 
-That the world turned away and life itself forgot about you?
+That the world has turned away, and life itself has forgotten about you?
 
-Psorinum gives support when a person has lost faith in his worth and shame is paralyzing.
+Psorinum provides support when a person has lost faith in their own worth, and shame paralyzes.
 
-The remedy opens the way from despair to renewal.
+The preparation opens the path from despair to renewal.
 
-BASIS
+## FOUNDATION
 
 The secret of human psoriasis.
 
-Symbolizes the deep pain of rejection, shame, inferiority.
+Symbolizes deep pain of rejection, shame, deficiency.
 
-This is the vibration of the primal wound: you are unworthy of love, simply for being you.
+It is the vibration of the primal wound: you are unworthy of love, just for being yourself.
 
 ARCHETYPES
 
 - Rejected child (believes he is bad)
 
-- Prisoner of shame (trapped by self-deprecation)
+- Prisoner of shame (constrained by self-deprecation)
 
-- Poor in spirit (wanders in search of warmth and acceptance)
+- Spiritually poor (wanders in search of warmth and acceptance)
 
 IMAGES
 
-- A thin child in torn clothes in the rain, whom no one notices,
+- A skinny child in tattered clothes in the rain, unnoticed by anyone,
 
-- A man sitting in the shadow of a destroyed house, wearing old clothes. He is freezing from the cold inside, but believes that he is not worthy of salvation.
+- A person sitting in the shadow of a ruined house, in old clothes. He is freezing
 
-- Leaves covered with dirt, but
+from the cold inside, but believes that he is unworthy of salvation.
 
-still with bright veins waiting to be cleansed.
+- Leaves covered with dirt, yet still with bright veins awaiting cleansing.
 
-INDICATIONS:
+## SYMPTOMS
 
 - lack of strength, depression
 
-- shame for existence
+- shame for existing
 
-- fear of loneliness, uselessness, rejection
+- fear of loneliness, unworthiness, rejection
 
 - feeling of hopelessness, doom, despair
 
-- physically: skin diseases, problems with immunity.
+- physically: skin diseases, immune problems.
 
 FORMATION DYNAMICS
 
-- Development stage: 0–1.5 years - basic security, right to exist
+- Development stage: 0–1.5 years — basic safety, the right to exist
 
-- Trauma: “I am bad from the very fact of my existence,” “I am not needed.”
+- Trauma: "I am bad simply for existing," "I am not needed."
 
-- Conflict: I’m not needed, I’d rather hide.
+- Conflict: I am not needed, better to hide.
 
-- Mask: Despair, self-depreciation, avoidance of contact.
+- Mask: Despair, self-devaluation, withdrawal from contact.
 
-SCENARIO
+## SCENARIO
 
 - Basic:
 
-"Ignannik." I'm bad. I'm not needed. I will be rejected and forgotten. I'd rather hide.
+"The Outcast." I am bad. I am not needed. I will be rejected and forgotten. I better hide.
 
 - New:
 
-"Accepted Adult"
+"The Accepted Adult"
 
 If I am rejected, it is their choice, not my defect.
 
-I can be in touch and talk about my feelings.
+I can be in contact and talk about my feelings.
 
-Behavior: do not hide in shame and fear of rejection, but express your needs.
+Behavior: not to hide in shame, and
 
-IDEA OF THE remedy
+fear of rejection, but to state your needs.
 
-Your worth does not depend on purity or mistakes.
+IDEA OF THE REMEDY
 
-You deserve to live - simply because you exist.
+Your worth does not depend on cleanliness or mistakes.
+
+You are worthy of living — simply because you exist.
 
 MESSAGE AND LESSON
 
-Darkness, pain
-
-inside is not the end. This is the place where new light sprouts.
+Darkness, pain inside — this is not the end. This is a place where new light sprouts.
 
 You were in deep darkness.
 
-You are alive - and that is enough to be loved.
+You are alive — and that is enough to be loved.
 
 You are not a mistake.
 
-You are the light that passed through the thickest night.
+You are light that has passed through the thickest night.
 
 AFFIRMATIONS
 
-- I have the right to be.
+- I have the right to exist.
 
-- My value does not depend on the opinions of others.
+- My worth does not depend on the opinions of others.
 
 - I am loved, even in my vulnerability.
 
 - I give myself the right to live, breathe, grow.
 
-TRANSFORMATION
+## TRANSFORMATION
 
-- Before: Absorbed by shame, hopelessness, fear of existence.
+- Before: Consumed by shame, hopelessness, fear of existence.
 
-- After: Feeling of inner value, awakening of the vital impulse, the right to be yourself without conditions.
+- After: Feeling of inner worth, awakening of the life impulse, the right to be oneself unconditionally.
 
-RITUAL
+## RITUAL
 
-- Find a stone; feel that it represents inner heaviness, dirt; wash it with warm water. Wash your hands and dry with a white towel.
+- Find a stone; feel that it represents inner heaviness, dirt; wash it with warm water. Wash your hands and dry them with a white towel.
 
-ALCHEMY
+## ALCHEMY
 
-Here is the point of absolute darkness, complete Nigredo: the disintegration of faith in one's own worth.
+Here is the point
 
-From here a new light is born.
+absolute darkness, complete Nigredo: the collapse of faith in your own worth.
+
+From this, a new light is born.
 
 IDEA: RADICAL ACCEPTANCE
 
-Your value is not for correctness, not for achievements.
+Your worth is not for correctness, not for achievements.
 
-You are valuable because you are.
+You are valuable because you exist.
 
-Even in dirt, in pain, in fall - you are worthy of love.
+Even in dirt, in pain, in falling — you are worthy of love.
 
-PHYSICAL MODEL OF OUTPUT/BALANCE.
+PHYSICAL MODEL OF EXIT/ balance.
 
--
+- The body learns to reduce inflammation / more flexible boundaries,
 
-The body learns to reduce inflammation/more flexible boundaries,
+- Calibrate your cells and others' cells more clearly, i.e., not to attack everyone at once.
 
-- Calibrate your own and foreign cells more clearly, i.e. Don't attack everyone at once.
-
-- Cell division decreases / less fear, adrenaline.
+- Cell division decreases / less fear, less adrenaline.

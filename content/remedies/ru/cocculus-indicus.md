@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message725 (05.07.2025 16:19:12 UTC-05:00)
+primary_source_sections: ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message725 (05.07.2025 16:19:12 UTC-05:00)
 source_images: /media/remedies/cocculus-indicus/message725-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cocculus Indicus.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cocculus Indicus.; primary canonical content rebuilt from message725 (05.07.2025 16:19:12 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message725
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Cocculus Indicus, message725.
 ---
-
-### message725
 
 🧪 COCCULUS INDICUS
 

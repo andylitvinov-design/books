@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message470 (27.04.2025 12:33:31 UTC-05:00)
+primary_source_sections: ОСНОВА
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message470 (27.04.2025 12:33:31 UTC-05:00)
 source_images: /media/remedies/psorinum/message470-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Psorinum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Psorinum.; primary canonical content rebuilt from message470 (27.04.2025 12:33:31 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message470
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Psorinum, message470.
 ---
-
-### message470
 
 PSORINUM
 
@@ -59,7 +62,7 @@ Psorinum дает поддержку, когда человек потерял �
 
 Препарат открывает путь от отчаяния к обновлению.
 
-ОСНОВА
+## ОСНОВА
 
 Секрет псориаза человека.
 
@@ -83,7 +86,7 @@ Psorinum дает поддержку, когда человек потерял �
 
 - Листья, покрытые грязью, но всё еще с яркими прожилками, которые ждут очищения.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - отсутствие силы, депрессия
 
@@ -105,7 +108,7 @@ Psorinum дает поддержку, когда человек потерял �
 
 - Маска: Отчаяние, самообесценивание, уход от контакта.
 
-СЦЕНАРИЙ
+## СЦЕНАРИЙ
 
 - Базовый:
 
@@ -149,17 +152,17 @@ Psorinum дает поддержку, когда человек потерял �
 
 - Я даю себе право жить, дышать, расти.
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - До: Поглощённость стыдом, безысходность, страх существования.
 
 - После: Ощущение внутренней ценности, пробуждение жизненного импульса, право быть собой без условий.
 
-РИТУАЛ
+## РИТУАЛ
 
 - Найди камень; ощути, что он представляет внутреннюю тяжесть, грязь; омой его теплой водой. Омой руки и вытри белым полотенцем.
 
-АЛХИМИЯ
+## АЛХИМИЯ
 
 Здесь точка абсолютной тьмы, полного Nigredo: распад веры в свою ценность.
 

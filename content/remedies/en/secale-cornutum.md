@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message285 (09.01.2025 17:33:42 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message285 (09.01.2025 17:33:42 UTC-05:00)
 source_images: /media/remedies/secale-cornutum/message285-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Secale Cornutum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Secale Cornutum.; primary canonical content rebuilt from message285 (09.01.2025 17:33:42 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message285
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/secale-cornutum.md
@@ -41,102 +46,100 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Secale Cornutum, message285.
 ---
 
-### message285
-
 SECALE CORNUTUM
 
-Mystery of Life.
+The Mystery of Life.
 
-This is a remedy that allows you to let go of fear, stupor, freezing - and allow yourself to live, breathe, spread within the energy of life.
+This is a preparation that allows one to let go of fear, stupor, freezing — and allow oneself to live, breathe, and flow with the energy of life.
 
-1. INDICATIONS
+## INDICATIONS
 
-- when the heart and chest freezes, a person holds back, hides his emotions,
+- when the heart and chest freeze, when a person restrains or hides their emotions,
 
-- when a person freezes, is afraid and blocks changes,
+- when a person freezes, is afraid, and blocks changes,
 
-- spasms, feeling of squeezing, difficulty relaxing
+- spasms, a feeling of tightness, difficulty relaxing,
 
 - cold extremities.
 
-Secale allows you to let go of blocks, revitalize the flow of life and restore a feeling of lightness.
+Secale allows one to release blocks, revive the flow of life, and restore a sense of lightness.
 
-2. BASIS OF SUBSTANCE:
+2. MAIN SUBSTANCE:
 
-Ergot is a parasitic fungus that attacks cereals.
+Ergot — a parasitic fungus that affects cereals.
 
-It constricts blood vessels and muscles, causing spasms, convulsions and a feeling of squeezing.
+It narrows vessels and muscles, causes spasms, cramps, and a feeling of compression.
 
-Homeopathy relieves these symptoms by helping to relax and revitalize frozen feelings.
+Homeopathy relieves these symptoms, helping to relax and revive frozen feelings.
 
 3. DEVELOPMENTAL TRAUMA:
 
-Autonomy stage (2–4 years): the ability to defend one’s boundaries, show will, express oneself.
+Autonomy stage (2–4 years): the ability to defend one’s boundaries, assert will, express oneself.
 
-4. EFFECT:
+## EFFECT
 
 Relieves anxiety and fears.
 
-Removes spasms, restores the fluidity of life, the ability to move forward.
+Removes spasms, restores
+
+the flow of life, the ability to move forward.
 
 5. IMAGES
 
-- A river frozen under a thick
+- A river frozen under a thick layer of ice, which gradually begins to melt and come alive.
 
-a layer of ice that gradually begins to melt and come to life.
+- A clenched fist that slowly relaxes, allowing warmth to be felt.
 
-- A clenched fist that slowly relaxes, allowing you to feel warmth.
+- A grain that has lain in the soil for a long time, now beginning to sprout.
 
-- The grain, which has been lying in the ground for a long time, is now beginning to sprout.
-
-6. ARCHETYPE:
+## ARCHETYPE
 
 - Snow Queen
 
-- Discreet warrior.
+- Reserved Warrior
 
-7. IDEA OF ARCHETYPE:
+## ARCHETYPE IDEA
 
 Life requires movement, fluidity, the ability to let go of the old so that the new can enter.
 
-8. ARCHETYPE LESSON:
+8. LESSON OF THE ARCHETYPE:
 
 - Let go of control and trust the process.
 
 - Accept that sometimes strength is the ability to relax and let events take their course.
 
-9. SHADOW (accept):
+9. SHADOW (to accept):
 
-- Fear of loss of control.
+- Fear of losing control.
 
 - Feeling of stagnation and powerlessness.
 
 - Fear of change.
 
-10. LIGHT (open):
+10. LIGHT (to reveal):
 
-- Ability to update.
+- Ability to renew.
 
 - Flexibility and fluidity.
 
 - Ability to adapt to new conditions.
 
-11. TRANSFORMATION:
+## TRANSFORMATION
 
-From fear of loss of control to trust in life.
+From fear of losing control to trust
+
+life.
 
 From spasm to relaxation.
 
 From a state of stagnation to movement.
 
-12. OBSERVATIONS.
+## OBSERVATIONS
 
-It seems incredible, but this remedy can instantly release chest tightness, causing a wave of
+It seems incredible, but this remedy can instantly release tightness in the chest, causing a wave of pleasant relaxation, joy of life, and openness to the world.
 
-pleasant relaxation, pleasure from life and openness to the world.
-
-13. RESULTS:
+13. CONCLUSIONS:
 
 Secale Cornutum helps to return to a state of lightness and movement.
 
-It teaches us to let go of what is unnecessary, to trust ourselves and the world, allowing energy to flow freely and nourish the soul.
+It teaches us to let go of the unnecessary, trust ourselves and the world, allowing energy to flow freely and nourish the soul.

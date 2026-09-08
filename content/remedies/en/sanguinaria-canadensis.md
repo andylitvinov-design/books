@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message678 (26.06.2025 20:00:40 UTC-05:00)
+primary_source_sections: ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message678 (26.06.2025 20:00:40 UTC-05:00)
 source_images: /media/remedies/sanguinaria-canadensis/message678-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Sanguinaria Canadensis.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Sanguinaria Canadensis.; primary canonical content rebuilt from message678 (26.06.2025 20:00:40 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message678
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/sanguinaria-canadensis.md
@@ -41,156 +46,154 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Sanguinaria Canadensis, message678.
 ---
 
-### message678
-
 SANGUINARIA CANADENSIS
 
 (Sanguinaria, bloodroot)
 
-A unique remedy.
+A unique preparation.
 
-This is the archetype of the patriarch, the Guardian of the Family.
+It is the archetype of the patriarch, the Guardian of the Clan.
 
-Returns strength, protection, support of ancestors.
+Restores strength, protection, and support from ancestors.
 
-Gives masculine energy.
+Gives male energy of the lineage.
 
-It helps when a man feels that he has no right to take his place. Or he has lost his internal axis.
+Helps when a man feels that he does not have the right to occupy his place or has lost his inner axis.
 
-In fact, experience, this remedy brings back the connection with the archetypal figures of male power. Gives a sense of belonging.
+In fact, based on work experience, this preparation restores connection with archetypal figures of male strength. Provides a sense of belonging.
 
-This is a unique effect that is difficult to achieve with other remedies and techniques.
+This is that unique effect, which is difficult to achieve with other preparations and techniques.
 
-This is a remedy of memory of the family and internal fire. When the call of your ancestors sounds within you, but you don’t know how to take this gift. When the wound of the family burns, and the pain is hereditary.
+This is a preparation of ancestral memory and inner fire. When the call of the ancestors resonates within you—but you do not know how to take this gift. When the family wound burns, and the pain is inherited.
 
-BASE:
+## BASE
 
-Sanguinaria canadensis is the blood-red root of a plant nicknamed Bloodroot. Its juice is burning, reminiscent of blood. It was used by North American Indians in rituals of purification and veneration of the family.
+Sanguinaria canadensis is the blood-red root of a plant called Bloodroot. Its sap is pungent, resembling blood. It was used by North American Indians in rituals of cleansing and honoring the lineage.
 
-This is not just a plant - it is a symbol of connection with the blood of the family, tradition, mission that it conveys
+This is not
 
-line of men.
+just a plant — it is a symbol of connection with the bloodline of the family, tradition, the mission passed down through the line of men.
 
-The strength of the paternal line, the memory of male fire.
+The strength of the paternal line, the memory of the male fire.
 
-INDICATIONS:
+## INDICATIONS
 
 - A feeling of loss of dignity, connection with the father, with the family.
 
-- When a man does not feel support behind his back, as if the family line is “cut off.”
+- When a man does not feel support behind him, as if the family line is 'cut off'.
 
-- Lack of feeling of support from the father or grandfathers, the body is “on fire”, there is nowhere to lean.
+- Lack of feeling of support from the father or grandfathers, the body 'burns', nowhere to lean on.
 
-- A man does not feel the male core.
+- The man does not feel the male core.
 
-- The father did not give support, and the man does not know how to be a man.
+- The father did not provide support, and the man does not know how to be a man.
 
-- The absence of the figure of the Patriarch in the field or it is burnt.
+- Absence of a Patriarch figure in the field or it is scorched.
 
-- Suppressed aggression, rage, inability to express inner anger or pain, when everything is “burning from the inside.”
+- Suppressed aggression, rage, inability to express inner anger or pain when everything 'burns from inside'.
 
-- Thirst for recognition, but fear of weakness.
+- Desire for recognition, but fear of weakness.
 
 - Deep burnout, especially in men or women with a male mission.
 
-- Deep pain in the head, neck, right side of the body.
+- Deep pains in the head, neck, right side of the body.
 
-- Feelings of heat, pressure, tension in the head, chest.
+- Feeling of heat, pressure, tension in the head, chest.
 
-- Hereditary pathology.
+- Hereditary
 
-- Also indicated for traumas of exile, deprivation of home, betrayal by family.
+pathologies.
 
-🔥 EFFECT OF THE remedy
+- Also indicated for traumas of banishment, loss of home, betrayal by family.
 
-- Connects with a strong part of the family, returns contact with the male line
+🔥 EFFECT OF THE PREPARATION
 
--
+- Connects with the strong part of the lineage, restores contact with the male line
 
-Relieves inflammation of the internal conflict between one’s strength and the fear of expressing it
+- Reduces the inflammation of the internal conflict between one's own strength and the fear of expressing it
 
-- Helps restore respect for yourself and your origins
+- Helps restore respect for oneself and one's origins
 
 - Can awaken the spirit of a warrior, protector, leader.
 
 🧱 ARCHETYPES
 
-🔸 Guardian of the clan - guarding the gates between generations
+🔸 Guardian of the lineage — guarding the gates between generations
 
-🔸 A warrior expelled from the tribe bears the wound of exile, but fire burns in his heart
+🔸 Warrior exiled from the tribe — bears the wound of banishment, but a fire blazes in the heart
 
-🔸 The last of his kind - he feels that everything ends with him
+🔸 The last of the lineage — feels that everything ends with him
 
-🌿 LOOKS
+🌿 IMAGES
 
-- A male figure with a torch standing on the ruins of a temple
+- Male figure with a torch, standing on the ruins of a temple
 
-- Red flame in the chest that burns from the inside
+- Red flame in the chest that burns from within
 
-- A man standing on a cliff with silhouettes of his ancestors behind him
+- Person standing on a cliff, with ancestral silhouettes behind
 
-DEVELOPMENT STAGES:
+STAGES OF DEVELOPMENT:
 
-- Autonomy / Will (1.5–4 years) Suppressed aggression, fear of expressing strength, prohibition on “I want.”
+- Autonomy / Will (1.5–4 years) Suppressed aggression, fear to express strength, prohibition on “I want”.
 
-- Opinions (5–8 years) External pressure: you have to be smart, correct, in control.
+- Opinions (5–8
 
-- Solidarity (8–12 years old) Competition and fear of being weak, especially among peers.
+years) External pressure: you need to be smart, correct, in control.
 
-💡 remedy IDEA
+- Solidarity (ages 8–12) Competition and fear of being weak, especially among peers.
 
-- “The strength of the family is not the pain you bear, but the fire you light”
+💡 IDEA OF THE REMEDY
 
-- "You are not the last. You are the connecting link. You are the one
+- "The strength of the family is not the pain you carry, but the fire you ignite"
 
-who continues the Flame."
+- "You are not the last. You are the connecting link. You are the one who continues the Flame."
 
-- The strength received from our ancestors should not burn.
+- The power received from ancestors should not burn.
 
-It should warm and illuminate the path.
+It should warm and light the way.
 
 - You are not cut off. You continue the line of light.
 
-Shadow
+## SHADOW
 
-- A feeling of internal failure in the male world.
+- A sense of internal inadequacy in the male world.
 
-- Fear of being unworthy, of becoming ostracized, of not living up to the image of a strong man.
+- Fear of being unworthy, becoming an outcast, not living up to the image of a strong man.
 
 - Bitterness from loss of strength, shame, unfulfilled mission.
 
-Message
+## MESSAGE
 
-“You are a continuation of the family. The power of the ancestors is in you."
+"You are the continuation of the family. The strength of the ancestors is in you."
 
 Positive quality
 
-Returns pride in male identity, the feeling that a man has the right to be.
+Restores pride in male identity, the feeling that a man has the right to be.
 
 🌺 AFFIRMATIONS
 
-I feel the power of the family in me
+I feel the strength of my family in me
 
-I am part of the line. I'm not alone
+I am part
 
-I carry my strength with honor
+lines. I am not alone
 
-I heal the wounds of the past and build something new.
+I carry my power with honor
+
+I heal the wounds of the past, and build something new.
 
 🔄 TRANSFORMATION
 
-Before: Rejection, fever, chest or head pain, anger at fathers/ancestors
+Before: rejection, heat, pain in the chest or head, anger at fathers/ancestors
 
-After: grounded strength, self-respect, connection to lineage, worthy leadership
+After: grounded power, self-respect, connection with the lineage, worthy leadership
 
 🔮 RITUAL
 
-Sit by an imaginary fire. Around are the figures of your ancestors.
+Sit by an imaginary fire. Around you are the figures of your ancestors.
 
-They are silent, but look at you.
+They are silent, but they look at you.
 
-You raise your head and say, "I accept my
+You lift your head and say: “I accept my blood. I am their continuation. I am here to carry the Light.”
 
-blood. I am their continuation. I am here to bring the Light."
-
-The fire from the chest becomes clear, even, and alive.
+The fire in your chest becomes clear, steady, alive.

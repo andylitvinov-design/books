@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message244 (19.12.2024 19:58:03 UTC-05:00)
+primary_source_sections: ЭФФЕКТ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message245 (20.12.2024 16:12:36 UTC-05:00)
 source_messages: message244 (19.12.2024 19:58:03 UTC-05:00); message245 (20.12.2024 16:12:36 UTC-05:00)
 source_images: /media/remedies/carbo-vegetabilis/message244-1.jpg; /media/remedies/carbo-vegetabilis/message245-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carbo Vegetables; Carbo vegetabilis.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carbo Vegetables; Carbo vegetabilis.; primary canonical content rebuilt from message244 (19.12.2024 19:58:03 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message244
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Carbo vegetabilis, message244.
 ---
-
-### message244
 
 CARBO VEGETABLES
 
@@ -59,13 +62,13 @@ CARBO VEGETABLES
 
 Это средство позволяет "оживить организм" даже в самых крайних состояниях высокой слабости, беспомощности, отсутствия интереса к жизни, аппатии и депрессии. Помогает при чувстве подавленности и удушья, угасания.
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 Пробуждение жизни, росток надежды.
 
 Детоксикация, выведение негативных эмоций, чувств.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Возрождающийся огонь.
 
@@ -93,7 +96,7 @@ CARBO VEGETABLES
 
 Отвечает за базовое чувство опоры и безопасности.
 
-УРОК
+## УРОК
 
 - Выгорание — это знак переоценки своих возможностей.
 
@@ -107,9 +110,9 @@ Carbo Vegetabilis
 
 помогает восстановить баланс, пройти путь от крайнего истощения до восстановления энергии и жизни.
 
-## Дополнительные авторские материалы из Telegram
+## Дополнительные материалы и наблюдения
 
-### message245
+### message245 (20.12.2024 16:12:36 UTC-05:00)
 
 CARBO VEGETABLES - настройка.
 

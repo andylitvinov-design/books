@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message429 (13.04.2025 16:29:13 UTC-05:00)
+primary_source_sections: ЭФФЕКТ; АРХЕТИП; ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions: message1053 (23.08.2026 09:22:00 UTC-05:00)
+supplementary_materials: message430 (13.04.2025 16:57:35 UTC-05:00)
 source_messages: message429 (13.04.2025 16:29:13 UTC-05:00); message1053 (23.08.2026 09:22:00 UTC-05:00); message430 (13.04.2025 16:57:35 UTC-05:00)
 source_images: /media/remedies/carcinosinum/message429-1.jpg; /media/remedies/carcinosinum/message430-1.jpg; /media/remedies/carcinosinum/message1053-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carsinosinum; Carcinosinum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carsinosinum; Carcinosinum.; primary canonical content rebuilt from message429 (13.04.2025 16:29:13 UTC-05:00); full-card additions: message1053 (23.08.2026 09:22:00 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message429; message1053
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Carcinosinum, message429.
 ---
 
-### message429
-
 CARSINOSINUM
 
 Особый препарат.
@@ -51,7 +54,7 @@ CARSINOSINUM
 
 Это один из самых глубоких препапаратов, позволяющий высвободить внутреннее напряжение, подавленность и стыд, желание быть хорошим для других.
 
-ОБОСНОВАНИЕ.
+## ОБОСНОВАНИЕ
 
 Препарат изготавливается из очищенной злокачественной опухоли.
 
@@ -61,7 +64,7 @@ CARSINOSINUM
 
 Препарат убирает травмы детства, связанные с перфекционизмом, гиперконтролем и требованием идеальности.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - перфекционизм
 
@@ -75,7 +78,7 @@ CARSINOSINUM
 
 - опухоли, аллергии, аутоимунные заболевания.
 
-ЭТАП РАЗВИТИЯ
+## ЭТАП РАЗВИТИЯ
 
 5-8 лет: Структура мнений.
 
@@ -83,7 +86,7 @@ CARSINOSINUM
 
 Подавление себя, чтобы соответствовать чужим ожиданиям.
 
-СЦЕНАРИЙ
+## СЦЕНАРИЙ
 
 - ДО: "Хороший малый"
 
@@ -99,7 +102,7 @@ CARSINOSINUM
 
 - Поведение: свобода быть собой, уважение своих границ.
 
-ОБРАЗЫ / МЕТАФОРЫ
+## ОБРАЗЫ / МЕТАФОРЫ
 
 - Хрустальная маска, скрывающая лицо
 
@@ -109,7 +112,7 @@ CARSINOSINUM
 
 - Балерина в клетке, танцующая идеальный танец под чужую музыку, не умеющая остановиться, даже если у неё кровь на пальцах.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Раненый перфекционист
 
@@ -121,7 +124,7 @@ CARSINOSINUM
 
 - Идеальный ребенок (который устал жить чужой жизнью).
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 - Освобождает от хронического напряжения.
 
@@ -131,7 +134,7 @@ CARSINOSINUM
 
 - Запускает процесс восстановления личной истории.
 
-ИДЕЯ АРХЕТИПА
+## ИДЕЯ АРХЕТИПА
 
 - Истинная красота — в искренности
 
@@ -139,7 +142,7 @@ CARSINOSINUM
 
 - Принятие себя — путь к исцелению
 
-УРОК
+## УРОК
 
 - Сбрось маску идеальности
 
@@ -157,7 +160,7 @@ CARSINOSINUM
 
 - Запрет на яркость, спонтанность, гнев, желание.
 
-12. ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - Из маски — в подлинность
 
@@ -165,17 +168,17 @@ CARSINOSINUM
 
 - Из "надо быть" — в "я выбираю".
 
-АЛХИМИЯ
+## АЛХИМИЯ
 
 - твой свет прячется в Nigredo под маской «хорошести».
 
-КОНФЛИКТЫ
+## КОНФЛИКТЫ
 
 - Желание быть собой vs. страх быть отвергнутым.
 
 - Потребность в любви vs. отказ от себя ради этой любви.
 
-ЗАДАЧИ:
+## ЗАДАЧИ
 
 - Вернуть право на спонтанность, живость, ошибки.
 
@@ -187,17 +190,13 @@ CARSINOSINUM
 
 "Я не идеален — я живой. И в этом моя истинная сила."
 
-### message1053
-
-CARCINOSINUM
-
-НАБЛЮДЕНИЯ.
+## НАБЛЮДЕНИЯ
 
 Очень интересный препарат. Он мощный. Делается из раковой клетки но и воздействие его значимо.
 
 По наблюдениям: он возвращает внутреннюю свободу. Когда человек тоскует, хочет любви, внимания мира, пытается подстраиваться - препарат наоборот возвращает достоинство, свободу, опору на себя.
 
-ОСНОВА:
+## ОСНОВА
 
 Нозод из опухолевой ткани. Несет вибрацию эгоцентричности. Что целительно для подобных кейсов.
 
@@ -229,7 +228,7 @@ CARCINOSINUM
 
 * Истощение от самоконтроля
 
-ИСТОЧНИК
+## ИСТОЧНИК
 
 Примерно 3–7 лет — период правил, ожиданий и формирования «хорошего ребёнка».
 
@@ -295,9 +294,9 @@ CARCINOSINUM
 
 «Я могу идти своим путём».
 
-## Дополнительные авторские материалы из Telegram
+## Дополнительные материалы и наблюдения
 
-### message430
+### message430 (13.04.2025 16:57:35 UTC-05:00)
 
 CARSINOSINUM — Танец без маски .
 

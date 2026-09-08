@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message417 (08.04.2025 13:05:18 UTC-05:00)
+primary_source_sections: ОСНОВА; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message417 (08.04.2025 13:05:18 UTC-05:00)
 source_images: /media/remedies/bryonia/message417-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Bryonia.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Bryonia.; primary canonical content rebuilt from message417 (08.04.2025 13:05:18 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message417
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Bryonia, message417.
 ---
 
-### message417
-
 BRYONIA
 
 Мистерия внутренней правды.
@@ -51,7 +54,7 @@ BRYONIA
 
 Я его использую на средних этапах терапии.
 
-ОСНОВА:
+## ОСНОВА
 
 Бриония, вьющееся ядовитое растение семейства тыквенных.
 
@@ -61,7 +64,7 @@ BRYONIA
 
 Возвращает вас к себе.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - Страх нестабильности, нарушения порядка.
 
@@ -77,7 +80,7 @@ BRYONIA
 
 Препарат помогает, когда есть страх измений в жизни и закрытость от мира через скованность, сухость, раздражительность.
 
-ЭТАП РАЗВИТИЯ:
+## ЭТАП РАЗВИТИЯ
 
 - 3-5 лет, травма контроля и нарушения границ.
 
@@ -89,7 +92,7 @@ BRYONIA
 
 - помогает вернуться к себе, ощутить внутреннюю самодостаточность.
 
-ОБРАЗЫ / МЕТАФОРЫ
+## ОБРАЗЫ / МЕТАФОРЫ
 
 - Крепкая изгородь вокруг сада, охраняющая внутреннее пространство.
 
@@ -99,7 +102,7 @@ BRYONIA
 
 Bryonia помогает обрести опору, размотать бинты страха и напряжения.
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Страж границ
 
@@ -109,7 +112,7 @@ Bryonia помогает обрести опору, размотать бинт�
 
 - Контролер
 
-ИДЕЯ АРХЕТИПА
+## ИДЕЯ АРХЕТИПА
 
 - Твоё право — быть одному.
 
@@ -133,7 +136,7 @@ Bryonia помогает обрести опору, размотать бинт�
 
 - Центрированность.
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - Из перенапряжения и раздражения — в тишину и самодостаточность.
 

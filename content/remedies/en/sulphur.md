@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message113 (26.09.2024 20:41:07 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message198 (03.12.2024 21:47:26 UTC-05:00); message199 (03.12.2024 21:54:01 UTC-05:00); message200 (03.12.2024 22:16:52 UTC-05:00)
 source_messages: message113 (26.09.2024 20:41:07 UTC-05:00); message198 (03.12.2024 21:47:26 UTC-05:00); message199 (03.12.2024 21:54:01 UTC-05:00); message200 (03.12.2024 22:16:52 UTC-05:00)
 source_images: /media/remedies/sulphur/message113-1.jpg; /media/remedies/sulphur/message198-1.jpg; /media/remedies/sulphur/message199-1.jpg; /media/remedies/sulphur/message200-1.jpg
-provenance: Three later source headings are recorded as duplicates.
+provenance: Three later source headings are recorded as duplicates.; primary canonical content rebuilt from message113 (26.09.2024 20:41:07 UTC-05:00)
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Препарат Sulphur (сера)
 source_author: Andrii Litvinov
-source_status: manual-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/sulphur.md
@@ -41,65 +46,109 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Sulphur, message113.
 ---
 
-It has an interesting effect. It stabilizes when everything is boiling inside. Especially thoughts. Useful when there is chaos and disorder inside and outside. When you want more, but it doesn’t work out. When a person lives in his head, in thoughts, worries.
+The Sulphur (sulfur) preparation.
 
-## Additional author materials from Telegram
+It has an interesting effect.
 
-### message198
+It stabilizes when everything is boiling inside. Especially the thoughts.
+
+It is useful when there is chaos and disorder inside and outside.
+
+When you want more,
+
+but it doesn’t work out.
+
+When a person lives in their head, in thoughts, in anxieties.
+
+Sulphur helps with stabilization.
+
+Like soda neutralizes lime.
+
+It also activates a person in cases of apathy and weakness.
+
+SULFUR IN ALCHEMY
+
+- it is a key element. Element of fire. Passion, strength, will, movement. Freedom, independence. Burning, transformation, purification.
+
+In homeopathy, we activate the essence, the energy of sulfur.
+
+It helps.
+
+#1. On one hand, to carry out detoxification, remove excess thoughts, emotions, toxins, stabilize the state.
+
+#2. On the other hand, if there is fatigue inside, little fire, Sulphur helps ignite inner strength, passion, desires.
+
+According to experience:
+
+- High dilution of the preparation adds tone to thoughts.
+
+- Medium dilution
+
+the preparation adds tone to the senses.
+
+- Low dilution has not been tested yet. I think it should enhance bodily activity.
+
+Archetype Sulphur:
+
+- Prometheus, Fire, Alchemist, Creator, Sage, Fire Seeker.
+
+## Additional Materials and Observations
+
+### message198 (03.12.2024 21:47:26 UTC-05:00)
 
 SULPHUR (Sage).
 
-A valuable remedy.
+Valuable preparation.
 
 It reveals meanings.
 
-Illuminates and opens the future. For me it looks like the image of a hermit with a lantern with the 9th lasso of the Tarot.
+It illuminates and opens the future. For me, it resembles the image of a hermit with a lantern with the 9th Tarot arcana.
 
-APPLICATION EXPERIENCE
+EXPERIENCE OF USE
 
-Sulfur lights the way for clients who are lost, stressed, and don’t know what to do next.
+Sulphur for clients who are lost, stressed, who do not know what to do next, illuminates the path.
 
 There is a sense of prospects ahead.
 
-It is also relevant for those who strive for great things, for big goals, but at home, in life, there is chaos.
+Also relevant for those who aspire to greatness, to big goals, while there is chaos at home, in life.
 
 FEATURE
 
-The desire for something high interferes with everyday tasks.
+Aspiration to the high interferes with performing mundane tasks.
 
-There is fatigue from routine, irritation and a desire to retire.
+Fatigue from routine, irritation, and desire to retreat arise.
 
-INDICATIONS:
+## INDICATIONS
 
-- conflict between ideals and reality,
+- conflict of ideals and reality,
 
-- separation from reality
+- detachment from
 
-- mental stress leads to burnout
+realities
 
-- need for recognition, internal heat,
+- mental strain leads to burnout
 
-dissatisfaction, desire for more.
+- the need for recognition, inner heat, dissatisfaction, desire for more.
 
-BASE: Sulfur.
+BASIS: Sulfur.
 
-Used to compensate for internal overheating from excess activity, physical or intellectual.
+Used to compensate for a state of internal overheating from excessive activity, physical or intellectual.
 
-EFFECT:
+## EFFECT
 
 - reduces internal chaos
 
-- adds a sense of yourself and your path in the fog of life.
+- adds a sense of self and one's path in the fog of life.
 
-LOOK:
+## IMAGE
 
--  A man by the fire, warming himself, but sometimes getting burned by the flames.
+- A person by the fire, warming up, but sometimes getting burned by the flame.
 
-- A tired philosopher, deep in thought, surrounded by books, but not noticing the chaos around him.
+- A tired philosopher, immersed in thought, surrounded by books, but not noticing the mess around.
 
-- Fire that illuminates the path, but can destroy.
+- Fire that illuminates the path but can destroy.
 
-ARCHETYPE:
+## ARCHETYPE
 
 - Seeker of truth.
 
@@ -109,126 +158,125 @@ ARCHETYPE:
 
 - Proud genius.
 
-IDEA:
+## IDEA
 
-- a conflict between high goals and the need to find a solution in real life.
+- conflict between high goals and the need to find a solution in real life.
 
-SHADOW ARCHETYPE:
+## SHADOW OF THE ARCHETYPE
 
-- Laziness, sloppiness, inability to finish what you start.
+- Laziness, sloppiness, inability to finish what was started.
 
-- Losing yourself in dreams and theories, detachment from reality.
+- Retreat into dreams and theories, detachment from reality.
+-
 
-- Perfectionism and the need to recognize one’s exclusivity.
+Perfectionism and the need for recognition of one's uniqueness.
 
-RESOURCE:
+## RESOURCE
 
 - clear thinking
 
-- energy, creativity, intuition.
+- energy, creativity, intuition
 
-- the ability to inspire others with your ideas.
+- ability to inspire others with one's ideas
 
-INTERNAL CONFLICT:
+## INTERNAL CONFLICT
 
-- Passion,
+- Passion, mental overload / but the need for physical rest
 
-overload with mental work/ but need for physical rest.
+- Striving for high ideals vs. lack of order
 
-- Striving for high ideals vs. lack of order.
+- Pride, desire for recognition while inside there is emptiness and dissatisfaction
 
-- Pride, the desire for recognition, at a time when there is emptiness and dissatisfaction inside.
+## LESSON
 
-LESSON:
+- Connecting ideas with reality
 
-- connecting ideas with reality,
-
-- recognition that ideals require practical steps.
+- Recognizing that ideals require practical steps
 
 SULPHUR
 
-- on the one hand, it kindles the fire of consciousness if it has gone out, shows prospects if they are vague;
+- on one hand, ignites the fire of consciousness if it has gone out, reveals perspectives if they are foggy;
 
-- and on the other hand, it balances excess chaos, fire in thoughts, gives a feeling of support, a sense of stability.
+- on the other hand, balances excessive chaos, the fire in thoughts, gives a sense of support, a feeling of stability
 
-That. Through the remedy Sulfur we balance the internal fire in our body.
+Thus, through the Sulphur remedy we balance the inner fire in our body.
 
-###message199
+### message199 (03.12.2024 21:54:01 UTC-05:00)
 
-Traditionally it is believed that Sulfur is used for excess fire and chaos in the body.
+Traditionally
 
-But experience shows that it is just as effective even when there is a lack of fire.
+It is believed that Sulphur is used for an excess of fire, chaos in the body.
 
-Ambivalent in the same way as Ferrum.
+But experience shows that it is also effective in case of a lack of fire.
 
-It is believed that the main purpose of Ferrum is to give balance to very tough, “iron” people.
+It is ambivalent, just like Ferrum, by the way.
 
-But my experience has shown that it works the other way around.
+It is considered that the main purpose of Ferrum is to provide balance to very rigid, "iron" people.
+
+But my experience has shown that it works the other way around as well.
 
 I can tell a story)
 
-I'm leading
+I am conducting a session... the girl needs activity toward her goal...
 
-session.. the girl needs activity towards the goal..
+I went through all my remedies, and they did not work!
 
-I tried all my medications, but they don’t work!
+Then I accidentally took Ferrum — and it turned out that there was a resonance here!
 
-Then I accidentally took Ferrum - and it turned out that there was just resonance here!
+At that time, I still did not know that Ferrum, on the contrary, is prescribed to rigid people.)
 
-I didn’t yet know that Ferrum, on the contrary, is prescribed to female people.)
+And it worked very well. The client developed firmness and decisiveness where previously there was no will.
 
-And it worked very well. The client developed toughness and determination where there was no will before.
+### message200 (03.12.2024 22:16:52 UTC-05:00)
 
-### message200
+Sulphur — The Sage of Fire
 
-Sulfur - Sage of Fire
+In the fog of life, in earthly chaos,
 
-In the fog of life, in the chaos of the earth,
+The fire in his sleepless soul burns.
 
-A fire burns in his sleepless soul.
+He shines like a lantern in the thick night,
 
-It shines like a lantern in the thick night,
+And lights the way for the soul.
 
-And lights the way for the bottomless soul.
+bottomless.
 
 He knows: truth is in the mind,
 
-At its heights - through pain and idleness.
+In its peaks — through pain and idleness.
 
-But the chaos of everyday life, the squabbles of days,
+But the chaos of everyday life, the quarrels of days,
 
-They torment a genius, erasing the sweetness.
+torture the genius, erasing sweetness.
 
-In the fire the philosopher is looking for his answer,
+In the fire, the philosopher seeks his answer,
 
-Warm yourself and the world, hope with a wave
+to warm himself and the world, hopes with a sweep
 
 Sometimes the fire is ready to burn him,
 
-But he keeps his path, not knowing fear.
+But he keeps to his path, knowing no fear.
 
 He reaches for the stars, for his dreams,
 
-Ideas fly upward like mahi smoke.
+Ideas fly upwards, like waves of smoke.
 
-But reality is pulled down by an abscess,
+But the reality sore pulls him down,
 
-And the shine in the soul fades under the cover of dust.
+And the sparkle in the soul fades under a veil of dust.
 
-Oh, Sulfur, genius of hot fire,
+Oh, Sulphur, genius of the fiery flame,
 
-You teach to reveal
+You teach to reveal your light and self.
 
-your light and self.
+With an idea, the Earth awakens
 
-The Earth awakens with an idea
+You give the beam of inspiration and joy.
 
-You give a ray of inspiration and joy.
+Your lesson — to joint dream and world,
 
-Your lesson is to unite the dream and the world,
+To enter reality without losing the banner.
 
-Enter reality without losing the banner.
+On your path you shine for others,
 
-On your way you shine for others,
-
-And you give strength, Kindling the flame.
+And give strength, Kindling the flame.

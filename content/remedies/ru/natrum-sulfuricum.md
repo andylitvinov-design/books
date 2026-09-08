@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message449 (19.04.2025 22:15:21 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; АРХЕТИП; РЕСУРС
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message449 (19.04.2025 22:15:21 UTC-05:00)
 source_images: /media/remedies/natrum-sulfuricum/message449-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Natrum Sulfuricum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Natrum Sulfuricum.; primary canonical content rebuilt from message449 (19.04.2025 22:15:21 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message449
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Natrum Sulfuricum, message449.
 ---
 
-### message449
-
 NATRUM SULFURICUM
 
 (Сульфат натрия, глауберова соль).
@@ -51,13 +54,13 @@ NATRUM SULFURICUM
 
 Возвращает веру в себя и силу жить.
 
-ОСНОВА
+## ОСНОВА
 
 Сульфат натрия, легкое слабительное, которое применяется для выведения из организма ядов, шлаков, восстановления водно-солевого баланса.
 
 Применяется в гомеопатии для выведения глубинных чувств грусти, тоски, замкнутости, чувства застоя.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Молчаливый хранитель боли
 
@@ -65,7 +68,7 @@ NATRUM SULFURICUM
 
 - Живой мертвец
 
-ОБРАЗ.
+## ОБРАЗ
 
 - человек, стоящий в болоте под дождём. Он уже даже не зовёт на помощь. Он принял боль как свою.
 
@@ -73,7 +76,7 @@ NATRUM SULFURICUM
 
 - Стеклянный сосуд, внутри которого — замёрзшая вода.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - подавленность после тяжелых событий, стрессов, травм,
 
@@ -83,7 +86,7 @@ NATRUM SULFURICUM
 
 - тяжесть в теле, голове, животе.
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 - Освобождение от тягостных эмоций и боли
 
@@ -95,13 +98,13 @@ NATRUM SULFURICUM
 
 Natrum Sulfuricum — это свет, который медленно пробивается сквозь тучи старой печали, давая шанс впустить солнце.
 
-ЭТАП РАЗВИТИЯ:
+## ЭТАП РАЗВИТИЯ
 
 3–6 лет — Этап любви и сексуальности.
 
 Тема: «Меня не любят таким, какой я есть. Лучше быть невидимым, чем отвергнутым».
 
-РЕСУРС
+## РЕСУРС
 
 - Глубокая эмпатия, мудрость, сила молчаливого присутствия.
 
@@ -119,7 +122,7 @@ Natrum Sulfuricum — это свет, который медленно проб�
 
 Я могу снова жить — не как тень, а как свет."
 
-УРОК
+## УРОК
 
 - твоя боль не твоя суть
 
@@ -141,7 +144,7 @@ Natrum Sulfuricum — это свет, который медленно проб�
 
 - Я выбираю жить.
 
-РИТУАЛ:
+## РИТУАЛ
 
 - наполнить чашу водой с солью как символ очищения; зажечь свечу как символ внутреннего света
 

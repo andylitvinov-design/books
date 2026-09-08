@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message417 (08.04.2025 13:05:18 UTC-05:00)
+primary_source_sections: ОСНОВА; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message417 (08.04.2025 13:05:18 UTC-05:00)
 source_images: /media/remedies/bryonia/message417-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Bryonia.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Bryonia.; primary canonical content rebuilt from message417 (08.04.2025 13:05:18 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message417
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/bryonia.md
@@ -41,120 +46,116 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Bryonia, message417.
 ---
 
-### message417
-
 BRYONIA
 
-The mystery of inner truth.
+The Mystery of Inner Truth.
 
-This is an interesting remedy. It strengthens the inner core, weight, structure.
+This is an interesting remedy. It provides strengthening of the inner core, weight, and structure.
 
-Gives a feeling of confidence and strength.
+It gives a sense of confidence and strength.
 
 I use it in the middle stages of therapy.
 
-BASE:
+## BASE
 
-Bryonia, a climbing poisonous plant of the pumpkin family.
+Bryonia, a climbing poisonous plant of the gourd family.
 
-Its root is protected, causing dryness and inflammation.
+Its root protects itself by causing dryness and inflammation.
 
-In homeopathy, this remedy strengthens your “personal root”, dries and restores boundaries.
+In homeopathy, this remedy strengthens your "personal root," dries out and restores boundaries.
 
-Brings you back to yourself.
+It brings you back to yourself.
 
-INDICATIONS:
+## INDICATIONS
 
 - Fear of instability, disruption of order.
 
-- Irritability from communication when you are interrupted,
+- Irritability from communication when you are disturbed,
 
-- Tired of communication, desire to be alone,
+- Fatigue from communication, desire to be alone,
 
-- Stress, with excessive involvement,
+- Stress from excessive involvement,
 
-- Pain that gets worse with movement
+- Pains worsening with movement,
 
-- Dryness: feelings, body, contacts.
+- Dryness: of feelings, body, contacts.
 
-The remedy helps when there is a fear of changes in life and closedness from the world through stiffness, dryness, and irritability.
+The remedy helps when there is fear of life changes and closedness from the world through stiffness, dryness, irritability.
 
-DEVELOPMENT STAGE:
+## DEVELOPMENT STAGE
 
-- 3-5 years, control trauma and boundary violations.
+- 3-5 years, trauma of control and disruption
 
-EFFECT OF THE remedy:
+boundaries.
+
+EFFECT OF THE REMEDY:
 
 - helps to defend personal boundaries,
 
-- calms the inner
+- soothes inner irritation,
 
-irritation,
+- helps to return to oneself, to feel inner self-sufficiency.
 
-- helps to return to yourself, to feel inner self-sufficiency.
+## IMAGES / METAPHORS
 
-IMAGES/METAPHORS
+- A strong hedge around a garden, protecting the inner space.
 
-- A strong fence around the garden, protecting the interior space.
+- A root going deep into the ground, nourishing itself and interacting with no one.
 
-- A root that goes deep into the earth, feeds itself and does not interact with anyone.
+- A person slowly closing the door and turning inward.
 
-- A man slowly closing the door and turning inward.
+Bryonia helps to find support, unravel the bandages of fear and tension.
 
-Bryonia helps to find support and unwind the bandages of fear and tension.
+## ARCHETYPE
 
-ARCHETYPE:
+- Guardian of boundaries
 
-- Guardian of the Borders
-
-- Protector of inner peace
+- Protector of the inner world
 
 - Hermit
 
 - Controller
 
-IDEA OF ARCHETYPE
+## ARCHETYPE IDEA
 
 - Your right is to be alone.
 
 - Your truth is inside, not outside.
 
-- Strength lies in the ability to close the door on time.
+- Strength lies in knowing how to close the door on time.
 
 ARCHETYPE LESSON
 
-- Solitude is not selfishness, but caring.
+- Solitude is not selfishness, but care.
 
-- You don't have to always be available.
+- It is not necessary to always be available.
 
-- Clear boundaries are the basis of inner peace.
+- Clear boundaries are the foundation of inner peace.
 
-LIGHT (SKILL TO REVEAL):
+LIGHT (SKILL TO UNLOCK):
 
-- Ability to say “no.”
+- The ability to say "no."
 
 - Clarity of intentions
 
 - Centeredness.
 
-TRANSFORMATION
+## TRANSFORMATION
 
-- From overstrain and irritation to silence and self-sufficiency.
+- From overstrain and irritation — to silence and self-sufficiency.
 
-- From hyper-responsibility: to self-respect.
+- From hyper-responsibility — to self-respect.
 
 AFFIRMATIONS:
 
-- I have the right to be myself in
+- I have the right to be myself in silence.
 
-silence.
-
-- I build boundaries with self-love.
+- I set boundaries with love for myself.
 
 - My solitude is my source of strength.
 
-“I am the center of my world, and that’s enough.”
+- I am the center of my world, and that is enough.
 
-Bryonia alba -
+Bryonia alba —
 
-This is an archetype of toughness, stubbornness and fear of losses, but behind it lies the need for support and protection. The remedy helps you feel supported, let go of excessive control, relieve internal and physical spasms, and restore softness of movement - both in the body and in life.
+is an archetype of rigidity, stubbornness, and fear of loss, but behind it lies a need for support and protection. The remedy helps to feel support, release excessive control, relieve inner and physical tension, and restore softness of movement — both in body and in life.

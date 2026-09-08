@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message294 (16.01.2025 17:54:19 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; АРХЕТИП; ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message294 (16.01.2025 17:54:19 UTC-05:00)
 source_images: /media/remedies/hypericum-perforatum/message294-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Hypericum Perforatum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Hypericum Perforatum.; primary canonical content rebuilt from message294 (16.01.2025 17:54:19 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message294
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,15 +44,13 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Hypericum Perforatum, message294.
 ---
 
-### message294
-
 HYPERICUM PERFORATUM
 
 Интересный препарат, который дает возвращение силы, способность постоять за себя, самоуверенность, защиту своего мнения при страхе осуждения
 
 /обнаружено опытным путем/.
 
-ОСНОВА:
+## ОСНОВА
 
 За этим хитрым названием - скрывается зверобой. Он имеет прожилки в структуре и воспринимается, будто он напитан светом.
 
@@ -55,7 +58,7 @@ HYPERICUM PERFORATUM
 
 В средние века считалось, что это растение "изгоняет тьму" и его использовали для очистки помещений.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - Страх будущего, паника,
 
@@ -67,7 +70,7 @@ HYPERICUM PERFORATUM
 
 - Уязвимость, ожоги, порезы, ушибы.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - убирает ощущение уязвимости,
 
@@ -85,7 +88,7 @@ HYPERICUM PERFORATUM
 
 - Луч света, проникающий в тёмную комнату.
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Целитель нервов
 
@@ -93,13 +96,13 @@ HYPERICUM PERFORATUM
 
 - Страж света
 
-ИДЕЯ АРХЕТИПА:
+## ИДЕЯ АРХЕТИПА
 
 Свет проникает в темные уголки боли, травм, восстанавливает и выводит из состояния отчаяния.
 
 Свет исцеляет внутри, даже когда вокруг тьма.
 
-УРОК:
+## УРОК
 
 Принять боль, как этап роста.
 

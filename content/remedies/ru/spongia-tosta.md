@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message230 (15.12.2024 00:06:39 UTC-05:00)
+primary_source_sections: ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message230 (15.12.2024 00:06:39 UTC-05:00)
 source_images: /media/remedies/spongia-tosta/message230-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Spongia Tosta.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Spongia Tosta.; primary canonical content rebuilt from message230 (15.12.2024 00:06:39 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message230
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Spongia Tosta, message230.
 ---
-
-### message230
 
 Препарат Spongia Tosta
 
@@ -65,25 +68,25 @@ primary_image_alt: Исходное изображение, прикреплён
 
 - помогает ощутить себя отдельной личностью, ощутить свои границы, начать дышать.
 
-ЭФФЕКТ.
+## ЭФФЕКТ
 
 Особенность Spongia в том, что препарат не только дает поддержку человеку в самых стрессовых ситуациях, но препарат позволяет вернуть жизнь.
 
 Т.е. при работе с очень травмированными субличностями, они начинают выходить из воронки травмы.
 
-ОБРАЗ
+## ОБРАЗ
 
 - Человек, освободившийся от плотной сети, которая сжимала его тело и не давала дышать.
 
 - Зажатый цветок, который постепенно распускается.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Дыхание жизни
 
 - Целитель голоса
 
-ИДЕЯ.
+## ИДЕЯ
 
 - Жесткость границ - это тюрьма, попробуйте расслабиться.
 
@@ -91,12 +94,12 @@ primary_image_alt: Исходное изображение, прикреплён
 
 - Вернуть легкость дыхания - значит вернуть жизнь.
 
-ТРАНСФОРМАЦИЯ:
+## ТРАНСФОРМАЦИЯ
 
 - вспомнить свою естественную мягкую природу,
 
 - из сдавленности, колючести, чувства ограничения обстоятельствами перейти в легкость, текучесть и свободу жизни.
 
-НАБЛЮДЕНИЯ
+## НАБЛЮДЕНИЯ
 
 Препарат вытаскивает из ямы ранней травмы, возвращает энергию для жизни.

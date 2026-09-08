@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message848 (05.10.2025 18:30:33 UTC-05:00)
+primary_source_sections: ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message848 (05.10.2025 18:30:33 UTC-05:00)
 source_images: /media/remedies/rock-water/message848-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Rock Water.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Rock Water.; primary canonical content rebuilt from message848 (05.10.2025 18:30:33 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message848
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,15 +44,13 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Rock Water, message848.
 ---
 
-### message848
-
 Расскажу про препарат Баха Rock Water.
 
 Физически это вода ручья разведенная с бренди. ;)
 
 Но все не так просто.
 
-ИДЕЯ.
+## ИДЕЯ
 
 Сама вода берется из горных ущелий, где она активно взаимодействует с камнями, перенимает свойства камней.
 

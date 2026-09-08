@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message230 (15.12.2024 00:06:39 UTC-05:00)
+primary_source_sections: ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message230 (15.12.2024 00:06:39 UTC-05:00)
 source_images: /media/remedies/spongia-tosta/message230-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Spongia Tosta.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Spongia Tosta.; primary canonical content rebuilt from message230 (15.12.2024 00:06:39 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message230
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/spongia-tosta.md
@@ -41,66 +46,63 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Spongia Tosta, message230.
 ---
 
-### message230
+Spongia Tosta Preparation
 
-Spongia Tosta
+(Sea Sponge).
 
-(Sea sponge).
+- A soft, tender sea sponge is dried and burned with fire. It becomes hard and prickly.
 
-- A soft, delicate sea sponge is dried and burned with fire. It becomes hard and prickly.
+This is a symbol of a person who has experienced emotional trauma. The preparation helps to return a person to a soft, alive, natural state.
 
-This is a symbol of a person who has experienced mental trauma. The remedy helps return a person to a soft, lively, natural state.
+This preparation, according to the principle of similarity, helps in situations of personal helplessness, control by others, a feeling of oppression, fear for life, and difficulties in breathing.
 
-This remedy, based on the principle of similarity, helps in situations of personal powerlessness, control by others, feelings of depression, fear for life, difficulty breathing.
+INDICATIONS/ SHADE:
 
-INDICATIONS/SHADOW:
+1) fear of being unnecessary, thrown out of the water, depletion of personal resources,
+/ reflects the drying out of the sponge /;
 
-1) fear of being unnecessary, thrown out of the water, draining personal resources,
+2) lack of freedom, fear of excessive control, pressure from other people and circumstances that deprive the choice / loss of oxygen when drying /.
 
-/ reflects the drying of the sponge /;
-
-2) lack of freedom, fear of over-control, pressure from other people and circumstances that deprive one of choice / loss of oxygen during drying /.
-
-3) there is no room for life, growth and self-expression /sponge burning/.
+3) no room for life, growth, and self-expression / burning of the sponge /.
 
 STAGE: SEPARATION (2-4 years).
 
-- helps you feel like a separate person, feel your boundaries, and start breathing.
+- helps to feel oneself as a separate individual, to feel one's boundaries, to start breathing.
 
-EFFECT.
+## EFFECT
 
-The peculiarity of Spongia is that the remedy not only provides support to a person in the most stressful situations, but
+The feature of Spongia in
 
-The remedy allows you to restore life.
+that the remedy not only provides support to a person in the most stressful situations, but it allows the person to regain life.
 
-Those. when working with very traumatized subpersonalities, they begin to emerge from the funnel of trauma.
+That is, when working with very traumatized subpersonalities, they begin to come out of the trauma funnel.
 
-IMAGE
+## IMAGE
 
-- A man freed from a dense network that squeezed his body and did not allow him to breathe.
+- A person freed from the dense web that was squeezing their body and not letting them breathe.
 
-- A pinched flower that gradually opens.
+- A tight flower that gradually blooms.
 
-ARCHETYPE
+## ARCHETYPE
 
-- Breath of Life
+- Breath of life
 
-- Voice Healer
+- Voice healer
 
-IDEA.
+## IDEA
 
 - Rigidity of boundaries is a prison, try to relax.
 
 - Allow yourself to release tension and breathe.
 
-- Restoring ease of breathing means returning life.
+- Restoring the ease of breathing means restoring life.
 
-TRANSFORMATION:
+## TRANSFORMATION
 
-- remember your natural soft nature,
+- to remember your natural gentle nature,
 
-- from constriction, prickliness, a sense of limitation by circumstances, move into lightness, fluidity and freedom of life.
+- to move from compression, prickliness, and feeling restricted by circumstances to lightness, fluidity, and freedom of life.
 
-OBSERVATIONS
+## OBSERVATIONS
 
-The remedy pulls you out of the hole of early trauma and returns energy for life.
+The remedy pulls you out of the pit of early trauma, returning energy for life.

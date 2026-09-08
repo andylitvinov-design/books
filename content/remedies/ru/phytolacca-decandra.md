@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message575 (26.05.2025 21:01:52 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message575 (26.05.2025 21:01:52 UTC-05:00)
 source_images: /media/remedies/phytolacca-decandra/message575-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Phytolacca Decandra.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Phytolacca Decandra.; primary canonical content rebuilt from message575 (26.05.2025 21:01:52 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message575
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Phytolacca Decandra, message575.
 ---
-
-### message575
 
 PHYTOLACCA DECANDRA
 
@@ -59,7 +62,7 @@ PHYTOLACCA DECANDRA
 
 Ключевое: работаем с чувством стыда за свою потребность в контакте.
 
-ОСНОВА:
+## ОСНОВА
 
 Фитолакка/ лаконос - ядовитое растение с центральным стеблем и темными ягодами.
 
@@ -69,7 +72,7 @@ PHYTOLACCA DECANDRA
 
 Выводит яд физический и психический (материнская агрессия).
 
-АРХЕТИП
+## АРХЕТИП
 
 - Человек с зажатой челюстью: не имеет права выразить гнев.
 
@@ -93,7 +96,7 @@ PHYTOLACCA DECANDRA
 
 - если отдавал слишком много, подавлял злость ради близости.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - Освобождение от зажатого гнева
 
@@ -101,7 +104,7 @@ PHYTOLACCA DECANDRA
 
 - Возвращает жизнь, любовь, заботу в любой контакт.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - Вытесненная агрессия, особенно по отношению к близким
 
@@ -147,13 +150,13 @@ PHYTOLACCA DECANDRA
 
 - Я возвращаю себе голос, дыхание, контакт.
 
-Трансформация
+## ТРАНСФОРМАЦИЯ
 
 - До: Грудная зажатость, жесткость, злость без выхода, молчаливая боль.
 
 - После: Мягкость, живое дыхание, освобождённый голос, здоровая забота.
 
-Ритуал.
+## РИТУАЛ
 
 Положи руки на грудь, сделай 3 вдоха-выдоха и начни звучать. Вырази эмоцию.
 

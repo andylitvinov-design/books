@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message848 (05.10.2025 18:30:33 UTC-05:00)
+primary_source_sections: ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message848 (05.10.2025 18:30:33 UTC-05:00)
 source_images: /media/remedies/rock-water/message848-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Rock Water.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Rock Water.; primary canonical content rebuilt from message848 (05.10.2025 18:30:33 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message848
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/rock-water.md
@@ -41,62 +46,62 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Rock Water, message848.
 ---
 
-### message848
+I will tell you about the Bach remedy Rock Water.
 
-I’ll tell you about Bach’s remedy Rock Water.
-
-Physically, it is stream water diluted with brandy. ;)
+Physically, it is spring water diluted with brandy. ;)
 
 But it's not that simple.
 
-IDEA.
+## THE IDEA
 
-The water itself is taken from mountain gorges, where it actively interacts with stones and takes on the properties of stones.
+The water itself is taken from mountain gorges, where it actively interacts with the stones, absorbing the properties of the stones.
 
-TARGET.
+PURPOSE.
 
-It is believed that this remedy helps with overstress, when a person sets high goals for himself and becomes all tense, becomes like a stone, and does not allow himself to relax.
+It is believed that this remedy helps with extreme tension, when a person sets high goals for themselves and becomes completely stiff, like a stone, not allowing themselves to relax.
 
 CHECK 1.
 
-In fact, this remedy really resonates with symptoms in the area of hypercontrol and over-tightness.
+In fact, this remedy really resonates with symptoms in the area of hyper-control and extreme stiffness.
 
-Effect: the internal axis, support is strengthened, the need for a symptom is reduced.
+Effect: the internal axis, support, and need for the symptom are strengthened.
 
 CHECK 2.
 
-(more detailed analysis of the change in the meaning of the symptom).
+(a more detailed analysis of the change in the meaning of the symptom).
 
 Step 1. Primary connection/meaning of the symptom:
 
 external attention causes anxiety and rejection
 
-Step 2. For comparison, we check how Reishi tincture works. Everything is simple here.
+Step 2. For comparison, we check how the Reishi tincture works. Here everything is simple.
 
-The connection with the symptom is transformed, instead of rejection there is a soft mutual interest. Those. the strength of the symptom goes away gently, the problem
+The connection with the symptom transforms, instead of
 
-integrates.
+A soft mutual interest arises with rejection. That is, the strength of the symptom gently diminishes, the problem integrates.
 
-Step 3. Rock Water Effect.
+Step 3. The Rock Water effect.
 
-It's not easy here.
+This is not simple.
 
-- At first the system becomes strong, but tough.
+- At first, the system becomes strong but rigid.
 
-- There is internal support, but mutual rejection between the person and the symptom.
+- Support arises within, but there is mutual rejection between the person and the symptom.
 
-Next is a subtle point:
+Next, a subtle point:
 
-In this case, the connection between the symptom itself switches from the person to the amygdala of the brain.
+At the same time, the connection of the symptom itself shifts from the person to the amygdala.
 
-Those. the person himself denies the symptom - and anxiety moves to the level of neurophysiology.
+That is, the person himself denies the symptom—and the anxiety moves to the level of neurophysiology.
 
-Those. this shows us how psychosomatics begins: when a person excludes something from consciousness, the body works it out.
+That is, this shows us how psychosomatics begins: when a person excludes something from consciousness, the body works it out.
 
-This is significant. Bach remedies: first activate the symptom in order to cope with it later.
+It is illustrative. Bach remedies: first they activate the symptom in order to later cope with it.
 
-- What's next?
+- What next?
 
-- After a short time, the system changes. The person retains the stone axis, but the need for the symptom disappears. And the symptom is similar.
+- After a short time, the system changes. The person retains a stone-like axis, but the need for the symptom disappears. And the same happens with the symptom.
 
-In constellations, it is known that when the connection disappears, the symptom disappears. This is the formula for healing.
+In constellations, it is known: the connection disappears—the symptom disappears. This is
+
+healing formula.

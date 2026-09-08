@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message277 (06.01.2025 20:16:59 UTC-05:00)
+primary_source_sections: ЭФФЕКТ; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message283 (08.01.2025 21:06:55 UTC-05:00)
 source_messages: message277 (06.01.2025 20:16:59 UTC-05:00); message283 (08.01.2025 21:06:55 UTC-05:00)
 source_images: /media/remedies/staphysagria/message277-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Staphysagria.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Staphysagria.; primary canonical content rebuilt from message277 (06.01.2025 20:16:59 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message277
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/staphysagria.md
@@ -41,128 +46,128 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Staphysagria, message277.
 ---
 
-### message277
-
 STAPHYSAGRIA:
 
-The Mystery of Awakening the Warrior of the Spirit.
+The Mystery of Awakening the Warrior Spirit.
 
-This unique remedy allows you to regain lost strength in situations of shame, aggression and coercion.
+This unique remedy allows you to regain lost strength in situations of shame, aggression, and coercion.
 
-It helps restore mental resources lost in stressful childhood stories.
+It helps restore the psychological resources lost in stressful childhood experiences.
 
-INDICATIONS:
+## INDICATIONS
 
-- problems of the skin, gastrointestinal tract, genitourinary system;
+- Skin, gastrointestinal, and genitourinary problems;
 
-- feeling of shame, humiliation, injustice;
+- Feelings of shame, humiliation, injustice;
 
-- difficulty in expressing your will and anger.
+- Difficulty in expressing your will and anger.
 
-EFFECT:
+## EFFECT
 
-- Instead of shame and embarrassment, a feeling of pride, dignity, acceptance of yourself as you are returns.
+- Instead of shame and embarrassment - a sense of pride, dignity, and self-acceptance returns, accepting yourself as you are.
 
-RATIONALE:
+## RATIONALE
 
-- The basis is the seeds of the Delphinium plant (Larkspur), which cause irritation to the skin and mucous membranes.
+- The basis is the seeds of the Delphinium plant (Larkspur), which cause irritation of the skin and mucous membranes.
 
-Homeopathy, on the contrary, relieves irritation and internal depression that leads to inflammation, restores balance and dignity.
+Homeopathy, on the contrary, relieves irritation and internal oppression that leads to inflammation, restoring balance and dignity.
 
 DEVELOPMENTAL TRAUMA:
 
-- Autonomy stage (1.5–3 years)
+- Stage of autonomy (1.5–3 years)
 
-This stage is associated with the formation of the ability to protect one’s boundaries and defend one’s right to express emotions.
+This stage is associated with the formation of the ability to protect your boundaries and assert your
 
-The remedy helps overcome fear of conflicts and learn
+the right to express emotions.
 
-express your feelings.
+The remedy helps overcome the fear of conflicts and learn to express one's feelings.
 
-It restores a sense of personal boundaries and dignity.
+It restores the sense of personal boundaries and dignity.
 
-IMAGE
+## IMAGE
 
-- A person who outwardly looks calm and reserved, but inside experiences strong emotions that burn him from the inside.
+- A person who outwardly appears calm and restrained but internally experiences strong emotions burning within.
 
-- A man with a heavy load on his shoulders who finally throws it off and stands up straight.
+- A person with a heavy burden on their shoulders who finally sheds it and straightens up.
 
-- A flower crushed by a stone, which is released and blooms.
+- A flower crushed by a stone, which is freed and blossoms.
 
-- A lion who was in a cage for a long time, but now finds freedom.
+- A lion that has been in a cage for a long time but now gains freedom.
 
-ARCHETYPE
+## ARCHETYPE
 
-- The Hunted Thinker
+- The driven thinker
 
 - Hidden anger
 
-- Liberating warrior.
+- The liberating warrior.
 
-ARCHETYPE IDEA:
+## ARCHETYPE IDEA
 
 - Freedom begins with the ability to express your feelings and protect your boundaries.
 
-RITUAL / ARRANGEMENT
+RITUAL / SET-UP
 
 - Victim, Warrior, Judge.
 
-In your mind's eye, invite these three figures in turn. Ask what they need.
+In the inner vision, invite these three figures one by one. Ask what they need.
 
-In a circle, draw 3 dots symbolizing these 3 figures, draw next to each figure what they need. And when the figures are happy, connect these 3 points with lines.
+In a circle, draw 3 points representing these 3 figures, draw
 
-Staphysagria is a remedy that helps deal with suppressed anger, resentment, shame and
+next to each figure, what they need. And when the figures are happy, connect these 3 points with lines.
 
-humiliation.
+Staphysagria is a remedy that helps deal with suppressed anger, resentment, feelings of shame, and humiliation.
 
-It teaches us to express our feelings, protect our boundaries, and regain our inner balance and dignity.
+It teaches us to express our feelings, protect our boundaries, and restore our inner balance and dignity.
 
-## Additional author materials from Telegram
+## Additional materials and observations
 
-### message283
+### message283 (08.01.2025 21:06:55 UTC-05:00)
 
 STAPHYSAGRIA
 
-healing verse
+Healing verse,
 
-To overcome the trauma of rejection.
+For overcoming the trauma of rejection.
 
-The doors that closed are no longer there,
+The doors that have closed are no more,
 
-You yourself move forward, towards the light.
+You yourself move forward, toward the light.
 
-The outside world cannot take away the answer,
+The external world cannot take away the answer,
 
-Which lights up summer in the heart.
+That ignites summer in your heart.
 
-You were deprived of your home, not your roots,
+You were deprived of a home, not of roots,
 
 Your dignity is always with you.
 
-You are no longer an exile among people,
+You are no longer an outcast among people,
 
 You yourself create a world of happiness and peace.
 
-You are no longer dependent on others
+You no longer depend on others,
 
-You no longer knock on other people's doors.
+You no longer knock on someone else's doors.
 
-You yourself are life, and in your own eyes
+You are life itself, and in your own eyes
 
-You see strength—resilience and victory.
+You see strength —
 
-That cold that shackled you then,
+resilience and victory.
 
-Becomes a breath of freedom.
+That cold that bound you back then,
+
+Becomes the breath of freedom.
 
 You are in eternal connection with the world forever,
 
-And the sky brightens in my soul.
+And the skies brighten in your soul.
 
 Now your path is an open horizon,
 
 Where every step fills you with strength.
 
-You are your own light and true front,
+You yourself are both light and a loyal front,
 
-You are whole, loved, worthy and beautiful.
+You are whole, loved, worthy, and beautiful.

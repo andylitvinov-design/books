@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message704 (02.07.2025 21:30:16 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message704 (02.07.2025 21:30:16 UTC-05:00)
 source_images: /media/remedies/colchicum-autumnale/message704-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Colchicum Autumnale.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Colchicum Autumnale.; primary canonical content rebuilt from message704 (02.07.2025 21:30:16 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message704
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/colchicum-autumnale.md
@@ -41,144 +46,142 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Colchicum Autumnale, message704.
 ---
 
-### message704
-
 COLCHICUM AUTUMNALE
 
-(Colchicum).
+(Autumn Crocus).
 
-It turned out to be a very valuable remedy for early chaotic subpersonalities. Colchicum collects them, compacts them, and places them on the ground.
+It turned out to be a very valuable remedy for early chaotic subpersonalities. Colchicum gathers them, consolidates them, and grounds them.
 
-They gain support, structure - and they can begin to manifest normally.
+They gain support, structure – and they can start manifesting normally.
 
-C symbol: A soul poisoned by the memory of a poisonous past. A remedy of deep betrayal and poisonous poisoning of the soul.
+Symbol: The soul poisoned by the memory of a toxic past. A remedy for deep betrayal and poisonous poisoning of the soul.
 
-This cannot be digested. I feel sick from the manifestation of the world, smells, sounds, touches. Life has become poison.
+This cannot be digested. There is nausea from the manifestation of the world, smells, sounds, touches. Life has become poison.
 
-Increased anxiety, exhaustion, disgust, aversion to people.
+Heightened anxiety, exhaustion, fastidiousness, aversion to people.
 
-BASIS
+## BASIS
 
-Colchicum is a plant that blooms in the fall, radiating beauty at a time when nature is dying. It combines subtlety, fragility and poison. It affects the gastrointestinal tract and nervous system.
+The Colchicum plant, which blooms in autumn, radiating beauty at the moment of the dying of nature. It combines delicacy, fragility, and poison. It affects the gastrointestinal and nervous systems.
 
-Symbolically, this is a soul that cannot withstand the rudeness, dirt and violence of life.
+Symbolically – this is a soul that cannot withstand the coarseness, filth, and violence of life.
 
-INDICATIONS - shock:
+INDICATIONS – shock:
 
 - Deep sensitivity to everything: smells, impressions, people, words.
 
-(The world is too dirty, loud)
+(The world is too
 
-- Often - after a traumatic experience (violence, loss)
+dirty, loud)
 
-- Disgust,
+- Often — after traumatic experiences (violence, loss)
 
-especially to food, as a symbol of life, contact, joy.
+- Disgust, especially towards food, as a symbol of life, contact, joy.
 
-- Intolerance to pain, aesthetic and physical.
+- Intolerance of pain, both aesthetic and physical.
 
-- Internal powerlessness, emptiness
+- Inner powerlessness, emptiness
 
-- rheumatic pain, exacerbation in autumn.
+- Rheumatic pain, worsening in autumn.
 
-- Crying without tears, melancholy without words, disgust without reason.
+- Crying without tears, longing without words, disgust without cause.
 
-- Closedness, coldness, prohibition of touching.
+- Withdrawal, coldness, prohibition on touch.
 
 🔥 ARCHETYPE
 
-- A hypersensitive hermit - goes into solitude, unable to bear the outside world.
+- Highly sensitive hermit — retreats into seclusion, unable to endure the outside world.
 
-- A priestess, detached from the world, who has ultra-fine sensitivity, but has no strength to defend herself.
+- Priestess, detached from the world, with extremely fine sensitivity but no strength to protect herself.
 
-- A refined soul thrown into a rough, stinking reality.
+- Refined soul, thrown into a crude, stinking reality.
 
-- A girl forced to swallow someone else's dirt.
+- A girl forced to swallow someone else's filth.
 
 IMAGES:
 
 - A room filled with the smells of the past, where it is stuffy.
 
-- A woman holding a beautiful flower in her hands, which makes her feel sick.
+- A woman holding a beautiful flower, which makes her nauseous.
 
-- Fall of leaves containing poison.
+- Falling leaves in which there is poison.
 
-EFFECT
+## EFFECT
 
-- Relieves hypersensitivity to odors, the past, pain.
+- Removes
+
+hypersensitivity to smells, the past, pain.
 
 - Helps digest the poisons of past emotions.
 
-- Returns contact with the body, life, world
+- Restores contact with the body, life, the world.
 
-- Restores the ability to nourish oneself, eat food,
+- Restores the ability to nourish yourself, to take in food, touch, life.
 
-touch, life.
+- Reduces bodily and emotional disgust towards oneself and the world.
 
-- Reduces physical and mental disgust towards oneself and the world.
+- Clears the internal "fog": restores the sense of body, ground, taste.
 
-- Clears the internal “fog”: returns the sense of body, soil, taste.
+IDEA OF THE REMEDY
 
-IDEA OF THE remedy
-
-* Sometimes the pain cannot be pulled out - it must be gently dissolved.
+* Sometimes pain cannot be pulled out — it needs to be gently dissolved.
 
 * You have the right to live, even if it hurts.
 
-* Even if the past smells of death, you are alive.
+* Even if the past smells of death — you are alive.
 
-🧱 DEVELOPMENT STAGE
+🧱 STAGE OF DEVELOPMENT
 
-- 0.1–1.5 years: trauma of disgust, refusal of contact.  Experience of loss, rejection, perhaps trauma from a maternal figure.
+- 0.1–1.5 years: trauma of disgust, refusal of contact. Experience of loss, rejection, possibly — traumas from the maternal figure.
 
-- 3–6 years (sexuality): feeling that the body is a source of disgust or pain.
+- 3–6 years (sexuality): the feeling that the body is a source of disgust or pain.
 
 💡 LESSON AND MESSAGE
 
 Your sensitivity is a gift, not a curse.
 
-You can create clean space around you.
+You can create a pure space around yourself.
 
-You have the right to say no to everything that poisons you.
+You have the right to say "no" to everything that
 
-You don't have to endure dirt to live.
+poisons.
 
-You can live - not despite the pain, but with it.
+You are not obliged to endure filth in order to live.
+
+You can live — not despite the pain, but together with it.
 
 AFFIRMATIONS
 
-I feel but I don't collapse
+I feel, but I do not break
 
-I can live even if it hurts
+I can live, even if it hurts
 
-I'm breathing through memory
+I breathe through memory
 
-I'm not poisoned, I'm cleansed
+I am not poisoned, I am cleansing
 
-I take from life only what nourishes me
+I take from life only what nourishes
 
-TRANSFORMATION
+## TRANSFORMATION
 
-Before:
-
-disgust, nausea, hypersensitivity, poisoning of the past
+Before: disgust, nausea, hypersensitivity, poisoned by the past
 
 After: calm clarity, easy breathing, acceptance, inner warmth
 
 IMAGE / MEDITATION
 
-Imagine that you have a fog filled with poison. You're standing in the wind. The wind is your new choice. It passes through you and disperses the fog.
+Imagine that inside you there is fog filled with poison. You are standing in the wind. The wind is your new choice. It passes through you and disperses the fog.
 
-You pick up a flower - it still smells like the past, but now you look at it without pain. You plant it in the ground. Where there is pain there is now memory, strength and roots.
+You take a flower in your hands — it still smells of the past, but now you look at it without pain. You plant it in the ground. Where the pain was — now there is memory, strength, and roots.
 
 🔮 RITUAL
 
-Prepare aromatic herbs (mint, lavender) - anything that pleases the senses
+Prepare fragrant herbs (mint, lavender) — anything that pleases the senses
 
-Wrap yourself in a warm blanket and recreate your personal temple
+Wrap yourself in a warm blanket, recreate your personal temple
 
-Speak up:  “I have the right to separate myself from what harms me.
+Say: "I have the right to separate myself from what harms me.
 
 I have the right to sensitivity and purity.
 
-I breathe life. I feel, but I don't dissolve."
+I breathe life. I feel, but I do not dissolve."

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message387 (17.03.2025 17:49:18 UTC-05:00)
+primary_source_sections: ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message387 (17.03.2025 17:49:18 UTC-05:00)
 source_images: /media/remedies/apis/message387-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Apis.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Apis.; primary canonical content rebuilt from message387 (17.03.2025 17:49:18 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message387
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/apis.md
@@ -41,79 +46,79 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Apis, message387.
 ---
 
-### message387
-
 APIS (bee venom).
 
 An important remedy.
 
-It is suitable in situations of despair, stalemate, hopelessness, and depression.
+It is suitable in situations of despair, hopeless deadlock, depression.
 
-Returns a feeling of self-reliance and self-sufficiency.
+Restores a sense of reliance on oneself and self-sufficiency.
 
-JUSTIFICATION
+## RATIONALE
 
-The preparation is prepared quite cruelly: live bees are ground in a mortar, so that they release the poison.
+The remedy is prepared rather cruelly: live bees are crushed in a mortar, causing them to release venom.
 
 Accordingly, in such situations of hopelessness, the remedy helps.
 
-APIS helps you release blocked energy, break free from restrictions, express your feelings and protect your boundaries.
+APIS helps to release blocked energy, break free from limitations, express your feelings, and protect your boundaries.
 
-INDICATION
+INDICATIONS
 
-- feeling of victimhood, fear of loss of control, suppressed emotions, feeling of infringement, inflammation, swelling. As well as emotional vulnerability, the desire for protection.
+- Feeling like a victim, fear of losing control, suppressed emotions, a sense of being deprived, inflammations, swelling. Also emotional vulnerability, a tendency toward self-protection.
 
-DEVELOPMENT STAGE
+## DEVELOPMENT STAGE
 
-- Will and Guilt, 2-4 years: fear of expressing strength, ability to say no, defending boundaries.
+- Will and Guilt, ages 2-4: fear of expressing strength, inability to say no, to protect boundaries.
 
-LOOK:
+## IMAGE
 
-- A swarm of bees that is constantly ready to sting anyone who gets too close.
+- A swarm of bees constantly ready to sting anyone who comes too close.
 
-- A person clenching his fists from suppressed anger, but not daring to speak out.
+- A person clenching their fists from
 
-- A river that is about to overflow its banks due to
+restrained anger, but not daring to speak out.
 
-accumulated tension.
+- A river that is about to overflow because of accumulated tension.
 
-ARCHETYPE
+## ARCHETYPE
 
-- Warlike Queen.
+- Warlike queen.
 
-- Guardian of boundaries (queen bee protecting its structure).
+- Guardian of borders (queen bee defending her hive).
 
-IDEA:
+## IDEA
 
--You have the right to express your emotions.
+- You have the right to express your emotions.
 
-- You don't have to endure it if you're in pain.
+- You are not obliged to endure if it hurts you.
 
--You can defend yourself without destruction.
+- You can protect yourself without destroying.
 
-- Your energy is life, don’t suppress it.
+- Your energy is life; do not suppress it.
 
 LESSON (TRANSFORMATION):
 
-- anger is also energy, it can be directed into creativity and protection.
+- Anger is also energy; it can be directed into creativity and protection.
 
-- expressing emotions does not make you weak, but gives you freedom.
+- Expressing emotions does not make you weak; it gives you freedom.
 
-- Allow yourself not to endure too much, not to sacrifice yourself.
+- Allow yourself not to endure the unnecessary, not to sacrifice yourself.
 
-- Allow your inner strength to manifest itself gently and consciously.
+- Let your inner strength manifest gently and consciously.
 
 2. SECOND STAGE: SHADOW
 
-- fear of vulnerability, need for total control.
+- Fear of vulnerability, need for total control.
 
 CORRECTION:
 
-- Recognizing that you don’t always need to defend yourself.
+- Recognizing that it is not always necessary to defend oneself.
 
-- Developing trust in the world and other people.
+- Developing trust in the world and in other people.
 
-- Through awareness of your strength without the need to prove it to others.
+- Through the awareness of your own strength without
+
+the need to prove it to others.
 
 AFFIRMATIONS:
 
@@ -123,14 +128,14 @@ AFFIRMATIONS:
 
 - I trust my energy, I direct it.
 
-- I am free/free to be myself.
+- I am free to be myself.
 
 - My strength is in sincerity.
 
-TOTAL:
+SUMMARY:
 
-Apis Mellifica teaches you to give yourself permission to be a vibrant, spontaneous, self-protective person.
+Apis Mellifica teaches you to allow yourself to be a bright, spontaneous, self-protecting person.
 
-This remedy helps you feel your body, your boundaries and your light, so as not to immerse yourself in the victim, but to take your power into your hands.
+This remedy helps you feel your body, your boundaries, and your light, so as not to fall into victimhood, but to take your power into your own hands.
 
-He reminds us that life is a movement, and suppressed anger is just pent-up energy that wants to flow freely.
+It reminds that life is movement, and suppressed anger is merely trapped energy that wants to flow freely.

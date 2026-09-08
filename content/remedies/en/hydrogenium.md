@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message606 (03.06.2025 19:57:34 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message606 (03.06.2025 19:57:34 UTC-05:00)
 source_images: /media/remedies/hydrogenium/message606-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Hydrogenium.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Hydrogenium.; primary canonical content rebuilt from message606 (03.06.2025 19:57:34 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message606
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/hydrogenium.md
@@ -41,103 +46,99 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Hydrogenium, message606.
 ---
 
-### message606
-
 HYDROGENIUM (hydrogen).
 
-A unique remedy that brings a person back to himself in difficult situations
+A unique remedy that brings a person back to themselves in difficult situations.
 
-It removes the fog of consciousness, distancing from the world.
+It clears the mental fog, the distancing from the world.
 
-Gives clarity, calm, self-confidence and comfort with oneself.
+Provides clarity, calmness, self-confidence, and comfort with oneself.
 
-Hydrogenium helps you return to the Source, find your Essence, the Spark inside, when you seem to have dissolved in chaos, lost yourself in this world.
+Hydrogenium helps to return to the Source, to find your Essence, the Spark within, when you seem to have dissolved in chaos, lost yourself in this world.
 
-It helps you get rid of everything unnecessary and return to yourself.
+It helps to free yourself from everything unnecessary, to return to oneself.
 
-BASIS
+## BASIS
 
 Hydrogen is the lightest element in the Universe.
 
-Participates in cleansing and transferring energy in the body.
+It participates in cleansing and transferring energy in the body.
 
-It symbolizes the energetic basis of life, the standard purity.
+It symbolizes the energetic foundation of life, exemplary purity.
 
-In Hydrogenium homeopathy, according to the principle of similarity, a person is returned to the Self, the primary energies. Cleanses from other people's energies, from imposed programs,
+In homeopathy, Hydrogenium, according to the principle of similarity, returns a person to the Self, to primary energies. It cleanses from foreign energies, from imposed programs,
 
-helps renew itself at the cellular level.
+and helps to renew at the cellular level.
 
-Returns inner light and integrity.
+It restores inner light and wholeness.
 
-INDICATIONS:
+## INDICATIONS
 
-- With the collapse of supports, a feeling of emptiness and loss of meaning.
+- In case of collapse of support, feelings of emptiness and loss of meaning.
+-
 
-- Feeling of stagnation, dead end, fading of vital energy.
+A feeling of stagnation, deadlock, the freezing of life energy.
 
-- Loss of your value, contact
+- Loss of personal value, contact with oneself, loss of resources, feeling dissolved in others
 
-with oneself, loss of resources, feeling of dissolution in others
+- The feeling that you are living someone else's life
 
-- Feeling like you are living someone else's life
-
-- Energy pollution: the feeling “I absorb everything around me.”
+- Energetic pollution: the feeling of 'I absorb everything around me.'
 
 - Physically: weakness, loss of energy, allergies, eczema.
 
-EFFECT
+## EFFECT
 
-Cleansing from other people's influence
+Cleansing from external influence
 
-Restoring connection with your own essence.
+Restoring connection with one's own essence.
 
-Strengthening internal integrity.
+Strengthening inner wholeness.
 
-Feeling: “I am me. I'm clean. I am the light."
+Feeling: 'I am me. I am clean. I am light.'
 
 Lightness, renewal, a sense of freedom.
 
 ARCHETYPES
 
-- Mystical Pilgrim walking in the desert to find his Source
+- The mystical Pilgrim walking in the desert to find their Source
 
-- A pure flame that burns inside, illuminating the path.
+- The pure flame burning inside, illuminating the path.
 
-- Dissolved soul.
+- The dissolved soul.
 
 IMAGES
 
-- A clean source of water gushing out of a rock
+- Pure water springing from a rock
 
-- A light fog in which old fears dissolve
+- Bright mist in which old fears dissolve
 
-- A light in a dark cave showing the way
+- A small fire in a dark cave showing the way
 
-- Cosmic spark in the human heart
+- A cosmic spark in the heart of a person
 
-- Man in the white void,
+- A person in a white void,
+feeling everything
 
-feels like everything around is dissolving, but light begins to be born from within.
+disappears, but from within a light begins to be born.
 
-Development stage
+## STAGE OF DEVELOPMENT
 
-- Age: intrauterine and the very first year of life
+- Age: prenatal and the very first year of life
 
-- Topic: the right to exist and feel part of the Universe
+- Theme: the right to exist and to feel part of the Universe
 
--
+- Conflict: "There is too much/too little of me in this world"
 
-Conflict: “There are too many/too few of me in this world”
+- loss of the inner center
 
-- loss of inner center
+Idea of the remedy
 
-The idea of the remedy
+To kindle your own star, you need to cleanse yourself of external lights.
 
-To light your star, you need to cleanse yourself of other people's fires.
+Only then will you shine with your own light.
 
-Only then will you begin to shine with your own light.
-
-Message and Lesson
+Message and lesson
 
 You are part of the world, but you are unique.
 
@@ -147,28 +148,30 @@ It is your path and your strength.
 
 Affirmations
 
-I am the light and I have the right to shine.
+I am light, and I have the right to shine.
 
-I regain my purity and clarity.
+I reclaim my purity and clarity.
 
-I dissolve other people's energies and become myself.
+I dissolve others' energies and become myself.
 
 I belong to the Universe and feel my place in it.
 
-Transformation
+## TRANSFORMATION
 
-- Before: Blurriness, loss of self, fear of dissolution
+- Before: Blur, loss of self, fear of dissolving
 
-- After: Purity, clarity, inner light, integrity
+- After: Purity, clarity, inner light, wholeness
 
-Ritual
+## RITUAL
 
-Stand or sit quietly.
+Stand or sit calmly.
 
-Imagine a light fog around you that slowly dissolves everything alien.
+Imagine how around you
+
+A bright fog that slowly dissolves everything foreign.
 
 Feel a tiny spark in the center of your chest.
 
-Say: “I am returning to myself. I'm clean. I am the light."
+Say: 'I am returning to myself. I am clean. I am light.'
 
-Take a deep breath and exhale. Feel how everything alien goes away, leaving only your essence.
+Take a deep breath in and out. Feel how everything foreign leaves, leaving only your essence.

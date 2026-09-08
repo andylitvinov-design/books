@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message247 (20.12.2024 18:22:07 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message249 (21.12.2024 16:33:16 UTC-05:00)
 source_messages: message247 (20.12.2024 18:22:07 UTC-05:00); message249 (21.12.2024 16:33:16 UTC-05:00)
 source_images: /media/remedies/sepia/message247-1.jpg; /media/remedies/sepia/message249-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Sepia.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Sepia.; primary canonical content rebuilt from message247 (20.12.2024 18:22:07 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message247
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Sepia, message247.
 ---
-
-### message247
 
 SEPIA
 
@@ -55,7 +58,7 @@ SEPIA
 
 Sepia - бережно раскрывает сердце для новой любви.
 
-ОСНОВА:
+## ОСНОВА
 
 Чернильная жидкость - облако черного тумана, которое выпускает каракатица, чтобы скрыться от внешнего давления.
 
@@ -67,13 +70,13 @@ SEPIA
 
 - эмоциональное выгорание, отстраненность, равнодушие, потеря интереса к близким, к семье, усталость, снижение влечения, желание уединиться.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - Возвращает открытость к чувствам, к переживаниям.
 
 Уменьшает холодность и открывает к построению близких отношений. Возвращает радость и яркость жизни.
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Холодная женщина,
 
@@ -81,7 +84,7 @@ SEPIA
 
 - Отшельница.
 
-ОБРАЗ:
+## ОБРАЗ
 
 - Женщина, стоящая у окна и смотрящая вдаль, чувствуя себя уставшей и оторванной от окружающего мира, неспособная испытывать радость или любовь;
 
@@ -125,9 +128,9 @@ __
 
 https://t.me/psychic_alchemy/249
 
-## Дополнительные авторские материалы из Telegram
+## Дополнительные материалы и наблюдения
 
-### message249
+### message249 (21.12.2024 16:33:16 UTC-05:00)
 
 SEPIA - настройка.
 

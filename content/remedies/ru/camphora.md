@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message622 (09.06.2025 22:47:20 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message622 (09.06.2025 22:47:20 UTC-05:00)
 source_images: /media/remedies/camphora/message622-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Camphora.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Camphora.; primary canonical content rebuilt from message622 (09.06.2025 22:47:20 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message622
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Camphora, message622.
 ---
-
-### message622
 
 CAMPHORA (камфора).
 
@@ -53,7 +56,7 @@ CAMPHORA (камфора).
 
 Когда чувства замерли, в сердце лед, а в теле холод - сamphora помогает почувствовать жизнь.
 
-ОСНОВА
+## ОСНОВА
 
 Камфора - вещество из древесины камфорного лавра (азия). Имеет сильный аромат, что стимулирует кровь, дыхание, нервную систему.
 
@@ -63,7 +66,7 @@ CAMPHORA (камфора).
 
 Camphora пробуждает и расширяет пространство для жизни.
 
-ПОКАЗАНИЯ
+## ПОКАЗАНИЯ
 
 - холод и оцепенение (в теле и душе)
 
@@ -77,7 +80,7 @@ Camphora пробуждает и расширяет пространство д�
 
 - холодные конечности, истощение, падение сил
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 - Размораживает тело и чувства
 
@@ -89,7 +92,7 @@ Camphora пробуждает и расширяет пространство д�
 
 - Ощущение «я живой, я здесь, я могу чувствовать»
 
-ЭТАП РАЗВИТИЯ:
+## ЭТАП РАЗВИТИЯ
 
 Возраст: внутриутробный период и 0–1 год (право жить)
 
@@ -135,13 +138,13 @@ Camphora пробуждает и расширяет пространство д�
 
 - Я оживаю и позволяю энергии течь.
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - До: оцепенение, холод, отчуждение, страх движения
 
 - После: тепло, энергия, движение, желание жить и чувствовать
 
-РИТУАЛ
+## РИТУАЛ
 
 Представь, что внутри твоего сердца сидит снежинка.
 

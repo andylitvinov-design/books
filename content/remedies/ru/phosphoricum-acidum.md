@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message169 (21.11.2024 14:26:29 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП; ТЕНЬ; РЕСУРС
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message169 (21.11.2024 14:26:29 UTC-05:00)
 source_images: /media/remedies/phosphoricum-acidum/message169-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Phosphoricum Acidum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Phosphoricum Acidum.; primary canonical content rebuilt from message169 (21.11.2024 14:26:29 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message169
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Phosphoricum Acidum, message169.
 ---
 
-### message169
-
 PHOSPHORICUM ACIDUM
 
 Ценный препарат, который я  прописываю на начальных стадиях работы с травмой.
@@ -49,7 +52,7 @@ PHOSPHORICUM ACIDUM
 
 Препарат возвращает силу и надежду.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - хроническая усталость, апатия
 
@@ -59,17 +62,17 @@ PHOSPHORICUM ACIDUM
 
 - истощение, ослабление иммунитета.
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 Препарат возвращает баланс сил, интерес к жизни.
 
-ОБРАЗ:
+## ОБРАЗ
 
 - Засохшее дерево в пустыне, которое когда-то было зелёным и сильным, но потеряло свои соки из-за долгой засухи.
 
 - Человек, отрешенно сидящий на пустынной равнине под серым небом, но вдали виднеется свет – символ надежды и возрождения.
 
-ОСНОВА
+## ОСНОВА
 
 Фосфорная кислота – слегка разрушает металлы, хорошо впитывает влагу.
 
@@ -79,7 +82,7 @@ PHOSPHORICUM ACIDUM
 
 Мягко убирает утечки, восстанавливает баланс энергии.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Уставший путник
 
@@ -87,17 +90,17 @@ PHOSPHORICUM ACIDUM
 
 - Сожженная душа.
 
-ИДЕЯ АРХЕТИПА:
+## ИДЕЯ АРХЕТИПА
 
 - утрата (ресурсов, смыслов)
 
 и восстановление через связь с глубинными источниками жизненной силы.
 
-ТЕНЬ АРХЕТИПА
+## ТЕНЬ АРХЕТИПА
 
 - нежелание признать усталость, попытка "держаться", несмотря на истощение.
 
-РЕСУРС АРХЕТИПА
+## РЕСУРС АРХЕТИПА
 
 - повышенная чувствительность к красоте и интуиции,
 
@@ -113,7 +116,7 @@ PHOSPHORICUM ACIDUM
 
 - заботиться о себе
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 (Смыслы, задачи):
 
@@ -123,7 +126,7 @@ PHOSPHORICUM ACIDUM
 
 3. Нахождение новых источников энергии и вдохновения.
 
-АЛХИМИЯ
+## АЛХИМИЯ
 
 - Nigredo (чёрная стадия алхимии): состояние упадка, которое предшествует возрождению.
 

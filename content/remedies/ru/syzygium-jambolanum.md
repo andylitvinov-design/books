@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message826 (14.09.2025 19:17:12 UTC-05:00)
+primary_source_sections: ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message826 (14.09.2025 19:17:12 UTC-05:00)
 source_images: /media/remedies/syzygium-jambolanum/message826-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Syzygiun Jambolanum; Syzygium jambolanum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Syzygiun Jambolanum; Syzygium jambolanum.; primary canonical content rebuilt from message826 (14.09.2025 19:17:12 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message826
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Syzygium jambolanum, message826.
 ---
-
-### message826
 
 SYZYGIUN JAMBOLANUM
 
@@ -71,7 +74,7 @@ SYZYGIUN JAMBOLANUM
 
 Как ребенок.
 
-Показания :
+## ПОКАЗАНИЯ
 
 - Тяга к сладкому, к похвале, к любви, диабет.
 
@@ -83,13 +86,13 @@ SYZYGIUN JAMBOLANUM
 
 - Чувство: «я кормлю других, а меня никто не питает».
 
-Идея
+## ИДЕЯ
 
 Syzygium - это врата инициации к Источнику безусловной любви.
 
 Это архетип ребенка у груди, который позволяет себе открыться и быть накормленным.
 
-Трансформация .
+## ТРАНСФОРМАЦИЯ
 
 Архетип меняется:
 
@@ -103,7 +106,7 @@ Syzygium - это врата инициации к Источнику безус
 
 - Тело: поджелудочная работает ровно, сахар усваивается мягко, без скачков и падения сил после еды.
 
-Обоснование .
+## ОБОСНОВАНИЕ
 
 Архетипически Syzygium соединяет 2 качества: сладость фрукта и терпкость косточки. Это образ любви, которая оборачивается горечью.
 
@@ -123,7 +126,7 @@ Syzugium - это трансформация
 
 пустоты — в наполнение, страха — в ощущение, что мир кормит и поддерживает.
 
-Эффект
+## ЭФФЕКТ
 
 - Чувство наполненности и покоя
 
@@ -135,7 +138,7 @@ Syzugium - это трансформация
 
 - поддержка поджелудочной железы и регулировка сахара.
 
-Наблюдения
+## НАБЛЮДЕНИЯ
 
 по работе с клиентами:
 
@@ -151,7 +154,7 @@ Syzugium - это трансформация
 
 - Твоя потребность может быть утолена.
 
-Образ / Медитация
+## ОБРАЗ / МЕДИТАЦИЯ
 
 Представь себя в пустыне. Ты пьёшь воду, но жажда остаётся.
 

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message575 (26.05.2025 21:01:52 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message575 (26.05.2025 21:01:52 UTC-05:00)
 source_images: /media/remedies/phytolacca-decandra/message575-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Phytolacca Decandra.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Phytolacca Decandra.; primary canonical content rebuilt from message575 (26.05.2025 21:01:52 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message575
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/phytolacca-decandra.md
@@ -41,53 +46,51 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Phytolacca Decandra, message575.
 ---
 
-### message575
-
 PHYTOLACCA DECANDRA
 
 (Phytolacca)
 
-A remedy for unexpressed deep pain.
+A remedy for subtle deep-seated pain.
 
 It helps to gain endurance and support in difficult situations.
 
-Release the knot of pain.
+Unties the knot of pain.
 
-The remedy takes a person out of the archetype of “suppressed aggression”, “frozen scream”.
+The remedy brings a person out of the archetype of "suppressed aggression," "frozen scream."
 
-Leads you out of the darkness of fear and worthlessness.
+It leads out of the darkness of fear and worthlessness.
 
-Helps to cross the border from isolation to timid interest and attempt at contact.
+Helps to cross the boundary from isolation to timid interest and an attempt at contact.
 
-Key: we work with a feeling of shame about our need for contact.
+Key point: we work with the feeling of shame for one’s need for contact.
 
-BASE:
+## BASIS
 
-Phytolacca/polyweed is a poisonous plant with a central stem and dark berries.
+Phytolacca / pokeweed - a poisonous plant with a central stem and dark berries.
 
-Symbolizes the cry of the soul in the body. Repressed aggression directed inward.
+Symbolizes the cry of the soul in the body. Tensed aggression directed inward.
 
-In homeopathy it is used to mobilize the cleansing system. Used to remove toxins, mucus, inflammation, burning.
+In homeopathy, it is used to mobilize the cleansing system. Applied for removing toxins, mucus, inflammations, burning.
 
-Removes physical and mental poison (maternal aggression).
+Removes physical and psychic poison (maternal aggression).
 
-ARCHETYPE
+## ARCHETYPE
 
 - A person with a clenched jaw: has no right to express anger.
 
-- Poisoned mother: gives care, but inside there is pain and anger.
+- Poisoned mother: provides care, but inside there is pain and
 
-- Body armor: tension leading to pain and inflammation
+anger.
 
-- Amazon at
+- Bodily armor: tension that turns into pain and inflammation
 
-armor: she feels everything, but does not allow herself to be visible and vulnerable.
+- Amazon in armor: feels everything but does not allow herself to be seen and vulnerable.
 
-LOOKS:
+IMAGES:
 
-- A child whose mouth was covered to keep him quiet
+- A child whose mouth is held shut so they won't make noise
 
-- A woman is breastfeeding, with a face full of fatigue and pain that she cannot show to be good
+- A woman breastfeeding, her face full of fatigue and pain that she cannot show in order to be good
 
 CONFLICT
 
@@ -95,86 +98,86 @@ CONFLICT
 
 - between contact and bodily rejection.
 
-- if he gave too much, he suppressed anger for the sake of intimacy.
+- if too much was given, anger was suppressed for the sake of closeness.
 
-EFFECT:
+## EFFECT
 
-- Release from suppressed anger
+- Release from pent-up anger
 
-- Restoring contact without destroying yourself.
+- Restoring contact without destroying oneself.
 
-- Returns life, love, care to any contact.
+- Brings life, love, care back into any contact.
 
-INDICATIONS:
+## INDICATIONS
 
 - Repressed aggression, especially towards loved ones
 
-- Constriction, depression, suppression of screaming
+- Tightness, depression, suppression of cries
 
-- Cruelty to oneself: “I have no right to be angry”
+- Cruelty to oneself: 'I am not allowed to be angry'
 
-- The feeling that “I’m keeping everything to myself,” “I don’t have the right to speak out.”
+- Feeling that 'I hold everything inside,' 'I am not allowed to express myself.'
 
-- Violation of the mother-child connection,
+- Disruption of connection
 
-- Inflammation of the lymph, mammary glands, throat
+mother–child,
 
-- Clamps in the jaws, neck, voice.
+- Inflammation of the lymph nodes, breasts, throat
 
-Developmental stage: 3–6 years
+- Tension in the jaw, neck, voice.
 
-Expression of aggression, will, protection of borders.
+Stage of development: 3–6 years
 
-Conflict: “If I express anger -
+Expression of aggression, willpower, defense of boundaries.
 
-I'll destroy everything"
+Conflict: "If I express anger — I will destroy everything"
 
-→ I’m going into self-poisoning.
+→ I go into self-poisoning.
 
-The idea of the remedy
+Idea of the remedy
 
 - Suppressed anger becomes poison.
 
-But when you allow yourself to sound, feel, move, you become not dangerous - but alive.
+But when you allow yourself to sound, feel, move, you become not dangerous — but alive.
 
-Message and Lesson
+Message and lesson
 
 - You have the right to be angry.
 
-You can care - without sacrifice or pain. Your body is not a container of pain, but an instrument of life and love.
+You can care — without sacrifice and pain. Your body is not a container of pain, but an instrument of life and love.
 
 Affirmations
 
-- I can talk.
+- I can speak.
 
 - I can feel and express.
 
 - I respect my anger and my chest.
 
-- I regain my voice, breathing, contact.
+- I reclaim my voice, breath, contact.
 
-Transformation
+## TRANSFORMATION
 
-- Before: Chest tightness, rigidity, anger without outlet, silent pain.
+- Before: Chest tightness, stiffness, anger without outlet, silent pain.
 
-- After: Gentleness, living breathing, freed voice, healthy care.
+- After: Softness, alive breathing, liberated voice, healthy care.
 
-Ritual.
+## RITUAL
 
-Place your hands on your chest, take 3 breaths and start sounding. Express your emotion.
+Place your hands on your chest, take 3 breaths in and out and
 
-Stretch your hands forward and say:
+start to sound. Express emotion.
 
-“I'm no longer afraid to give. I give out of fullness, not out of pain.”
+Reach your hands forward and say:
+
+"I am no longer afraid to give. I give — from abundance, not from pain."
 
 RESULT
 
-- A person begins to feel his boundaries, stops sacrificing himself for the sake of the world.
+- A person begins to feel their boundaries, stops sacrificing themselves for the sake of peace.
 
-- Courage in making a statement about yourself
+- Courage in asserting oneself
 
-- Eco-friendly to show aggression
+- To express aggression ecologically
 
-- Translation
-
-inflammation into life, movement, energy.
+- Transformation of inflammation into life, movement, energy.

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message240 (16.12.2024 17:54:26 UTC-05:00)
+primary_source_sections: ОСНОВА; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message240 (16.12.2024 17:54:26 UTC-05:00)
 source_images: /media/remedies/lycopodium/message240-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Lycopodium.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Lycopodium.; primary canonical content rebuilt from message240 (16.12.2024 17:54:26 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message240
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/lycopodium.md
@@ -41,76 +46,76 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Lycopodium, message240.
 ---
 
-### message240
-
 LYCOPODIUM
 
-An important remedy for guys.
+An important remedy for men.
 
-It's about confidence and courage. When, instead of appearing strong and confident, we begin to truly feel this strength within.
+It is about confidence and courage. When instead of just appearing strong and confident, we begin to truly feel this strength inside.
 
-ARCHETYPE
+## ARCHETYPE
 
 - General
 
 - Anxious General
 
-It allows you to gain calm confidence within.
+It allows one to acquire calm confidence within.
 
-BASE:
+## BASIS
 
-Moss plant. It is slowly but tirelessly developing, occupying an ever larger area.
+The plant is clubmoss. It grows slowly but steadily, occupying an ever-larger area.
 
-The remedy triggers the build-up of internal potential for unconditional expansion.
+The remedy triggers the swing of internal potential for unconditional expansion.
 
-SHADOW. The remedy is relevant when present:
+SHADOW. The remedy is relevant when there is:
 
-- uncertainty,
+- insecurity,
 
 - fear of failure,
 
-- fear of responsibility
+- fear of responsibility,
 
-- depression
+- depression,
 
-- low self-esteem
+- low self-esteem,
 
-- feelings of inferiority, need for recognition,
+- a sense of inadequacy, need for recognition,
 
 - ostentatious strength and hidden weakness.
 
-LOOK:
+## IMAGE
 
-- A person standing on stage in front of a large audience who is afraid of being exposed, despite the fact that outwardly he looks confident and authoritative.
+- A person standing on stage in front of a large audience, who is afraid of being exposed, even though outwardly looks confident and authoritative.
 
-- A small, timid lion who eventually finds his voice and roars confidently.
+- A small, timid lion who, over time
 
-LESSON:
+finds its voice and roars confidently.
 
-- Recognition of one's value, the courage to declare
+## LESSON
 
-to yourself;
+- Recognizing your own worth, the courage to assert yourself;
 
-- Gaining core, confidence, leadership qualities.
+- Gaining a backbone, confidence, leadership qualities.
 
 - Free expression of your opinions and ideas.
 
-OBSERVATIONS
+## OBSERVATIONS
 
-- From experience, this remedy gives a greater sense of personal boundaries and the ability to declare them.
+- In practice, this remedy gives a greater sense of personal boundaries and the ability to assert them.
 
-- More attention is paid to feeling oneself, awareness of one’s desires and freely, without hesitation, conveying one’s opinions and desires to others.
+- More attention goes to the perception of oneself, awareness of one's desires, and freely, without embarrassment, conveying one's opinions and desires to others.
 
 STAGE OF HUMAN DEVELOPMENT
 
-- BY BODYNAMICS:
+- ACCORDING TO BODYDYNAMICS:
 
-Structure of Opinions (5-8 years) - the ability to declare oneself in the world. Confidence, self-expression, taking responsibility and decisions.
+Structure of Opinions (5-8 years) - the ability to assert oneself in the world. Confidence, self-expression, acceptance of responsibility and decisions.
 
 - IN ALCHEMY:
 
-Second, White stage: sharpening the personal core and axis.
+Second, White stage: honing the personal backbone and axis.
 
-PS. We work with this remedy when we have already passed the first stage, cleared the basic stresses and stupors.
+PS. We work with this remedy when we have already gone through the first stage, cleared basic stresses and stupors.
 
-LYCOPODIUM helps you move from weakness and doubt to awareness of your strength and ability to confidently express yourself.
+LYCOPODIUM helps transition from weakness and doubts to the awareness of one's strength and the ability to confidently assert oneself.
+
+to oneself.

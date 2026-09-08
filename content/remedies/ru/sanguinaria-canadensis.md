@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message678 (26.06.2025 20:00:40 UTC-05:00)
+primary_source_sections: ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message678 (26.06.2025 20:00:40 UTC-05:00)
 source_images: /media/remedies/sanguinaria-canadensis/message678-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Sanguinaria Canadensis.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Sanguinaria Canadensis.; primary canonical content rebuilt from message678 (26.06.2025 20:00:40 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message678
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Sanguinaria Canadensis, message678.
 ---
-
-### message678
 
 SANGUINARIA CANADENSIS
 
@@ -61,7 +64,7 @@ SANGUINARIA CANADENSIS
 
 Это препарат памяти рода и внутреннего огня. Когда в тебе звучит зов предков — но ты не знаешь, как взять этот дар. Когда рана рода горит, а боль наследственная.
 
-ОСНОВА :
+## ОСНОВА
 
 Sanguinaria canadensis — это кроваво-красный корень растения, прозванного Bloodroot. Его сок жгучий, напоминает кровь. Использовался у североамериканских индейцев в ритуалах очищения и почитания рода.
 
@@ -69,7 +72,7 @@ Sanguinaria canadensis — это кроваво-красный корень р�
 
 Сила отцовской линии, память мужского огня.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - Ощущение утраты достоинства, связи с отцом, с родом.
 
@@ -143,7 +146,7 @@ Sanguinaria canadensis — это кроваво-красный корень р�
 
 - Ты — не отрезан. Ты продолжаешь линию света.
 
-Тень
+## ТЕНЬ
 
 - Ощущение внутренней несостоятельности перед мужским миром.
 
@@ -151,7 +154,7 @@ Sanguinaria canadensis — это кроваво-красный корень р�
 
 - Горечь от утраты силы, стыда, нереализованной миссии.
 
-Послание
+## ПОСЛАНИЕ
 
 «Ты — продолжение рода. Сила предков в тебе».
 

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message496 (04.05.2025 15:55:49 UTC-05:00)
+primary_source_sections: ОСНОВА; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message496 (04.05.2025 15:55:49 UTC-05:00)
 source_images: /media/remedies/borax/message496-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Borax.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Borax.; primary canonical content rebuilt from message496 (04.05.2025 15:55:49 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message496
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Borax, message496.
 ---
-
-### message496
 
 BORAX
 
@@ -55,7 +58,7 @@ BORAX
 
 Даёт: мягкость, доверие.
 
-ОСНОВА:
+## ОСНОВА
 
 - натриевая соль борной кислоты, традиционно использовалась как антисептик при раздражении кожи и слизистых,
 
@@ -63,7 +66,7 @@ BORAX
 
 - в гомеопатии дает чувство защиты и мягкого контакта с миром.
 
-АРХЕТИП
+## АРХЕТИП
 
 - ранимый ребенок
 
@@ -79,7 +82,7 @@ BORAX
 
 - младенец, пугающийся при падении
 
-ПОКАЗАНИЯ
+## ПОКАЗАНИЯ
 
 - Чувствительность к переменам, страх новых шагов, изменений.
 
@@ -91,7 +94,7 @@ BORAX
 
 - Затруднения с переходами (смена места, этапа жизни, новых отношений).
 
-4. ЭТАП РАЗВИТИЯ
+## ЭТАП РАЗВИТИЯ
 
 0–1.5 года — Этап  близости.
 
@@ -111,11 +114,11 @@ BORAX
 
 - Снимает страхи «падения», отказа, провала.
 
-6. ИДЕЯ АРХЕТИПА
+## ИДЕЯ АРХЕТИПА
 
 - "Мир меняется, но я могу двигаться мягко и безопасно."
 
-7. УРОК
+## УРОК
 
 - Я могу переходить к новому, сохраняя чувство устойчивости.
 
@@ -123,7 +126,7 @@ BORAX
 
 - Я умею просить поддержки, когда мир становится нестабильным.
 
-8. ТЕНЬ
+## ТЕНЬ
 
 - Избегание перемен.
 
@@ -131,7 +134,7 @@ BORAX
 
 - Стыд за страх «быть слабым» или зависеть от других.
 
-9. ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - До: Тревога, страх упасть, боязнь нового.
 

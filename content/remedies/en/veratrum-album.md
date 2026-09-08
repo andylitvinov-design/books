@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message680 (27.06.2025 20:52:50 UTC-05:00)
+primary_source_sections: ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message680 (27.06.2025 20:52:50 UTC-05:00)
 source_images: /media/remedies/veratrum-album/message680-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Veratrum Album.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Veratrum Album.; primary canonical content rebuilt from message680 (27.06.2025 20:52:50 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message680
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/veratrum-album.md
@@ -41,148 +46,133 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Veratrum Album, message680.
 ---
 
-### message680
-
 VERATRUM ALBUM
 
-I usually prescribe this remedy in the later stages of therapy.
+I usually prescribe this remedy at the later stages of therapy.
 
-Its beauty is that it forms a mature axis in a person. Feeling of dignity and support. At the same time, a person’s inner strength blossoms.
+Its charm lies in the fact that it forms a mature axis in a person. A sense of dignity and support. At the same time, the inner strength of the person blossoms.
 
-It's like a tree that grows. A strong trunk appears, a sense of personal value appears, and flowers bloom.
+It is like a tree that grows. A strong trunk appears, a sense of self-worth, and the flowers bloom.
 
-This is a profound remedy associated with collapse of dignity, inner emptiness, fear of loss of control and false greatness.
+This is a deep remedy, connected with the collapse of dignity, inner emptiness, fear of losing control, and false greatness.
 
-This is the medicine of a soul that has experienced shame, exile, humiliation and is trying to recover through play and external greatness.
+It is a medicine for the soul that has experienced shame, exile, humiliation, and is trying to recover through play and external greatness.
 
 📌 BASIS
 
-Veratrum album - white hellebore, a poisonous plant. It sets a drop in pressure, alternation of excitement and devastation, tremor, trembling.
+Veratrum album — white hellebore, a poisonous plant. It causes a drop in blood pressure, alternation of excitement and exhaustion, tremor, shaking.
 
-Suppresses the will center, causing fuss and the need to regain control through activity.
+It suppresses the center of will, causing fussiness and the need to regain control through activity.
 
-In homeopathy, the remedy treats fear of devaluation and themes of narcissism (“I am nothing if I am not admired”).
+In homeopathy, the remedy treats fear of devaluation and themes of narcissism ("I am nothing if I am not..."
 
-The bright mask is removed.
+admire).
 
-The strength and core of the Self is restored.
+A bright mask is removed.
 
-🧠 E TAP
+The strength and core of the Self are restored.
 
-DEVELOPMENTS.
+🧠 THIS IS A STAGE OF DEVELOPMENT.
 
 * suppression of will (2-4 years)
-
 * fear of judgment (5-8 years)
-
 * identity crisis 12+: who am I without approval.
 
-Trauma: loss of significance, comparison, expulsion
+Trauma: loss of significance, comparison, ostracism
 
-Experience: “If they don’t recognize me, that means I will shine.”
+Experience: "They don't recognize me — so I will shine."
 
-Fear: “If they see my weakness, I will disappear.”
+Fear: "If they see my weakness — I will disappear."
 
-The need to be special.
+Need to be special.
 
 🔥 INDICATIONS
 
 - hysteria, theatricality
-
 - desire to impress
-
 - intellectual or spiritual superiority
-
-- exaltation,
-
-- feeling of shame and fear of humiliation,
-
-- stress after loss of status or shame
-
-- panic attacks,
-
-- convulsions,
-
-- obsession with order, external purity, ritual, when there is chaos inside.
+- exaltation
+- feelings of shame and fear of humiliation
+- stress after loss of status or disgrace
+- panic attacks
+- convulsions
+- obsession with order, external cleanliness, ritual, when there is chaos inside.
 
 🧱 ARCHETYPES
 
-🔸 Harlequin with empty eyes - laughs so as not to cry
+🔸 Harlequin with empty eyes — laughs so as not to cry
+🔸 Fallen angel — strived for heights but was cast down
+🔸 Prophet whom no one listens to — elevated and alone
 
-🔸 Fallen Angel - strived for the top, but was thrown down
+🌿 IMAGES
+-
 
-🔸 The prophet whom no one listens to is exalted and lonely
+A man in a gilded robe, standing in the square and addressing the crowd, and at night — crying alone
 
-🌿 LOOKS
+- A girl in a theatrical dress, on tiptoe — so that she is noticed
 
-- A man in a gilded robe, standing in the square and broadcasting to the crowd, and at night - sobbing alone
+- A light mask, under which a hole gapes.
 
-- A girl in a theatrical dress, on tiptoe - to be noticed
+## EFFECT
 
-- Light mask,
+- Psychic effect: restoration of the inner center
 
-under which there is a gaping hole.
+* The obsessive need to impress, save, play the role of "special" disappears.
 
-EFFECT
+* A person stops performing a show and begins to hear themselves.
 
-- Mental effect: restoration of the inner center
+* Inner panic, anxiety, fear of losing control decrease.
 
-* The obsessive need to impress, save, and play the role of “special” goes away.
+* The feeling of "I disappear if I am not admired" passes.
 
-* A person stops putting on a show and begins to hear himself.
+* One’s own value returns — without a mask.
 
-* Internal panic, anxiety, and fear of loss of control are reduced.
-
-* The feeling “I disappear if I am not admired” passes.
-
-* Return of own value - without mask.
-
-- The level of adrenaline anxiety and the need for control decreases.
+- The level of adrenaline-induced anxiety, need for control decreases.
 
 - There is a feeling of inner stability and calm.
 
-- A person stops being afraid of being “not enough”
+- A person stops being afraid of being "insufficient"
 
-- A person begins to live not for proof, but from internal support
+- A person begins to live not to prove themselves, but from inner support
 
-- True dignity is returning without theater.
+- True dignity returns without theater.
 
-💬 Clients often describe this as: “For the first time I can just be - and not be ashamed of myself, without explaining anything.”
+💬
 
-💡 remedy IDEA
+Clients often describe it as: “For the first time, I can just be — and not be ashamed of myself, not explain anything.”
+
+💡 IDEA OF THE REMEDY
 
 True greatness is not about impressing, but about being.
 
-You are valuable not because of your role, but because of your presence.
+You are valuable not because of your role, but simply because of your presence.
 
 🌺 AFFIRMATIONS
 
-- I don't have to be
-
-great to be alive
+- I do not have to be great to be alive
 
 - My presence is already enough
 
-- I take off my mask. Beneath her is a man worthy of love
+- I take off the mask. Beneath it — a person worthy of love
 
-- I forgive myself for the fall. I am.
+- I forgive myself for falling. I am.
 
 🔄 TRANSFORMATION
 
-Before: ostentatious grandeur, despair, feeling of fall, shame, emptiness.
+Before: showy greatness, despair, a sense of falling, shame, emptiness.
 
-After: accepting vulnerability, returning to authenticity, warm contact, gentle dignity.
+After: acceptance of vulnerability, the return of authenticity, warm connection, gentle dignity.
 
 🔮 RITUAL
 
-Imagine that you are standing on stage. There were bright lights and applause all around.
+Imagine you are standing on a stage. Around you — bright lights, applause.
 
 You see that the stage is empty. Only you.
 
-You take off your suit.
+You take off the costume.
 
-You remain yourself - simple, alive.
+You remain yourself — simple, alive.
 
-A child comes out of the darkness and you hug him.
+A child comes out of the darkness — and you embrace them.
 
-It's the real you.
+This is you — real.

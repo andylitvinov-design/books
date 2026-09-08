@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message755 (20.07.2025 00:56:16 UTC-05:00)
+primary_source_sections: АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message755 (20.07.2025 00:56:16 UTC-05:00)
 source_images: /media/remedies/folliculinum/message755-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Folliculinum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Folliculinum.; primary canonical content rebuilt from message755 (20.07.2025 00:56:16 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message755
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/folliculinum.md
@@ -41,125 +46,119 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Folliculinum, message755.
 ---
 
-###message755
-
 🧪 FOLLICULINUM
 
 (Female sex hormone extragen)
 
 Another remedy that works wonders.
 
-It gives freedom, strength, courage to those early parts of the soul that have been imprisoned for a long time.
+It gives freedom, strength, and courage to those early parts of the soul that have long been imprisoned.
 
-It allows you to do what other remedies often cannot do - throw off the covering of fear, guilt and begin to radiate the power of life.
+It allows one to do what other remedies often cannot do — shed the covering of fear and guilt and begin to radiate the power of life.
 
-His archetype is a depressed personality, dissolved in the expectations of others.
+Its archetype is a suppressed individual, dissolved in the expectations of others.
 
-A person who sacrifices himself loses his essence in pleasing, especially in relationships.
+A person who sacrifices themselves, losing their essence in pleasing others, especially in relationships.
 
-Often occurs after abusive relationships or overload in childhood.
+Often found after abusive relationships, childhood overload.
 
-This is the image of a Mother or Wife who lives for the sake of others, forgetting about her “I”.
+It is the image of a Mother or Wife who lives for others, forgetting about her own 'self'.
 
-But inside there is resentment, “I am everything to everyone, but no one sees me.”
+But inside there is resentment, 'I am everything for everyone, and no one sees me'.
 
-Folliculinum returns the right to be oneself, the right to want, the right to feel, the right to separate from others without guilt.
+Folliculinum restores the right to be oneself, the right to want, the right to feel, the right to separate from others without guilt.
 
-🌿 BASE
+🌿 BASIS
 
-The female hormone estradiol, symbolizing peak femininity, but in a distorted version (dependence, submission).
+Female hormone estradiol, symbolizing peak femininity, but in a distorted
 
-In homeopathy it is used when there is a feeling of “loss
+variant (dependence, subordination).
 
-yourself”, dissolution in other people’s desires.
+In homeopathy, it is used for the feeling of “losing oneself,” dissolving in the desires of others.
 
 💥 INDICATIONS
 
-- Feeling of loss of self, dissolution in family, relationships, work.
+- Feeling of losing oneself, dissolving in family, relationships, work.
 
-- Conditions “I live by other people’s desires”, “I don’t know what I want”.
+- States of “I live according to others’ desires,” “I don’t know what I want.”
 
-- Periods of mental emptiness, “it’s as if I don’t exist”
+- Periods of mental emptiness, "as if I do not exist."
 
-- Tendency to suppress sexuality or, conversely, its hypertrophy with a sense of shame
+- Tendency to suppress sexuality or, conversely, its exaggeration accompanied by feelings of shame
 
-- Overload with other people's emotions, loss of boundaries
+- Overload with others’ emotions, loss of boundaries
 
-- Feeling: “I am nobody”, “I should be a good wife, mother, daughter, husband”, but there is emptiness inside
+- Feeling: "I am nobody," "I must be a good wife, mother, daughter, husband," but inside there is emptiness
 
 - Fatigue, insomnia, headaches, weight gain
 
-- An obsessive desire for perfection, with deep inner emptiness.
+- Obsessive striving for perfection, with deep inner emptiness.
 
-- “Doll without support” state, sensitivity to external evaluation.
+- States of “a doll without support,” sensitivity to external evaluation.
 
 🔥 ARCHETYPES
 
-Consumed wife or mother who has lost herself
+An absorbed wife or mother who has lost herself
 
-The ideal woman whom everyone admires, but who does not feel alive
+The ideal woman admired by everyone but who does not feel alive
 
-A dummy woman, a beautiful shell without contact with herself
+A hollow woman, a beautiful shell without connection to herself
 
-The one who dissolves in others, forgetting about herself.
+The one who dissolves into others, forgetting about herself.
 
-Archetype:
+## ARCHETYPE
 
-A man who regained his freedom. A leader who broke free from strangers
+A man who reclaimed his freedom. A leader who broke free from others' expectations. Masculine nature, purified from suppression.
 
-expectations. Masculine nature, purified from repression.
+🖼 IMAGES
 
-🖼 LOOKS
+A woman with a beautiful smile and empty eyes
 
-Woman with a beautiful smile and empty eyes
+A woman looking in the mirror and not recognizing herself
 
-Woman looking in the mirror and not recognizing herself
+A girl in a golden cage with jewelry but without a voice.
 
-A girl in a golden cage with jewelry, but no voice.
+A lotus wilting under the touch of someone else's fingers.
 
-A lotus withering under a layer of alien fingers.
+A river flowing backward — all energy leaves instead of replenishing.
 
-A river flowing backwards means all the energy goes away and does not fill it.
+A doll coming to life, tearing off her mask
 
-A doll coming to life, tearing off its mask
+🌸 EFFECT OF THE REMEDY
 
-🌸 EFFECT OF THE remedy
+Helps to return to oneself, to feel one's own desires
 
-Helps you return to yourself, feel your desires
+Restores the inner center, helps understand one's "I want"
 
-Restores the inner center, helps to understand your “want”
+Revives vitality, liveliness, connection to the body's desires.
 
-Revives vitality, vitality, connection with the desires of the body.
+Removes the feeling of "living someone else's life"
 
-Relieves the feeling of “I’m not living my own life”
+Balances the psycho-hormonal background, creates inner stability
 
-Evens out the psycho-hormonal background, creates internal stability
+Eliminates inner split, restores wholeness
 
-Removes internal duality and returns integrity
+Helps to separate from other people's emotions, other people's expectations
 
-Helps to separate from other people's emotions and other people's expectations
-
-Returns joy from the body, sexuality, feminine nature
+Restores joy from the body, sexuality, feminine nature
 
 🧱 DEVELOPMENT STAGE
 
-0.1–1.5 years - the right to receive, to be in contact, the need for care
+0.1–1.5 years — the right to receive, to be in contact, the need for care
 
-3–6 years - acceptance of your femininity, your sensuality
+3–6 years — acceptance of your femininity, your sensuality
 
-5–8 years – right
+5–8 years — the right to your own point of view and personal desires
 
-to your point of view and personal desires
+Adult phase — woman's identity crisis: "Who am I without roles?"
 
-The adult phase is a woman’s identity crisis: “Who am I without roles?”
-
-💡 remedy IDEA
+💡 IDEA OF THE REMEDY
 
 You are not a function.
 
-You don't have to lose yourself in others to be loved.
+You are not obliged to dissolve into others to be loved.
 
-You are valuable, even without roles.
+You are valuable even without roles.
 
 You have the right to want, to feel, to live.
 
@@ -169,23 +168,23 @@ You can be a Woman without losing yourself.
 
 You can love and still have your desires.
 
-You can be gentle - and have boundaries.
+You can be gentle — and have boundaries.
 
 You have the right to choose yourself.
 
 🌺 AFFIRMATIONS
 
-I am.
+I exist.
 
-I am important on my own.
+I am important in myself.
 
 I feel my desires.
 
 I choose myself.
 
-I am a woman - whole, alive, real.
+I am a woman — whole, alive, real.
 
-I don't dissolve. I'm glowing from the inside out.
+I do not dissolve. I shine from within.
 
 🔄 TRANSFORMATION
 
@@ -199,11 +198,9 @@ You look in the mirror. The reflection is blurry.
 
 You close your eyes, touch your heart.
 
-You open your eyes - and for the first time you see the real you: living, feeling, whole.
+You open your eyes — and for the first time see your true self: alive, feeling, whole.
 
-You
-
-you smile to yourself.
+You smile at yourself.
 
 🔮 RITUAL
 
@@ -215,4 +212,4 @@ Place your hand on your heart and say:
 
 Feel your heart fill with warmth.
 
-You are whole. You don't dissolve. You live your life.
+You are whole. You do not dissolve. You live your life.

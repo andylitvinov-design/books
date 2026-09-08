@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message802 (11.08.2025 15:38:34 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message802 (11.08.2025 15:38:34 UTC-05:00)
 source_images: /media/remedies/magnesium-carbonicum/message802-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesium Carbonicum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesium Carbonicum.; primary canonical content rebuilt from message802 (11.08.2025 15:38:34 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message802
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/magnesium-carbonicum.md
@@ -41,124 +46,124 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Magnesium Carbonicum, message802.
 ---
 
-### message802
-
 MAGNESIUM CARBONICUM
 
-This is a remedy that is often suitable for clients when starting out in homeopathy.
+This is a remedy that often suits clients at the beginning of working with Usin homeopathy.
 
-His energy is careful but stable.
+Its energy is gentle but stable.
 
-This remedy is often associated with themes of neediness and fear of abandonment, especially in early childhood experiences.
+This remedy is often associated with themes of the need for care and fear of abandonment, especially in early childhood experiences.
 
-It provides soft support in which to find stability.
+It provides a soft support in which one can find stability.
 
-Allows you to gain a sense of support that many lacked in childhood.
+It allows one to gain a sense of support that many lacked in childhood.
 
-Returns trust, warmth and the basic feeling: “I have a place where I am welcome.”
+It restores trust, warmth, and a basic feeling: "I have a place where I am awaited."
 
-BASE:
+## FOUNDATION
 
 Magnesium carbonate, which softens acids, neutralizes environmental aggression.
 
-It is a symbol of peace, gentleness, care, comfort, support and home warmth.
+It is a symbol of calm, gentleness, care, comfort, support, and homely warmth.
 
-ARCHETYPE:
+## ARCHETYPE
 
-- A lonely child waiting for his mother at the window.
+- A lonely child waiting for their mother at the window.
 
-- An abandoned child looking for a home.
+- An abandoned child seeking a home.
 
 - A child waiting for love and warmth.
 
-- An old teddy bear, lost but still warm.
+- An old teddy bear, lost but still retaining warmth.
 
 IMAGES:
 
-- Soft light from a lamp in a cold room.
+- Soft lamp light in a cold room.
 
-- A warm blanket in which to wrap yourself from the cold of the world.
+- A warm blanket in which
 
-- Chestnut or shell hiding a tender kernel.
+wrapped up against the cold of the world.
 
-- Moonlit night, in
+- Chestnut or shell, hiding a tender core.
 
-who wants to cuddle up to someone.
+- Moonlit night, when you want to snuggle up to someone.
 
-INDICATIONS:
+## INDICATIONS
 
-- Deep fatigue, especially after emotional stress.
+- Deep fatigue, especially after emotional strain.
 
-- Desire to be alone.
+- Desire for solitude.
 
 - Fear of conflict, avoidance of tense situations.
 
 - Increased sensitivity to cold, sounds, light.
 
-- Gastrointestinal disorders.
+- Gastrointestinal disturbances.
 
-- Problems with sleep, fears at night.
+- Sleep problems, fears at night.
 
 - Psychosomatics due to feelings of loneliness.
 
-EFFECT:
+## EFFECT
 
-- Relieves internal anxiety and gently relaxes.
+- Relieves inner anxiety and gently relaxes.
 
-- Restores the feeling of internal support through soft filling.
+- Restores a sense of inner support through gentle nurturing.
 
-- Helps you feel again that the world can be safe.
+- Helps to feel again that the world can be safe.
 
-- Supports the nervous system, removes the feeling of “I’m at the limit.”
+- Supports the nervous system, removes the feeling of "I am at my limit."
 
-IDEA OF THE remedy
+IDEA OF THE REMEDY
 
-"You have the right to be loved just like that."
+"You have the right to be loved just as you are."
 
-There is no need to deserve care; it is everyone’s natural right.
+You don't need to earn care; it is a natural right of everyone.
 
-DEVELOPMENT STAGE
+## DEVELOPMENT STAGE
 
 0.1–1.5 years —
 
-the right to receive care, the formation of basic trust in the world.
+the right to receive care,
 
-If during this period there was not enough warmth, the archetype of a “cold baby” is formed - outwardly living, but inside looking for lost contact.
+formation of basic trust in the world.
+
+If there was a lack of warmth during this period, the archetype of the "cold baby" is formed — outwardly living, but inside searching for lost connection.
 
 MESSAGE / LESSON
 
--
-
-Allow yourself to accept care without expecting a catch.
+- Allow yourself to receive care without expecting a catch.
 
 - Gentleness is strength.
 
-- Love doesn't always have to be earned - sometimes it can just be received.
+- Love doesn't always have to be earned — sometimes it can just be received.
 
 AFFIRMATIONS
 
 - I am worthy of love and care.
 
-- I allow myself to be warm and accepted.
+- I allow myself to be in warmth and acceptance.
 
 - I am safe when I accept help.
 
 - My inner child is surrounded by care.
 
-TRANSFORMATION
+## TRANSFORMATION
 
 - Before: feeling of inner cold, detachment, fatigue, emotional emptiness.
 
-- After: soft filling, a feeling of warmth inside, trust in the world, a feeling of “I’m in the house.”
+- After: gentle fulfillment, feeling of warmth inside, trust in the world, feeling of "I am at home."
 
-IMAGE
+## IMAGE
 
-Imagine that you are sitting in a cold forest, covered with a blanket. Suddenly a soft light appears, warm arms wrap you up, and you feel that you no longer need to run anywhere.
+Imagine that you are sitting in a cold forest, wrapped in a blanket. Suddenly a soft light appears, warm hands wrap you up, and you feel that there is no need to run anywhere anymore.
 
-RITUAL
+## RITUAL
 
-- Drink a warm drink with magnesium (cocoa, herbal tea) when you feel tired.
+-
 
-- Imagine that a small warm flashlight lights up in your heart.
+Drink a warm beverage with magnesium (cocoa, herbal tea) at the moment of fatigue.
 
-- Place the remedy near your photograph and mentally “cover” yourself with a blanket of light.
+- Imagine a small warm lantern lighting up in your heart.
+
+- Place the remedy near your photo and mentally 'cover' yourself with a blanket of light.

@@ -12,7 +12,9 @@ test('Book 02 reads the same 94 sorted canonical remedy cards as the standalone 
     assert.equal(remedies.length, 94)
     assert.deepEqual(remedies.map(({ slug }) => slug), directory.map(({ slug }) => slug))
     assert.equal(remedies.find(({ slug }) => slug === 'aurum-metallicum').primary_image, '/media/remedies/aurum-metallicum/message37-1.jpg')
-    assert.match(remedies.find(({ slug }) => slug === 'carcinosinum').description, /CARCINOSINUM/i)
+    const carcinosinum = remedies.find(({ slug }) => slug === 'carcinosinum')
+    assert.equal(carcinosinum.canonical_latin_name, 'Carcinosinum')
+    assert.match(carcinosinum.description, /CARSINOSINUM/i)
   }
 })
 

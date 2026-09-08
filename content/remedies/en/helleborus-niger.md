@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message760 (21.07.2025 00:16:11 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message760 (21.07.2025 00:16:11 UTC-05:00)
 source_images: /media/remedies/helleborus-niger/message760-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Helleborus Niger.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Helleborus Niger.; primary canonical content rebuilt from message760 (21.07.2025 00:16:11 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message760
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/helleborus-niger.md
@@ -41,109 +46,107 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Helleborus Niger, message760.
 ---
 
-###message760
+🧪 HELLEBORUS NIGER (Black Hellebore)
 
-🧪 HELLEBORUS NIGER (Black hellebore)
+This remedy exists between life and death.
 
-This remedy lives between life and death.
+It enters those stressful situations where the soul simply shuts down, consciousness freezes. A person lives in a fog, feelings are not felt, a person exists on autopilot.
 
-He goes into those stressful stories where the soul simply switches off, the consciousness freezes. A person lives in a fog, feelings are not felt, a person exists on autopilot.
+The remedy thaws forgotten, rejected parts of the soul, restoring the wholeness of personality.
 
-The remedy unfreezes forgotten, split-off parts of the soul and restores the integrity of the individual.
-
-Helleborus returns the spark of life to the frozen heart, restores the impulses of the movement of the soul in those parts that are frozen in trauma or devastation.
+Helleborus returns the spark of life to a frozen heart, restores the impulses of the soul's movement in those parts that have frozen in trauma or emptiness.
 
 🌿 BASE
 
-Black hellebore is a poisonous plant that blooms among the snow in winter. Poisonous root, causes stupor, paralysis, confusion, numbness.
+Black Hellebore is a poisonous plant that blooms in winter among the snow. The poisonous root causes stupor, paralysis, confusion, and numbness.
 
-Symbolically, this is a state of mind after extreme stress, when there is no strength to scream, cry, or live.
+Symbolically, it is the state of the soul after extreme stress, when there is no strength to scream, cry, or live.
 
-This is life frozen in the cold; flowering in torpor conditions; an attempt to survive in a world that has frozen feelings. In mythology, the plant is associated with purification from madness.
+It is life frozen in cold; blooming under conditions of numbness; an attempt to survive in a world that has frozen feelings. In mythology, the plant
+
+associated with cleansing from madness.
 
 💥 INDICATIONS
 
-Complete numbness of the psyche after
+Complete psychic numbness after severe trauma, grief, loss.
 
-severe trauma, grief, loss.
-
-Apathy, lethargy, feeling of emptiness in the head, internal death
+Apathy, sluggishness, feeling of emptiness in the head, inner death
 
 Alienation from oneself.
 
-Feeling of “I am not there”, complete emotional numbness
+Feeling of 'I do not exist', complete emotional numbness
 
-Forgetfulness, brain fog, absent-mindedness.
+Forgetfulness, fog in the head, distraction.
 
-I feel like “life is a viscous mass,” I can barely move.
+Feeling 'life is a viscous mass', I barely move.
 
-Refusal to contact, lack of curiosity, lack of will to live
+Refusal of contact, lack of curiosity, will to live
 
-A state where even your favorite things don’t make you happy
+A state when even favorite things do not bring joy
 
 🔥 ARCHETYPES
 
-Frozen child who survived the disaster
+Frozen child who survived a catastrophe
 
-A woman in emptiness who has lost interest in everything
+Woman in the void, having lost interest in everything
 
-An empty witness who has experienced too much and forgotten himself
+Empty witness who has experienced too much and forgotten herself
 
-A woman in an ice palace who dares not feel pain.
+Woman in an icy palace of pain, who does not dare to feel.
 
-A sick king who has lost hope.
+Sick king who has lost hope.
 
-🖼 LOOKS
+🖼 IMAGES
 
-A palace made of ice where a single flower comes to life.
+Palace of ice where a single flower comes to life.
 
-Man in an ice cave sitting alone
+Person in an ice cave, sitting alone
 
-Eyes, dull, without shine
+Eyes extinguished, without sparkle
 
 Frozen flower in the snow
 
-A man in a windowless room where time has stood still.
+A person in a room without windows, where time has stopped.
 
-🌸 EFFECT OF THE remedy
+🌸 EFFECT OF THE MEDICINE
 
-Gently unfreezes frozen parts of the soul
+Gently thaws frozen parts of the soul
 
 Returns warmth to a frozen heart
 
-Helps to gradually return
+Helps gradually regain contact with reality
 
-contact with reality
+Relieves stupor, revives the will to live.
 
-Relieves stupor, revitalizes the will to live.
-
-Gives energy for the first steps, awakening of feelings
+Provides energy for first steps, awakening of feelings
 
 Helps a person hear the world, notice life around
 
-Helps restore interest in life, movement, and activity
+Promotes the restoration of interest in life, movement, activity
 
-Helps relieve feelings of inner emptiness
+Helps to free oneself from the feeling of inner emptiness
 
-Reduces slowness, forgetfulness, indifference
+Reduces sluggishness, forgetfulness, indifference
 
-Returns the ability to hear your body, your feelings, your desires.
+Restores the ability to hear your body, your feelings, your desires.
 
-🧱 DEVELOPMENT STAGE
+🧱 STAGE OF DEVELOPMENT
 
-3-6 years: prohibition on showing feelings.
+3-6 years: prohibition on the expression of feelings.
 
-Deep trauma of grief, loss, when the psyche turns off
+Deep trauma of grief, loss, when the psyche shuts down
 
-Sometimes - perinatal trauma, a feeling that the world is hostile.
+Sometimes — perinatal traumas, feeling that the world is hostile.
 
-💡 remedy IDEA
+💡 IDEA OF THE MEDICINE
 
-You can come back to life after being frozen.
+You can come to life after freezing.
 
 Life returns even after the deepest winter.
 
-Your feelings can be resurrected, and your pain can become wisdom.
+Your feelings
+
+can be resurrected, and pain can become wisdom.
 
 You have the right to return to yourself slowly, step by step.
 
@@ -153,17 +156,15 @@ Life can still be warm.
 
 Numbness is not the end.
 
-You can slowly warm yourself up.
+You can slowly warm yourself.
 
-Your soul remembers the warmth.
+Your soul remembers warmth.
 
-Life continues to blossom even after
+Life continues to bloom even after the darkest times.
 
-darkest time.
+You are no longer obliged to be turned off.
 
-You don't have to be switched off anymore.
-
-You have the right to slowly come to life.
+You have the right to slowly come alive.
 
 You can feel the light again.
 
@@ -175,35 +176,37 @@ I can feel.
 
 I can be in touch with myself.
 
-I let go of the weight that has frozen me.
+I release the heaviness that froze me.
 
 I return to myself, to life, to the world.
 
 🔄 TRANSFORMATION
 
-Before: emptiness, stupor, lifelessness, internal freezing
+Before: emptiness, stupor, lifelessness, inner freezing
 
-After: softness, movement, interest, awakening of feelings, clarity, revitalization of the mind.
+After: softness, movement, interest, awakening of feelings, clarity, enlivening of the mind.
 
 🖌 IMAGE / MEDITATION
 
 You are standing in an icy room.
 
-The candle barely smolders inside you.
+Inside you, a candle is barely smoldering.
 
-You touch your chest, and a small flame warms your hands.
+You touch your chest, and the small flame warms
 
-Light spreads throughout the body.
+hands.
+
+Light spreads across the body.
 
 The ice begins to melt.
 
-You are coming into the light.
+You step into the light.
 
-With every breath you inhale sunlight, with every exhale you release the icy fog.
+With each inhale, you breathe in sunlight, with each exhale — let go of the icy fog.
 
-Tell yourself: “I am warming up. I allow myself to come alive.
+Say to yourself: "I am warming myself. I allow myself to come alive.
 
-I'm blooming again"
+I bloom again."
 
 🔮 RITUAL
 
@@ -213,10 +216,8 @@ Light a small candle. Place your hand on your chest.
 
 Say:
 
-"I'm alive. I'm returning to myself. I allow myself to feel. I
+"I am alive. I am returning to myself. I allow myself to feel. I embrace my return."
 
-I accept my return."
-
-Sit with this warmth. Let the frozen part thaw.
+Sit with this warmth. Allow the frozen part to thaw.
 
 You are alive.

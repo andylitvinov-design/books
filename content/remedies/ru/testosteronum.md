@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message838 (29.09.2025 16:41:52 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message842 (02.10.2025 15:10:46 UTC-05:00); message866 (28.10.2025 11:34:18 UTC-05:00)
 source_messages: message838 (29.09.2025 16:41:52 UTC-05:00); message842 (02.10.2025 15:10:46 UTC-05:00); message866 (28.10.2025 11:34:18 UTC-05:00)
 source_images: /media/remedies/testosteronum/message838-1.jpg; /media/remedies/testosteronum/message842-1.jpg
-provenance: Two later source headings are recorded as duplicates.
+provenance: Two later source headings are recorded as duplicates.; primary canonical content rebuilt from message838 (29.09.2025 16:41:52 UTC-05:00)
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Начинаю работать с препаратом гомеопатии на основе тестостерона - Testosteronum
 source_author: Andrii Litvinov
-source_status: manual-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,11 +44,31 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Testosteronum, message838.
 ---
 
-Начинаю работать с препаратом гомеопатии на основе тестостерона - Testosteronum.
+ГОРМОНАЛЬНЫЕ ПРЕПАРАТЫ
 
-## Дополнительные авторские материалы из Telegram
+Сейчас я провожу диагностику и коррекцию нервно-гормональной системы через следующие препараты:
 
-### message842
+Ключевые препараты регуляторы .
+
+Это "дирижёры", универсальные точки входа, через которые можно тестировать и балансировать систему:
+
+• Thymuline - регулировка имунной системы, тимуса
+
+• Adrenalinum , Hydrocartisol – регулировка уровня стресса
+
+• Hypophysis / Pituitarium – гипофиз, главный дирижёр эндокринной системы, общая настройка и регуляция.
+
+• Pancreatinum – поджелудочная, ферменты, обмен, важнейшая точка для диабета и переваривания.
+
+• Thyroidinum – щитовидка, энергия, метаболизм (ключ к ожирению, усталости, депрессии).
+
+• Oophorinum, Folliculinum – эстрогены, женские гормоны, цикл, баланс женской оси.
+
+• Testosteronum, Orchitinum – мужские гормоны, ось, энергия, решительность.
+
+## Дополнительные материалы и наблюдения
+
+### message842 (02.10.2025 15:10:46 UTC-05:00)
 
 ♂️ Testosteronum (Тестостерон)
 
@@ -51,13 +76,13 @@ primary_image_alt: Исходное изображение, прикреплён
 
 Архетип Мужчины-Воина, Солнца, зрелого Лидера. Это энергия стержня, ясности и решимости. Препарат помогает выйти из инфантильности, страха и сомнений, вернуть силу и внутреннюю опору.
 
-2. Основа
+## ОСНОВА
 
 – Гормон тестостерон, ключевой мужской гормон.
 
 – Символика: солнечный огонь, ян-энергия, проявленность, сила, власть, способность защищать и созидать.
 
-3. Показания
+## ПОКАЗАНИЯ
 
 - Снижение либидо,
 
@@ -105,7 +130,7 @@ primary_image_alt: Исходное изображение, прикреплён
 
 – «Сила — это спокойствие и ясность».
 
-8. Этап развития
+## ЭТАП РАЗВИТИЯ
 
 – Подростковый возраст (12–25 лет): становление идентичности, поиск мужской роли, формирование силы.
 
@@ -133,7 +158,7 @@ primary_image_alt: Исходное изображение, прикреплён
 
 – В тени: агрессия, жесткость, гиперкомпенсация («маска мужика»).
 
-12. Трансформация
+## ТРАНСФОРМАЦИЯ
 
 До: слабость, пассивность, сомнение в себе, депрессия.
 
@@ -145,7 +170,7 @@ primary_image_alt: Исходное изображение, прикреплён
 
 – Солнце на рассвете: мягкое, но неотвратимо восходящее.
 
-14. Ритуал
+## РИТУАЛ
 
 – Медитация на солнечный свет в центре груди.
 
@@ -153,7 +178,7 @@ primary_image_alt: Исходное изображение, прикреплён
 
 – Использование символа меча или свечи как проводника ян-энергии.
 
-### message866
+### message866 (28.10.2025 11:34:18 UTC-05:00)
 
 Тестостерон.
 

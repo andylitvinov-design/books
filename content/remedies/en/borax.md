@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message496 (04.05.2025 15:55:49 UTC-05:00)
+primary_source_sections: ОСНОВА; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message496 (04.05.2025 15:55:49 UTC-05:00)
 source_images: /media/remedies/borax/message496-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Borax.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Borax.; primary canonical content rebuilt from message496 (04.05.2025 15:55:49 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message496
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/borax.md
@@ -41,130 +46,128 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Borax, message496.
 ---
 
-### message496
-
 BORAX
 
 An interesting remedy.
 
 It adds courage!
 
-It brings out the fear of contact, the fear of rejection.
+It removes the fear of contact, the fear of rejection.
 
-Increases determination.
+It increases decisiveness.
 
-Function: Removes fear from intimacy, trembling, fear that you will be pushed away, judged, offended.
+Function: Removes fright from closeness, trembling, fear of being pushed away, judged, hurt.
 
 Gives: gentleness, trust.
 
-BASE:
+## BASE
 
 - sodium salt of boric acid, traditionally used as an antiseptic for irritation of the skin and mucous membranes,
 
-is a brittle mineral that is easily destroyed by sudden impact.
+- a brittle mineral that easily breaks under sudden impact.
 
-- in homeopathy gives a feeling of protection and soft contact with the world.
+- in homeopathy gives a sense of protection and gentle contact with the world.
 
-ARCHETYPE
+## ARCHETYPE
 
-- vulnerable child
+- sensitive child
 
-- guardian of contact boundaries
+- guardian of the boundaries of contact
 
-- someone who is afraid of falling
+- one who is afraid to fall
 
 IMAGES
 
-- a flower that trembles in the wind
+- a flower trembling in the wind
 
-- a crystal that breaks when struck
+- a crystal splitting under impact
 
-- baby scared when falling
+- a baby frightened when falling
 
-INDICATIONS
+## INDICATIONS
 
-- Sensitivity to change, fear of new steps, changes.
+- Sensitivity to changes, fear of new steps, changes.
 
-- Fear of falling, failure, refusal.
+- Fear of falling, failure, rejection.
 
 - Increased anxiety.
 
-- Problems with skin and mucous membranes.
+- Problems with skin, mucous membranes.
 
-- Difficulties with transitions (change of place, stage of life, new relationships).
+- Difficulties with transitions
 
-4. DEVELOPMENT STAGE
+(change of place, stage of life, new relationships).
 
-0–1.5 years – Stage
+## DEVELOPMENT STAGE
 
-proximity.
+0–1.5 years — Stage of closeness.
 
-Fear of interrupting contact, loss of a sense of security when conditions change.
+Fear of interruption of contact, loss of sense of security when conditions change.
 
-As well as the trauma of ridicule and falling (usually 1.5–2 years).
+As well as trauma of ridicule and falling (usually 1.5–2 years).
 
-What it does: removes fear of approach, fear of evaluation, removes hyperreaction to criticism and humiliation.
+What it does: relieves fear of approaching, fear of evaluation, removes overreaction to criticism and humiliation.
 
-5. EFFECT OF THE remedy
+5. EFFECT OF THE PREPARATION
 
-- Calms anxiety before change.
+- Calms anxiety before changes.
 
-- Restores a sense of stability.
+- Restores the sense of stability.
 
-- Helps you gently enter a new stage without losing your sense of security.
+- Helps to gently enter a new stage without losing the sense of security.
 
-- Relieves fears of “falling”, refusal, failure.
+- Relieves fears of 'falling', rejection, failure.
 
-6. IDEA OF ARCHETYPE
+## ARCHETYPE IDEA
 
-- "The world is changing, but I can move softly and safely."
+- 'The world changes, but I can move gently and safely.'
 
-7. LESSON
+## LESSON
 
-- I can move on to new things while maintaining a sense of stability.
+- I can transition to something new while maintaining a sense of stability.
 
-- Change is not danger, but growth.
+- Changes are not danger, but growth.
 
 - I know how to ask for support when the world becomes unstable.
 
-8. SHADOW
+## SHADOW
 
 - Avoidance of change.
 
-- Subconscious growth inhibition.
+- Subconscious inhibition of growth.
 
-- Shame for fear of “being weak” or depending on others.
+- Shame for the fear of 'being weak' or
 
-9. TRANSFORMATION
+depend on others.
 
-- Before: Anxiety, fear of falling, fear of new things.
+## TRANSFORMATION
 
-- After: Flexibility, trust in life, a sense of soft stability in changes.
+- Before: Anxiety, fear of falling, fear of the new.
+
+- After: Flexibility, trust in life, a sense of gentle stability in changes.
 
 10. AFFIRMATIONS
 
-- I
-
-I trust change.
+- I trust changes.
 
 - I maintain balance while moving forward.
 
 - I can change and remain safe.
 
-11. RITUAL “Safe Step”
+11. RITUAL "Safe Step"
 
-1. Stand on one leg. Feel the vibrations of your body.
+1. Stand on one leg. Feel the body's sway.
 
-2. Imagine that there is soft soil beneath you that will always support you.
+2. Imagine that under you is soft soil that will always support you.
 
 3. Take a small step forward and say:
 
-"I can move. I'm safe."
+"I can move. I am safe."
 
-4. Repeat several times, allowing your body to remember the feeling of security with each step.
+4. Repeat several times, allowing the body to remember the feeling of safety with each step.
 
-IDEA OF THE remedy:
+IDEA OF THE PRACTICE:
 
-Fear of change is not a weakness.
+Fear of change is not weakness.
 
-This is a call to find resilience within, not without.
+It is a call to find stability within, not outside.

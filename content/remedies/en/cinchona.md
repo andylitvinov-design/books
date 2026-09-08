@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message565 (23.05.2025 18:05:35 UTC-05:00)
+primary_source_sections: ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message566 (23.05.2025 18:29:58 UTC-05:00)
 source_messages: message565 (23.05.2025 18:05:35 UTC-05:00); message566 (23.05.2025 18:29:58 UTC-05:00)
 source_images: /media/remedies/cinchona/message565-1.jpg; /media/remedies/cinchona/message566-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cinchona.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cinchona.; primary canonical content rebuilt from message565 (23.05.2025 18:05:35 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message565
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/cinchona.md
@@ -41,29 +46,27 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Cinchona, message565.
 ---
 
-### message565
-
-CINCHONA (quinna)
+CINCHONA (quinine)
 
 A wonderful remedy that restores broken connections.
 
-If you are avoiding someone, are ashamed, disappointed, are afraid of betrayal - this remedy again launches a wave of life into your relationship.
+If you are avoiding someone, feeling ashamed, disappointed, afraid of betrayal - this remedy once again triggers a wave of life in your relationships.
 
-In relationships with the world and yourself.
+In your relationships with the world and yourself.
 
-Hope for intimacy and sparks of feelings are gently ignited.
+Hope for closeness and little sparks of feelings gently ignite.
 
-INDICATIONS:
+## INDICATIONS
 
 - the remedy is suitable when life seems to have lost joy, color, meaning.
 
-- when you gave a lot to others, and you yourself were left in emptiness, without strength and juices
+- when you have given a lot to others, and yourself remain in emptiness, without strength and vitality
 
-- deep fatigue, exhaustion after loss of love, meaning, divorce, etc.
+- deep fatigue, exhaustion after the loss of love, meaning, divorce, etc.
 
 - inability to let go of loss,
 
-- isolation, loss of strength due to minor stimuli
+- closedness, loss of strength at minor irritations
 
 - loss of taste for life,
 
@@ -71,132 +74,125 @@ INDICATIONS:
 
 - superficial cheerfulness with inner emptiness.
 
-BASE:
+## BASIS
 
-Cinchona bark.
+Cinchona tree bark.
 
-It helps with loss of strength, burnout, blood loss, and malaria.
+It helps with loss of strength, burnout, blood loss, malaria.
 
-Bark - protects, cools from overheating.
+The bark protects, cools from overheating.
 
-EFFECT:
+EFFECT
 
-- Return of strength and hope
+- Restoration of strength and hope
 
-- Alleviation of pain, sensitivity
+- Relief of pain and sensitivity
 
-- Completion
-
-cycle of loss and opening to new things
+- Completion of the cycle of loss and opening up to something new
 
 - Return of taste and interest in life and relationships
 
-- The Force Awakens
+- Awakening of strength
 
 ARCHETYPES:
 
-- Exhausted Empath:
+- Exhausted empath:
+  drained and closed off
 
-devastated and fenced off
+- Fragile healer, who heals everyone while forgetting about themselves
 
-- A fragile healer who heals everyone, forgetting about himself
+- Emptied soul,
+  unable to mourn the loss
 
-- Devastated soul,
+- Broken hero:
+  saved, healed, while losing loved ones and health, but did not allow themselves to grieve, as they did not allow themselves to be weak.
+  They deny their suffering, and inside is emptiness. They do not wear mourning, but buried themselves.
 
-who cannot mourn the loss.
+IMAGES:
 
-- Broken Hero:
+- a person who puts on a mask of cheerfulness, but at night does not sleep because inside there is emptiness and unprocessed grief,
 
-he saved, healed, and at the same time lost loved ones, health, but did not allow himself to experience grief, because he did not allow himself to be weak.
-
-He denies his suffering, and there is emptiness inside. He does not mourn, but buried himself.
-
-IMAGES.
-
-- a person who puts on a mask of cheerfulness, but does not sleep at night, because inside there is emptiness and unlived grief,
-
-- the cup from which everything poured out,
+- a cup from which everything has spilled out,
 
 - a flower that gave away all its nectar.
 
-DEVELOPMENT STAGE: CARE.
+STAGE OF DEVELOPMENT: CARE.
 
-Am I eligible to receive?
+Do I have the right to receive?
 
-IDEA OF THE remedy:
+IDEA OF THE PREPARATION:
 
-- Loss is a pause, not an end.
+- Loss is a pause, not the end.
+You can
 
-You can reclaim the sunshine of your life.
+to take back the sun of your life.
 
-MESSAGE:
+## MESSAGE
 
-You don't have to give yourself up to the last drop.
+You do not have to give yourself to the last drop.
 
-Life can fill you again - if you allow it.
+Life can fill you again — if you allow it.
 
 AFFIRMATIONS:
 
-I don't give myself up anymore
+I no longer give myself until I disappear.
 
-disappearance.
+My soul thirsts for living water — and I allow it.
 
-My soul thirsts for living water - and I allow it.
+## TRANSFORMATION
 
-TRANSFORMATION:
+Before: Emptiness, exhaustion, gloomy self-sacrifice
 
-Before: Emptiness, exhaustion, sad sacrifice
+After: Fullness, gentle joy, restored strength
 
-After: Fullness, soft joy, restored strength
+## RITUAL
 
-RITUAL:
+Take an empty cup (that’s you), pour water into it with the intention: “I fill myself with life. I take back my strength. I allow myself to be complete.” Thank yourself.
 
-Take an empty cup (that’s you), pour water into it with the attitude: “I fill myself with life. I'm getting my strength back. I give myself permission to be complete." Thank yourself.
+## Additional materials and observations
 
-## Additional author materials from Telegram
+### message566 (23.05.2025 18:29:58 UTC-05:00)
 
-### message566
+CINCHONA — returning the light
 
-CINCHONA - return of light
+I gave myself without counting —
 
-I gave myself without counting -
+into care, into closeness, into bright laughter.
 
-into care, into intimacy, into bright laughter.
+And suddenly I was left without something
 
-And suddenly I was left without something,
+that I called myself — “I am.”
 
-what he called himself - “I am.”
+I was like a cup that was emptying,
 
-I was like a cup that was emptying
+with a smile — even in the gray gloom.
 
-with a smile - even in the gray darkness.
+I hid my soul behind cheerfulness so as not to ask:
 
-I hid my soul behind fun, so as not to ask: “give me...”
+"'But give me…'
 
-But night fell. And in the fall
+But night fell. And in its fall
 
-I suddenly heard: “You’re alive.”
+I suddenly heard: 'you are alive.'
 
-And with this pain comes a revelation:
+And with this pain — a revelation:
 
 you can be weak, yourself.
 
-And a flame was born in the void,
+And in the void a flame was born,
 
-not from struggle, but from tears.
+not from struggle, but from a tear.
 
-Life returns - not with drama, but with silence. From a living vine.
+Life returns — not through drama, but through silence. From a living vine.
 
-I'm filling up. Not from the outside, from the depths, from that water,
+I am filling up. Not from outside — from within, from that water,
 
-what drops
+which with drops washed the soul, bringing me back from the void.
 
-washed my soul, returning me from the void.
+Now my light — not bright, warm.
 
-Now my light is not bright, warm.
+It does not burn — it sings.
 
-He doesn't burn - he sings.
+And if someone needs it,
 
-And if anyone needs it,
-
-I'm nearby. My fire lives.
+I am nearby. My fire — lives."

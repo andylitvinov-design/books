@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message680 (27.06.2025 20:52:50 UTC-05:00)
+primary_source_sections: ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message680 (27.06.2025 20:52:50 UTC-05:00)
 source_images: /media/remedies/veratrum-album/message680-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Veratrum Album.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Veratrum Album.; primary canonical content rebuilt from message680 (27.06.2025 20:52:50 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message680
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Veratrum Album, message680.
 ---
-
-### message680
 
 VERATRUM ALBUM
 
@@ -117,7 +120,7 @@ Veratrum album — белая чемерица, ядовитое растени�
 
 - Световая маска, под которой зияет дыра.
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 - Психический эффект: восстановление внутреннего центра
 

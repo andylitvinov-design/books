@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message240 (16.12.2024 17:54:26 UTC-05:00)
+primary_source_sections: ОСНОВА; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message240 (16.12.2024 17:54:26 UTC-05:00)
 source_images: /media/remedies/lycopodium/message240-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Lycopodium.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Lycopodium.; primary canonical content rebuilt from message240 (16.12.2024 17:54:26 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message240
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,15 +44,13 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Lycopodium, message240.
 ---
 
-### message240
-
 LYCOPODIUM
 
 Важный препарат для парней.
 
 Он про уверенность и смелость. Когда мы вместо того, чтобы казаться сильным и уверенным, начинаем по-настоящему чувствовать эту силу внутри.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Генерал
 
@@ -55,7 +58,7 @@ LYCOPODIUM
 
 Он позволяет обрести внутри спокойную уверенность.
 
-ОСНОВА:
+## ОСНОВА
 
 Растенение плаун. Оно медленно но неустанно развивается, занимая все большую площадь.
 
@@ -77,13 +80,13 @@ LYCOPODIUM
 
 - показная сила и скрытая слабость.
 
-ОБРАЗ:
+## ОБРАЗ
 
 - Человек, стоящий на сцене перед большой аудиторией, который боится быть разоблачённым, несмотря на то, что внешне выглядит уверенно и авторитетно.
 
 - Маленький, робкий лев, который со временем находит свой голос и рычит уверенно.
 
-УРОК:
+## УРОК
 
 - Признание своей ценности, смелость заявить о себе;
 
@@ -91,7 +94,7 @@ LYCOPODIUM
 
 - Свободное выражение своего мнения и идей.
 
-НАБЛЮДЕНИЯ
+## НАБЛЮДЕНИЯ
 
 - По опыту, такой препарат дает большее ощущение личных границ и способность о них заявить.
 

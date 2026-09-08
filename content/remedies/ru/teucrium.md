@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message609 (05.06.2025 14:44:50 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message609 (05.06.2025 14:44:50 UTC-05:00)
 source_images: /media/remedies/teucrium/message609-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Teucrium.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Teucrium.; primary canonical content rebuilt from message609 (05.06.2025 14:44:50 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message609
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Teucrium, message609.
 ---
 
-### message609
-
 TEUCRIUM (чабрец)
 
 Чудесный препарат, который помогает человеку укрепить его границы.
@@ -51,7 +54,7 @@ TEUCRIUM (чабрец)
 
 Препарат хорошо очищает от внешних чувств и мыслей, укрепляя чувство свободы внутри и контроля над своим внутренним миром.
 
-ОСНОВА:
+## ОСНОВА
 
 Чабрец, растение с сильным ароматом, традиционно использовалось для изгнания паразитов.
 
@@ -59,7 +62,7 @@ TEUCRIUM (чабрец)
 
 Защищает от внешних вторжений.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - беспокойство, разражение
 
@@ -69,7 +72,7 @@ TEUCRIUM (чабрец)
 
 - полипы, аллергии, воспаления слизистых.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - ощущение мягкого защищенного пространства внутри
 
@@ -85,7 +88,7 @@ TEUCRIUM (чабрец)
 
 Конфликт: «Я не знаю, как защититься от вторжения»
 
-АРХЕТИП:
+## АРХЕТИП
 
 🔸 Страж границ — чувствует, когда кто-то вторгается в его пространство, и ищет способы защитить свою территорию.
 
@@ -93,7 +96,7 @@ TEUCRIUM (чабрец)
 
 🔸 Воин против невидимого врага — ощущает внутри или вокруг себя «что-то не своё» и борется с этим.
 
-ОБРАЗ:
+## ОБРАЗ
 
 🌿 Колючий куст с мелкими листьями — как барьер для всего чужого.
 
@@ -127,13 +130,13 @@ TEUCRIUM (чабрец)
 
 - Я возвращаю контроль над своими мыслями и желаниями.
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - До: зуд, раздражение, навязчивые мысли, ощущение чужого влияния
 
 - После: чистота, свобода, контроль над собой, спокойствие
 
-РИТУАЛ
+## РИТУАЛ
 
 Нащупай внутри себя чужой темный дым и представь как он растворяется в свете.
 

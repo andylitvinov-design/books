@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message733 (05.07.2025 20:20:10 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message733 (05.07.2025 20:20:10 UTC-05:00)
 source_images: /media/remedies/aethusa-cynapium/message733-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Aethusa Cynapium.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Aethusa Cynapium.; primary canonical content rebuilt from message733 (05.07.2025 20:20:10 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message733
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/aethusa-cynapium.md
@@ -41,135 +46,133 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Aethusa Cynapium, message733.
 ---
 
-### message733
-
 🧪 AETHUSA CYNAPIUM
 
-(Dog parsley)
+(Dog's Parsley)
 
-A remedy with amazing depth. It brings back life when the psyche has already seemingly collapsed.
+A remedy that is stunning in its depth. It restores life when the psyche seems to have already collapsed.
 
-When there is deep shame, fear, there is fog in the head and there is no desire to contact the world.
+When there is deep shame, fear, fog in the mind, and no desire for contact with the world.
 
-The remedy is ideal for early subpersonalities that have lost the meaning of existence and have frozen in their depths.
+The remedy is ideal for early subpersonalities that have lost the meaning of existence and froze in their depth.
 
-This is the archetype of the little child who was not accepted. A child expelled from his mother's paradise.
+It is the archetype of a small child who was not accepted. A child exiled from the maternal paradise.
 
 A soul rejected at the very beginning.
 
-This is a remedy for early abandonment. A subpersonality that wanted love, but was rejected and fell silent forever.
+This is a remedy for early abandonment. A subpersonality that sought love but received rejection and fell silent forever.
 
 PSYCHODYNAMICS
 
-This is a soul that did not have a mother - or there was a mother, but not in resource.
+It is a soul that did not have a mother — or there was a mother, but she was not available.
 
-The result is deep loneliness and panic when alone. He does not scream - he has already resigned himself, plunged into oblivion, went inside himself, lost contact with the body, with the world, with himself.
+As a result — deep loneliness and panic in solitude. It does not scream — it has already resigned itself, submerged into oblivion, withdrawn into itself, lost contact with the body, with the world, with itself.
 
-He cannot assimilate love, food, peace.
+It cannot assimilate love, food, or the world.
 
-He does not digest and rejects maternal care.
+It does not digest and rejects.
+
+maternal care.
 
 🌿 BASE
 
-Dog parsley is a poisonous plant similar to
+Dog parsley — a poisonous plant that looks like parsley.
 
-parsley
+Symbolically — a deceived contact, a mother who appears loving but cannot be in real contact.
 
-Symbolically - a deceived contact, a mother who looks like she is loving, but cannot be in real contact.
+Causes poisoning, loss of consciousness.
 
-Causes poisoning and loss of consciousness.
-
-In homeopathy it is used for severe mental conditions associated with impaired contact and difficulties in assimilating food and love.
+In homeopathy, it is used for severe mental conditions associated with impaired contact and difficulties in digesting food and love.
 
 💥 INDICATIONS
 
 - Panic and helplessness when alone.
 
-- Feeling: “They don’t love me. I'm not here."
+- Feeling: 'I am not loved. I do not exist.'
 
-- Emotional rejection, the feeling that you have been “spitted out” from the world.
+- Emotional rejection, feeling that you have been 'spat out' of the world.
 
-- Nausea, inability to “digest” love or care
+- Nausea, inability to 'digest' love or care
 
-- Mental retardation, detachment.
+- Mental sluggishness, detachment.
 
-- Avoiding contact
+- Avoidance of contact
 
 - Vomiting after eating, especially milk
 
-- Loss of consciousness, convulsions, stupor, freezing, staring into space
+- Loss of consciousness, convulsions, stupor, freezing, staring into emptiness
 
-- The feeling that you are superfluous, unnecessary, misunderstood
+- Feeling that you are extra, unnecessary, misunderstood
 
-- Alienation, inability to process contact
+- Alienation, inability to digest contact
 
-- Tired of life, apathy, weakness, feeling of abandonment.
+- Fatigue from life, apathy,
+
+weakness, a feeling of abandonment.
 
 🔥 ARCHETYPES
 
-- Abandoned baby who stopped calling
+- Abandoned infant, who stopped calling
 
-- A ghostly child who cannot be seen
+- Ghost child, who is not seen
 
-🖼 LOOKS
+🖼 IMAGES
 
-- An empty cradle under the cold light
+- Empty cradle under cold light
 
--
+- Child with huge eyes, who cannot cry
 
-A child with huge eyes who cannot cry
+- Woman reaching out, but it is already too late
 
-- Woman holding out her hands, but it's too late
-
-- A child in a cradle, who has been turned away and no one comes near.
+- Child in a cradle, turned away from and no one approaches
 
 - Moon, cold light in an empty room.
 
-🌸 EFFECT OF THE remedy
+🌸 EFFECT OF THE PREPARATION
 
-- Returns contact with the body and reality
+- Restores contact with the body and reality
 
-- Helps to start feeling, thawing, awakening
+- Helps begin to feel, thaw, awaken
 
-- Allows you to digest maternal trauma, the pain of absence
+- Allows processing maternal trauma, the pain of absence
 
-- Supports emotional absorption of care and love
+- Supports emotional assimilation of care and love
 
 - Revives frozen parts of the soul
 
-- Softens stomach psychosomatics, blackout
+- Softens stomach psychosomatics, disconnection of consciousness
 
 - Removes the feeling that you are a ghost.
 
-- Helps to relax panic tension, restore the feeling that “I am.”
+- Helps relax panic tension, restore the sense of "I am."
 
-- Gives softness, support, a feeling of acceptance.
+- Gives softness, support, a sense of acceptance.
 
-🧱 DEVELOPMENT STAGE
+🧱 STAGE
 
-Before birth / 0 years: feeling of uselessness, rejection.
+DEVELOPMENT
 
-0.1–1.5 years - trauma of love
+Before birth / 0 years: a sense of being unwanted, rejection.
 
-💡 remedy IDEA
+0.1–1.5 years — trauma of love
 
-Even if they didn’t hear you, you exist
+💡 IDEA OF THE REMEDY
 
-Even if you are rejected, you can feel
+Even if you were not heard — you exist
 
-The world may be dangerous - but you have the right to be.
+Even if you were rejected — you can feel
 
-Your soul is not a mistake. You are not a shadow. You -
+The world may be dangerous — but you have the right to exist.
 
-Human.
+Your soul is not a mistake. You are not a shadow. You are a human.
 
 ✨ MESSAGE / LESSON
 
 You are needed.
 
-You can feel - and not dissolve.
+You can feel — and not dissolve.
 
-You are worthy of touch.
+You deserve touch.
 
 You can come back.
 
@@ -181,46 +184,46 @@ You can accept love.
 
 🌺 AFFIRMATIONS
 
-I have the right to be.
+I have the right to exist.
 
 My body is safe.
 
-I may be alive.
+I can be alive.
 
-I feel it, but I don't disappear.
+I feel, but do not disappear.
 
 I deserve love.
 
-I'm needed. I'm worthy. I'm here.
+I am needed. I am worthy. I am here.
 
 I can accept care.
 
-I feel calm around others.
+I feel calm being with another.
 
-I am returning home - to my body and to myself.
+I return home — to my body and to myself.
 
 🔄 TRANSFORMATION
 
-Before: Panic, loneliness, shrinking, rejection, refusal to care.
+Before: Panic, loneliness, tension, rejection, refusal of care.
 
-After: Gentleness, relaxation, the right to receive love and be in contact, awakening, the desire to live.
+After: Softness, relaxation, the right to receive love and
+
+to be in touch, awakening, desire to live.
 
 🖌 IMAGE / MEDITATION
 
 You are lying in an empty room. Everything is white and cold.
 
-You feel someone take you in their arms - gently, without words.
+You feel someone picking you up — gently, without words.
 
-The heart begins to beat. The chest is breathing.
+Your heart begins to beat. Your chest breathes.
 
-You are not alone. Are you here.
+You are not alone. You are here.
 
 You allow yourself to feel.
 
 🔮 RITUAL
 
-Wrap yourself in a warm blanket. Lie down and put your hands on your stomach. Imagine that you are a child who is being taken to
+Wrap yourself in a warm blanket. Lie down and place your hands on your stomach. Imagine that you are a child being picked up.
 
-hands.
-
-Say: “I have the right to be loved. I am part of this world. I feel warm. I'm safe. I give myself permission to accept love.” Inhale the aroma (vanilla, lavender). Be in the feeling that you are needed.
+Say: "I have the right to be loved. I am part of this world. I feel warmth. I am safe. I allow myself to receive love." Inhale the scent (vanilla, lavender). Stay in the feeling — you are needed.

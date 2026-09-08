@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message826 (14.09.2025 19:17:12 UTC-05:00)
+primary_source_sections: ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message826 (14.09.2025 19:17:12 UTC-05:00)
 source_images: /media/remedies/syzygium-jambolanum/message826-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Syzygiun Jambolanum; Syzygium jambolanum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Syzygiun Jambolanum; Syzygium jambolanum.; primary canonical content rebuilt from message826 (14.09.2025 19:17:12 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message826
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/syzygium-jambolanum.md
@@ -41,130 +46,126 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Syzygium jambolanum, message826.
 ---
 
-### message826
+SYZYGIUM JAMBOLANUM
 
-SYZYGIUN JAMBOLANUM
+(Jambolan, Eastern plum).
 
-(Jambolan, oriental plum).
+This remedy is key for the theme of receiving pleasure.
 
-This remedy is key to the theme of accepting pleasure.
+- In health homeopathy, it is used to treat diabetes, lower sugar levels.
 
-- In health homeopathy it is used to treat diabetes, reduce sugar
-
-- In psychohomeopathy, it is used for injuries to the trust of the child’s first steps towards the world.
+- In psychohomeopathy, it is used for traumas of trust during a child's first steps into the world.
 
 This remedy is a mystery.
 
-It teaches you to open up to the Sweetness of life, to allow you to accept the pleasure and love of the world without stress to your health.
+It teaches to open up to the sweetness of life, to allow oneself to receive pleasure and the love of the world without stress for health.
 
 Psychodynamics.
 
-At the “Right to Receive” stage (0.5-1.5 years), the child learns to trust the world and accept care.
+At the stage "Right to Receive" (0.5-1.5 years), the child learns to trust the world and accept care.
 
-If care is inconsistent (that is, then not), an anxious type of attachment is formed.
+If care is inconsistent (that is, sometimes yes, sometimes no), an anxious attachment type forms.
 
-Those. There is a constant lack of love inside, but there is a fear of asking so as not to be rejected.
+That is, internally there is a constant feeling of lack of love, but there is a fear to ask in order not to face rejection.
 
 Psychosomatics.
 
-At the body level, when receiving sugar, the pancreas gets scared: there is too much sweetness, I can’t handle it, it releases insulin, which burns sugar, and the person is left without strength after eating.
+At the body level, when receiving sugar, the pancreas gets scared: the sweetness is too much, I can’t handle it, it releases insulin, which burns sugar, and a person after eating is left without
 
-And with diabetes it’s even worse: there’s a lot of sugar in the blood, but the pancreas even
+strength.
 
-refuses to accept it and the person remains hungry, without love.
+And with diabetes, it's even worse: there's a lot of sugar in the blood, but the pancreas even refuses to take it in, and the person remains hungry, without love.
 
 Like a child.
 
-Indications:
+## INDICATIONS
 
 - Craving for sweets, for praise, for love, diabetes.
 
-- Feelings of hunger, melancholy, emptiness.
+- Feeling of hunger, longing, emptiness.
 
 - Fatigue, weakness, exhaustion.
 
 - Skin complications.
 
-- Feeling: “I feed others, but no one feeds me.”
+- Feeling: 'I feed others, but no one nourishes me.'
 
-Idea
+## IDEA
 
-Syzygium is the gateway of initiation to the Source of unconditional love.
+Syzygium is the gate of initiation to the Source of unconditional love.
 
-This is the archetype of the baby at the breast, allowing itself to open up and be fed.
+It is the archetype of a child at the breast, who allows itself to open and be nourished.
 
-Transformation.
+## TRANSFORMATION
 
 The archetype changes:
 
-First up: the hungry child.
+At first: the hungry child.
 
-- “I want, but I'm afraid to ask. I take it and still remain empty.”
+- 'I want, but I'm afraid to ask. I take — and still remain empty.'
 
-Then: a trusting, nourished baby.
+Then: the trusting, nourished infant.
 
-“I can open up, trust the world. Get. It's safe, it nourishes me. The world gives me enough."
+- 'I can open up, trust the world. Receive. It is safe, it nourishes me. The world gives me enough.'
 
-- Body: the pancreas works smoothly, sugar is absorbed gently, without surges and loss of strength after eating.
+- Body: the pancreas works smoothly, sugar is absorbed gently, without spikes and drops in energy after eating.
 
-Rationale.
+## JUSTIFICATION
 
-Archetypally, Syzygium combines two qualities: the sweetness of the fruit and the tartness of the seed. This is an image of love that turns into bitterness.
+Archetypically, Syzygium combines 2 qualities: the sweetness of the fruit and the astringency of the seed. It is the image of love that turns into bitterness.
 
-By taking syzygium we learn
+By taking syzygium, we learn to trust the bitterness of life, the bitterness of love.
 
-trust the bitterness of life, the bitterness of love.
+In the case of love trauma, a person seeks only the "sweet" and perfect.
 
-With the trauma of love, a person seeks only the “sweet”, the ideal.
+While working through trauma, a person opens up to the different facets of life and accepts the world.
 
-When working through trauma, a person opens up to different facets of life and accepts the world.
-
-Syzygium is a medicine of trust in life in its different tastes.
+Syzygium is a medicine for trust in life in all its flavors.
 
 Mystery.
 
-Syzugium is a transformation
+Syzygium is the transformation of
 
-hunger for trust,
+hunger into trust,
 
-emptiness - into filling, fear - into the feeling that the world feeds and supports.
+emptiness — into fulfillment, fear — into the feeling that the world nourishes and supports.
 
-Effect
+## EFFECT
 
-- Feeling of fullness and peace
+- A sense of fullness and peace
 
 - Removes the feeling of chronic lack.
 
-- Reduces cravings for sweets, praise, addiction.
+- Reduces craving for sweets, praise, dependence.
 
-- Returns the ability to be saturated with the present.
+- Restores the ability to be satisfied with the present.
 
-- support the pancreas and regulate sugar.
+- Supports the pancreas and regulates sugar.
 
-Observations
+## OBSERVATIONS
 
-for working with clients:
+from working with clients:
 
-- high potencies of the remedy help the soul to blossom, begin to shine and rejoice in the world - like trees blossom in spring, children smile
+- The high potencies of the preparation help the soul to blossom, begin to shine and
 
-- low potencies give a feeling of support and strength for the pancreas.
+Rejoice in the world - like trees blooming in spring, children smiling
 
-Message/Lesson
+- Low potentials give a sense of support, strength for the pancreas.
 
-- You don't have to be “sweet” to be loved.
+Message / Lesson
 
-- You can ask and you will receive
+- You don’t have to be 'sweet' to be loved.
+
+- You can ask - and you will receive
 
 - Your need can be satisfied.
 
-Image /
-
-Meditation
+## IMAGE / MEDITATION
 
 Imagine yourself in the desert. You drink water, but the thirst remains.
 
-Suddenly a source appears - a clean river. The light of the sun is reflected in the water, and you understand: there has always been this source inside you.
+Suddenly a spring appears — a clear river. The sunlight reflects in the water, and you realize: this spring has always existed within you.
 
-You drink from it, and for the first time you feel: the thirst has gone.
+You drink from it, and for the first time you feel: the thirst is gone.
 
 You are filled inside, at the very source of your life.

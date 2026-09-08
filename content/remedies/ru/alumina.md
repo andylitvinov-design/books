@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message450 (20.04.2025 09:47:39 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message450 (20.04.2025 09:47:39 UTC-05:00)
 source_images: /media/remedies/alumina/message450-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Alumina.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Alumina.; primary canonical content rebuilt from message450 (20.04.2025 09:47:39 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message450
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Alumina, message450.
 ---
-
-### message450
 
 ALUMINA
 
@@ -57,7 +60,7 @@ ALUMINA
 
 Он прямо выводит человека из дальних уголков пещеры внутреннего мира, возвращает возможность взаимодействия с другими.
 
-ОСНОВА
+## ОСНОВА
 
 Оскид алюминия - белое тугоплавкое вещество, которое используется для придания прочности медицинским приборам.
 
@@ -65,7 +68,7 @@ ALUMINA
 
 В гомеопатии помогает работать с расщепленным Я, заторможенностью,  подавленностью и при этом страхом потерять контроль.
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Исчезающее Я (скорее функционирующее, чем живое)
 
@@ -79,7 +82,7 @@ ALUMINA
 
 - Молчаливый изгнанник
 
-ОБРАЗ:
+## ОБРАЗ
 
 - Стеклянная кукла, которая смотрит на мир, но не чувствует его.
 
@@ -87,7 +90,7 @@ ALUMINA
 
 - Белая пустыня, где исчезли цвета, звуки, желания.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - апатия, хроническая усталость
 
@@ -105,7 +108,7 @@ ALUMINA
 
 - онемение, запоры, утомляемость.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 Alumina "размораживает" душу, тело и мышление.
 
@@ -119,7 +122,7 @@ Alumina "размораживает" душу, тело и мышление.
 
 - Возрождает способность к действию и контакту с миром.
 
-ЭТАП РАЗВИТИЯ
+## ЭТАП РАЗВИТИЯ
 
 0–6 месяцев (Право быть) — отчуждение от базового ощущения «Я есть», сложности с восприятием границ тела, чувств, желаний.
 
@@ -127,7 +130,7 @@ Alumina "размораживает" душу, тело и мышление.
 
 - Желание жить, но не желание чувствовать свою боль.
 
-УРОК
+## УРОК
 
 - Твоя медлительность — не слабость, а глубина.
 
@@ -137,7 +140,7 @@ Alumina "размораживает" душу, тело и мышление.
 
 - Найди в себе того, кто чувствует, думает, выбирает.
 
-ИДЕЯ АРХЕТИПА
+## ИДЕЯ АРХЕТИПА
 
 «Даже в тишине есть пульс.
 
@@ -155,7 +158,7 @@ Alumina "размораживает" душу, тело и мышление.
 
 - Моя тишина — источник моей силы.
 
-РИТУАЛ:
+## РИТУАЛ
 
 - Признание.
 

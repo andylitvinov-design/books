@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message222 (13.12.2024 17:57:04 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП; ТЕНЬ; РЕСУРС
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message222 (13.12.2024 17:57:04 UTC-05:00)
 source_images: /media/remedies/kalium-arsenicosum/message222-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Kalium Arsenicosum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Kalium Arsenicosum.; primary canonical content rebuilt from message222 (13.12.2024 17:57:04 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message222
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/kalium-arsenicosum.md
@@ -41,37 +46,37 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Kalium Arsenicosum, message222.
 ---
 
-### message222
-
 KALIUM ARSENICOSUM
 
-I started working with a new remedy that is suitable for special situations where additional support is needed.
+I started working with a new remedy, which is suitable in special situations where additional support is needed.
 
-It is good because it can penetrate the depths of mental pain, but at the same time give a feeling of stability and support.
+It is good in that it can penetrate the depth of emotional pain while giving a sense of stability and support.
 
-He is like a circle that pulls you out of the abyss and whirlpools of mental wounds.
+It is like a circle that pulls one out of the chasm and whirlpools of emotional wounds.
 
-This is an archetype of extreme anxiety, loneliness and internal tension, disguised as external politeness and control.
+This is the archetype of extreme anxiety, loneliness, and inner tension, masked by outward politeness and control.
 
-Man learned to be good and correct so as not to be rejected.
+The person has learned to be good and proper so as not to be rejected.
 
-Emotions are suppressed, but anxiety bubbles up inside, sometimes reaching the point of panic.
+Emotions are suppressed, but anxiety boils inside, sometimes reaching panic.
 
-BASIS
+## BASIS
 
-This is a combination of arsenic and potassium.
+This is a combination of arsenic with potassium.
 
 - Arsenic helps in a state of chaos, when personal support is lost.
 
-- And potassium just strengthens this support.
+- And potassium precisely strengthens this support.
 
-INDICATIONS:
+## INDICATIONS
 
-- feeling of defenselessness, anxiety, vulnerability, weakness, exhaustion.
+- Feeling of defenselessness, anxiety, vulnerability, weakness, exhaustion.
 
-- the desire to regain control and management of one’s life, to get out of the hole, but the powerlessness to do so,
+- The desire to regain control and manage one's life, to get out of the pit, but powerlessness to do so.
 
-- with special sensitivity to other people
+this,
+
+- with it, a special sensitivity to other people
 
 - fear for health and future,
 
@@ -83,76 +88,78 @@ INDICATIONS:
 
 - Deliberate politeness, correctness, like armor.
 
-- Tendency to rituals, neatness to calm anxiety.
+- Tendency to rituals, neatness, to calm anxiety.
 
-EFFECT:
+## EFFECT
 
-- A feeling of support arises.
+- A sense of support arises.
 
-Instead of grasping at the world as salvation, a person begins to feel better about himself and rely on himself.
+Instead of grasping the world as salvation, a person begins to better feel themselves, to rely on themselves.
 
-He understands: I have myself.
+Understands: I am here for myself.
 
-This builds confidence and gives inner stability. Restores energy and strength. The person may begin to develop a strong, magical look.
+This strengthens confidence and gives inner stability. Restores energy and strength. A person may begin to have a strong, magical gaze.
 
-LOOK:
+## IMAGE
 
-- A man walking on a tightrope over an abyss, balancing between the fear of falling and the desire to reach the other shore.
+- A person walking on a tightrope over an abyss, balancing between the fear of falling and the desire to reach the other shore.
 
 - Ice that slowly melts, giving way to warm earth and life.
 
-ARCHETYPE:
+## ARCHETYPE
 
 - Vulnerable healer
 
-- Tamer of Chaos.
+- Tamer
+
+chaos.
 
 IDEA / CONFLICT:
 
 - Desire for stability vs. fear of change.
 
-- Desire for control vs. the need to trust the world.
+- Drive for control vs. the need to trust the world.
 
-SHADOW:
+## SHADOW
 
 - Fear of losing control and management.
 
-"If I stop
+"If I stop controlling — I will be abandoned or I will fall apart."
 
-control - they will abandon me or I will collapse.”
+"To be loved, I must be flawless."
 
-“To be loved, I must be flawless.”
+## RESOURCE
 
-RESOURCE:
+- Ability to withstand stress and trials
 
-- Ability to withstand stress and challenges
+IDEA OF THE REMEDY
 
-IDEA OF THE remedy
+Provide support during anxiety, restore trust in life.
 
-Provide support for anxiety and restore trust in life.
+Free from obsessive rituals and fear of loss.
 
-Free yourself from obsessive rituals and fear of loss.
+TRANSFORMATION / LESSON:
 
-TRANSFORMATION/LESSON:
-
-- Accepting your vulnerability as a source of strength. Trust the world. Discover your strength not outside, but inside.
+- Acceptance of one's vulnerability as a source of strength. Trust the world. Open your power not outwardly, but within.
 
 Affirmations
 
-“I am safe even when I am not in control.”
+"I am safe even when I do not control everything."
 
-“I can be myself. They love me not for my mask, but for my soul.”
+"I can be myself. I am loved not for a mask, but for my soul."
 
-“My peace of mind is born within, not outwardly.”
+"My calmness is born inside, not from external order."
 
 SPIRITUAL TASK:
 
-- accept uncertainty as part of life
+- accept uncertainty as a part of life
 
-- strengthen faith in your strength and stop being afraid of chaos.
+- strengthen faith in your own strength and stop being afraid
+
+chaos.
 
 KALIUM ARSENICOSUM
 
-- helps restore balance, reduces anxiety and restores confidence.
+- helps restore balance, reduces anxiety, and brings back confidence.
 
-From observations, the look after working with this remedy becomes firmer and more radiant.
+From observations, the gaze after working with this remedy becomes firmer and more radiant.

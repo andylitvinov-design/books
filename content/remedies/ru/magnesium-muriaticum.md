@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message487 (01.05.2025 22:44:19 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message487 (01.05.2025 22:44:19 UTC-05:00)
 source_images: /media/remedies/magnesium-muriaticum/message487-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesium Muriaticum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesium Muriaticum.; primary canonical content rebuilt from message487 (01.05.2025 22:44:19 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message487
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Magnesium Muriaticum, message487.
 ---
 
-### message487
-
 MAGNESIUM MURIATICUM
 
 Чудесный препарат.
@@ -51,7 +54,7 @@ MAGNESIUM MURIATICUM
 
 Препарат актуален, когда внутри есть мечта о тихом, надежном принятии, но сердце загрубело от груза обид, без ласки и поддержки.
 
-ОСНОВА
+## ОСНОВА
 
 Хлорид магния, соединение двух противоположностей:
 
@@ -77,7 +80,7 @@ MAGNESIUM MURIATICUM
 
 - Человек на берегу моря: шторм утих, но еще холодно. Вдали нет тех, кого он ждал, но он все еще надеется.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - одиночество, замкнутость, хроническая печаль, которую никто не видит
 
@@ -97,7 +100,7 @@ MAGNESIUM MURIATICUM
 
 Снаружи человек спокойный, мягкий, но внутри сжимает обиду.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - смягчение чувства вины, внутренней жесткости
 
@@ -105,7 +108,7 @@ MAGNESIUM MURIATICUM
 
 - готовность открываться и строить новые связи.
 
-ЭТАП РАЗВИТИЯ
+## ЭТАП РАЗВИТИЯ
 
 - Близость (0.1-1.5 года)
 
@@ -123,19 +126,19 @@ MAGNESIUM MURIATICUM
 
 Твоя зрелость — в умении не только поддерживать, но и принимать любовь.
 
-ИДЕЯ
+## ИДЕЯ
 
 Сила — не в том, чтобы всегда быть самостоятельным.
 
 Сила — в том, чтобы позволить себе быть уязвимым и довериться.
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - До: Сдерживание эмоций, одиночество, усталость от самостоятельности.
 
 - После: Открытость к принятию, мягкость, восстановление эмоциональных связей.
 
-РИТУАЛ:
+## РИТУАЛ
 
 - найти ряд камней, которые символизируют чувства грусти, обиды, одиночества
 
