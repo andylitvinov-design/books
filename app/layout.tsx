@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { metadataBaseFor } from "@/data/site-metadata";
 import { PwaRegistration } from "@/components/pwa-registration";
+import { MobileBottomNavigation } from "@/components/mobile-bottom-navigation";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className="font-sans"><PwaRegistration />{children}</body>
+      <body className="font-sans"><PwaRegistration />{children}<MobileBottomNavigation /></body>
     </html>
   );
 }
