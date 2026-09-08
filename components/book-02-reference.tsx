@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 
+import { RemedyContent, RemedyEssence } from "@/components/remedy-content";
 import type { Locale, Remedy, RemedyDirectoryEntry } from "@/data/remedies";
 
 type Book02ReferenceProps = {
@@ -29,7 +30,6 @@ const copy = {
     standalone: "Открыть отдельную карточку",
     source: "Источник",
     sourceRecord: "Записи источника",
-    supplementalSource: "Источник в Telegram",
     sourceName: "Исходное название",
     gallery: "Дополнительные изображения из источника",
     galleryHint: "Из связанных авторских сообщений",
@@ -52,7 +52,6 @@ const copy = {
     standalone: "Open standalone card",
     source: "Source",
     sourceRecord: "Source records",
-    supplementalSource: "Source in Telegram",
     sourceName: "Source name",
     gallery: "Additional source images",
     galleryHint: "From linked author messages",
@@ -110,29 +109,19 @@ function RemedyNavigator({ entries, locale, onNavigate }: { entries: RemedyDirec
   );
 }
 
-function BookRemedyDescription({ description, locale, sourceUrl }: { description: string; locale: Locale; sourceUrl?: string }) {
-  const labels = copy[locale];
-  return <div className="book-remedy-description">{description.split(/\n{2,}/).filter(Boolean).map((block, index) => {
-    const heading = block.match(/^#{2,3}\s*(.*)$/)?.[1]?.trim();
-    if (/^###\s+message\d+\s+\(/i.test(block)) return <p className="book-remedy-supplementary-source" key={`${index}-${block.slice(0, 24)}`}>{sourceUrl ? <a href={sourceUrl} rel="noreferrer" target="_blank">{labels.supplementalSource}: {block.slice(4)}</a> : block.slice(4)}</p>;
-    if (heading && (/^message-?\d+$/i.test(heading) || /^(дополнительные авторские материалы из telegram|additional author materials from telegram)$/i.test(heading))) return null;
-    if (heading) return block.startsWith("## ") ? <h3 key={`${index}-${heading}`}>{heading}</h3> : <h4 key={`${index}-${heading}`}>{heading}</h4>;
-    return <p className="whitespace-pre-line" key={`${index}-${block.slice(0, 24)}`}>{block}</p>;
-  })}</div>;
-}
-
 function BookRemedyImages({ locale, remedy }: { locale: Locale; remedy: Remedy }) {
   const labels = copy[locale];
   const alt = remedy.primary_image_alt || (locale === "ru" ? `Исходное изображение, прикреплённое к ${remedy.canonical_latin_name}.` : `Source image attached to ${remedy.canonical_latin_name}.`);
   const supporting = (remedy.supporting_images || "").split(";").map((image) => image.trim()).filter(Boolean);
 
   return <>
+    <RemedyEssence locale={locale} remedy={remedy} />
     {remedy.primary_image ? <figure className="book-remedy-primary-image">
       {/* The source attachment is rendered without inferred visual claims. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img alt={alt} decoding="async" src={remedy.primary_image} />
     </figure> : null}
-    <BookRemedyDescription description={remedy.description} locale={locale} sourceUrl={remedy.primary_source_url} />
+    <RemedyContent locale={locale} remedy={remedy} showEssence={false} sourceUrl={remedy.primary_source_url} variant="book" />
     <footer className="book-remedy-source">
       <p>{labels.source}</p>
       <strong>{remedy.source_author}</strong>
