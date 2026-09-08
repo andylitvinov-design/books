@@ -8,3 +8,6 @@ node_modules/
 *.tmp3
 *.app/
 .vercel
+
+tmp/
+output/
