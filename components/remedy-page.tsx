@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 import { RemedyContent, RemedyEssence } from "@/components/remedy-content";
+import { RemedyClientActions } from "@/components/remedy-client-actions";
 import { SiteNavigation } from "@/components/site-navigation";
-import { getRelatedRemedies, getRemedySwitchPath } from "@/data/remedies";
+import { getRelatedRemedies, getRemedyDirectory, getRemedySwitchPath } from "@/data/remedies";
 import type { Locale, Remedy } from "@/data/remedies";
 
 type RemedyPageProps = { locale: Locale; remedy: Remedy };
@@ -58,6 +59,7 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
       <SiteNavigation locale={locale} />
       <article className="remedy-page">
         <div className="remedy-page-actions"><Link href={`/${locale}/homeopathy/remedies`}>{labels.back}</Link><Link href={getRemedySwitchPath(otherLocale, remedy.slug)} lang={otherLocale}>{labels.switch}</Link></div>
+        <RemedyClientActions locale={locale} slug={remedy.slug} knownSlugs={getRemedyDirectory(locale).map((entry) => entry.slug)} />
         <p className="homeopathy-kicker">{locale === "ru" ? "Гомеопатия · источник" : "Homeopathy · source"}</p>
         <h1>{remedy.canonical_latin_name}</h1>
         {remedy.russian_common_name ? <p className="remedy-common-name">{labels.sourceName}: {remedy.russian_common_name}</p> : null}

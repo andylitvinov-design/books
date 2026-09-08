@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+import { readPublicReadingState } from "@/lib/public-reading-state";
 
 import type { Locale, RemedyDirectoryEntry } from "@/data/remedies";
 
@@ -33,6 +36,9 @@ export function RemedyDirectory({ locale, entries }: RemedyDirectoryProps) {
   const [query, setQuery] = useState("");
   const [activeLetter, setActiveLetter] = useState("all");
   const deferredQuery = useDeferredValue(query);
+  const searchParams = useSearchParams();
+  const savedOnly = searchParams.get('saved') === '1';
+  const savedSlugs = useMemo(() => typeof window === 'undefined' ? [] : readPublicReadingState(new Set(entries.map((entry) => entry.slug))).savedSlugs, [entries]);
   const copy = labels[locale];
   const letters = [...new Set(entries.map(({ letter }) => letter))];
   const visibleEntries = useMemo(() => {
@@ -40,9 +46,9 @@ export function RemedyDirectory({ locale, entries }: RemedyDirectoryProps) {
     return entries.filter((entry) => {
       const matchesLetter = activeLetter === "all" || entry.letter === activeLetter;
       const matchesQuery = !normalisedQuery || entry.searchText.includes(normalisedQuery);
-      return matchesLetter && matchesQuery;
+      return matchesLetter && matchesQuery && (!savedOnly || savedSlugs.includes(entry.slug));
     });
-  }, [activeLetter, deferredQuery, entries]);
+  }, [activeLetter, deferredQuery, entries, savedOnly, savedSlugs]);
 
   return (
     <section aria-label={locale === "ru" ? "Каталог препаратов" : "Remedy directory"} className="remedy-directory">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { RemedyDirectory } from "@/components/remedy-directory";
 import { SiteNavigation } from "@/components/site-navigation";
@@ -33,7 +34,7 @@ export default async function RemediesPage({ params }: PageProps) {
     <main className="homeopathy-shell">
       <SiteNavigation locale={locale} />
       <header className="remedy-index-header"><div><p className="homeopathy-kicker">{current.kicker}</p><h1>{current.heading}</h1><p>{current.lead}</p></div><Link className="locale-link" href={`/${otherLocale}/homeopathy/remedies`} lang={otherLocale}>{current.switch}</Link></header>
-      <RemedyDirectory entries={getRemedyDirectory(locale)} locale={locale} />
+      <Suspense fallback={<p className="remedy-result-count">{current.lead}</p>}><RemedyDirectory entries={getRemedyDirectory(locale)} locale={locale} /></Suspense>
     </main>
   );
 }
