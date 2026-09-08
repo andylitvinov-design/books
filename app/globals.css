@@ -282,6 +282,8 @@
   .remedy-essence span { color: #8b5a3c; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
   .remedy-content-pair { display: grid; gap: 1rem; }
   .remedy-content-pair .remedy-content-section { margin-top: 1.2rem; }
+  .remedy-content-pair .remedy-content-section h2,
+  .remedy-content-pair .remedy-content-section h3 { font-size: 19px; }
   .remedy-supplementary { margin-top: 1.25rem; border-top: 1px solid #cdbda5; padding-top: 0.7rem; }
   .remedy-supplementary summary { cursor: pointer; color: #70442d; font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.45; }
   .remedy-supplementary > div { margin-top: 0.85rem; }
