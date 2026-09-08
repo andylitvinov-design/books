@@ -266,7 +266,7 @@
   .mobile-bottom-navigation { display: none; }
 
   @media (max-width: 767px) {
-    .homeopathy-shell { @apply px-4 pb-24 pt-5; }
+    .homeopathy-shell { padding-top: max(1.25rem, env(safe-area-inset-top)); @apply px-4 pb-24; }
     .remedy-content-body { font-size: 18px; line-height: 1.5; }
     .remedy-primary-image { float: none; margin: 1rem 0; max-width: none; width: 100%; }
     .mobile-bottom-navigation { @apply fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-[#d8c9b5] bg-[#fffaf3] px-1 pb-[max(.45rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(56,45,38,.08)]; display: grid; }
