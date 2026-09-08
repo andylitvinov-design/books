@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message737 (07.07.2025 15:22:26 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message737 (07.07.2025 15:22:26 UTC-05:00)
 source_images: /media/remedies/bovista-lycoperdon/message737-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Bovista Lycoperdon.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Bovista Lycoperdon.; primary canonical content rebuilt from message737 (07.07.2025 15:22:26 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message737
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/bovista-lycoperdon.md
@@ -41,79 +46,79 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Bovista Lycoperdon, message737.
 ---
 
-### message737
+🧪 BOVISTA LYCOPERDON (puffball mushroom)
 
-🧪 BOVISTA LYCOPERDON (dust mushroom)
+The feature of this remedy is that it returns the roots, support, the sense of I am, I exist, I have the right to be.
 
-The peculiarity of this remedy is that it returns roots, support, the feeling I am, I exist, I have the right to be.
+Relevant when a person forgets about themselves, listens to social assessments, expectations — tries to please. Gives away all of themselves, like a cloud of dust.
 
-It is relevant when a person forgets about himself, listens to social assessments, expectations - tries to please. Gives away all of himself like a cloud of dust.
+The remedy restores the sense of inner wholeness and self-sufficiency.
 
-The remedy restores a sense of internal integrity and self-sufficiency.
+🌿 BASIS
 
-🌿 BASE
+Bovista is a puffball mushroom, which is initially dense and round, and then bursts and scatters into dust at the slightest touch.
 
-Bovista is a dust mushroom that starts out dense and round, then breaks and crumbles into dust at the slightest touch.
-
-Symbolically: devaluation of oneself, lack of boundaries, blurred form and meaning. This is the one who “exploded” from the pressure, trying to be good for everyone.
+Symbolically: devaluation of oneself, lack of boundaries, blurriness of form and meaning. It is someone who has “exploded” from pressure, trying to be good for everyone.
 
 💥 INDICATIONS
 
-- Feeling of loss of self, dissolution, life “on automatic”
+- Feeling of losing oneself, dissolution, life on "autopilot"
 
-- Difficulties with boundaries and sense of self: “I don’t know who I am”, “I blend in with others”
+- Difficulties with boundaries and self-perception: "I don't know who I am," "I merge with others"
 
-- Tendency to please, to live for others
+- Tendency to please, living for others
 
-- Excessive sensitivity to social/environmental expectations
+- Excessive sensitivity to
 
-- Emotional explosions after containment: tears,
+expectations of society/environment
 
-hysterics, panic
+- Emotional outbursts after holding back: tears, tantrums, panic
 
-- Clumsiness, feeling that the body is “not mine”, poor coordination
+- Clumsiness, feeling that the body is 'not mine,' poor coordination
 
-- Periods of frozen indifference, loss
+- Periods of frozen indifference, confusion
 
-- Shame about expressions of feelings, sexuality, the desire to be “correct”
+- Shame over expressions of feelings, sexuality, striving to be 'proper'
 
 - Skin symptoms: itching, rash, eczema from suppressed emotions.
 
 Main theme:
 
-A soul living someone else's life, having forgotten why it was born.
+A soul living someone else's life, forgetting why it was born.
 
-Social shame, awkwardness, clumsiness, compliance, inability to say no.
+Social shame, absurdity, clumsiness, compliance, inability to say no.
 
 🔥 ARCHETYPES
 
 - An empty shell that was once alive
 
-- A kind girl/boy who strives to fit in
+- Good girl/boy striving to comply
 
-- Soul without center, without anchor
+- A soul without a center, without an anchor
 
 - A dancer without a stage, tired of other people's roles
 
-🖼 LOOKS
+🖼 IMAGES
 
-- A woman crumbling into dust like a statue
+- A woman crumbling to dust, like a statue
 
-- A gray field on which only a shadow remains
+- A gray field where only a shadow remains
 
-A man standing in front of a mirror but not seeing himself reflected
+A person standing in front of a mirror but not seeing their reflection
 
-🌸 EFFECT OF THE remedy
+🌸 EFFECT OF THE PREPARATION
 
-- Returns the center, I, helps to collect myself
+-
 
-- Gives a sense of form, boundaries, body
+Returns the center, I, helps to gather oneself
 
-- Helps you understand: where am I and where is the other person?
+- Gives a sense of shape, boundaries, body
 
-- Relieves shame about feelings and desires, especially sexual ones
+- Helps to understand: where I am, and where the other is
 
-- Helps to get out of blurriness and absent-mindedness
+- Removes shame for feelings and desires, especially sexual ones
+
+- Helps to get out of vagueness, scatteredness
 
 - Supports the restoration of awareness in the body
 
@@ -121,27 +126,29 @@ A man standing in front of a mirror but not seeing himself reflected
 
 🧱 DEVELOPMENT STAGE
 
-1.5–3 years - Autonomy stage.
+1.5–3 years — Stage of autonomy.
 
-The child learns to feel separate, but if during this period the right to be oneself was not supported, a fear of separation arises → dissolution, abandonment of the “I”.
+The child learns to feel separate, but if during this period the right to be oneself was not supported, a fear of separation arises → dissolution, rejection of the "I".
 
-💡 remedy IDEA
+💡 IDEA OF THE REMEDY
 
-You can be yourself - even if it's uncomfortable.
+You can be yourself — even if it is inconvenient.
 
-You don't have to disappear to be loved.
+You are not required to dissolve in order to be loved.
 
-You don't have to be dust to be accepted.
+You do not have to be dust to be accepted.
 
 You are whole. You have a center.
 
 ✨ MESSAGE / LESSON
 
-You can feel and still maintain form.
+You can feel and at the same time maintain form.
 
-You can be bright, sensitive, alive - and still not dissolve.
+You can be bright, sensitive, alive — and at the same time not dissolve.
 
-Your “I” has the right to be.
+Your “I”
+
+has the right to exist.
 
 You can stop and breathe.
 
@@ -153,48 +160,48 @@ I feel myself.
 
 I respect my boundaries.
 
-I don't dissolve anymore.
+I no longer dissolve.
 
 I have a center.
 
-I am worthy to be.
+I deserve to exist.
 
 My body is my home.
 
 I can be real and preserve myself.
 
-🔄
+🔄 TRANSFORMATION
 
-TRANSFORMATION
+Before: Dissolution, insecurity, people-pleasing, inner emptiness, resentment, emotional breakdowns.
 
-Before: Dissolution, uncertainty, pleasing, internal vacuum, resentment, emotional breakdowns.
-
-After: Center, boundaries, warmth, contact with the body, clarity of the Self, a calm sense of one's own existence.
+After: Center, boundaries, warmth, connection with the body, clarity of "I", calm sense of self-existence.
 
 🖌 IMAGE / MEDITATION
 
-You are standing in the fog. It envelops you. You can't feel your legs.
+You stand in the fog. It envelops you. You don’t feel your feet.
 
-But there is a spark inside.
+But inside — a spark.
 
 You inhale. The fog settles.
 
-You feel: arms, chest, stomach.
+You feel: your arms, chest, belly.
 
-You're standing. You are visible.
+You stand. You are visible.
 
 You exist.
 
 🔮 RITUAL
 
-Sit comfortably. Feel your body. Place your hands on your stomach.
+Sit comfortably. Feel your body. Place your hands on your belly.
 
-Say:
+Say aloud:
 
-"I am returning to myself. I am no longer dust. I am the center. I am."
+"I return to myself. I am no longer dust. I am the center. I exist."
 
-Give yourself a hug. Do a slow dance - feel the form.
+Hug yourself. Do a slow dance — feel the form.
 
-Finish by standing in stability pose (mountain pose).
+Finish,
 
-You are the whole.
+Standing in a pose of stability (mountain pose).
+
+You are whole.

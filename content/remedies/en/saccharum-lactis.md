@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message1025 (01.05.2026 23:33:31 UTC-05:00)
+primary_source_sections: ОСНОВА
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message1025 (01.05.2026 23:33:31 UTC-05:00)
 source_images: /media/remedies/saccharum-lactis/message1025-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Saccharum Lactis.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Saccharum Lactis.; primary canonical content rebuilt from message1025 (01.05.2026 23:33:31 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message1025
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/saccharum-lactis.md
@@ -41,67 +46,65 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Saccharum Lactis, message1025.
 ---
 
-### message1025
+🧪 SACCHARUM LACTIS (Milk Sugar)
 
-🧪 SACCHARUM LACTIS (Milk sugar)
+## OBSERVATIONS
 
-OBSERVATIONS.
+In my experience, the remedy has shown good results in the early stages of therapy or in difficult situations:
 
-In my work experience, the remedy showed itself well in the early stages of therapy or in difficult situations:
+- in moments of emotional helplessness, when you want to curl up into a ball and not talk to anyone,
 
-- in moments of mental impotence, when you want to curl up and not even talk to anyone,
+- in situations of physical illness and weakness, when support is needed but is hard to accept.
 
-- in situations of physical illness and powerlessness, when support is needed, but it is difficult to accept.
+## BASIS
 
-BASE:
-
-Milk sugar (component of milk).
+Milk sugar (a component of milk).
 
 Symbolizes:
 
-- the sense of basic belonging and support that infants feel
+- the feeling of basic belonging and support felt by infants
 
-– feeling “I am needed - I am fed”
+- the feeling of "I am needed – I am fed"
 
-It's not just food.
+This is not just nourishment.
 
-This is the first experience of love through the body.
+It is the first experience of love through the body.
 
-It gives a state of soft fullness:
+It gives a state of gentle fullness:
 
-“They hold me - it means I can relax - it means I live”
+"I am held – therefore, I can relax – therefore, I am alive"
 
 🌙 ARCHETYPE
 
-Baby/Adopted Archetype.
+The Infant / Accepted archetype.
 
-The remedy helps to take a condition where there is no need to fight. Where the world comes to you on its own.
+The remedy helps to reach a state where there is no need to struggle. Where the world comes to you on its own.
 
 💥 INDICATIONS:
 
 - Feeling of inner emptiness
 
-- Feeling unsupported
+- Feeling of lack of support
 
-- Dependency on approval
+-
+
+Dependence on Approval
 
 - Exhaustion
 
 - Difficulty accepting help
 
-SOURCE
+## SOURCE
 
-- 0–1.5 years
+- 0–1.5 years — contact and feeding
 
-- contact and power
-
-Stress: They won’t give me / I can’t receive.
+Stress: I won't be given / I can't receive.
 
 💡 IDEA
 
-Life may come to you.
+Life can come to you.
 
-You don't have to deserve everything.
+You don't need to deserve everything.
 
 ✨ Message
 
@@ -109,11 +112,11 @@ You have the right to receive.
 
 You can be supported.
 
-You don't have to survive alone.
+You are not obliged to survive alone.
 
-🖼 LOOKS
+🖼 IMAGES
 
-- Warm milk in a bowl
+- Warm milk in a cup
 
 - Hands that hold
 
@@ -127,42 +130,44 @@ You don't have to survive alone.
 
 I accept.
 
-I can receive it.
+I am allowed to receive.
 
-They support me.
+I am supported.
 
-I've had enough.
+I am enough.
 
 🌸 Effect
 
-Gives a feeling: “I have enough”
+Gives a feeling: "I have enough"
 
 Removes inner emptiness
 
-Alleviates addiction
+Softens dependence
 
-Returns contact with the body
+Restores contact with the body
 
-Teaches you to accept without tension
+Teaches to accept without tension
 
-Gives a basic feeling of security.
+Provides a basic sense of security.
 
 🖌 Image / Meditation
 
-You're lying warm.
+You are lying in warmth.
 
-They're holding you.
+You are held.
 
-There's nothing to do
+Nothing needs to be done
 
-and at the same time everything comes.
+and yet everything comes.
 
 🔮 Ritual
 
 Make yourself a warm drink.
 
-Wrap your body in warmth
+Wrap your body.
+
+warmth
 
 Place your hand on your stomach and say:
 
-“I can receive. I'm safe"
+'I am allowed to receive. I am safe.'

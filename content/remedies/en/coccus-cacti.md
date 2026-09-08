@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message614 (06.06.2025 19:03:09 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message614 (06.06.2025 19:03:09 UTC-05:00)
 source_images: /media/remedies/coccus-cacti/message614-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Coccus Cacti.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Coccus Cacti.; primary canonical content rebuilt from message614 (06.06.2025 19:03:09 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message614
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/coccus-cacti.md
@@ -41,79 +46,77 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Coccus Cacti, message614.
 ---
 
-### message614
-
 COCCUS CACTI
 
-A special remedy that launches flows of love where it sleeps.
+A special remedy that triggers flows of love where it lies dormant.
 
-And it also helps to free yourself from melancholy and fear of rejection.
+It also helps to free oneself from melancholy and the fear of rejection.
 
-Takes you out of loneliness and dependence, returns self-reliance.
+Draws one out of loneliness and dependency, restores self-reliance.
 
-BASIS
+## BASE
 
-Female cochineal (parasitizes cacti, feeds on its juices).
+Female cochineal (parasitizes cacti, feeds on their juices).
 
-The "little invader" symbol is a person who will not survive without contact.
+Symbol of "the little invader" - a person who cannot survive without contact.
 
 Clings to others out of fear of rejection.
 
-INDICATIONS:
+## INDICATIONS
 
 - Longing for support, desire to cling to someone for security
 
-- Fear of rejection, uselessness, betrayal
+- Fear of rejection, feeling unnecessary, betrayal
 
-- Freezing without contact
+- Becoming numb without contact
 
-- Tired of merging with others
+- Fatigue from merging with others
 
-- Weakness when alone
+- Weakness in solitude
 
-- Stagnation of emotions, but fear of splashing it out
+- Emotional stagnation, but fear of letting it out
 
-- Constriction in the throat and chest
+- Tightness in throat and chest
 
-EFFECT
+## EFFECT
 
-- Liberation from sticky melancholy and obsessive addiction
+- Release from clingy melancholy and obsessive dependency
 
-- Return of support
+- Restoration of self-reliance
 
-- Ease of breathing and a feeling of freedom
+- Ease of breathing and sense of freedom
 
-- Feeling “I can live and breathe even if I am alone”
+- Feeling of "I can live and breathe even if I am alone"
 
-- Ability to build relationships without feeling suffocated
+- Ability to build
+
+relationships without a sense of suffocation
 
 DEVELOPMENT STAGE: 0–1.5 years
 
-Conflict: “If I am alone, I die.”
-
-Fear of being without a group, without love.
+Conflict: 'If I am alone — I die.' Fear of being without a group, without love.
 
 ARCHETYPES
 
-🔸 A frightened baby clings to his mother, to the world, to any support in order to survive.
+🔸 Frightened infant — clings to the mother, to the world, to any support in order to survive.
 
-🔸 A person in a cocoon out of fear feels that if he lets go of someone else’s, he will lose himself.
+🔸 Person in a cocoon of fear — feels that if they let go of what is not theirs, they will lose themselves.
 
 IMAGES
 
-🌿 Sticky syrup flowing from your fingers - dependence on other people's emotions that are difficult to wash off.
+🌿 Sticky syrup running off fingers — dependence on other people's emotions, which are hard to wash off.
 
-🌿 A man is in a dense cocoon, from which he is trying to get out, but is afraid that he will die without him.
+🌿 Person in a dense cocoon, trying to get out of it, but afraid that without it they will perish.
 
-IDEA OF THE remedy
+IDEA OF THE REMEDY
 
-- Your breathing and life do not depend on other people's attention.
+- Your breathing and life do not depend on others' attention.
 
-You can breathe and live even alone.
+You can breathe and live even in solitude.
 
 MESSAGE AND LESSON
 
--You don't have to cling to someone else's to survive.
+- You are not obliged to cling to what is not yours in order to survive.
 
 You yourself are the source of your life. You can breathe and be alive.
 
@@ -121,26 +124,26 @@ AFFIRMATIONS
 
 - I breathe freely.
 
-- I live, even if I am alone.
+- I live even if I am alone.
 
-- I free myself from other people's stickiness.
+- I release myself from others’ stickiness.
 
-- I breathe my life.
+- I breathe my own life.
 
-TRANSFORMATION
+## TRANSFORMATION
 
-- Before: sticky melancholy, obsessive dependence, fear of loneliness.
+-
 
-- After: lightness, freedom, breathing, self-reliance.
+Before: sticky melancholy, obsessive dependence, fear of loneliness.
 
-RITUAL
+- After: lightness, freedom, breath, reliance on yourself.
+
+## RITUAL
 
 Close your eyes and feel the sticky web inside.
 
-Imagine how soft the light is
+Imagine how soft light dissolves it.
 
-dissolves it.
+Say: "I am free. I breathe. I live my own life."
 
-Say: “I am free. I'm breathing. I live my life."
-
-Take a breath and exhale. Feel your own light turn on inside.
+Take a breath in and out. Feel your own light ignite inside.

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message1025 (01.05.2026 23:33:31 UTC-05:00)
+primary_source_sections: ОСНОВА
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message1025 (01.05.2026 23:33:31 UTC-05:00)
 source_images: /media/remedies/saccharum-lactis/message1025-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Saccharum Lactis.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Saccharum Lactis.; primary canonical content rebuilt from message1025 (01.05.2026 23:33:31 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message1025
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,11 +44,9 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Saccharum Lactis, message1025.
 ---
 
-### message1025
-
 🧪 SACCHARUM LACTIS (Молочный сахар)
 
-НАБЛЮДЕНИЯ.
+## НАБЛЮДЕНИЯ
 
 По моему опыту работы, препарат хорошо себя показал на ранних стадиях терапии или в сложных ситуациях:
 
@@ -51,7 +54,7 @@ primary_image_alt: Исходное изображение, прикреплён
 
 - в ситуациях телесной болезни и бессилия, когда нужна поддержка, но ее сложно принять.
 
-ОСНОВА:
+## ОСНОВА
 
 Молочный сахар (компонент молока).
 
@@ -87,7 +90,7 @@ primary_image_alt: Исходное изображение, прикреплён
 
 - Трудность принимать помощь
 
-ИСТОЧНИК
+## ИСТОЧНИК
 
 - 0–1.5 года — контакт и питание
 

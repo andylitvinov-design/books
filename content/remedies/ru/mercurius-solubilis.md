@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message570 (24.05.2025 22:06:42 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message570 (24.05.2025 22:06:42 UTC-05:00)
 source_images: /media/remedies/mercurius-solubilis/message570-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Mercurious Solubilis; Mercurius solubilis.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Mercurious Solubilis; Mercurius solubilis.; primary canonical content rebuilt from message570 (24.05.2025 22:06:42 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message570
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Mercurius solubilis, message570.
 ---
-
-### message570
 
 MERCURIOUS SOLUBILIS
 
@@ -63,7 +66,7 @@ MERCURIOUS SOLUBILIS
 
 - когда нельзя выражать настоящие чувства, чтобы быть удобным, хорошим, так как иначе последует кара.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - тревога по поводу чужого мнения
 
@@ -77,7 +80,7 @@ MERCURIOUS SOLUBILIS
 
 - при тревоге и двойственности, когда вместо правды сотни масок.
 
-ОСНОВА:
+## ОСНОВА
 
 Ртуть: жидкий металл, который расползается на капли, не позволяя его ухватить. Как сознание ребенка при ранней травме.
 
@@ -85,7 +88,7 @@ MERCURIOUS SOLUBILIS
 
 Возвращает подлинность Я.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - Способность быть собой — без масок и самоотравления
 
@@ -95,7 +98,7 @@ MERCURIOUS SOLUBILIS
 
 - Выход из яда в подлинность и прозрачность
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Двойной агент — живущий между маской и тенью
 
@@ -105,7 +108,7 @@ MERCURIOUS SOLUBILIS
 
 - Тревожный хищник: всё чувствует, всё боится, нападает, чтобы не быть уязвлённым.
 
-ОБРАЗ:
+## ОБРАЗ
 
 - Маска с глазами, полными ужаса: вдруг узнают, кто ты на самом деле
 
@@ -135,12 +138,12 @@ MERCURIOUS SOLUBILIS
 
 Я перестаю питать ядом фальши свою душу.
 
-Трансформация
+## ТРАНСФОРМАЦИЯ
 
 До: Раздвоенность, страх быть разоблачённым, внутреннее отравление
 
 После: Прозрачность, выровненное "Я", очищенная подлинность.
 
-Ритуал.
+## РИТУАЛ
 
 Посмотри в зеркало. Напиши на бумаге все что боишься сказать вслух. Сожги/ разорви лист. Выпей стакан воды как символ жизни и очищения от яда.

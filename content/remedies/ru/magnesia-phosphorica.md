@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message408 (04.04.2025 23:30:17 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; АРХЕТИП; ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message408 (04.04.2025 23:30:17 UTC-05:00)
 source_images: /media/remedies/magnesia-phosphorica/message408-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesia Phosphorica.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesia Phosphorica.; primary canonical content rebuilt from message408 (04.04.2025 23:30:17 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message408
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Magnesia Phosphorica, message408.
 ---
 
-### message408
-
 MAGNESIA PHOSPHORICA
 
 Еще один из моих любимых препаратов в вопросах любви.
@@ -51,7 +54,7 @@ MAGNESIA PHOSPHORICA
 
 Мир наполняется любовью.
 
-ОСНОВА
+## ОСНОВА
 
 Фосфат магния: соединение, отвечающие за передачу энергии и расслаблении мышц.
 
@@ -59,7 +62,7 @@ MAGNESIA PHOSPHORICA
 
 Архетипически - это образ человека, который «держит всё в себе», сжимается от внутренней боли и только через тепло, заботу и расслабление возвращается к балансу.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - мышечные спазмы
 
@@ -81,7 +84,7 @@ MAGNESIA PHOSPHORICA
 
 - Светящийся круг, внутри которого ты можешь отпустить всё лишнее.
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Хранитель Уюта
 
@@ -91,7 +94,7 @@ MAGNESIA PHOSPHORICA
 
 - Душа Заботы.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - Успокаивает тело и душу
 
@@ -101,11 +104,11 @@ MAGNESIA PHOSPHORICA
 
 - Помогает расслабиться и восстановить силы.
 
-ЭТАП РАЗВИТИЯ:
+## ЭТАП РАЗВИТИЯ
 
 - Контакт/ Близость, Забота (1.5-3 года).
 
-ИДЕЯ АРХЕТИПА:
+## ИДЕЯ АРХЕТИПА
 
 - Истинная сила — в способности быть мягким. Защита приходит через расслабление, а не через сопротивление.
 
@@ -125,7 +128,7 @@ MAGNESIA PHOSPHORICA
 
 - Понять, что сила — в гибкости, а не в контроле.
 
-УРОК:
+## УРОК
 
 - Ты имеешь право на отдых
 
@@ -141,7 +144,7 @@ MAGNESIA PHOSPHORICA
 
 - Мягкость, создающая безопасное пространство
 
-ТРАНСФОРМАЦИЯ:
+## ТРАНСФОРМАЦИЯ
 
 - Из спазма — в расслабление
 

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message609 (05.06.2025 14:44:50 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message609 (05.06.2025 14:44:50 UTC-05:00)
 source_images: /media/remedies/teucrium/message609-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Teucrium.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Teucrium.; primary canonical content rebuilt from message609 (05.06.2025 14:44:50 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message609
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/teucrium.md
@@ -41,91 +46,89 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Teucrium, message609.
 ---
 
-### message609
-
 TEUCRIUM (thyme)
 
-A wonderful remedy that helps a person strengthen his boundaries.
+A wonderful remedy that helps a person strengthen their boundaries.
 
-And thanks to this, a state of liveliness, lightness, and interest in the outside world grows inside.
+Thanks to this, a state of liveliness, lightness, and interest in the outside world grows within.
 
-Similar to Silicea, mild in action. But Silicea gives a greater sense of stability and support, and Teucrium makes the boundaries more elastic, mobile, and alive.
+Similar to Silicea, acts gently. But Silicea gives more of a sense of stability and support, while Teucrium makes boundaries more elastic, flexible, and alive.
 
-The remedy cleanses well of external feelings and thoughts, strengthening the feeling of freedom within and control over your inner world.
+The remedy cleans well from external feelings and thoughts, strengthening the sense of inner freedom and control over one’s inner world.
 
-BASE:
+## BASIS
 
-Thyme, a plant with a strong aroma, was traditionally used to expel parasites.
+Thyme, a plant with a strong aroma, has traditionally been used to expel parasites.
 
-Helps to cleanse yourself of parasites, unnecessary obsessive thoughts, emotions, and conditions.
+Helps cleanse from parasites, unnecessary obsessive thoughts, emotions, states.
 
-Protects against external intrusions.
+Protects from external intrusions.
 
-INDICATIONS:
+## INDICATIONS
 
-- anxiety, irritation
+- anxiety, irritability
 
-- feeling that there are energy parasites inside
+- feeling that there are energetic parasites inside
 
-- fatigue from external pressure, other people's rules
+- fatigue from external pressure, others’ rules
 
-- polyps, allergies, inflammation of the mucous membranes.
+- polyps, allergies, mucous membrane inflammations.
 
-EFFECT:
+## EFFECT
 
-- a feeling of soft, protected space inside
+- a feeling of a gently protected space
+
+inside
 
 - calming irritation and anxiety
 
-- soft awakening of activity
+- gentle awakening of activity
 
-- soft
+- gentle strengthening of personality – release from foreign energies, thoughts, emotions.
 
-strengthening of personality - liberation from alien energies, thoughts, emotions.
+DEVELOPMENT STAGE: 3–6 years
 
-DEVELOPMENTAL STAGE: 3–6 years
+The right to say "no," to protect one's boundaries.
 
-The right to say “no”, to protect your borders.
+Conflict: "I don't know how to protect myself from intrusion"
 
-Conflict: “I don’t know how to protect myself from invasion”
+## ARCHETYPE
 
-ARCHETYPE:
+🔸 Boundary Keeper — feels when someone intrudes into their space and looks for ways to protect their territory.
 
-🔸 Border guard - senses when someone is invading his space and looks for ways to protect his territory.
+🔸 Parasite Hunter — goes deep to cleanse their body and soul of foreign elements.
 
-🔸 Parasite hunter - goes deep to cleanse your body and soul of foreign things.
+🔸 Warrior against the invisible enemy — senses inside or around themselves "something that does not belong" and fights it.
 
-🔸 A warrior against an invisible enemy - he feels “something that is not his own” inside or around him and fights against it.
+## IMAGE
 
-LOOK:
+🌿 Thorny bush with small leaves — like a barrier against everything foreign.
 
-🌿 A prickly bush with small leaves is like a barrier for everything alien.
+🌿 A person in a cocoon who needs to break out in order to breathe deeply.
 
-🌿 A man in a cocoon who needs to break free to breathe deeply.
+🌿 A snake coiled in rings, symbolizing foreign energy that needs to be expelled.
 
-🌿 A snake curled up in rings, symbolizing someone else's energy that needs to be expelled.
+🌿 A clear river that washes away all foreign things and returns
 
-🌿 A clean river that washes away everything that is alien and returns freedom of movement.
+freedom of movement.
 
-IDEA OF THE remedy
+IDEA OF THE PREPARATION
 
-- Something else may live inside you, but you have the right to expel it.
+- Something foreign can live inside you — but you have the right to expel it.
 
-You don't have to carry around something that doesn't belong to you.
+You are not obliged to carry within you what does not belong to you.
 
 MESSAGE AND LESSON
 
->You have the right
-
-say: “This is not mine.”
+> You have the right to say: "This is not mine."
 
 You are the master of your space.
 
-You can cleanse yourself of everything foreign.
+You can cleanse yourself of everything that is foreign.
 
 AFFIRMATIONS
 
-- I cleanse my body and soul from everything foreign.
+- I cleanse my body and soul of everything that is foreign.
 
 - I protect my space.
 
@@ -133,14 +136,14 @@ AFFIRMATIONS
 
 - I regain control over my thoughts and desires.
 
-TRANSFORMATION
+## TRANSFORMATION
 
-- Before: itching, irritation, obsessive thoughts, feeling of someone else's influence
+- Before: itchiness, irritation, intrusive thoughts, feeling of foreign influence
 
-- After: purity, freedom, self-control, calm
+- After: cleanliness, freedom, self-control, calmness
 
-RITUAL
+## RITUAL
 
-Feel someone else's dark smoke inside yourself and imagine how it dissolves into light.
+Feel the foreign dark smoke inside you and imagine it dissolving in the light.
 
-As you inhale, fill yourself with strength and purity within.
+With inhalation, fill yourself with strength and purity inside.

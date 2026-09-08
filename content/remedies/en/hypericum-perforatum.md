@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message294 (16.01.2025 17:54:19 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; АРХЕТИП; ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message294 (16.01.2025 17:54:19 UTC-05:00)
 source_images: /media/remedies/hypericum-perforatum/message294-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Hypericum Perforatum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Hypericum Perforatum.; primary canonical content rebuilt from message294 (16.01.2025 17:54:19 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message294
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/hypericum-perforatum.md
@@ -41,73 +46,65 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Hypericum Perforatum, message294.
 ---
 
-### message294
-
 HYPERICUM PERFORATUM
 
-An interesting remedy that gives the return of strength, the ability to stand up for oneself, self-confidence, defending one’s opinion in the face of fear of condemnation
+An interesting remedy that restores strength, the ability to stand up for oneself, self-confidence, and the protection of one's opinion in the fear of judgment
 
-/discovered empirically/.
+/discovered through experience/.
 
-BASE:
+## BASE
 
-Behind this tricky name is St. John's wort. It has veins in its structure and is perceived as if it is saturated with light.
+Behind this tricky name hides St. John's Wort. It has veins in its structure and is perceived as if it is filled with light.
 
-In medicine, St. John's wort is used to treat depression, fear, and melancholy.
+In medicine, St. John's Wort is used to treat depression, fears, and melancholy.
 
-In the Middle Ages, this plant was believed to “banish darkness” and was used to cleanse rooms.
+In the Middle Ages, it was believed that this plant "expels darkness," and it was used to cleanse rooms.
 
-INDICATIONS:
+## INDICATIONS
 
 - Fear of the future, panic,
-
-- Depression due to shock
-
+- Depression after shock
 - Pain of loss and loneliness
-
 - Stress, depression,
-
 - Vulnerability, burns, cuts, bruises.
 
-EFFECT:
+## EFFECT
 
 - removes the feeling of vulnerability,
+- relieves inner pain, fears,
+- restores joy of life, fills with inner strength.
 
-- relieves internal pain, fears,
+IMAGES:
 
-- returns the joy of life, fills with inner strength.
+- an electric wire sparking due to damaged insulation, symbolizing the nervous
 
-LOOKS:
+system in need of restoration.
 
-- an electrical wire that sparks due to damaged insulation, symbolizing a nervous system in need of restoration.
-
-- a thin bridge spanning a deep abyss,
-
-which was damaged by the storm, but still holds the ability to pass.
+- A thin bridge spanning a deep chasm, which was damaged by the storm, but still holds the ability to pass.
 
 The remedy restores the integrity of the bridge.
 
-- A ray of light penetrating a dark room.
+- A beam of light that penetrates a dark room.
 
-ARCHETYPE:
+## ARCHETYPE
 
-- Nerve healer
+- Nerve Healer
 
 - Protector of the senses
 
 - Guardian of Light
 
-ARCHETYPE IDEA:
+## THE IDEA OF AN ARCHETYPE
 
-Light penetrates the dark corners of pain, trauma, restores and leads out of despair.
+Light penetrates into the dark corners of pain, trauma, restores and brings out of a state of despair.
 
-Light heals within, even when there is darkness around.
+The light heals within, even when there is darkness around.
 
-LESSON:
+## LESSON
 
 Accept pain as a stage of growth.
 
-Learn to see the light even in the darkest places.
+Learn to see light even in the darkest places.
 
 Realize that the power of healing is always there within.
 
@@ -115,16 +112,16 @@ SHADOW (see, accept):
 
 Fear of pain and injury.
 
-Feeling helpless.
+A feeling of helplessness.
 
-Self-containment.
+Self-isolation.
 
 LIGHT (expand):
 
-Through accepting pain and restoring feelings, regeneration occurs, the growth of inner light, strength and potential.
+Through the acceptance of pain, the restoration of feelings, there is a regeneration, an increase in inner light, strength and potential.
 
-Hypericum Perforatum helps restore a sense of inner light and strength. This remedy is especially useful during periods of loss, pain and trauma when it is necessary to regain the joy of life and self-confidence.
+Hypericum Perforatum helps to restore the feeling of inner
 
-Hypericum is the light of nature that penetrates the dark
+Light and strength. This remedy is especially useful in times of loss, pain, and trauma, when it is necessary to regain the joy of life and faith in oneself.
 
-corners of the soul to revive it and nourish it with energy.
+Hypericum is the light of nature that penetrates the dark corners of the soul to revive it and nourish it with energy.

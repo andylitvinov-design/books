@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message802 (11.08.2025 15:38:34 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message802 (11.08.2025 15:38:34 UTC-05:00)
 source_images: /media/remedies/magnesium-carbonicum/message802-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesium Carbonicum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesium Carbonicum.; primary canonical content rebuilt from message802 (11.08.2025 15:38:34 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message802
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Magnesium Carbonicum, message802.
 ---
-
-### message802
 
 MAGNESIUM CARBONICUM
 
@@ -55,13 +58,13 @@ MAGNESIUM CARBONICUM
 
 Возвращает доверие, тепло и базовое чувство: "у меня есть место, где меня ждут".
 
-ОСНОВА:
+## ОСНОВА
 
 Карбонат магния, который смягчает кислоты, нейтрализует агрессию среды.
 
 Он символ покоя, мягкости, заботы, уюта, поддержки и домашнего тепла.
 
-АРХЕТИП :
+## АРХЕТИП
 
 - Одинокий ребёнок, которое ждёт маму у окна.
 
@@ -81,7 +84,7 @@ MAGNESIUM CARBONICUM
 
 - Лунная ночь, в которой хочется прижаться к кому-то.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - Глубокая усталость, особенно после эмоционального напряжения.
 
@@ -97,7 +100,7 @@ MAGNESIUM CARBONICUM
 
 - Психосоматика из-за чувства одиночества.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - Снимает внутреннюю тревожность и мягко расслабляет.
 
@@ -113,7 +116,7 @@ MAGNESIUM CARBONICUM
 
 Не нужно заслуживать заботу, она — естественное право каждого.
 
-ЭТАП РАЗВИТИЯ
+## ЭТАП РАЗВИТИЯ
 
 0.1–1.5 года —
 
@@ -139,17 +142,17 @@ MAGNESIUM CARBONICUM
 
 - Мой внутренний ребёнок окружён заботой.
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - До : чувство внутреннего холода, отстранённость, усталость, эмоциональная пустота.
 
 - После : мягкое наполнение, чувство тепла внутри, доверие к миру, ощущение «я в доме».
 
-ОБРАЗ
+## ОБРАЗ
 
 Представь, что ты сидишь в холодном лесу, укрывшись одеялом. Вдруг появляется мягкий свет, тёплые руки укутывают тебя, и ты чувствуешь, что больше не нужно никуда бежать.
 
-РИТУАЛ
+## РИТУАЛ
 
 - Выпить тёплый напиток с магнием (какао, травяной чай) в момент усталости.
 

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message819 (05.09.2025 10:00:34 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message819 (05.09.2025 10:00:34 UTC-05:00)
 source_images: /media/remedies/cyclamen-europaeum/message819-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cyclamen Europaeum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cyclamen Europaeum.; primary canonical content rebuilt from message819 (05.09.2025 10:00:34 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message819
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/cyclamen-europaeum.md
@@ -41,135 +46,129 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Cyclamen Europaeum, message819.
 ---
 
-### message819
-
 🧪 CYCLAMEN EUROPAEUM
 
 (Cyclamen / Alpine violet)
 
-This is a remedy that awakens the joy of life, unfreezes the stiffness of the element of water, and launches the dynamics of change.
+This is a remedy that awakens the joy of life, unfreezes the stiffness of the water element, and initiates the dynamics of change.
 
-Key point:
+Key essence:
 
-This is a remedy for those who live in the shadow of guilt, self-reproach and the feeling of “I have no right to joy.” Cyclamen restores the ability to feel beauty, accept joy and light, and remove inner darkness.
+This is a remedy for those who live in the shadow of guilt, self-reproach, and the feeling of 'I do not have the right to joy.' Cyclamen restores the ability to feel beauty, accept joy and light, and remove inner darkness.
 
-This is the archetype of a person who suppresses his life with guilt, sacrifices himself and hides his desires.
+It is the archetype of a person who suppresses their life with feelings of guilt, sacrifices themselves, and hides their desires.
 
-🌿Basis
+🌿 Basis
 
-Cyclamen is a delicate plant with bright, but downward-sloping flowers.
+Cyclamen is a delicate plant with bright, but downward-facing flowers.
 
-Its symbolism is beauty, turned downward, inward, hidden from the world.
+Its symbolism is beauty turned downward, inward, hidden from the world.
 
-In pathogenesis it causes dizziness, weakness, melancholy, aggravation from feelings of guilt and shame.
+In pathogenesis, it causes dizziness, weakness, melancholy, exacerbation from feelings of guilt and shame.
 
 💥 Indications
 
-Chronic guilt, self-reproach.
+Chronic feeling of guilt, self-reproach.
 
-Tendency to self-sacrifice, renunciation of joy.
+Tendency to self-sacrifice, denial of joy.
 
 Melancholy, longing, rejection of the beauty of life.
 
 Menstrual disorders associated with feelings of guilt or depression.
 
-Violations
-
-vision, feeling of a “veil” before the eyes.
+Vision disturbances, a sensation of a "veil" before the eyes.
 
 Dizziness, weakness, desire to be alone.
 
 Dreams about death, sin, punishment.
 
-The feeling that joy is forbidden and life is hard.
+A feeling that joy is forbidden and life is a burden.
 
 🔥 Archetypes
 
-A penitent nun who rejected joy for the sake of guilt.
+A penitent nun who has rejected joy for the sake of guilt.
 
-A woman in black who does not allow herself to be happy.
+A woman in black who does not allow herself happiness.
 
-The girl who was told that joy is a sin.
+A girl who was told that joy is a sin.
 
-A soul that bowed its head, having lost faith in the beauty of life.
+A soul that has bowed its head, losing faith in the beauty of life.
 
 🖼 Images
 
-A flower bent towards the ground hides its brightness.
+A flower bent toward the ground, hiding its brightness.
 
-Fog before the eyes, hiding the light.
+Mist before the eyes, hiding the light.
 
 A woman standing at the altar, blaming herself.
 
-The sun is behind the clouds, which seems inaccessible.
+The sun behind clouds that seems unattainable.
 
-🌸 Effect of the remedy
+🌸 Effect of the preparation
 
 Relieves feelings of guilt and self-reproach.
 
-Returns the right to joy and beauty.
+Restores the right to joy and beauty.
 
-Clears perception (literally and symbolically: eyes, dreams, images).
+Cleanses perception (literally and symbolically: eyes, dreams, images).
 
-Gives a feeling of inner forgiveness and lightness.
+Gives a sense of inner forgiveness, lightness.
 
-Supports the feminine sphere, relieves stress associated with the cycle.
+Supports the feminine sphere, relieves tension associated with the cycle.
 
-🧱 Stage of development (according to Bodynamics)
+🧱 Stage of development (according to Biodynamics)
 
-3–6 years (love and sexuality) - the child is taught that joy, pleasure or
+Ages 3–6 (love and sexuality) — the child is taught that joy, pleasure, or expression of the body is a sin.
 
-manifestation of the body is sin.
+Ages 5–8 (structure of opinions) — an attitude is formed that "joy is dangerous," "one must be modest, proper."
 
-5–8 years (structure of opinions) - the attitude “joy is dangerous”, “one must be modest, correct” is formed.
+In adulthood, this manifests as a tendency to depression and self-sacrifice.
 
-In adulthood, this manifests itself as a tendency toward depression and sacrifice.
+💡 Idea of the remedy
 
-💡 remedy idea
-
-Life is given to love, not to be ashamed of.
+Life is given to be loved, not to be ashamed of.
 
 Joy is not a sin.
 
-You can bow your head not in guilt, but in gratitude.
+You can bow your head not out of guilt, but out of gratitude.
 
-✨ Message/lesson
+✨ Message / lesson
 
 You have the right to light and beauty.
 
 Your guilt is not the truth, but a shadow.
 
-You can raise your head to the sun again.
+You can lift your head to the sun again.
 
 🌺 Affirmations
 
-I allow myself joy.
+I allow myself to feel joy.
 
-I look up and see the light.
+I lift my head and see the light.
 
-I don't have to live in guilt.
+I am not obliged to live in guilt.
 
-The beauty of the world belongs to me too.
+The beauty of the world belongs to me as well.
 
 My soul is pure, I am worthy of joy.
 
 🔄 Transformation
 
-Before: guilt, depression, darkness, loss of joy.
+Before: guilt, depression, darkness,
+
+loss of joy.
 
 After: lightness, forgiveness, acceptance of the beauty of life.
 
 🖌 Image / Meditation
 
-You see a bowed flower. He is sad, his petals look down.
+You see a bowed flower. It is sad, its petals are facing down.
 
-But a ray of sun touches him. The petals open and rise up.
+But a ray of sunlight touches it. The petals unfold, rise upward.
 
-The flower reaches for the light - just like you.
+The flower reaches for the light — just like you.
 
-Do you feel: guilt
-
-leaves.
+You feel: guilt goes away.
 
 Instead, joy comes, simple and pure.
 
@@ -177,8 +176,8 @@ Instead, joy comes, simple and pure.
 
 Stand by the window.
 
-Raise your head to the light (sun or moon).
+Lift your head toward the light (sun or moon).
 
-Say: “I allow myself joy. I raise my head. I live."
+Say: "I allow myself joy. I lift my head. I live."
 
-Take a deep breath, as if letting light in.🌸
+Take a deep breath, as if letting the light in.🌸

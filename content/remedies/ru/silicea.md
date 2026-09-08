@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message390 (22.03.2025 01:45:13 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message390 (22.03.2025 01:45:13 UTC-05:00)
 source_images: /media/remedies/silicea/message390-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Silicea.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Silicea.; primary canonical content rebuilt from message390 (22.03.2025 01:45:13 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message390
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,15 +44,13 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Silicea, message390.
 ---
 
-### message390
-
 SILICEA (кремень).
 
 Этот тот препарат, который позволяет собрать и структурировать мысли, слова, действия, когда казалось бы мир рассыпается на части, силы уходят и непонятно что делать дальше.
 
 Препарат помогает обрести стойкость, упорство, устойчивость, активировать внутреннее ядро, уверенность и ясность намерений.
 
-2. ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - для мягких людей, которым не хватает уверенности, ну у которых заложен потенциал твердости и стойкости
 
@@ -69,7 +72,7 @@ SILICEA (кремень).
 
 В гомеопатии укрепляет структуру личности, иммунитет. Укрепляет внутренний стержень, помогая вытолкнуть инородное, восстановить границы, ясность, силу.
 
-4. ЭТАП РАЗВИТИЯ
+## ЭТАП РАЗВИТИЯ
 
 Период до рождения и до 6 месяцев.
 
@@ -77,7 +80,7 @@ SILICEA (кремень).
 
 Укрепляет ощущение: «Я есть», «Я достоин занимать место», «Я могу быть твердым и стойким».
 
-5. ЭФФЕКТ:
+## ЭФФЕКТ
 
 активирует внутренний стержень,
 
@@ -85,13 +88,13 @@ SILICEA (кремень).
 
 придаёт целеустремлённость и кристальную ясность
 
-6. ОБРАЗЫ / МЕТАФОРЫ:
+## ОБРАЗЫ / МЕТАФОРЫ
 
 - Песок, ставший стеклом.
 
 - Кристалл, который долго находился под землёй и теперь сияет на свету.
 
-7. АРХЕТИП:
+## АРХЕТИП
 
 Стержень
 
@@ -99,13 +102,13 @@ SILICEA (кремень).
 
 Хранитель света
 
-8. ИДЕЯ АРХЕТИПА:
+## ИДЕЯ АРХЕТИПА
 
 Сила — не в громкости, а в прозрачной стойкости.
 
 Твёрдость — не в агрессии, а в ясности и тишине.
 
-9. УРОК:
+## УРОК
 
 - Ты можешь быть мягким снаружи и сильным внутри.
 
@@ -135,7 +138,7 @@ SILICEA (кремень).
 
 - Преодолеть страх видимости и раскрыть свет внутри себя.
 
-13. ТРАНСФОРМАЦИЯ:
+## ТРАНСФОРМАЦИЯ
 
 - Из хрупкости — в твёрдость
 

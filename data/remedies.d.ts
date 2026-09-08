@@ -31,6 +31,11 @@ export type Remedy = {
   practical_observations?: string;
   cases?: string;
   comparisons?: string;
+  primary_source_message?: string;
+  primary_source_sections?: string;
+  primary_source_url?: string;
+  full_card_additions?: string;
+  supplementary_materials?: string;
   source_messages?: string;
   primary_image?: string;
   source_images?: string;

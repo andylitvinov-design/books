@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message452 (21.04.2025 16:19:15 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП; ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message452 (21.04.2025 16:19:15 UTC-05:00)
 source_images: /media/remedies/thuja/message452-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Thuja.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Thuja.; primary canonical content rebuilt from message452 (21.04.2025 16:19:15 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message452
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/thuja.md
@@ -41,152 +46,150 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Thuja, message452.
 ---
 
-### message452
-
-THUJA (Thuja western).
+THUJA (Western Thuja).
 
 This is a remedy that restores the courage to be yourself.
 
-It gives strength to emerge from the labyrinths of shame and suffering, and directly face what is important.
+It gives the strength to come out of the labyrinths of shame and suffering, and directly face what is important.
 
-Thuja very gently and carefully penetrates into the very essence of the soul, where you are real, into the very pain. Gives presence, soft contact and you finally
+Thuja very gently and carefully penetrates into the very essence of the soul, where you are real, into the very pain. It gives presence, gentle contact, and you finally
 
-you start to feel:
+begin to feel:
 
-My mask of success is not really me. I am different, deeper. More alive. Stranger, more vulnerable, but real.
+My mask of success is not entirely me. I am someone else, deeper. More alive. Stranger, vulnerable, but real.
 
-Thuja is like warm water that washes away a layer of makeup - tightness and falseness. The ice is melting.
+Thuja is like warm water that washes away the layer of makeup — tightness and falseness. Melts the ice.
 
-The mask drains, it becomes easier to breathe.
+The mask flows away, it becomes easier to breathe.
 
-BASE:
+## BASIS
 
-Thuja cypress plant, which has a beautiful crown on the outside, but a soft structure on the inside.
+The cypress plant thuja, which has a beautiful crown outwardly, but a soft structure inside.
 
-Its essential oils can cause hallucinations, nervous and mental disorders, and a feeling of “another reality.”
+Its essential oils can cause hallucinations, nervous and mental disorders, a feeling of "another reality."
 
-In homeopathy, Thuja draws out the negativity that is repressed inside, shame, spiritual poison. A person gently opens up to the world.
+In homeopathy, Thuja draws out the negative, repressed inside, shame, soul poison. A person gently opens up to the world.
 
-ARCHETYPE
+## ARCHETYPE
 
-- internal exile: part of the personality that hides, ashamed of not being enough
+-
 
-good
+inner exile: part of the personality that hides, ashamed of not being good enough,
 
-- wearer of a beautiful mask
+- bearer of a beautiful mask
 
-- a shadow waiting to be seen.
+- shadow waiting to be seen.
 
-LOOK:
+## IMAGE
 
-- a man in a mask in front of a mirror, afraid that if the mask falls, the world will turn away,
+- a person in a mask in front of a mirror, afraid that if the mask falls - the world will turn away,
 
-- a beautiful garden, in the center of which there is a well with dark water,
+- a beautiful garden, in the center of which is a well with dark water,
 
 - a tree with an empty trunk.
 
-INDICATIONS
+## SYMPTOMS
 
 - Obsessive states (as if something alien or dark lives inside);
 
-- Deep shame, a feeling that something is wrong with me;
+- Deep shame, feeling that something is wrong with me;
 
-- Interference with the integrity of the body;
+- Interference with bodily integrity;
 
-- Problems with the skin and genitourinary system;
+- Skin and genitourinary problems;
 
 - Shame about the body, sexuality, secret desires;
 
 - Repressed anger;
 
-- Vera, if they see the real me, they will reject me.
+- Belief that if people see the real me, they will reject me.
 
-EFFECT:
+## EFFECT
 
-- Removing shame and fear of being yourself.
+- Removal of shame and fear of being oneself.
 
 - Return to the True Self.
 
-- Restoring a sense of inner integrity, strength and harmony.
+- Restoration of the sense of inner integrity, strength, and harmony.
 
-DEVELOPMENT STAGE:
+## DEVELOPMENT STAGE
 
-3–6 years - Oedipal stage:
+3–6 years — Oedipal stage:
 
-Shame about your desires, body, manifestation. A false identity is formed: “I am not who I really am.”
+Shame about one's desires,
+
+body, manifestation. A false persona is formed: 'I am not who I really am.'
 
 CONFLICT
 
-- Shame about telling the truth about yourself
+- Shame about the truth about oneself
 
-- Be yourself vs. match the image.
+- Being oneself vs. conforming to an image
 
-- Being bodily vs. be
+- Being physical vs. being 'spiritual'
 
-"spiritual".
-
-IDEA
+## IDEA
 
 Wholeness begins with accepting the Shadow.
 
 Light is born when you enter the darkness with love.
 
-LESSON
+## LESSON
 
 The shadow is a part of me that I can heal.
 
-I don't have to hide to be loved.
+I do not need to hide to be loved.
 
-MESSAGE
+## MESSAGE
 
-"You are not a mask. You are a living, contradictory, beautiful creature.
+'You are not a mask. You are a living, contradictory, beautiful being.
 
-You don't have to be perfect to be loved.
+You do not have to be perfect to be loved.
 
-Let your shadow come into the light and become your strength."
+Let your shadow come to the light—and become your strength.'
 
 AFFIRMATIONS
 
 I accept myself completely.
 
-I can be real.
+I can be authentic.
 
-I'm not afraid of my shadow - it's part of me.
+I am not afraid of my shadow—it is part of me.
 
-TRANSFORMATION
+## TRANSFORMATION
 
-From shame to acceptance.
+From shame—to acceptance.
 
-From duality to integrity.
+From split—to wholeness.
 
-From the shadows into the light.
+From shadow—to light.
 
-TRANSFORMATION
+## TRANSFORMATION
 
-BEFORE: a man in a mask, no reflection in the mirror
+BEFORE: a person in a mask, no reflection in the mirror
 
-AFTER: shadow healer, holistic, sexy, sincere, not hiding himself.
+AFTER: a shadow healer, whole,
 
-RITUAL:
+sexual, sincere, not hiding oneself.
 
-- Recognition:
+## RITUAL
 
-Take a mirror. Look into your eyes for 3 minutes without distraction. Tell that which is hidden: “You are here. I see you. You are not the enemy. You are my strength, forgotten by me.” “I give you permission to be. I'm not rejecting you."
+- Acknowledgment:
+
+Take a mirror. Look into your own eyes for 3 minutes without distraction. Say to what is hidden: “You are here. I see you. You are not my enemy. You are my strength, forgotten by me.” “I allow you to be. I do not reject you.”
 
 - Confrontation:
 
-Take a paper mask (or
-
-draw it) and write on it what you often hide (for example: shame, anger, desire, fear).
+Take a paper mask (or draw one) and write on it what you often hide (for example: shame, anger, desire, fear).
 
 Say:
 
 "I accept my shadow.
 
-I'm not afraid to be myself.
+I am not afraid to be myself.
 
-I'm letting go of control. I allow myself to breathe, feel, shine"
+I release control. I allow myself to breathe, feel, shine."
 
 - Integration.
 
-Fold the mask and carry it with you or burn it. Rinse your face with water. Hug yourself and say, “I accept my whole self. I'm alive. I am."
+Fold the mask and carry it with you or burn it. Rinse your face with water. Hug yourself and say: “I accept myself completely. I am alive. I am.”

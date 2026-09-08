@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message429 (13.04.2025 16:29:13 UTC-05:00)
+primary_source_sections: ЭФФЕКТ; АРХЕТИП; ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions: message1053 (23.08.2026 09:22:00 UTC-05:00)
+supplementary_materials: message430 (13.04.2025 16:57:35 UTC-05:00)
 source_messages: message429 (13.04.2025 16:29:13 UTC-05:00); message1053 (23.08.2026 09:22:00 UTC-05:00); message430 (13.04.2025 16:57:35 UTC-05:00)
 source_images: /media/remedies/carcinosinum/message429-1.jpg; /media/remedies/carcinosinum/message430-1.jpg; /media/remedies/carcinosinum/message1053-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carsinosinum; Carcinosinum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carsinosinum; Carcinosinum.; primary canonical content rebuilt from message429 (13.04.2025 16:29:13 UTC-05:00); full-card additions: message1053 (23.08.2026 09:22:00 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message429; message1053
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/carcinosinum.md
@@ -41,364 +46,326 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Carcinosinum, message429.
 ---
 
-### message429
-
 CARSINOSINUM
 
-A special remedy.
+A special preparation.
 
-He brings back life.
+It restores life.
 
 Adhesions, blocks, and stupors begin to dissolve.
 
-This is one of the most profound remedies that allows you to release internal tension, depression and shame, the desire to be good for others.
+This is one of the most profound remedies, allowing the release of inner tension, depression, and shame, the desire to be good for others.
 
-RATIONALE.
+## JUSTIFICATION
 
-The remedy is made from purified malignant tumors.
+The preparation is made from a purified malignant tumor.
 
-A tumor is a cell that has lost contact with the body and lives on its own.
+A tumor is a cell that has lost contact with the body, living on its own.
 
-The remedy resolves tension when a person has lost himself. When he lives out of a sense of duty, shame or guilt. Out of a desire to be comfortable.
+The preparation dissolves tension when a person has lost themselves. When living out of a sense of duty, shame, or guilt. From the desire to be convenient.
 
-The remedy removes childhood trauma associated with perfectionism, hypercontrol and the demand for perfection.
+The preparation removes childhood traumas related to perfectionism, hypercontrol, and the demand for perfection.
 
-INDICATIONS:
+## INDICATIONS
 
 - perfectionism
 
-- fatigue, exhaustion from perfection
+- fatigue, exhaustion from striving for perfection
 
-- shame, debt, guilt
+- shame, duty, guilt
 
-- the feeling that you are not living your life, but for the sake of others
+- the feeling of living not your own life, but for others
 
-- history of childhood repression, addiction to love
+- history of childhood suppression, dependence on love
 
 - tumors, allergies, autoimmune diseases.
 
-DEVELOPMENT STAGE
+## DEVELOPMENT STAGE
 
-5-8 years: Structure of opinions.
+5-8
 
-Fear of criticism, condemnation, social pressure.
+ages: Structure of opinions.
 
-Suppressing yourself
+Fear of criticism, judgment, social pressure.
 
-to meet other people's expectations.
+Suppressing oneself to meet others' expectations.
 
-SCENARIO
+## SCENARIO
 
-- BEFORE: “Good guy”
+- BEFORE: "Good boy"
 
-I have to be good and live up to expectations in order to be loved. If I'm wrong, love will disappear.
+I must be good, meet expectations, to be loved. If I make a mistake, love will disappear.
 
-Perfectionism. Live for others.
+Perfectionism. Living for others.
 
 - AFTER: Adult.
 
 I can be myself.
 
-I choose honest contact and do not settle for the role of convenience. I don't have to conform to deserve love.
+I choose honest contact and do not agree to play the convenient role. I do not need to conform to deserve love.
 
-- Behavior: freedom to be yourself, respect for your boundaries.
+- Behavior: freedom to be oneself, respecting one’s boundaries.
 
-IMAGES/METAPHORS
+## IMAGES / METAPHORS
 
-- Crystal mask that hides the face
+- A crystal mask hiding the face
 
-- A person who dances perfectly, but has forgotten why he dances
+- A person dancing perfectly, but forgetting why they are dancing
 
-- Flower crushed by glass dome
+- A flower compressed under a glass dome
 
-- A ballerina in a cage, dancing the perfect dance to someone else's music, unable to stop, even if there is blood on her fingers.
+- A ballerina in a cage, dancing a perfect dance to someone else’s music, unable to stop even if her fingers are bleeding.
 
-ARCHETYPE
+## ARCHETYPE
 
-- Wounded Perfectionist
+- Wounded perfectionist
 
-- Holy Sacrifice
+- Holy victim
 
-- Shadow of Submission
+- Shadow of obedience
 
-- Dancer on someone else's stage
+- Dancer on someone else’s stage
 
-- An ideal child (who is tired of living someone else's life).
+- The Perfect Child (who is tired of living someone else's life).
 
-EFFECT
+## EFFECT
 
-- Relieves from chronic tension.
+- Releases chronic tension.
 
-- Removes deep internal control.
+- Removes deep inner control.
 
-- Gives you a feeling of right to be yourself.
+- Gives a sense of the right to be yourself.
 
-- Launches
+- Starts the process of restoring personal history.
 
-the process of restoring personal history.
+## ARCHETYPE IDEA
 
-IDEA OF ARCHETYPE
+- True beauty is in sincerity
 
-- True beauty lies in sincerity
-
--You don't have to be perfect to be loved
+- You don't have to be perfect to be loved
 
 - Self-acceptance is the path to healing
 
-LESSON
+## LESSON
 
-- Drop the mask of perfection
+- Take off the mask of perfection
 
 - Allow yourself to live for yourself, not for approval
 
-- Free your senses and your body will come to life
+- Free your feelings — and the body will come to life
 
-SHADOW (accept and transform)
+SHADOW (to accept and transform)
 
 - Fear of making mistakes
 
-- Feeling guilty for one’s “imperfection”
+- Guilt for your "imperfection"
 
-- Suppressed aggression and pain.
+- Suppressed aggression and pain
 
-- Ban on brightness, spontaneity, anger, desire.
+- Prohibition on brightness, spontaneity, anger, desire
 
-12. TRANSFORMATION
+## TRANSFORMATION
 
-- From mask to authenticity
+- From mask — to authenticity
 
-- From guilt to love
+- From guilt — to love
 
-- From “must be” to “I choose.”
+- From "have to be" — to "I choose"
 
-ALCHEMY
+## ALCHEMY
 
-- your light hides in Nigredo under the guise of “goodness”.
+- your light hides in Nigredo under the mask of "goodness"
 
-CONFLICTS
+## CONFLICTS
 
-- The desire to be yourself vs. fear of being rejected.
+- Desire to be yourself vs. fear to be
 
-- Need for love vs. giving up oneself for the sake of this love.
+rejected.
 
-TASKS:
+- The need for love vs. self-denial for that love.
 
-- Restore the right to spontaneity, liveliness, and mistakes.
+## TASKS
 
-- Allow yourself to have inner honesty, even if it is “uncomfortable for others.”
+- Regain the right to spontaneity, liveliness, mistakes.
 
-- Start to feel yourself, and not just adapt.
+- Allow yourself inner honesty, even if it is "uncomfortable for others."
+
+- Start feeling yourself, not just adapting.
 
 KEY IDEA
 
-"I'm not perfect - I'm alive. And
+"I am not perfect — I am alive. And in that lies my true strength."
 
-This is my true strength."
+## OBSERVATIONS
 
-### message1053
+A very interesting preparation. It is powerful. It is made from a cancer cell, but its effect is significant.
 
-CARCINOSINUM
+According to observations: it restores inner freedom. When a person longs, wants love and attention from the world, tries to adapt — the preparation, on the contrary, restores dignity, freedom, and self-reliance.
 
-OBSERVATIONS.
+## BASIS
 
-A very interesting remedy. He's powerful. It is made from a cancer cell, but its effect is significant.
-
-According to observations: it restores inner freedom. When a person is sad, wants love, attention from the world, tries to adapt - the remedy, on the contrary, restores dignity, freedom, self-reliance.
-
-BASE:
-
-Nosode from tumor tissue. Carries the vibration of self-centeredness. Which is beneficial for such cases.
+Nosode from tumor tissue. Carries the vibration of egocentrism. Which is healing for such cases.
 
 🌙 ARCHETYPE
 
 Good Child
 
-Gives a transition from:
+Provides a transition from:
 
-“Which is correct?” to:
+"How is it right?" to:
 
-“What do I want?”
+"What do I want?"
 
 💥 INDICATIONS
 
 * Perfectionism
-
 * Fear of disapproval
+*
 
-* Excessive responsibility
+Excessive Responsibility
 
-* Habit of patience
+* Habit of enduring
 
-* Suppression of desires
+* Repression of desires
 
-*Difficulty expressing yourself freely
+* Difficulty expressing freely
 
-* Internal stiffness
+* Inner restraint
 
-* Self-control exhaustion
+* Exhaustion from self-control
 
-SOURCE
+## SOURCE
 
-Approximately 3–7 years is the period of rules, expectations and the formation of a “good child”.
+Approximately 3–7 years old — a period of rules, expectations, and the formation of the 'good child'.
 
 Stress:
 
-“If I am myself, I may not be accepted.”
+"If I am myself, I may not be accepted."
 
 💡 IDEA
 
-It is possible to stay in touch with others without giving up on yourself.
+It is possible to remain in contact with others without giving up on oneself.
 
 ✨ MESSAGE
 
-to me
+I am allowed to want.
 
-you can want.
+I am allowed to choose.
 
-I can choose.
-
-I don't have to be comfortable.
+I do not have to be convenient.
 
 Freedom can be safe.
 
-I can go my own way.
+I can follow my own path.
 
-🖼 LOOKS
+🖼 IMAGES
 
-* A horse whose bridle has been removed
+* A horse with the bridle removed
 
-* Open gate
+* Open gates
 
 * Field and road
 
 * Hair in the wind
 
-* Child coming out from behind the fence
+* A child coming out from behind a fence
 
 🌸 EFFECT
 
-Relieves the feeling of an internal “frenulum”.
+Removes the feeling of an internal 'bridle'.
 
-Returns interest in life and one's own desires.
+Restores interest in life and personal desires.
 
-Gives more freedom, naturalness and movement from oneself.
+Provides more freedom, naturalness, and movement from oneself.
 
 🖌 IMAGE / MEDITATION
 
-The horse stood tied under a tree for a long time.
+The horse stood tied under the tree for a long time.
 
-The bridle is removed.
+The bridle
 
-She doesn't run right away.
+taken off.
 
-First he raises his head, looks around, feels the wind and takes a few steps.
+She doesn't run immediately.
 
-She realizes that she can now move on her own.
+First she lifts her head, looks around, feels the wind, and takes a few steps.
+
+She understands that now she can move on her own.
 
 🔮 RITUAL
 
 Feel where your body habitually holds itself.
 
-Relax this place and make one movement where you want.
+Relax that place and make one movement toward where you want to go.
 
-Tell yourself:
+Say to yourself:
 
 "I can go my own way."
 
-## Additional author materials from Telegram
+## Additional materials and observations
 
-### message430
+### message430 (13.04.2025 16:57:35 UTC-05:00)
 
-CARSINOSINUM - Dance without a mask.
+CARSINOSINUM — Dance without a mask.
 
-You lived as if on instructions,
-
-It’s as if life is a strict court.
-
-Hid
-
-and pain and expectations,
-
-I walked where there was no joy, no comfort.
-
+You lived as if on command,
+As if life were a strict court.
+You hid both pain and expectations,
+Walked where there was no joy, no comfort.
 You were obedient, soft, precise,
+You lived by unspoken rules.
+But the heart surrendered too firmly
+Into a ring of duty and shackles.
+You knew how to be an example,
+You suppressed whim and pain within yourself.
+But beneath the facade — too faithful
+You lost your living fire.
+You smiled — too sweetly,
+You warmed others without warming yourself.
+You extinguished the flame
 
-You lived by the rules without words.
+very quickly,
 
-But my heart gave in too hard
+To stand again in someone else's rules.
 
-In a ring of debt and shackles.
-
-You knew how to be an example
-
-You drove away whim and pain.
-
-But underneath the façade is too true
-
-You have lost your living fire.
-
-You smiled - too sweet
-
-You warmed yourself without warming yourself.
-
-You extinguished the flame very quickly,
-
-To again stand in someone else's charter.
-
-But you're not a statue made of pain
-
+But you are not a statue of pain,
 You are not a showcase of silence.
 
-You are a cry in silence, you are will
+You are a scream in the silence, you are the will
+Within the glass silence.
 
-Inside the glass silence.
-
-And Carsinosin - like a touch
-
+And Carsinosin — like a touch
 Removes a layer of lies and dreams.
 
-You suddenly understand for the first time:
+Suddenly you understand for the first time:
+The world needs you without chains.
 
-The world needs you without shackles.
-
-You are more than a convenient image
-
+You are more than a convenient image,
 You are the pulse of freedom, the dance of the day.
 
 You can live as your heart wants,
+Without a mask, pain, and lies.
 
-Without a mask, pain and lies.
+You can cry, you can be angry,
+You can sing and fall silent.
 
-You can cry, you can get angry
-
-You can sing and stop.
-
-You are the one who may not strive,
-
+You are the one who can not strive,
 And just be. And just become.
 
-You are not for the role, not for the stage,
-
+You are not for a role, not for a stage,
 You are for the breath of spring.
 
-For a life full of adventure
-
-you for
-
-victory, for love.
+For a life full of adventures
+You are for victory, for love.
 
 You are not a mistake, not a projection,
-
-Not “should”, “must” and “shut up”.
+Not "must," "need," or "be silent."
 
 You are the voice of your own universe,
+You are life giving dreams.
 
-You are the life that gives dreams.
+And every step in your movement —
+Is to accept without the masks of mirrors.
 
-And every step in your movement -
-
-Accept without masks of mirrors.
-
-Warmth, fire of the soul, forgiveness.
-
-Open your light, what you were looking for.
+Warmth, the fire of the soul, forgiveness.
+To open your light that you sought.

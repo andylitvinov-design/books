@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message162 (18.11.2024 08:03:11 UTC-05:00)
+primary_source_sections: АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message162 (18.11.2024 08:03:11 UTC-05:00)
 source_images: /media/remedies/nitricum-acidum/message162-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Nitricum Acidum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Nitricum Acidum.; primary canonical content rebuilt from message162 (18.11.2024 08:03:11 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message162
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Nitricum Acidum, message162.
 ---
-
-### message162
 
 NITRICUM ACIDUM
 
@@ -59,7 +62,7 @@ NITRICUM ACIDUM
 
 Если напряжение слишком высоко внутри, оно выходит как агрессия и сарказм.
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Уязвимый обиженный.
 

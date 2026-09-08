@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message168 (20.11.2024 10:49:37 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП; ТЕНЬ; РЕСУРС
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message168 (20.11.2024 10:49:37 UTC-05:00)
 source_images: /media/remedies/arnica/message168-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Arnica.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Arnica.; primary canonical content rebuilt from message168 (20.11.2024 10:49:37 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message168
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Arnica, message168.
 ---
 
-### message168
-
 ARNICA
 
 Один из базовых препаратов.
@@ -49,17 +52,17 @@ ARNICA
 
 Кажутся сильными, стойкими, независимым.
 
-ОБРАЗ:
+## ОБРАЗ
 
 Воин, который продолжает стоять, несмотря на раны.
 
 Он прячет свою боль, считая, что должен справиться сам. Однако тело и душа просят исцеления.
 
-ОСНОВА
+## ОСНОВА
 
 Арника горная – цветок, процветающий в тяжёлых условиях. Он олицетворяет стойкость и способность восстанавливаться после  травмы.
 
-ПРИМЕНЕНИЕ
+## ПРИМЕНЕНИЕ
 
 - восстановление после эмоционального и физического шока
 
@@ -67,13 +70,13 @@ ARNICA
 
 - закрытость, отрицание боли и отказ от помощи.
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 Препарат помогает убрать внутреннюю зажатость.
 
 Человек отпускает зажимы, смягчает броню, расслабляется, открывается миру. Проявляется мягкий взгляд.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Раненый воин
 
@@ -81,13 +84,13 @@ ARNICA
 
 - Молчаливый защитник
 
-ТЕНЬ АРХЕТИПА
+## ТЕНЬ АРХЕТИПА
 
 - Отрицание своей боли, слабости, уязвимости
 
 - Самоизоляция из-за подавления эмоций.
 
-РЕСУРС АРХЕТИПА
+## РЕСУРС АРХЕТИПА
 
 - Сила, стойкость, мужество и способность к самовосстановлению.
 
@@ -97,7 +100,7 @@ ARNICA
 
 - Для близости и поддержки необходимость открыться в уязвимости.
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 (Смыслы, задачи):
 
@@ -107,7 +110,7 @@ ARNICA
 
 3. Открыться для получения заботы и поддержки от окружающих.
 
-АЛХИМИЯ
+## АЛХИМИЯ
 
 Rubedo (красная стадия): процесс заживления и возрождения после разрушения.
 

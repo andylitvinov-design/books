@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message285 (09.01.2025 17:33:42 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message285 (09.01.2025 17:33:42 UTC-05:00)
 source_images: /media/remedies/secale-cornutum/message285-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Secale Cornutum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Secale Cornutum.; primary canonical content rebuilt from message285 (09.01.2025 17:33:42 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message285
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,15 +44,13 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Secale Cornutum, message285.
 ---
 
-### message285
-
 SECALE CORNUTUM
 
 Мистерия Жизни.
 
 Это препарат, который позволяет отпустить страх, ступор, замирание - и позволить себе жить, дышать, растекаться внутри энергии жизни.
 
-1. ПОКАЗАНИЯ
+## ПОКАЗАНИЯ
 
 - когда замирает сердце, грудь, человек сдерживает, таит свои эмоции,
 
@@ -71,7 +74,7 @@ Secale позволяет отпустить  блоки, оживить пот
 
 Этап автономии (2–4 года): способность отстоять свои границы, проявить волю, выразить себя.
 
-4. ЭФФЕКТ:
+## ЭФФЕКТ
 
 Снимает тревожность, страхи.
 
@@ -85,13 +88,13 @@ Secale позволяет отпустить  блоки, оживить пот
 
 - Зерно, которое долгое время лежало в земле, теперь начинает прорастать.
 
-6. АРХЕТИП:
+## АРХЕТИП
 
 - Снежная королева
 
 - Сдержанный воин.
 
-7. ИДЕЯ АРХЕТИПА:
+## ИДЕЯ АРХЕТИПА
 
 Жизнь требует движения, текучести, способности отпускать старое, чтобы новое могло войти.
 
@@ -117,7 +120,7 @@ Secale позволяет отпустить  блоки, оживить пот
 
 - Способность адаптироваться к новым условиям.
 
-11. ТРАНСФОРМАЦИЯ:
+## ТРАНСФОРМАЦИЯ
 
 Из страха потери контроля в доверие жизни.
 
@@ -125,7 +128,7 @@ Secale позволяет отпустить  блоки, оживить пот
 
 Из состояния застоя в движение.
 
-12. НАБЛЮДЕНИЯ.
+## НАБЛЮДЕНИЯ
 
 Кажется невероятным, но этот препарат может мгновенно отпустить скованность в груди, вызывая волну приятного расслабления, удовольствия от жизни и открытости миру.
 

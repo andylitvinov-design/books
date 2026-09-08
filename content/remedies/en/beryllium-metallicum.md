@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message735 (07.07.2025 00:44:57 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message735 (07.07.2025 00:44:57 UTC-05:00)
 source_images: /media/remedies/beryllium-metallicum/message735-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Beryllium Metallicum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Beryllium Metallicum.; primary canonical content rebuilt from message735 (07.07.2025 00:44:57 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message735
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/beryllium-metallicum.md
@@ -41,123 +46,121 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Beryllium Metallicum, message735.
 ---
 
-### message735
+🧪 BERYLLIUM METALLICUM (Beryllium / metallic beryllium)
 
-🧪 BERYLLIUM METALLICUM (Beryllium / beryllium metal)
+A special remedy that works at the stage before birth.
 
-A special remedy that works before birth.
+It restores the sense of I AM ME – for those subpersonalities that merge with the outside world, experiencing dependence and anxiety from others.
 
-It returns the feeling of I AM I - for those subpersonalities that merge with the outside world, experience dependence and anxiety on others.
+It is suitable for those who fear being imperfect, rejected, and therefore strive to be "perfect" or "invisible."
 
-It is suitable for those who are afraid of being imperfect, rejected, and therefore strive to be “perfect” or “invisible.”
+This is the archetype of special sensitivity, shame, and deep vulnerability under a mask of correctness.
 
-This is an archetype of special sensitivity, shame and deep vulnerability under the guise of correctness.
-
-When a subpersonality dies from fear of evaluation, but dreams of being seen.
+When a subpersonality dies from fear of judgment but dreams of being seen.
 
 🌿 BASE
 
-Beryllium is a rare light metal, but is extremely toxic to the lungs if inhaled. The body contracts so as not to breathe.
+Beryllium is a rare light metal but extremely toxic to the lungs when inhaled. The body contracts to avoid breathing.
 
 Symbolically: This is air that has become poison.
 
 For a child, this is an analogy that the outside world has become toxic.
 
-The desire to hide, but inside there is a large charge of feelings.
+The desire to hide, but inside a large charge of feelings.
 
 💥 INDICATIONS
 
 - Acute shyness, social anxiety.
 
-- Fear that you will be seen for real - and rejected
+- Fear that you
 
-- Fear of showing up
+they will see the real me — and reject me
 
-- Need for security and
+- Fear of showing oneself
 
-control
+- Need for safety and control
 
-- tight chest, feeling like you can’t breathe freely
+- tight chest, feeling that you cannot breathe freely
 
-A feeling of not belonging, of guilt simply for one's existence
+Feeling of not belonging, guilt just for existing
 
-- Hypersensitivity to the opinions of others
+- Hypersensitivity to others' opinions
 
-- shrinking under someone else's gaze
+- tensing up under someone else's gaze
 
-- Preoccupation with how a person looks and what people will think of him
+- Concern about how one looks, what others will think
 
-- Avoiding confrontation and direct contact
+- Avoidance of confrontation and direct contact
 
 - sometimes panic attacks, self-aggression, depression with self-blame
 
-- feelings of shame and unworthiness
+- feeling of shame and unworthiness
 
 🔥 ARCHETYPES
 
-Vulnerable teenager who can't open up to the world
+Vulnerable teenager who cannot open up to the world
 
-A young man with wings who is afraid to fly
+Young man with wings who is afraid to fly
 
-A ghost on the school stage, frozen under the gaze
+Ghost on the school stage, frozen under gazes
 
-The one who shrunk to a molecule so as not to be noticed
+One who has shrunk to a molecule to avoid being noticed
 
-The child in the corner, dreaming of love, but afraid to approach
+Child in the corner, dreaming of love but afraid of approach
 
-🖼 LOOKS
+🖼 IMAGES
 
-- Transparent cocoon, inside of which the light trembles
+- Transparent cocoon inside which the light trembles
 
-- Boy with downcast eyes clutching his chest
+- Boy with downcast eyes, compressing his chest
 
-- Voice frozen in throat
+Voice frozen in the throat
 
 - Heart breathing with difficulty, as if the world is a threat
 
-🌸 EFFECT OF THE remedy
+🌸 EFFECT OF THE PREPARATION
 
-- Unclenches the chest, restores breathing and voice
+- Opens the chest, restores breathing and voice
 
-- Gives a feeling of security in
+- Gives a sense of safety in contact
 
-contact
+- Helps to hold a gaze — and to be
 
-- Helps you hold your gaze - and be
+- Removes the panic fear of judgment, eases shame
 
-- Removes panic fear of evaluation, reduces shame
+- Contributes to the unfolding of a subpersonality that is stuck in fear
 
-- Promotes the revelation of a subpersonality that is stuck in fear
+- Supports coming out of a frozen state
 
-- Supports recovery from frozen state
+- Helps to speak, look into eyes, assert oneself
 
-- Helps to speak, look into the eyes, express oneself
+🧱 STAGE OF DEVELOPMENT
 
-🧱 DEVELOPMENT STAGE
+0.1–1.5 years — the child does not receive warmth directly / receives rejection, feels that they need to be "convenient", "easy".
 
-0.1–1.5 years - the child does not receive warmth directly/receives rejection, feels that he needs to be “comfortable”, “easy”.
+5–8 years — Formation of opinion, the right to speak, to be noticed.
 
-5–8 years - Formation of opinion, the right to speak, to be noticed.
+💡 IDEA OF THE PREPARATION
 
-💡 remedy IDEA
+You can be visible — and you will not be rejected.
 
-You can be visible without being rejected.
+You can speak — and be heard.
 
-You can speak and be heard.
+You are worthy of occupying space, breathing, feeling.
 
-You are worthy to take up space, to breathe, to feel.
+You are not a mistake. You are a manifestation of light, even if you are trembling for now.
 
-You are not a mistake. You are a manifestation of light, even if you are still trembling.
+✨ MESSAGE /
 
-✨ MESSAGE / LESSON
+LESSON
 
 You have the right to speak.
 
-You can be sensitive—and strong.
+You can be sensitive — and strong.
 
-You can be yourself and they will love you.
+You can be yourself — and you will be loved.
 
-You don't have to disappear to be safe.
+You are not obligated to disappear to be safe.
 
 You are needed. You are beautiful. You are whole.
 
@@ -167,13 +170,11 @@ I can breathe.
 
 I can be here.
 
-I can talk.
+I can speak.
 
-I allow
+I allow myself to be.
 
-to be yourself.
-
-I don't have to be perfect to be loved.
+I do not have to be perfect to be loved.
 
 I am valuable.
 
@@ -181,27 +182,27 @@ I am part of the world.
 
 🔄 TRANSFORMATION
 
-Before: Constriction, panic, fear of being seen, invisibility, chest tension
+Before: Constriction, panic, fear of being noticed, invisibility, chest tension
 
-After: Lightness, clarity, opening, contact, return of breath, voice, self-acceptance
+After: Lightness, clarity, openness, contact, return of breath, voice, self-acceptance
 
 🖌 IMAGE / MEDITATION
 
-You are standing on stage. The light is blinding. There is fear in my chest.
+You are standing on stage. The light blinds you. Fear is in your chest.
 
 You close your eyes.
 
-You feel someone putting a hand on your shoulder.
+You feel someone placing a hand on your shoulder.
 
-The chest unclenches. You take a breath.
+Your chest loosens. You take a breath.
 
-You open your eyes and the world is not scary.
+You open your eyes — and the world is not scary.
 
 You say: "I am."
 
 🔮 RITUAL
 
-Stand in front of the mirror.
+Stand in front of a mirror.
 
 Look at yourself with gentleness.
 
@@ -209,12 +210,14 @@ Place your hands on your chest.
 
 Say:
 
-"I can be. I can breathe. I can talk.
+"I
+
+I can be. I can breathe. I can speak.
 
 I don't have to hide. I deserve to be myself."
 
-Breathe through your mouth - softly, like the wind.
+Breathe through your mouth - soft as the wind.
 
-Let the tension release.
+Let the tension come out.
 
 You deserve to be in this world.

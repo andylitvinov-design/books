@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message601 (02.06.2025 19:30:01 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message601 (02.06.2025 19:30:01 UTC-05:00)
 source_images: /media/remedies/kali-muriaticum/message601-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Kali Muriaticum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Kali Muriaticum.; primary canonical content rebuilt from message601 (02.06.2025 19:30:01 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message601
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,15 +44,13 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Kali Muriaticum, message601.
 ---
 
-### message601
-
 KALI MURIATICUM
 
 Еще один препарат, который мягко наполняет закрытое сердце любовью.
 
 Он снимает блоки обид, подавленности. Добавляет свежести и нежности в душе.
 
-ОСНОВА
+## ОСНОВА
 
 Хлорид калия - помогает передавать нервные импульсы в мышцах и регулировать баланс солей в жидкостях.
 
@@ -55,7 +58,7 @@ KALI MURIATICUM
 
 Помогает строит связи и достигать гармонии в жизни.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - скрытые обиды внутри
 
@@ -71,7 +74,7 @@ KALI MURIATICUM
 
 - воспаления, отеки
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - высвобождение эмоций и обид
 
@@ -81,7 +84,7 @@ KALI MURIATICUM
 
 - возвращение движение в жизнь, тело
 
-АРХЕТИП
+## АРХЕТИП
 
 - молчаливый хранитель боли
 
@@ -89,7 +92,7 @@ KALI MURIATICUM
 
 - умерший голос души (страх высказаться)
 
-ОБРАЗ:
+## ОБРАЗ
 
 - Застывший сосуд, в котором копится слизь эмоций и недосказанности
 
@@ -105,13 +108,13 @@ KALI MURIATICUM
 
 Если я скажу правду - потеряю любовь.
 
-ИДЕЯ
+## ИДЕЯ
 
 Застой - когда ты не разрешаешь себе высказаться.
 
 Когда ты позволяешь себе чувствовать и говорить, ты возвращаешь жизнь.
 
-ПОСЛАНИЕ
+## ПОСЛАНИЕ
 
 Ты не обязан все терпеть внутри.
 
@@ -119,13 +122,13 @@ KALI MURIATICUM
 
 Ты имеешь право сказать.
 
-ТРАНСФОРМАЦИЯ:
+## ТРАНСФОРМАЦИЯ
 
 - До: застой, молчание, накопленные обиды, внутренний «туман»
 
 - После: лёгкость, освобождение голоса, движение эмоций, свежесть жизни.
 
-РИТУАЛ
+## РИТУАЛ
 
 Положи руки на грудь. Представь, как слизь в груди растворяется в свете.
 

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message168 (20.11.2024 10:49:37 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП; ТЕНЬ; РЕСУРС
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message168 (20.11.2024 10:49:37 UTC-05:00)
 source_images: /media/remedies/arnica/message168-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Arnica.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Arnica.; primary canonical content rebuilt from message168 (20.11.2024 10:49:37 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message168
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/arnica.md
@@ -41,8 +46,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Arnica, message168.
 ---
 
-###message168
-
 ARNICA
 
 One of the basic remedies.
@@ -51,72 +54,70 @@ It is suitable for people who are full of deep emotional wounds and pain, but th
 
 They seem strong, resilient, independent.
 
-LOOK:
+## IMAGE
 
-A warrior who continues to stand despite his wounds.
+A warrior who continues to stand despite wounds.
 
-He hides his pain, believing that he must cope on his own. However, the body and soul are asking for healing.
+He hides his pain, believing he must cope on his own. However, the body and soul are asking for healing.
 
-BASIS
+## BASIS
 
-Arnica montana is a flower that thrives in difficult conditions. It represents resilience and the ability to recover from injury.
+Mountain arnica – a flower that thrives in harsh conditions. It represents resilience and the ability to recover after trauma.
 
-APPLICATION
+## USE
 
-- recovery from emotional and physical shock
+- Recovery after emotional and physical shock
 
-- overwork
+- Overwork
 
-- closedness, denial of pain and refusal to help.
+- Closedness, denial of pain, and refusal of help
 
-EFFECT
+## EFFECT
 
-The remedy helps remove internal tightness.
+The remedy helps to remove internal tension.
 
-A person lets go of clamps, softens his armor, relaxes, and opens up to the world. A soft look appears.
+The person lets go of tightness, softens their armor, relaxes, and opens up to the world. A gentle gaze appears.
 
-ARCHETYPE
+## ARCHETYPE
 
-- Wounded Warrior
+- The wounded warrior
 
-- Steadfast defender
+- The steadfast protector
 
-- Silent Protector
+- The silent guardian
 
-SHADOW OF THE ARCHETYPE
+## SHADOW OF THE ARCHETYPE
 
-- Denial of your pain, weakness, vulnerability
+- Denial of one's pain, weakness, vulnerability
 
-- Self-isolation due to suppression of emotions.
+- Self-isolation due to suppressed emotions.
 
-ARCHETYPE RESOURCE
+## ARCHETYPE RESOURCE
 
-- Strength, tenacity, courage and ability
-
-to self-healing.
+- Strength, resilience, courage, and the ability for self-recovery.
 
 LESSON / STRESS
 
 - The need for care, restoration / but the fear of admitting vulnerability in order to be strong.
 
-- For intimacy and support, the need to open up in vulnerability.
+- For closeness and support, the need to open up in vulnerability.
 
-TRANSFORMATION
+## TRANSFORMATION
 
-(Meanings, objectives):
+(Meanings, tasks):
 
 1. Understand that vulnerability is not weakness, but a path to growth.
 
-2. Overcoming isolation and loneliness by recognizing your vulnerability.
+2. Overcome isolation and loneliness by acknowledging your vulnerability.
 
-3. Be open to receiving care and support from others.
+3. Open up to receive care and support from others.
 
-ALCHEMY
+## ALCHEMY
 
 Rubedo (red stage): the process of healing and rebirth after destruction.
 
 ARNICA
 
-Softens internal scars, brings relief and renewal to the body and soul.
+Softens internal scars, brings relief and renewal to body and soul.
 
-It adds courage to open up to people and reconnect with the world.
+It adds courage to open up to people and restore connection with the world.

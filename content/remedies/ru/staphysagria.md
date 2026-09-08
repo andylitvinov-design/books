@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message277 (06.01.2025 20:16:59 UTC-05:00)
+primary_source_sections: ЭФФЕКТ; ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message283 (08.01.2025 21:06:55 UTC-05:00)
 source_messages: message277 (06.01.2025 20:16:59 UTC-05:00); message283 (08.01.2025 21:06:55 UTC-05:00)
 source_images: /media/remedies/staphysagria/message277-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Staphysagria.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Staphysagria.; primary canonical content rebuilt from message277 (06.01.2025 20:16:59 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message277
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Staphysagria, message277.
 ---
 
-### message277
-
 STAPHYSAGRIA:
 
 Мистерия пробуждения Воина Духа.
@@ -49,7 +52,7 @@ STAPHYSAGRIA:
 
 Он помогает восстановить ресурс психики, утраченный в стрессовых историях детства.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - проблемы кожи, ЖКТ, мочеполовой системы;
 
@@ -57,11 +60,11 @@ STAPHYSAGRIA:
 
 - сложность проявить свою волю и гнев.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - Вместо стыда и смущения - возвращается чувство гордости, достоинства, принятие себя, такой какой ты есть.
 
-ОБОСНОВАНИЕ:
+## ОБОСНОВАНИЕ
 
 - Основа - семена растения Delphinium (Живокость), которые вызывают раздражение кожи и слизистых.
 
@@ -77,7 +80,7 @@ STAPHYSAGRIA:
 
 Он восстанавливает чувство личных границ и достоинство.
 
-ОБРАЗ
+## ОБРАЗ
 
 - Человек, который внешне выглядит спокойным и сдержанным, но внутри испытывает сильные эмоции, сжигающие его изнутри.
 
@@ -87,7 +90,7 @@ STAPHYSAGRIA:
 
 - Лев, который долго был в клетке, но теперь обретает свободу.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Загнанный мыслитель
 
@@ -95,7 +98,7 @@ STAPHYSAGRIA:
 
 - Освобождающийся воин.
 
-ИДЕЯ АРХЕТИПА:
+## ИДЕЯ АРХЕТИПА
 
 - Свобода начинается с умения заявлять о своих чувствах и защищать свои границы.
 
@@ -111,9 +114,9 @@ Staphysagria — это средство, которое помогает спр
 
 Оно учит нас  выражать свои чувства, защищать свои границы и возвращать себе внутренний баланс и достоинство.
 
-## Дополнительные авторские материалы из Telegram
+## Дополнительные материалы и наблюдения
 
-### message283
+### message283 (08.01.2025 21:06:55 UTC-05:00)
 
 STAPHYSAGRIA
 

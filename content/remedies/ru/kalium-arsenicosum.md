@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message222 (13.12.2024 17:57:04 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП; ТЕНЬ; РЕСУРС
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message222 (13.12.2024 17:57:04 UTC-05:00)
 source_images: /media/remedies/kalium-arsenicosum/message222-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Kalium Arsenicosum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Kalium Arsenicosum.; primary canonical content rebuilt from message222 (13.12.2024 17:57:04 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message222
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Kalium Arsenicosum, message222.
 ---
-
-### message222
 
 KALIUM ARSENICOSUM
 
@@ -55,7 +58,7 @@ KALIUM ARSENICOSUM
 
 Эмоции подавлены, но тревога бурлит внутри, иногда доходя до паники.
 
-ОСНОВА
+## ОСНОВА
 
 Это соединение мышьяка с калием.
 
@@ -63,7 +66,7 @@ KALIUM ARSENICOSUM
 
 - А калий как раз усиливает эту опору.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - чувство беззащитности, тревога, уязвимость, слабость, истощение.
 
@@ -83,7 +86,7 @@ KALIUM ARSENICOSUM
 
 - Склонность к ритуалам, аккуратности, чтобы успокоить тревогу.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - Возникает чувсто опоры.
 
@@ -93,13 +96,13 @@ KALIUM ARSENICOSUM
 
 Это укрепляет уверенность и дает внутреннюю устойчивость. Восстанавливает энергию и силу. У человека может начать появляться сильный, магический взгляд.
 
-ОБРАЗ:
+## ОБРАЗ
 
 - Человек, идущий по натянутому канату над пропастью, балансируя между страхом падения и желанием достичь другого берега.
 
 - Лёд, который медленно тает, уступая место тёплой земле и жизни.
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Уязвимый целитель
 
@@ -111,7 +114,7 @@ KALIUM ARSENICOSUM
 
 - Стремление к контролю vs. необходимость довериться миру.
 
-ТЕНЬ:
+## ТЕНЬ
 
 - Страх потерять контроль и управление.
 
@@ -119,7 +122,7 @@ KALIUM ARSENICOSUM
 
 «Чтобы быть любимым, я должен быть безупречным.»
 
-РЕСУРС:
+## РЕСУРС
 
 - Способность выстоять в стрессе и испытаниях
 

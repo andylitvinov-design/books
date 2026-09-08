@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message696 (30.06.2025 20:30:35 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message696 (30.06.2025 20:30:35 UTC-05:00)
 source_images: /media/remedies/kalium-iodatum/message696-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Kalium Iodatum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Kalium Iodatum.; primary canonical content rebuilt from message696 (30.06.2025 20:30:35 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message696
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/kalium-iodatum.md
@@ -41,166 +46,164 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Kalium Iodatum, message696.
 ---
 
-### message696
-
 KALIUM IODATUM
 
-(Potassium iodide)
+(Kalium iodide)
 
-The warrior is a purifier.
+The warrior - the cleanser.
 
-Fire spirit.
+Fiery spirit.
 
-The uniqueness of this remedy is that it creates powerful protection around the wounded part of the Self.
+The uniqueness of this remedy is that it creates powerful protection around the vulnerable part of the Self.
 
-She gains stone support, determination, readiness to fight and defend herself.
+It gains a stony support, decisiveness, readiness to fight and defend oneself.
 
-The remedy strengthens boundaries and enhances morale.
+The remedy strengthens boundaries and enhances fighting spirit.
 
-Instead of relying on others and seeking contact or fear of contact, self-reliance is formed.
+Instead of relying on others and seeking contact or fearing contact, reliance on oneself is formed.
 
-A remedy for the very weak and the part of the Self that is forced to “be strong” and protect its borders from invasion.
+A remedy for a very weak part of the Self, which is forced to "be strong," to protect its boundaries from intrusion.
 
-This is a guard who is afraid to put down his weapon.
+It is a guardian that is afraid to lower its weapon.
 
-Kali iodatum - helps strengthen support, loosen stiffness, release the poison of grief and self-condemnation, free up the space of the soul to let in peace.
+Kali iodatum — helps to strengthen support, release stiffness, let go of the poison of grief and self-condemnation, free the soul's space to let peace in.
 
-🧬 BASE
+🧬 BASIS
 
 A compound of potassium and iodine.
 
-Potassium - responsible for balance, support, structure, protection.
+Potassium — responsible for balance, support, structure, protection.
 
-Iodine - activates internal “fire”, burning cleansing, destruction of stagnation.
+Iodine — activates the inner "fire," burning cleansing, eliminating stagnation.
 
-A remedy for dynamic, breakthrough cleansing of internal blockages of anxiety, tension, self-condemnation.
+The remedy of dynamic, breakthrough cleansing of the internal
+
+buildup of anxiety, tension, self-judgment.
 
 🔥 INDICATIONS
 
 Soul on fire.
 
-- Human
+- a proper, good person, who keeps themselves under control
 
-correct, good, self-controlled
+- shame, sadness, fear of embarrassment, judgment
 
-- eating, shame, sadness, fear of disgrace, condemnation
+- deep feeling of rejection, rage, resentment,
 
-- deep feelings of rejection, rage, resentment,
-
-- intense loneliness, often disguised as concern for others.
+- tense loneliness, often disguised as concern for others
 
 - inability to relax, restlessness, anxious activity
 
-- feeling guilty for your passion or anger.
+- feeling guilty for one's passion or anger
 
-- anxiety at night and alone
+- anxiety at night and when alone
 
-- at the same time - a strong desire to be accepted, to prove one’s need.
+- at the same time — a strong desire to be accepted, to prove one's usefulness
 
-- inside there is a desire to throw off the mask, moral constriction, throw out anger
+- inside there is a desire to drop the mask, moral restraint, to release anger
 
-- the fire of the soul results in chronic inflammation, anxiety, melancholy in the bones
+- the fire of the soul manifests in chronic inflammations, anxiety, longing in the bones
 
 - intolerance to external fire, heat, conflicts
 
-- tightness of joints, throat, chest.
+- stiffness in joints, throat, chest
 
 Feeling:
 
-“I have to endure. I have no right to ask for help."
+"I must endure. I have no right to ask for help."
 
-“I’m doing everything right, but I’m not getting heat.”
+"I do everything right, but I do not receive warmth."
 
-🌟 EFFECT OF THE remedy
+🌟 EFFECT OF THE MEDICATION
 
-- Cleanses both the body and feelings from stagnation, suppressed anger, and internal heat.
+- Cleanses and
 
-- Gives strength for a breakthrough when a person is stuck in chronic “rotting.”
+body, and feelings from stagnation, suppressed anger, internal heat.
 
-- Relieves inflamed tension and burning sensation
+- Gives strength for a breakthrough when a person is stuck in chronic 'decay.'
 
-anxiety.
+- Relieves inflamed tension and burning anxiety.
 
-- Helps to gently return boundaries, clearing away other people's energies.
+- Helps gently restore boundaries, clearing away foreign energies.
 
 🌿 ARCHETYPES
 
-- Protesting exile. Outcast but strong. The soul is on fire, the body is in suffering.
+- The protesting exile. Rejected, yet strong. Soul in fire, body in suffering.
 
-- Warrior-Purifier - destroys stagnant forms, burns out the old, frees from pain.
+- The Warrior-Cleanser — destroys stagnant forms, burns away the old, frees from pain.
 
-- Fire spirit who came to cleanse and restart the movement
+- The fiery spirit, coming to cleanse and restart movement
 
-🖼 LOOKS
+🖼 IMAGES
 
-- A charred tree that is still alive inside
+- A charred tree, still alive inside
 
-- Chest wrapped with iron wire
+- Chest wrapped in barbed wire
 
-- Ice lump in the solar plexus
+- Ice block in the solar plexus
 
 - Tears hidden behind a stone mask
 
 🌱 DEVELOPMENT STAGE
 
-2–4 years: Will and Guilt - shame for showing will, rage
+2–4 years: Will and Guilt — shame for showing will, rage
 
-5–8 years: Self-Esteem and Control - the habit of being “ideal”
+5–8 years: Self-esteem and Control — habit of being 'perfect'
 
-0–1.5 years: Receiving love - freezing in response to rejection
+0–1.5 years: Receiving love — freezing in response to rejection
 
-Conflict: “everything is burning inside me - but I don’t have the right to speak out.”
+Conflict: 'I have everything'
 
-Inside there is a burning pain associated with rejection: “I am not accepted. I am not needed. But I am worthy!”
+Inside it burns — but I do not have the right to speak out.
 
-It can form in adolescence, especially if there was trauma of isolation, accusation, or expulsion. Gives a desire for recognition in the group,
+Inside — a burning pain connected with rejection: "I am not accepted. I am not needed. But I am worthy!"
 
-fear of being rejected.
+It may develop in adolescence, especially if there was trauma from isolation, blame, or exile. Gives a drive for recognition in a group, fear of being rejected.
 
-💡 remedy IDEA
+💡 IDEA OF THE REMEDY
 
 The right to feel.
 
-You can be strong and cry.
+You can be strong — and cry.
 
-The right not to keep everything to yourself.
+The right not to keep everything inside.
 
-You can be kind and be angry.
+You can be kind — and be angry.
 
-You don't have to be perfect to be loved.
+You are not obligated to be perfect to be loved.
 
 💡 LESSON AND MESSAGE
 
-Anger can be healing if it serves life.
+Anger — can be healing if it serves life.
 
-Sometimes, to make it easier, you need to let yourself break through.
+Sometimes, to feel relief, you need to let yourself break through.
 
 🌺 AFFIRMATIONS
 
-I let go of the expectation that I have to be perfect.
+I release the expectation that I must be perfect.
 
 I allow myself to feel pain to free myself.
 
-I can be vulnerable—and be worthy.
+I can be vulnerable — and worthy.
 
-I'm alive even if I'm burning.
+I am alive, even if I burn.
 
-I'm getting my warmth back.
+I reclaim my warmth.
 
 I open my heart without fear.
 
 🔄 TRANSFORMATION
 
-Before: Restrained melancholy, anxiety. A fire that burns everything inside.
+Before :
 
-After: Support, security. Purified, living heart, gentleness, openness. The right to be yourself. Fire that gives life.
+Restrained longing, anxiety. A fire that burns everything inside.
+
+After: Support, security. A purified, living heart, softness, openness. The right to be yourself. A fire that gives life.
 
 🔮 CLEANSING RITUAL
 
-Take a candle / red or yellow stone - a symbol of internal heat.
+Take a candle / a red or yellow stone — a symbol of inner heat.
 
-Say: “I acknowledge my inner fire. I'm not afraid of my strength. I am cleansing myself of everything that is no longer mine. I'm taking back myself
+Say: "I acknowledge my inner fire. I am not afraid of my power. I cleanse myself of everything that is no longer mine. I reclaim my freedom and peace."
 
-freedom and peace."
-
-Imagine how everything old is burned out inside you. And in its place is a new, calm, sustainable energy.
+Imagine all the old within you being burned away. And in its place — a new, calm, stable energy.

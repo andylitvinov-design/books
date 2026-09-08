@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message70 (12.09.2024 19:14:04 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message70 (12.09.2024 19:14:04 UTC-05:00)
 source_images: /media/remedies/cantharis/message70-1.jpg
-provenance: Russian label is copied from the source heading.
+provenance: Russian label is copied from the source heading.; primary canonical content rebuilt from message70 (12.09.2024 19:14:04 UTC-05:00)
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
 source_heading: Шпанская мушка (Препарат Cantharis)
 source_author: Andrii Litvinov
-source_status: manual-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,4 +44,26 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Cantharis, message70.
 ---
 
-А с точки зрения психотерапии, оно хорошо устраняет "внутренний зуд", нервозность, нетерпеливость. Добавляет внутреннего спокойствия и достоинства.
+Шпанская мушка
+
+(Препарат Cantharis).
+
+Шпанская мушка - легендарный афродизиак, который использовался до 20 века.
+
+Маркиз де Сад использовал его в своих оргиях.
+
+Многие представители высшего света добавляли его в сладости.
+
+Но вещество в избытке поражает слизистые и вызывает жжение.
+
+Так Казанова погубил нескольких возлюбленных.
+
+А семейство Борджиа этим ядом устраняло несогласных.
+
+__
+
+В гомеопатии информация данного средства используется чтобы снять жжение слизистых, кожи.
+
+А с точки зрения психотерапии, оно хорошо устраняет "внутренний зуд", нервозность, нетерпеливость.
+
+Добавляет внутреннего спокойствия и достоинства.

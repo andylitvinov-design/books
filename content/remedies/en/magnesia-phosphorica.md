@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message408 (04.04.2025 23:30:17 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ; АРХЕТИП; ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message408 (04.04.2025 23:30:17 UTC-05:00)
 source_images: /media/remedies/magnesia-phosphorica/message408-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesia Phosphorica.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Magnesia Phosphorica.; primary canonical content rebuilt from message408 (04.04.2025 23:30:17 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message408
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/magnesia-phosphorica.md
@@ -41,134 +46,134 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Magnesia Phosphorica, message408.
 ---
 
-### message408
-
 MAGNESIA PHOSPHORICA
 
-Another one of my favorite remedies in matters of love.
+Another one of my favorite remedies when it comes to questions of love.
 
-He works miracles.
+It works wonders.
 
-Clients taking this remedy relax and begin to establish soft, gentle contacts with others. And they receive love and recognition in return.
+Clients taking this remedy relax and begin to establish gentle, tender contacts with others. And they receive love and recognition in return.
 
-The world is filled with love.
+The world fills with love.
 
-BASIS
+## BASIS
 
 Magnesium phosphate: a compound responsible for energy transfer and muscle relaxation.
 
-In homeopathy, it is celebrated for relaxation both physical and emotional.
+In homeopathy, it is responsible for both physical and emotional relaxation.
 
-Archetypally, this is the image of a person who “keeps everything inside”, shrinks from internal pain and only through warmth, care and relaxation returns to balance.
+Archetypically, it is the image of a person who "keeps everything inside," contracts from inner pain, and only through warmth, care, and relaxation returns to balance.
 
-INDICATIONS:
+## INDICATIONS
 
 - muscle spasms
 
-- anxiety, internal compression
+- anxiety, inner tension
 
 - fear of relaxing, letting go of control
 
-- fatigue from conflicts, pressure, irritability,
+- fatigue from conflicts, pressure, irritability
 
 - restraint, delicacy, fear of rejection, loneliness, but difficulty asking for support.
 
 SYMBOL:
 
-- A compressed bud that does not dare to open because it is afraid of cold, wind and being broken
+- A closed bud, which in no way...
 
-- Wings that envelop
+decides to open up because it is afraid of the cold, the wind, and being broken
 
-you in a moment of pain
+- Wings that wrap around you in moments of pain
 
-- A warm bath in which the exhausted body is immersed
+- A warm bath in which the exhausted body immerses
 
-- A luminous circle within which you can let go of everything unnecessary.
+- A glowing circle within which you can let go of everything unnecessary.
 
-ARCHETYPE:
+## ARCHETYPE
 
 - Keeper of Comfort
 
 - Keeper of Warmth
 
-- Gentle Healer
+- Soft Healer
 
 - Soul of Care.
 
-EFFECT:
+## EFFECT
 
 - Calms the body and soul
 
-- Relieves muscle and internal tension
+- Relieves muscle and inner tension
 
-- Returns a feeling of comfort, warmth, trust
+- Restores the feeling of comfort, warmth, trust
 
-- Helps to relax and restore strength.
+- Helps to relax and regain strength.
 
-DEVELOPMENT STAGE:
+## DEVELOPMENT STAGE
 
-- Contact/Intimacy, Caring (1.5-3 years).
+- Contact/Intimacy, Care (1.5-3 years).
 
-ARCHETYPE IDEA:
+## ARCHETYPE IDEA
 
-- True strength lies in the ability to be gentle. Protection comes through relaxation, not through resistance.
+- True strength is in the ability to be gentle. Protection comes through relaxation, not resistance.
 
 SHADOW (to see and accept):
 
-- Repressed desire to be loved and protected, but fear of showing pain and weakness.
+- Repressed desire to be loved and protected, but fear of showing pain and weakness
 
-- Overexertion, trying to always be strong,
+- Overexertion, trying to always be strong
 
-- Inability to ask for help,
+- Inability to ask for help
 
-- Shame about your sensitivity
+- Shame for one's
 
-What to convert:
+sensitivity
+
+What to transform:
 
 - Allow yourself to ask for care and be vulnerable.
 
-- Understand that strength lies in flexibility, not control.
+- Understand that strength is in flexibility, not in control.
 
-LESSON:
+## LESSON
 
 - You have the right to rest
 
-- The force can be warm
+- Strength can be warm
 
--
+- Support is not weakness, but a resource
 
-Support is not a weakness, but a resource
+- You can release tension and be in acceptance.
 
-- You can let go of tension and be in acceptance.
+LIGHT (to reveal):
 
-LIGHT (expand):
-
-- Ability to take care of yourself
+- The ability to take care of yourself
 
 - Softness that creates a safe space
 
-TRANSFORMATION:
+## TRANSFORMATION
 
-- From spasm to relaxation
+- From spasm — to relaxation
 
-- From struggle to acceptance
+- From struggle — to acceptance
 
-- From fear of pain - to trust in the body and life.
+- From fear of pain — to trust in the body and life.
 
 AFFIRMATIONS:
 
 - I allow myself to relax
 
-- I'm safe
+- I am safe
 
-- My gentleness is my strength
+- My softness is my strength
 
-- I accept care and support with love
+- I receive care and support with love
 
-TOTAL
+SUMMARY
 
-Magnesia Phosphorica is the archetype of a warm inner strength that is not loud, but real. The remedy helps to release tension, dissolve internal pressures, regain softness, acceptance, and inner peace.
+Magnesia Phosphorica is the archetype of warm inner strength, which is not loud, but real. The remedy helps to release tension, dissolve internal blocks, restore softness, acceptance, and inner peace.
 
 Key idea:
 
-"Strength lies in warmth and love. Harmony comes when you let go of tension."
+"Strength is in warmth and
+
+love. Harmony comes when you let go of tension.

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message606 (03.06.2025 19:57:34 UTC-05:00)
+primary_source_sections: ОСНОВА; ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message606 (03.06.2025 19:57:34 UTC-05:00)
 source_images: /media/remedies/hydrogenium/message606-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Hydrogenium.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Hydrogenium.; primary canonical content rebuilt from message606 (03.06.2025 19:57:34 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message606
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Hydrogenium, message606.
 ---
-
-### message606
 
 HYDROGENIUM (водород).
 
@@ -53,7 +56,7 @@ Hydrogenium помогает вернуться к Истоку, найти св
 
 Он помогает освободиться от всего лишнего, вернуться к себе.
 
-ОСНОВА
+## ОСНОВА
 
 Водород — самый лёгкий  элемент во Вселенной.
 
@@ -67,7 +70,7 @@ Hydrogenium помогает вернуться к Истоку, найти св
 
 Возвращает внутренний свет и целостность.
 
-ПОКАЗАНИЯ :
+## ПОКАЗАНИЯ
 
 - При крахе опор, чувстве пустоты и утраты смысла.
 
@@ -81,7 +84,7 @@ Hydrogenium помогает вернуться к Истоку, найти св
 
 - Физически: слабость, потеря энергии, аллергии, экзема.
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 Очистка от чужого влияния
 
@@ -115,7 +118,7 @@ Hydrogenium помогает вернуться к Истоку, найти св
 
 чувствует, как всё вокруг растворяется, но изнутри начинает рождаться свет.
 
-Этап развития
+## ЭТАП РАЗВИТИЯ
 
 - Возраст: внутриутробный и самый первый год жизни
 
@@ -149,13 +152,13 @@ Hydrogenium помогает вернуться к Истоку, найти св
 
 Я принадлежу Вселенной и чувствую своё место в ней.
 
-Трансформация
+## ТРАНСФОРМАЦИЯ
 
 - До: Размытость, потеря себя, страх раствориться
 
 - После: Чистота, ясность, внутренний свет, целостность
 
-Ритуал
+## РИТУАЛ
 
 Встань или сядь спокойно.
 

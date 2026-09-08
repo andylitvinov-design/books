@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message682 (28.06.2025 14:19:27 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message682 (28.06.2025 14:19:27 UTC-05:00)
 source_images: /media/remedies/cobaltum-metallicum/message682-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cobaltum Metallicum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cobaltum Metallicum.; primary canonical content rebuilt from message682 (28.06.2025 14:19:27 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message682
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/cobaltum-metallicum.md
@@ -41,170 +46,170 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Cobaltum Metallicum, message682.
 ---
 
-### message682
-
 COBALTUM METALLICUM
 
 (Cobalt)
 
-A special remedy that restores the Power of the Spirit.
+A special remedy that restores the Strength of Spirit.
 
-The right to live. The right to assert your boundaries and be yourself.
+The right to live. The right to defend your boundaries and be yourself.
 
-Cobaltum strengthens personal strength, gives more endurance and support. Borders are expanding and strengthening. There is a growing feeling that you hold and control the world, and not he you.
+Cobaltum strengthens personal power, gives more endurance and support. Boundaries expand and strengthen. The feeling grows that you hold and control the world, not the world you.
 
-A remedy for those who work, but feel invisible, unrecognized, excluded from the circle. Its theme is the restoration of masculinity, social power and sexual self-esteem.
+A remedy for those who act but feel invisible, unrecognized, excluded from the circle. Its theme is the restoration of masculinity, social power, and sexual self-respect.
 
-🧬 BASE
+🧬 FOUNDATION
 
-Cobalt - used in magnetic alloys.
+Cobalt is used in magnetic alloys.
 
-This is a key element for the synthesis of DNA, vitamin B12, which is responsible for tone, stability, personal center and energy frame.
+It is a key element for the synthesis of DNA, vitamin B12, which is responsible for tone, resilience, the personal center, and the energy framework.
 
-In homeopathy, the remedy responds to the condition of exhaustion from Social silence. When there is weakness, depression due to lack of recognition and inclusion.
+In homeopathy, the remedy corresponds to a state of exhaustion from Social Silence. When there is weakness, depression due to lack of recognition and exclusion.
 
 When a person continues to “function” in the world,
 
-but due to the lack of confirmation of its value, need -
+but due to the lack of
 
-loses contact with itself, the axis, and the power to be alive
+confirmation of one's value, necessity -
+
+loses contact with oneself, the axis, and the strength to be alive
 
 🔥 INDICATIONS
 
-- the body weakens from lack of recognition, attention and inclusion in the community,
+- the body weakens from a lack of recognition, attention, and involvement in the community,
 
 - loneliness among people.
 
-At a time when energy replenishment through recognition, contact, glance is important,
+At the time when energetic nourishment through recognition, contact, and gaze is important,
 
-- when a person feels broken, ashamed, “nobody.”
+- when a person feels broken, ashamed, 'nobody'.
 
-- feeling of not being accepted into the male/social circle
+- feeling of non-acceptance in the male/social circle
 
-- Loss of manhood
+- Loss of male dignity
 
-- Shame about your body, impotence, inner feeling of a “weak male”
+- Shame about one's body, impotence, internal feeling of a 'weak male'
 
 - Fear of being humiliated, ridiculed
 
 - Repression of sexuality, especially after failure or rejection
 
-- The feeling that “men will not accept me”, “I am not worthy of a circle of men”
+- Feeling that 'men will not accept me,' 'I am not worthy of the circle of men'
 
-- The need for feedback, respect, eye contact.
+- Need for feedback, respect, eye contact.
 
-- tired after mental stress
+- fatigue after mental exertion
 
-- loss of clarity, concentration
+- loss of clarity, focus
 
 - depression, sadness, apathy, emptiness
 
-- feeling of inferiority without approval
+- feeling of inadequacy
+
+without approval
 
 - desire to be alone and longing for recognition
 
-- exhaustion, withdrawal into silence due to non-recognition.
+- exhaustion, retreat into silence if unrecognized.
 
-- a quiet erosion of personality that occurs due to the lack of a mirror confirming “you”
+- quiet erosion of personality caused by the absence of a mirror confirming 'you exist.'
 
-there is.”
+- Feeling: 'I am needed only if I am effective'
 
-- Feeling: “I am needed only if I am effective”
+Key theme
 
-Key topic
-
-- “They don’t see me.” Especially as a man, as a figure.
+- 'I am not seen.' Especially as a man, as a figure.
 
 - Longing for recognition.
 
-Physics
+Physical
 
-- Weakness in the back. Fatigue after mental stress.
+- Weakness in the back. Fatigue after mental exertion.
 
 Emotions
 
-Suppressed melancholy, desire to lie down, dissolve. There is an ulcerated silence.
+- Suppressed longing, desire to lie down, dissolve. Vulnerable silence.
 
 Social aspect
 
-- Fear of being excluded, invisible in a male environment, team.
+- Fear of being excluded, invisible in a male environment, in a group.
 
 🌿 EFFECT
 
-The remedy restores inclusion in the world, the male axis, voice, and self-respect.
+- The remedy restores engagement with the world, the male axis, voice, and self-respect.
 
-- Returns the feeling “I am a Man”, I have the right to be"
+- Restores the feeling 'I am a Man,' I have the right to exist.
 
-- Helps to free yourself from shame and fear of being rejected by men
+- Helps to free from shame and fear of being rejected by men
 
 - Restores energy flow in the body (especially in the legs and pelvis)
 
-- Returns initiative, desire to live, sexual energy.
+- Returns initiative, a desire to live
+
+sexual energy.
 
 🧱 ARCHETYPES
 
-- A warrior in the ranks who is not noticed
+- A warrior in the ranks who is unnoticed
 
-- A fallen hero is one who has been defeated and is afraid to return
+- A fallen hero — one who has been defeated and fears returning
 
-- A hermit without a fire is a man who has gone into the shadows after losing his strength
+- A hermit without a fire — a man who has gone into the shadows after losing his strength
 
-- A young man who was ridiculed by his peers - and he hid his strength forever
+- A youth mocked by peers — and he has forever hidden his strength
 
-- Magnet,
+- A magnet that has lost its power — without an external charge
 
-lost power - without external charge
+🌱 STAGE OF DEVELOPMENT
 
-🌱 DEVELOPMENT STAGE
+- Solidarity (8–12 years) — fear of being expelled from the male group
 
-- Solidarity (8–12 years old) – fear of being expelled from the men’s group
+- Sexuality (3–6 years) — shame for sexuality and body
 
-- Sexuality (3–6 years) – shame about sexuality and body
+- Self-esteem (5–8 years) — refusal of one's own value after criticism
 
-- Self-esteem (5–8 years) – giving up one’s worth after criticism
+“I seem to be among ‘my own,’ but as if I am not involved”
 
-“I seem to be among “my people”, but it’s as if I’m not involved”
+Wound: “I am not important”
 
-Rana: “I’m not important”
-
-💡 remedy IDEA
+💡 IDEA OF THE REMEDY
 
 You are not broken.
 
-You are going through the path of renewal.
+You are undergoing a path of renewal.
 
-Your strength is in accepting your vulnerability.
+Your strength lies in accepting your vulnerability.
 
 💬 MESSAGE
 
-"I'm not ashamed of myself. I embrace my strength.
+“I am not ashamed of myself. I accept my strength.
 
-I am worthy of respect. I'm coming back."
+I am worthy of respect. I am returning.”
 
 🌺 AFFIRMATIONS
 
-- I see. I'm important. I am.
+- I am seen. I am important. I exist.
 
-- My value does not depend on the assessment - but I am worthy of a response.
+- My value does not depend on evaluation — but I
 
-- I'm in a circle. I'm recognized.
+worthy of response.
+
+- I am in the circle. I am recognized.
 
 - My presence in the circle is important.
 
-- I am worthy of a response, even if I was silent.
+- I am worthy of a response, even if I remained silent.
 
-- I can be myself - and be accepted.
+- I can be myself — and be accepted.
 
 🔮 RITUAL
 
-- Light a candle and draw a circle of earth/stones
+- Light a candle and draw a circle with earth/stones
 
 - Stand in the center of the circle and say:
 
-"I am returning to masculine power. I am no longer hiding. I am."
+"I am returning to masculine power. I no longer hide. I exist."
 
-- Raise your hands, feel your feet, pelvis, chest - say:
+- Raise your hands, feel your feet, pelvis, chest — say:
 
-"My strength is not
-
-ideality, but in honesty."
+"My strength is not in perfection, but in honesty."

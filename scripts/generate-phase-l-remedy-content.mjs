@@ -1,5 +1,13 @@
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+
+import {
+  formatSourceCard,
+  readCsv,
+  requiredSectionsIn,
+  sourceChannelUrl,
+  telegramTexts,
+} from './remedy-source-completeness.mjs'
 
 const projectRoot = process.cwd()
 const exportRoot = process.env.TELEGRAM_PSYCHIC_ALCHEMY_EXPORT
@@ -10,64 +18,6 @@ const ruDirectory = path.join(projectRoot, 'content/remedies/ru')
 const enDirectory = path.join(projectRoot, 'content/remedies/en')
 const tocPath = path.join(projectRoot, 'data/book-02-remedy-toc.json')
 
-function csv(line) {
-  const cells = []; let value = ''; let quoted = false
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index]
-    if (character === '"') {
-      if (quoted && line[index + 1] === '"') { value += '"'; index += 1 } else quoted = !quoted
-    } else if (character === ',' && !quoted) { cells.push(value); value = '' } else value += character
-  }
-  cells.push(value)
-  return cells
-}
-
-function readCsv(filePath) {
-  const lines = readFileSync(filePath, 'utf8').trim().split('\n')
-  const header = csv(lines.shift())
-  return lines.map((line) => Object.fromEntries(header.map((column, index) => [column, csv(line)[index] ?? ''])))
-}
-
-function bodyFromMarkdown(filePath) {
-  if (!readdirSync(path.dirname(filePath)).includes(path.basename(filePath))) return ''
-  return readFileSync(filePath, 'utf8').replace(/^---\n[\s\S]*?\n---\n+/, '').trim()
-}
-
-function plainText(value) {
-  return value
-    .replace(/<br\s*\/?\s*>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&')
-    .replace(/&laquo;/g, '«').replace(/&raquo;/g, '»')
-    .replace(/&#(\d+);/g, (_, codePoint) => String.fromCodePoint(Number(codePoint)))
-    .replace(/[ \t]+/g, ' ').replace(/\n[ \t]*/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
-}
-
-function endOfDiv(html, start) {
-  const divTag = /<\/?div\b[^>]*>/gi; divTag.lastIndex = start; let depth = 0; let token
-  while ((token = divTag.exec(html))) { depth += token[0][1] === '/' ? -1 : 1; if (depth === 0) return divTag.lastIndex }
-  throw new Error(`unclosed div at ${start}`)
-}
-
-function telegramTexts() {
-  const html = readFileSync(path.join(exportRoot, 'messages.html'), 'utf8')
-  const start = /<div\b(?=[^>]*\bclass="([^"]*\bmessage\b[^"]*)")(?=[^>]*\bid="([^"]+)")[^>]*>/gi
-  const messages = new Map(); let match
-  while ((match = start.exec(html))) {
-    const end = endOfDiv(html, match.index); const fragment = html.slice(match.index, end)
-    const textStart = /<div\b[^>]*class="text"[^>]*>/gi; const textParts = []; let textMatch
-    while ((textMatch = textStart.exec(fragment))) { const textEnd = endOfDiv(fragment, textMatch.index); textParts.push(plainText(fragment.slice(textMatch.index, textEnd))); textStart.lastIndex = textEnd }
-    messages.set(match[2], textParts.join('\n\n').trim()); start.lastIndex = end
-  }
-  return messages
-}
-
-function cleanTelegramText(text) {
-  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean)
-  const kept = lines.filter((line) => !/(?:@andytherapist|записаться|свободн(?:ые|ое) время|стоимость|акци[яи]|скидк|консультаци|подписывай)/iu.test(line))
-  return kept.join('\n\n').trim()
-}
-
 function frontmatter(metadata, body) {
   const fields = Object.entries(metadata).map(([key, value]) => {
     const normalized = String(value ?? '').replace(/\n/g, ' ').trim()
@@ -76,7 +26,7 @@ function frontmatter(metadata, body) {
   return `---\n${fields.join('\n')}\n---\n\n${body.trim()}\n`
 }
 
-function splitTranslation(text, maximum = 1000) {
+function splitTranslation(text, maximum = 900) {
   if (text.length <= maximum) return [text]
   const chunks = []; let rest = text
   while (rest.length > maximum) {
@@ -87,31 +37,60 @@ function splitTranslation(text, maximum = 1000) {
   return chunks
 }
 
+const browserUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+let bingSession
+
+async function createBingSession() {
+  const response = await fetch('https://www.bing.com/translator', { headers: { 'user-agent': browserUserAgent, 'accept-language': 'en-CA,en;q=0.9' } })
+  if (!response.ok) throw new Error(`Bing Translator session failed (status=${response.status})`)
+  const html = await response.text()
+  const ig = html.match(/"ig":"([^"]+)"/)?.[1]
+  const iid = html.match(/data-iid="([^"]+)/)?.[1]
+  const parameters = html.match(/var params_AbusePreventionHelper = \[([^\]]+)\]/)?.[1].split(',').map((value) => value.trim().replace(/^"|"$/g, ''))
+  const cookie = response.headers.getSetCookie().map((value) => value.split(';')[0]).join('; ')
+  if (!ig || !iid || !parameters?.[0] || !parameters?.[1] || !cookie) throw new Error('Bing Translator session parameters are incomplete')
+  return { ig, iid, key: parameters[0], token: parameters[1], cookie }
+}
+
 async function translateChunk(chunk) {
-  const query = new URLSearchParams({ client: 'gtx', sl: 'ru', tl: 'en', dt: 't', q: chunk })
   let lastResponse = 'no response'
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const response = await fetch(`https://translate.googleapis.com/translate_a/single?${query}`)
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    bingSession ||= await createBingSession()
+    const body = `&fromLang=ru&to=en&text=${encodeURIComponent(chunk)}&token=${encodeURIComponent(bingSession.token)}&key=${encodeURIComponent(bingSession.key)}`
+    const endpoint = `https://www.bing.com/ttranslatev3?isVertical=1&IG=${bingSession.ig}&IID=${bingSession.iid}&SFX=${attempt}`
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'user-agent': browserUserAgent,
+        'accept-language': 'en-CA,en;q=0.9',
+        origin: 'https://www.bing.com',
+        referer: 'https://www.bing.com/translator',
+        'x-requested-with': 'XMLHttpRequest',
+        'sec-fetch-site': 'same-origin',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-dest': 'empty',
+        cookie: bingSession.cookie,
+      },
+      body,
+    })
     lastResponse = `status=${response.status}`
     if (response.ok) {
       const payload = await response.json()
-      const translation = payload?.[0]?.map(([part]) => part).join('').trim()
-      if (translation) {
-        return translation
-          .replace(/\bdrugs\b/gi, 'remedies')
-          .replace(/\bdrug\b/gi, 'remedy')
-      }
+      const translation = payload?.[0]?.translations?.[0]?.text?.trim()
+      if (translation) return translation.replace(/\bdrugs\b/gi, 'remedies').replace(/\bdrug\b/gi, 'remedy')
     }
-    await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)))
+    bingSession = undefined
   }
   throw new Error(`translation service did not return text (${lastResponse}; characters=${chunk.length})`)
 }
 
 async function translate(body) {
-  const chunks = splitTranslation(body)
   const output = []
-  for (const chunk of chunks) output.push(await translateChunk(chunk))
-  return output.join('\n\n').replaceAll('Additional copyright materials from Telegram', 'Additional author materials from Telegram')
+  for (const chunk of splitTranslation(body)) output.push(await translateChunk(chunk))
+  return output.join('\n\n')
+    .replaceAll('Additional copyright materials from Telegram', 'Additional materials and observations')
+    .replaceAll('Additional author materials from Telegram', 'Additional materials and observations')
 }
 
 async function mapLimit(values, limit, iteratee) {
@@ -122,37 +101,53 @@ async function mapLimit(values, limit, iteratee) {
   return output
 }
 
+function sourceRecord(source) {
+  return `${source.messageId}${source.row?.date_utc_offset ? ` (${source.row.date_utc_offset})` : ''}`
+}
+
+function uniqueBlocks(blocks) {
+  const seen = new Set()
+  return blocks.filter((block) => {
+    const key = block.replace(/\s+/g, ' ').trim().toLocaleLowerCase('ru-RU')
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function mergeFullCards(primary, additions) {
+  let result = formatSourceCard(primary.text)
+  for (const source of additions) {
+    const blocks = formatSourceCard(source.text).split(/\n{2,}/).filter(Boolean).slice(1)
+    const unique = uniqueBlocks(blocks.filter((block) => !result.toLocaleLowerCase('ru-RU').includes(block.toLocaleLowerCase('ru-RU'))))
+    if (unique.length) result = `${result}\n\n${unique.join('\n\n')}`
+  }
+  return result
+}
+
 const inventory = readCsv(inventoryPath).filter(({ candidate_status }) => candidate_status === 'confirmed')
 if (inventory.length !== 94) throw new Error(`expected 94 confirmed remedies, received ${inventory.length}`)
 const index = readCsv(indexPath)
-const indexById = new Map(index.map((row) => [row.message_id, row]))
-const telegram = telegramTexts()
-const legacySlugs = new Set(inventory.filter(({ source_file }) => source_file !== 'data/telegram-psychic-alchemy-index.csv').map(({ slug }) => slug))
-const previousRu = new Map([...legacySlugs].map((slug) => [slug, bodyFromMarkdown(path.join(ruDirectory, `${slug}.md`)).replace(/\n\n## Дополнительные авторские материалы из Telegram[\s\S]*$/, '')]))
-const previousEn = new Map([...legacySlugs].map((slug) => [slug, bodyFromMarkdown(path.join(enDirectory, `${slug}.md`))]))
-const enrichSlugs = new Set(['natrum-muriaticum', 'sulphur', 'kalium-sulphuricum', 'baryta-carbonica', 'testosteronum'])
+const telegram = telegramTexts(exportRoot)
 
 mkdirSync(ruDirectory, { recursive: true }); mkdirSync(enDirectory, { recursive: true })
 
 const cards = inventory.map((remedy) => {
-  const primaryIds = remedy.source_file === 'data/telegram-psychic-alchemy-index.csv'
-    ? remedy.source_section_heading.split(';').map((value) => value.trim()).filter(Boolean)
-    : index.filter(({ remedy_slug, remedy_focus }) => remedy_slug === remedy.slug && remedy_focus === 'full_card').map(({ message_id }) => message_id)
-  const supportingIds = index
-    .filter(({ remedy_slug, remedy_focus }) => remedy_slug === remedy.slug && remedy_focus === 'supporting_post')
-    .map(({ message_id }) => message_id)
-    .filter((messageId) => !primaryIds.includes(messageId))
-  const sourceIds = [...primaryIds, ...supportingIds]
-  const sources = sourceIds.map((messageId) => ({ messageId, row: indexById.get(messageId), text: cleanTelegramText(telegram.get(messageId) || '') }))
-  const sourceMessages = sources.map(({ messageId, row }) => `${messageId}${row?.date_utc_offset ? ` (${row.date_utc_offset})` : ''}`).join('; ')
-  const sourceImages = [...new Set(sources.flatMap(({ row }) => (row?.photo_assets || '').split(';').map((value) => value.trim()).filter(Boolean)))].join('; ')
-  const additions = sources.filter(({ messageId }) => !primaryIds.includes(messageId) && Boolean(messageId))
-  const existing = previousRu.get(remedy.slug)
-  const baseRu = existing || sources.filter(({ messageId }) => primaryIds.includes(messageId)).map(({ messageId, text }) => `### ${messageId}\n\n${text}`).join('\n\n')
-  const ruBody = additions.length && (enrichSlugs.has(remedy.slug) || !existing)
-    ? `${baseRu}\n\n## Дополнительные авторские материалы из Telegram\n\n${additions.map(({ messageId, text }) => `### ${messageId}\n\n${text}`).join('\n\n')}`
-    : baseRu
-  if (!ruBody) throw new Error(`missing author content for ${remedy.slug}`)
+  const allSources = index
+    .filter(({ remedy_slug, remedy_focus }) => remedy_slug === remedy.slug && (remedy_focus === 'full_card' || remedy_focus === 'supporting_post'))
+    .map((row) => ({ messageId: row.message_id, row, text: telegram.get(row.message_id) || '' }))
+    .filter(({ text }) => Boolean(text.trim()))
+  const fullCards = allSources.filter(({ row }) => row.remedy_focus === 'full_card').sort((left, right) => right.text.length - left.text.length)
+  if (!fullCards.length) throw new Error(`missing full-card Telegram source for ${remedy.slug}`)
+  const [primary, ...additionalFullCards] = fullCards
+  const supporting = allSources.filter(({ row }) => row.remedy_focus === 'supporting_post')
+  const primaryBody = mergeFullCards(primary, additionalFullCards)
+  const supplementary = supporting.length
+    ? `## Дополнительные материалы и наблюдения\n\n${supporting.map((source) => `### ${sourceRecord(source)}\n\n${formatSourceCard(source.text)}`).join('\n\n')}`
+    : ''
+  const ruBody = [primaryBody, supplementary].filter(Boolean).join('\n\n')
+  const sourceMessages = [...fullCards, ...supporting].map(sourceRecord).join('; ')
+  const sourceImages = [...new Set(allSources.flatMap(({ row }) => (row.photo_assets || '').split(';').map((value) => value.trim()).filter(Boolean)))].join('; ')
   const baseMetadata = {
     slug: remedy.slug,
     canonical_latin_name: remedy.canonical_latin_name,
@@ -161,13 +156,18 @@ const cards = inventory.map((remedy) => {
     aliases: remedy.aliases_abbreviations,
     key_image: '',
     main_state: '', observed_effect: '', archetype: '', shadow: '', resource: '', internal_conflict: '', developmental_stage: '', subpersonality: '', transformation: '', meanings_lessons: '', alchemical_interpretation: '', practical_observations: '', cases: '', comparisons: '',
+    primary_source_message: sourceRecord(primary),
+    primary_source_sections: requiredSectionsIn(primary.text).join('; '),
+    primary_source_url: sourceChannelUrl(),
+    full_card_additions: additionalFullCards.map(sourceRecord).join('; '),
+    supplementary_materials: supporting.map(sourceRecord).join('; '),
     source_messages: sourceMessages,
     source_images: sourceImages,
-    provenance: remedy.notes,
+    provenance: `${remedy.notes}; primary canonical content rebuilt from ${sourceRecord(primary)}${additionalFullCards.length ? `; full-card additions: ${additionalFullCards.map(sourceRecord).join(', ')}` : ''}`,
     source_file: remedy.source_file,
     source_heading: remedy.source_section_heading,
     source_author: 'Andrii Litvinov',
-    source_status: remedy.source_file === 'data/telegram-psychic-alchemy-index.csv' ? 'telegram-primary-source' : 'manual-primary-source',
+    source_status: 'telegram-full-card-primary',
     related_slugs: '',
   }
   return { remedy, ruBody, baseMetadata }
@@ -175,12 +175,19 @@ const cards = inventory.map((remedy) => {
 
 await mapLimit(cards, 2, async ({ remedy, ruBody, baseMetadata }) => {
   writeFileSync(path.join(ruDirectory, `${remedy.slug}.md`), frontmatter({ locale: 'ru', ...baseMetadata, translation_provenance: 'original-ru-source', en_source_exists: 'no' }, ruBody))
-  const oldEnglish = previousEn.get(remedy.slug)
-  const enBody = oldEnglish && !enrichSlugs.has(remedy.slug) ? oldEnglish : await translate(ruBody)
+  if (process.env.SKIP_EN_TRANSLATION === '1') return
+  const enBody = await translate(ruBody)
   writeFileSync(path.join(enDirectory, `${remedy.slug}.md`), frontmatter({ locale: 'en', ...baseMetadata, translation_provenance: 'translated-from-ru', translation_source: `content/remedies/ru/${remedy.slug}.md`, translation_method: 'source-faithful machine-assisted translation', en_source_exists: 'no' }, enBody))
 })
 
-const entries = cards.map(({ remedy, baseMetadata }) => ({ slug: remedy.slug, canonical_latin_name: remedy.canonical_latin_name, russian_common_name: remedy.russian_common_name, aliases: remedy.aliases_abbreviations, source_messages: baseMetadata.source_messages }))
-  .sort((left, right) => left.canonical_latin_name.localeCompare(right.canonical_latin_name, 'en'))
+const entries = cards.map(({ remedy, baseMetadata }) => ({
+  slug: remedy.slug,
+  canonical_latin_name: remedy.canonical_latin_name,
+  russian_common_name: remedy.russian_common_name,
+  aliases: remedy.aliases_abbreviations,
+  primary_source_message: baseMetadata.primary_source_message,
+  supplementary_materials: baseMetadata.supplementary_materials,
+  source_messages: baseMetadata.source_messages,
+})).sort((left, right) => left.canonical_latin_name.localeCompare(right.canonical_latin_name, 'en'))
 writeFileSync(tocPath, `${JSON.stringify({ book_id: 'book-02-homeopathy-remedies', title_ru: 'Гомеопатические препараты и карточки', title_en: 'Homeopathic Remedies and Cards', remedy_count: entries.length, entries }, null, 2)}\n`)
 console.log(`generated ru=${cards.length} en=${cards.length} book_02_toc=${entries.length}`)

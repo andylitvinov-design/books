@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message425 (12.04.2025 17:43:15 UTC-05:00)
+primary_source_sections: ЭФФЕКТ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message425 (12.04.2025 17:43:15 UTC-05:00)
 source_images: /media/remedies/ruta-graveolens/message425-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Ruta Graveolens.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Ruta Graveolens.; primary canonical content rebuilt from message425 (12.04.2025 17:43:15 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message425
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/ruta-graveolens.md
@@ -41,79 +46,73 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Ruta Graveolens, message425.
 ---
 
-### message425
-
 RUTA GRAVEOLENS
 
-(Rue fragrant)
+(Rue, fragrant)
 
 An interesting remedy that improves relationships with money and clients. It brings life back into tense connections.
 
-It is relevant in situations where you feel like you are working hard and not appreciated, and you are distancing yourself.
+It is relevant in situations where you feel that you are working hard but are not appreciated, and you start to distance yourself.
 
-The remedy relieves fatigue, stiffness, adds lightness, passion, and excitement to people and the world.
+The remedy relieves fatigue, rigidity, adds lightness, enthusiasm, and excitement toward people and the world.
 
-JUSTIFICATION
+## JUSTIFICATION
 
 Ruta is a medicinal plant that helps with overstrain of muscles, eyes, and mind. In large doses, it irritates tissues.
 
-In homeopathy, it relieves inflammation and heals the body.
+In homeopathy, it reduces inflammation and heals the body.
 
-Restores a person after an overload. Returns flexibility, physical and emotional.
+It restores a person after overload. It returns flexibility, both physical and emotional.
 
-INDICATIONS:
+## INDICATIONS
 
-- overwork
+- Overfatigue
+- Body stiffness
+- Joint pain
+- Perfectionism, fear of relaxing
 
-- body rigidity
+## DEVELOPMENT STAGE
 
-- joint pain
+5-8 years, fear of opinions.
 
-- perfectionism, fear of relaxing
+"They will accept me only if I am perfect."
 
-DEVELOPMENT STAGE:
+Also, a stage of will: the ability to protect your boundaries.
 
-5-8 years old, fear of opinions.
+## ARCHETYPE
+-
 
-"They will only accept me if I am perfect."
-
-And also the Will Stage: the ability to protect one’s borders.
-
-ARCHETYPE:
-
-- Overloaded Warrior
+Overloaded Warrior
 
 - Tired Builder
 
 - Servant without rest
 
-- Hard worker
+- Tense worker
 
-- Tired
+- Weary controller.
 
-controller.
+IMAGES:
 
-LOOKS:
+- A person supporting a roof, afraid that everything will collapse if they let go.
 
-- A man who holds up the roof, afraid that everything will collapse if he lets go.
+- A stone statue beginning to crack from tension.
 
-- A stone statue that begins to crack from stress.
+- A bow that is too tight — and cannot shoot.
 
-- A bow that is too tight and cannot fire.
+## EFFECT
 
-EFFECT
+- Restores resources during extreme fatigue and overload
 
-- restores resource in case of excessive fatigue and overload
+- Returns the feeling of lightness, suppleness, flexibility in body and life
 
-- returns a feeling of lightness, plasticity, flexibility in the body and life
+- Relieves muscular and emotional tension
 
-- relieves muscle and emotional tension
+## ARCHETYPE IDEA
 
-IDEA OF ARCHETYPE
+- “Strength is not in effort, but in the ability to relax. Flexibility is your protection.”
 
-- “Strength is not in effort, but in the ability to relax. Flexibility is your protection."
-
-7. LESSON
+## LESSON
 
 - Allow yourself to be imperfect.
 
@@ -121,56 +120,56 @@ IDEA OF ARCHETYPE
 
 - Personal boundaries must be respected, not broken.
 
-8. SHADOW (see and heal)
+8. SHADOW (to see and heal)
 
 - Fear of losing control.
 
-- Feeling guilty when on vacation.
+- Guilt when resting.
 
-- Shame for “weakness”.
+- Shame for being “weak.”
 
-- The habit of keeping everything to yourself.
+- Habit of holding everything inside.
 
-TRANSFORMATION
+## TRANSFORMATION
 
-- From rigidity to living mobility.
+- From
 
-- From fatigue to recovery.
+rigidity — into lively mobility.
 
-- From perfectionism to simplicity and joy in the process.
+- From fatigue — into recovery.
+
+- From perfectionism — into simplicity and joy in the process.
 
 11. AFFIRMATIONS
 
-- I release the tension to return to myself.
+- I release tension to return to myself.
 
-- My body is mine
+- My body is my ally, I listen to it.
 
-ally, I hear him.
-
-- I don't have to be perfect to be loved.
+- I don’t have to be perfect to be loved.
 
 - I have the right to rest.
 
-- I breathe - and everything becomes easier.
+- I breathe — and everything becomes easier.
 
 Conflict
 
-- Need for rest, but prohibition of weakness.
+- The need for rest, but the prohibition on weakness.
 
-- Desire to live more softly, but fear of losing efficiency.
+- Wishing to live more gently, but fear of losing efficiency.
 
 Meaning
 
-- Realize that control does not equal power.
+- Realize that control does not equal strength.
 
 - Trust yourself and life, let go of tension.
 
 - Allow yourself not to be perfect, but to be alive.
 
-RITUAL: Releasing the bow
+RITUAL: Releasing the Bow
 
 - Feel where the tension is
 
 - Pull the elastic band
 
-- Exhale and release the elastic band and tension.
+- Exhale and release the elastic band and the tension.

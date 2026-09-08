@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message387 (17.03.2025 17:49:18 UTC-05:00)
+primary_source_sections: ОБРАЗ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message387 (17.03.2025 17:49:18 UTC-05:00)
 source_images: /media/remedies/apis/message387-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Apis.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Apis.; primary canonical content rebuilt from message387 (17.03.2025 17:49:18 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message387
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Apis, message387.
 ---
 
-### message387
-
 APIS (пчелиный яд).
 
 Важный препарат.
@@ -49,7 +52,7 @@ APIS (пчелиный яд).
 
 Возвращает чувство опоры на себя и самодостаточности.
 
-ОБОСНОВАНИЕ
+## ОБОСНОВАНИЕ
 
 Препарат готовят довольно жестоко: живых пчел перетирают в ступке, так что они выпускают яд.
 
@@ -61,11 +64,11 @@ APIS помогает освободить заблокированную эне
 
 - чувство жертвы, страх потери контроля, подавленные эмоции, чувство ущемленности, воспаления, отеки. А так же эмоциональная ранимость, стремление к защите.
 
-ЭТАП РАЗВИТИЯ
+## ЭТАП РАЗВИТИЯ
 
 - Воля и Вина, 2-4 года: страх выразить силу, имение сказать нет, защитить границы.
 
-ОБРАЗ:
+## ОБРАЗ
 
 - Пчелиный рой, который находится в постоянной готовности ужалить любого, кто приближается слишком близко.
 
@@ -73,13 +76,13 @@ APIS помогает освободить заблокированную эне
 
 - Река, которая вот-вот выйдет из берегов из-за накопившегося напряжения.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Воинственная королева.
 
 - Хранитель границ (пчела-матка, защищающая свою структуру).
 
-ИДЕЯ:
+## ИДЕЯ
 
 - Ты имеешь право выражать свои эмоции.
 

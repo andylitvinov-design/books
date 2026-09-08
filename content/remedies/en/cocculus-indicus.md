@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message725 (05.07.2025 16:19:12 UTC-05:00)
+primary_source_sections: ТЕНЬ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message725 (05.07.2025 16:19:12 UTC-05:00)
 source_images: /media/remedies/cocculus-indicus/message725-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cocculus Indicus.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cocculus Indicus.; primary canonical content rebuilt from message725 (05.07.2025 16:19:12 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message725
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: translated-from-ru
 translation_source: content/remedies/ru/cocculus-indicus.md
@@ -41,178 +46,176 @@ image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Cocculus Indicus, message725.
 ---
 
-###message725
-
 🧪 COCCULUS INDICUS
 
 (Cocculus, a poisonous vine from India)
 
-A unique remedy that helps the weakest, early subpersonalities.
+A unique remedy that helps the weakest, earliest subpersonalities.
 
-Cocculus for them gives a breath of freedom, fullness, expansion, axis.
+Cocculus gives them a sip of freedom, fullness, expansion, an axis.
 
-This is the first breath after freezing. Soft awakening. Permission to live, breathe, be yourself.
+It is the first breath after freezing. A gentle awakening. Permission to live, breathe, be oneself.
 
-Provides a way out of frozen fatigue and half-sleep.
+Provides an outlet from frozen fatigue and half-sleep.
 
-This is a remedy for those who are extremely exhausted, but at the same time empathic and sacrifice themselves for others.
+It is a remedy for those who are extremely exhausted, yet at the same time empathetic and self-sacrificing for others.
 
 PSYCHODYNAMICS
 
-This is the archetype of the mother who sacrifices herself for others.
+It is the archetype of the mother who sacrifices herself for others.
 
-And the archetype of a 0-1 year old child, who depends on the mother and gives all of himself to contact. If the mother does not react or gets angry, the child becomes silent and does not call. He is quiet, but there is emptiness inside him. Such a child loses himself, boundaries, desires. He learns that if I am obedient and caring, they will not be angry with me.
+And the archetype of a 0-1 year old child, who depends on the mother and gives all of itself in contact. If the mother does not respond or is angry - the child becomes silent, does not call. It is quiet, but inside is emptiness. Such a child loses itself, boundaries, desires. It learns that if I am obedient and caring, they will not be angry at me.
 
-A remedy for those who are stuck in the role of an assistant, but have lost contact with themselves.
+A remedy for those who are stuck in the role of a helper but have lost contact with themselves.
 
-🌿 BASE
+🌿
 
-Cocculus indicus is a poisonous plant with paralyzing effects. Calls
+BASIS
 
-weakness, dizziness, loss of coordination.
+Cocculus indicus is a poisonous plant with a paralyzing effect. It causes weakness, dizziness, and loss of coordination.
 
-In homeopathy it is used for nervous exhaustion.
+In homeopathy, it is used for nervous exhaustion.
 
 💥 INDICATIONS
 
-- Feeling: “I’m not there”, complete internal shutdown
+- Feeling: "I am not there," complete internal shutdown
 
-- Lethargy, brain fog, dizziness, forgetfulness.
+- Lethargy, mental fog, dizziness, forgetfulness
 
-- Sleep disturbance
+- Sleep disturbances
 
-- Unconscious anxiety, decreased sensitivity to desires, body, sexuality
+- Unconscious anxiety, reduced sensitivity to desires, body, sexuality
 
-- Fading of feelings, loss of spirit, lack of joy
+- Emotional numbness, low spirits, lack of joy
 
-- Aversion to food, movement, talking
+- Aversion to food, movement, conversation
 
-- Hyper-responsibility, the desire to control everything, despite exhaustion.
+- Hyper-responsibility, the desire to control everything despite exhaustion
 
 - Chronic fatigue from overload, caring for others
 
-- weakness in bones, muscles
+- Weakness in bones and muscles
 
-- feeling of heaviness in the body
+- Sensation of heaviness in the body
 
-- internal tremor, but without external movement
+- Internal tremor, but without external movement
 
-- feeling that “everything is pulling down”
+- Feeling that "everything drags downward"
 
 🔥 ARCHETYPES
 
-Mother Teresa - lives for others, but loses herself
+Mother Teresa — lives for others but loses herself
 
-Nurse's shadow - dissolves in someone else's pain
+The caregiver shadow — dissolves in another's pain
 
-A frozen soul - the body is nearby, but the consciousness is in the fog
+Frozen soul — body
 
-🖼 LOOKS
+next to, but consciousness in a fog
 
-- A river that is almost dry, but still flows.
+🖼 IMAGES
 
-- A woman sitting sleeplessly by the bed, forgetting about herself
+- A river that has almost dried up, but still flows.
 
-- A man sailing in a boat in the fog
+- A woman, sleepless, sitting by the bed, forgetting about herself
 
-knowing who he is
+- A person rowing a boat in the fog, not knowing who they are
 
-- Empty eyes, hands moving by inertia
+- Empty eyes, hands moving out of inertia
 
-🌸 EFFECT OF THE remedy
+🌸 EFFECT OF THE SUBSTANCE
 
-- Returns a sense of self: body, soul, needs
+- Restores the sense of self: body, soul, needs
 
-- Helps to stop, restore the cycle of sleep, strength, desire
+- Helps to stop, restore the cycle of sleep, energy, and desire
 
-- Relieves vegetative tension, improves balance
+- Relieves autonomic tension, improves balance
 
-- Returns boundaries, the feeling: “I live, and not just care”
+- Restores boundaries, the feeling: 'I live, not just care for others'
 
-- Allows you to separate from the pain of others, maintain compassion without losing yourself
+- Allows separation from someone else’s pain, maintaining compassion without losing oneself
 
-- Returns the joy of simple bodily sensations, food, movement, relaxation.
+- Restores the joy of simple bodily sensations, food, movement, rest
 
-- Removes fog and detachment, restores clarity.
+- Lifts the fog and detachment, restores clarity
 
-- Gives permission to rest, recover, and live your own life.
+- Gives permission to rest, recover, live one’s own life
 
 🧱 DEVELOPMENT STAGE
 
-0.1–1.5 years (contact) - trauma of dissolution in another, excessive empathy
+0.1–1.5 years (contact) — trauma of merging into another, excessive empathy
 
-2–4 years (autonomy) – ban on one’s desires: “others first”
+2–4 years (autonomy) — prohibition on one’s own desires:
 
-5–8 years (opinion) - a ban on “I” and one’s opinion in favor of care and duty.
+"'Others first'
 
-💡 remedy IDEA
+Ages 5–8 (opinion) — a prohibition on 'I' and one's own opinion in favor of care and duty.
 
-You don't have to save everyone.
+💡 IDEA OF THE REMEDY
 
-You don't become bad if you choose yourself.
+You are not obliged to save everyone.
 
-Sacrifice is not the path to light, but to destruction.
+You are not bad if you choose yourself.
 
-Truly caring for others begins with caring
+Self-sacrifice is not a path to the light, but to destruction.
 
-about myself.
+True care for others begins with care for yourself.
 
 ✨ MESSAGE / LESSON
 
 Your presence is valuable when you are alive.
 
-Taking care of yourself is not selfishness, but the basis of life.
+Self-care is not selfishness, but the foundation of life.
 
-You have the right not to know, not to be able to, not to be around.
+You have the right not to know, not to be able, not to be there.
 
-You can stop guarding other people's pain - and return to life.
+You can stop guarding someone else's pain — and return to life.
 
-You are important even when you are resting.
+You are important, even when resting.
 
 🌺 AFFIRMATIONS
 
-I'm coming back to myself
+I return to myself
 
-I'm important even when I'm doing nothing
+I am important even when I do nothing
 
 I can take care of myself
 
-I'm letting go of the rescuer role
+I let go of the role of the savior
 
-I deserve peace
+I deserve rest
 
-My body has a right to rest
+My body has the right to rest
 
-My strength is returning to me.
+My strength returns to me.
 
 🔄 TRANSFORMATION (before / after)
 
-Before: exhaustion, fog, lost in others, dizziness
+Before: exhaustion, fog, dissolving in others, dizziness
 
-After: restoration of boundaries, return of energy, clarity, body feeling.
+After: restoration of boundaries, return of energy,
+
+clarity, body awareness.
 
 🖌 IMAGE / MEDITATION
 
-You stand in the fog, exhausted and lost.
+You are standing in the fog, exhausted and lost.
 
-In the distance is a house with soft light. It's you.
+In the distance — a house with soft light. That is you.
 
 You take a step, then another.
 
-With every step your soul returns to your body.
+With each step, your soul returns to your body.
 
-You again feel the warmth of your hands, the taste of the air, the desire to live.
+You feel the warmth of your hands, the taste of the air, the desire to live again.
 
 🔮 RITUAL
 
-Sit comfortably, cover yourself with a blanket, light a candle.
+Sit comfortably, wrap yourself in a blanket, light a candle.
 
 Place your hand on your chest and say:
 
-"I allow myself
-
-stay. I don't have to save the whole world.
+"I allow myself to stop. I do not have to save the whole world.
 
 I have the right to be.
 
-I'm coming back to myself."
+I am returning to myself."

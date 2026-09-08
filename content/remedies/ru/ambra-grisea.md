@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message751 (18.07.2025 00:42:30 UTC-05:00)
+primary_source_sections:
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message752 (18.07.2025 01:08:36 UTC-05:00)
 source_messages: message751 (18.07.2025 00:42:30 UTC-05:00); message752 (18.07.2025 01:08:36 UTC-05:00)
 source_images: /media/remedies/ambra-grisea/message751-1.jpg; /media/remedies/ambra-grisea/message752-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Ambra Grisea.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Ambra Grisea.; primary canonical content rebuilt from message751 (18.07.2025 00:42:30 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message751
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -38,8 +43,6 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Ambra Grisea, message751.
 ---
-
-### message751
 
 🧪AMBRA GRISEA
 
@@ -217,9 +220,9 @@ Ambra grisea — выделение из кишечника кашалота, в
 
 Почувствуй, как мир становится светлее.
 
-## Дополнительные авторские материалы из Telegram
+## Дополнительные материалы и наблюдения
 
-### message752
+### message752 (18.07.2025 01:08:36 UTC-05:00)
 
 AMBRA GRISEA
 

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message425 (12.04.2025 17:43:15 UTC-05:00)
+primary_source_sections: ЭФФЕКТ; АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message425 (12.04.2025 17:43:15 UTC-05:00)
 source_images: /media/remedies/ruta-graveolens/message425-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Ruta Graveolens.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Ruta Graveolens.; primary canonical content rebuilt from message425 (12.04.2025 17:43:15 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message425
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Ruta Graveolens, message425.
 ---
 
-### message425
-
 RUTA GRAVEOLENS
 
 (Рута душистая)
@@ -51,7 +54,7 @@ RUTA GRAVEOLENS
 
 Препарат снимает усталость, закостенелость, добавляет легкости, увлеченности, азарта к людям и миру.
 
-ОБОСНОВАНИЕ
+## ОБОСНОВАНИЕ
 
 Ruta - лекарственное растение, помогающее при перенапряжении мышц, глаз, ума. В больших дозах раздражает ткани.
 
@@ -59,7 +62,7 @@ Ruta - лекарственное растение, помогающее при 
 
 Восстанавливает человека после перегруза. Возвращает гибкость, физическую и эмоциональную.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - переутомление
 
@@ -69,7 +72,7 @@ Ruta - лекарственное растение, помогающее при 
 
 - перфекционизм, страх расслабиться
 
-ЭТАП РАЗВИТИЯ:
+## ЭТАП РАЗВИТИЯ
 
 5-8 лет, страх мнений.
 
@@ -77,7 +80,7 @@ Ruta - лекарственное растение, помогающее при 
 
 А так же Этап воли: способность защищать свои границы.
 
-АРХЕТИП:
+## АРХЕТИП
 
 - Перегруженный Воин
 
@@ -97,7 +100,7 @@ Ruta - лекарственное растение, помогающее при 
 
 - Лук, который слишком натянут — и не может выстрелить.
 
-ЭФФЕКТ
+## ЭФФЕКТ
 
 - восстанавливает ресурс при чрезмерной усталости и перегрузок
 
@@ -105,11 +108,11 @@ Ruta - лекарственное растение, помогающее при 
 
 - снимает мышечное и эмоциональное напряжение
 
-ИДЕЯ АРХЕТИПА
+## ИДЕЯ АРХЕТИПА
 
 - «Сила — не в усилии, а в умении расслабиться. Гибкость — твоя защита».
 
-7. УРОК
+## УРОК
 
 - Позволь себе быть неидеальным.
 
@@ -127,7 +130,7 @@ Ruta - лекарственное растение, помогающее при 
 
 - Привычка держать всё в себе.
 
-ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - Из ригидности — в живую подвижность.
 

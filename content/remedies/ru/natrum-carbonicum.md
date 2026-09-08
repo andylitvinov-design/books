@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message398 (29.03.2025 16:07:52 UTC-05:00)
+primary_source_sections: АРХЕТИП
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials:
 source_messages: message398 (29.03.2025 16:07:52 UTC-05:00)
 source_images: /media/remedies/natrum-carbonicum/message398-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Natrum Carbonicum.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Natrum Carbonicum.; primary canonical content rebuilt from message398 (29.03.2025 16:07:52 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message398
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Natrum Carbonicum, message398.
 ---
 
-### message398
-
 NATRUM CARBONICUM (сода)
 
 Это новый препарат в моей практике, но он проявил себя так эффективно, что я внес его в группу своих ключевых препаратов.
@@ -51,7 +54,7 @@ NATRUM CARBONICUM (сода)
 
 Пищевая сода. Смягчает избыточную кислотность, в теле и душе. Сиягчает раздражение, боль. Мягко восстанавливает баланс.
 
-2. ПОКАЗАНИЯ
+## ПОКАЗАНИЯ
 
 - усталость после напряжения,
 
@@ -77,7 +80,7 @@ NATRUM CARBONICUM
 
 Период чувствительности в отношениях, установления контакта и боли отказа, ненужности, непонимания.
 
-4. ЭФФЕКТ
+## ЭФФЕКТ
 
 - Душевный баланс, равновесие
 
@@ -85,7 +88,7 @@ NATRUM CARBONICUM
 
 - Ощущение своих границ, не растворение в других.
 
-5. ОБРАЗ
+## ОБРАЗ
 
 - Прозрачный зонтик из света, защищающий тонкую душу от бурь внешнего мира,
 
@@ -95,7 +98,7 @@ NATRUM CARBONICUM
 
 Natrum Carbonicum — это душевный фильтр, который помогает чувствительному человеку не раствориться в другом.
 
-АРХЕТИП
+## АРХЕТИП
 
 - Тихий целитель
 
@@ -105,7 +108,7 @@ Natrum Carbonicum — это душевный фильтр, который по�
 
 - Невидимый мост
 
-ИДЕЯ АРХЕТИПА
+## ИДЕЯ АРХЕТИПА
 
 - Истинная сила проявляется в способности оставаться собой, даже в тишине.
 
@@ -141,7 +144,7 @@ Natrum Carbonicum — это душевный фильтр, который по�
 
 - Понять, что быть собой — достаточно, даже без постоянного служения другим.
 
-12. ТРАНСФОРМАЦИЯ
+## ТРАНСФОРМАЦИЯ
 
 - Из растворения в других — в здоровую индивидуальность
 

@@ -20,13 +20,18 @@ alchemical_interpretation:
 practical_observations:
 cases:
 comparisons:
+primary_source_message: message565 (23.05.2025 18:05:35 UTC-05:00)
+primary_source_sections: ЭФФЕКТ
+primary_source_url: https://t.me/arche_therapy
+full_card_additions:
+supplementary_materials: message566 (23.05.2025 18:29:58 UTC-05:00)
 source_messages: message565 (23.05.2025 18:05:35 UTC-05:00); message566 (23.05.2025 18:29:58 UTC-05:00)
 source_images: /media/remedies/cinchona/message565-1.jpg; /media/remedies/cinchona/message566-1.jpg
-provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cinchona.
+provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Cinchona.; primary canonical content rebuilt from message565 (23.05.2025 18:05:35 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message565
 source_author: Andrii Litvinov
-source_status: telegram-primary-source
+source_status: telegram-full-card-primary
 related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
@@ -39,8 +44,6 @@ image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Cinchona, message565.
 ---
 
-### message565
-
 CINCHONA (хинна)
 
 Чудесный препарат, который возвращает разорванные связи.
@@ -51,7 +54,7 @@ CINCHONA (хинна)
 
 Мягко зажигается надежда на близость и огоньки чувств.
 
-ПОКАЗАНИЯ:
+## ПОКАЗАНИЯ
 
 - препарат подходит когда жизнь кажется потеряла радость, цвет, смысл.
 
@@ -69,7 +72,7 @@ CINCHONA (хинна)
 
 - поверхностная жизнерадостность при внутренней пустоте.
 
-ОСНОВА :
+## ОСНОВА
 
 Кора хинного дерева.
 
@@ -77,7 +80,7 @@ CINCHONA (хинна)
 
 Кора - защищает, охлаждает от перегрева.
 
-ЭФФЕКТ:
+## ЭФФЕКТ
 
 - Возвращение силы и надежды
 
@@ -125,7 +128,7 @@ CINCHONA (хинна)
 
 Ты можешь вернуть себе солнце своей жизни.
 
-ПОСЛАНИЕ:
+## ПОСЛАНИЕ
 
 Ты не должен отдавать себя до последней капли.
 
@@ -137,19 +140,19 @@ CINCHONA (хинна)
 
 Моя душа жаждет живой воды — и я ей это позволяю.
 
-ТРАНСФОРМАЦИЯ:
+## ТРАНСФОРМАЦИЯ
 
 До: Пустота, истощение, унылая жертвенность
 
 После: Наполненность, мягкая радость, восстановленная сила
 
-РИТУАЛ:
+## РИТУАЛ
 
 Взять пустую чашу (это ты), налить в нее воду с установкой: «Я наполняю себя жизнью. Я возвращаю себе силы. Я разрешаю себе быть полным.» Поблагодарить себя.
 
-## Дополнительные авторские материалы из Telegram
+## Дополнительные материалы и наблюдения
 
-### message566
+### message566 (23.05.2025 18:29:58 UTC-05:00)
 
 CINCHONA — возвращение света
 

@@ -29,6 +29,7 @@ const copy = {
     standalone: "Открыть отдельную карточку",
     source: "Источник",
     sourceRecord: "Записи источника",
+    supplementalSource: "Источник в Telegram",
     sourceName: "Исходное название",
     gallery: "Дополнительные изображения из источника",
     galleryHint: "Из связанных авторских сообщений",
@@ -51,6 +52,7 @@ const copy = {
     standalone: "Open standalone card",
     source: "Source",
     sourceRecord: "Source records",
+    supplementalSource: "Source in Telegram",
     sourceName: "Source name",
     gallery: "Additional source images",
     galleryHint: "From linked author messages",
@@ -108,9 +110,11 @@ function RemedyNavigator({ entries, locale, onNavigate }: { entries: RemedyDirec
   );
 }
 
-function BookRemedyDescription({ description }: { description: string }) {
+function BookRemedyDescription({ description, locale, sourceUrl }: { description: string; locale: Locale; sourceUrl?: string }) {
+  const labels = copy[locale];
   return <div className="book-remedy-description">{description.split(/\n{2,}/).filter(Boolean).map((block, index) => {
     const heading = block.match(/^#{2,3}\s*(.*)$/)?.[1]?.trim();
+    if (/^###\s+message\d+\s+\(/i.test(block)) return <p className="book-remedy-supplementary-source" key={`${index}-${block.slice(0, 24)}`}>{sourceUrl ? <a href={sourceUrl} rel="noreferrer" target="_blank">{labels.supplementalSource}: {block.slice(4)}</a> : block.slice(4)}</p>;
     if (heading && (/^message-?\d+$/i.test(heading) || /^(дополнительные авторские материалы из telegram|additional author materials from telegram)$/i.test(heading))) return null;
     if (heading) return block.startsWith("## ") ? <h3 key={`${index}-${heading}`}>{heading}</h3> : <h4 key={`${index}-${heading}`}>{heading}</h4>;
     return <p className="whitespace-pre-line" key={`${index}-${block.slice(0, 24)}`}>{block}</p>;
@@ -128,10 +132,11 @@ function BookRemedyImages({ locale, remedy }: { locale: Locale; remedy: Remedy }
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img alt={alt} decoding="async" src={remedy.primary_image} />
     </figure> : null}
-    <BookRemedyDescription description={remedy.description} />
+    <BookRemedyDescription description={remedy.description} locale={locale} sourceUrl={remedy.primary_source_url} />
     <footer className="book-remedy-source">
       <p>{labels.source}</p>
       <strong>{remedy.source_author}</strong>
+      {remedy.primary_source_url ? <a href={remedy.primary_source_url} rel="noreferrer" target="_blank">Telegram</a> : null}
       {sourceRecords(remedy) ? <span>{labels.sourceRecord}: {sourceRecords(remedy)}</span> : null}
       {locale === "en" ? <span>Translation: {remedy.translation_provenance}.</span> : null}
       <Link href={`/${locale}/homeopathy/remedies/${remedy.slug}`}>{labels.standalone} →</Link>
