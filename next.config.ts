@@ -14,7 +14,9 @@ const nextConfig: NextConfig = {
       "./source-books/book-3-maya-tradition/raw/photos/**/*",
     ],
     "/[locale]/homeopathy/remedies/[slug]": ["./content/remedies/**/*.md"],
-    "/api/prescriptions/[selector]/pdf": ["./assets/fonts/NotoSans-Regular.ttf"],
+    "/api/prescriptions/[selector]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
+    "/document-preview/[kind]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
+    "/admin/api/documents/[id]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
   },
 };
 

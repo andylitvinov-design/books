@@ -49,7 +49,7 @@ test('client prescription route is dynamic, session-authorized, neutral, and noi
   // The route may check selector existence for a 404, but only the authorized
   // record may reach the client projection.
   assert.match(page, /const record = await authorizePrescriptionRequest\(selector\)/)
-  assert.match(page, /const document = getClientPrescription\(record, locale\)/)
+  assert.match(page, /getClientPrescription\(record, locale\)/)
   assert.doesNotMatch(page, /const record = await (?:store\.)?findBy/)
 })
 
