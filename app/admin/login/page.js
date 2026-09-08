@@ -10,8 +10,8 @@ export default async function PrescriptionAdminLogin({ searchParams }) {
       <form className="prescription-admin-login" action={login}>
         <p>Private practitioner area</p>
         <h1>Prescription admin</h1>
-        <label>Access code<input name="accessCode" type="password" autoComplete="current-password" required /></label>
-        {error && <p role="alert">Access code was not accepted.</p>}
+        <label>PIN / Access code<input name="accessCode" type="password" autoComplete="current-password" inputMode="numeric" required /></label>
+        {error && <p role="alert">The PIN / access code was not accepted.</p>}
         <button type="submit">Continue</button>
       </form>
     </main>

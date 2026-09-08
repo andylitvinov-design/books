@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { PrescriptionForm } from '@/components/prescription-form'
+import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionRemedyOptions } from '@/lib/prescriptions/service'
 
@@ -12,5 +13,5 @@ export const metadata = { robots: { index: false, follow: false }, title: 'New r
 
 export default async function NewPrescriptionPage() {
   if (!await requireAdminRequest()) notFound()
-  return <main className="prescription-admin-shell"><h1>New recommendation</h1><p><Link href="/admin/payments/new">Create a payment document</Link></p><PrescriptionForm action={createPrescriptionAction} remedies={getPrescriptionRemedyOptions()} /></main>
+  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="New recommendation" description="Client details, remedies, and instructions — all in one place." /><p><Link href="/admin/payments/new">Create a payment document</Link></p><PrescriptionForm action={createPrescriptionAction} remedies={getPrescriptionRemedyOptions()} /></main>
 }
