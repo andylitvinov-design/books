@@ -8,6 +8,7 @@ function privatePath(pathname: string) {
     || decoded.startsWith('/api/prescription-access')
     || decoded.startsWith('/api/admin/')
     || decoded.startsWith('/admin/')
+    || decoded.startsWith('/document-preview/')
 }
 
 export function middleware(request: NextRequest) {
@@ -40,4 +41,4 @@ export function middleware(request: NextRequest) {
   return response
 }
 
-export const config = { matcher: ['/ru/:path*', '/en/:path*', '/api/:path*', '/admin/:path*'] }
+export const config = { matcher: ['/ru/:path*', '/en/:path*', '/api/:path*', '/admin/:path*', '/document-preview/:path*'] }

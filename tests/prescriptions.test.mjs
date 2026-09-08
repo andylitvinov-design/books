@@ -253,10 +253,10 @@ test('embeds a Unicode Cyrillic font for Russian prescriptions instead of transl
 test('keeps the PDF footer below general instructions instead of overlapping it', () => {
   const record = createPrescription({ ...baseInput, status: 'active' })
   const source = buildPrescriptionPdf(getClientPrescription(record, 'en'), 'en', 'https://books.example.test').toString('latin1')
-  const instructionY = Number(source.match(/1 0 0 1 52 (\d+(?:\.\d+)?) Tm \(Fixture\/test content only/)?.[1])
-  const updatedY = Number(source.match(/1 0 0 1 52 (\d+(?:\.\d+)?) Tm \(Updated:/)?.[1])
+  const instructionY = Number(source.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Fixture\/test content only/)?.[1])
+  const signatureY = Number(source.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Andrii Litvinov/)?.[1])
 
-  assert.ok(updatedY <= instructionY - 20)
+  assert.ok(signatureY <= instructionY - 20)
 })
 
 test('paginates a long bilingual-safe prescription without dropping items or instructions', () => {

@@ -13,6 +13,7 @@ function formInput(formData) {
     patientName: formData.get('patientName'), patientDob: formData.get('patientDob'), dateIssued: formData.get('dateIssued'),
     languagePreference: formData.get('languagePreference'), practitionerName: formData.get('practitionerName'), practitionerRole: formData.get('practitionerRole'),
     practitionerBackground: formData.get('practitionerBackground'), practitionerContact: formData.get('practitionerContact'), generalInstructions: formData.get('generalInstructions'),
+    recommendationNumber: formData.get('recommendationNumber'), followUp: formData.get('followUp'),
     internalNotes: formData.get('internalNotes'), status: formData.get('status'), items,
   }
 }
@@ -31,6 +32,6 @@ export async function updatePrescriptionAction(id, formData) {
   if (!await requireAdminRequest()) throw new Error('Unauthorized')
   const store = getPrescriptionStore()
   const existing = store ? await store.findById(id) : undefined
-  if (!existing) throw new Error('Prescription not found')
+  if (!existing || existing.kind === 'payment') throw new Error('Prescription not found')
   return save(existing, formData)
 }

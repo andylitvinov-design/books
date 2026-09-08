@@ -501,3 +501,58 @@
   .catalog-empty h2 { @apply font-serif text-3xl text-[#2c2119]; }
   .catalog-empty p { @apply mt-3 text-[#67584b]; }
 }
+
+/* Canonical private-practice documents: matches the approved A4 masters. */
+.canonical-shell { max-width: 870px; }
+.canonical-document { background: white; color: #48494b; padding: 54px 64px 48px; min-height: 1000px; font: 14px/1.65 Arial, sans-serif; overflow-wrap: anywhere; }
+.canonical-letterhead { display: flex; align-items: center; gap: 32px; border-bottom: 1px solid #cdd5d9; padding: 0 0 34px; margin-bottom: 20px; }
+.canonical-letterhead img { width: 110px; height: 110px; object-fit: contain; flex: 0 0 110px; }
+.canonical-practitioner { font: 27px/1.25 Georgia, serif; color: #465f6f; margin: 0 0 6px; }
+.canonical-credentials { font: 13px/1.5 Georgia, serif; color: #747c81; }
+.canonical-contact { font: 10px/1.5 Arial, sans-serif; color: #747c81; margin-top: 9px; }
+.canonical-document h1 { font: bold 20px/1.35 Georgia, serif; margin: 0 0 20px; }
+.canonical-document h2 { font: bold 16px/1.4 Georgia, serif; }
+.canonical-client { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; }
+.canonical-intro { margin: 22px 0 18px; }
+.canonical-remedy { border-bottom: 1px solid #cdd5d9; padding: 0 0 20px; margin: 0 0 12px; }
+.canonical-remedy h2 { color: #465f6f; margin-bottom: 6px; }
+.canonical-remedy a { text-decoration: underline; text-underline-offset: 3px; }
+.canonical-remedy dl { font-size: 13px; line-height: 1.65; }
+.canonical-remedy dt, .canonical-remedy dd { display: inline; }
+.canonical-remedy dd, .canonical-general p, .canonical-follow-up { white-space: pre-wrap; }
+.canonical-general p { margin-top: 8px; }
+.canonical-follow-up { margin-top: 18px; }
+.canonical-signature { margin-top: 22px; font-size: 11px; color: #70797e; break-inside: avoid; }
+.canonical-signature > p:first-child { font-size: 13px; color: #48494b; }
+.canonical-signature-line { width: 44%; border-top: 1px solid #929799; margin: 64px 0 8px; }
+.canonical-signature strong { color: #48494b; }
+.canonical-disclaimer { margin-top: 42px; font: 9px/1.5 Arial, sans-serif; color: #929799; }
+.canonical-payment-narrative { font-size: 14px; margin: 26px 0; white-space: pre-wrap; }
+.canonical-payment-details { color: #747c81; font-size: 13px; }
+.payment-signature { margin-top: 104px; }
+.payment-signature .canonical-signature-line { margin-top: 96px; }
+.admin-document-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 24px 0; }
+.admin-document-panel { padding: 20px; background: #fff; border: 1px solid #cdd5d9; }
+.admin-document-panel h2 { font: bold 18px/1.4 Georgia, serif; margin-bottom: 12px; }
+.document-panel-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.document-panel-actions a, .document-panel-actions button { display: inline-flex; align-items: center; padding: 9px 12px; min-height: 44px; border: 1px solid #667b89; }
+@media (max-width: 600px) {
+  .canonical-shell { padding: 12px; }
+  .canonical-document { padding: 24px 20px; min-height: 0; }
+  .canonical-letterhead { gap: 12px; padding-bottom: 22px; align-items: flex-start; }
+  .canonical-letterhead img { width: 64px; height: 74px; flex-basis: 64px; }
+  .canonical-practitioner { font-size: 20px; }
+  .canonical-credentials { font-size: 11px; }
+  .canonical-contact { font-size: 9px; }
+  .canonical-document h1 { font-size: 18px; }
+  .prescription-toolbar { align-items: flex-start; }
+  .admin-document-panels { grid-template-columns: 1fr; }
+}
+@media print {
+  .canonical-shell { margin: 0; padding: 0; max-width: none; }
+  .canonical-document { padding: 4mm 10mm; min-height: 0; }
+  .canonical-letterhead, .canonical-remedy h2, .canonical-general h2 { break-after: avoid; }
+  .canonical-remedy { break-inside: auto; }
+  .canonical-signature { break-inside: avoid; }
+  .admin-document-panels, .document-panel-actions { display: none; }
+}
