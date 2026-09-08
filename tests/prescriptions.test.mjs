@@ -7,6 +7,7 @@ import {
   getClientPrescription,
   validatePrescriptionInput,
 } from '../lib/prescriptions/service.js'
+import { createPrescriptionSession, issuePrescriptionAccess } from '../lib/prescriptions/access.js'
 import { createMemoryPrescriptionStore, createPrescriptionStore } from '../lib/prescriptions/store.js'
 import { buildPrescriptionPdf } from '../lib/prescriptions/pdf.js'
 
@@ -39,26 +40,28 @@ function createRestKvHarness() {
       PRESCRIPTIONS_KV_REST_API_URL: 'https://kv.example.test',
     },
     fetchFn: async (_url, request) => {
-      const [operation, key, value] = JSON.parse(request.body)
-      commands.push([operation, key, value])
+      const args = JSON.parse(request.body)
+      const [operation, key, value] = args
+      commands.push(args)
       let result
       if (operation === 'GET') result = values.get(key) ?? null
       if (operation === 'SET') { values.set(key, value); result = 'OK' }
       if (operation === 'DEL') { result = values.delete(key) ? 1 : 0 }
+      if (operation === 'INCR') { result = Number(values.get(key) ?? 0) + 1; values.set(key, String(result)) }
+      if (operation === 'EXPIRE') result = values.has(key) ? 1 : 0
       return { ok: true, json: async () => ({ result }) }
     },
     values,
   }
 }
 
-test('creates non-sequential internal and public identifiers', () => {
+test('creates a non-sequential internal identifier without a public bearer', () => {
   const first = createPrescription(baseInput)
   const second = createPrescription(baseInput)
 
   assert.match(first.id, /^[0-9a-f-]{36}$/)
-  assert.match(first.publicId, /^[A-Za-z0-9_-]{43}$/)
-  assert.notEqual(first.id, first.publicId)
-  assert.notEqual(first.publicId, second.publicId)
+  assert.notEqual(first.id, second.id)
+  assert.equal('publicId' in first, false)
   assert.equal(first.status, 'draft')
 })
 
@@ -74,8 +77,8 @@ test('projects only active client fields and canonical localized remedy links', 
   const ru = getClientPrescription(record, 'ru')
   const en = getClientPrescription(record, 'en')
 
-  assert.equal(ru.publicId, record.publicId)
-  assert.equal(en.publicId, record.publicId)
+  assert.equal('publicId' in ru, false)
+  assert.equal('publicId' in en, false)
   assert.equal(ru.items[0].remedyPath, '/ru/homeopathy/remedies/arsenicum-album')
   assert.equal(en.items[0].remedyPath, '/en/homeopathy/remedies/arsenicum-album')
   assert.equal(ru.items[2].remedyPath, undefined)
@@ -92,14 +95,14 @@ test('does not project drafts or revoked prescriptions publicly', () => {
   assert.equal(getClientPrescription(revoked, 'ru'), undefined)
 })
 
-test('keeps private lookup IDs server-only while resolving a public token', async () => {
+test('keeps private lookup IDs server-only while resolving a non-secret selector', async () => {
   const store = createMemoryPrescriptionStore()
-  const record = createPrescription({ ...baseInput, status: 'active' })
+  const { record, selector } = issuePrescriptionAccess(createPrescription({ ...baseInput, status: 'active' }))
 
   await store.save(record)
   assert.deepEqual(await store.findById(record.id), record)
-  assert.deepEqual(await store.findByPublicId(record.publicId), record)
-  assert.equal(await store.findByPublicId(record.id), undefined)
+  assert.deepEqual(await store.findBySelector(selector), record)
+  assert.equal(await store.findBySelector(record.id), undefined)
 })
 
 test('fails closed when the persistent REST-KV configuration is absent outside demo runtime', () => {
@@ -122,7 +125,7 @@ test('rejects an insecure REST-KV endpoint before patient data can be sent', () 
 test('encrypts sensitive prescription records before REST-KV persistence and decrypts them server-side', async () => {
   const harness = createRestKvHarness()
   const store = createPrescriptionStore(harness)
-  const record = createPrescription({
+  const { record, selector } = issuePrescriptionAccess(createPrescription({
     ...baseInput,
     patientName: 'Synthetic Patient Encryption Check',
     patientDob: '1990-01-02',
@@ -130,7 +133,7 @@ test('encrypts sensitive prescription records before REST-KV persistence and dec
     generalInstructions: 'Synthetic instructions encryption check',
     internalNotes: 'Synthetic internal notes encryption check',
     status: 'active',
-  })
+  }))
 
   await store.save(record)
   const raw = harness.values.get(`prescription:record:${record.id}`)
@@ -139,7 +142,7 @@ test('encrypts sensitive prescription records before REST-KV persistence and dec
   for (const privateValue of [record.patientName, record.patientDob, record.practitionerName, record.generalInstructions, record.internalNotes]) {
     assert.equal(raw.includes(privateValue), false)
   }
-  const restored = await store.findByPublicId(record.publicId)
+  const restored = await store.findBySelector(selector)
   assert.equal(restored?.patientName, record.patientName)
   assert.equal(restored?.patientDob, record.patientDob)
   assert.equal(restored?.practitionerName, record.practitionerName)
@@ -155,28 +158,55 @@ test('fails closed for a missing, malformed, or tampered REST-KV encryption enve
   assert.equal(createPrescriptionStore({ environment: { ...harness.environment, PRESCRIPTIONS_DATA_ENCRYPTION_KEY: `${harness.environment.PRESCRIPTIONS_DATA_ENCRYPTION_KEY}=` }, fetchFn: harness.fetchFn }), undefined)
 
   const store = createPrescriptionStore(harness)
-  const record = createPrescription({ ...baseInput, status: 'active' })
+  const { record, selector } = issuePrescriptionAccess(createPrescription({ ...baseInput, status: 'active' }))
   await store.save(record)
   const key = `prescription:record:${record.id}`
   const envelope = JSON.parse(harness.values.get(key))
   envelope.ciphertext = `${envelope.ciphertext.slice(0, -2)}AA`
   harness.values.set(key, JSON.stringify(envelope))
-  assert.equal(await store.findByPublicId(record.publicId), undefined)
+  assert.equal(await store.findBySelector(selector), undefined)
 })
 
-test('revoking an active prescription removes the public mapping but retains only encrypted internal storage', async () => {
+test('revoking an active prescription removes selector and legacy mappings but retains only encrypted internal storage', async () => {
   const harness = createRestKvHarness()
   const store = createPrescriptionStore(harness)
-  const active = createPrescription({ ...baseInput, status: 'active' })
-  await store.save(active)
-  assert.equal((await store.findByPublicId(active.publicId))?.id, active.id)
+  const legacyPublicId = 'L'.repeat(43)
+  const legacy = { ...createPrescription({ ...baseInput, status: 'active' }), publicId: legacyPublicId }
+  const { record: active, selector } = issuePrescriptionAccess(legacy)
+  harness.values.set(`prescription:public:${legacyPublicId}`, active.id)
+  await store.save(active, legacy)
+  assert.equal((await store.findBySelector(selector))?.id, active.id)
+  assert.equal(harness.values.has(`prescription:public:${legacyPublicId}`), false)
 
   const revoked = { ...active, status: 'revoked', updatedAt: '2026-09-08T00:00:00.000Z' }
-  await store.save(revoked)
-  assert.equal(await store.findByPublicId(active.publicId), undefined)
-  assert.equal(harness.values.has(`prescription:public:${active.publicId}`), false)
+  await store.save(revoked, active)
+  assert.equal(await store.findBySelector(selector), undefined)
+  assert.equal(harness.values.has(`prescription:selector:${selector}`), false)
   assert.match(harness.values.get(`prescription:record:${active.id}`), /"algorithm":"AES-256-GCM"/)
-  assert.ok(harness.commands.some(([operation, key]) => operation === 'DEL' && key === `prescription:public:${active.publicId}`))
+  assert.ok(harness.commands.some(([operation, key]) => operation === 'DEL' && key === `prescription:public:${legacyPublicId}`))
+})
+
+test('persists opaque expiring access sessions and bounded rate counters in REST KV', async () => {
+  const harness = createRestKvHarness()
+  const store = createPrescriptionStore(harness)
+  const { record } = issuePrescriptionAccess(createPrescription({ ...baseInput, status: 'active' }))
+  const session = createPrescriptionSession(record, 1_788_891_200_000)
+
+  await store.createAccessSession(session, 900)
+  assert.deepEqual(await store.findAccessSession(session.digest), {
+    recordId: session.recordId,
+    selector: session.selector,
+    accessVersion: session.accessVersion,
+    expiresAt: session.expiresAt,
+  })
+  assert.equal(await store.consumeAccessAttempt('a'.repeat(64), 2, 300), true)
+  assert.equal(await store.consumeAccessAttempt('a'.repeat(64), 2, 300), true)
+  assert.equal(await store.consumeAccessAttempt('a'.repeat(64), 2, 300), false)
+  assert.ok(harness.commands.some((args) => args[0] === 'SET' && args[1] === `prescription:session:${session.digest}` && args[3] === 'EX' && args[4] === 900))
+  assert.ok(harness.commands.some((args) => args[0] === 'EXPIRE' && args[2] === 300))
+
+  await store.deleteAccessSession(session.digest)
+  assert.equal(await store.findAccessSession(session.digest), undefined)
 })
 
 test('generates a download-safe PDF without internal notes or IDs and keeps remedy hyperlinks', () => {
