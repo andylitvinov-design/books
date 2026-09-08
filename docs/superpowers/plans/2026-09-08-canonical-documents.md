@@ -5,12 +5,12 @@ Architecture: build on PR #16 (74fc134) and retain encrypted storage, fragment e
 
 - [x] Audit PRs #9, #13, #16, #17 and Drive specification; inspect rendered master PDFs.
 - [x] Isolate worktree; baseline prescription/security tests: 28 passed.
-- [ ] Add payment domain validation and wording tests, implement independent invoice/receipt records.
-- [ ] Add canonical recommendation fields and shared letterhead/PDF layout; cover Cyrillic, links, wrapping, pagination and absence of private metadata.
-- [ ] Wire separate admin payment and recommendation panels, authenticated previews/PDFs and existing client session routes; preserve no-store/noindex/PWA exclusions.
-- [ ] Generate only synthetic Receipt, Invoice and Recommendation PDFs. Render and inspect masters and generated files, including RU and long documents.
-- [ ] Verify admin workflow and mobile client page with browser; run unit/lint/build checks.
-- [ ] Commit, push, create stacked PR and preview; verify preview without production writes. Record any hosted storage/auth limitation precisely.
+- [x] Add payment domain validation and wording tests, implement independent invoice/receipt records.
+- [x] Add canonical recommendation fields and shared letterhead/PDF layout; cover Cyrillic, links, wrapping, pagination and absence of private metadata.
+- [x] Wire separate admin payment and recommendation panels, authenticated previews/PDFs and existing client session routes; preserve no-store/noindex/PWA exclusions.
+- [x] Generate only synthetic Receipt, Invoice and Recommendation PDFs. Render and inspect masters and generated files, including RU and long documents.
+- [x] Verify admin workflow and mobile client page with browser; run unit/lint/build checks.
+- [x] Commit, push, create stacked PR and preview; verify preview without production writes. Record any hosted storage/auth limitation precisely.
 
 Sources: docs/document-templates/README.md and the private Drive folder linked there. Real filled receipts are not downloaded or committed. Local master downloads and evidence stay in ignored tmp/output folders; only approved lighthouse asset enters product source.
 
