@@ -38,7 +38,7 @@ export function RemedyDirectory({ locale, entries }: RemedyDirectoryProps) {
   const deferredQuery = useDeferredValue(query);
   const searchParams = useSearchParams();
   const savedOnly = searchParams.get('saved') === '1';
-  const savedSlugs = typeof window === 'undefined' ? [] : readPublicReadingState(new Set(entries.map((entry) => entry.slug))).savedSlugs;
+  const savedSlugs = useMemo(() => typeof window === 'undefined' ? [] : readPublicReadingState(new Set(entries.map((entry) => entry.slug))).savedSlugs, [entries]);
   const copy = labels[locale];
   const letters = [...new Set(entries.map(({ letter }) => letter))];
   const visibleEntries = useMemo(() => {
