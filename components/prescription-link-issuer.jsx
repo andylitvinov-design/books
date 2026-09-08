@@ -8,7 +8,7 @@ export function PrescriptionLinkIssuer({ recordId, hasAccess }) {
   const issueAndCopy = async () => {
     setStatus('working')
     try {
-      const response = await fetch(`/api/admin/prescriptions/${recordId}/access`, {
+      const response = await fetch(`/admin/api/prescriptions/${recordId}/access`, {
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store',

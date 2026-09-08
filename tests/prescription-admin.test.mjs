@@ -19,7 +19,7 @@ test('admin form submits canonical remedy slugs and supports the status lifecycl
   const [form, issuer, route] = await Promise.all([
     readFile('components/prescription-form.jsx', 'utf8'),
     readFile('components/prescription-link-issuer.jsx', 'utf8'),
-    readFile('app/api/admin/prescriptions/[id]/access/route.js', 'utf8'),
+    readFile('app/admin/api/prescriptions/[id]/access/route.js', 'utf8'),
   ])
 
   assert.match(form, /remedySlug/)
@@ -32,6 +32,7 @@ test('admin form submits canonical remedy slugs and supports the status lifecycl
   assert.doesNotMatch(form, /clientPath|publicId/)
 
   assert.match(issuer, /navigator\.clipboard\.writeText/)
+  assert.match(issuer, /\/admin\/api\/prescriptions/)
   assert.match(issuer, /url\.hash = secret/)
   assert.match(issuer, /Issue private link/)
   assert.match(issuer, /Rotate private link/)

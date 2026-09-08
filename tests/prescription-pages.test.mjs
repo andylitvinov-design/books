@@ -82,6 +82,8 @@ test('private middleware applies no-store, no-referrer, clickjacking, and nonce 
   assert.match(middleware, /X-Content-Type-Options/)
   assert.match(middleware, /nosniff/)
   assert.match(middleware, /X-Frame-Options/)
+  assert.match(middleware, /process\.env\.NODE_ENV === 'development'/)
+  assert.match(middleware, /developmentEval/)
 })
 
 test('print stylesheet removes interactive controls and uses A4 sizing', async () => {
@@ -91,4 +93,10 @@ test('print stylesheet removes interactive controls and uses A4 sizing', async (
   assert.match(css, /@page\s*\{\s*size:\s*A4/)
   assert.match(css, /\.prescription-actions\s*\{\s*display:\s*none/)
   assert.match(css, /\.prescription-item\s*\{\s*break-inside:\s*avoid/)
+})
+
+test('keeps the configured adapter stable within a runtime context', async () => {
+  const store = await readFile('lib/prescriptions/store.js', 'utf8')
+  assert.match(store, /Symbol\.for\('psialchemy\.prescription-store\.v2'\)/)
+  assert.match(store, /globalThis\[configuredStoreKey\]/)
 })
