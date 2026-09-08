@@ -133,6 +133,18 @@
   .prescription-lifecycle button { @apply min-h-11 rounded-lg border border-[#d8cfc5] px-3 hover:bg-[#f3e9df]; }
   .prescription-legacy-details { @apply col-span-full text-xs; }
   .prescription-form-error { @apply rounded-lg bg-[#fff1ee] px-4 py-3 text-sm text-[#9d392b]; }
+  .prescription-import { @apply rounded-xl border border-[#d8cfc5] bg-[#fffaf3] p-4; }
+  .prescription-import summary { @apply cursor-pointer text-sm font-semibold text-[#513d2e]; }
+  .prescription-import > p { @apply my-2; }
+  .prescription-import-controls { @apply flex flex-wrap gap-3; }
+  .prescription-import button { @apply min-h-11 rounded-lg border border-[#bca48e] px-4 text-sm font-semibold text-[#563b2a] hover:bg-[#f3e9df] disabled:opacity-40; }
+  .prescription-import-preview { @apply mt-4 grid gap-3 border-t border-[#d8cfc5] pt-4 text-sm; }
+  .prescription-import-preview ol { @apply grid gap-2; }
+  .prescription-import-preview li { @apply break-words; }
+  .prescription-import-preview li span { @apply mt-1 block text-xs text-[#796b5e]; }
+  .prescription-import-preview > button { @apply justify-self-start bg-[#563b2a] text-white hover:bg-[#3f291d]; }
+  .prescription-import-warnings { @apply rounded-lg bg-[#fff0dc] p-3 text-[#78501c]; }
+  .prescription-import-warnings ul { @apply mt-2 grid gap-1; }
   @media (min-width: 1100px) {
     .prescription-column-headings, .prescription-admin-item { display: grid; grid-template-columns: 24px minmax(220px, 2.5fr) minmax(76px, .8fr) minmax(96px, 1fr) minmax(110px, 1.1fr) minmax(96px, 1fr) minmax(120px, 1.3fr) 36px; gap: 10px; }
     .prescription-column-headings { @apply border-b border-[#d8cfc5] pb-3 text-xs font-medium text-[#796b5e]; }
