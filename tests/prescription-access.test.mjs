@@ -12,6 +12,12 @@ import {
   verifyPrescriptionSecret,
 } from '../lib/prescriptions/access.js'
 import { createPrescription, getClientPrescription } from '../lib/prescriptions/service.js'
+import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
+import {
+  authorizePrescription,
+  exchangePrescriptionAccess,
+  prescriptionAccessFailure,
+} from '../lib/prescriptions/session.js'
 
 const input = {
   patientName: 'Synthetic Access Client',
@@ -91,4 +97,63 @@ test('new and client prescription objects expose no bearer or private identifier
   assert.equal('id' in document, false)
   assert.equal('internalNotes' in document, false)
   assert.equal('access' in document, false)
+})
+
+test('exchanges a same-origin fragment credential for an opaque server session', async () => {
+  const store = createMemoryPrescriptionStore()
+  const issued = issuePrescriptionAccess(createPrescription(input))
+  await store.save(issued.record)
+  const request = new Request('https://books.example.test/api/prescription-access', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://books.example.test' },
+    body: JSON.stringify({ selector: issued.selector, secret: issued.secret }),
+  })
+
+  const session = await exchangePrescriptionAccess({ request, store, ip: '192.0.2.10' })
+
+  assert.match(session.token, /^[A-Za-z0-9_-]{43}$/)
+  assert.equal('secret' in session, false)
+  assert.equal((await authorizePrescription(store, issued.selector, session.token))?.id, issued.record.id)
+})
+
+test('uses one generic failure for wrong origin, malformed body, and wrong secret', async () => {
+  const store = createMemoryPrescriptionStore()
+  const issued = issuePrescriptionAccess(createPrescription(input))
+  await store.save(issued.record)
+  const requests = [
+    new Request('https://books.example.test/api/prescription-access', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://evil.example' },
+      body: JSON.stringify({ selector: issued.selector, secret: issued.secret }),
+    }),
+    new Request('https://books.example.test/api/prescription-access', {
+      method: 'POST', headers: { 'Content-Type': 'text/plain', Origin: 'https://books.example.test' }, body: '{}',
+    }),
+    new Request('https://books.example.test/api/prescription-access', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://books.example.test' },
+      body: JSON.stringify({ selector: issued.selector, secret: 'A'.repeat(43) }),
+    }),
+  ]
+
+  for (const request of requests) {
+    assert.equal(await exchangePrescriptionAccess({ request, store, ip: '192.0.2.20' }), prescriptionAccessFailure)
+  }
+})
+
+test('rate limits repeated access exchanges without revealing credential validity', async () => {
+  const store = createMemoryPrescriptionStore()
+  const issued = issuePrescriptionAccess(createPrescription(input))
+  await store.save(issued.record)
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const request = new Request('https://books.example.test/api/prescription-access', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://books.example.test' },
+      body: JSON.stringify({ selector: issued.selector, secret: 'A'.repeat(43) }),
+    })
+    assert.equal(await exchangePrescriptionAccess({ request, store, ip: '192.0.2.30' }), prescriptionAccessFailure)
+  }
+  const validRequest = new Request('https://books.example.test/api/prescription-access', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://books.example.test' },
+    body: JSON.stringify({ selector: issued.selector, secret: issued.secret }),
+  })
+  assert.equal(await exchangePrescriptionAccess({ request: validRequest, store, ip: '192.0.2.30' }), prescriptionAccessFailure)
 })

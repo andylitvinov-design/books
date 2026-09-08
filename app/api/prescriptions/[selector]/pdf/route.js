@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server'
 
+import { metadataBaseFor } from '@/data/site-metadata'
 import { isSupportedLocale } from '@/data/remedies'
 import { buildPrescriptionPdf } from '@/lib/prescriptions/pdf'
 import { getClientPrescription } from '@/lib/prescriptions/service'
-import { getPrescriptionStore } from '@/lib/prescriptions/store'
-import { metadataBaseFor } from '@/data/site-metadata'
+import { authorizePrescriptionRequest } from '@/lib/prescriptions/session'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request, { params }) {
-  const { publicId } = await params
+  const { selector } = await params
   const locale = new URL(request.url).searchParams.get('locale') ?? 'en'
   if (!isSupportedLocale(locale)) return new NextResponse(null, { status: 404 })
-  const store = getPrescriptionStore()
-  const record = store ? await store.findByPublicId(publicId) : undefined
+  const record = await authorizePrescriptionRequest(selector)
   const document = getClientPrescription(record, locale)
   if (!document) return new NextResponse(null, { status: 404 })
 
@@ -23,8 +22,9 @@ export async function GET(request, { params }) {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': 'attachment; filename="homeopathic-prescription.pdf"',
-      'Cache-Control': 'private, no-store',
+      'Cache-Control': 'private, no-store, max-age=0',
       'X-Robots-Tag': 'noindex, nofollow, noarchive',
+      'Referrer-Policy': 'no-referrer',
       'X-Content-Type-Options': 'nosniff',
     },
   })
