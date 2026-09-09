@@ -1,0 +1,64 @@
+{
+  "checked_at": "2026-08-26T17:39:50Z",
+  "scope": {
+    "local_search": {
+      "roots": [
+        "/Users/andriilitvinov/Downloads",
+        "/Users/andriilitvinov/Documents",
+        "/Users/andriilitvinov/Desktop",
+        "/Users/andriilitvinov/projects"
+      ],
+      "max_depth": 5,
+      "terms": [
+        "maya",
+        "mayaismagic",
+        "tradition"
+      ],
+      "methods": [
+        "find",
+        "Spotlight (mdfind)",
+        "rg"
+      ]
+    },
+    "public_fetch": {
+      "method": "curl -L with an empty cookie jar",
+      "session_changed": false
+    }
+  },
+  "items": [
+    {
+      "path_url": "/Users/andriilitvinov/{Downloads,Documents,Desktop,projects}",
+      "kind": "bounded_local_source_search",
+      "coverage": "Targeted name search to max depth 5; no Telegram export, archive, or preserved Maya post corpus candidate found.",
+      "post_id_evidence": null,
+      "usable_as_primary_source": false,
+      "checked_at": "2026-08-26T17:39:50Z",
+      "notes": "Repository planning and manifest files mention Maya, but are not source exports. Unrelated files with 'tradition' in their names were excluded."
+    },
+    {
+      "path_url": "https://t.me/s/mayaismagic",
+      "kind": "public_telegram_channel_page",
+      "coverage": "Current public page returned HTTP 200 and displayed the current visible slice.",
+      "post_id_evidence": {
+        "observed_first": "mayaismagic/225",
+        "observed_last": "mayaismagic/246"
+      },
+      "usable_as_primary_source": true,
+      "checked_at": "2026-08-26T17:39:50Z",
+      "notes": "Fetched with curl -L and an empty cookie jar; no authenticated Telegram session was changed. Public page is author-source material but is not proof of complete archive coverage."
+    },
+    {
+      "path_url": "https://t.me/s/mayaismagic?before=225",
+      "kind": "public_telegram_channel_pagination",
+      "coverage": "Preceding public slice returned HTTP 200; the page advertised the next older cursor before=205.",
+      "post_id_evidence": {
+        "observed_first": "mayaismagic/205",
+        "observed_last": "mayaismagic/224",
+        "next_before_cursor": 205
+      },
+      "usable_as_primary_source": true,
+      "checked_at": "2026-08-26T17:39:50Z",
+      "notes": "Use cursor-by-cursor retrieval and preserve each post URL/ID. The page confirms public pagination, not an original export."
+    }
+  ]
+}

@@ -47,9 +47,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background:
-      radial-gradient(circle at top, rgba(255, 255, 255, 0.55), transparent 36%),
-      linear-gradient(180deg, #f6efe4 0%, #efe6d6 100%);
+    background: #f3ecdf;
   }
 
   ::selection {
@@ -58,7 +56,118 @@
   }
 }
 
+@media print {
+  @page { size: A4 portrait; margin: 14mm; }
+  body { background: #fff !important; }
+  .prescription-toolbar, .prescription-actions { display: none !important; }
+  .prescription-shell { max-width: none; padding: 0; }
+  .prescription-document { max-width: none; padding: 0; box-shadow: none; }
+  .prescription-item { break-inside: avoid; }
+}
+
 @layer utilities {
+  .prescription-shell { @apply mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-10; }
+  .prescription-toolbar { @apply mb-5 flex items-center justify-between gap-3 text-sm font-semibold text-[#70442d]; }
+  .prescription-toolbar > a { @apply min-h-11 border border-[#b99373] px-4 py-3; }
+  .prescription-actions { @apply flex flex-wrap gap-2; }
+  .prescription-actions a, .prescription-actions button { @apply inline-flex min-h-11 items-center border border-[#70442d] bg-[#fffaf3] px-4 text-sm font-semibold text-[#563b2a] hover:bg-[#f1e3d0]; }
+  .prescription-document { @apply mx-auto max-w-[50rem] bg-white px-6 py-8 text-[#252525] shadow-[0_12px_40px_rgba(50,36,24,0.12)] sm:px-12 sm:py-12; }
+  .prescription-header { @apply flex flex-col gap-8 border-b border-[#b9ada2] pb-8 sm:flex-row sm:items-start sm:justify-between; }
+  .prescription-kicker { @apply text-xs font-semibold uppercase tracking-[0.12em] text-[#795b43]; }
+  .prescription-header h1 { @apply mt-2 font-serif text-3xl leading-tight sm:text-4xl; }
+  .prescription-header h2 { @apply max-w-60 font-serif text-xl leading-snug sm:text-right; }
+  .prescription-header p:not(.prescription-kicker) { @apply mt-2 text-sm leading-6 text-[#4c443d]; }
+  .prescription-patient { @apply grid gap-4 border-b border-[#ddd3c9] py-6 sm:grid-cols-3; }
+  .prescription-patient span, .prescription-item-title > span, .prescription-item-details dt { @apply block text-[11px] font-semibold uppercase tracking-[0.11em] text-[#765d4a]; }
+  .prescription-patient strong { @apply mt-1 block text-[17px]; }
+  .prescription-items { @apply divide-y divide-[#ddd3c9]; }
+  .prescription-item { @apply py-6; break-inside: avoid; }
+  .prescription-item-title > a, .prescription-item-title > strong { @apply mt-1 block font-serif text-2xl leading-tight text-[#35261c]; }
+  .prescription-item-title > a { @apply underline decoration-[#bd9270] underline-offset-4; }
+  .prescription-remedy-link { @apply mt-3 inline-block text-sm font-semibold text-[#70442d] underline decoration-[#bd9270] underline-offset-4; }
+  .prescription-item-details { @apply mt-5 grid gap-4 sm:grid-cols-2; }
+  .prescription-item-details dd { @apply mt-1 text-[17px] leading-6 text-[#403a34]; }
+  .prescription-instructions { @apply border-t border-[#b9ada2] py-7; }
+  .prescription-instructions h2 { @apply font-serif text-2xl; }
+  .prescription-instructions p { @apply mt-3 whitespace-pre-wrap text-[17px] leading-7; }
+  .prescription-footer { @apply border-t border-[#b9ada2] pt-6 text-sm leading-6 text-[#57504a]; }
+  .prescription-signature { @apply mt-10 border-b border-[#8f8378] pb-2 text-[#312820]; }
+  .prescription-footer > p:last-child { @apply mt-7 text-xs leading-5 text-[#736961]; }
+  .prescription-unavailable { @apply mx-auto max-w-xl px-6 py-20 text-center; }
+  .prescription-unavailable h1 { @apply font-serif text-4xl; }
+  .prescription-unavailable p { @apply mt-4 text-lg leading-7 text-[#5d5249]; }
+  .prescription-admin-shell { @apply mx-auto max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12; }
+  .prescription-admin-shell > h1 { @apply font-serif text-4xl; }
+  .prescription-admin-header { @apply flex flex-wrap items-start justify-between gap-5 border-b border-[#cdbca8] pb-7; }
+  .prescription-admin-header > div > p:first-child, .prescription-owner-actions > div > p { @apply text-xs font-semibold uppercase tracking-[0.14em] text-[#765d4a]; }
+  .prescription-admin-header h1 { @apply mt-2 font-serif text-4xl; }
+  .prescription-admin-description { @apply mt-3 max-w-2xl text-base leading-6 text-[#5d5046]; }
+  .prescription-admin-header button { @apply min-h-11 border border-[#8b664c] bg-[#fffaf3] px-4 text-sm font-semibold text-[#563b2a]; }
+  .prescription-admin-form { @apply mt-7 grid gap-6; }
+  .prescription-admin-form fieldset { @apply min-w-0 border-0 p-0; }
+  .prescription-admin-form legend { @apply mb-4 text-base font-semibold text-[#35261c]; }
+  .prescription-admin-form label { @apply grid min-w-0 gap-2 text-sm font-medium text-[#513d2e]; }
+  .prescription-admin-form input, .prescription-admin-form select, .prescription-admin-form textarea { @apply min-h-11 w-full min-w-0 rounded-lg border border-[#d8cfc5] bg-white px-3 py-2 text-base font-normal text-[#2e241d] outline-none transition-colors placeholder:text-[#978a7d] hover:border-[#ac9985] focus:border-[#70442d] focus:ring-2 focus:ring-[#70442d]/15; }
+  .prescription-admin-form textarea { @apply resize-y; }
+  .prescription-client-fields { @apply grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px]; }
+  .prescription-form-hint { @apply text-xs font-normal leading-5 text-[#796b5e]; }
+  .prescription-remedies legend span { @apply ml-3 text-xs font-normal text-[#796b5e]; }
+  .prescription-remedies > p { @apply -mt-2 mb-4; }
+  .prescription-column-headings { display: none; }
+  .prescription-admin-item { @apply relative grid min-w-0 grid-cols-2 gap-3 border-b border-[#e4ddd5] py-4; }
+  .prescription-row-number { @apply self-center text-xs tabular-nums text-[#978a7d]; }
+  .prescription-remedy-search { @apply relative col-span-2 min-w-0; }
+  .prescription-admin-item .prescription-remove { @apply absolute right-0 top-1 flex h-11 w-11 items-center justify-center rounded-lg text-[#8d7563] hover:bg-[#f3e9df] hover:text-[#9d392b] disabled:opacity-30; }
+  .prescription-field-notes { @apply col-span-2; }
+  .prescription-remedy-results { @apply absolute left-0 right-0 top-full z-30 mt-1 grid max-h-64 min-w-[240px] overflow-y-auto rounded-lg border border-[#d6c5b4] bg-white p-1 shadow-lg; }
+  .prescription-remedy-results button { @apply min-h-11 rounded-md px-3 py-2 text-left text-sm hover:bg-[#f4eadc] focus:bg-[#f4eadc] focus:outline-none; }
+  .prescription-remedy-empty { @apply mt-1 text-xs text-[#9d392b]; }
+  .prescription-add { @apply mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-[#70442d] transition-colors hover:bg-[#f3e9df]; }
+  .prescription-admin-actions { @apply flex flex-wrap items-center justify-between gap-3 border-t border-[#d8cfc5] pt-5; }
+  .prescription-admin-actions > span { @apply text-sm text-[#796b5e]; }
+  .prescription-admin-actions .prescription-save { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-6 transition-colors hover:bg-[#3f291d] disabled:opacity-60; }
+  .prescription-document-options { @apply border-t border-[#e4ddd5] pt-4 text-sm text-[#796b5e]; }
+  .prescription-document-options summary, .prescription-legacy-details summary { @apply cursor-pointer py-1; }
+  .prescription-document-options > div { @apply mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+  .prescription-document-options .prescription-lifecycle { @apply flex flex-wrap gap-3; }
+  .prescription-lifecycle button { @apply min-h-11 rounded-lg border border-[#d8cfc5] px-3 hover:bg-[#f3e9df]; }
+  .prescription-legacy-details { @apply col-span-full text-xs; }
+  .prescription-form-error { @apply rounded-lg bg-[#fff1ee] px-4 py-3 text-sm text-[#9d392b]; }
+  .prescription-import { @apply rounded-xl border border-[#d8cfc5] bg-[#fffaf3] p-4; }
+  .prescription-import summary { @apply cursor-pointer text-sm font-semibold text-[#513d2e]; }
+  .prescription-import > p { @apply my-2; }
+  .prescription-import-controls { @apply flex flex-wrap gap-3; }
+  .prescription-import button { @apply min-h-11 rounded-lg border border-[#bca48e] px-4 text-sm font-semibold text-[#563b2a] hover:bg-[#f3e9df] disabled:opacity-40; }
+  .prescription-import-preview { @apply mt-4 grid gap-3 border-t border-[#d8cfc5] pt-4 text-sm; }
+  .prescription-import-preview ol { @apply grid gap-2; }
+  .prescription-import-preview li { @apply break-words; }
+  .prescription-import-preview li span { @apply mt-1 block text-xs text-[#796b5e]; }
+  .prescription-import-preview > button { @apply justify-self-start bg-[#563b2a] text-white hover:bg-[#3f291d]; }
+  .prescription-import-warnings { @apply rounded-lg bg-[#fff0dc] p-3 text-[#78501c]; }
+  .prescription-import-warnings ul { @apply mt-2 grid gap-1; }
+  @media (min-width: 1100px) {
+    .prescription-column-headings, .prescription-admin-item { display: grid; grid-template-columns: 24px minmax(220px, 2.5fr) minmax(76px, .8fr) minmax(96px, 1fr) minmax(110px, 1.1fr) minmax(96px, 1fr) minmax(120px, 1.3fr) 36px; gap: 10px; }
+    .prescription-column-headings { @apply border-b border-[#d8cfc5] pb-3 text-xs font-medium text-[#796b5e]; }
+    .prescription-admin-item { @apply items-start py-3; }
+    .prescription-admin-item label > span { @apply sr-only; }
+    .prescription-remedy-search, .prescription-field-notes { grid-column: auto; }
+    .prescription-admin-item .prescription-remove { position: static; width: 36px; }
+    .prescription-admin-item input { @apply text-sm; }
+    .prescription-row-number { min-height: 44px; display: flex; align-items: center; }
+  }
+  .prescription-admin-actions button, .prescription-admin-login button { @apply min-h-11 border border-[#563b2a] bg-[#563b2a] px-4 text-sm font-semibold text-white; }
+  .prescription-owner-actions { @apply mt-7 border border-[#b99a7e] bg-[#fffaf3] p-5 sm:p-6; }
+  .prescription-owner-actions h2 { @apply mt-2 font-serif text-3xl; }
+  .prescription-owner-action-grid { @apply mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }
+  .prescription-owner-action-grid > a, .prescription-owner-action-grid button { @apply flex min-h-14 w-full items-center justify-center border border-[#70442d] bg-white px-4 text-center text-sm font-semibold text-[#563b2a] hover:bg-[#f1e3d0]; }
+  .prescription-owner-action-grid > a:first-child, .prescription-owner-action-grid > button:first-child { @apply bg-[#563b2a] text-white hover:bg-[#3f291d]; }
+  .prescription-owner-action-grid form:last-child button { @apply border-[#8c2f24] text-[#8c2f24] hover:bg-[#fff1ee]; }
+  .prescription-owner-unavailable { @apply mt-7 border border-[#d6c5b4] bg-[#fffaf3] p-5; }
+  .prescription-owner-unavailable h2 { @apply font-serif text-2xl; }
+  .prescription-owner-unavailable p { @apply mt-2 text-[#5d5046]; }
+  .prescription-admin-login { @apply mx-auto mt-16 grid max-w-md gap-5 border border-[#d6c5b4] bg-[#fffaf3] p-7; }
+  .prescription-admin-login h1 { @apply font-serif text-3xl; }
+
   .text-balance {
     text-wrap: balance;
   }
@@ -72,4 +181,428 @@
   .reader-content p + p {
     @apply mt-5;
   }
+
+  .reader-shell {
+    @apply mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12;
+  }
+
+  .reader-header {
+    @apply max-w-3xl;
+  }
+
+  .reader-eyebrow,
+  .reader-toc-title,
+  .reader-supplemental-label {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-[#8b4513];
+  }
+
+  .reader-header h1,
+  .reader-not-found h1 {
+    @apply mt-3 font-serif text-4xl leading-tight text-[#241b16] sm:text-5xl;
+  }
+
+  .reader-summary {
+    @apply mt-4 max-w-2xl text-base leading-7 text-[#6d5d51];
+  }
+
+  .reader-back-link {
+    @apply inline-flex text-sm font-semibold text-[#7c3f1f] underline decoration-[#cba27a] underline-offset-4;
+  }
+
+  .reader-facts {
+    @apply mt-6 flex flex-wrap gap-3;
+  }
+
+  .reader-facts div {
+    @apply rounded-full border border-[#d9c7b0] bg-[#fffaf3] px-4 py-2 text-sm;
+  }
+
+  .reader-facts dt {
+    @apply text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8b4513];
+  }
+
+  .reader-facts dd {
+    @apply mt-1 text-[#382d26];
+  }
+
+  .reader-cover {
+    @apply mt-8 overflow-hidden rounded-2xl border border-[#d9c7b0] bg-[#fffaf3];
+  }
+
+  .reader-cover img {
+    @apply block aspect-[16/7] w-full object-cover;
+  }
+
+  .reader-layout {
+    @apply mt-10 grid gap-8 lg:grid-cols-[15rem_minmax(0,42rem)] lg:justify-center;
+  }
+
+  .reader-toc {
+    @apply h-fit rounded-xl border border-[#d9c7b0] bg-[#fffaf3] p-5 lg:sticky lg:top-6;
+  }
+
+  .reader-toc ol {
+    @apply mt-3 space-y-2 pl-5 text-sm leading-5 text-[#5e493b];
+  }
+
+  .reader-toc a {
+    @apply underline decoration-[#d5b28d] underline-offset-4;
+  }
+
+  .reader-article {
+    @apply min-w-0;
+  }
+
+  .reader-content {
+    @apply font-serif text-[17px] leading-8 text-[#382d26];
+  }
+
+  .reader-content h1,
+  .reader-content h2,
+  .reader-content h3,
+  .reader-content h4,
+  .reader-content h5,
+  .reader-content h6 {
+    @apply scroll-mt-8 font-serif font-semibold leading-tight text-[#241b16];
+  }
+
+  .reader-content h1 { @apply mt-12 text-4xl; }
+  .reader-content h2 { @apply mt-10 text-3xl; }
+  .reader-content h3 { @apply mt-8 text-2xl; }
+  .reader-content h4,
+  .reader-content h5,
+  .reader-content h6 { @apply mt-6 text-xl; }
+
+  .reader-content a {
+    @apply text-[#7c3f1f] underline decoration-[#d5b28d] underline-offset-4;
+  }
+
+  .reader-content figure { @apply my-8; }
+  .reader-content img { @apply h-auto max-w-full rounded-xl; }
+  .reader-content table { @apply my-6 w-full border-collapse text-sm; }
+  .reader-content th,
+  .reader-content td { @apply border border-[#d9c7b0] p-3 text-left align-top; }
+  .reader-content ul,
+  .reader-content ol { @apply my-5 space-y-2 pl-6; }
+
+  .reader-source-label {
+    @apply mt-6 border-l-2 border-[#cba27a] pl-4 text-sm italic leading-6 text-[#6d5d51];
+  }
+
+  .reader-supplemental {
+    @apply mt-8 border-t border-[#d9c7b0] pt-5;
+  }
+
+  .reader-supplemental-label { @apply mb-2; }
+  .reader-not-found { @apply max-w-2xl; }
+  .reader-not-found p { @apply mt-4 text-[#6d5d51]; }
+  .reader-not-found .reader-back-link { @apply mt-6; }
+
+  .catalog-shell {
+    @apply mx-auto max-w-7xl px-5 pb-20 pt-8 sm:px-8 sm:pt-12;
+  }
+
+  .site-navigation {
+    @apply mb-8 flex items-center gap-5 border-b border-[#d8c9b5] pb-4 text-sm font-semibold text-[#70442d];
+  }
+
+  .site-navigation a {
+    @apply underline decoration-[#bf9473] underline-offset-4 transition hover:text-[#2c2119];
+  }
+
+  .remedy-client-actions { @apply my-4 flex gap-2; }
+  .remedy-client-actions button { @apply min-h-11 rounded-full border border-[#cba27a] bg-[#fffaf3] px-4 text-sm font-semibold text-[#70442d]; }
+
+  .mobile-bottom-navigation { display: none; }
+
+  @media (max-width: 767px) {
+    .homeopathy-shell { padding-top: max(1.25rem, env(safe-area-inset-top)); @apply px-4 pb-24; }
+    .remedy-content-body { font-size: 18px; line-height: 1.5; }
+    .remedy-primary-image { float: none; margin: 1rem 0; max-width: none; width: 100%; }
+    .mobile-bottom-navigation { @apply fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-[#d8c9b5] bg-[#fffaf3] px-1 pb-[max(.45rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(56,45,38,.08)]; display: grid; }
+    .mobile-bottom-navigation a { @apply min-h-11 px-1 text-center text-[10px] font-semibold leading-4 text-[#70442d]; }
+    .mobile-bottom-navigation a[aria-current='page'] { @apply text-[#2c2119] underline decoration-[#cba27a] underline-offset-4; }
+  }
+
+  .homeopathy-shell {
+    @apply mx-auto min-h-screen max-w-5xl px-5 pb-20 pt-8 sm:px-8 sm:pt-12;
+  }
+
+  .homeopathy-intro {
+    @apply max-w-3xl border-y border-[#cdbda5] py-12 sm:py-20;
+  }
+
+  .homeopathy-kicker {
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8b5a3c];
+  }
+
+  .homeopathy-intro h1,
+  .remedy-index-header h1,
+  .remedy-page h1,
+  .remedy-empty h1 {
+    @apply mt-3 font-serif text-5xl leading-none text-[#2c2119] sm:text-6xl;
+  }
+
+  .homeopathy-intro > p:not(.homeopathy-kicker):not(.homeopathy-source-note),
+  .remedy-index-header > div > p:last-child {
+    @apply mt-6 max-w-2xl text-[17px] leading-8 text-[#5e4e40];
+  }
+
+  .homeopathy-primary-link {
+    @apply mt-8 inline-flex border-b-2 border-[#8b4513] pb-1 text-sm font-semibold text-[#70442d] transition hover:text-[#2c2119];
+  }
+
+  .homeopathy-source-note {
+    @apply mt-14 border-l-2 border-[#cba27a] pl-4 text-sm leading-6 text-[#6d5d51];
+  }
+
+  .remedy-index-header {
+    @apply flex flex-col gap-6 border-b border-[#cdbda5] pb-8 sm:flex-row sm:items-end sm:justify-between;
+  }
+
+  .locale-link,
+  .remedy-page-actions a:last-child {
+    @apply inline-flex min-h-11 items-center border border-[#b99373] px-4 py-2 text-xs font-semibold tracking-[0.12em] text-[#70442d] transition hover:bg-[#ede0cf];
+  }
+
+  .remedy-directory { @apply mt-8; }
+  .remedy-search { @apply flex w-full items-center gap-3 border-b border-[#8c6a52] py-3 text-[#6d4c38]; }
+  .remedy-search input { @apply w-full bg-transparent text-[15px] text-[#2c2119] outline-none placeholder:text-[#8b7c6f]; }
+  .remedy-alphabet { @apply mt-5 flex flex-wrap gap-1; }
+  .remedy-alphabet button { @apply min-w-9 rounded-full px-3 py-2 text-sm text-[#6e5746] transition hover:bg-[#e6d8c5] hover:text-[#3d2c21]; }
+  .remedy-alphabet button[aria-pressed="true"] { @apply bg-[#4f3829] text-[#fffaf2]; }
+  .remedy-result-count { @apply mt-7 text-xs font-semibold uppercase tracking-[0.14em] text-[#8b5a3c]; }
+  .remedy-list { @apply mt-3 border-t border-[#d8c9b5]; }
+  .remedy-list li { @apply border-b border-[#d8c9b5]; }
+  .remedy-list a { @apply grid grid-cols-[2.5rem_1fr] gap-3 py-5 transition hover:bg-[#f8f1e7]; }
+  .remedy-list-letter { @apply font-serif text-2xl text-[#8b5a3c]; }
+  .remedy-list strong { @apply block font-serif text-2xl text-[#2c2119]; }
+  .remedy-list small,
+  .remedy-list em { @apply mt-1 block text-sm not-italic leading-6 text-[#6d5d51]; }
+  .remedy-list em { @apply text-xs text-[#8b5a3c]; }
+  .remedy-empty { @apply mt-8 border border-dashed border-[#cdbda5] bg-[#fbf6ed] px-6 py-12 text-center; }
+  .remedy-empty h2 { @apply font-serif text-3xl text-[#2c2119]; }
+  .remedy-empty p { @apply mt-3 text-[#67584b]; }
+
+  .remedy-page { width: 100%; max-width: 56rem; margin-inline: auto; }
+  .remedy-page-actions { @apply mb-8 flex items-center justify-between gap-4 text-sm font-semibold text-[#70442d]; }
+  .remedy-page-actions a:first-child { @apply inline-flex min-h-11 items-center underline decoration-[#bf9473] underline-offset-4; }
+  .remedy-page h1 { @apply mt-3 font-serif text-[30px] leading-[1.04] text-[#2c2119] sm:text-[38px] lg:text-[42px]; }
+  .remedy-common-name { @apply mt-3 text-[15px] italic leading-6 text-[#6d5d51]; }
+  .remedy-primary-image { @apply mt-5 overflow-hidden rounded-md border border-[#cdbda5] bg-[#f6f0e7] p-2; }
+  .remedy-primary-image img { @apply mx-auto block w-full object-contain; }
+  .remedy-content-body { margin-top: 1rem; color: #382d26; font-family: var(--font-serif); font-size: 18px; line-height: 1.5; }
+  .remedy-content-body p { margin: 0.5em 0 0; }
+  .remedy-content-body p:first-child { margin-top: 0; }
+  .remedy-content-intro { margin-bottom: 1rem; }
+  .remedy-content-section { margin-top: 1.2rem; border-top: 1px solid #e1d5c5; padding-top: 0.55rem; }
+  .remedy-content-section h2,
+  .remedy-content-section h3 { margin: 0; color: #2c2119; font-family: var(--font-serif); font-size: 22px; font-weight: 600; line-height: 1.18; }
+  .remedy-content-body ul,
+  .remedy-content-body ol { margin: 0.55em 0 0; padding-left: 1.15em; }
+  .remedy-content-body li { margin-bottom: 0.28em; padding-left: 0.1em; }
+  .remedy-content-body li:last-child { margin-bottom: 0; }
+  .remedy-content-message { margin-top: 0.85rem !important; color: #6d5d51; font-family: var(--font-sans); font-size: 13px; line-height: 1.45; }
+  .remedy-essence { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 1rem 0 0; border-left: 2px solid #8b4513; padding-left: 0.75rem; color: #4d3b2f; font-family: var(--font-sans); font-size: 15px; font-weight: 600; line-height: 1.45; }
+  .remedy-essence span { color: #8b5a3c; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .remedy-content-pair { display: grid; gap: 1rem; }
+  .remedy-content-pair .remedy-content-section { margin-top: 1.2rem; }
+  .remedy-content-pair .remedy-content-section h2,
+  .remedy-content-pair .remedy-content-section h3 { font-size: 19px; }
+  .remedy-supplementary { margin-top: 1.25rem; border-top: 1px solid #cdbda5; padding-top: 0.7rem; }
+  .remedy-supplementary summary { cursor: pointer; color: #70442d; font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.45; }
+  .remedy-supplementary > div { margin-top: 0.85rem; }
+  .remedy-source-reference { clear: both; margin-top: 1.25rem; color: #6d5d51; font-family: var(--font-sans); font-size: 13px; line-height: 1.45; }
+  .remedy-source-reference summary { cursor: pointer; color: #70442d; font-weight: 600; }
+  .remedy-source-reference > div { display: grid; gap: 0.2rem; margin-top: 0.55rem; border-left: 2px solid #cba27a; padding-left: 0.65rem; }
+  .remedy-source-reference span { overflow-wrap: anywhere; }
+  .remedy-supporting-gallery { @apply mt-7 clear-both border-t border-[#cdbda5] pt-4; }
+  .remedy-supporting-gallery > p { @apply text-sm leading-6 text-[#6d5d51]; }
+  .remedy-supporting-gallery > div { @apply mt-3 grid max-w-2xl grid-cols-2 gap-3; }
+  .remedy-supporting-gallery img { @apply h-36 w-full rounded-md border border-[#d9cab7] bg-[#f6f0e7] object-contain p-1 sm:h-40; }
+  .remedy-related { @apply mt-8 border-t border-[#d8c9b5] pt-5; }
+  .remedy-related h2 { @apply font-serif text-2xl text-[#2c2119]; }
+  .remedy-related ul { @apply mt-3 space-y-2 text-sm text-[#70442d]; }
+  .remedy-related a { @apply underline decoration-[#bf9473] underline-offset-4; }
+  .remedy-disclaimer { @apply mt-8 border-t border-[#d8c9b5] pt-5 text-xs leading-5 text-[#7a6a5d]; }
+
+  @media (min-width: 768px) {
+    .remedy-primary-image {
+      float: right;
+      width: clamp(16.25rem, 20vw, 17.5rem);
+      margin: 0 0 1rem 1.25rem;
+    }
+
+    .remedy-primary-image img { max-height: 25rem; }
+  }
+
+  @media (max-width: 767px) {
+    .remedy-primary-image {
+      float: none;
+      width: 100%;
+    }
+
+    .remedy-primary-image img { max-height: 22rem; }
+  }
+
+  @media (min-width: 900px) {
+    .remedy-content-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 899px) {
+    .remedy-content-pair { grid-template-columns: 1fr; }
+  }
+
+  .book-reference-shell { @apply mx-auto max-w-[92rem] px-5 pb-20 pt-8 sm:px-8 sm:pt-12; }
+  .book-reference-header { @apply flex flex-col gap-7 border-y border-[#cdbda5] py-8 lg:flex-row lg:items-end lg:justify-between; }
+  .book-reference-header > div:first-child { @apply max-w-3xl; }
+  .book-reference-header h1 { @apply mt-3 font-serif text-4xl leading-[1.05] text-[#2c2119] sm:text-5xl; }
+  .book-reference-header > div:first-child > p:last-child { @apply mt-4 max-w-2xl text-[17px] leading-7 text-[#5e4e40] sm:text-[18px]; }
+  .book-reference-header-actions { @apply flex flex-wrap items-center gap-3 text-sm font-semibold text-[#70442d]; }
+  .book-reference-header-actions > span { @apply text-[11px] uppercase tracking-[0.14em] text-[#8b5a3c]; }
+  .book-reference-header-actions a { @apply inline-flex min-h-11 items-center border-b border-[#b99373] px-1 transition hover:text-[#2c2119]; }
+  .book-reference-header-actions a:last-child { @apply border border-[#b99373] px-4 text-xs tracking-[0.12em]; }
+  .book-reference-layout { @apply mt-8 grid gap-9 lg:grid-cols-[clamp(16.25rem,22vw,20rem)_minmax(0,56rem)] lg:justify-center; }
+  .book-reference-sidebar { @apply hidden border border-[#d9c7b0] bg-[#fffaf3] p-4 lg:sticky lg:top-6 lg:block lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto; }
+  .book-reference-sidebar > div:first-child { @apply border-b border-[#d8c9b5] pb-4; }
+  .book-reference-sidebar > div:first-child p { @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8b4513]; }
+  .book-reference-sidebar > div:first-child strong { @apply mt-1 block font-serif text-xl leading-tight text-[#2c2119]; }
+  .book-reference-navigator { @apply mt-4; }
+  .book-reference-search { @apply flex items-center gap-2 border-b border-[#8c6a52] py-2 text-[#6d4c38]; }
+  .book-reference-search input { @apply min-w-0 flex-1 bg-transparent text-[15px] text-[#2c2119] outline-none placeholder:text-[#8b7c6f]; }
+  .book-reference-alphabet { @apply mt-3 flex flex-wrap gap-1; }
+  .book-reference-alphabet button { @apply min-h-8 min-w-8 rounded-full px-2 text-xs text-[#6e5746] transition hover:bg-[#e6d8c5] hover:text-[#3d2c21]; }
+  .book-reference-alphabet button[aria-pressed="true"] { @apply bg-[#4f3829] text-[#fffaf2]; }
+  .book-reference-result-count { @apply mt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8b5a3c]; }
+  .book-reference-remedy-list { @apply mt-2 border-t border-[#d8c9b5]; }
+  .book-reference-remedy-list li { @apply grid grid-cols-[minmax(0,1fr)_1.5rem] items-center gap-2 border-b border-[#e0d4c3]; }
+  .book-reference-remedy-list a:first-child { @apply min-w-0 py-2 text-sm leading-5 text-[#4d3b2f] transition hover:text-[#8b4513]; }
+  .book-reference-remedy-list a:last-child { @apply py-2 text-center text-sm text-[#8b5a3c] transition hover:text-[#2c2119]; }
+  .book-reference-empty { @apply mt-4 text-sm leading-6 text-[#6d5d51]; }
+  .book-reference-mobile-toggle { @apply mt-6 inline-flex min-h-11 items-center border border-[#b99373] px-4 text-sm font-semibold text-[#70442d] lg:hidden; }
+  .book-reference-drawer-backdrop { @apply fixed inset-0 z-50 flex justify-end bg-[#2c2119]/35 p-3 sm:p-5; }
+  .book-reference-drawer { @apply h-full w-full max-w-sm overflow-y-auto border border-[#d9c7b0] bg-[#fffaf3] p-5 shadow-2xl; }
+  .book-reference-drawer > div:first-child { @apply flex items-center justify-between gap-4 border-b border-[#d8c9b5] pb-4; }
+  .book-reference-drawer-title { @apply font-serif text-2xl text-[#2c2119]; }
+  .book-reference-drawer > div:first-child button { @apply inline-flex size-11 items-center justify-center border border-[#b99373] text-[#70442d]; }
+  .book-reference-article { @apply min-w-0; }
+  .book-remedy-section { @apply scroll-mt-6 border-t border-[#cdbda5] py-9 first:border-t-0 first:pt-0 sm:py-11; clear: both; }
+  .book-remedy-letter { @apply mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8b5a3c]; }
+  .book-remedy-section h2 { @apply font-serif text-[30px] leading-[1.08] text-[#2c2119] sm:text-[34px]; }
+  .book-remedy-common-name { @apply mt-2 text-[15px] italic leading-6 text-[#6d5d51]; }
+  .book-remedy-primary-image { @apply mt-5 overflow-hidden rounded-md border border-[#cdbda5] bg-[#f6f0e7] p-2; }
+  .book-remedy-primary-image img { @apply mx-auto block w-full object-contain; }
+  .remedy-content-body--book { margin-top: 0.85rem; }
+  .book-remedy-source { @apply mt-5 grid clear-both gap-1 border-l-2 border-[#cba27a] pl-3 text-[13px] leading-5 text-[#6d5d51]; clear: both; }
+  .book-remedy-source p { @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8b4513]; }
+  .book-remedy-source a { @apply mt-1 w-fit font-semibold text-[#70442d] underline decoration-[#bf9473] underline-offset-4; }
+  .book-remedy-gallery { @apply mt-6 clear-both border-t border-[#cdbda5] pt-4; }
+  .book-remedy-gallery > p { @apply text-sm leading-6 text-[#6d5d51]; }
+  .book-remedy-gallery > div { @apply mt-3 grid max-w-2xl grid-cols-2 gap-3; }
+  .book-remedy-gallery img { @apply h-36 w-full rounded-md border border-[#d9cab7] bg-[#f6f0e7] object-contain p-1 sm:h-40; }
+  .book-remedy-disclaimer { @apply mt-6 border-t border-[#d8c9b5] pt-4 text-xs leading-5 text-[#7a6a5d]; }
+
+  @media (min-width: 768px) {
+    .book-remedy-primary-image { float: right; width: clamp(15rem, 26vw, 20rem); margin: 0 0 1.25rem 1.5rem; }
+    .book-remedy-primary-image img { max-height: 24rem; }
+  }
+
+  @media (max-width: 767px) {
+    .book-remedy-primary-image { float: none; width: 100%; }
+    .book-remedy-primary-image img { max-height: 22rem; }
+  }
+
+  .catalog-header {
+    @apply flex flex-col gap-7 border-y border-[#cdbda5] py-8 lg:flex-row lg:items-end lg:justify-between;
+  }
+
+  .catalog-header-copy { @apply max-w-2xl; }
+
+  .catalog-kicker,
+  .catalog-card-series { @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8b5a3c]; }
+
+  .catalog-header h1 { @apply mt-2 font-serif text-5xl leading-none text-[#2c2119] sm:text-6xl; }
+  .catalog-header-copy > p:last-child { @apply mt-4 max-w-xl text-[15px] leading-7 text-[#67584b]; }
+
+  .catalog-search { @apply flex w-full items-center gap-3 border-b border-[#8c6a52] py-3 text-[#6d4c38] lg:max-w-sm; }
+  .catalog-search input { @apply w-full bg-transparent text-[15px] text-[#2c2119] outline-none placeholder:text-[#8b7c6f]; }
+
+  .catalog-filters { @apply flex flex-wrap gap-x-1 gap-y-2 border-b border-[#d8c9b5] py-5; }
+  .catalog-filter { @apply rounded-full px-4 py-2 text-sm text-[#6e5746] transition hover:bg-[#e6d8c5] hover:text-[#3d2c21]; }
+  .catalog-filter[aria-pressed="true"] { @apply bg-[#4f3829] text-[#fffaf2]; }
+
+  .catalog-grid { @apply mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4; }
+
+  .catalog-card {
+    @apply flex min-w-0 flex-col overflow-hidden border border-[#d5c5b0] bg-[#fffaf2] text-inherit shadow-[0_12px_28px_rgba(81,57,36,0.08)] transition duration-200 hover:-translate-y-1 hover:border-[#a77b5d] hover:shadow-[0_18px_36px_rgba(81,57,36,0.15)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#714d37];
+  }
+
+  .catalog-cover { @apply aspect-[4/3] overflow-hidden border-b border-[#d5c5b0] bg-[#ded1bf]; }
+  .catalog-cover img { @apply block size-full object-cover transition duration-500; }
+  .catalog-card:hover .catalog-cover img { @apply scale-105; }
+  .catalog-card-body { @apply flex flex-1 flex-col p-5; }
+  .catalog-card h2 { @apply mt-2 font-serif text-[25px] leading-[1.12] text-[#2c2119]; }
+  .catalog-card-description { @apply mt-4 line-clamp-3 text-[15px] leading-6 text-[#5e4e40]; }
+  .catalog-card-footer { @apply mt-6 flex items-center justify-between gap-3 border-t border-[#e0d4c3] pt-4 text-sm text-[#715e4d]; }
+  .catalog-card-footer > span:first-child { @apply inline-flex items-center gap-2; }
+  .catalog-card-read { @apply font-semibold text-[#70442d] underline decoration-[#bf9473] underline-offset-4; }
+
+  .catalog-empty { @apply mt-8 border border-dashed border-[#cdbda5] bg-[#fbf6ed] px-6 py-12 text-center; }
+  .catalog-empty h2 { @apply font-serif text-3xl text-[#2c2119]; }
+  .catalog-empty p { @apply mt-3 text-[#67584b]; }
+}
+
+/* Canonical private-practice documents: matches the approved A4 masters. */
+.canonical-shell { max-width: 870px; }
+.canonical-document { background: white; color: #48494b; padding: 54px 64px 48px; min-height: 1000px; font: 14px/1.65 Arial, sans-serif; overflow-wrap: anywhere; }
+.canonical-letterhead { display: flex; align-items: center; gap: 32px; border-bottom: 1px solid #cdd5d9; padding: 0 0 34px; margin-bottom: 20px; }
+.canonical-letterhead img { width: 110px; height: 110px; object-fit: contain; flex: 0 0 110px; }
+.canonical-practitioner { font: 27px/1.25 Georgia, serif; color: #465f6f; margin: 0 0 6px; }
+.canonical-credentials { font: 13px/1.5 Georgia, serif; color: #747c81; }
+.canonical-contact { font: 10px/1.5 Arial, sans-serif; color: #747c81; margin-top: 9px; }
+.canonical-document h1 { font: bold 20px/1.35 Georgia, serif; margin: 0 0 20px; }
+.canonical-document h2 { font: bold 16px/1.4 Georgia, serif; }
+.canonical-client { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; }
+.canonical-intro { margin: 22px 0 18px; }
+.canonical-remedy { border-bottom: 1px solid #cdd5d9; padding: 0 0 20px; margin: 0 0 12px; }
+.canonical-remedy h2 { color: #465f6f; margin-bottom: 6px; }
+.canonical-remedy a { text-decoration: underline; text-underline-offset: 3px; }
+.canonical-remedy dl { font-size: 13px; line-height: 1.65; }
+.canonical-remedy dt, .canonical-remedy dd { display: inline; }
+.canonical-remedy dd, .canonical-general p, .canonical-follow-up { white-space: pre-wrap; }
+.canonical-general p { margin-top: 8px; }
+.canonical-follow-up { margin-top: 18px; }
+.canonical-signature { margin-top: 22px; font-size: 11px; color: #70797e; break-inside: avoid; }
+.canonical-signature > p:first-child { font-size: 13px; color: #48494b; }
+.canonical-signature-line { width: 44%; border-top: 1px solid #929799; margin: 64px 0 8px; }
+.canonical-signature strong { color: #48494b; }
+.canonical-disclaimer { margin-top: 42px; font: 9px/1.5 Arial, sans-serif; color: #929799; }
+.canonical-payment-narrative { font-size: 14px; margin: 26px 0; white-space: pre-wrap; }
+.canonical-payment-details { color: #747c81; font-size: 13px; }
+.payment-signature { margin-top: 104px; }
+.payment-signature .canonical-signature-line { margin-top: 96px; }
+.admin-document-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 24px 0; }
+.admin-document-panel { padding: 20px; background: #fff; border: 1px solid #cdd5d9; }
+.admin-document-panel h2 { font: bold 18px/1.4 Georgia, serif; margin-bottom: 12px; }
+.document-panel-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.document-panel-actions a, .document-panel-actions button { display: inline-flex; align-items: center; padding: 9px 12px; min-height: 44px; border: 1px solid #667b89; }
+@media (max-width: 600px) {
+  .canonical-shell { padding: 12px; }
+  .canonical-document { padding: 24px 20px; min-height: 0; }
+  .canonical-letterhead { gap: 12px; padding-bottom: 22px; align-items: flex-start; }
+  .canonical-letterhead img { width: 64px; height: 74px; flex-basis: 64px; }
+  .canonical-practitioner { font-size: 20px; }
+  .canonical-credentials { font-size: 11px; }
+  .canonical-contact { font-size: 9px; }
+  .canonical-document h1 { font-size: 18px; }
+  .prescription-toolbar { align-items: flex-start; }
+  .admin-document-panels { grid-template-columns: 1fr; }
+}
+@media print {
+  .canonical-shell { margin: 0; padding: 0; max-width: none; }
+  .canonical-document { padding: 4mm 10mm; min-height: 0; }
+  .canonical-letterhead, .canonical-remedy h2, .canonical-general h2 { break-after: avoid; }
+  .canonical-remedy { break-inside: auto; }
+  .canonical-signature { break-inside: avoid; }
+  .admin-document-panels, .document-panel-actions { display: none; }
 }

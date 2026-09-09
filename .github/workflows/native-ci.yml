@@ -1,0 +1,87 @@
+name: Native CI
+
+on:
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'ios/**'
+      - 'native-web/**'
+      - 'capacitor.config.json'
+      - 'components/native-**'
+      - 'lib/native/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/native-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios-simulator:
+    name: iOS unsigned simulator build
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify the private native session remains fail-closed
+        run: npm run native:check
+      - name: Sync Capacitor iOS shell
+        run: npm run native:sync -- ios 2>&1 | tee capacitor-ios-sync.log
+      - name: Build unsigned simulator target
+        run: >-
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App
+          -configuration Debug -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO build 2>&1 | tee xcodebuild-ios.log
+      - name: Upload iOS logs and build products
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-build
+          if-no-files-found: warn
+          path: |
+            capacitor-ios-sync.log
+            xcodebuild-ios.log
+            ~/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
+
+  android-debug:
+    name: Android debug APK build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android API required by the generated project
+        run: sdkmanager --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
+      - run: npm ci
+      - name: Verify the private native session remains fail-closed
+        run: npm run native:check
+      - name: Sync Capacitor Android shell
+        run: npm run native:sync -- android 2>&1 | tee capacitor-android-sync.log
+      - name: Build unsigned debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --stacktrace 2>&1 | tee ../gradle-android.log
+      - name: Upload Android APK and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-build
+          if-no-files-found: warn
+          path: |
+            capacitor-android-sync.log
+            gradle-android.log
+            android/app/build/outputs/apk/debug/*.apk
