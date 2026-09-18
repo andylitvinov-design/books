@@ -11,9 +11,9 @@ Downloaded from the existing approved Drive folder on 2026-09-18:
 | Receipt, Signed_Left_LargeSignature | [Master](https://drive.google.com/file/d/1ZP4rPy6znahcV5vPlDIrQn3STh2F3q5S/view) | `6ab935a5a3609af65dc4d505b856755f05783798c3255fa811223545ce21ec57` |
 | Recommendation, Signed_Left_LargeSignature | [Master](https://drive.google.com/file/d/1ksYzIDL3srWGGTleuIzSDKJq77pq86Dy/view) | `afb51ff54913623a1c2da55fc457ffb070abd1bdbe2ece673f2c1bc807fe9c68` |
 
-Canonical copies are in `assets/document-templates/` with their original filenames. The newly uploaded Receipt has no `_v2` suffix; confirmation that it is the requested final revision remains pending. No filled client PDF was downloaded or committed.
+Canonical copies are in `assets/document-templates/` with their original filenames. The owner explicitly confirmed this Receipt filename without `_v2` as the final approved master on 2026-09-18. No filled client PDF is committed or used as a fixture.
 
-Both blank masters embed identical 1229×484 RGBA signature pixels. `scripts/prepare-signature-assets.py` recovers them losslessly, without rotation, recoloring, resampling or cropping. The recovered PNG SHA-256 is `fdf409258ba55ce0183146192444fe4c0af4faaeccee3698f0e6fdced10b42cd`.
+The primary signature is the exact [approved PNG](https://drive.google.com/file/d/1aGty2n4RDdc9FebM4pim3EqCvlMhVzMx/view), SHA-256 `9f34fc3bbf3db3c73b1abf61ea3174b7e71cb2b4b66d4e484339a402104f7c6d`. Its 1229×484 RGBA pixels are identical to both blank masters and to the previously extracted PNG; only PNG encoding differs. `scripts/prepare-signature-assets.py` verifies the original PNG against both masters and creates lossless PDF streams without changing orientation, pixels or the PNG file.
 
 ## Assets and layout
 
@@ -40,4 +40,6 @@ Optional payment method is manual, trimmed, limited to 120 characters and preser
 - Scripted creation took 22 seconds for the basic recommendation and 31 seconds for the invoice, including tool overhead. This is not a human usability study.
 - Mobile client viewport 390px: document width 390px, signature loaded at 226.8×89.3px, no horizontal overflow.
 
-Local production build passes, including static generation and tracing. Hosted Preview verification follows deployment. Full stateful hosted Preview admin testing requires separately configured isolated Preview storage; local authenticated testing never falls back to production.
+Local production build passes, including static generation and tracing. Hosted Preview verified all three PDF types, exact signature pixels, Cyrillic text, remedy links and anonymous private-route privacy headers. Mobile review navigation wraps without horizontal overflow at 390px. Full stateful hosted Preview admin testing requires separately configured isolated Preview storage; local authenticated testing never falls back to production.
+
+The owner-supplied filled visual reference was inspected privately: the same quiet lighthouse layout, muted palette, signature orientation and large size are preserved. It was not used as test data or included in the repository. Temporary private reference downloads/renders were removed after comparison.

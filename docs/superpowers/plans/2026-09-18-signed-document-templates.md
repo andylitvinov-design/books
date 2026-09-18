@@ -36,3 +36,8 @@ These are unsigned preparation artifacts, not approved signed-template deliverab
 ## Resolved source discovery and implementation
 
 New Signed_Left_LargeSignature blank masters appeared in the approved Drive folder during continuation. Both contained identical signature pixels, now extracted losslessly and embedded in PDF/web. The Receipt file has no `_v2` suffix; owner confirmation of that revision remains pending. See `docs/document-templates/signed-template-review.md` for source hashes and current verification, which supersedes the unsigned preparation checkpoint above. 147 tests and local production build now pass. Hosted Preview verification is next.
+
+
+## Final source confirmation — 2026-09-18
+
+The owner explicitly approved the exact Receipt filename without `_v2` and supplied the primary PNG. The original PNG is now stored verbatim; all RGBA pixels match both masters and previous generated PDFs. The source-version blocker is resolved. The filled reference was inspected privately for visual comparison only, never used as a fixture or committed. Hosted verification and PR #23 are complete; final asset-only deployment is verified separately in the PR. Production remains unchanged.
