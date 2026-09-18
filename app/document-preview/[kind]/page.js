@@ -12,7 +12,7 @@ export default async function DocumentSamplePage({ params, searchParams }) {
   const document = getDocumentSample(kind, locale)
   if (!document) notFound()
   const Document = kind === 'recommendation' ? PrescriptionDocument : PaymentDocument
-  return <><nav className="prescription-toolbar prescription-admin-shell" aria-label="Synthetic document review">
+  return <><nav className="prescription-toolbar prescription-admin-shell" style={{ flexWrap: 'wrap' }} aria-label="Synthetic document review">
     <span>Synthetic sample</span>
     {sampleKinds.map((name) => <Link href={`/document-preview/${name}?locale=${locale}`} key={name}>{name}</Link>)}
     <Link href={`/document-preview/${kind}?locale=${locale === 'en' ? 'ru' : 'en'}`}>{locale === 'en' ? 'RU' : 'EN'}</Link>
