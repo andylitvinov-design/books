@@ -11,10 +11,10 @@
 ## Steps
 
 - [x] Audit current templates, fields, private routes and canonical branch.
-- [ ] Obtain `andrii-signature-left-90.png` and the exact `Signed_Left_LargeSignature` masters; inspect rendered pages and record SHA-256 provenance. Commit only the signature and blank templates, never the filled client reference.
+- [x] Obtain `andrii-signature-left-90.png` and the exact `Signed_Left_LargeSignature` masters; inspect rendered pages and record SHA-256 provenance. Commit only the signature and blank templates, never the filled client reference.
 - [x] Add optional `paymentMethod` through validation, public projection, server action, form, web and PDF. Test preservation through paid/revoked updates, absent legacy values and excessive length rejection.
-- [x] Centralize PDF/web recommendation labels. Preserve exact practitioner identity and payment wording; avoid clinical inference. Layout constants await the exact final masters.
-- [ ] Embed the approved original PNG in the shared web signature block and native PDF image resources. Reserve measured vertical space before signature placement so multi-page content cannot overlap it. Trace assets into all PDF routes.
+- [x] Centralize PDF/web recommendation labels. Preserve exact practitioner identity and payment wording; avoid clinical inference. Measured signature geometry and PDF page/typography constants now live in the shared template configuration.
+- [x] Embed the approved original PNG in the shared web signature block and native PDF image resources. Reserve measured vertical space before signature placement so multi-page content cannot overlap it. Trace assets into all PDF routes.
 - [x] Add a two-remedy synthetic recommendation, shared paid/unpaid fixtures and byte-determinism tests. Signature image assertions await the approved asset.
 - [ ] Run unit tests, JSX lint, production build, synthetic generation and rendered master comparison. Verify local authenticated synthetic save/link/PDF/revoke flow and hosted Preview sample routes without using production storage.
 - [ ] Push branch, open PR against canonical branch, verify Ready Preview and return PDFs/screenshots/assets/tests. Stop for review; no merge or production deployment.
@@ -32,3 +32,7 @@ The known approved Drive folder contains older `Receipt_Master_Template_Signed.p
 139 unit tests pass; JSX-inclusive lint has zero errors and ten existing archive warnings; production build passes locally. Seven synthetic PDFs generate successfully. Parsed page bounds show zero out-of-page glyphs, ordinary documents are one page, the long recommendation is 11 pages with 24 remedy links. The two-remedy sample contains two links in RU and EN. Independent bounded review found no actionable defects.
 
 These are unsigned preparation artifacts, not approved signed-template deliverables. No signature was recreated or taken from an older master. Production and production data were not changed. Final PDF visual acceptance, PR/Preview review package and automatic signature confirmation remain pending the exact source assets.
+
+## Resolved source discovery and implementation
+
+New Signed_Left_LargeSignature blank masters appeared in the approved Drive folder during continuation. Both contained identical signature pixels, now extracted losslessly and embedded in PDF/web. The Receipt file has no `_v2` suffix; owner confirmation of that revision remains pending. See `docs/document-templates/signed-template-review.md` for source hashes and current verification, which supersedes the unsigned preparation checkpoint above. 147 tests and local production build now pass. Hosted Preview verification is next.
