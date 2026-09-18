@@ -31,3 +31,13 @@ test('English payment supports Cyrillic names and unpaid document says INVOICE',
   assert.doesNotMatch(source, /NaN|undefined/)
   assert.doesNotMatch(source, /I confirm that I received/)
 })
+
+test('payment PDF includes explicitly supplied method for invoices and receipts, omits absent method', () => {
+  const document = { patientName: 'Synthetic Client', dateIssued: '2026-09-08', dateOfService: '2026-09-08', amount: 12550, currency: 'CAD', service: 'Synthetic consultation' }
+  for (const paymentStatus of ['unpaid', 'received']) {
+    const source = buildPaymentPdf({ ...document, paymentStatus, paymentMethod: 'Synthetic transfer' }, 'en').toString('latin1')
+    assert.ok(source.includes('Payment method: Synthetic transfer'), 'PDF should contain the explicitly supplied method')
+    const legacy = buildPaymentPdf({ ...document, paymentStatus }, 'en').toString('latin1')
+    assert.doesNotMatch(legacy, /Payment method:/)
+  }
+})
