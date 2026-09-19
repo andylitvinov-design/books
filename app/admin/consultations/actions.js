@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { consultationSavingAvailable } from '@/lib/consultations/availability'
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
 
 function input(formData) {
@@ -15,6 +16,7 @@ function input(formData) {
 
 export async function createConsultationAction(previous, formData) {
   if (!await requireAdminRequest()) return { error: 'Please sign in before creating documents.' }
+  if (!consultationSavingAvailable()) return { error: 'Document saving is unavailable in this review environment.' }
   const store = getPrescriptionStore()
   if (!store) return { error: 'Documents are temporarily unavailable. Please try again.' }
   let pair
@@ -25,6 +27,7 @@ export async function createConsultationAction(previous, formData) {
 
 export async function updateConsultationAction(id, previous, formData) {
   if (!await requireAdminRequest()) return { error: 'Please sign in before saving.' }
+  if (!consultationSavingAvailable()) return { error: 'Document saving is unavailable in this review environment.' }
   const store = getPrescriptionStore()
   const recommendation = store ? await store.findById(id) : undefined
   const payment = recommendation?.paymentDocumentId ? await store.findById(recommendation.paymentDocumentId) : undefined

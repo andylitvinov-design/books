@@ -25,3 +25,9 @@ Before this change, recommendation and payment used separate creation forms; rec
 - Seven requested UI screenshots and four PDFs are local review artifacts under `output/consultation/`; no real client data used.
 
 Tests/lint/build and final hosted Preview status are recorded in the PR. Redis Lua behavior is covered by transport fixtures; no production Redis tests were run. Full stateful browser acceptance uses an isolated local memory store with temporary QA credentials, never production storage.
+
+## Hosted review finding
+
+The isolated Preview rendered the form and created a temporary memory-backed pair, but its client-link API ran in a different serverless instance and could not read that pair. The project has only an integration named `prescriptions-production`; it was not accessed or used for tests. Saving consultations on Preview now fails closed unless shared encrypted storage is configured, rather than displaying a misleading successful result.
+
+To finish hosted acceptance, connect a separate Preview-only REST KV/Redis resource and configure `PRESCRIPTIONS_KV_REST_API_URL`, `PRESCRIPTIONS_KV_REST_API_TOKEN`, and `PRESCRIPTIONS_DATA_ENCRYPTION_KEY` (32 random bytes encoded as base64), alongside Preview admin access. Scope these values to Preview/the PR branch, never Production. Do not paste secret values into the PR or chat. Re-run the same exact synthetic flow after redeploy. Local full-flow proof and all artifacts remain valid; hosted full-flow acceptance is pending this external configuration.
