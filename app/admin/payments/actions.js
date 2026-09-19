@@ -7,7 +7,7 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 
 function paymentInput(formData) {
-  return Object.fromEntries(['patientName', 'dateOfService', 'dateIssued', 'amount', 'currency', 'service', 'consultations', 'documentNumber', 'paymentStatus'].map((key) => [key, formData.get(key)]))
+  return Object.fromEntries(['patientName', 'dateOfService', 'dateIssued', 'amount', 'currency', 'service', 'consultations', 'documentNumber', 'paymentMethod', 'paymentStatus'].map((key) => [key, formData.get(key)]))
 }
 
 export async function createPaymentAction(consultationId, previousState, formData) {

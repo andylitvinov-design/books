@@ -14,6 +14,7 @@ export function PaymentForm({ action, payment, patientName, dateOfService, payme
       <label>Service<textarea name="service" defaultValue={payment?.service} required maxLength={1000} /></label>
       <label>Number of consultations (optional)<input name="consultations" type="number" min="1" step="1" defaultValue={payment?.consultations} /></label>
       <label>Receipt / invoice number (optional)<input name="documentNumber" defaultValue={payment?.documentNumber} maxLength={80} /></label>
+      <label>Payment method (optional)<input name="paymentMethod" defaultValue={payment?.paymentMethod} maxLength={120} /></label>
       <label>Payment status<select name="paymentStatus" defaultValue={payment?.paymentStatus ?? paymentStatus}><option value="unpaid">Not received — Invoice</option><option value="received">Received — Receipt</option></select></label>
     </fieldset>
     {state?.error && <p role="alert">{state.error}</p>}

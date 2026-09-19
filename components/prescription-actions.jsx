@@ -7,7 +7,13 @@ export function PrescriptionActions({ locale, selector, autoPrint = false }) {
     ? { download: 'Скачать PDF', print: 'Печать', close: 'Закрыть доступ' }
     : { download: 'Download PDF', print: 'Print', close: 'Close access' }
 
-  useEffect(() => { if (autoPrint) window.print() }, [autoPrint])
+  useEffect(() => {
+    const scrub = () => window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+    scrub()
+    window.addEventListener('hashchange', scrub)
+    if (autoPrint) window.print()
+    return () => window.removeEventListener('hashchange', scrub)
+  }, [autoPrint])
 
   const closeAccess = async () => {
     await fetch('/api/prescription-access/logout', { method: 'POST', credentials: 'same-origin', cache: 'no-store' })

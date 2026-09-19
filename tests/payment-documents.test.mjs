@@ -83,3 +83,33 @@ test('updates preserve identity and active access but revoke access on status tr
   assert.equal(await store.findBySelector(selector), undefined)
   assert.throws(() => updatePaymentDocument({ id: 'recommendation' }, input, now), /payment/)
 })
+
+test('optional payment method is trimmed and survives storage, projection and lifecycle updates', async () => {
+  const record = createPaymentDocument({ ...input, paymentStatus: 'unpaid', paymentMethod: '  Synthetic transfer  ' }, now)
+  assert.equal(record.paymentMethod, 'Synthetic transfer')
+  const store = createMemoryPrescriptionStore()
+  await store.save(record)
+  const stored = await store.findById(record.id)
+  assert.equal(getClientPaymentDocument(stored, 'en').paymentMethod, 'Synthetic transfer')
+  const paid = updatePaymentDocument(stored, { ...stored, amount: '125.50', paymentStatus: 'received' }, now)
+  assert.equal(paid.paymentMethod, 'Synthetic transfer')
+  const revoked = updatePaymentDocument(paid, { ...paid, amount: '125.50', status: 'revoked' }, now)
+  assert.equal(revoked.paymentMethod, 'Synthetic transfer')
+})
+
+test('payment method accepts 120 trimmed characters and rejects longer values', () => {
+  assert.equal(createPaymentDocument({ ...input, paymentMethod: ` ${'x'.repeat(120)} ` }, now).paymentMethod, 'x'.repeat(120))
+  assert.throws(() => createPaymentDocument({ ...input, paymentMethod: 'x'.repeat(121) }, now), /Payment method.*120/)
+})
+
+test('absent or blank payment methods remain absent without inferring from paid status', () => {
+  for (const paymentMethod of [undefined, null, '', '   ']) {
+    const record = createPaymentDocument({ ...input, paymentMethod }, now)
+    assert.equal(record.paymentMethod, undefined)
+    assert.equal(getClientPaymentDocument(record, 'en').paymentMethod, undefined)
+  }
+  const legacy = createPaymentDocument(input, now)
+  delete legacy.paymentMethod
+  assert.equal(getClientPaymentDocument(legacy, 'ru').paymentMethod, undefined)
+  assert.equal(updatePaymentDocument(legacy, { ...legacy, amount: '125.50' }, now).paymentMethod, undefined)
+})

@@ -20,6 +20,7 @@ export function PaymentDocument({ document, locale, selector, autoPrint = false,
       <div className="canonical-payment-details">
         <p>{ru ? 'Услуга' : 'Service'}: {document.service}</p>
         <p>{received ? (ru ? 'Получено' : 'Amount received') : (ru ? 'К оплате' : 'Amount due')}: {document.currency} {formatPaymentAmount(document, locale)}</p>
+        {document.paymentMethod && <p>{ru ? 'Способ оплаты' : 'Payment method'}: {document.paymentMethod}</p>}
         {document.documentNumber && <p>{received ? (ru ? 'Квитанция №' : 'Receipt No.') : (ru ? 'Счёт №' : 'Invoice No.')}: {document.documentNumber}</p>}
       </div>
       <DocumentSignature date={document.dateIssued} locale={locale} payment />
