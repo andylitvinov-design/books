@@ -607,3 +607,20 @@
   .canonical-signature { break-inside: avoid; }
   .admin-document-panels, .document-panel-actions { display: none; }
 }
+
+/* Short consultation workflow; optional fields stay in native disclosure panels. */
+.consultation-form { max-width: 680px; }
+.consultation-two-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.consultation-remedies { display: grid; gap: 12px; }
+.consultation-remedy-row { display: flex; gap: 8px; align-items: flex-start; }
+.consultation-remedy-row .prescription-remedy-search { flex: 1; min-width: 0; position: relative; }
+.consultation-remove { min-width: 44px; min-height: 44px; }
+.consultation-details { border-top: 1px solid #d8cfc5; padding-top: 14px; }
+.consultation-details summary { cursor: pointer; font-weight: 600; }
+.consultation-details > div { margin-top: 16px; }
+.consultation-details fieldset { margin-bottom: 20px; }
+.consultation-details textarea { margin-bottom: 12px; }
+.consultation-result { max-width: 870px; }
+.consultation-result .document-panel-actions { align-items: center; }
+.consultation-result .document-panel-actions button { cursor: pointer; }
+@media (max-width: 600px) { .consultation-two-columns { grid-template-columns: 1fr; } .prescription-toolbar { flex-wrap: wrap; } }

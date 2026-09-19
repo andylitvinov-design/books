@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { ConsultationDocumentActions } from '@/components/consultation-document-actions'
 import { AdminDocumentActions } from '@/components/admin-document-panels'
 import { PaymentDocument } from '@/components/payment-document'
 import { PrescriptionDocument } from '@/components/prescription-document'
@@ -22,14 +23,16 @@ export default async function AdminDocumentPreview({ params, searchParams }) {
   const record = store ? await store.findById(id) : undefined
   if (!record) notFound()
   const payment = record.kind === 'payment'
+  const linkedPayment = !payment && record.paymentDocumentId ? await store.findById(record.paymentDocumentId) : undefined
+  const consultationId = payment ? record.consultationId : linkedPayment?.consultationId === record.id ? record.id : undefined
   const document = payment ? getClientPaymentDocument({ ...record, status: 'active' }, locale) : getClientPrescription({ ...record, status: 'active' }, locale)
   if (!document) notFound()
   const Document = payment ? PaymentDocument : PrescriptionDocument
   return <>
     <nav className="prescription-admin-shell prescription-toolbar" aria-label="Admin document actions">
-      <Link href={`/admin/${payment ? 'payments' : 'prescriptions'}/${record.id}`}>Back to document</Link>
+      <Link href={consultationId ? `/admin/consultations/${consultationId}` : `/admin/${payment ? 'payments' : 'prescriptions'}/${record.id}`}>Back to document</Link>
       <Link href={`/admin/documents/${record.id}?locale=${locale === 'en' ? 'ru' : 'en'}`}>{locale === 'en' ? 'RU' : 'EN'}</Link>
-      <AdminDocumentActions record={record} locale={locale} />
+      {consultationId ? <ConsultationDocumentActions recordId={record.id} locale={locale} active={record.status === 'active'} /> : <AdminDocumentActions record={record} locale={locale} />}
     </nav>
     <Document document={document} locale={locale} admin autoPrint={query.print === '1'} />
   </>

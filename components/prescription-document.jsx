@@ -23,6 +23,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       <section>
         {document.items.map((item, index) => <section className="canonical-remedy" key={index}>
           <h2>{index + 1}. {item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}{item.potency && ` - ${item.potency}`}</h2>
+          {item.remedyPath && <Link href={item.remedyPath}>{locale === 'ru' ? 'Подробнее о препарате →' : 'Read remedy profile →'}</Link>}
           <dl>{['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key]).map((key) => <div key={key}><dt>{labels[key]}: </dt><dd>{item[key]}</dd></div>)}</dl>
         </section>)}
       </section>
