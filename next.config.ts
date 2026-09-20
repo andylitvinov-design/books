@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingIncludes: {
+    "/[locale]/prescriptions/[selector]": ["./assets/documents/andrii-signature-left-90.png"],
+    "/admin/documents/[id]": ["./assets/documents/andrii-signature-left-90.png"],
+    "/document-preview/[kind]": ["./assets/documents/andrii-signature-left-90.png"],
     "/books/[bookId]": [
       "./source-books/book-1-alchemy-soul/*.html",
       "./source-books/book-2-dao-books/*.html",

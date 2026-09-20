@@ -9,28 +9,29 @@ export function PrescriptionAccessGate({ locale, selector }) {
   const [unavailable, setUnavailable] = useState(false)
 
   useEffect(() => {
-    if (started.current) return
-    started.current = true
-    const secret = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : ''
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
-    if (!secretPattern.test(secret)) {
-      setUnavailable(true)
-      return
+    const exchange = () => {
+      const secret = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : ''
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+      if (started.current) return
+      if (!secretPattern.test(secret)) { setUnavailable(true); return }
+      started.current = true
+      setUnavailable(false)
+      void (async () => {
+        const response = await fetch('/api/prescription-access', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store', credentials: 'same-origin',
+          body: JSON.stringify({ selector, secret }),
+        })
+        if (response.ok) {
+          window.location.replace(`${window.location.pathname}${window.location.search}`)
+          return
+        }
+        setUnavailable(true)
+      })().catch(() => setUnavailable(true)).finally(() => { started.current = false })
     }
-    void (async () => {
-      const response = await fetch('/api/prescription-access', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store',
-        credentials: 'same-origin',
-        body: JSON.stringify({ selector, secret }),
-      })
-      if (response.ok) {
-        window.location.replace(`${window.location.pathname}${window.location.search}`)
-        return
-      }
-      setUnavailable(true)
-    })().catch(() => setUnavailable(true))
+    exchange()
+    window.addEventListener('hashchange', exchange)
+    return () => window.removeEventListener('hashchange', exchange)
   }, [selector])
 
   const labels = locale === 'ru'
