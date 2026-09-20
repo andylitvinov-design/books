@@ -1,0 +1,2251 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-09-20",
+  "baselineCommit": "3e8bed6",
+  "canonicalStatusAuthority": "content/remedies/{locale}/*.md; resolve at runtime, never trust registry status alone",
+  "sourceScope": [
+    "Telegram Desktop/ChatExport_2026-09-04/messages.html",
+    "source-books/**/*.html"
+  ],
+  "remedies": [
+    {
+      "slug": "natrum-muriaticum",
+      "preferredName": "Natrum Muriaticum",
+      "aliases": [
+        "Natrum Muriaticum",
+        "Natrum",
+        "NATRUM MURIATICUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "ignatia-amara",
+      "preferredName": "Ignatia Amara",
+      "aliases": [
+        "Ignatia Amara"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "cantharis",
+      "preferredName": "Cantharis",
+      "aliases": [
+        "Cantharis",
+        "Шпанская мушка"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "opium",
+      "preferredName": "Opium",
+      "aliases": [
+        "Opium",
+        "OPIUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "sulphur",
+      "preferredName": "Sulphur",
+      "aliases": [
+        "Sulphur",
+        "сера",
+        "Мудрец огня",
+        "SULPHUR",
+        "Мудрец"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "baryta-carbonica",
+      "preferredName": "Baryta Carbonica",
+      "aliases": [
+        "Baryta Carbonica",
+        "карбонат бария",
+        "BARYTA CARBONICA"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "urtica-urens",
+      "preferredName": "Urtica Urens",
+      "aliases": [
+        "Urtica Urens",
+        "энергия крапивы"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "ferrum-phosphoricum",
+      "preferredName": "Ferrum Phosphoricum",
+      "aliases": [
+        "Ferrum Phosphoricum",
+        "железо",
+        "FERRUM PHOSPHORICUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "lachesis",
+      "preferredName": "Lachesis",
+      "aliases": [
+        "Lachesis",
+        "яд змеи",
+        "LACHESIS"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "gelsemium",
+      "preferredName": "Gelsemium",
+      "aliases": [
+        "Gelsemium",
+        "GELSEMIUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "pulsatilla",
+      "preferredName": "Pulsatilla",
+      "aliases": [
+        "Pulsatilla",
+        "PULSATILLA"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "rhus-toxicodendron",
+      "preferredName": "Rhus Toxicodendron",
+      "aliases": [
+        "Rhus Toxicodendron",
+        "RHUS TOXICODENDRON"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "arsenicum-album",
+      "preferredName": "Arsenicum Album",
+      "aliases": [
+        "Arsenicum Album",
+        "ARSENICUM ALBUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "calcarea-carbonica",
+      "preferredName": "Calcarea Carbonica",
+      "aliases": [
+        "Calcarea Carbonica"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "kalium-sulphuricum",
+      "preferredName": "Kalium Sulphuricum",
+      "aliases": [
+        "Kalium Sulphuricum",
+        "KALIUM SULPHURICUM",
+        "Kalium sulphuricum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "coffea-cruda",
+      "preferredName": "Coffea Cruda",
+      "aliases": [
+        "Coffea Cruda"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "avena-sativa",
+      "preferredName": "Avena Sativa",
+      "aliases": [
+        "Avena Sativa",
+        "энергия овса"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "kalium-phosphoricum",
+      "preferredName": "Kalium Phosphoricum",
+      "aliases": [
+        "Kalium Phosphoricum",
+        "KALIUM PHOSPHORICUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "antimonium-crudum",
+      "preferredName": "Antimonium Crudum",
+      "aliases": [
+        "Antimonium Crudum",
+        "Висмут",
+        "ANTIMONIUM CRUDUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "argentum-nitricum",
+      "preferredName": "Argentum Nitricum",
+      "aliases": [
+        "Argentum Nitricum",
+        "Нитрат серебра",
+        "ARGENTUM NITRICUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "causticum",
+      "preferredName": "Causticum",
+      "aliases": [
+        "Causticum",
+        "CAUSTICUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "mezereum",
+      "preferredName": "Mezereum",
+      "aliases": [
+        "Mezereum",
+        "Вольчье лыко, кустарник",
+        "MEZEREUM",
+        "Вольчье лыко",
+        "кустарник"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "lac-humanum",
+      "preferredName": "Lac Humanum",
+      "aliases": [
+        "Lac Humanum",
+        "материнское молоко",
+        "LAC HUMANUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "lac-asinum",
+      "preferredName": "Lac Asinum",
+      "aliases": [
+        "Lac Asinum",
+        "Ослиное молоко",
+        "LAC ASINUM",
+        "Lac ac."
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "kali-carbonicum",
+      "preferredName": "Kali Carbonicum",
+      "aliases": [
+        "Kali Carbonicum",
+        "KALI CARBONICUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "cenchris-contortrix",
+      "preferredName": "Cenchris Contortrix",
+      "aliases": [
+        "Cenchris Contortrix",
+        "Медноголовая змея",
+        "CENCHRIS CONTORTRIX"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "testosteronum",
+      "preferredName": "Testosteronum",
+      "aliases": [
+        "Testosteronum",
+        "Тестостерон",
+        "Тестостеронум"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "oophorinum",
+      "preferredName": "Oophorinum",
+      "aliases": [
+        "Oophorinum",
+        "OOPHORINUM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bach-vine",
+      "preferredName": "Bach Vine",
+      "aliases": [
+        "Bach Vine",
+        "BACH VINE",
+        "Vine"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bach-crab-apple",
+      "preferredName": "Bach Crab Apple",
+      "aliases": [
+        "Bach Crab Apple",
+        "BACH CRAB APPLE",
+        "Crab Apple"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bach-oak",
+      "preferredName": "Bach Oak",
+      "aliases": [
+        "Bach Oak",
+        "BACH OAK",
+        "Oak"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bach-hornbeam",
+      "preferredName": "Bach Hornbeam",
+      "aliases": [
+        "Bach Hornbeam",
+        "BACH HORNBEAM",
+        "Hornbeam"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bach-wild-oat",
+      "preferredName": "Bach Wild Oat",
+      "aliases": [
+        "Bach Wild Oat",
+        "BACH WILD OAT",
+        "Wild Oat"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bach-elm",
+      "preferredName": "Bach Elm",
+      "aliases": [
+        "Bach Elm",
+        "BACH ELM",
+        "Elm"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "rock-rose",
+      "preferredName": "Rock Rose",
+      "aliases": [
+        "Rock Rose",
+        "ROCK ROSE"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "star-of-bethlehem",
+      "preferredName": "Star of Bethlehem",
+      "aliases": [
+        "Star of Bethlehem",
+        "STAR OF BETHLEHEM"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bach-sweet-chestnut",
+      "preferredName": "Bach Sweet Chestnut",
+      "aliases": [
+        "Bach Sweet Chestnut",
+        "BACH SWEET CHESTNUT",
+        "Sweet Chestnut"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bach-cerato",
+      "preferredName": "Bach Cerato",
+      "aliases": [
+        "Bach Cerato",
+        "BACH CERATO",
+        "Cerato"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "aurum-metallicum",
+      "preferredName": "Aurum metallicum",
+      "aliases": [
+        "Aurum metallicum",
+        "золото",
+        "Аурум",
+        "Aurum",
+        "Aurum Metallicum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message37"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "nitricum-acidum",
+      "preferredName": "Nitricum Acidum",
+      "aliases": [
+        "Nitricum Acidum",
+        "Азотная кислота"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message162"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "arnica",
+      "preferredName": "Arnica",
+      "aliases": [
+        "Arnica"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message168"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "phosphoricum-acidum",
+      "preferredName": "Phosphoricum Acidum",
+      "aliases": [
+        "Phosphoricum Acidum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message169"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "kalium-arsenicosum",
+      "preferredName": "Kalium Arsenicosum",
+      "aliases": [
+        "Kalium Arsenicosum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message222"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "spongia-tosta",
+      "preferredName": "Spongia Tosta",
+      "aliases": [
+        "Spongia Tosta",
+        "Морская губка"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message230"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "lycopodium",
+      "preferredName": "Lycopodium",
+      "aliases": [
+        "Lycopodium"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message240"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "carbo-vegetabilis",
+      "preferredName": "Carbo vegetabilis",
+      "aliases": [
+        "Carbo vegetabilis",
+        "Carbo Vegetables"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message244"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "sepia",
+      "preferredName": "Sepia",
+      "aliases": [
+        "Sepia"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message247"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "staphysagria",
+      "preferredName": "Staphysagria",
+      "aliases": [
+        "Staphysagria"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message277"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "secale-cornutum",
+      "preferredName": "Secale Cornutum",
+      "aliases": [
+        "Secale Cornutum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message285"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "hypericum-perforatum",
+      "preferredName": "Hypericum Perforatum",
+      "aliases": [
+        "Hypericum Perforatum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message294"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "carbo-animalis",
+      "preferredName": "Carbo Animalis",
+      "aliases": [
+        "Carbo Animalis"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message317"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "apis",
+      "preferredName": "Apis",
+      "aliases": [
+        "Apis",
+        "пчелиный яд"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message387"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "silicea",
+      "preferredName": "Silicea",
+      "aliases": [
+        "Silicea",
+        "кремень"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message390"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "natrum-carbonicum",
+      "preferredName": "Natrum Carbonicum",
+      "aliases": [
+        "Natrum Carbonicum",
+        "сода"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message398"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "magnesia-phosphorica",
+      "preferredName": "Magnesia Phosphorica",
+      "aliases": [
+        "Magnesia Phosphorica"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message408"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bryonia",
+      "preferredName": "Bryonia",
+      "aliases": [
+        "Bryonia"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message417"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "ruta-graveolens",
+      "preferredName": "Ruta Graveolens",
+      "aliases": [
+        "Ruta Graveolens",
+        "Рута душистая"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message425"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "carcinosinum",
+      "preferredName": "Carcinosinum",
+      "aliases": [
+        "Carcinosinum",
+        "Carsinosinum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message429",
+        "message1053"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "natrum-sulfuricum",
+      "preferredName": "Natrum Sulfuricum",
+      "aliases": [
+        "Natrum Sulfuricum",
+        "Сульфат натрия, глауберова соль"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message449"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "alumina",
+      "preferredName": "Alumina",
+      "aliases": [
+        "Alumina",
+        "Оксид алюминия"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message450"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "thuja",
+      "preferredName": "Thuja",
+      "aliases": [
+        "Thuja",
+        "Туя западная"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message452"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "psorinum",
+      "preferredName": "Psorinum",
+      "aliases": [
+        "Psorinum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message470"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "magnesium-muriaticum",
+      "preferredName": "Magnesium Muriaticum",
+      "aliases": [
+        "Magnesium Muriaticum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message487"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "borax",
+      "preferredName": "Borax",
+      "aliases": [
+        "Borax"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message496"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "cinchona",
+      "preferredName": "Cinchona",
+      "aliases": [
+        "Cinchona",
+        "хинна"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message565"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "mercurius-solubilis",
+      "preferredName": "Mercurius solubilis",
+      "aliases": [
+        "Mercurius solubilis",
+        "Mercurious Solubilis"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message570"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "phytolacca-decandra",
+      "preferredName": "Phytolacca Decandra",
+      "aliases": [
+        "Phytolacca Decandra",
+        "Фитолакка"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message575"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "kali-muriaticum",
+      "preferredName": "Kali Muriaticum",
+      "aliases": [
+        "Kali Muriaticum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message601"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "hydrogenium",
+      "preferredName": "Hydrogenium",
+      "aliases": [
+        "Hydrogenium",
+        "водород"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message606"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "teucrium",
+      "preferredName": "Teucrium",
+      "aliases": [
+        "Teucrium",
+        "чабрец"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message609"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "coccus-cacti",
+      "preferredName": "Coccus Cacti",
+      "aliases": [
+        "Coccus Cacti"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message614"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "camphora",
+      "preferredName": "Camphora",
+      "aliases": [
+        "Camphora",
+        "камфора"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message622"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "platina-metallicum",
+      "preferredName": "Platina Metallicum",
+      "aliases": [
+        "Platina Metallicum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message667"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "baptisia-tinctoria",
+      "preferredName": "Baptisia Tinctoria",
+      "aliases": [
+        "Baptisia Tinctoria"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message670"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "sanguinaria-canadensis",
+      "preferredName": "Sanguinaria Canadensis",
+      "aliases": [
+        "Sanguinaria Canadensis",
+        "Сангвинария, кровавый корень"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message678"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "veratrum-album",
+      "preferredName": "Veratrum Album",
+      "aliases": [
+        "Veratrum Album"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message680"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "hydrastis-canadensis",
+      "preferredName": "Hydrastis Canadensis",
+      "aliases": [
+        "Hydrastis Canadensis",
+        "Гидрастис, Золотарник канадский"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message681"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "cobaltum-metallicum",
+      "preferredName": "Cobaltum Metallicum",
+      "aliases": [
+        "Cobaltum Metallicum",
+        "Кобальт"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message682"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "kalium-iodatum",
+      "preferredName": "Kalium Iodatum",
+      "aliases": [
+        "Kalium Iodatum",
+        "Иодистый калий"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message696"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "colchicum-autumnale",
+      "preferredName": "Colchicum Autumnale",
+      "aliases": [
+        "Colchicum Autumnale",
+        "Безвременник"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message704"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "cocculus-indicus",
+      "preferredName": "Cocculus Indicus",
+      "aliases": [
+        "Cocculus Indicus",
+        "Коккулюс, ядовитая лиана из Индии"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message725"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "aethusa-cynapium",
+      "preferredName": "Aethusa Cynapium",
+      "aliases": [
+        "Aethusa Cynapium",
+        "Собачья петрушка"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message733"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "beryllium-metallicum",
+      "preferredName": "Beryllium Metallicum",
+      "aliases": [
+        "Beryllium Metallicum",
+        "Бериллий / бериллий металл"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message735"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bovista-lycoperdon",
+      "preferredName": "Bovista Lycoperdon",
+      "aliases": [
+        "Bovista Lycoperdon",
+        "гриб пылевик"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message737"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "bothrops-lanceolatus",
+      "preferredName": "Bothrops Lanceolatus",
+      "aliases": [
+        "Bothrops Lanceolatus",
+        "Ботропс, копьеголовая змея"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message749"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "ambra-grisea",
+      "preferredName": "Ambra Grisea",
+      "aliases": [
+        "Ambra Grisea"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message751"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "folliculinum",
+      "preferredName": "Folliculinum",
+      "aliases": [
+        "Folliculinum",
+        "Женский половой гармон экстраген"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message755"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "helleborus-niger",
+      "preferredName": "Helleborus Niger",
+      "aliases": [
+        "Helleborus Niger",
+        "Черный морозник"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message760"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "magnesium-carbonicum",
+      "preferredName": "Magnesium Carbonicum",
+      "aliases": [
+        "Magnesium Carbonicum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message802"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "saccharum-officinale",
+      "preferredName": "Saccharum Officinale",
+      "aliases": [
+        "Saccharum Officinale",
+        "Тростниковый сахар"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message806"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "cyclamen-europaeum",
+      "preferredName": "Cyclamen Europaeum",
+      "aliases": [
+        "Cyclamen Europaeum",
+        "Цикламен / альпийская фиалка"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message819"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "syzygium-jambolanum",
+      "preferredName": "Syzygium jambolanum",
+      "aliases": [
+        "Syzygium jambolanum",
+        "Syzygiun Jambolanum"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message826"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "rock-water",
+      "preferredName": "Rock Water",
+      "aliases": [
+        "Rock Water"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message848"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "saccharum-lactis",
+      "preferredName": "Saccharum Lactis",
+      "aliases": [
+        "Saccharum Lactis",
+        "Молочный сахар"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message1025"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
+    },
+    {
+      "slug": "aconitum",
+      "preferredName": "Aconitum",
+      "aliases": [
+        "Aconitum",
+        "Аконит",
+        "Аконитум",
+        "aconit",
+        "Aconite"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message23",
+        "message31",
+        "message34",
+        "message47",
+        "message48",
+        "message76",
+        "message137",
+        "message185",
+        "message209",
+        "message276",
+        "message312",
+        "message439",
+        "message693",
+        "message757",
+        "message1018"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html",
+        "source-books/book-2-dao-books/dao_practicum_cases_remedies.html"
+      ],
+      "reviewStatus": "profile_prepared",
+      "proposedStatus": "canonical candidate",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Standalone substance, Guardian archetype, states and transformation; author does not establish the species napellus.",
+      "primaryCandidate": "message31",
+      "additionalSourceIds": [
+        "daomagic/139"
+      ],
+      "supplementaryMaterials": [
+        {
+          "sourceMessageId": "message23",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "case"
+        },
+        {
+          "sourceMessageId": "message34",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "case"
+        },
+        {
+          "sourceMessageId": "message47",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "case"
+        },
+        {
+          "sourceMessageId": "message48",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "case"
+        },
+        {
+          "sourceMessageId": "message76",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "case"
+        },
+        {
+          "sourceMessageId": "message137",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "case"
+        },
+        {
+          "sourceMessageId": "message185",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "case"
+        },
+        {
+          "sourceMessageId": "message209",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "thematic mention"
+        },
+        {
+          "sourceMessageId": "message276",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "case"
+        },
+        {
+          "sourceMessageId": "message312",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "thematic mention"
+        },
+        {
+          "sourceMessageId": "message439",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "case"
+        },
+        {
+          "sourceMessageId": "message693",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "thematic mention"
+        },
+        {
+          "sourceMessageId": "message757",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "thematic mention"
+        },
+        {
+          "sourceMessageId": "message1018",
+          "sourceChannel": "psychic_alchemy",
+          "classification": "comparison"
+        },
+        {
+          "sourceMessageId": "daomagic/139",
+          "sourceChannel": "daomagic",
+          "classification": "thematic mention",
+          "sourceFile": "source-books/book-2-dao-books/dao_practicum_cases_remedies.html"
+        }
+      ]
+    },
+    {
+      "slug": "medorrhinum",
+      "preferredName": "Medorrhinum",
+      "aliases": [
+        "Medorrhinum",
+        "Медорринум"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message67",
+        "message312",
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html",
+        "source-books/book-2-dao-books/dao_wuxing_five_elements.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "source-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Case and multi-remedy thematic lists; no standalone portrait found.",
+      "additionalSourceIds": [
+        "daomagic/141"
+      ]
+    },
+    {
+      "slug": "aqua-marina",
+      "preferredName": "Aqua Marina",
+      "aliases": [
+        "Aqua Marina"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message194"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "source-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Short entry in a four-remedy comparison (message194), not a standalone card.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "luna",
+      "preferredName": "Luna",
+      "aliases": [
+        "Luna"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message194",
+        "message857"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "source-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Short comparison in message194; generic lunar imagery/astrology excluded. message857 names a lunar preparation in a planetary group.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "anandamide",
+      "preferredName": "Anandamide",
+      "aliases": [
+        "Anandamide"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Named only in the early-trauma remedy list.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "cineraria",
+      "preferredName": "Cineraria",
+      "aliases": [
+        "Cineraria",
+        "Cineraria Maritima",
+        "Цинерария",
+        "Пепельник приморский"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message757",
+        "message793"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_oils.html"
+      ],
+      "reviewStatus": "candidate_needs_editorial_review",
+      "proposedStatus": "canonical candidate",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Complete Cineraria Maritima portrait in message793: substance, archetype, states, effects, transformation, meditation and ritual. Also misplaced in the oils source guide.",
+      "primaryCandidate": "message793",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "amniotic-fluid",
+      "preferredName": "Amniotic Fluid",
+      "aliases": [
+        "Amniotic Fluid",
+        "Околоплодные воды"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message411",
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html",
+        "source-books/book-2-dao-books/dao_magic_basics.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "source-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Short description in a multi-remedy source/attachment list; no individual portrait.",
+      "additionalSourceIds": [
+        "daomagic/145"
+      ]
+    },
+    {
+      "slug": "placenta",
+      "preferredName": "Placenta",
+      "aliases": [
+        "Placenta",
+        "Плацента",
+        "Placentum"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message411",
+        "message442",
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "source-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Placenta/Placentum observations in multi-remedy posts. Placenta Humana and Placenta Totalis are not silently equated with this generic record.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "lac-amnioticum",
+      "preferredName": "Lac Amnioticum",
+      "aliases": [
+        "Lac Amnioticum"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Named in message757 only; not merged with Amniotic Fluid without author identity evidence.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "aquamarinus",
+      "preferredName": "Aquamarinus",
+      "aliases": [
+        "Aquamarinus"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Named in message757 only; not merged with Aqua Marina without author identity evidence.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "lac-caninum",
+      "preferredName": "Lac Caninum",
+      "aliases": [
+        "Lac Caninum",
+        "Молоко собаки",
+        "Лак канинум"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message151",
+        "message411",
+        "message482",
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "candidate_needs_editorial_review",
+      "proposedStatus": "canonical candidate",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "message151 explicitly introduces the remedy, identifies dog milk, states, archetypes and effect: standalone source missed by the classifier.",
+      "primaryCandidate": "message151",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "berberis",
+      "preferredName": "Berberis",
+      "aliases": [
+        "Berberis"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message711",
+        "message757",
+        "message808"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_bach_foundations.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_oils.html",
+        "source-books/book-2-dao-books/dao_wuxing_five_elements.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Thematic multi-remedy lists; botanical Berberis vulgaris in Dao source retained as context, not used to infer a canonical species.",
+      "additionalSourceIds": [
+        "daomagic/134",
+        "daomagic/141"
+      ]
+    },
+    {
+      "slug": "plumbum-metallicum",
+      "preferredName": "Plumbum Metallicum",
+      "aliases": [
+        "Plumbum Metallicum",
+        "Plumbum",
+        "Свинец"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message232",
+        "message312",
+        "message320",
+        "message441",
+        "message482",
+        "message720",
+        "message757",
+        "message988",
+        "message990"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_brain_protocols.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_oils.html"
+      ],
+      "reviewStatus": "candidate_needs_editorial_review",
+      "proposedStatus": "canonical candidate",
+      "previousStatus": "mention_only",
+      "confidence": "medium",
+      "notes": "message232 is a coherent standalone lead/Plumbum therapeutic narrative (substance, symbolism, states, effect). Candidate requires naming/scope review: author also discusses symbols, not only preparations.",
+      "primaryCandidate": "message232",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "helium",
+      "preferredName": "Helium",
+      "aliases": [
+        "Helium"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Named only in early-trauma list.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "dolphin-milk",
+      "preferredName": "Dolphin Milk",
+      "aliases": [
+        "Dolphin Milk",
+        "Lac Delphinum",
+        "Молоко дельфина"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message411",
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html",
+        "source-books/book-2-dao-books/dao_magic_basics.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "source-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Dolphin Milk in message757; Lac Delphinum explicitly glossed as dolphin milk in message411. Dolphin music in message413 excluded.",
+      "additionalSourceIds": [
+        "daomagic/145"
+      ]
+    },
+    {
+      "slug": "crocus-sativus",
+      "preferredName": "Crocus Sativus",
+      "aliases": [
+        "Crocus Sativus"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message742",
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Multi-remedy thematic comparisons. Culinary/aromatherapy saffron in message9 excluded.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "tuberculinum",
+      "preferredName": "Tuberculinum",
+      "aliases": [
+        "Tuberculinum"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message757",
+        "message1057"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "List in message757 and miasm terminology in1057, no standalone remedy portrait;1056 adjective alone not treated as remedy evidence.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "moschus",
+      "preferredName": "Moschus",
+      "aliases": [
+        "Moschus"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Only message757 establishes Moschus; Nux moschata occurrences are a different name and excluded.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "anacardium",
+      "preferredName": "Anacardium",
+      "aliases": [
+        "Anacardium"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message312",
+        "message482",
+        "message712",
+        "message742",
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_brain_protocols.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html",
+        "source-books/book-2-dao-books/dao_wuxing_five_elements.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Multiple comparisons/lists but no standalone portrait found.",
+      "additionalSourceIds": [
+        "daomagic/135"
+      ]
+    },
+    {
+      "slug": "magnesium-sulphiricum",
+      "preferredName": "Magnesium Sulphiricum",
+      "aliases": [
+        "Magnesium Sulphiricum",
+        "Magnesium Sulphuricum",
+        "Magnesium Sulfuricum"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message757"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_naturopathy_hormones.html",
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_foundations.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "mention-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Source spelling Sulphiricum retained; Sulphuricum/Sulfuricum added only as editorial search spelling variants.",
+      "additionalSourceIds": []
+    },
+    {
+      "slug": "aspen",
+      "preferredName": "Aspen",
+      "aliases": [
+        "Aspen",
+        "Bach Aspen"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message1026"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-2-dao-books/dao_practicum_cases_remedies.html",
+        "source-books/book-2-dao-books/dao_wuxing_model_steps.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "source-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Comparative observations with Rock Rose and White Chestnut in1026; Dao thematic lists add context, not a standalone card.",
+      "additionalSourceIds": [
+        "daomagic/139",
+        "daomagic/286",
+        "daomagic/312"
+      ]
+    },
+    {
+      "slug": "white-chestnut",
+      "preferredName": "White Chestnut",
+      "aliases": [
+        "White Chestnut"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message1026"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-index.csv",
+        "source-books/book-2-dao-books/dao_wuxing_model_steps.html"
+      ],
+      "reviewStatus": "reviewed_no_standalone",
+      "proposedStatus": "source-only",
+      "previousStatus": "mention_only",
+      "confidence": "high",
+      "notes": "Comparative observation in1026 and Dao thematic list; no standalone card found.",
+      "additionalSourceIds": [
+        "daomagic/299"
+      ]
+    },
+    {
+      "slug": "x-ray",
+      "preferredName": "X-ray",
+      "aliases": [
+        "X-ray",
+        "Х-рей",
+        "X ray"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message36"
+      ],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "grouped_source_not_profile_reviewed",
+      "proposedStatus": "source-only",
+      "notes": "Name split from the explicit grouped inventory heading; this creates no canonical card."
+    },
+    {
+      "slug": "north-pole",
+      "preferredName": "Северный Полюс",
+      "aliases": [
+        "Северный Полюс",
+        "North Pole"
+      ],
+      "status": "source_only",
+      "sourceMessageIds": [
+        "message36",
+        "message194"
+      ],
+      "sourceFiles": [
+        "source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html"
+      ],
+      "reviewStatus": "grouped_source_not_profile_reviewed",
+      "proposedStatus": "source-only",
+      "notes": "Name split from the explicit grouped inventory heading; this creates no canonical card."
+    }
+  ],
+  "telegramExportSha256": "f8098de2df2eb4e8ff8b10c733f68fbf4f494167e544df55d2b3ce290faed50d"
+}

@@ -6,6 +6,7 @@ const inventoryPath = path.join(projectRoot, 'data', 'remedy-source-inventory.cs
 const telegramIndexPath = path.join(projectRoot, 'data', 'telegram-psychic-alchemy-index.csv')
 const baselineStatuses = new Set(['confirmed', 'duplicate', 'grouped'])
 const phaseLSourceSpellings = new Map([
+  ['Aconitum', 'Aconitum; Аконит; Аконитум; aconit; Aconite'],
   ['Carbo vegetabilis', 'Carbo Vegetables; Carbo vegetabilis'],
   ['Mercurius solubilis', 'Mercurious Solubilis; Mercurius solubilis'],
   ['Syzygium jambolanum', 'Syzygiun Jambolanum; Syzygium jambolanum'],
@@ -13,11 +14,11 @@ const phaseLSourceSpellings = new Map([
   ['Carcinosinum', 'Carsinosinum; Carcinosinum'],
 ])
 const phaseLCommonNames = new Map([
+  ['Aconitum', 'Аконит'],
   ['Aurum metallicum', 'золото'],
 ])
 
 const mentionOnly = [
-  ['Aconitum', 'aconitum', ['message34', 'message47', 'message48']],
   ['Medorrhinum', 'medorrhinum', ['message67', 'message757']],
   ['Aqua Marina', 'aqua-marina', ['message194']],
   ['Luna', 'luna', ['message194']],

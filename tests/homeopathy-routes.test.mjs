@@ -10,16 +10,16 @@ import {
   searchRemedies,
 } from '../data/remedies.js'
 
-test('builds all 94 remedy routes for each supported locale and no unknown locale', () => {
+test('builds all 95 remedy routes for each supported locale and no unknown locale', () => {
   assert.equal(isSupportedLocale('ru'), true)
   assert.equal(isSupportedLocale('en'), true)
   assert.equal(isSupportedLocale('de'), false)
 
   const params = getRemedyRouteParams()
-  assert.equal(params.length, 188)
-  assert.equal(params.filter(({ locale }) => locale === 'ru').length, 94)
-  assert.equal(params.filter(({ locale }) => locale === 'en').length, 94)
-  assert.equal(new Set(params.map(({ locale, slug }) => `${locale}/${slug}`)).size, 188)
+  assert.equal(params.length, 190)
+  assert.equal(params.filter(({ locale }) => locale === 'ru').length, 95)
+  assert.equal(params.filter(({ locale }) => locale === 'en').length, 95)
+  assert.equal(new Set(params.map(({ locale, slug }) => `${locale}/${slug}`)).size, 190)
   assert.equal(getRemedy('ru', 'not-a-remedy'), undefined)
 })
 
@@ -35,10 +35,22 @@ test('searches partial Latin names, source Russian names, abbreviations, and Cyr
 
 test('groups every remedy alphabetically and preserves the current slug on language switch', () => {
   const grouped = getAlphabeticalRemedies('ru')
-  assert.equal(grouped.flatMap(({ remedies }) => remedies).length, 94)
+  assert.equal(grouped.flatMap(({ remedies }) => remedies).length, 95)
   assert.equal(grouped.some(({ letter }) => letter === 'A'), true)
   assert.equal(grouped.some(({ letter }) => letter === 'S'), true)
   assert.equal(getRemedySwitchPath('en', 'natrum-muriaticum'), '/en/homeopathy/remedies/natrum-muriaticum')
   assert.equal(getRemedySwitchPath('ru', 'natrum-muriaticum'), '/ru/homeopathy/remedies/natrum-muriaticum')
   assert.equal(getRemedySwitchPath('en', 'aurum-metallicum'), '/en/homeopathy/remedies/aurum-metallicum')
+})
+
+test('Aconitum author naming variants resolve to the same canonical profile in both locales', () => {
+  for (const locale of ['ru', 'en']) {
+    for (const query of ['aconit', 'Aconitum', 'Аконит', 'Аконитум', 'Aconite']) {
+      assert.deepEqual(searchRemedies(locale, query).map(({ slug }) => slug), ['aconitum'])
+    }
+    const card = getRemedy(locale, 'aconitum')
+    assert.equal(card.canonical_latin_name, 'Aconitum')
+    assert.match(card.primary_source_message, /^message31 \(01\.09\.2024 /)
+    assert.doesNotMatch(card.canonical_latin_name, /napellus/i)
+  }
 })

@@ -4,12 +4,12 @@ import test from 'node:test'
 
 import { getBook02Remedies, getRemedyDirectory } from '../data/remedies.js'
 
-test('Book 02 reads the same 94 sorted canonical remedy cards as the standalone directory', () => {
+test('Book 02 reads the same 95 sorted canonical remedy cards as the standalone directory', () => {
   for (const locale of ['ru', 'en']) {
     const remedies = getBook02Remedies(locale)
     const directory = getRemedyDirectory(locale)
 
-    assert.equal(remedies.length, 94)
+    assert.equal(remedies.length, 95)
     assert.deepEqual(remedies.map(({ slug }) => slug), directory.map(({ slug }) => slug))
     assert.equal(remedies.find(({ slug }) => slug === 'aurum-metallicum').primary_image, '/media/remedies/aurum-metallicum/message37-1.jpg')
     const carcinosinum = remedies.find(({ slug }) => slug === 'carcinosinum')
@@ -27,7 +27,7 @@ test('Book 02 reference renderer provides indexed canonical cards without the ar
   assert.match(page, /book\.id === "alchemy-homeopathy-remedies"/)
   assert.match(page, /getBook02Remedies/)
   assert.match(reference, /Найти препарат/)
-  assert.match(reference, /Remedies \(94\)/)
+  assert.match(reference, /Remedies.*remedies\.length/)
   assert.match(reference, /#remedy-\$\{entry\.slug\}/)
   assert.match(reference, /homeopathy\/remedies\/\$\{entry\.slug\}/)
   assert.match(reference, /source_messages/)

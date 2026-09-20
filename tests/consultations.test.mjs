@@ -14,7 +14,7 @@ test('consultation defaults and bilingual projections isolate payment and clinic
 })
 test('validation rejects either invalid document before store mutation',async()=>{
  let writes=0;const store={saveConsultationPair(){writes++}}
- for(const extra of [{amount:'bad'},{items:[{displayNameOverride:'guess'}]},{items:[{remedySlug:'unknown'}]},{consultationDate:'2026-02-30'}]) await assert.rejects(create(store,extra))
+ for(const extra of [{amount:'bad'},{items:[{}]},{items:[{remedySlug:'unknown'}]},{consultationDate:'2026-02-30'}]) await assert.rejects(create(store,extra))
  assert.equal(writes,0)
 })
 test('concurrent creation retries return one pair and survive a lost response',async()=>{

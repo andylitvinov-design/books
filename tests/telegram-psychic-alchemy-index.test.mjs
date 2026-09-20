@@ -50,12 +50,20 @@ test('Phase L keeps Book 02 cards, source variants, and approved canonical names
   const rows = readIndex()
   const books = Object.groupBy(rows, ({ book_assignment }) => book_assignment)
   assert.equal(books.book_01.length, 252)
-  assert.equal(books.book_02.length, 111)
+  assert.equal(books.book_02.length, 112)
   assert.equal(books.book_03.length, 133)
-  assert.equal(books.book_04.length, 278)
-  assert.equal(rows.filter(({ remedy_focus }) => remedy_focus === 'full_card').length, 95)
+  assert.equal(books.book_04.length, 277)
+  assert.equal(rows.filter(({ remedy_focus }) => remedy_focus === 'full_card').length, 96)
   assert.equal(rows.filter(({ remedy_focus }) => remedy_focus === 'supporting_post').length, 16)
   assert.equal(rows.filter(({ duplicate_of_message_id }) => duplicate_of_message_id).length, 2)
+
+  // Reviewed message31 moves from Book 04 to a standalone Book 02 source.
+  const aconitum = rows.find(({ message_id }) => message_id === 'message31')
+  assert.match(aconitum.text_excerpt, /^Красивое высокогорное растение - Аконит/u)
+  assert.equal(aconitum.book_assignment, 'book_02')
+  assert.equal(aconitum.remedy_focus, 'full_card')
+  assert.equal(aconitum.canonical_remedy, 'Aconitum')
+  assert.equal(aconitum.canonical_card_message_id, 'message31')
 
   const aurum = rows.find(({ message_id }) => message_id === 'message37')
   assert.equal(aurum.canonical_remedy, 'Aurum metallicum')

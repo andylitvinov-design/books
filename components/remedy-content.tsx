@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { Locale, Remedy } from "@/data/remedies";
+import { countSupplementarySources } from "@/lib/remedy-sources";
 
 type RemedyContentProps = {
   locale: Locale;
@@ -174,7 +175,7 @@ function SectionLayout({ sections, locale, variant, sourceUrl }: { sections: Sec
 export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence = true }: RemedyContentProps) {
   const labels = copy[locale];
   const content = splitDescription(remedy.description);
-  const supplementaryCount = (remedy.supplementary_materials?.match(/message-?\d+/gi) ?? []).length;
+  const supplementaryCount = countSupplementarySources(remedy.supplementary_materials);
 
   return <div className={`remedy-content-body remedy-content-body--${variant}`}>
     {showEssence ? <RemedyEssence locale={locale} remedy={remedy} /> : null}
