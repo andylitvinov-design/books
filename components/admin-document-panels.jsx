@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { markPaymentReceivedAction, revokePaymentAccessAction, reactivatePaymentAction } from '@/app/admin/payments/actions'
 import { PrescriptionLinkIssuer } from './prescription-link-issuer'
 
-export function AdminDocumentActions({ record, locale = 'en' }) {
+export function AdminDocumentActions({ record, locale = record.languagePreference === 'ru' ? 'ru' : 'en' }) {
   return <div className="document-panel-actions">
     <Link href={`/admin/documents/${record.id}?locale=${locale}`}>Preview / Open</Link>
     <a href={`/admin/api/documents/${record.id}/pdf?locale=${locale}`} download>Download PDF</a>

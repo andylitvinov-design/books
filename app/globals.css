@@ -629,3 +629,37 @@
 .prescription-admin-form .prescription-remedy-results button small { display: block; }
 .prescription-admin-form .prescription-remedy-results button small { margin-top: 3px; font-size: .75rem; color: #626962; }
 .prescription-admin-form .prescription-remedy-results .consultation-source-status { font-weight: 600; }
+
+/* One language choice, two quiet document sections. */
+.consultation-result { max-width: 870px; }
+.consultation-result-heading { display:flex; justify-content:space-between; align-items:center; gap:24px; margin:34px 0 24px; }
+.consultation-result-heading h2 { margin:0; font-size:28px; line-height:1.2; }
+.consultation-result-heading p { margin:8px 0 0; color:#796b5e; }
+.consultation-language { border:0; padding:0; margin:0; }
+.consultation-language legend { font-size:12px; color:#796b5e; margin-bottom:8px; }
+.consultation-language > div { display:flex; background:#e8e0d3; border-radius:9px; padding:3px; }
+.consultation-language button { min-width:55px; min-height:42px; border:0; border-radius:7px; background:transparent; cursor:pointer; color:#65584b; transition:background-color .15s,color .15s; }
+.consultation-language button[aria-pressed="true"] { background:#594737; color:#fffdf8; }
+.consultation-result-document { padding:26px 0; border-top:1px solid #d7cdbf; }
+.consultation-result-document h2 { margin:0; font-family:inherit; font-size:12px; font-weight:600; letter-spacing:.09em; color:#796b5e; }
+.consultation-document-meta { margin:9px 0 20px; font-size:20px; }
+.consultation-result-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.consultation-result-actions > a,.consultation-result-actions > button { display:inline-flex; align-items:center; justify-content:center; padding:10px 15px; min-height:44px; border:1px solid transparent; border-radius:7px; font:inherit; font-size:14px; font-weight:500; text-decoration:none; color:#594737; background:transparent; cursor:pointer; transition:background-color .15s; }
+.consultation-result-actions > a:hover { background:#e8e0d3; }
+.consultation-result-actions > .consultation-copy { background:#594737; color:#fffdf8; min-width:110px; }
+.consultation-result-actions > .consultation-copy:hover { background:#403225; }
+.consultation-result-actions > button:disabled { opacity:.55; cursor:default; }
+.consultation-result button:focus-visible,.consultation-result a:focus-visible,.consultation-result summary:focus-visible { outline:2px solid #594737; outline-offset:3px; }
+.consultation-copy-feedback { min-height:18px; margin:6px 0; font-size:12px; color:#796b5e; }
+.consultation-edit-link { display:inline-block; font-size:13px; color:#796b5e; text-underline-offset:3px; }
+.consultation-access { margin-top:14px; font-size:13px; color:#796b5e; }
+.consultation-access summary { cursor:pointer; width:fit-content; padding:5px 0; }
+.consultation-access form { padding:12px 0; }
+.consultation-access button { padding:8px 12px; border:1px solid #c9bbaa; border-radius:5px; cursor:pointer; }
+@media (max-width:540px) {
+  .consultation-result-heading { align-items:flex-start; flex-direction:column; gap:20px; margin-top:24px; }
+  .consultation-result-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .consultation-result-actions > a,.consultation-result-actions > button { padding:10px 8px; }
+  .consultation-result-heading h2 { overflow-wrap:anywhere; }
+}
+@media (prefers-reduced-motion:reduce) { .consultation-result button,.consultation-result a { transition:none; } }
