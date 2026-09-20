@@ -12,3 +12,7 @@ Interactions: instant selected-state/action URL updates without navigation; temp
 - Reactivation is explicit inside access settings and does not revive revoked credentials. Ordinary language changes never call lifecycle endpoints.
 - Verify URL combinations, credential stability/concurrent copying, pluralization and lifecycle guards; run all tests/lint/build and hosted desktop/mobile bilingual PDF/access smoke.
 - Stop at Preview review; do not merge the redesign or deploy it to Production.
+
+## Accepted localization follow-up
+
+The shared selector also controls all result-screen UI copy: navigation/title, document headings/metadata, actions, edit/access controls and feedback. RU uses Russian plural forms and number/date formatting. Record data is not translated. Locale switching preserves mounted document identities and their credential cache. Browser title and page language follow selection.

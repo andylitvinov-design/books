@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { resultCopy } from '@/lib/consultations/result-copy'
 import { createDocumentLinkCache, documentActionUrls } from '@/lib/consultations/result-actions'
 
 export function ConsultationDocumentActions({ recordId, locale, active }) {
@@ -15,6 +16,7 @@ export function ConsultationDocumentActions({ recordId, locale, active }) {
     return response.json()
   })
   useEffect(() => () => clearTimeout(timer.current), [])
+  const labels = resultCopy(locale)
   const urls = documentActionUrls(recordId, locale)
   const copy = async () => {
     setCopying(true); setStatus(''); setCopiedLocale(null)
@@ -23,16 +25,16 @@ export function ConsultationDocumentActions({ recordId, locale, active }) {
       setCopiedLocale(locale)
       clearTimeout(timer.current)
       timer.current = setTimeout(() => setCopiedLocale(null), 2200)
-    } catch { setStatus('Could not copy the link. Please try again.') }
+    } catch { setStatus('error') }
     finally { setCopying(false) }
   }
   return <>
     <div className="consultation-result-actions">
-      <a href={urls.open}>Open</a>
-      <button className="consultation-copy" type="button" disabled={!active || copying} onClick={copy}>{copying ? 'Copying…' : copiedLocale === locale ? '✓ Copied' : 'Copy link'}</button>
-      <a href={urls.pdf} download>Download PDF</a>
-      <a href={urls.print}>Print</a>
+      <a href={urls.open}>{labels.open}</a>
+      <button className="consultation-copy" type="button" disabled={!active || copying} onClick={copy}>{copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}</button>
+      <a href={urls.pdf} download>{labels.pdf}</a>
+      <a href={urls.print}>{labels.print}</a>
     </div>
-    <p className="consultation-copy-feedback" role="status" aria-live="polite">{status || (copiedLocale === locale ? `${locale === 'ru' ? 'Russian' : 'English'} link copied` : !active ? 'Client access is disabled.' : '')}</p>
+    <p className="consultation-copy-feedback" role="status" aria-live="polite">{status ? labels.copyError : copiedLocale === locale ? labels.copiedFeedback : !active ? labels.disabled : ''}</p>
   </>
 }
