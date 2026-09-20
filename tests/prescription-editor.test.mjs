@@ -29,3 +29,13 @@ test('partially entered rows are not silently discarded', () => {
   rows[2].dosage = 'Unassigned dose'
   assert.equal(JSON.parse(serializePrescriptionRows(rows)).length, 1)
 })
+
+test('source-only and custom rows retain their own names with mixed search options', () => {
+  const rows = initialPrescriptionRows({ items: [
+    { remedySlug: null, displayNameOverride: 'My Custom Remedy', sourceStatus: 'custom' },
+    { remedySlug: null, displayNameOverride: 'Source Two', sourceStatus: 'source_only' },
+  ] }, [{ slug: null, label: 'Source One' }, { slug: null, label: 'Source Two' }])
+  assert.equal(rows[0].query, 'My Custom Remedy')
+  assert.equal(rows[1].query, 'Source Two')
+  assert.deepEqual(JSON.parse(serializePrescriptionRows(rows)).map((row) => row.sourceStatus), ['custom', 'source_only'])
+})

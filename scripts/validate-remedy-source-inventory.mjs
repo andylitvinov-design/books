@@ -133,7 +133,7 @@ for (const row of rows.filter(({ candidate_status }) => candidate_status === 'du
 }
 
 const enMissing = rows.filter(({ candidate_status, needs_translation }) => candidate_status === 'confirmed' && needs_translation === 'yes').length
-if (counts.confirmed !== 94 || counts.duplicate !== 8 || counts.grouped !== 1 || counts.mention_only !== 22) {
+if (counts.confirmed !== 95 || counts.duplicate !== 8 || counts.grouped !== 1 || counts.mention_only !== 21) {
   fail(`unexpected Phase L inventory counts: confirmed=${counts.confirmed} duplicates=${counts.duplicate} grouped=${counts.grouped} mention_only=${counts.mention_only}`)
 }
 

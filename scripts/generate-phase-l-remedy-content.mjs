@@ -126,7 +126,7 @@ function mergeFullCards(primary, additions) {
 }
 
 const inventory = readCsv(inventoryPath).filter(({ candidate_status }) => candidate_status === 'confirmed')
-if (inventory.length !== 94) throw new Error(`expected 94 confirmed remedies, received ${inventory.length}`)
+if (inventory.length !== 95) throw new Error(`expected 95 confirmed remedies, received ${inventory.length}`)
 const index = readCsv(indexPath)
 const telegram = telegramTexts(exportRoot)
 

@@ -3,13 +3,13 @@ import test from 'node:test'
 
 import { getRobotsPolicy, getSitemapEntries } from '../data/seo.js'
 
-test('sitemap includes all localized Homeopathy indexes and all 188 paired remedy routes', () => {
+test('sitemap includes all localized Homeopathy indexes and all 190 paired remedy routes', () => {
   const sitemap = getSitemapEntries('https://example.test')
   const urls = sitemap.map(({ url }) => url)
   const remedyUrls = urls.filter((url) => url.includes('/homeopathy/remedies/'))
 
-  assert.equal(sitemap.length, 216)
-  assert.equal(remedyUrls.length, 188)
+  assert.equal(sitemap.length, 218)
+  assert.equal(remedyUrls.length, 190)
   assert.equal(urls.includes('https://example.test/ru/homeopathy'), true)
   assert.equal(urls.includes('https://example.test/en/homeopathy'), true)
   assert.equal(urls.includes('https://example.test/ru/homeopathy/remedies'), true)

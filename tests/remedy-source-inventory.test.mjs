@@ -56,7 +56,7 @@ function readInventory() {
   }
 }
 
-test('publishes the approved 94-card Book 02 inventory without promoting mention-only entries', () => {
+test('publishes the approved 95-card Book 02 inventory without promoting mention-only entries', () => {
   assert.equal(existsSync(inventoryPath), true, 'remedy source inventory must exist')
   if (!existsSync(inventoryPath)) return
 
@@ -65,15 +65,15 @@ test('publishes the approved 94-card Book 02 inventory without promoting mention
   assert.equal(rows.length, 125)
 
   const counts = Object.groupBy(rows, ({ candidate_status }) => candidate_status)
-  assert.equal(counts.confirmed.length, 94)
+  assert.equal(counts.confirmed.length, 95)
   assert.equal(counts.duplicate.length, 8)
   assert.equal(counts.grouped.length, 1)
-  assert.equal(counts.mention_only.length, 22)
+  assert.equal(counts.mention_only.length, 21)
   assert.equal(counts.proposed_full_card, undefined)
   assert.equal(counts.needs_resolution, undefined)
 
   const confirmed = counts.confirmed
-  assert.equal(new Set(confirmed.map(({ slug }) => slug)).size, 94)
+  assert.equal(new Set(confirmed.map(({ slug }) => slug)).size, 95)
   assert.equal(confirmed.every(({ slug }) => slug), true)
   assert.equal(confirmed.every(({ ru_source_exists }) => ru_source_exists === 'yes'), true)
   assert.equal(confirmed.every(({ en_source_exists }) => en_source_exists === 'no'), true)
@@ -85,7 +85,7 @@ test('publishes the approved 94-card Book 02 inventory without promoting mention
   )
   assert.equal(rows.filter(({ source_file: file }) => file === sourceFile).every(({ source_section_heading }) => headings.has(source_section_heading)), true)
   assert.equal(confirmed.filter(({ source_file: file }) => file === sourceFile).length, 38)
-  assert.equal(confirmed.filter(({ source_file: file }) => file === 'data/telegram-psychic-alchemy-index.csv').length, 56)
+  assert.equal(confirmed.filter(({ source_file: file }) => file === 'data/telegram-psychic-alchemy-index.csv').length, 57)
 
   const confirmedSlugs = new Set(confirmed.map(({ slug }) => slug))
   assert.equal(counts.duplicate.every(({ slug }) => confirmedSlugs.has(slug)), true)
@@ -107,5 +107,5 @@ test('validates the audited remedy counts from the CSV source of truth', () => {
   })
 
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /confirmed=94 duplicates=8 grouped=1 mention_only=22 en_missing=94/)
+  assert.match(result.stdout, /confirmed=95 duplicates=8 grouped=1 mention_only=21 en_missing=95/)
 })

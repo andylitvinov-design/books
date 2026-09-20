@@ -12,6 +12,7 @@ const outputFile = path.join(projectRoot, 'data', 'telegram-psychic-alchemy-inde
 // names follow the approved Phase L normalization; the source spelling remains
 // in the inventory aliases/provenance rather than being discarded.
 const NEW_FULL_CARDS = [
+  ['Aconitum', 'aconitum', 'message31'],
   ['Nitricum Acidum', 'nitricum-acidum', 'message162'],
   ['Arnica', 'arnica', 'message168'],
   ['Phosphoricum Acidum', 'phosphoricum-acidum', 'message169'],

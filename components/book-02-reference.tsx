@@ -17,15 +17,15 @@ const copy = {
   ru: {
     book: "Книга 02",
     title: "Гомеопатические препараты",
-    description: "Справочник из 94 авторских карточек. Ищите по латинскому, русскому или сокращённому названию и переходите к нужному препарату.",
-    count: "94 препарата",
+    description: "Справочник из {count} авторских карточек. Ищите по латинскому, русскому или сокращённому названию и переходите к нужному препарату.",
+    count: "{count} препаратов",
     directory: "Открыть отдельный каталог",
     back: "← К библиотеке",
     search: "Найти препарат...",
     all: "Все",
     result: "препаратов",
     empty: "Ничего не найдено",
-    remedies: "Препараты (94)",
+    remedies: "Препараты ({count})",
     close: "Закрыть препараты",
     standalone: "Открыть отдельную карточку",
     source: "Источник",
@@ -39,15 +39,15 @@ const copy = {
   en: {
     book: "Book 02",
     title: "Homeopathic remedies",
-    description: "A reference of 94 authorial cards. Search by Latin name, Russian/source name, alias, or abbreviation, then jump to a remedy.",
-    count: "94 remedies",
+    description: "A reference of {count} authorial cards. Search by Latin name, Russian/source name, alias, or abbreviation, then jump to a remedy.",
+    count: "{count} remedies",
     directory: "Open remedy directory",
     back: "← Library",
     search: "Find a remedy...",
     all: "All",
     result: "remedies",
     empty: "No remedies found",
-    remedies: "Remedies (94)",
+    remedies: "Remedies ({count})",
     close: "Close remedies",
     standalone: "Open standalone card",
     source: "Source",
@@ -138,7 +138,11 @@ function BookRemedyImages({ locale, remedy }: { locale: Locale; remedy: Remedy }
 }
 
 export function Book02Reference({ locale, remedies, entries }: Book02ReferenceProps) {
-  const labels = copy[locale];
+  const labels = { ...copy[locale],
+    description: copy[locale].description.replace("{count}", String(remedies.length)),
+    count: copy[locale].count.replace("{count}", String(remedies.length)),
+    remedies: locale === "ru" ? `Препараты (${remedies.length})` : `Remedies (${remedies.length})`,
+  };
   const [drawerOpen, setDrawerOpen] = useState(false);
   const otherLanguageHref = locale === "ru" ? "/books/alchemy-homeopathy-remedies?lang=en" : "/books/alchemy-homeopathy-remedies";
 
