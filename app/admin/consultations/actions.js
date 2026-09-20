@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { consultationSavingAvailable } from '@/lib/consultations/availability'
+import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/consultations/lifecycle'
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
 
 function input(formData) {
@@ -38,15 +39,17 @@ export async function updateConsultationAction(id, previous, formData) {
   redirect(`/admin/consultations/${id}`)
 }
 
-export async function revokeConsultationDocumentAction(consultationId, documentId) {
+async function changeConsultationDocumentStatus(consultationId, documentId, status) {
   if (!await requireAdminRequest()) throw new Error('Unauthorized')
   const store = getPrescriptionStore()
-  const consultation = store ? await store.findById(consultationId) : undefined
-  if (!consultation || consultation.kind === 'payment' || ![consultation.id, consultation.paymentDocumentId].includes(documentId)) throw new Error('Unavailable')
-  const document = await store.findById(documentId)
-  if (!document) throw new Error('Unavailable')
-  const next = { ...document, status: 'revoked', updatedAt: new Date().toISOString() }
-  delete next.access
-  await store.save(next, document)
+  await changeDocumentStatus(store, consultationId, documentId, status)
   redirect(`/admin/consultations/${consultationId}`)
+}
+
+export async function revokeConsultationDocumentAction(consultationId, documentId) {
+  return changeConsultationDocumentStatus(consultationId, documentId, 'revoked')
+}
+
+export async function reactivateConsultationDocumentAction(consultationId, documentId) {
+  return changeConsultationDocumentStatus(consultationId, documentId, 'active')
 }

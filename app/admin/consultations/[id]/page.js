@@ -1,10 +1,9 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
-import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
-import { ConsultationDocumentActions } from '@/components/consultation-document-actions'
-import { revokeConsultationDocumentAction } from '../actions'
+import { logout } from '@/app/admin/logout/actions'
+import { ConsultationResult as ResultScreen } from '@/components/consultation-result'
+import { revokeConsultationDocumentAction, reactivateConsultationDocumentAction } from '../actions'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Documents ready', robots: { index: false, follow: false } }
 export default async function ConsultationResult({ params }) {
@@ -14,16 +13,11 @@ export default async function ConsultationResult({ params }) {
   const recommendation = store ? await store.findById(id) : undefined
   const payment = recommendation?.paymentDocumentId ? await store.findById(recommendation.paymentDocumentId) : undefined
   if (!recommendation || recommendation.kind === 'payment' || !payment || payment.kind !== 'payment') notFound()
-  const locale = recommendation.languagePreference === 'ru' ? 'ru' : 'en'
-  const date = new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${recommendation.dateIssued}T12:00:00Z`))
+  const documents = [
+    { record: payment, kind: 'payment', paymentStatus: payment.paymentStatus, currency: payment.currency, amount: payment.amount, editHref: `/admin/payments/${payment.id}#edit-payment` },
+    { record: recommendation, kind: 'recommendation', count: recommendation.items.length, editHref: `/admin/prescriptions/${recommendation.id}#edit-recommendation` },
+  ].map(({ record, ...display }) => ({ ...display, id: record.id, active: record.status === 'active', revoke: revokeConsultationDocumentAction.bind(null, id, record.id), reactivate: reactivateConsultationDocumentAction.bind(null, id, record.id) }))
   return <main className="prescription-admin-shell consultation-result">
-    <PrescriptionAdminHeader title="✓ DOCUMENTS READY" />
-    <h2>{recommendation.patientName}</h2><p>{date}</p>
-    {[{ record: payment, title: 'PAYMENT DOCUMENT', description: `${payment.paymentStatus === 'received' ? 'Receipt' : 'Invoice'} · ${payment.currency} ${(payment.amount / 100).toFixed(2)}` }, { record: recommendation, title: 'HOMEOPATHIC RECOMMENDATION', description: `${recommendation.items.length} remedies` }].map(({ record, title, description }) => <section className="admin-document-panel" key={`${record.id}-${record.status}`} aria-label={title}>
-      <h2>{title}</h2><p>{description}</p>
-      <ConsultationDocumentActions recordId={record.id} locale={locale} active={record.status === 'active'} />
-      {record.status === 'active' && <details><summary>Access settings</summary><form action={revokeConsultationDocumentAction.bind(null, id, record.id)}><button type="submit">Revoke client access</button></form></details>}
-    </section>)}
-    <p><Link href={`/admin/consultations/${id}/edit`}>Edit consultation</Link></p>
+    <ResultScreen logout={logout} patientName={recommendation.patientName} dateIssued={recommendation.dateIssued} languagePreference={recommendation.languagePreference} documents={documents} />
   </main>
 }
