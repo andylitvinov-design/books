@@ -48,18 +48,31 @@ It helps develop a sense of safety, self-confidence, and the state of the Fearle
 ## Additional materials and observations
 
 - message23 — case.
+
 - message34 — case.
+
 - message47 — case.
+
 - message48 — case.
+
 - message76 — case.
+
 - message137 — case.
+
 - message185 — case.
+
 - message209 — thematic mention.
+
 - message276 — case (with comparisons).
+
 - message312 — thematic mention.
+
 - message439 — case.
+
 - message693 — thematic mention.
+
 - message757 — thematic mention.
+
 - message1018 — comparison.
 
-- [daomagic/139](https://t.me/daomagic/139) (2025-08-01) — thematic mention; “Aconitum: panic”. Source: the author’s practicum.
+- daomagic/139 (2025-08-01) — thematic mention; “Aconitum: panic”. Source: the author’s practicum.
