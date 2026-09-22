@@ -18,8 +18,8 @@ test('one versioned origin drives metadata and public sitemap without private do
   }
 })
 
-test('redirect remains inactive until approved host attachment', () => {
-  assert.equal(canonicalRedirectTarget(`${old}/books`), undefined)
+test('approved release enables legacy public redirects', () => {
+  assert.equal(canonicalRedirectTarget(`${old}/books`), `${next}/books`)
 })
 
 test('approved public redirect preserves path, query and reading fragment without loops', () => {

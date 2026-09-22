@@ -2,6 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      { source: "/book", destination: "/books", permanent: true },
+      { source: "/book/:bookId", destination: "/books/:bookId", permanent: true },
+      { source: "/homeopathy", destination: "/ru/homeopathy", permanent: true },
+      { source: "/homeopathy/remedies/:path*", destination: "/ru/homeopathy/remedies/:path*", permanent: true },
+    ];
+  },
   outputFileTracingIncludes: {
     "/[locale]/client/[selector]/documents/[id]": ["./assets/documents/*"],
     "/api/client/[selector]/documents/[id]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
