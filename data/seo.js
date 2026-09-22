@@ -29,7 +29,7 @@ export function getSitemapEntries(baseUrl) {
   const remedyEntries = getRemedyRouteParams()
     .map(({ locale, slug }) => localizedEntry(base, `/${locale}/homeopathy/remedies/${slug}`))
 
-  return [{ url: at(base, '/'), lastModified: new Date('2026-09-04T00:00:00.000Z'), changeFrequency: 'weekly', priority: 1 }, ...booksEntries, ...homeopathyIndexes, ...remedyEntries]
+  return [{ url: at(base, '/'), changeFrequency: 'weekly', priority: 1 }, { url: at(base, '/books'), changeFrequency: 'monthly', priority: 0.8 }, ...booksEntries, ...homeopathyIndexes, ...remedyEntries]
 }
 
 export function getRobotsPolicy(baseUrl) {

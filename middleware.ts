@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { canonicalRedirectTarget } from './lib/canonical-redirect'
 
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
@@ -12,6 +13,8 @@ function privatePath(pathname: string) {
 }
 
 export function middleware(request: NextRequest) {
+  const redirectTarget = canonicalRedirectTarget(request.url, request.method)
+  if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
   const requestHeaders = new Headers(request.headers)
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
@@ -41,4 +44,4 @@ export function middleware(request: NextRequest) {
   return response
 }
 
-export const config = { matcher: ['/ru/:path*', '/en/:path*', '/api/:path*', '/admin/:path*', '/document-preview/:path*'] }
+export const config = { matcher: ['/', '/books/:path*', '/sitemap.xml', '/robots.txt', '/ru/:path*', '/en/:path*', '/api/:path*', '/admin/:path*', '/document-preview/:path*'] }

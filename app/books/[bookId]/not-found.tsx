@@ -6,7 +6,7 @@ export default function BookNotFound() {
       <p className="reader-eyebrow">Библиотека источников</p>
       <h1>Книга не найдена</h1>
       <p>Этой книги нет в опубликованном каталоге.</p>
-      <Link className="reader-back-link" href="/">← Вернуться к библиотеке</Link>
+      <Link className="reader-back-link" href="/books">← Вернуться к библиотеке</Link>
     </main>
   );
 }

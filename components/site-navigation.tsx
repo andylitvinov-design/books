@@ -8,13 +8,15 @@ type SiteNavigationProps = {
 
 export function SiteNavigation({ locale = "ru" }: SiteNavigationProps) {
   const labels = locale === "ru"
-    ? { library: "Библиотека", homeopathy: "Гомеопатия" }
-    : { library: "Library", homeopathy: "Homeopathy" };
+    ? { home: "Главная", library: "Книги", homeopathy: "Гомеопатия" }
+    : { home: "Home", library: "Books", homeopathy: "Homeopathy" };
 
   return (
     <nav aria-label={locale === "ru" ? "Основная навигация" : "Primary navigation"} className="site-navigation">
-      <Link href="/">{labels.library}</Link>
+      <Link href="/">{labels.home}</Link>
+      <Link href="/books">{labels.library}</Link>
       <Link href={`/${locale}/homeopathy`}>{labels.homeopathy}</Link>
+      <Link href="/#psialchemy">PsiAlchemy</Link>
     </nav>
   );
 }

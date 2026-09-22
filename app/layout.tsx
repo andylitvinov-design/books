@@ -9,8 +9,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
-  title: "PsiAlchemy",
-  description: "Современный локальный каталог книг с поиском, разделами и сохранением позиции чтения.",
+  title: "Holistic House",
+  description: "Holistic House — книги, библиотека препаратов и авторские материалы PsiAlchemy.",
 };
 
 export default function RootLayout({

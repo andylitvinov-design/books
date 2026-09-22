@@ -7,8 +7,8 @@ import { classifyPwaRequest } from '../lib/pwa/cache-policy.js'
 
 test('accepts only a bare HTTPS canonical host', () => {
   assert.equal(canonicalPublicOrigin('https://psialchemy.example.test').toString(), 'https://psialchemy.example.test/')
-  assert.equal(canonicalPublicOrigin('http://unsafe.example.test').hostname, 'codex-public-book-library.vercel.app')
-  assert.equal(canonicalPublicOrigin('https://psialchemy.example.test/path').hostname, 'codex-public-book-library.vercel.app')
+  assert.equal(canonicalPublicOrigin('http://unsafe.example.test').hostname, 'holistichouse.vercel.app')
+  assert.equal(canonicalPublicOrigin('https://psialchemy.example.test/path').hostname, 'holistichouse.vercel.app')
 })
 
 test('keeps every private or administrative request network-only', () => {

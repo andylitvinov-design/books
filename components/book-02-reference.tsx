@@ -157,7 +157,7 @@ export function Book02Reference({ locale, remedies, entries }: Book02ReferencePr
 
   return <main className="book-reference-shell">
     <header className="book-reference-header">
-      <div><Link className="reader-back-link" href="/">{labels.back}</Link><p className="reader-eyebrow">{labels.book}</p><h1>{labels.title}</h1><p>{labels.description}</p></div>
+      <div><Link className="reader-back-link" href="/books">{labels.back}</Link><p className="reader-eyebrow">{labels.book}</p><h1>{labels.title}</h1><p>{labels.description}</p></div>
       <div className="book-reference-header-actions"><span>{labels.count}</span><Link href={`/${locale}/homeopathy/remedies`}>{labels.directory}</Link><Link href={otherLanguageHref} lang={locale === "ru" ? "en" : "ru"}>{labels.language}</Link></div>
     </header>
     <button aria-controls="book-remedy-drawer" aria-expanded={drawerOpen} className="book-reference-mobile-toggle" onClick={() => setDrawerOpen(true)} type="button">{labels.remedies}</button>

@@ -94,7 +94,7 @@ test('uses an absolute deployable metadata base with a Vercel fallback', async (
 
   assert.equal(
     metadataBaseFor(undefined).href,
-    'https://codex-public-book-library.vercel.app/',
+    'https://holistichouse.vercel.app/',
   )
   assert.equal(
     metadataBaseFor('https://books.example.test').href,
