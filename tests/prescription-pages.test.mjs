@@ -13,7 +13,7 @@ test('neutral bootstrap removes the fragment before exchange and never persists 
   assert.match(gate, /\/api\/prescription-access/)
   assert.match(gate, /cache: 'no-store'/)
   assert.doesNotMatch(gate, /localStorage|sessionStorage|indexedDB/)
-  assert.ok(gate.indexOf('window.history.replaceState') < gate.indexOf("fetch('/api/prescription-access'"))
+  assert.ok(gate.indexOf('window.history.replaceState') < gate.indexOf("fetch(cabinet ?"))
 })
 
 test('access exchange and logout use short HttpOnly same-site sessions', async () => {

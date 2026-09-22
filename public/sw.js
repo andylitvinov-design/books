@@ -1,5 +1,5 @@
 const CACHE_NAME = 'psialchemy-public-v1'
-const PRIVATE_PREFIXES = ['/ru/prescriptions/', '/en/prescriptions/', '/api/prescriptions/', '/api/prescription-access', '/api/admin/', '/admin/', '/document-preview/']
+const PRIVATE_PREFIXES = ['/en/client/', '/ru/client/', '/api/client', '/ru/prescriptions/', '/en/prescriptions/', '/api/prescriptions/', '/api/prescription-access', '/api/admin/', '/admin/', '/document-preview/']
 
 function policy(url) {
   let pathname = url.pathname

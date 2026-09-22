@@ -48,7 +48,11 @@ function createRestKvHarness() {
       if (operation === 'GET') result = values.get(key) ?? null
       if (operation === 'SET') { values.set(key, value); result = 'OK' }
       if (operation === 'DEL') { result = values.delete(key) ? 1 : 0 }
-      if (operation === 'EVAL') {
+      if (operation === 'EVAL' && key.includes("redis.call('MSET'")) {
+        const expected = args[4]; const current = values.get(args[3])
+        if (key.includes("redis.call('EXISTS'") ? current !== undefined : current !== expected) result = 0
+        else { const writes = JSON.parse(args[5]); for (let i = 0; i < writes.length; i += 2) values.set(writes[i], writes[i + 1]); for (const removed of JSON.parse(args[6])) values.delete(removed); result = 1 }
+      } else if (operation === 'EVAL') {
         const rateKey = args[3]
         result = Number(values.get(rateKey) ?? 0) + 1
         values.set(rateKey, String(result))
@@ -178,6 +182,7 @@ test('revoking an active prescription removes selector and legacy mappings but r
   const legacy = { ...createPrescription({ ...baseInput, status: 'active' }), publicId: legacyPublicId }
   const { record: active, selector } = issuePrescriptionAccess(legacy)
   harness.values.set(`prescription:public:${legacyPublicId}`, active.id)
+  await store.save(legacy)
   await store.save(active, legacy)
   assert.equal((await store.findBySelector(selector))?.id, active.id)
   assert.equal(harness.values.has(`prescription:public:${legacyPublicId}`), false)
@@ -187,7 +192,7 @@ test('revoking an active prescription removes selector and legacy mappings but r
   assert.equal(await store.findBySelector(selector), undefined)
   assert.equal(harness.values.has(`prescription:selector:${selector}`), false)
   assert.match(harness.values.get(`prescription:record:${active.id}`), /"algorithm":"AES-256-GCM"/)
-  assert.ok(harness.commands.some(([operation, key]) => operation === 'DEL' && key === `prescription:public:${legacyPublicId}`))
+  assert.ok(harness.commands.some(args => args[0] === 'EVAL' && JSON.parse(args[6]).includes(`prescription:public:${legacyPublicId}`)))
 })
 
 test('reactivating a revoked prescription requires freshly issued access', async () => {

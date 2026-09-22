@@ -21,7 +21,11 @@ export async function createConsultationAction(previous, formData) {
   const store = getPrescriptionStore()
   if (!store) return { error: 'Documents are temporarily unavailable. Please try again.' }
   let pair
-  try { pair = await createConsultation(input(formData), { store, requestId: String(formData.get('requestId') ?? '') }) }
+  try {
+    const data = input(formData)
+    if (formData.get('clientMode') === 'new') data.newClient = { fullName: data.patientName, preferredLocale: data.languagePreference, email: formData.get('clientEmail') ?? '', phone: formData.get('clientPhone') ?? '' }
+    else { data.clientId = String(formData.get('clientId') ?? ''); if (!data.clientId) throw new Error('Choose a client') }
+    pair = await createConsultation(data, { store, requestId: String(formData.get('requestId') ?? '') }) }
   catch { return { error: 'Documents could not be saved. Check the client, date, remedies and payment settings, then try again.' } }
   redirect(`/admin/consultations/${pair.recommendation.id}`)
 }

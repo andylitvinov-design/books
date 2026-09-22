@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingIncludes: {
+    "/[locale]/client/[selector]/documents/[id]": ["./assets/documents/*"],
+    "/api/client/[selector]/documents/[id]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
     "/[locale]/prescriptions/[selector]": ["./assets/documents/andrii-signature-left-90.png"],
     "/admin/documents/[id]": ["./assets/documents/andrii-signature-left-90.png"],
     "/document-preview/[kind]": ["./assets/documents/andrii-signature-left-90.png"],
