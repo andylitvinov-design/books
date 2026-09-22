@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 
 const secretPattern = /^[A-Za-z0-9_-]{43}$/
 
-export function PrescriptionAccessGate({ locale, selector }) {
+export function PrescriptionAccessGate({ locale, selector, cabinet = false }) {
   const started = useRef(false)
   const [unavailable, setUnavailable] = useState(false)
 
@@ -17,7 +17,7 @@ export function PrescriptionAccessGate({ locale, selector }) {
       started.current = true
       setUnavailable(false)
       void (async () => {
-        const response = await fetch('/api/prescription-access', {
+        const response = await fetch(cabinet ? '/api/client-access' : '/api/prescription-access', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           cache: 'no-store', credentials: 'same-origin',
           body: JSON.stringify({ selector, secret }),
@@ -32,11 +32,11 @@ export function PrescriptionAccessGate({ locale, selector }) {
     exchange()
     window.addEventListener('hashchange', exchange)
     return () => window.removeEventListener('hashchange', exchange)
-  }, [selector])
+  }, [selector, cabinet])
 
   const labels = locale === 'ru'
-    ? { checking: 'Проверяем приватную ссылку…', unavailable: 'Назначение недоступно.' }
-    : { checking: 'Checking the private link…', unavailable: 'Recommendation unavailable.' }
+    ? { checking: 'Проверяем приватную ссылку…', unavailable: 'Приватная ссылка недоступна.' }
+    : { checking: 'Checking the private link…', unavailable: 'Private link unavailable.' }
 
   return <main className="prescription-access-gate" aria-live="polite">
     <h1>{unavailable ? labels.unavailable : labels.checking}</h1>

@@ -1,5 +1,6 @@
 'use server'
 
+import { attachPaymentToRecommendation } from '@/lib/consultations/service'
 import { redirect } from 'next/navigation'
 
 import { createPaymentDocument, updatePaymentDocument } from '@/lib/documents/payment'
@@ -19,13 +20,10 @@ export async function createPaymentAction(consultationId, previousState, formDat
   if (consultation?.paymentDocumentId) redirect(`/admin/payments/${consultation.paymentDocumentId}`)
   let record
   try { record = createPaymentDocument({ ...paymentInput(formData), status: 'active' }) } catch (error) { return { error: error.message } }
-  await store.save(record)
-  if (consultationId) {
-    const latest = await store.findById(consultationId)
-    if (latest && latest.kind !== 'payment' && !latest.paymentDocumentId) {
-      await store.save({ ...latest, paymentDocumentId: record.id, updatedAt: new Date().toISOString() }, latest)
-    }
-  }
+  try {
+    if (consultation) record = (await attachPaymentToRecommendation(store, consultation, record)).payment
+    else await store.save(record)
+  } catch { return { error: 'Document changed. Reload before saving.' } }
   redirect(`/admin/payments/${record.id}`)
 }
 

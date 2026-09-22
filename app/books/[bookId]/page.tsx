@@ -61,7 +61,7 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
   return (
     <main className="reader-shell">
       <header className="reader-header">
-        <Link className="reader-back-link" href="/">← К библиотеке</Link>
+        <Link className="reader-back-link" href="/books">← К библиотеке</Link>
         <p className="reader-eyebrow">{book.category}</p>
         <h1>{book.title}</h1>
         <p className="reader-summary">{book.description}</p>

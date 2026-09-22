@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
 
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
-  return /^\/(ru|en)\/prescriptions\//.test(decoded)
+  return /^\/(ru|en)\/(prescriptions|client)\//.test(decoded)
+    || decoded.startsWith('/api/client')
     || decoded.startsWith('/api/prescriptions/')
     || decoded.startsWith('/api/prescription-access')
     || decoded.startsWith('/api/admin/')
@@ -12,6 +14,18 @@ function privatePath(pathname: string) {
 }
 
 export function middleware(request: NextRequest) {
+  const redirectTarget = canonicalRedirectTarget(request.url, request.method)
+  if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
+  const bridgeNonce = crypto.randomUUID().replaceAll('-', '')
+  const bridge = privateMigrationBridge(request.url, bridgeNonce)
+  if (bridge && ['GET', 'HEAD'].includes(request.method)) return new NextResponse(request.method === 'HEAD' ? null : bridge, { headers: {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
+    'X-Robots-Tag': 'noindex, nofollow, noarchive',
+    'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': `default-src 'none'; script-src 'nonce-${bridgeNonce}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
+    'X-Content-Type-Options': 'nosniff',
+  } })
   const requestHeaders = new Headers(request.headers)
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
@@ -41,4 +55,4 @@ export function middleware(request: NextRequest) {
   return response
 }
 
-export const config = { matcher: ['/ru/:path*', '/en/:path*', '/api/:path*', '/admin/:path*', '/document-preview/:path*'] }
+export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)', '/', '/books/:path*', '/sitemap.xml', '/robots.txt', '/ru/:path*', '/en/:path*', '/api/:path*', '/admin/:path*', '/document-preview/:path*'] }

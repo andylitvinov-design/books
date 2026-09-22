@@ -1,15 +1,18 @@
-const fallbackSiteUrl = 'https://codex-public-book-library.vercel.app'
+// Versioned with the migration so metadata and generated PDFs use one origin.
+// This branch is Preview-only until hostname ownership and cutover are approved.
+export const canonicalSiteUrl = 'https://holistichouse.vercel.app'
+const fallbackSiteUrl = canonicalSiteUrl
 
-export function canonicalPublicOrigin(value = process.env.PSIALCHEMY_CANONICAL_HOST || process.env.NEXT_PUBLIC_SITE_URL) {
+export function canonicalPublicOrigin(value = canonicalSiteUrl) {
   try {
     const origin = new URL(value || fallbackSiteUrl)
-    if (origin.protocol !== 'https:' || origin.pathname !== '/' || origin.search || origin.hash) throw new Error('Invalid canonical origin')
+    if (origin.protocol !== 'https:' || origin.pathname !== '/' || origin.search || origin.hash || origin.username || origin.password || origin.port) throw new Error('Invalid canonical origin')
     return origin
   } catch {
     return new URL(fallbackSiteUrl)
   }
 }
 
-export function metadataBaseFor(siteUrl = process.env.NEXT_PUBLIC_SITE_URL) {
+export function metadataBaseFor(siteUrl = canonicalSiteUrl) {
   return canonicalPublicOrigin(siteUrl)
 }

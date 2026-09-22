@@ -1,11 +1,12 @@
 'use client'
 
+import { CabinetLinkActions } from './cabinet-link-actions'
 import { useEffect, useState } from 'react'
 import { ConsultationDocumentActions } from './consultation-document-actions'
 import { resultCopy, resultDocumentText } from '@/lib/consultations/result-copy'
 import { resultLocale } from '@/lib/consultations/result-actions'
 
-export function ConsultationResult({ patientName, dateIssued, languagePreference, documents, logout }) {
+export function ConsultationResult({ clientId, patientName, dateIssued, languagePreference, documents, logout }) {
   const [locale, setLocale] = useState(() => resultLocale(languagePreference))
   const labels = resultCopy(locale)
   useEffect(() => {
@@ -26,6 +27,7 @@ export function ConsultationResult({ patientName, dateIssued, languagePreference
         {['en', 'ru'].map(language => <button key={language} type="button" aria-pressed={locale === language} onClick={() => setLocale(language)}>{language.toUpperCase()}</button>)}
       </div></fieldset>
     </div>
+    {clientId && <CabinetLinkActions clientId={clientId} locale={locale} />}
     <div className="consultation-result-documents">{documents.map(document => { const text = resultDocumentText(document, locale); return <section className="consultation-result-document" key={`${document.id}-${document.active}`} aria-label={text.title}>
       <h2>{text.title}</h2><p className="consultation-document-meta">{text.description}</p>
       <ConsultationDocumentActions recordId={document.id} locale={locale} active={document.active} />

@@ -18,6 +18,6 @@ export default async function ConsultationResult({ params }) {
     { record: recommendation, kind: 'recommendation', count: recommendation.items.length, editHref: `/admin/prescriptions/${recommendation.id}#edit-recommendation` },
   ].map(({ record, ...display }) => ({ ...display, id: record.id, active: record.status === 'active', revoke: revokeConsultationDocumentAction.bind(null, id, record.id), reactivate: reactivateConsultationDocumentAction.bind(null, id, record.id) }))
   return <main className="prescription-admin-shell consultation-result">
-    <ResultScreen logout={logout} patientName={recommendation.patientName} dateIssued={recommendation.dateIssued} languagePreference={recommendation.languagePreference} documents={documents} />
+    <ResultScreen clientId={recommendation.clientId} logout={logout} patientName={recommendation.patientName} dateIssued={recommendation.dateIssued} languagePreference={recommendation.languagePreference} documents={documents} />
   </main>
 }

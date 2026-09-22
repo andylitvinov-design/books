@@ -78,9 +78,9 @@ test('REST access CAS rejects a write raced by revocation without inserting stal
   else if(c[0]==='DEL'){saved.delete(c[1]);result=1}
   else if(c[0]==='GET')result=saved.get(c[1])??null
   else if(c[0]==='EVAL'){
-   assert.match(c[1],/redis.call\('GET', KEYS\[1\]\) ~= ARGV\[1\]/)
+   assert.match(c[1],/redis.call\('(GET|EXISTS)', KEYS\[1\]\)/)
    if(race){race=false;saved.set(c[3],'concurrent replacement')}
-   if(saved.get(c[3])!==c[4])result=0
+   if(c[1].includes("redis.call('EXISTS'") ? saved.has(c[3]) : saved.get(c[3])!==c[4])result=0
    else{const values=JSON.parse(c[5]);for(let i=0;i<values.length;i+=2)saved.set(values[i],values[i+1]);for(const key of JSON.parse(c[6]))saved.delete(key);result=1}
   }else throw new Error('Unexpected command')
   return {ok:true,json:async()=>({result})}

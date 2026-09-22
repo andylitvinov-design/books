@@ -1,11 +1,12 @@
 'use client'
 
+import { ConsultationClientSelector } from './consultation-client-selector'
 import { useActionState, useState } from 'react'
 import { initialConsultationRows, serializeConsultationRows, validateConsultationRows, consultationClinicalFields as clinicalFields } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
 
 const badges = { canonical: '✓ Profile', source_only: '○ Sources', custom: '＋ Custom' }
-export function ConsultationForm({ action, remedies, consultation, payment, requestId }) {
+export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId }) {
   const [state, submit, pending] = useActionState(action, {})
   const [items, setItems] = useState(() => initialConsultationRows(consultation, remedies, 2))
   const [focused, setFocused] = useState(null)
@@ -23,10 +24,10 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     <input type="hidden" name="paymentRevision" value={payment?.updatedAt ?? ''} />
     <input type="hidden" name="requestId" value={requestId ?? ''} />
     <input type="hidden" name="itemsJson" value={JSON.stringify(serializeConsultationRows(items))} />
-    <label>Client<input name="patientName" placeholder="Full name" required maxLength={200} defaultValue={consultation?.patientName} autoComplete="off" /></label>
+    {!consultation ? <ConsultationClientSelector clients={clients} selectedClientId={selectedClientId} /> : <label>Client<input name="patientName" placeholder="Full name" required maxLength={200} defaultValue={consultation?.patientName} autoComplete="off" /></label>}
     <div className="consultation-two-columns">
       <label>Date<input type="date" name="dateIssued" required defaultValue={consultation?.dateIssued ?? today} /></label>
-      <label>Client language<select name="languagePreference" defaultValue={consultation?.languagePreference === 'ru' ? 'ru' : 'en'}><option value="en">English</option><option value="ru">Русский</option></select></label>
+      {consultation && <label>Client language<select name="languagePreference" defaultValue={consultation?.languagePreference === 'ru' ? 'ru' : 'en'}><option value="en">English</option><option value="ru">Русский</option></select></label>}
     </div>
     <fieldset><legend>Remedies</legend>
       <div className="consultation-remedies">{items.map((item, index) => {

@@ -31,10 +31,11 @@ export function ConsultationDocumentActions({ recordId, locale, active }) {
   return <>
     <div className="consultation-result-actions">
       <a href={urls.open}>{labels.open}</a>
-      <button className="consultation-copy" type="button" disabled={!active || copying} onClick={copy}>{copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}</button>
+
       <a href={urls.pdf} download>{labels.pdf}</a>
       <a href={urls.print}>{labels.print}</a>
     </div>
+    <details><summary>{locale === 'ru' ? 'Поделиться отдельным документом' : 'Share individual document'}</summary>      <button className="consultation-copy" type="button" disabled={!active || copying} onClick={copy}>{copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}</button></details>
     <p className="consultation-copy-feedback" role="status" aria-live="polite">{status ? labels.copyError : copiedLocale === locale ? labels.copiedFeedback : !active ? labels.disabled : ''}</p>
   </>
 }

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 import { createPaymentDocument, updatePaymentDocument, getClientPaymentDocument } from '../lib/documents/payment.js'
+import { attachPaymentToRecommendation } from '../lib/consultations/service.js'
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 import { issuePrescriptionAccess, createPrescriptionSession, authorizePrescriptionSession } from '../lib/prescriptions/access.js'
 
@@ -17,7 +18,7 @@ const input = { patientName: 'Synthetic Client', dateOfService: '2026-09-08', am
 const form = () => new Map(Object.entries(input))
 const redirected = (path) => { throw new Error(`REDIRECT:${path}`) }
 async function actions(store, authorized = true) {
-  return loadHandlers('../app/admin/payments/actions.js', { redirect: redirected, createPaymentDocument, updatePaymentDocument, requireAdminRequest: async () => authorized, getPrescriptionStore: () => store }, ['createPaymentAction', 'updatePaymentAction', 'markPaymentReceivedAction', 'revokePaymentAccessAction', 'reactivatePaymentAction'])
+  return loadHandlers('../app/admin/payments/actions.js', { redirect: redirected, attachPaymentToRecommendation, createPaymentDocument, updatePaymentDocument, requireAdminRequest: async () => authorized, getPrescriptionStore: () => store }, ['createPaymentAction', 'updatePaymentAction', 'markPaymentReceivedAction', 'revokePaymentAccessAction', 'reactivatePaymentAction'])
 }
 
 test('payment revocation invalidates access; reactivation cannot resurrect old sessions or links', async () => {
@@ -80,26 +81,18 @@ test('payment edit consumes decimal form amount and preserves active access', as
   assert.deepEqual((await store.findById(record.id)).access, record.access)
 })
 
-test('payment creation associates independent record and preserves latest recommendation', async () => {
+test('payment creation associates an independent record through the atomic pair path', async () => {
   const recommendation = { id: 'synthetic-recommendation', patientName: 'Synthetic Client', status: 'active', items: [{ dosage: 'Practitioner supplied' }] }
   const store = createMemoryPrescriptionStore([recommendation])
-  const save = store.save
-  let created
-  store.save = async (record, previous) => {
-    await save(record, previous)
-    if (record.kind === 'payment') {
-      created = record
-      await save({ ...recommendation, generalInstructions: 'Concurrent edit preserved' })
-    }
-  }
   const { createPaymentAction } = await actions(store)
   await assert.rejects(createPaymentAction(recommendation.id, {}, form()), /REDIRECT:/)
   const linked = await store.findById(recommendation.id)
+  const created = await store.findById(linked.paymentDocumentId)
   assert.equal(linked.paymentDocumentId, created.id)
-  assert.equal(linked.generalInstructions, 'Concurrent edit preserved')
   assert.deepEqual(linked.items, recommendation.items)
   assert.equal(created.status, 'active')
   assert.equal(created.items, undefined)
+  assert.equal(created.consultationId, recommendation.id)
 })
 
 test('admin PDF authorizes before reads and returns private headers for denial', async () => {
