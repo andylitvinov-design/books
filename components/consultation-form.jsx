@@ -226,14 +226,13 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <label>{uiLocale === 'ru' ? 'Язык' : 'Language'}<select name="languagePreference" defaultValue={consultation?.languagePreference === 'ru' ? 'ru' : 'en'}><option value="en">EN</option><option value="ru">RU</option></select></label>
         </div>}
 
-    <div className="consultation-quick-meta">
+    <div className="consultation-quick-meta consultation-quick-meta--date-only">
       <label>{labels.date}<input type="date" name="dateIssued" required value={dateIssued} onChange={(event) => setDateIssued(event.target.value)} /></label>
-      <div className="consultation-auto-type"><span>{labels.reportAuto}</span><strong>{reportLabel}</strong></div>
     </div>
 
     <ConsultationTextImport remedies={remedies} onApply={applyParsed} uiLocale={uiLocale} />
 
-    <fieldset className="consultation-remedy-fieldset consultation-remedy-fieldset--compact"><legend>{labels.items}</legend>
+    <fieldset className="consultation-remedy-fieldset consultation-remedy-fieldset--compact"><legend>{labels.items}<span className="consultation-report-badge">{labels.reportAuto}: {reportLabel}</span></legend>
       <div className="consultation-remedies">{items.map((item, index) => {
         const type = item.itemType === 'bach' ? 'bach' : 'homeopathy'
         const matches = focused === index && !item.selected
