@@ -40,18 +40,21 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
 })
 
 test('the admin entry redirects guests and shows daily practitioner actions after authentication', async () => {
-  const [dashboard, header, loginAction] = await Promise.all([
+  const [dashboard, header, cabinet, loginAction] = await Promise.all([
     readFile('app/admin/page.js', 'utf8'),
     readFile('components/prescription-admin-header.jsx', 'utf8'),
+    readFile('components/practitioner-cabinet.jsx', 'utf8'),
     readFile('app/admin/login/actions.js', 'utf8'),
   ])
 
   assert.match(dashboard, /requireAdminRequest/)
   assert.match(dashboard, /redirect\('\/admin\/login'\)/)
-  assert.match(dashboard, /PRACTITIONER CABINET/)
-  assert.match(dashboard, /\/admin\/consultations\/new/)
-  assert.match(dashboard, /\/admin\/clients/)
-  assert.match(dashboard, /\/admin\/clients\/legacy/)
+  assert.match(dashboard, /PractitionerCabinet/)
+  assert.match(cabinet, /PRACTITIONER CABINET/)
+  assert.match(cabinet, /КАБИНЕТ ПРАКТИКА/)
+  assert.match(cabinet, /\/admin\/consultations\/new/)
+  assert.match(cabinet, /\/admin\/clients/)
+  assert.match(cabinet, /\/admin\/clients\/legacy/)
   assert.match(header, /Holistic House/)
   assert.match(header, /Cabinet/)
   assert.match(header, /New consultation/)
