@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createPrescription, getClientPrescription } from '../lib/prescriptions/service.js'
-import { recommendationCopy, recommendationGuidance } from '../lib/documents/recommendation.js'
-import { remedySchedule } from '../lib/documents/recommendation.js'
+import { recommendationCopy, recommendationGuidance, remedySchedule } from '../lib/documents/recommendation.js'
 const input = { patientName: 'Synthetic Example', practitionerName: 'Andrii Litvinov', status: 'active', recommendationNumber: 'HR-TEST-001', followUp: 'Practitioner-entered follow-up', items: [{ remedySlug: 'arsenicum-album', granules: '5', timesPerDay: '3', purpose: 'Synthetic purpose', sequence: 'Synthetic stage', notes: 'PRIVATE ITEM NOTE' }] }
 test('preserves manually entered canonical recommendation fields without private notes', () => {
   const record = createPrescription(input)
@@ -23,11 +22,10 @@ test('recommendation projection cannot project a payment record', () => {
 })
 
 
-test('compact remedy schedule is localized for the client document', () => {
-  assert.equal(remedySchedule({ granules: '5', timesPerDay: '3' }, 'ru'), '5 гранул · 3×/день')
-  assert.equal(remedySchedule({ granules: '5', timesPerDay: '3' }, 'en'), '5 granules · 3×/day')
-  assert.equal(remedySchedule({ granules: '1', timesPerDay: '1' }, 'ru'), '1 гранула · 1×/день')
-  assert.equal(remedySchedule({}, 'en'), '')
+test('compact remedy schedule is localized and includes potency', () => {
+  assert.equal(remedySchedule({ potency: '30', granules: '5', timesPerDay: '3', itemType: 'homeopathy' }, 'ru'), 'потенция 30 · 5 гранул · 3×/день')
+  assert.equal(remedySchedule({ potency: '200', granules: '5', timesPerDay: '3', itemType: 'homeopathy' }, 'en'), 'potency 200 · 5 granules · 3×/day')
+  assert.equal(remedySchedule({ itemType: 'bach' }, 'ru', 'mixed'), '')
 })
 
 
@@ -36,7 +34,7 @@ test('new Homeopathy recommendations use the structured two-week follow-up templ
   const document = getClientPrescription(record, 'ru')
   assert.equal(document.recommendationType, 'homeopathy')
   const guidance = recommendationGuidance(document, 'ru')
-  assert.deepEqual(guidance.bullets, ['5 гранул препарата.', '3 раза в день и дополнительно в момент стресса.'])
+  assert.deepEqual(guidance.sections[0].bullets, ['5 гранул препарата.', '3 раза в день и дополнительно в момент стресса.'])
   assert.equal(guidance.course, 'Курс: 2 недели.')
   assert.equal(guidance.recheck, 'Повторная проверка — через 1–2 недели.')
   assert.match(guidance.contact, /проверю состояние/)
@@ -49,8 +47,8 @@ test('Bach recommendations use the mixture template and a distinct bilingual tit
   assert.equal(recommendationCopy('ru', 'bach').title, 'РЕКОМЕНДАЦИЯ ПО ЭССЕНЦИЯМ БАХА')
   assert.equal(recommendationCopy('en', 'bach').title, 'BACH FLOWER ESSENCE RECOMMENDATION')
   const guidance = recommendationGuidance(document, 'ru')
-  assert.match(guidance.bullets[0], /по 5 капель каждой выбранной эссенции/)
-  assert.equal(guidance.bullets[1], 'Принимать 2–4 раза в день.')
+  assert.match(guidance.sections[0].bullets[0], /по 5 капель каждой выбранной эссенции/)
+  assert.equal(guidance.sections[0].bullets[1], 'Принимать 2–4 раза в день.')
   assert.equal(guidance.course, 'Курс: 2 недели.')
 })
 
@@ -59,4 +57,26 @@ test('legacy recommendations without an explicit type do not gain a new dosing t
   const document = getClientPrescription(legacy, 'en')
   assert.equal(document.recommendationType, undefined)
   assert.equal(recommendationGuidance(document, 'en'), undefined)
+})
+
+
+test('mixed recommendations retain per-item modality and render both guidance sections', () => {
+  const record = createPrescription({
+    ...input,
+    recommendationType: 'mixed',
+    items: [
+      { itemType: 'homeopathy', remedySlug: 'arsenicum-album', potency: '30', granules: '5', timesPerDay: '3' },
+      { itemType: 'bach', displayNameOverride: 'Mimulus', sourceStatus: 'custom' },
+    ],
+  })
+  const document = getClientPrescription(record, 'ru')
+  assert.equal(document.recommendationType, 'mixed')
+  assert.deepEqual(document.items.map((item) => item.itemType), ['homeopathy', 'bach'])
+  assert.equal(document.items[0].potency, '30')
+  assert.equal(document.items[1].remedyPath, undefined)
+  assert.equal(recommendationCopy('ru', 'mixed').title, 'КОМПЛЕКСНАЯ РЕКОМЕНДАЦИЯ')
+  const guidance = recommendationGuidance(document, 'ru')
+  assert.deepEqual(guidance.sections.map((section) => section.type), ['homeopathy', 'bach'])
+  assert.equal(guidance.sections[0].title, 'Гомеопатия')
+  assert.equal(guidance.sections[1].title, 'Эссенции Баха')
 })
