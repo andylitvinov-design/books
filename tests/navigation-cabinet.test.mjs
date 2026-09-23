@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import test from 'node:test'
+
+test('locale counterpart paths preserve the current localized route', async () => {
+  const { localePath } = await import('../lib/ui-locale.js')
+
+  assert.equal(localePath('/ru/homeopathy/remedies/aconitum', 'en'), '/en/homeopathy/remedies/aconitum')
+  assert.equal(localePath('/en/client/personal-selector', 'ru'), '/ru/client/personal-selector')
+  assert.equal(localePath('/books', 'en'), '/books')
+})
+
+test('public navigation exposes both UI languages and the practitioner cabinet', async () => {
+  const navigation = await readFile('components/site-navigation.tsx', 'utf8')
+
+  assert.match(navigation, /Главная/)
+  assert.match(navigation, /Книги/)
+  assert.match(navigation, /Гомеопатия/)
+  assert.match(navigation, /Кабинет/)
+  assert.match(navigation, /Home/)
+  assert.match(navigation, /Books/)
+  assert.match(navigation, /Homeopathy/)
+  assert.match(navigation, /Cabinet/)
+  assert.match(navigation, /href="\/admin"/)
+  assert.match(navigation, /localePath/)
+  assert.match(navigation, /document\.cookie/)
+})
+
+test('the umbrella homepage can render Russian and English chrome and copy', async () => {
+  const [home, page] = await Promise.all([
+    readFile('components/holistic-house-home.tsx', 'utf8'),
+    readFile('app/page.tsx', 'utf8'),
+  ])
+
+  assert.match(home, /Библиотеки · практики · исследование/)
+  assert.match(home, /Libraries · practice · research/)
+  assert.match(home, /Книги, справочные материалы и цифровые инструменты/)
+  assert.match(home, /Books, reference materials, and digital tools/)
+  assert.match(page, /uiLocale/)
+})
+
+test('the admin entry redirects guests and shows daily practitioner actions after authentication', async () => {
+  const [dashboard, header, loginAction] = await Promise.all([
+    readFile('app/admin/page.js', 'utf8'),
+    readFile('components/prescription-admin-header.jsx', 'utf8'),
+    readFile('app/admin/login/actions.js', 'utf8'),
+  ])
+
+  assert.match(dashboard, /requireAdminRequest/)
+  assert.match(dashboard, /redirect\('\/admin\/login'\)/)
+  assert.match(dashboard, /PRACTITIONER CABINET/)
+  assert.match(dashboard, /\/admin\/consultations\/new/)
+  assert.match(dashboard, /\/admin\/clients/)
+  assert.match(dashboard, /\/admin\/clients\/legacy/)
+  assert.match(header, /Holistic House/)
+  assert.match(header, /Cabinet/)
+  assert.match(header, /New consultation/)
+  assert.match(header, /Unassigned legacy documents/)
+  assert.match(loginAction, /redirect\('\/admin'\)/)
+})
