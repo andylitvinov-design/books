@@ -2377,3 +2377,22 @@
     font-size: 8px;
   }
 }
+
+.consultation-edit-client-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 110px;
+  gap: 8px;
+}
+.consultation-edit-client-row label {
+  gap: 4px !important;
+  font-size: 10px !important;
+}
+.consultation-edit-client-row input,
+.consultation-edit-client-row select {
+  min-height: 40px !important;
+}
+@media (max-width: 600px) {
+  .consultation-edit-client-row {
+    grid-template-columns: minmax(0,1fr) 72px;
+  }
+}
