@@ -9,6 +9,10 @@
 .house-wordmark span { display: block; margin-top: 6px; font-family: var(--font-sans); font-size: 9px; letter-spacing: .08em; }
 .house-header .site-navigation { margin: 0; padding: 0; border: 0; gap: 24px; }
 .house-header .site-navigation a { font-size: 12px; }
+.site-language-switch { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; color: #765d4a; }
+.site-language-switch > * { min-height: 28px; border: 0; background: transparent; padding: 0 3px; font: inherit; line-height: 1; color: inherit; cursor: pointer; }
+.site-language-switch > * + * { border-left: 1px solid #cdbca8; }
+.site-language-switch [aria-current='true'], .site-language-switch [aria-pressed='true'] { color: #2c2119; text-decoration: underline; text-underline-offset: 4px; }
 .house-hero { position: relative; min-height: min(690px, calc(100svh - 96px)); display: flex; align-items: center; padding: 52px 8vw 48px; background: #e9decb; overflow: hidden; }
 .house-hero-inner { width: 100%; max-width: 1160px; margin: auto; animation: house-enter .7s ease-out both; }
 .house-eyebrow { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; line-height: 1.7; }
@@ -47,6 +51,7 @@
   .house-header { position: relative; align-items: flex-start; flex-direction: column; gap: 18px; padding: 20px 6vw; }
   .house-header .site-navigation { gap: 16px; flex-wrap: wrap; }
   .house-header .site-navigation a { font-size: 11px; }
+  .house-header .site-language-switch { margin-left: 0; }
   .house-hero { padding: 38px 7vw; min-height: 470px; }
   .house-hero h1 { font-size: clamp(84px, 18vw, 138px); }
   .house-hero-bottom { display: block; }
@@ -164,6 +169,16 @@
   .prescription-admin-header h1 { @apply mt-2 font-serif text-4xl; }
   .prescription-admin-description { @apply mt-3 max-w-2xl text-base leading-6 text-[#5d5046]; }
   .prescription-admin-header button { @apply min-h-11 border border-[#8b664c] bg-[#fffaf3] px-4 text-sm font-semibold text-[#563b2a]; }
+  .prescription-admin-brand a, .prescription-admin-navigation a { @apply underline decoration-[#bf9473] underline-offset-4 hover:text-[#2c2119]; }
+  .prescription-admin-navigation { @apply mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold text-[#70442d]; }
+  .prescription-admin-header-actions { @apply flex flex-wrap items-center gap-3; }
+  .prescription-admin-header-actions .site-language-switch { @apply border border-[#cdbca8] bg-[#fffaf3] px-2 text-sm font-semibold text-[#563b2a]; }
+  .prescription-admin-header-actions .site-language-switch button { @apply min-h-9 border-0 bg-transparent px-2; }
+  .practitioner-cabinet-actions { @apply mt-8 divide-y divide-[#cdbca8] border-y border-[#cdbca8]; }
+  .practitioner-cabinet-actions > a { @apply grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4 py-6 transition-colors hover:bg-[#f8f1e7] sm:grid-cols-[4rem_minmax(0,1fr)] sm:px-4; }
+  .practitioner-cabinet-actions > a > span { @apply pt-1 text-xs font-semibold tracking-[0.14em] text-[#8b5a3c]; }
+  .practitioner-cabinet-actions h2 { @apply font-serif text-2xl text-[#35261c]; }
+  .practitioner-cabinet-actions p { @apply mt-2 text-sm leading-6 text-[#5d5046]; }
   .prescription-admin-form { @apply mt-7 grid gap-6; }
   .prescription-admin-form fieldset { @apply min-w-0 border-0 p-0; }
   .prescription-admin-form legend { @apply mb-4 text-base font-semibold text-[#35261c]; }
@@ -370,6 +385,8 @@
   .site-navigation a {
     @apply underline decoration-[#bf9473] underline-offset-4 transition hover:text-[#2c2119];
   }
+
+  .site-navigation .site-language-switch { @apply text-sm font-semibold text-[#70442d]; }
 
   .remedy-client-actions { @apply my-4 flex gap-2; }
   .remedy-client-actions button { @apply min-h-11 rounded-full border border-[#cba27a] bg-[#fffaf3] px-4 text-sm font-semibold text-[#70442d]; }
