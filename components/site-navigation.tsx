@@ -17,8 +17,8 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
   const [preference, setPreference] = useState<Locale>(locale ?? "ru");
   const activeLocale = locale ?? preference;
   const labels = activeLocale === "ru"
-    ? { home: "Главная", library: "Книги", homeopathy: "Гомеопатия", cabinet: "Кабинет" }
-    : { home: "Home", library: "Books", homeopathy: "Homeopathy", cabinet: "Cabinet" };
+    ? { home: "Главная", library: "Книги", remedies: "Препараты", services: "Услуги", cabinet: "Кабинет" }
+    : { home: "Home", library: "Books", remedies: "Remedies", services: "Services", cabinet: "Cabinet" };
   const localizedPath = /^\/(ru|en)(?=\/|$)/.test(pathname);
 
   useEffect(() => {
@@ -42,8 +42,8 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
     <nav aria-label={activeLocale === "ru" ? "Основная навигация" : "Primary navigation"} className="site-navigation">
       <Link href="/">{labels.home}</Link>
       <Link href="/books">{labels.library}</Link>
-      <Link href={`/${activeLocale}/homeopathy`}>{labels.homeopathy}</Link>
-      <Link href="/#psialchemy">PsiAlchemy</Link>
+      <Link href={`/${activeLocale}/homeopathy`}>{labels.remedies}</Link>
+      <Link href={`/${activeLocale}/services`}>{labels.services}</Link>
       <Link href="/admin">{labels.cabinet}</Link>
       <span aria-label={activeLocale === "ru" ? "Язык интерфейса" : "Interface language"} className="site-language-switch">
         {(["ru", "en"] as Locale[]).map((nextLocale) => localizedPath ? (
