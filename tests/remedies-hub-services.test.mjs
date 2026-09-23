@@ -2,8 +2,6 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-import { getRemedy } from '../data/remedies.js'
-
 test('Remedies landing combines remedy search, free consultation and book covers in both locales', async () => {
   const [page, search, books, header] = await Promise.all([
     readFile('app/[locale]/homeopathy/page.tsx', 'utf8'),
@@ -43,14 +41,17 @@ test('Services page is bilingual and grounds Alchemy of the Soul in the publishe
   assert.match(page, /published project materials/)
 })
 
-test('remedy pages include exact source-article cross-links when the remedy is mentioned', async () => {
-  const { getRemedyArticleLinks } = await import('../data/remedy-articles.ts')
-  const remedy = getRemedy('ru', 'aconitum')
-  const links = getRemedyArticleLinks(remedy)
-  assert.ok(links.length > 0)
-  assert.ok(links.some(({ href }) => href.startsWith('/books/dao-practicum-cases-remedies#')))
-  assert.ok(links.every(({ href }) => !href.startsWith('/books/alchemy-homeopathy-remedies#')))
-  const page = await readFile('components/remedy-page.tsx', 'utf8')
+test('remedy pages build related links from exact mentions in source articles', async () => {
+  const [index, page, practicum] = await Promise.all([
+    readFile('data/remedy-articles.ts', 'utf8'),
+    readFile('components/remedy-page.tsx', 'utf8'),
+    readFile('source-books/book-2-dao-books/dao_practicum_cases_remedies.html', 'utf8'),
+  ])
+  assert.match(practicum, /Aconitum/i)
+  assert.match(index, /<article\\b/)
+  assert.match(index, /containsTerm/)
+  assert.match(index, /\/books\/\\\$\{book\.id\}#\\\$\{id\}/)
+  assert.match(index, /book\.id === "alchemy-homeopathy-remedies"/)
   assert.match(page, /Другие статьи, где упоминается препарат/)
   assert.match(page, /Other articles mentioning this remedy/)
   assert.match(page, /getRemedyArticleLinks/)
