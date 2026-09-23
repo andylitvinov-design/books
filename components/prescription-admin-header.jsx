@@ -18,13 +18,16 @@ export function PrescriptionAdminHeader({ title, description }) {
     saveUiLocale(nextLocale)
   }
 
+  const localizedTitle = typeof title === 'object' ? (title?.[locale] ?? title?.en ?? title?.ru ?? '') : title
+  const localizedDescription = typeof description === 'object' ? (description?.[locale] ?? description?.en ?? description?.ru ?? '') : description
+
   return (
     <header className="prescription-admin-header">
       <div>
         <p className="prescription-admin-brand"><Link href="/">Holistic House</Link> · <Link href="/admin">{labels.cabinet}</Link></p>
         <nav aria-label={labels.cabinet} className="prescription-admin-navigation"><Link href="/admin/consultations/new">{labels.newConsultation}</Link><Link href="/admin/clients">{labels.clients}</Link><Link href="/admin/clients/legacy">{labels.legacy}</Link></nav>
-        <h1>{title}</h1>
-        {description && <p className="prescription-admin-description">{description}</p>}
+        <h1>{localizedTitle}</h1>
+        {localizedDescription && <p className="prescription-admin-description">{localizedDescription}</p>}
       </div>
       <div className="prescription-admin-header-actions"><span aria-label={labels.language} className="site-language-switch"><button aria-pressed={locale === 'ru'} lang="ru" onClick={() => selectLocale('ru')} type="button">RU</button><button aria-pressed={locale === 'en'} lang="en" onClick={() => selectLocale('en')} type="button">EN</button></span><form action={logout}><button type="submit">{labels.logout}</button></form></div>
     </header>
