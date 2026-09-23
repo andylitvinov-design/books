@@ -13,5 +13,5 @@ export default async function NewConsultation({ searchParams }) {
   const store = getPrescriptionStore()
   const clients = store ? await store.listClients() : []
   const options = await Promise.all(clients.filter(c => c.status === 'active').map(async c => { const docs = await store.listClientDocuments(c.id); return { id: c.id, fullName: c.fullName, preferredLocale: c.preferredLocale, consultationCount: new Set(docs.map(d => d.consultationId ?? d.id)).size, lastConsultation: docs.map(d => d.dateIssued).sort().at(-1) } }))
-  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="New consultation" description="Client and remedies → two ready documents." /><ConsultationForm clients={options} selectedClientId={(await searchParams).clientId} action={createConsultationAction} remedies={getConsultationRemedyOptions()} requestId={randomUUID()} /></main>
+  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title={{ ru: "Новая консультация", en: "New consultation" }} description={{ ru: "Клиент → препараты → готовые документы.", en: "Client → remedies → ready documents." }} /><ConsultationForm clients={options} selectedClientId={(await searchParams).clientId} action={createConsultationAction} remedies={getConsultationRemedyOptions()} requestId={randomUUID()} /></main>
 }

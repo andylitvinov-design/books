@@ -741,3 +741,271 @@
   .consultation-result-heading h2 { overflow-wrap:anywhere; }
 }
 @media (prefers-reduced-motion:reduce) { .consultation-result button,.consultation-result a { transition:none; } }
+
+
+/* Practitioner consultation mobile polish */
+.consultation-form {
+  width: 100%;
+  max-width: 640px;
+}
+.consultation-client-selector,
+.consultation-remedy-fieldset {
+  border-top: 1px solid #d8cfc5;
+  padding-top: 18px !important;
+}
+.consultation-client-search,
+.consultation-remedy-row {
+  position: relative;
+}
+.consultation-client-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 45;
+  display: grid;
+  max-height: min(18rem, 42vh);
+  overflow-y: auto;
+  border: 1px solid #d6c5b4;
+  border-radius: 12px;
+  background: #fff;
+  padding: 4px;
+  box-shadow: 0 14px 34px rgba(68, 48, 31, 0.14);
+}
+.consultation-client-results button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 9px 12px;
+  text-align: left;
+}
+.consultation-client-results button:hover,
+.consultation-client-results button:focus-visible {
+  background: #f4eadc;
+  outline: none;
+}
+.consultation-client-results strong,
+.consultation-client-results span {
+  display: block;
+}
+.consultation-client-results span {
+  margin-top: 3px;
+  color: #796b5e;
+  font-size: 12px;
+}
+.consultation-create-client {
+  width: fit-content;
+  min-height: 40px;
+  color: #70442d;
+  font-weight: 600;
+}
+.consultation-new-client-fields {
+  display: grid;
+  gap: 14px;
+}
+.consultation-selected-client {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-left: 2px solid #8b664c;
+  padding-left: 10px;
+  color: #35261c;
+}
+.consultation-selected-client span {
+  color: #796b5e;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.consultation-remedy-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 40px;
+  align-items: start;
+  gap: 8px;
+}
+.consultation-remove {
+  display: inline-flex;
+  width: 40px;
+  height: 48px;
+  min-width: 40px;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6f5948;
+  font-size: 22px;
+}
+.consultation-remove:hover:not(:disabled) {
+  background: #f3e9df;
+}
+.consultation-remove:disabled {
+  opacity: .3;
+}
+.consultation-form input[type="date"] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.consultation-form .prescription-remedy-results {
+  left: 0;
+  right: 0;
+  width: 100%;
+  min-width: 0;
+  max-height: min(18rem, 42vh);
+  z-index: 50;
+  padding: 4px;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(68, 48, 31, 0.14);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.consultation-form .prescription-remedy-results button {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  touch-action: manipulation;
+}
+.consultation-form .consultation-source-badge {
+  margin: 5px 2px 0;
+  font-size: 12px;
+}
+.consultation-primary-action {
+  width: 100%;
+  min-height: 50px !important;
+  border: 1px solid #563b2a !important;
+  border-radius: 9px !important;
+  background: #563b2a !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: .03em;
+}
+.consultation-primary-action:hover {
+  background: #3f291d !important;
+}
+.consultation-details {
+  padding: 14px 0 0;
+}
+.consultation-details summary {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  html,
+  body {
+    max-width: 100%;
+  }
+  .prescription-admin-shell {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+    padding: 18px 16px 32px;
+  }
+  .prescription-admin-header {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 12px 14px;
+    padding-bottom: 18px;
+  }
+  .prescription-admin-header > div:first-child {
+    min-width: 0;
+  }
+  .prescription-admin-brand {
+    font-size: 11px !important;
+    letter-spacing: .08em !important;
+  }
+  .prescription-admin-navigation {
+    margin-top: 8px;
+    gap: 6px 12px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .prescription-admin-header h1 {
+    margin-top: 16px;
+    font-size: 34px;
+    line-height: 1.02;
+    letter-spacing: -.02em;
+  }
+  .prescription-admin-description {
+    margin-top: 7px;
+    max-width: 28rem;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .prescription-admin-header-actions {
+    align-self: start;
+    justify-content: flex-end;
+    gap: 7px;
+  }
+  .prescription-admin-header-actions .site-language-switch {
+    padding: 0 4px;
+    font-size: 12px;
+  }
+  .prescription-admin-header-actions .site-language-switch button {
+    min-height: 34px;
+    padding: 0 6px;
+  }
+  .prescription-admin-header > .prescription-admin-header-actions form button {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  .prescription-admin-form {
+    margin-top: 20px;
+    gap: 22px;
+  }
+  .prescription-admin-form legend {
+    margin-bottom: 11px;
+    font-size: 15px;
+  }
+  .prescription-admin-form label {
+    gap: 7px;
+    font-size: 14px;
+  }
+  .prescription-admin-form input,
+  .prescription-admin-form select,
+  .prescription-admin-form textarea {
+    min-height: 50px;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+  .consultation-two-columns {
+    grid-template-columns: minmax(0,1fr);
+    gap: 14px;
+  }
+  .consultation-client-selector,
+  .consultation-remedy-fieldset {
+    padding-top: 16px !important;
+  }
+  .consultation-remedies {
+    gap: 10px;
+  }
+  .prescription-add {
+    margin-top: 7px;
+    min-height: 40px;
+    padding: 6px 4px;
+  }
+  .consultation-source-badge {
+    margin-left: 3px;
+  }
+  .consultation-details {
+    padding-top: 10px;
+  }
+  .consultation-details summary {
+    font-size: 14px;
+  }
+  .consultation-primary-action {
+    min-height: 50px !important;
+    margin-top: 2px;
+  }
+}
