@@ -63,11 +63,31 @@ test('Homeopathy PDF renders the compact per-remedy schedule and stress guidance
     patientName: 'Synthetic Client',
     dateIssued: '2026-09-23',
     recommendationType: 'homeopathy',
-    items: [{ displayName: 'Aconitum', granules: '5', timesPerDay: '3' }],
+    items: [{ displayName: 'Aconitum', itemType: 'homeopathy', potency: '30', granules: '5', timesPerDay: '3' }],
   }
   const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
+  assert.match(source, /potency 30/)
   assert.match(source, /5 granules/)
   assert.match(source, /3/)
   assert.match(source, /times a day and additionally during moments of stress/)
   assert.match(source, /Course: 2 weeks/)
+})
+
+
+test('Mixed PDF groups Homeopathy and Bach items and renders both guidance sections', () => {
+  const document = {
+    patientName: 'Synthetic Client',
+    dateIssued: '2026-09-23',
+    recommendationType: 'mixed',
+    items: [
+      { displayName: 'Aconitum', itemType: 'homeopathy', potency: '30', granules: '5', timesPerDay: '3' },
+      { displayName: 'Mimulus', itemType: 'bach' },
+    ],
+  }
+  const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
+  assert.match(source, /INTEGRATED RECOMMENDATION/)
+  assert.match(source, /HOMEOPATHY/)
+  assert.match(source, /BACH ESSENCES/)
+  assert.match(source, /potency 30/)
+  assert.match(source, /Prepare a mixture: add 5 drops of each selected essence/)
 })
