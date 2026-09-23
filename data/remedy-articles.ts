@@ -10,6 +10,8 @@ export type RemedyArticleLink = {
   href: string;
 };
 
+type SourceArticle = RemedyArticleLink & { text: string };
+
 function decodeText(value: string) {
   return value
     .replace(/<[^>]+>/g, " ")
@@ -41,13 +43,8 @@ function containsTerm(text: string, terms: string[]) {
   });
 }
 
-export function getRemedyArticleLinks(remedy: Remedy, limit = 10): RemedyArticleLink[] {
-  const terms = termsFor(remedy);
-  if (!terms.length) return [];
-
-  const results: RemedyArticleLink[] = [];
-  const seen = new Set<string>();
-
+function buildSourceArticleIndex(): SourceArticle[] {
+  const records: SourceArticle[] = [];
   for (const book of books) {
     if (book.id === "alchemy-homeopathy-remedies") continue;
     const filePath = path.join(process.cwd(), book.originalSourceFile);
@@ -59,18 +56,28 @@ export function getRemedyArticleLinks(remedy: Remedy, limit = 10): RemedyArticle
       const body = match[2] ?? "";
       const id = attributes.match(/\bid=["']([^"']+)["']/i)?.[1];
       if (!id) continue;
-      const text = decodeText(body);
-      if (!containsTerm(text, terms)) continue;
       const heading = body.match(/<h[2-5]\b[^>]*>([\s\S]*?)<\/h[2-5]>/i)?.[1];
       const title = decodeText(heading ?? "");
       if (!title) continue;
-      const href = `/books/${book.id}#${id}`;
-      if (seen.has(href)) continue;
-      seen.add(href);
-      results.push({ title, bookTitle: book.title, href });
-      if (results.length >= limit) return results;
+      records.push({
+        title,
+        bookTitle: book.title,
+        href: `/books/${book.id}#${id}`,
+        text: decodeText(body),
+      });
     }
   }
+  return records;
+}
 
-  return results;
+const sourceArticles = buildSourceArticleIndex();
+
+export function getRemedyArticleLinks(remedy: Remedy, limit = 10): RemedyArticleLink[] {
+  const terms = termsFor(remedy);
+  if (!terms.length) return [];
+
+  return sourceArticles
+    .filter((article) => containsTerm(article.text, terms))
+    .slice(0, limit)
+    .map(({ text: _text, ...article }) => article);
 }
