@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { recommendationCopy } from '@/lib/documents/recommendation'
+import { recommendationCopy, remedySchedule } from '@/lib/documents/recommendation'
 import { DocumentAutoPrint } from './document-auto-print'
 import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
@@ -21,11 +21,14 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       {document.recommendationNumber && <p>{labels.number}: {document.recommendationNumber}</p>}
       <p className="canonical-intro">{labels.intro}</p>
       <section>
-        {document.items.map((item, index) => <section className="canonical-remedy" key={index}>
-          <h2>{index + 1}. {item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}{item.potency && ` - ${item.potency}`}</h2>
+        {document.items.map((item, index) => {
+          const schedule = remedySchedule(item, locale)
+          return <section className="canonical-remedy" key={index}>
+          <div className="canonical-remedy-heading"><h2>{index + 1}. {item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}{item.potency && ` - ${item.potency}`}</h2>{schedule && <span className="canonical-remedy-schedule">{schedule}</span>}</div>
           {item.remedyPath && <Link href={item.remedyPath}>{locale === 'ru' ? 'Подробнее о препарате →' : 'Read remedy profile →'}</Link>}
           <dl>{['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key]).map((key) => <div key={key}><dt>{labels[key]}: </dt><dd>{item[key]}</dd></div>)}</dl>
-        </section>)}
+        </section>
+        })}
       </section>
       {document.generalInstructions && <section className="canonical-general"><h2>{labels.general}</h2><p>{document.generalInstructions}</p></section>}
       {document.followUp && <p className="canonical-follow-up">{labels.followUp}: {document.followUp}</p>}
