@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildPaymentPdf, buildPrescriptionPdf, wrapPdfText, measurePdfText } from '../lib/prescriptions/pdf.js'
 
-const recommendation = { patientName: 'Synthetic Client', dateIssued: '2026-09-08', recommendationNumber: 'HR-TEST', items: [{ displayName: 'Arsenicum album', remedyPath: '/en/homeopathy/remedies/arsenicum-album', potency: '30C', purpose: 'Manually entered purpose', sequence: 'First stage', notes: 'PRIVATE-NOTE' }], generalInstructions: 'SYNTHETIC-GUIDANCE', followUp: '2026-09-15' }
+const recommendation = { patientName: 'Synthetic Client', dateIssued: '2026-09-08', recommendationNumber: 'HR-TEST', items: [{ displayName: 'Arsenicum album', remedyPath: '/en/homeopathy/remedies/arsenicum-album', potency: '30C', granules: '5', purpose: 'Manually entered purpose', sequence: 'First stage', notes: 'PRIVATE-NOTE' }], generalInstructions: 'SYNTHETIC-GUIDANCE', followUp: '2026-09-15' }
 
 test('canonical PDF has A4 letterhead, lighthouse and active remedy link without internal notes', () => {
   const source = buildPrescriptionPdf(recommendation, 'en', 'https://example.test').toString('latin1')
@@ -13,6 +13,7 @@ test('canonical PDF has A4 letterhead, lighthouse and active remedy link without
   assert.match(source, /68 668 m/)
   assert.match(source, /\/URI \(https:\/\/example.test\/en\/homeopathy\/remedies\/arsenicum-album\)/)
   assert.doesNotMatch(source, /PRIVATE-NOTE/)
+  assert.match(source, /5 granules/)
 })
 
 test('font metrics preserve newlines and wrap long unbroken values within content width', () => {
