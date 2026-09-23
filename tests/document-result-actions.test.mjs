@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { documentActionUrls, remedyCountLabel, resultLocale, createDocumentLinkCache } from '../lib/consultations/result-actions.js'
@@ -26,4 +27,23 @@ test('failed credential request can retry without caching an error',async()=>{
  let calls=0;const cache=createDocumentLinkCache(async()=>{if(++calls===1)throw new Error('temporary');return {selector:'selector',secret:'secret'}})
  await assert.rejects(cache.url('en','https://preview.invalid'))
  assert.match(await cache.url('ru','https://preview.invalid'),/\/ru\/prescriptions\/selector#secret$/);assert.equal(calls,2)
+})
+
+
+test('Documents Ready uses compact cards with a primary cabinet action and three document actions', async () => {
+  const [result, cabinet, actions, css] = await Promise.all([
+    readFile('components/consultation-result.jsx', 'utf8'),
+    readFile('components/cabinet-link-actions.jsx', 'utf8'),
+    readFile('components/consultation-document-actions.jsx', 'utf8'),
+    readFile('app/globals.css', 'utf8'),
+  ])
+  assert.match(result, /consultation-result-topbar/)
+  assert.match(result, /consultation-document-card/)
+  assert.match(cabinet, /consultation-cabinet-card/)
+  assert.match(cabinet, /consultation-cabinet-primary/)
+  assert.match(actions, /consultation-document-actions/)
+  assert.match(actions, /consultation-action-primary/)
+  assert.match(css, /Documents Ready — compact practitioner result screen/)
+  assert.match(css, /\.consultation-result-documents[\s\S]*grid-template-columns: repeat\(2/)
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.consultation-result-documents[\s\S]*grid-template-columns: 1fr/)
 })
