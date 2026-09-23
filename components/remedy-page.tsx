@@ -62,7 +62,7 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
       <article className="remedy-page">
         <div className="remedy-page-actions"><Link href={`/${locale}/homeopathy`}>{labels.back}</Link><Link href={getRemedySwitchPath(otherLocale, remedy.slug)} lang={otherLocale}>{labels.switch}</Link></div>
         <RemedyClientActions locale={locale} slug={remedy.slug} knownSlugs={getRemedyDirectory(locale).map((entry) => entry.slug)} />
-        <p className="homeopathy-kicker">{locale === "ru" ? "Гомеопатия · источник" : "Homeopathy · source"}</p>
+        <p className="homeopathy-kicker">{locale === "ru" ? "Препараты · источник" : "Remedies · source"}</p>
         <h1>{remedy.canonical_latin_name}</h1>
         {remedy.russian_common_name ? <p className="remedy-common-name">{labels.sourceName}: {remedy.russian_common_name}</p> : null}
         <RemedyEssence locale={locale} remedy={remedy} />
