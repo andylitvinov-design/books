@@ -42,3 +42,32 @@ test('payment PDF includes explicitly supplied method for invoices and receipts,
     assert.doesNotMatch(legacy, /Payment method:/)
   }
 })
+
+
+test('Bach PDF renders the Bach title and automatic mixture instructions', () => {
+  const document = {
+    patientName: 'Synthetic Client',
+    dateIssued: '2026-09-23',
+    recommendationType: 'bach',
+    items: [{ displayName: 'Mimulus' }, { displayName: 'Larch' }],
+  }
+  const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
+  assert.match(source, /BACH FLOWER ESSENCE RECOMMENDATION/)
+  assert.match(source, /Prepare a mixture: add 5 drops of each selected essence/)
+  assert.match(source, /Take 2/)
+  assert.match(source, /Course: 2 weeks/)
+})
+
+test('Homeopathy PDF renders the compact per-remedy schedule and stress guidance', () => {
+  const document = {
+    patientName: 'Synthetic Client',
+    dateIssued: '2026-09-23',
+    recommendationType: 'homeopathy',
+    items: [{ displayName: 'Aconitum', granules: '5', timesPerDay: '3' }],
+  }
+  const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
+  assert.match(source, /5 granules/)
+  assert.match(source, /3/)
+  assert.match(source, /times a day and additionally during moments of stress/)
+  assert.match(source, /Course: 2 weeks/)
+})
