@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getConsultationRemedyOptions } from '@/lib/remedies/registry'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
@@ -8,7 +8,7 @@ import { updateConsultationAction } from '../../actions'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Edit consultation', robots: { index: false, follow: false } }
 export default async function EditConsultation({ params }) {
-  if (!await requireAdminRequest()) notFound()
+  if (!await requireAdminRequest()) redirect('/admin/login')
   const { id } = await params
   const store = getPrescriptionStore()
   const consultation = store ? await store.findById(id) : undefined
