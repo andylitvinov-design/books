@@ -50,7 +50,7 @@ test('remedy pages build related links from exact mentions in source articles', 
   assert.match(practicum, /Aconitum/i)
   assert.match(index, /<article\\b/)
   assert.match(index, /containsTerm/)
-  assert.match(index, /\/books\/\\\$\{book\.id\}#\\\$\{id\}/)
+  assert.match(index, /\/books\/\$\{book\.id\}#\$\{id\}/)
   assert.match(index, /book\.id === "alchemy-homeopathy-remedies"/)
   assert.match(page, /Другие статьи, где упоминается препарат/)
   assert.match(page, /Other articles mentioning this remedy/)

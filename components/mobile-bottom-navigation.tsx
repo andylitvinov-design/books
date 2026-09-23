@@ -29,16 +29,16 @@ export function MobileBottomNavigation() {
   const items = locale === 'ru'
     ? [
         { label: 'Главная', href: '/', icon: House },
-        { label: 'Услуги', href: '/ru/services', icon: Sparkles },
-        { label: 'Препараты', href: '/ru/homeopathy', icon: Leaf },
         { label: 'Книги', href: '/books', icon: BookOpen },
+        { label: 'Препараты', href: '/ru/homeopathy', icon: Leaf },
+        { label: 'Услуги', href: '/ru/services', icon: Sparkles },
         { label: 'Кабинет', href: '/admin', icon: UserRound },
       ]
     : [
         { label: 'Home', href: '/', icon: House },
-        { label: 'Services', href: '/en/services', icon: Sparkles },
-        { label: 'Remedies', href: '/en/homeopathy', icon: Leaf },
         { label: 'Books', href: '/books', icon: BookOpen },
+        { label: 'Remedies', href: '/en/homeopathy', icon: Leaf },
+        { label: 'Services', href: '/en/services', icon: Sparkles },
         { label: 'Cabinet', href: '/admin', icon: UserRound },
       ]
 
