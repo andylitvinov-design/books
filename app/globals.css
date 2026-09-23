@@ -2350,3 +2350,30 @@
     min-height: 56px !important;
   }
 }
+
+.consultation-quick-meta--date-only {
+  grid-template-columns: minmax(0, 220px);
+}
+.consultation-remedy-fieldset--compact > legend {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.consultation-report-badge {
+  color: #796b5e;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+@media (max-width: 600px) {
+  .consultation-quick-meta--date-only {
+    grid-template-columns: minmax(0, 180px);
+  }
+  .consultation-remedy-fieldset--compact > legend {
+    gap: 6px;
+  }
+  .consultation-report-badge {
+    font-size: 8px;
+  }
+}
