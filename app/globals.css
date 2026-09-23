@@ -1966,3 +1966,387 @@
     line-height: 1.35;
   }
 }
+
+
+/* Compact consultation entry + auto parser */
+.consultation-new-shell {
+  max-width: 860px;
+}
+.consultation-form--compact {
+  max-width: 760px;
+  gap: 14px;
+}
+.consultation-client-selector--compact {
+  border: 0 !important;
+  padding: 0 !important;
+}
+.consultation-client-selected-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #d6c5b4;
+  border-radius: 12px;
+  background: #fffaf3;
+  padding: 9px 10px;
+}
+.consultation-client-selected-row > div {
+  min-width: 0;
+}
+.consultation-client-selected-row strong,
+.consultation-client-selected-row span {
+  display: block;
+}
+.consultation-client-selected-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.consultation-client-selected-row span {
+  margin-top: 2px;
+  color: #796b5e;
+  font-size: 10px;
+}
+.consultation-client-language {
+  display: grid !important;
+  gap: 2px !important;
+  color: #796b5e !important;
+  font-size: 9px !important;
+}
+.consultation-client-language select {
+  width: 64px !important;
+  min-height: 34px !important;
+  border-radius: 8px !important;
+  padding: 4px 22px 4px 7px !important;
+  font-size: 12px !important;
+}
+.consultation-client-change {
+  min-height: 34px;
+  border: 1px solid #c8b39f;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 9px;
+  color: #70442d;
+  font-size: 11px;
+  font-weight: 600;
+}
+.consultation-client-search--compact label {
+  gap: 4px !important;
+  font-size: 11px !important;
+}
+.consultation-client-search--compact input {
+  min-height: 44px !important;
+}
+.consultation-create-client--compact {
+  min-height: 32px;
+  margin-top: 4px;
+  padding: 2px 0;
+  font-size: 11px;
+}
+.consultation-new-client-fields--compact {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
+}
+.consultation-new-client-fields--compact input,
+.consultation-new-client-fields--compact select {
+  min-height: 42px !important;
+}
+
+.consultation-quick-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+.consultation-quick-meta > label {
+  gap: 4px !important;
+  font-size: 11px !important;
+}
+.consultation-quick-meta input[type="date"] {
+  min-height: 42px !important;
+}
+.consultation-auto-type {
+  display: grid;
+  min-width: 145px;
+  gap: 2px;
+  border: 1px solid #d6c5b4;
+  border-radius: 10px;
+  background: #f8f1e7;
+  padding: 6px 9px;
+}
+.consultation-auto-type span {
+  color: #796b5e;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.consultation-auto-type strong {
+  color: #4f3829;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.consultation-text-import {
+  border: 1px solid #d6c5b4;
+  border-radius: 12px;
+  background: #f8f1e7;
+  padding: 9px 10px;
+}
+.consultation-text-import-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.consultation-text-import-head strong {
+  font-size: 11px;
+}
+.consultation-text-import-head span {
+  max-width: 470px;
+  color: #796b5e;
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: right;
+}
+.consultation-text-import-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 8px;
+  margin-top: 6px;
+}
+.consultation-text-import textarea {
+  min-height: 58px !important;
+  resize: vertical;
+  border-radius: 9px !important;
+  padding: 8px 10px !important;
+  font-size: 13px !important;
+  line-height: 1.35;
+}
+.consultation-text-import button {
+  min-height: 42px;
+  align-self: end;
+  border: 1px solid #70442d;
+  border-radius: 8px;
+  background: #fffaf3;
+  padding: 0 11px;
+  color: #563b2a;
+  font-size: 11px;
+  font-weight: 700;
+}
+.consultation-text-import-status {
+  display: flex;
+  gap: 12px;
+  margin-top: 5px;
+  color: #6f6257;
+  font-size: 9px;
+}
+
+.consultation-remedy-fieldset--compact {
+  padding-top: 10px !important;
+}
+.consultation-remedy-fieldset--compact > legend {
+  margin-bottom: 7px !important;
+}
+.consultation-remedy-fieldset--compact .consultation-remedies {
+  gap: 8px;
+}
+.consultation-remedy-fieldset--compact .consultation-remedy-row--stacked {
+  gap: 5px 7px;
+  padding-bottom: 9px;
+}
+.consultation-remedy-fieldset--compact .consultation-item-type {
+  grid-column: 1;
+  margin-bottom: -1px;
+}
+.consultation-remedy-fieldset--compact .consultation-item-type > span {
+  display: none;
+}
+.consultation-remedy-fieldset--compact .consultation-item-type > select {
+  min-height: 28px !important;
+  min-width: 78px !important;
+  padding: 2px 22px 2px 7px !important;
+  font-size: 10px !important;
+}
+.consultation-remedy-fieldset--compact .consultation-dose-strip {
+  max-width: 330px;
+  gap: 5px;
+}
+.consultation-remedy-fieldset--compact .consultation-dose-strip .consultation-remedy-dose > input {
+  min-height: 36px !important;
+  height: 36px;
+}
+.consultation-remedy-fieldset--compact .consultation-source-badge {
+  margin-top: 3px;
+  font-size: 10px;
+}
+.consultation-add-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 5px;
+}
+.consultation-add-actions .prescription-add {
+  min-height: 34px;
+  margin: 0;
+  border: 1px solid #c8b39f;
+  border-radius: 8px;
+  background: #fffaf3;
+  padding: 5px 9px;
+  font-size: 11px;
+}
+
+.consultation-note {
+  gap: 5px !important;
+  font-size: 12px !important;
+}
+.consultation-note textarea {
+  min-height: 66px !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
+  font-size: 14px !important;
+}
+.consultation-payment-row {
+  display: grid;
+  gap: 7px;
+}
+.consultation-payment-row > label {
+  gap: 4px !important;
+  font-size: 11px !important;
+}
+.consultation-payment-row > label select {
+  min-height: 42px !important;
+}
+.consultation-payment-settings {
+  padding-top: 7px !important;
+}
+.consultation-payment-settings summary {
+  min-height: 30px !important;
+  font-size: 11px !important;
+}
+
+@media (max-width: 600px) {
+  .consultation-new-shell {
+    padding-top: 10px;
+  }
+  .consultation-new-shell .prescription-admin-header {
+    gap: 6px 10px;
+    padding-bottom: 9px;
+  }
+  .consultation-new-shell .prescription-admin-brand {
+    font-size: 9px !important;
+  }
+  .consultation-new-shell .prescription-admin-navigation {
+    margin-top: 4px;
+    gap: 4px 9px;
+    font-size: 9px;
+  }
+  .consultation-new-shell .prescription-admin-navigation a:last-child {
+    display: none;
+  }
+  .consultation-new-shell .prescription-admin-header h1 {
+    margin-top: 8px;
+    font-size: 27px;
+  }
+  .consultation-new-shell .prescription-admin-description {
+    display: none;
+  }
+  .consultation-new-shell .prescription-admin-header-actions {
+    gap: 4px;
+  }
+  .consultation-new-shell .prescription-admin-header-actions .site-language-switch {
+    font-size: 10px;
+  }
+  .consultation-new-shell .prescription-admin-header > .prescription-admin-header-actions form button {
+    min-height: 30px;
+    padding-inline: 7px;
+    font-size: 9px;
+  }
+  .consultation-form--compact {
+    margin-top: 10px;
+    gap: 11px;
+  }
+  .consultation-client-selected-row {
+    gap: 7px;
+    padding: 7px 8px;
+  }
+  .consultation-client-selected-row strong {
+    font-size: 13px;
+  }
+  .consultation-client-selected-row span {
+    font-size: 8.5px;
+  }
+  .consultation-client-language span {
+    display: none;
+  }
+  .consultation-client-language select {
+    width: 56px !important;
+    min-height: 30px !important;
+    font-size: 10px !important;
+  }
+  .consultation-client-change {
+    min-height: 30px;
+    padding-inline: 7px;
+    font-size: 9px;
+  }
+  .consultation-quick-meta {
+    grid-template-columns: minmax(0,1fr) 128px;
+    gap: 7px;
+  }
+  .consultation-quick-meta input[type="date"] {
+    min-height: 38px !important;
+    font-size: 14px !important;
+  }
+  .consultation-auto-type {
+    min-width: 0;
+    padding: 5px 7px;
+  }
+  .consultation-auto-type strong {
+    font-size: 9.5px;
+  }
+  .consultation-text-import {
+    padding: 7px 8px;
+  }
+  .consultation-text-import-head span {
+    display: none;
+  }
+  .consultation-text-import-row {
+    grid-template-columns: minmax(0,1fr) 92px;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .consultation-text-import textarea {
+    min-height: 50px !important;
+    font-size: 12px !important;
+  }
+  .consultation-text-import button {
+    min-height: 38px;
+    padding-inline: 7px;
+    font-size: 9.5px;
+    line-height: 1.15;
+  }
+  .consultation-remedy-fieldset--compact {
+    padding-top: 7px !important;
+  }
+  .consultation-remedy-fieldset--compact .consultation-remedy-row--stacked {
+    padding-bottom: 7px;
+  }
+  .consultation-remedy-fieldset--compact .consultation-dose-strip {
+    max-width: 100%;
+  }
+  .consultation-remedy-fieldset--compact .consultation-dose-strip .consultation-remedy-dose > input {
+    min-height: 34px !important;
+    height: 34px;
+  }
+  .consultation-add-actions {
+    gap: 5px;
+  }
+  .consultation-add-actions .prescription-add {
+    min-height: 32px;
+    font-size: 10px;
+  }
+  .consultation-note textarea {
+    min-height: 56px !important;
+  }
+}
