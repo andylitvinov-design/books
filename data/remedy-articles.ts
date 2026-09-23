@@ -79,5 +79,5 @@ export function getRemedyArticleLinks(remedy: Remedy, limit = 10): RemedyArticle
   return sourceArticles
     .filter((article) => containsTerm(article.text, terms))
     .slice(0, limit)
-    .map(({ text: _text, ...article }) => article);
+    .map(({ title, bookTitle, href }) => ({ title, bookTitle, href }));
 }
