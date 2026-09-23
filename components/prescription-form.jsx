@@ -40,6 +40,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
     }}>
       <input type="hidden" name="itemsJson" value={serializePrescriptionRows(items)} />
       <input type="hidden" name="internalNotes" value={prescription?.internalNotes ?? ''} />
+      <input type="hidden" name="recommendationType" value={prescription?.recommendationType ?? 'homeopathy'} />
       <PrescriptionTextImport remedies={remedies.filter((remedy) => remedy.slug)} canUndo={Boolean(importUndo)} onUndo={() => {
         setItems(importUndo.items); setPatientName(importUndo.patientName); setDateIssued(importUndo.dateIssued); setGeneralInstructions(importUndo.generalInstructions); setImportUndo(null); setError('')
       }} onApply={(parsed) => {

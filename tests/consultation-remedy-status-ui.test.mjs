@@ -87,3 +87,14 @@ test('consultation UI exposes two compact numeric dose fields beside each remedy
   assert.match(css, /Compact per-remedy granule schedule/)
   assert.match(css, /grid-template-columns: minmax\(0, 1fr\).*72px.*72px.*40px/s)
 })
+
+
+test('consultation UI can switch between Homeopathy and Bach essence modes', async () => {
+  const source = await readFile('components/consultation-form.jsx', 'utf8')
+  assert.match(source, /name="recommendationType"/)
+  assert.match(source, /value="homeopathy"/)
+  assert.match(source, /value="bach"/)
+  assert.match(source, /labels\.bach/)
+  assert.match(source, /consultation-remedy-row--bach/)
+  assert.match(source, /recommendationType === 'homeopathy'/)
+})

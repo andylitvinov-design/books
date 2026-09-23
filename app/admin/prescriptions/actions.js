@@ -10,7 +10,7 @@ function formInput(formData) {
   let items
   try { items = JSON.parse(String(formData.get('itemsJson') ?? '[]')) } catch { throw new Error('Invalid remedy item data') }
   return {
-    patientName: formData.get('patientName'), patientDob: formData.get('patientDob'), dateIssued: formData.get('dateIssued'),
+    patientName: formData.get('patientName'), patientDob: formData.get('patientDob'), dateIssued: formData.get('dateIssued'), recommendationType: formData.get('recommendationType'),
     languagePreference: formData.get('languagePreference'), practitionerName: formData.get('practitionerName'), practitionerRole: formData.get('practitionerRole'),
     practitionerBackground: formData.get('practitionerBackground'), practitionerContact: formData.get('practitionerContact'), generalInstructions: formData.get('generalInstructions'),
     recommendationNumber: formData.get('recommendationNumber'), followUp: formData.get('followUp'),

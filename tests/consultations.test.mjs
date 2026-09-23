@@ -99,3 +99,12 @@ test('REST access CAS rejects a write raced by revocation without inserting stal
  assert.equal(saved.has('prescription:selector:first'),false)
  assert.equal((await store.findBySelector('second')).id,second.id)
 })
+
+
+test('consultations persist the selected recommendation type and reject unknown types', async () => {
+ const store=createMemoryPrescriptionStore()
+ const pair=await create(store,{recommendationType:'bach',items:[{displayNameOverride:'Mimulus',sourceStatus:'custom'}]})
+ assert.equal(pair.recommendation.recommendationType,'bach')
+ assert.equal(getClientPrescription(pair.recommendation,'en').recommendationType,'bach')
+ await assert.rejects(create(store,{recommendationType:'unknown'}),/recommendation type/i)
+})
