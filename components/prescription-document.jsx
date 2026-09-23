@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { recommendationCopy, remedySchedule } from '@/lib/documents/recommendation'
+import { recommendationCopy, recommendationGuidance, remedySchedule } from '@/lib/documents/recommendation'
 import { DocumentAutoPrint } from './document-auto-print'
 import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
@@ -7,7 +7,8 @@ import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
 
 
 export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false }) {
-  const labels = recommendationCopy(locale)
+  const labels = recommendationCopy(locale, document.recommendationType)
+  const guidance = recommendationGuidance(document, locale)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
   return <main className="prescription-shell canonical-shell">
     {!admin && selector && <div className="prescription-toolbar">
@@ -22,7 +23,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       <p className="canonical-intro">{labels.intro}</p>
       <section>
         {document.items.map((item, index) => {
-          const schedule = remedySchedule(item, locale)
+          const schedule = remedySchedule(item, locale, document.recommendationType)
           return <section className="canonical-remedy" key={index}>
           <div className="canonical-remedy-heading"><h2>{index + 1}. {item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}{item.potency && ` - ${item.potency}`}</h2>{schedule && <span className="canonical-remedy-schedule">{schedule}</span>}</div>
           {item.remedyPath && <Link href={item.remedyPath}>{locale === 'ru' ? 'Подробнее о препарате →' : 'Read remedy profile →'}</Link>}
@@ -30,6 +31,13 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         </section>
         })}
       </section>
+      {guidance && <section className="canonical-guidance">
+        <h2>{guidance.takeTitle}</h2>
+        <ul>{guidance.bullets.map((line) => <li key={line}>{line}</li>)}</ul>
+        <p><strong>{guidance.course.split(':')[0]}:</strong>{guidance.course.includes(':') ? guidance.course.slice(guidance.course.indexOf(':') + 1) : ''}</p>
+        <p>{guidance.recheck}</p>
+        <p className="canonical-guidance-contact">{guidance.contact}</p>
+      </section>}
       {document.generalInstructions && <section className="canonical-general"><h2>{labels.general}</h2><p>{document.generalInstructions}</p></section>}
       {document.followUp && <p className="canonical-follow-up">{labels.followUp}: {document.followUp}</p>}
       <DocumentSignature date={document.dateIssued} locale={locale} />
