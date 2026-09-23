@@ -18,27 +18,26 @@ export function CabinetLinkActions({ clientId, locale = 'en' }) {
       if (open) location.assign(url)
       else {
         await navigator.clipboard.writeText(url)
-        setStatus(ru ? 'Ссылка на кабинет скопирована' : 'Cabinet link copied')
+        setStatus(ru ? 'Ссылка скопирована' : 'Link copied')
       }
     } catch {
-      setStatus(ru ? 'Доступ недоступен. Проверьте настройки клиента.' : 'Access unavailable. Check client settings.')
+      setStatus(ru ? 'Доступ недоступен' : 'Access unavailable')
     } finally {
       setBusy(false)
     }
   }
 
-  return <section className="consultation-cabinet-card" aria-label={ru ? 'Кабинет клиента' : 'Client cabinet'}>
-    <div className="consultation-cabinet-copy">
+  return <section className="consultation-cabinet-card consultation-cabinet-card--dense" aria-label={ru ? 'Кабинет клиента' : 'Client cabinet'}>
+    <div className="consultation-cabinet-head">
       <p>{ru ? 'КАБИНЕТ КЛИЕНТА' : 'CLIENT CABINET'}</p>
-      <h2>{ru ? 'Одна ссылка на всю историю' : 'One link for the full history'}</h2>
-      <span>{ru ? 'Новые рекомендации и квитанции будут появляться здесь автоматически.' : 'New recommendations and receipts appear here automatically.'}</span>
+      <span>{ru ? 'Одна ссылка на всю историю' : 'One link for all history'}</span>
     </div>
-    <div className="consultation-cabinet-actions">
+    <div className="consultation-cabinet-actions consultation-cabinet-actions--dense">
       <button className="consultation-cabinet-primary" type="button" disabled={busy} onClick={() => act(false)}>
-        {ru ? 'Копировать ссылку' : 'Copy cabinet link'}
+        {ru ? 'Копировать' : 'Copy link'}
       </button>
-      <button type="button" disabled={busy} onClick={() => act(true)}>{ru ? 'Открыть кабинет' : 'Open cabinet'}</button>
-      <a href={`/admin/clients/${clientId}`}>{ru ? 'История клиента' : 'Client history'}</a>
+      <button type="button" disabled={busy} onClick={() => act(true)}>{ru ? 'Открыть' : 'Open'}</button>
+      <a href={`/admin/clients/${clientId}`}>{ru ? 'История' : 'History'}</a>
     </div>
     <p className="consultation-cabinet-status" role="status">{status}</p>
   </section>
