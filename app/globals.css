@@ -2396,3 +2396,409 @@
     grid-template-columns: minmax(0,1fr) 72px;
   }
 }
+
+
+/* Remedies hub, services, and related source articles */
+.public-site-header {
+  margin: 0 0 28px;
+  border: 1px solid #d9cfc0;
+  border-left: 0;
+  border-right: 0;
+  padding: 16px 0;
+  background: transparent;
+}
+.public-site-header .house-wordmark { font-size: 22px; }
+.public-site-header .site-navigation { gap: 18px; }
+.public-site-header .site-navigation a { font-size: 11px; }
+
+.remedies-landing {
+  max-width: 82rem;
+  padding-top: 0;
+}
+.remedies-hero {
+  max-width: 58rem;
+  padding: 34px 0 26px;
+}
+.remedies-hero h1,
+.services-hero h1 {
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(46px, 7vw, 78px);
+  line-height: .98;
+  color: #2c2119;
+}
+.remedies-hero > p:last-of-type,
+.services-hero > p:last-of-type {
+  margin-top: 16px;
+  max-width: 46rem;
+  color: #5e4e40;
+  font-size: 16px;
+  line-height: 1.7;
+}
+.remedies-search-block {
+  position: relative;
+  margin-top: 24px;
+  max-width: 46rem;
+}
+.remedies-search-label {
+  display: grid;
+  gap: 7px;
+  color: #5e4e40;
+  font-size: 12px;
+  font-weight: 600;
+}
+.remedies-search-input {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #bfa98f;
+  border-radius: 14px;
+  background: #fffaf2;
+  padding: 0 14px;
+}
+.remedies-search-input input {
+  width: 100%;
+  background: transparent;
+  color: #2c2119;
+  font-size: 16px;
+  outline: none;
+}
+.remedies-search-input input::placeholder { color: #968777; }
+.remedies-search-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% - 4px);
+  z-index: 20;
+  display: grid;
+  max-height: 330px;
+  overflow-y: auto;
+  border: 1px solid #cbb79e;
+  border-radius: 0 0 12px 12px;
+  background: #fffdf8;
+  box-shadow: 0 16px 32px rgba(56, 39, 26, .12);
+}
+.remedies-search-results a {
+  display: grid;
+  gap: 2px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #eadfce;
+  color: #3f2c20;
+  text-decoration: none;
+}
+.remedies-search-results a:last-child { border-bottom: 0; }
+.remedies-search-results a:hover { background: #f4eadc; }
+.remedies-search-results strong { font-size: 14px; }
+.remedies-search-results span,
+.remedies-search-results p { color: #78695c; font-size: 11px; }
+.remedies-search-results p { padding: 12px 14px; }
+.remedies-all-link {
+  display: inline-block;
+  margin-top: 9px;
+  color: #70442d;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.remedies-consultation-banner,
+.services-consultation {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 24px;
+  margin: 18px 0 44px;
+  border: 1px solid #b99b7c;
+  border-radius: 18px;
+  background: #4d3d31;
+  padding: 24px 26px;
+  color: #fff8ef;
+}
+.remedies-consultation-banner h2,
+.services-consultation h2 {
+  margin-top: 7px;
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.remedies-consultation-banner p:not(.homeopathy-kicker),
+.services-consultation p:not(.homeopathy-kicker) {
+  margin-top: 8px;
+  max-width: 45rem;
+  color: #eadcca;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.remedies-consultation-actions,
+.services-consultation > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.remedies-consultation-actions a,
+.services-consultation > div:last-child a {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cfb394;
+  border-radius: 9px;
+  padding: 0 12px;
+  color: #fff8ef;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.remedies-consultation-actions a:first-child,
+.services-consultation > div:last-child a:first-child {
+  background: #fff8ef;
+  color: #4d3d31;
+}
+
+.remedies-books-section {
+  padding: 16px 0 30px;
+  border-top: 1px solid #d9cdbd;
+}
+.remedies-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+}
+.remedies-section-heading h2 {
+  margin-top: 6px;
+  font-family: var(--font-serif);
+  font-size: 38px;
+  line-height: 1.1;
+}
+.remedies-section-heading p:last-child {
+  margin-top: 8px;
+  max-width: 48rem;
+  color: #65564a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.remedies-section-heading > a {
+  color: #70442d;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.remedies-book-grid {
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 16px;
+}
+.remedies-book-card h3 {
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: 21px;
+  line-height: 1.15;
+  color: #2c2119;
+}
+.remedies-book-card .catalog-card-body { padding: 15px; }
+.remedies-book-card .catalog-card-description {
+  margin-top: 9px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.remedies-book-card .catalog-card-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  font-size: 10px;
+}
+.remedies-book-language-note {
+  margin-top: 8px;
+  color: #8a796b;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.remedies-landing-disclaimer { margin-top: 28px; }
+
+.services-shell {
+  min-height: 100vh;
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: 0 32px 72px;
+}
+.services-hero {
+  max-width: 60rem;
+  padding: 34px 0 34px;
+}
+.services-approach {
+  margin-top: 4px;
+  border-top: 1px solid #d9cdbd;
+  border-bottom: 1px solid #d9cdbd;
+  padding: 30px 0;
+}
+.services-approach h2 {
+  margin-top: 7px;
+  font-family: var(--font-serif);
+  font-size: 42px;
+  font-weight: 400;
+}
+.services-approach > p:last-of-type {
+  margin-top: 12px;
+  max-width: 58rem;
+  color: #5e4e40;
+  font-size: 15px;
+  line-height: 1.75;
+}
+.services-approach > a {
+  display: inline-block;
+  margin-top: 14px;
+  color: #70442d;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 14px;
+  margin-top: 28px;
+}
+.services-grid article {
+  border: 1px solid #d6c7b5;
+  border-radius: 14px;
+  background: #fffaf2;
+  padding: 20px;
+}
+.services-grid h2 {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+.services-grid p {
+  margin-top: 8px;
+  color: #66574a;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.services-disclaimer { margin-top: 24px; }
+
+.remedy-article-note {
+  margin-top: 18px;
+  border-top: 1px solid #cdbda5;
+  padding-top: 16px;
+}
+.remedy-article-note h2 {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: #2c2119;
+}
+.remedy-article-note > p {
+  margin-top: 6px;
+  color: #6d5d51;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.remedy-article-note ul {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+.remedy-article-note li {
+  list-style: none;
+}
+.remedy-article-note a {
+  display: grid;
+  gap: 2px;
+  border-left: 2px solid #cba27a;
+  padding: 7px 0 7px 10px;
+  color: #4d3829;
+  text-decoration: none;
+}
+.remedy-article-note a:hover strong { text-decoration: underline; text-underline-offset: 3px; }
+.remedy-article-note strong { font-size: 12px; }
+.remedy-article-note span { color: #807061; font-size: 10px; }
+
+.house-services-link {
+  grid-column: 2;
+  width: fit-content;
+  align-self: start;
+  margin-top: -20px;
+}
+
+@media (max-width: 900px) {
+  .remedies-book-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 767px) {
+  .public-site-header {
+    position: relative;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 14px 0;
+  }
+  .public-site-header .house-wordmark { font-size: 20px; }
+  .public-site-header .site-navigation {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .public-site-header .site-navigation a { font-size: 10px; }
+
+  .remedies-landing {
+    padding-top: 0 !important;
+  }
+  .remedies-hero { padding: 18px 0 20px; }
+  .remedies-hero h1,
+  .services-hero h1 { font-size: 50px; }
+  .remedies-search-input { min-height: 50px; }
+
+  .remedies-consultation-banner,
+  .services-consultation {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 30px;
+    padding: 20px;
+  }
+  .remedies-consultation-actions,
+  .services-consultation > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .remedies-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .remedies-book-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .remedies-book-card h3 { font-size: 17px; }
+  .remedies-book-card .catalog-card-body { padding: 11px; }
+  .remedies-book-card .catalog-card-description {
+    display: none;
+  }
+  .remedies-book-card .catalog-card-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .services-shell { padding: 0 16px 56px; }
+  .services-hero { padding: 18px 0 24px; }
+  .services-approach { padding: 22px 0; }
+  .services-approach h2 { font-size: 34px; }
+  .services-grid { grid-template-columns: 1fr; }
+
+  .house-services-link {
+    grid-column: auto;
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  .remedies-book-grid { grid-template-columns: 1fr; }
+}
