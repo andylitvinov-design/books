@@ -31,6 +31,7 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
   function selectLocale(nextLocale: Locale) {
     setPreference(nextLocale);
     saveUiLocale(nextLocale);
+    window.dispatchEvent(new CustomEvent<Locale>("ui-locale-change", { detail: nextLocale }));
     onLocaleChange?.(nextLocale);
   }
 
@@ -42,8 +43,8 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
     <nav aria-label={activeLocale === "ru" ? "Основная навигация" : "Primary navigation"} className="site-navigation">
       <Link href="/">{labels.home}</Link>
       <Link href="/books">{labels.library}</Link>
-      <Link href={`/${activeLocale}/homeopathy`}>{labels.remedies}</Link>
-      <Link href={`/${activeLocale}/services`}>{labels.services}</Link>
+      <Link href={"/" + activeLocale + "/homeopathy"}>{labels.remedies}</Link>
+      <Link href={"/" + activeLocale + "/services"}>{labels.services}</Link>
       <Link href="/admin">{labels.cabinet}</Link>
       <span aria-label={activeLocale === "ru" ? "Язык интерфейса" : "Interface language"} className="site-language-switch">
         {(["ru", "en"] as Locale[]).map((nextLocale) => localizedPath ? (
