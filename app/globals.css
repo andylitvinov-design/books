@@ -1695,3 +1695,83 @@
     text-align: left;
   }
 }
+
+
+/* Compact per-remedy granule schedule */
+.consultation-remedy-row {
+  grid-template-columns: minmax(0, 1fr) minmax(58px, 72px) minmax(58px, 72px) 40px;
+  gap: 6px;
+}
+.consultation-remedy-dose {
+  display: grid !important;
+  align-content: start;
+  gap: 4px !important;
+  min-width: 0;
+  color: #796b5e !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  line-height: 1.1;
+}
+.consultation-remedy-dose > span {
+  min-height: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.consultation-remedy-dose > input {
+  min-height: 48px !important;
+  padding-inline: 6px !important;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.canonical-remedy-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.canonical-remedy-heading h2 {
+  min-width: 0;
+  margin: 0 0 6px;
+}
+.canonical-remedy-schedule {
+  flex: 0 0 auto;
+  color: #747c81;
+  font: 600 12px/1.3 Arial, sans-serif;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .consultation-remedy-row {
+    grid-template-columns: minmax(0, 1fr) 62px 62px 36px;
+    gap: 5px;
+  }
+  .consultation-remedy-dose {
+    font-size: 9px !important;
+  }
+  .consultation-remedy-dose > input {
+    min-height: 50px !important;
+    padding-inline: 4px !important;
+  }
+  .consultation-remove {
+    width: 36px;
+    min-width: 36px;
+  }
+  .canonical-remedy-heading {
+    gap: 8px;
+  }
+  .canonical-remedy-schedule {
+    font-size: 11px;
+  }
+}
+
+.consultation-remedy-row > .prescription-remedy-search,
+.consultation-remedy-row > .consultation-remove {
+  margin-top: 16px;
+}
+@media (max-width: 600px) {
+  .consultation-remedy-row > .prescription-remedy-search,
+  .consultation-remedy-row > .consultation-remove {
+    margin-top: 14px;
+  }
+}
