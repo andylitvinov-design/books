@@ -63,3 +63,11 @@ test('client cabinet distinguishes Bach recommendations from Homeopathy', async 
   assert.match(page, /Bach Flower Essence Recommendation/)
   assert.match(page, /Рекомендация по эссенциям Баха/)
 })
+
+
+test('client cabinet distinguishes mixed recommendations', async () => {
+  const page = await readFile('app/[locale]/client/[selector]/page.js', 'utf8')
+  assert.match(page, /recommendationType === 'mixed'/)
+  assert.match(page, /Integrated Recommendation/)
+  assert.match(page, /Комплексная рекомендация/)
+})
