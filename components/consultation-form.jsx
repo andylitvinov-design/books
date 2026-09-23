@@ -194,6 +194,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       rowKey: crypto.randomUUID(),
       selected: true,
       itemType: item.itemType === 'bach' ? 'bach' : 'homeopathy',
+      sourceStatus: item.itemType === 'bach' ? 'custom' : item.remedySlug ? 'canonical' : item.sourceStatus ?? 'custom',
     }))
     setItems((current) => {
       const retained = current.filter((item) => item.selected)
