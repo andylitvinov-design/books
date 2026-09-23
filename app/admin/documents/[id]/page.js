@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import { ConsultationDocumentActions } from '@/components/consultation-document-actions'
 import { AdminDocumentActions } from '@/components/admin-document-panels'
@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false, follow: false }, title: 'Document preview' }
 
 export default async function AdminDocumentPreview({ params, searchParams }) {
-  if (!await requireAdminRequest()) notFound()
+  if (!await requireAdminRequest()) redirect('/admin/login')
   const { id } = await params
   const query = await searchParams
   const locale = query.locale ?? 'en'

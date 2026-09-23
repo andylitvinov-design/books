@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
@@ -7,7 +7,7 @@ import { editClientAction, rotateClientAction, revokeClientAction } from '../act
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Client history', robots: { index: false, follow: false } }
 export default async function ClientDetail({ params }) {
-  if (!await requireAdminRequest()) notFound()
+  if (!await requireAdminRequest()) redirect('/admin/login')
   const { id } = await params, store = getPrescriptionStore(), client = await store?.findClientById(id)
   if (!client) notFound()
   const docs = await store.listClientDocuments(id), groups = Object.groupBy(docs, d => `${d.dateIssued}|${d.consultationId ?? d.id}`)

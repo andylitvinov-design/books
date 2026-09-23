@@ -1,11 +1,11 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Clients', robots: { index: false, follow: false } }
 export default async function Clients({ searchParams }) {
-  if (!await requireAdminRequest()) notFound()
+  if (!await requireAdminRequest()) redirect('/admin/login')
   const store = getPrescriptionStore(), q = String((await searchParams).q ?? '').toLocaleLowerCase()
   const clients = store ? await store.listClients() : []
   const rows = await Promise.all(clients.filter(c => c.fullName.toLocaleLowerCase().includes(q)).map(async c => { const docs = await store.listClientDocuments(c.id); return { ...c, count: docs.length, last: docs.map(d => d.dateIssued).sort().at(-1) } }))
