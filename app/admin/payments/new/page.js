@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false, follow: false }, title: 'New payment document' }
 
 export default async function NewPaymentPage({ searchParams }) {
-  if (!await requireAdminRequest()) notFound()
+  if (!await requireAdminRequest()) redirect('/admin/login')
   const query = await searchParams
   const consultationId = typeof query.consultation === 'string' ? query.consultation : undefined
   const store = getPrescriptionStore()
