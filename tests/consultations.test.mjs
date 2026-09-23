@@ -101,9 +101,9 @@ test('REST access CAS rejects a write raced by revocation without inserting stal
 })
 
 
-test('consultations persist the selected recommendation type and reject unknown types', async () => {
+test('consultations infer Bach type from selected items and still reject an invalid explicit type', async () => {
  const store=createMemoryPrescriptionStore()
- const pair=await create(store,{recommendationType:'bach',items:[{displayNameOverride:'Mimulus',sourceStatus:'custom'}]})
+ const pair=await create(store,{items:[{itemType:'bach',displayNameOverride:'Mimulus',sourceStatus:'custom'}]})
  assert.equal(pair.recommendation.recommendationType,'bach')
  assert.equal(getClientPrescription(pair.recommendation,'en').recommendationType,'bach')
  await assert.rejects(create(store,{recommendationType:'unknown'}),/recommendation type/i)
@@ -113,7 +113,6 @@ test('consultations persist the selected recommendation type and reject unknown 
 test('mixed consultations persist Homeopathy and Bach item types with editable Homeopathy dose values', async () => {
  const store=createMemoryPrescriptionStore()
  const pair=await create(store,{
-  recommendationType:'mixed',
   items:[
    {itemType:'homeopathy',remedySlug:'arsenicum-album',potency:'200',granules:'7',timesPerDay:'2'},
    {itemType:'bach',displayNameOverride:'Mimulus',sourceStatus:'custom'}
@@ -126,4 +125,18 @@ test('mixed consultations persist Homeopathy and Bach item types with editable H
  assert.equal(pair.recommendation.items[0].timesPerDay,'2')
  assert.equal(pair.recommendation.items[1].potency,undefined)
  assert.equal(pair.recommendation.items[1].remedySlug,null)
+})
+
+
+test('consultations infer Homeopathy, Bach or mixed report type from selected item modalities', async () => {
+ const store=createMemoryPrescriptionStore()
+ const homeo=await create(store,{items:[{itemType:'homeopathy',remedySlug:'arsenicum-album'}]})
+ const bach=await create(store,{items:[{itemType:'bach',displayNameOverride:'Mimulus',sourceStatus:'custom'}]})
+ const mixed=await create(store,{items:[
+  {itemType:'homeopathy',remedySlug:'arsenicum-album'},
+  {itemType:'bach',displayNameOverride:'Mimulus',sourceStatus:'custom'}
+ ]})
+ assert.equal(homeo.recommendation.recommendationType,'homeopathy')
+ assert.equal(bach.recommendation.recommendationType,'bach')
+ assert.equal(mixed.recommendation.recommendationType,'mixed')
 })

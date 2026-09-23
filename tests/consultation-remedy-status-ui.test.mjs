@@ -40,9 +40,9 @@ test('existing source and custom rows survive editing alongside canonical rows',
 
 test('consultation suggestion selection happens on pointer down before mobile blur can close the list', async () => {
   const source = await readFile('components/consultation-form.jsx', 'utf8')
-  assert.match(source, /function selectItem\(index, remedy\)/)
-  assert.match(source, /onPointerDown=\{\(event\) => \{[\s\S]*?event\.preventDefault\(\)[\s\S]*?selectItem\(index, remedy\)/)
-  assert.match(source, /onClick=\{\(\) => selectItem\(index, remedy\)\}/)
+  assert.match(source, /function selectItem\(index, candidate\)/)
+  assert.match(source, /onPointerDown=\{\(event\) => \{[\s\S]*?event\.preventDefault\(\)[\s\S]*?selectItem\(index, candidate\)/)
+  assert.match(source, /onClick=\{\(\) => selectItem\(index, candidate\)\}/)
 })
 
 test('mobile consultation UI has compact controls, bounded dropdowns and a full-width primary action', async () => {
@@ -94,16 +94,14 @@ test('consultation UI exposes a compact potency / granules / times-per-day dose 
 })
 
 
-test('consultation UI can switch between Homeopathy, Bach and mixed modes with per-item type controls', async () => {
+test('consultation UI derives report type from per-item Homeopathy or Bach choices without a manual report selector', async () => {
   const source = await readFile('components/consultation-form.jsx', 'utf8')
-  assert.match(source, /name="recommendationType"/)
-  assert.match(source, /value="homeopathy"/)
-  assert.match(source, /value="bach"/)
-  assert.match(source, /value="mixed"/)
-  assert.match(source, /labels\.bach/)
-  assert.match(source, /consultation-remedy-row--bach/)
-  assert.match(source, /recommendationType === 'mixed'/)
+  assert.doesNotMatch(source, /name="recommendationType"/)
+  assert.match(source, /function detectedType\(items\)/)
   assert.match(source, /consultation-item-type/)
+  assert.match(source, /labels\.reportMixed/)
+  assert.match(source, /labels\.addRemedy/)
+  assert.match(source, /labels\.addEssence/)
 })
 
 
@@ -118,4 +116,22 @@ test('mixed rows serialize explicit Homeopathy and Bach item types without dose 
   assert.equal(saved[1].displayNameOverride, 'Mimulus')
   assert.equal(saved[1].potency, '')
   assert.equal(saved[1].granules, '')
+})
+
+
+test('consultation entry restores compact auto-parser and open Note field while removing redundant Additional details UI', async () => {
+  const source = await readFile('components/consultation-form.jsx', 'utf8')
+  assert.match(source, /ConsultationTextImport/)
+  assert.match(source, /className="consultation-note"/)
+  assert.match(source, /name="generalInstructions"/)
+  assert.doesNotMatch(source, /labels\.additional/)
+  assert.doesNotMatch(source, /consultationClinicalFields/)
+})
+
+test('compact consultation screen targets remedies on the first mobile viewport', async () => {
+  const css = await readFile('app/globals.css', 'utf8')
+  assert.match(css, /Compact consultation entry \+ auto parser/)
+  assert.match(css, /\.consultation-new-shell \.prescription-admin-description\s*\{\s*display: none/)
+  assert.match(css, /\.consultation-form--compact[\s\S]*gap: 11px/)
+  assert.match(css, /\.consultation-text-import textarea[\s\S]*min-height: 50px/)
 })
