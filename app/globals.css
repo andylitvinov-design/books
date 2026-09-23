@@ -1399,3 +1399,299 @@
     font-size: 11px;
   }
 }
+
+
+/* Documents Ready — single-screen mobile density */
+.consultation-result-topbar--dense {
+  align-items: center;
+  padding-bottom: 10px;
+}
+.consultation-result-topbar--dense h1 {
+  margin-top: 4px;
+  font-size: 34px;
+}
+.consultation-result-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.consultation-result-top-actions .consultation-result-new-link {
+  margin: 0;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #c8b39f;
+  border-radius: 7px;
+  padding: 0 9px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.consultation-result-top-actions .consultation-result-logout {
+  min-height: 36px;
+}
+
+.consultation-result-summary--dense {
+  align-items: center;
+  padding: 10px 0;
+}
+.consultation-result-client--inline {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.consultation-result-client--inline > span {
+  flex-basis: 100%;
+}
+.consultation-result-client--inline > strong {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.05;
+}
+.consultation-result-client--inline > em {
+  color: #a28e7c;
+  font-style: normal;
+}
+.consultation-result-client--inline > p {
+  margin: 0;
+  font-size: 12px;
+}
+.consultation-language--dense legend {
+  margin-bottom: 3px;
+  font-size: 10px;
+}
+.consultation-language--dense button {
+  min-width: 38px;
+  min-height: 32px;
+  font-size: 12px;
+}
+
+.consultation-cabinet-card--dense {
+  margin-bottom: 10px;
+  padding: 11px 12px;
+  border-radius: 11px;
+}
+.consultation-cabinet-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.consultation-cabinet-head > p {
+  margin: 0;
+  color: #8b5a3c;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+.consultation-cabinet-head > span {
+  color: #796b5e;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.consultation-cabinet-actions--dense {
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+.consultation-cabinet-actions--dense .consultation-cabinet-primary {
+  grid-column: auto;
+}
+.consultation-cabinet-actions--dense > * {
+  min-height: 38px;
+  border-radius: 7px;
+  padding: 6px 7px;
+  font-size: 11px;
+}
+.consultation-cabinet-status {
+  min-height: 0;
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+.consultation-document-card--dense {
+  padding: 11px 12px;
+  border-radius: 11px;
+}
+.consultation-document-heading--inline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.consultation-document-heading--inline h2 {
+  flex: 0 1 auto;
+  font-size: 9px;
+  letter-spacing: .11em;
+}
+.consultation-document-heading--inline .consultation-document-meta {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: 17px;
+  text-align: right;
+}
+.consultation-document-actions {
+  gap: 5px;
+  margin-top: 8px;
+}
+.consultation-document-actions > a {
+  min-height: 36px;
+  border-radius: 7px;
+  padding: 6px 5px;
+  font-size: 11px;
+}
+.consultation-document-more {
+  margin-top: 6px;
+  border-top: 1px solid #e1d6ca;
+  padding-top: 5px;
+  color: #796b5e;
+  font-size: 11px;
+}
+.consultation-document-more > summary {
+  width: fit-content;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.consultation-document-more-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+.consultation-document-more-grid > *,
+.consultation-document-more-grid > form > button {
+  min-height: 36px;
+  width: 100%;
+  border: 1px solid #c8b39f;
+  border-radius: 7px;
+  background: #fff;
+  padding: 6px 7px;
+  color: #594737;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+.consultation-document-more-grid > form {
+  display: contents;
+}
+.consultation-document-more-grid > form > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #796b5e;
+  font-size: 10px;
+}
+.consultation-copy-feedback {
+  min-height: 0;
+  margin: 2px 0 0;
+  font-size: 10px;
+}
+
+@media (max-width: 700px) {
+  .consultation-result {
+    padding-top: 10px;
+    padding-bottom: 14px;
+  }
+  .consultation-result-topbar--dense {
+    gap: 8px;
+  }
+  .consultation-result-topbar--dense h1 {
+    font-size: 29px;
+  }
+  .consultation-result-breadcrumb {
+    font-size: 9px;
+  }
+  .consultation-result-top-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 5px;
+  }
+  .consultation-result-top-actions .consultation-result-new-link,
+  .consultation-result-top-actions .consultation-result-logout {
+    min-height: 32px;
+    justify-content: center;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+  .consultation-result-summary--dense {
+    padding: 8px 0;
+  }
+  .consultation-result-client--inline > span {
+    flex-basis: auto;
+    font-size: 8px;
+  }
+  .consultation-result-client--inline > strong {
+    font-size: 19px;
+  }
+  .consultation-result-client--inline > p {
+    font-size: 11px;
+  }
+  .consultation-language--dense legend {
+    display: none;
+  }
+  .consultation-language--dense button {
+    min-width: 34px;
+    min-height: 30px;
+    font-size: 11px;
+  }
+  .consultation-cabinet-card--dense {
+    margin-bottom: 8px;
+    padding: 9px 10px;
+  }
+  .consultation-cabinet-head > span {
+    font-size: 10px;
+  }
+  .consultation-cabinet-actions--dense {
+    margin-top: 6px;
+  }
+  .consultation-cabinet-actions--dense > * {
+    min-height: 36px;
+    font-size: 10px;
+  }
+  .consultation-result-documents {
+    gap: 8px;
+  }
+  .consultation-document-card--dense {
+    padding: 9px 10px;
+  }
+  .consultation-document-heading--inline .consultation-document-meta {
+    font-size: 16px;
+  }
+  .consultation-document-actions {
+    margin-top: 6px;
+  }
+  .consultation-document-actions > a {
+    min-height: 34px;
+    font-size: 10px;
+  }
+  .consultation-document-more {
+    margin-top: 5px;
+    padding-top: 4px;
+  }
+}
+
+@media (max-width: 390px) {
+  .consultation-result-topbar--dense h1 {
+    font-size: 27px;
+  }
+  .consultation-result-top-actions .consultation-result-new-link {
+    max-width: 116px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+  .consultation-cabinet-head > span {
+    display: none;
+  }
+  .consultation-document-heading--inline {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .consultation-document-heading--inline .consultation-document-meta {
+    text-align: left;
+  }
+}
