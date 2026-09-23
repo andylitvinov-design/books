@@ -61,3 +61,24 @@ test('the admin entry redirects guests and shows daily practitioner actions afte
   assert.match(header, /Unassigned legacy documents/)
   assert.match(loginAction, /redirect\('\/admin'\)/)
 })
+
+
+test('direct protected admin pages redirect signed-out visitors to login instead of rendering a 404', async () => {
+  const pages = [
+    'app/admin/clients/page.js',
+    'app/admin/clients/[id]/page.js',
+    'app/admin/clients/legacy/page.js',
+    'app/admin/consultations/new/page.js',
+    'app/admin/consultations/[id]/page.js',
+    'app/admin/consultations/[id]/edit/page.js',
+    'app/admin/documents/[id]/page.js',
+    'app/admin/payments/new/page.js',
+    'app/admin/payments/[id]/page.js',
+    'app/admin/prescriptions/new/page.js',
+    'app/admin/prescriptions/[id]/page.js',
+  ]
+  for (const page of pages) {
+    const source = await readFile(page, 'utf8')
+    assert.match(source, /if \(!await requireAdminRequest\(\)\) redirect\('\/admin\/login'\)/, page)
+  }
+})
