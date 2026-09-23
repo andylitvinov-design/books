@@ -56,3 +56,23 @@ test('remedy pages build related links from exact mentions in source articles', 
   assert.match(page, /Other articles mentioning this remedy/)
   assert.match(page, /getRemedyArticleLinks/)
 })
+
+
+test('mobile navigation uses Remedies hub and Services routes', async () => {
+  const navigation = await readFile('components/mobile-bottom-navigation.tsx', 'utf8')
+  assert.match(navigation, /'Препараты'.*homeopathy/)
+  assert.match(navigation, /'Услуги'.*services/)
+  assert.match(navigation, /'Remedies'.*homeopathy/)
+  assert.match(navigation, /'Services'.*services/)
+})
+
+test('English Remedies page localizes book card titles while preserving source-language book content', async () => {
+  const [showcase, localization] = await Promise.all([
+    readFile('components/book-showcase.tsx', 'utf8'),
+    readFile('data/library-localization.ts', 'utf8'),
+  ])
+  assert.match(showcase, /localizedBookText/)
+  assert.match(showcase, /Book content is preserved in its source language/)
+  assert.match(localization, /Book 01\. Homeopathy: foundations and method/)
+  assert.match(localization, /Maya mysteries/)
+})
