@@ -2,15 +2,16 @@ import Link from "next/link";
 
 import { RemedyContent, RemedyEssence } from "@/components/remedy-content";
 import { RemedyClientActions } from "@/components/remedy-client-actions";
-import { SiteNavigation } from "@/components/site-navigation";
+import { PublicSiteHeader } from "@/components/public-site-header";
+import { getRemedyArticleLinks } from "@/data/remedy-articles";
 import { getRelatedRemedies, getRemedyDirectory, getRemedySwitchPath } from "@/data/remedies";
 import type { Locale, Remedy } from "@/data/remedies";
 
 type RemedyPageProps = { locale: Locale; remedy: Remedy };
 
 const copy = {
-  ru: { back: "← Все препараты", source: "Источник автора", sourceName: "Исходное название", supplementalSource: "Источник в Telegram", related: "Связанные препараты", disclaimer: "Материал публикуется как образовательный архив авторских текстов. Он не заменяет диагностику, лечение или консультацию квалифицированного специалиста.", switch: "EN" },
-  en: { back: "← All remedies", source: "Author source", sourceName: "Source name", supplementalSource: "Source in Telegram", related: "Related remedies", disclaimer: "This is an educational archive of the author’s texts. It does not replace diagnosis, treatment, or advice from a qualified professional.", switch: "RU" },
+  ru: { back: "← К препаратам", source: "Источник автора", sourceName: "Исходное название", supplementalSource: "Источник в Telegram", related: "Связанные препараты", articles: "Другие статьи, где упоминается препарат", articleNote: "Примечание: ссылки ниже ведут на другие опубликованные материалы проекта, где это название встречается в исходном тексте.", disclaimer: "Материал публикуется как образовательный архив авторских текстов. Он не заменяет диагностику, лечение или консультацию квалифицированного специалиста.", switch: "EN" },
+  en: { back: "← Back to remedies", source: "Author source", sourceName: "Source name", supplementalSource: "Source in Telegram", related: "Related remedies", articles: "Other articles mentioning this remedy", articleNote: "Note: the links below point to other published project materials where this name appears in the source text.", disclaimer: "This is an educational archive of the author’s texts. It does not replace diagnosis, treatment, or advice from a qualified professional.", switch: "RU" },
 } as const;
 
 function sourceAlt(locale: Locale, remedy: Remedy) {
@@ -54,11 +55,12 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
   const labels = copy[locale];
   const otherLocale: Locale = locale === "ru" ? "en" : "ru";
   const related = getRelatedRemedies(locale, remedy);
+  const articles = getRemedyArticleLinks(remedy);
   return (
     <main className="homeopathy-shell">
-      <SiteNavigation locale={locale} />
+      <PublicSiteHeader locale={locale} />
       <article className="remedy-page">
-        <div className="remedy-page-actions"><Link href={`/${locale}/homeopathy/remedies`}>{labels.back}</Link><Link href={getRemedySwitchPath(otherLocale, remedy.slug)} lang={otherLocale}>{labels.switch}</Link></div>
+        <div className="remedy-page-actions"><Link href={`/${locale}/homeopathy`}>{labels.back}</Link><Link href={getRemedySwitchPath(otherLocale, remedy.slug)} lang={otherLocale}>{labels.switch}</Link></div>
         <RemedyClientActions locale={locale} slug={remedy.slug} knownSlugs={getRemedyDirectory(locale).map((entry) => entry.slug)} />
         <p className="homeopathy-kicker">{locale === "ru" ? "Гомеопатия · источник" : "Homeopathy · source"}</p>
         <h1>{remedy.canonical_latin_name}</h1>
@@ -70,6 +72,7 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
         <RemedySupportingGallery locale={locale} remedy={remedy} />
         {related.length ? <section className="remedy-related"><h2>{labels.related}</h2><ul>{related.map((item) => <li key={item.slug}><Link href={`/${locale}/homeopathy/remedies/${item.slug}`}>{item.canonical_latin_name}</Link></li>)}</ul></section> : null}
         <p className="remedy-disclaimer">{labels.disclaimer}</p>
+        {articles.length ? <section className="remedy-article-note"><h2>{labels.articles}</h2><p>{labels.articleNote}</p><ul>{articles.map((article) => <li key={article.href}><Link href={article.href}><strong>{article.title}</strong><span>{article.bookTitle}</span></Link></li>)}</ul></section> : null}
       </article>
     </main>
   );
