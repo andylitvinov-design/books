@@ -34,10 +34,10 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
     readFile('app/page.tsx', 'utf8'),
   ])
 
-  assert.match(home, /Библиотеки · практики · исследование/)
-  assert.match(home, /Libraries · practice · research/)
-  assert.match(home, /Книги, справочные материалы и цифровые инструменты/)
-  assert.match(home, /Books, reference materials, and digital tools/)
+  assert.match(home, /восстановление · практика · поддержка/)
+  assert.match(home, /healing · practice · guidance/)
+  assert.match(home, /Книги, справочные материалы и цифровые ресурсы/)
+  assert.match(home, /Inspiring books, reference materials, and digital resources/)
   assert.match(page, /uiLocale/)
 })
 
