@@ -23,3 +23,11 @@ test('Documents Ready labels Bach recommendations distinctly', () => {
  assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'bach',count:2},'ru').title,'РЕКОМЕНДАЦИЯ ПО ЭССЕНЦИЯМ БАХА')
  assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'bach',count:2},'ru').description,'2 эссенции')
 })
+
+
+test('Documents Ready labels mixed recommendations distinctly', () => {
+ assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'mixed',count:2},'en').title,'INTEGRATED RECOMMENDATION')
+ assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'mixed',count:2},'en').description,'2 items')
+ assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'mixed',count:2},'ru').title,'КОМПЛЕКСНАЯ РЕКОМЕНДАЦИЯ')
+ assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'mixed',count:2},'ru').description,'2 позиций')
+})
