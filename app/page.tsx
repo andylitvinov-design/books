@@ -4,8 +4,8 @@ import { HolisticHouseHome } from "@/components/holistic-house-home";
 import { uiLocaleCookie } from "@/lib/ui-locale";
 
 export const metadata: Metadata = {
-  title: "Holistic House — библиотеки и направления",
-  description: "Holistic House: книги, библиотека препаратов, услуги и авторский подход «Алхимия души».",
+  title: "Holistic House — развитие, практики и индивидуальная работа",
+  description: "Holistic House: индивидуальные сессии, программы и воркшопы, навигация по препаратам, книги и авторские материалы.",
   alternates: { canonical: "/" },
 };
 

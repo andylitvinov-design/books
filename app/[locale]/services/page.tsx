@@ -67,7 +67,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: current.title,
     description: current.description,
     alternates: {
-      canonical: `/${locale}/services`,
+      canonical: "/" + locale + "/services",
       languages: { ru: "/ru/services", en: "/en/services" },
     },
   };
@@ -104,7 +104,7 @@ export default async function ServicesPage({ params }: PageProps) {
         ))}
       </section>
 
-      <section className="services-consultation">
+      <section className="services-consultation" id="consultation">
         <div>
           <p className="homeopathy-kicker">{locale === "ru" ? "Первый шаг" : "First step"}</p>
           <h2>{current.consultation}</h2>
