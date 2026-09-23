@@ -3,7 +3,7 @@
 import { BookOpen, House, Leaf, Sparkles, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type { Locale } from '@/data/remedies'
 import { readUiLocale } from '@/lib/ui-locale'
@@ -25,10 +25,8 @@ export function MobileBottomNavigation() {
     return () => window.removeEventListener('ui-locale-change', syncLocale)
   }, [])
 
-  if (/^\/(admin|(?:ru|en)\/prescriptions)/.test(pathname)) return null
-
   const locale: Locale = (pathLocale ?? preference) as Locale
-  const items = useMemo(() => locale === 'ru'
+  const items = locale === 'ru'
     ? [
         { label: 'Главная', href: '/', icon: House },
         { label: 'Услуги', href: '/ru/services', icon: Sparkles },
@@ -42,7 +40,9 @@ export function MobileBottomNavigation() {
         { label: 'Remedies', href: '/en/homeopathy', icon: Leaf },
         { label: 'Books', href: '/books', icon: BookOpen },
         { label: 'Cabinet', href: '/admin', icon: UserRound },
-      ], [locale])
+      ]
+
+  if (/^\/(admin|(?:ru|en)\/prescriptions)/.test(pathname)) return null
 
   return (
     <nav aria-label={locale === 'ru' ? 'Мобильная навигация' : 'Mobile navigation'} className="mobile-bottom-navigation">
