@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import { PaymentPanel } from '@/components/admin-document-panels'
 import { PaymentForm } from '@/components/payment-form'
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false, follow: false }, title: 'Payment document' }
 
 export default async function PaymentPage({ params }) {
-  if (!await requireAdminRequest()) notFound()
+  if (!await requireAdminRequest()) redirect('/admin/login')
   const { id } = await params
   const store = getPrescriptionStore()
   const payment = store ? await store.findById(id) : undefined
