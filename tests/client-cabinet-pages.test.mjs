@@ -55,3 +55,11 @@ test('cabinet PDF renders only the safe payment projection returned after exact 
   assert.match(response.headers.get('content-disposition'), /private-document\.pdf/)
   assert.match(response.headers.get('cache-control'), /private, no-store/)
 })
+
+
+test('client cabinet distinguishes Bach recommendations from Homeopathy', async () => {
+  const page = await readFile('app/[locale]/client/[selector]/page.js', 'utf8')
+  assert.match(page, /recommendationType === 'bach'/)
+  assert.match(page, /Bach Flower Essence Recommendation/)
+  assert.match(page, /Рекомендация по эссенциям Баха/)
+})
