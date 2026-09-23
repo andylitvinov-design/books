@@ -108,3 +108,22 @@ test('consultations persist the selected recommendation type and reject unknown 
  assert.equal(getClientPrescription(pair.recommendation,'en').recommendationType,'bach')
  await assert.rejects(create(store,{recommendationType:'unknown'}),/recommendation type/i)
 })
+
+
+test('mixed consultations persist Homeopathy and Bach item types with editable Homeopathy dose values', async () => {
+ const store=createMemoryPrescriptionStore()
+ const pair=await create(store,{
+  recommendationType:'mixed',
+  items:[
+   {itemType:'homeopathy',remedySlug:'arsenicum-album',potency:'200',granules:'7',timesPerDay:'2'},
+   {itemType:'bach',displayNameOverride:'Mimulus',sourceStatus:'custom'}
+  ]
+ })
+ assert.equal(pair.recommendation.recommendationType,'mixed')
+ assert.deepEqual(pair.recommendation.items.map(item=>item.itemType),['homeopathy','bach'])
+ assert.equal(pair.recommendation.items[0].potency,'200')
+ assert.equal(pair.recommendation.items[0].granules,'7')
+ assert.equal(pair.recommendation.items[0].timesPerDay,'2')
+ assert.equal(pair.recommendation.items[1].potency,undefined)
+ assert.equal(pair.recommendation.items[1].remedySlug,null)
+})
