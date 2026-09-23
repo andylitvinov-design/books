@@ -1764,3 +1764,14 @@
     font-size: 11px;
   }
 }
+
+.consultation-remedy-row > .prescription-remedy-search,
+.consultation-remedy-row > .consultation-remove {
+  margin-top: 16px;
+}
+@media (max-width: 600px) {
+  .consultation-remedy-row > .prescription-remedy-search,
+  .consultation-remedy-row > .consultation-remove {
+    margin-top: 14px;
+  }
+}
