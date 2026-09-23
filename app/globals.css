@@ -1826,3 +1826,143 @@
     font-size: 11px;
   }
 }
+
+
+/* Mixed recommendation + compact editable dose controls */
+.consultation-remedy-row--stacked {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  align-items: start;
+  gap: 7px 8px;
+  border-bottom: 1px solid #e1d6ca;
+  padding: 0 0 12px;
+}
+.consultation-remedy-row--stacked > .prescription-remedy-search {
+  grid-column: 1;
+  margin-top: 0;
+}
+.consultation-remedy-row--stacked > .consultation-remove {
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 0;
+}
+.consultation-item-type {
+  grid-column: 1 / -1;
+  display: flex !important;
+  width: fit-content;
+  align-items: center;
+  gap: 7px !important;
+  color: #796b5e !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+.consultation-item-type > span {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.consultation-item-type > select {
+  width: auto !important;
+  min-width: 92px !important;
+  min-height: 34px !important;
+  border-radius: 8px !important;
+  padding: 4px 26px 4px 8px !important;
+  font-size: 12px !important;
+}
+.consultation-dose-strip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.consultation-dose-strip .consultation-remedy-dose {
+  gap: 4px !important;
+}
+.consultation-dose-strip .consultation-remedy-dose > span {
+  min-height: 0;
+  color: #796b5e;
+  font-size: 9px;
+  line-height: 1.2;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+.consultation-dose-strip .consultation-remedy-dose > input {
+  min-height: 42px !important;
+  height: 42px;
+  border-radius: 9px !important;
+  padding: 6px 8px !important;
+  text-align: center;
+  font-size: 16px !important;
+}
+.consultation-remedy-row--stacked.consultation-remedy-row--bach {
+  grid-template-columns: minmax(0, 1fr) 40px;
+}
+.consultation-remedy-row--stacked.consultation-remedy-row--bach > .prescription-remedy-search,
+.consultation-remedy-row--stacked.consultation-remedy-row--bach > .consultation-remove {
+  margin-top: 0;
+}
+
+.canonical-remedy-group + .canonical-remedy-group {
+  margin-top: 18px;
+}
+.canonical-remedy-group-title {
+  margin: 0 0 9px;
+  border-bottom: 1px solid #d9dfe2;
+  padding-bottom: 5px;
+  color: #747c81;
+  font: bold 11px/1.4 Arial, sans-serif;
+  letter-spacing: .08em;
+}
+.canonical-remedy-schedule {
+  max-width: 58%;
+  text-align: right;
+  white-space: normal;
+}
+.canonical-guidance-section + .canonical-guidance-section {
+  margin-top: 10px;
+}
+.canonical-guidance h3 {
+  margin: 0 0 5px;
+  color: #747c81;
+  font: bold 12px/1.4 Arial, sans-serif;
+}
+
+@media (min-width: 760px) {
+  .consultation-remedy-row--stacked {
+    grid-template-columns: minmax(260px, 1fr) 40px;
+  }
+  .consultation-dose-strip {
+    max-width: 360px;
+  }
+}
+
+@media (max-width: 600px) {
+  .consultation-remedy-row--stacked {
+    grid-template-columns: minmax(0, 1fr) 36px;
+    gap: 6px 7px;
+    padding-bottom: 10px;
+  }
+  .consultation-dose-strip {
+    gap: 6px;
+  }
+  .consultation-dose-strip .consultation-remedy-dose > span {
+    font-size: 8.5px;
+  }
+  .consultation-dose-strip .consultation-remedy-dose > input {
+    min-height: 40px !important;
+    height: 40px;
+    font-size: 15px !important;
+  }
+  .consultation-item-type > select {
+    min-height: 32px !important;
+    font-size: 11px !important;
+  }
+  .canonical-remedy-heading {
+    align-items: flex-start;
+  }
+  .canonical-remedy-schedule {
+    max-width: 52%;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+}
