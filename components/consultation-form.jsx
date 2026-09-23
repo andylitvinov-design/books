@@ -47,7 +47,7 @@ const copy = {
     save: 'Сохранить консультацию',
     create: 'СОЗДАТЬ ДОКУМЕНТЫ',
     saving: 'Сохранение…',
-    chooseError: 'Выберите каждый препарат из подсказок. Нужен хотя бы один препарат.',
+    chooseError: 'Выберите каждый препарат или эссенцию из подсказок. Нужна хотя бы одна позиция.',
     clinical: {
       potency: 'Потенция',
       dosage: 'Дозировка',
@@ -98,7 +98,7 @@ const copy = {
     save: 'Save consultation',
     create: 'CREATE DOCUMENTS',
     saving: 'Saving…',
-    chooseError: 'Choose each remedy from the suggestions. At least one remedy is required.',
+    chooseError: 'Choose each remedy or essence from the suggestions. At least one item is required.',
     clinical: Object.fromEntries(clinicalFields),
   },
 }
@@ -183,7 +183,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
             ? item.query.trim() ? [{ id: `bach-${index}`, slug: null, label: item.query.trim(), displayName: item.query.trim(), sourceStatus: 'custom' }] : []
             : consultationRemedySuggestions(remedies, item.query)
           : []
-        return <div className="consultation-remedy-row" key={item.rowKey}>
+        return <div className={`consultation-remedy-row ${recommendationType === 'bach' ? 'consultation-remedy-row--bach' : ''}`} key={item.rowKey}>
           <div className="prescription-remedy-search" onBlur={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget)) setFocused(null)
           }}>
