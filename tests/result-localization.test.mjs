@@ -15,3 +15,11 @@ test('localized document metadata covers receipt, invoice and Russian plural for
  assert.equal(resultDocumentText({kind:'payment',paymentStatus:'received',currency:'CAD',amount:23000},'ru').description,'Квитанция · CAD 230,00')
  assert.equal(resultDocumentText({kind:'payment',paymentStatus:'unpaid',currency:'CAD',amount:23000},'ru').description,'Счёт · CAD 230,00')
 })
+
+
+test('Documents Ready labels Bach recommendations distinctly', () => {
+ assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'bach',count:1},'en').title,'BACH FLOWER ESSENCE RECOMMENDATION')
+ assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'bach',count:1},'en').description,'1 essence')
+ assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'bach',count:2},'ru').title,'РЕКОМЕНДАЦИЯ ПО ЭССЕНЦИЯМ БАХА')
+ assert.equal(resultDocumentText({kind:'recommendation',recommendationType:'bach',count:2},'ru').description,'2 эссенции')
+})
