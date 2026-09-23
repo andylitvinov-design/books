@@ -26,10 +26,11 @@ export function getSitemapEntries(baseUrl) {
   }))
   const homeopathyIndexes = ['/ru/homeopathy', '/en/homeopathy', '/ru/homeopathy/remedies', '/en/homeopathy/remedies']
     .map((pathname) => localizedEntry(base, pathname))
+  const servicesIndexes = ['/ru/services', '/en/services'].map((pathname) => localizedEntry(base, pathname))
   const remedyEntries = getRemedyRouteParams()
     .map(({ locale, slug }) => localizedEntry(base, `/${locale}/homeopathy/remedies/${slug}`))
 
-  return [{ url: at(base, '/'), changeFrequency: 'weekly', priority: 1 }, { url: at(base, '/books'), changeFrequency: 'monthly', priority: 0.8 }, ...booksEntries, ...homeopathyIndexes, ...remedyEntries]
+  return [{ url: at(base, '/'), changeFrequency: 'weekly', priority: 1 }, { url: at(base, '/books'), changeFrequency: 'monthly', priority: 0.8 }, ...booksEntries, ...homeopathyIndexes, ...servicesIndexes, ...remedyEntries]
 }
 
 export function getRobotsPolicy(baseUrl) {

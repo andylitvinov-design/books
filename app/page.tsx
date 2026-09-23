@@ -5,7 +5,7 @@ import { uiLocaleCookie } from "@/lib/ui-locale";
 
 export const metadata: Metadata = {
   title: "Holistic House — библиотеки и направления",
-  description: "Holistic House: собрание книг, справочная библиотека гомеопатии и цифровой продукт PsiAlchemy. Знакомство с материалами и планируемыми направлениями проекта.",
+  description: "Holistic House: книги, библиотека препаратов, услуги и авторский подход «Алхимия души».",
   alternates: { canonical: "/" },
 };
 

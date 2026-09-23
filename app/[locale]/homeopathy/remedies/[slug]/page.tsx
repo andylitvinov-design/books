@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!remedy || !isSupportedLocale(locale)) return { title: "Not found" };
   return {
     metadataBase: metadataBaseFor(),
-    title: locale === "ru" ? `${remedy.canonical_latin_name} — Гомеопатия` : `${remedy.canonical_latin_name} — Homeopathy`,
+    title: locale === "ru" ? `${remedy.canonical_latin_name} — Препараты` : `${remedy.canonical_latin_name} — Remedies`,
     description: remedy.description.slice(0, 155),
     alternates: { canonical: `/${locale}/homeopathy/remedies/${slug}`, languages: { ru: `/ru/homeopathy/remedies/${slug}`, en: `/en/homeopathy/remedies/${slug}` } },
   };

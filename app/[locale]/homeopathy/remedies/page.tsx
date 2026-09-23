@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { RemedyDirectory } from "@/components/remedy-directory";
-import { SiteNavigation } from "@/components/site-navigation";
+import { PublicSiteHeader } from "@/components/public-site-header";
 import { getHomeopathyLocaleParams, getRemedyDirectory, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -12,8 +11,8 @@ import { metadataBaseFor } from "@/data/site-metadata";
 type PageProps = { params: Promise<{ locale: string }> };
 
 const copy = {
-  ru: { title: "Препараты — Гомеопатия", description: "Поисковый и алфавитный указатель 94 подтверждённых препаратов из авторских материалов.", kicker: "Гомеопатия", heading: "Препараты", lead: "Ищите по латинскому названию, русскому исходному имени, алиасам или сокращению.", switch: "EN" },
-  en: { title: "Remedies — Homeopathy", description: "A searchable and alphabetical directory of 94 confirmed remedies from author-source materials.", kicker: "Homeopathy", heading: "Remedies", lead: "Search by Latin name, Russian/source name, aliases, or abbreviation.", switch: "RU" },
+  ru: { title: "Все препараты — Holistic House", description: "Поисковый и алфавитный указатель 94 подтверждённых препаратов из авторских материалов.", kicker: "Препараты", heading: "Все препараты", lead: "Ищите по латинскому названию, русскому исходному имени, алиасам или сокращению." },
+  en: { title: "All remedies — Holistic House", description: "A searchable and alphabetical directory of 94 confirmed remedies from author-source materials.", kicker: "Remedies", heading: "All remedies", lead: "Search by Latin name, Russian/source name, aliases, or abbreviation." },
 } as const;
 
 export function generateStaticParams() { return getHomeopathyLocaleParams(); }
@@ -29,11 +28,10 @@ export default async function RemediesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const current = copy[locale as Locale];
-  const otherLocale: Locale = locale === "ru" ? "en" : "ru";
   return (
     <main className="homeopathy-shell">
-      <SiteNavigation locale={locale} />
-      <header className="remedy-index-header"><div><p className="homeopathy-kicker">{current.kicker}</p><h1>{current.heading}</h1><p>{current.lead}</p></div><Link className="locale-link" href={`/${otherLocale}/homeopathy/remedies`} lang={otherLocale}>{current.switch}</Link></header>
+      <PublicSiteHeader locale={locale} />
+      <header className="remedy-index-header"><div><p className="homeopathy-kicker">{current.kicker}</p><h1>{current.heading}</h1><p>{current.lead}</p></div></header>
       <Suspense fallback={<p className="remedy-result-count">{current.lead}</p>}><RemedyDirectory entries={getRemedyDirectory(locale)} locale={locale} /></Suspense>
     </main>
   );
