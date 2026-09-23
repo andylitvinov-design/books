@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { listUnassignedConsultations } from '@/lib/clients/service'
@@ -8,7 +8,7 @@ import { assignLegacyAction } from '../actions'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Unassigned legacy documents', robots: { index: false, follow: false } }
 export default async function Legacy({ searchParams }) {
-  if (!await requireAdminRequest()) notFound()
+  if (!await requireAdminRequest()) redirect('/admin/login')
   const store = getPrescriptionStore()
   if (!store) notFound()
   const clients = (await store.listClients()).filter(c => c.status === 'active')
