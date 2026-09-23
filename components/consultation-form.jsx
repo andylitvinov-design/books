@@ -130,7 +130,14 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   function changeRecommendationType(nextType) {
     setRecommendationType(nextType)
     setItems((current) => current.map((item) => nextType === 'bach'
-      ? { ...item, granules: '', timesPerDay: '' }
+      ? {
+          ...item,
+          remedySlug: null,
+          displayNameOverride: item.selected ? item.query : null,
+          sourceStatus: item.selected ? 'custom' : null,
+          granules: '',
+          timesPerDay: '',
+        }
       : { ...item, granules: item.granules || '5', timesPerDay: item.timesPerDay || '3' }))
     setFocused(null)
   }
@@ -246,7 +253,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     </div></details>
 
     <details className="consultation-details"><summary>{labels.additional}</summary><div>
-      {selected.map((item) => {
+      {recommendationType === 'homeopathy' && selected.map((item) => {
         const index = items.indexOf(item)
         return <fieldset key={item.rowKey}><legend>{item.query}</legend><div className="consultation-two-columns">
           {clinicalFields.map(([key, fallbackLabel]) => <label key={key}>{labels.clinical[key] ?? fallbackLabel}<input value={item[key] ?? ''} onChange={(event) => update(index, { [key]: event.target.value })} /></label>)}
