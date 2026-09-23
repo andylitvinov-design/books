@@ -4,7 +4,18 @@ import { useEffect, useRef, useState } from 'react'
 import { resultCopy } from '@/lib/consultations/result-copy'
 import { createDocumentLinkCache, documentActionUrls } from '@/lib/consultations/result-actions'
 
-export function ConsultationDocumentActions({ recordId, locale, active }) {
+export function ConsultationDocumentActions({
+  recordId,
+  locale,
+  active,
+  editHref,
+  editLabel,
+  revoke,
+  reactivate,
+  reactivateHelp,
+  revokeLabel,
+  reactivateLabel,
+}) {
   const cache = useRef(null)
   const timer = useRef(null)
   const [status, setStatus] = useState('')
@@ -21,6 +32,7 @@ export function ConsultationDocumentActions({ recordId, locale, active }) {
 
   const labels = resultCopy(locale)
   const urls = documentActionUrls(recordId, locale)
+  const ru = locale === 'ru'
 
   const copy = async () => {
     setCopying(true)
@@ -41,16 +53,21 @@ export function ConsultationDocumentActions({ recordId, locale, active }) {
   return <>
     <div className="consultation-result-actions consultation-document-actions">
       <a className="consultation-action-primary" href={urls.open}>{labels.open}</a>
-      <a href={urls.pdf} download>{labels.pdf}</a>
+      <a href={urls.pdf} download>{locale === 'ru' ? 'PDF' : 'PDF'}</a>
       <a href={urls.print}>{labels.print}</a>
     </div>
 
-    <details className="consultation-share">
-      <summary>{locale === 'ru' ? 'Поделиться отдельно' : 'Share separately'}</summary>
-      <div>
+    <details className="consultation-document-more">
+      <summary>{ru ? 'Ещё' : 'More'}</summary>
+      <div className="consultation-document-more-grid">
         <button className="consultation-copy" type="button" disabled={!active || copying} onClick={copy}>
           {copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}
         </button>
+        <a href={editHref}>{editLabel}</a>
+        <form action={active ? revoke : reactivate}>
+          {!active && <p>{reactivateHelp}</p>}
+          <button type="submit">{active ? revokeLabel : reactivateLabel}</button>
+        </form>
       </div>
     </details>
 
