@@ -34,7 +34,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       {guidance && <section className="canonical-guidance">
         <h2>{guidance.takeTitle}</h2>
         <ul>{guidance.bullets.map((line) => <li key={line}>{line}</li>)}</ul>
-        <p><strong>{guidance.course.split(':')[0]}:</strong>{guidance.course.includes(':') ? guidance.course.slice(guidance.course.indexOf(':') + 1) : ''}</p>
+        <p>{guidance.course}</p>
         <p>{guidance.recheck}</p>
         <p className="canonical-guidance-contact">{guidance.contact}</p>
       </section>}
