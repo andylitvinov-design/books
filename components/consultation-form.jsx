@@ -21,6 +21,8 @@ const copy = {
     sourceCardMissing: 'Карточка ещё не подготовлена',
     descriptionMissing: 'Описание пока отсутствует',
     useCustom: 'Добавить как новый препарат',
+    granules: 'Гранул',
+    timesPerDay: 'Раз/д.',
     payment: 'Оплата',
     paid: 'Оплачено — Квитанция',
     unpaid: 'Не оплачено — Счёт',
@@ -63,6 +65,8 @@ const copy = {
     sourceCardMissing: 'Profile not prepared yet',
     descriptionMissing: 'Description not available yet',
     useCustom: 'Use custom remedy',
+    granules: 'Granules',
+    timesPerDay: 'Times/day',
     payment: 'Payment',
     paid: 'Paid — Receipt',
     unpaid: 'Not paid — Invoice',
@@ -190,6 +194,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
               })}
             </div>}
           </div>
+          <label className="consultation-remedy-dose"><span>{labels.granules}</span><input aria-label={`${labels.granules} ${index + 1}`} type="number" inputMode="numeric" min="1" max="99" value={item.granules ?? ''} onChange={(event) => update(index, { granules: event.target.value })} /></label>
+          <label className="consultation-remedy-dose"><span>{labels.timesPerDay}</span><input aria-label={`${labels.timesPerDay} ${index + 1}`} type="number" inputMode="numeric" min="1" max="99" value={item.timesPerDay ?? ''} onChange={(event) => update(index, { timesPerDay: event.target.value })} /></label>
           <button type="button" className="consultation-remove" aria-label={`${labels.removeRemedy} ${index + 1}`} disabled={items.length === 1} onClick={() => setItems((current) => current.filter((_, i) => i !== index))}>×</button>
         </div>
       })}</div>
