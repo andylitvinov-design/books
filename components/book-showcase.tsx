@@ -23,7 +23,7 @@ export function BookShowcase({ books, locale }: BookShowcaseProps) {
       {books.map((book, index) => {
         const display = localizedBookText(book, locale);
         return (
-        <Link className="catalog-card remedies-book-card" href={`/books/${book.id}`} key={book.id}>
+        <Link className="catalog-card remedies-book-card" href={`/${locale}/books/${book.id}`} key={book.id}>
           <figure className="catalog-cover">
             <Image
               alt={locale === "ru" ? `Обложка: ${display.title}` : `Cover: ${display.title}`}
