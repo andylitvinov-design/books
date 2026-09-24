@@ -76,52 +76,6 @@ const copy = {
     todayTitle: "Как я работаю сейчас",
     todayText: "В Holistic House я собрал опыт в три практических направления: бизнес-расстановки, Алхимия души / психогомеопатия и архетипические расстановки — Mysteries & Initiations. Работаю в Торонто и онлайн.",
     services: "Смотреть услуги",
-    eventsKicker: "События и мастерские",
-    eventsTitle: "Архив практики",
-    eventsIntro: "Часть старых программ сохранилась в фестивальных каталогах и архивах. Это не полный список, а восстановленная линия публичных мастерских и групповой работы.",
-    events: [
-      {
-        year: "с 2009",
-        place: "Украина",
-        title: "Мастерские тренеров / Центр «Альтаир»",
-        text: "Серия мастерских для тренеров и ведущих. В старом каталоге Тавале я указан как руководитель Центра развития личности «Альтаир» и организатор Мастерских тренеров в Украине.",
-        href: "https://tavale.com.ua/katalog-psy.htm",
-        link: "Архив Тавале",
-      },
-      {
-        year: "2010",
-        place: "Харьков",
-        title: "«Перемены и Самость» — международный фестиваль",
-        text: "Мастер-класс «Контакт-клуб» по телесно-ориентированным и релаксационным практикам, а также мастер-класс о работе тренером и ведущим.",
-        href: "https://ru.scribd.com/document/946328322/15",
-        link: "Программа фестиваля",
-      },
-      {
-        year: "2009–2010-е",
-        place: "Украина",
-        title: "«Мастерская волшебства»",
-        text: "Одна из ранних серий мастерских и экспериментальных форматов. Сейчас я восстанавливаю фото и анонсы из старых Facebook/VK архивов.",
-        href: "",
-        link: "",
-      },
-      {
-        year: "2010–2011",
-        place: "Альфа-Фест",
-        title: "Фестивали практической психологии",
-        text: "Публичные фестивальные мастерские и работа в среде практической психологии и тренинговых программ. Сохранилась открытая фотогалерея Альфа-Феста 2010.",
-        href: "https://www.alfa-fest.com.ua/k2/af2010",
-        link: "Архив и фотогалерея",
-      },
-      {
-        year: "2026",
-        place: "Toronto",
-        title: "Holistic House / Toronto Tantra",
-        text: "Новая линия живых групп: bodywork, расстановки, Mysteries & Initiations и практики осознанного контакта.",
-        href: "https://www.meetup.com/toronto-tantra-circle/",
-        link: "Текущие события",
-      },
-    ],
-    photosNote: "Facebook и VK почти не индексируют старые альбомы в открытом поиске. Поэтому я не добавляю случайные фотографии без подтверждения. Уже найден открытый архив Альфа-Феста; для фотографий «Мастерской тренеров» и «Мастерской волшебства» лучше использовать конкретные старые альбомы, когда мы восстановим ссылки.",
     testimonialsKicker: "Отзывы",
     testimonialsTitle: "Видео-отзывы",
     testimonialsText: "Несколько видео-отзывов, ранее опубликованных на моём сайте PsiMaster.",
@@ -202,52 +156,6 @@ const copy = {
     todayTitle: "How I work today",
     todayText: "At Holistic House I bring this experience together in three practical directions: Business Constellations, Alchemy of the Soul / Psychohomeopathy, and Archetypal Constellations — Mysteries & Initiations. I work in Toronto and online.",
     services: "Explore services",
-    eventsKicker: "Events & workshops",
-    eventsTitle: "Practice archive",
-    eventsIntro: "Part of the earlier work survives in festival programs and public archives. This is not a complete chronology, but a reconstructed line of workshops and group practice.",
-    events: [
-      {
-        year: "since 2009",
-        place: "Ukraine",
-        title: "Trainer Workshops / Altair Center",
-        text: "A workshop series for trainers and facilitators. An archived Tavale directory lists me as head of the Altair Personal Development Center and organizer of Trainer Workshops in Ukraine.",
-        href: "https://tavale.com.ua/katalog-psy.htm",
-        link: "Tavale archive",
-      },
-      {
-        year: "2010",
-        place: "Kharkiv",
-        title: "Changes & Selfhood — international festival",
-        text: "The program lists my Contact Club workshop in body-oriented and relaxation practices, as well as a workshop on working professionally as a trainer/facilitator.",
-        href: "https://ru.scribd.com/document/946328322/15",
-        link: "Festival program",
-      },
-      {
-        year: "2009–2010s",
-        place: "Ukraine",
-        title: "Magic Workshop",
-        text: "One of my earlier workshop series and experimental formats. I am currently rebuilding the photo and announcement archive from old Facebook/VK material.",
-        href: "",
-        link: "",
-      },
-      {
-        year: "2010–2011",
-        place: "Alfa-Fest",
-        title: "Practical Psychology Festivals",
-        text: "Public festival workshops in the Ukrainian practical-psychology and training community. A public Alfa-Fest 2010 photo archive is still online.",
-        href: "https://www.alfa-fest.com.ua/k2/af2010",
-        link: "Archive & photo gallery",
-      },
-      {
-        year: "2026",
-        place: "Toronto",
-        title: "Holistic House / Toronto Tantra",
-        text: "The current live-events line: bodywork, constellations, Mysteries & Initiations, and conscious-connection practices.",
-        href: "https://www.meetup.com/toronto-tantra-circle/",
-        link: "Current events",
-      },
-    ],
-    photosNote: "Facebook and VK expose very little of older albums to public search, so I have not used random images without verification. The Alfa-Fest public gallery is available; photos from Trainer Workshops and Magic Workshop should be added once we recover the exact legacy albums.",
     testimonialsKicker: "Testimonials",
     testimonialsTitle: "Video testimonials",
     testimonialsText: "A few video testimonials that were previously published on my PsiMaster website.",
@@ -369,30 +277,6 @@ export default async function AboutPage({ params }: PageProps) {
           <p>{current.todayText}</p>
           <Link href={"/" + typedLocale + "/services"}>{current.services}<span aria-hidden="true">→</span></Link>
         </div>
-      </section>
-
-      <section className="about-events" id="events" aria-labelledby="events-title">
-        <div className="about-section-heading">
-          <p className="homeopathy-kicker">{current.eventsKicker}</p>
-          <h2 id="events-title">{current.eventsTitle}</h2>
-          <p>{current.eventsIntro}</p>
-        </div>
-        <div className="about-events-timeline">
-          {current.events.map((event) => (
-            <article key={event.year + event.title}>
-              <div className="about-event-meta">
-                <strong>{event.year}</strong>
-                <span>{event.place}</span>
-              </div>
-              <div className="about-event-copy">
-                <h3>{event.title}</h3>
-                <p>{event.text}</p>
-                {event.href ? <a href={event.href} rel="noreferrer" target="_blank">{event.link}<span aria-hidden="true">↗</span></a> : null}
-              </div>
-            </article>
-          ))}
-        </div>
-        <p className="about-events-note">{current.photosNote}</p>
       </section>
 
       <section className="about-testimonials" aria-labelledby="testimonials-title">
