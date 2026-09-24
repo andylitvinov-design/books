@@ -187,13 +187,7 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
         </aside>
 
         <article className="reader-article">
-          {locale === "en" ? <p className="reader-source-language-note">Original source text is preserved below in its source language.</p> : null}
-          <div
-            className="reader-content"
-            id="reader-content"
-            lang="ru"
-            dangerouslySetInnerHTML={{ __html: document.content }}
-          />
+          <TranslatedReaderContent html={document.content} locale={locale} />
         </article>
       </div>
     </main>
