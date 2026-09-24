@@ -86,3 +86,24 @@ test('direct protected admin pages redirect signed-out visitors to login instead
     assert.match(source, /if \(!await requireAdminRequest\(\)\) redirect\('\/admin\/login'\)/, page)
   }
 })
+
+
+test('About exposes a consultation request form and a real Client Cabinet entry flow', async () => {
+  const [about, entryPage, entryForm, consultationForm] = await Promise.all([
+    readFile('app/[locale]/about/page.tsx', 'utf8'),
+    readFile('app/[locale]/client/page.tsx', 'utf8'),
+    readFile('components/client-cabinet-entry.tsx', 'utf8'),
+    readFile('components/personal-consultation-form.tsx', 'utf8'),
+  ])
+
+  assert.match(about, /PersonalConsultationForm/)
+  assert.match(about, /about-client-cabinet-login/)
+  assert.match(about, /typedLocale \+ "\/client"/)
+  assert.match(entryPage, /ClientCabinetEntry/)
+  assert.match(entryPage, /robots: \{ index: false, follow: false \}/)
+  assert.match(entryForm, /privateLink/)
+  assert.match(entryForm, /selectorPattern/)
+  assert.match(entryForm, /secretPattern/)
+  assert.match(consultationForm, /wa\.me\/14376066502/)
+  assert.match(consultationForm, /Request a personal consultation/)
+})

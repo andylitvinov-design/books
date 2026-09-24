@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { PersonalConsultationForm } from "@/components/personal-consultation-form";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { aboutBiography } from "@/data/about-biography";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
@@ -44,6 +45,21 @@ const testimonialCopy = {
   },
 } as const;
 
+const consultationCopy = {
+  en: {
+    kicker: "Personal work",
+    heading: "Personal Consultation",
+    text: "Want to explore your situation personally? Send me a short request and I’ll get back to you.",
+    cabinetAction: "Log in to Client Cabinet",
+  },
+  ru: {
+    kicker: "Личная работа",
+    heading: "Личная консультация",
+    text: "Хотите разобрать свою ситуацию лично? Оставьте короткую заявку — я свяжусь с вами.",
+    cabinetAction: "Войти в кабинет клиента",
+  },
+} as const;
+
 export function generateStaticParams() {
   return getHomeopathyLocaleParams();
 }
@@ -71,6 +87,7 @@ export default async function AboutPage({ params }: PageProps) {
   const typedLocale = locale as Locale;
   const current = aboutBiography[typedLocale];
   const testimonials = testimonialCopy[typedLocale];
+  const consultation = consultationCopy[typedLocale];
 
   return (
     <main className="about-shell" lang={typedLocale}>
@@ -127,9 +144,21 @@ export default async function AboutPage({ params }: PageProps) {
         </div>
       </section>
 
+      <section className="about-consultation" aria-labelledby="personal-consultation-title">
+        <div className="about-consultation-copy">
+          <p className="about-kicker">{consultation.kicker}</p>
+          <h2 id="personal-consultation-title">{consultation.heading}</h2>
+          <p>{consultation.text}</p>
+        </div>
+        <PersonalConsultationForm locale={typedLocale} />
+      </section>
+
       <section className="about-client-cabinet" aria-labelledby="client-cabinet-title">
         <h2 id="client-cabinet-title">{current.cabinet.heading}</h2>
         <p>{current.cabinet.body}</p>
+        <Link className="about-client-cabinet-login" href={"/" + typedLocale + "/client"}>
+          {consultation.cabinetAction}<span aria-hidden="true">→</span>
+        </Link>
         <p className="about-client-cabinet-prompt">{current.cabinet.prompt}</p>
         <a href={current.cabinet.href} rel="noreferrer" target="_blank">{current.cabinet.action}<span aria-hidden="true">→</span></a>
       </section>
