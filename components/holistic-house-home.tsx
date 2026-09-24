@@ -160,7 +160,7 @@ export function HolisticHouseHome({ locale: initialLocale = "ru" }: HolisticHous
           <p className="service-home-kicker">{text.libraryEyebrow}</p>
           <h2 id="service-home-library-title">{text.libraryTitle}</h2>
           <p className="service-home-library-intro">{text.libraryText}</p>
-          <Link href="/books">{text.libraryAction}<span aria-hidden="true">→</span></Link>
+          <Link href={"/" + locale + "/books"}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
         </div>
       </section>
 

@@ -42,7 +42,7 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
   return (
     <nav aria-label={activeLocale === "ru" ? "Основная навигация" : "Primary navigation"} className="site-navigation">
       <Link href="/">{labels.home}</Link>
-      <Link href="/books">{labels.library}</Link>
+      <Link href={"/" + activeLocale + "/books"}>{labels.library}</Link>
       <Link href={"/" + activeLocale + "/homeopathy"}>{labels.remedies}</Link>
       <Link href={"/" + activeLocale + "/services"}>{labels.services}</Link>
       <Link href="/admin">{labels.cabinet}</Link>

@@ -22,21 +22,25 @@ export function MobileBottomNavigation() {
 
     syncLocale()
     window.addEventListener('ui-locale-change', syncLocale)
-    return () => window.removeEventListener('ui-locale-change', syncLocale)
+    window.addEventListener('holistic-house-ui-locale', syncLocale)
+    return () => {
+      window.removeEventListener('ui-locale-change', syncLocale)
+      window.removeEventListener('holistic-house-ui-locale', syncLocale)
+    }
   }, [])
 
   const locale: Locale = (pathLocale ?? preference) as Locale
   const items = locale === 'ru'
     ? [
         { label: 'Главная', href: '/', icon: House },
-        { label: 'Книги', href: '/books', icon: BookOpen },
+        { label: 'Книги', href: '/ru/books', icon: BookOpen },
         { label: 'Препараты', href: '/ru/homeopathy', icon: Leaf },
         { label: 'Услуги', href: '/ru/services', icon: Sparkles },
         { label: 'Кабинет', href: '/admin', icon: UserRound },
       ]
     : [
         { label: 'Home', href: '/', icon: House },
-        { label: 'Books', href: '/books', icon: BookOpen },
+        { label: 'Books', href: '/en/books', icon: BookOpen },
         { label: 'Remedies', href: '/en/homeopathy', icon: Leaf },
         { label: 'Services', href: '/en/services', icon: Sparkles },
         { label: 'Cabinet', href: '/admin', icon: UserRound },
