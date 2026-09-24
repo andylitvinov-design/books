@@ -114,7 +114,7 @@ export function BookCatalog({ books, locale }: BookCatalogProps) {
           {visibleBooks.map((book, index) => {
             const display = localizedBookText(book, locale);
             return (
-              <Link className="catalog-card" href={"/books/" + book.id} key={book.id}>
+              <Link className="catalog-card" href={"/books/" + book.id + (locale === "en" ? "?lang=en" : "")} key={book.id}>
                 <figure className="catalog-cover">
                   <Image
                     alt={locale === "ru" ? "Обложка: " + display.title : "Cover: " + display.title}

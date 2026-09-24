@@ -123,7 +123,7 @@ export default async function ServicesPage({ params }: PageProps) {
         </div>
         <div>
           <p>{current.approachText}</p>
-          <Link href="/books/alchemy-services-workflow">{current.book}<span aria-hidden="true">→</span></Link>
+          <Link href={"/books/alchemy-services-workflow" + (locale === "en" ? "?lang=en" : "")}>{current.book}<span aria-hidden="true">→</span></Link>
         </div>
       </section>
 
