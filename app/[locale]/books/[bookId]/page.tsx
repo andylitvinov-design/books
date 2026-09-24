@@ -153,7 +153,7 @@ export default async function LocalizedBookReaderPage({ params }: PageProps) {
   if (!book) notFound();
 
   if (book.id === "alchemy-homeopathy-remedies") {
-    return <Book02Reference locale={typedLocale} remedies={getBook02Remedies(typedLocale)} entries={getRemedyDirectory(typedLocale)} />;
+    return <><PublicSiteHeader locale={typedLocale} /><Book02Reference locale={typedLocale} remedies={getBook02Remedies(typedLocale)} entries={getRemedyDirectory(typedLocale)} /></>;
   }
 
   const display = localizedBookText(book, typedLocale);
