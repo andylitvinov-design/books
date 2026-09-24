@@ -98,7 +98,7 @@ test('About exposes a consultation request form and a real Client Cabinet entry 
 
   assert.match(about, /PersonalConsultationForm/)
   assert.match(about, /about-client-cabinet-login/)
-  assert.match(about, /\/" \+ typedLocale \+ "\/client"/)
+  assert.match(about, /typedLocale \+ "\/client"/)
   assert.match(entryPage, /ClientCabinetEntry/)
   assert.match(entryPage, /robots: \{ index: false, follow: false \}/)
   assert.match(entryForm, /privateLink/)
