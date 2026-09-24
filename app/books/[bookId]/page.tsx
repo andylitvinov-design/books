@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Book02Reference } from "@/components/book-02-reference";
+import { Book02Reference } from "@/components/book-02-reference";\nimport { TranslatedReaderContent } from "@/components/translated-reader-content";
 import { books, getBookById } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
 import { loadReaderDocument } from "@/data/reader-content";
