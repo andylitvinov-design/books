@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -11,48 +13,84 @@ type PageProps = { params: Promise<{ locale: string }> };
 
 const copy = {
   ru: {
-    title: "Услуги и Алхимия души — Holistic House",
-    description: "Описание авторского подхода «Алхимия души», индивидуальных консультаций и сопровождения.",
-    kicker: "Индивидуальная работа",
+    title: "Услуги — Holistic House",
+    description: "Бизнес-расстановки, Алхимия души / психогомеопатия и архетипические расстановки.",
+    kicker: "Три направления работы",
     heading: "Услуги",
-    lead: "Форматы работы, описанные в материалах проекта «Алхимия души»: диагностика состояния, индивидуальные рекомендации, расстановочная и психотерапевтическая работа, сопровождение и повторная проверка.",
-    approachKicker: "Подход",
-    approachTitle: "Алхимия души",
-    approachText: "В авторских материалах «Алхимия души» описана как интегративная рамка, объединяющая системные расстановки, гомеопатию, алхимические инструменты и психотерапевтическую работу. Эссенции Баха используются как более мягкая линия поддержки, а гомеопатические и другие инструменты — как часть индивидуально подобранной работы.",
+    lead: "Три формата для разных задач: бизнес и решения, внутренние состояния и развитие, архетипическая и трансперсональная работа.",
     cards: [
-      { title: "Диагностика и индивидуальная рекомендация", text: "Разбор запроса и состояния, поиск ключевых факторов и составление индивидуальной рекомендации с последующей проверкой динамики." },
-      { title: "Сопровождение", text: "В опубликованных материалах основной цикл описан как две сессии и поддержка между ними: первая диагностика и назначение, затем повторная проверка и коррекция." },
-      { title: "Системные расстановки и работа с образами", text: "Расстановочная модель используется для диагностики и отслеживания изменений; в расширенной работе упоминаются образы, субличности и психотерапевтическая интеграция." },
-      { title: "Препараты и эссенции Баха", text: "Авторские материалы включают гомеопатические препараты и эссенции Баха как отдельные линии рекомендаций внутри общей системы сопровождения." },
+      {
+        id: "business",
+        title: "Бизнес-расстановки",
+        subtitle: "Анализ перспектив бизнес-проектов",
+        text: "Системное исследование проекта: его перспектив, скрытых динамик, партнёрств, ролей, денег, ограничений и возможных следующих шагов. Это способ увидеть ситуацию шире и проверить решения через расстановочное поле.",
+        icon: BriefcaseBusiness,
+      },
+      {
+        id: "alchemy",
+        title: "Алхимия души / психогомеопатия",
+        subtitle: "Индивидуальная работа с внутренними состояниями",
+        text: "Авторский формат, объединяющий образную и системную работу с навигацией по поддерживающим средствам. Фокус — внутренние состояния, повторяющиеся паттерны, ресурсы и движение к более целостному состоянию.",
+        icon: Flower2,
+      },
+      {
+        id: "archetypal",
+        title: "Архетипические расстановки",
+        subtitle: "Мистерии и инициации",
+        text: "Экспериментальная работа с архетипами, мифологическими образами, ритуальной структурой и трансперсональным полем — индивидуально или в группе.",
+        icon: Sparkles,
+      },
     ],
-    book: "Читать книгу «Услуги, формат работы и сопровождение»",
-    consultation: "Бесплатная консультация",
-    consultationText: "Можно начать с короткого разговора о вашем запросе и подходящем формате работы.",
-    telegram: "Telegram",
+    approachKicker: "О подходе",
+    approachTitle: "Одна практика — три направления",
+    approachText: "Во всех форматах я работаю через системное поле, образы и внимательное исследование динамики. Разница — в фокусе: бизнес, внутреннее состояние или архетипический уровень.",
+    about: "Обо мне",
+    consultationKicker: "Первый шаг",
+    consultation: "Начните с короткого разговора",
+    consultationText: "Опишите ваш запрос — вместе определим, какой из трёх форматов сейчас наиболее уместен.",
+    telegram: "Написать в Telegram",
     whatsapp: "WhatsApp",
-    note: "Описание основано на опубликованных материалах проекта. Конкретный формат, стоимость и границы работы уточняются перед началом. Материалы не заменяют медицинскую диагностику или лечение.",
+    note: "Бизнес-расстановки являются методом системного исследования и не заменяют финансовую экспертизу или прогноз. Материалы по психогомеопатии носят образовательный характер и не заменяют медицинскую диагностику или лечение.",
   },
   en: {
-    title: "Services and Alchemy of the Soul — Holistic House",
-    description: "An overview of the author’s Alchemy of the Soul approach, individual consultations, and ongoing support.",
-    kicker: "Individual work",
+    title: "Services — Holistic House",
+    description: "Business Constellations, Alchemy of the Soul / Psychohomeopathy, and Archetypal Constellations.",
+    kicker: "Three directions of work",
     heading: "Services",
-    lead: "Formats described in the Alchemy of the Soul project materials: assessment, individualized recommendations, constellation and psychotherapeutic work, ongoing support, and follow-up review.",
-    approachKicker: "Approach",
-    approachTitle: "Alchemy of the Soul",
-    approachText: "In the author’s materials, Alchemy of the Soul is described as an integrative framework combining systemic constellations, homeopathy, alchemical tools, and psychotherapeutic work. Bach flower essences are presented as a gentler support line, while homeopathic and other tools are used as part of individualized work.",
+    lead: "Three formats for different needs: business and decision-making, inner states and development, and archetypal / transpersonal exploration.",
     cards: [
-      { title: "Assessment and individual recommendation", text: "Clarifying the request and current state, identifying key factors, and creating an individual recommendation followed by review of changes." },
-      { title: "Ongoing support", text: "Published materials describe a core cycle of two sessions with support in between: initial assessment and recommendation, followed by reassessment and adjustment." },
-      { title: "Systemic constellations and imagery work", text: "Constellation work is described as a diagnostic and tracking framework; expanded formats also mention imagery, subpersonalities, and psychotherapeutic integration." },
-      { title: "Remedies and Bach flower essences", text: "The author materials include homeopathic remedies and Bach flower essences as distinct recommendation lines within a broader support framework." },
+      {
+        id: "business",
+        title: "Business Constellations",
+        subtitle: "Exploring the prospects of business projects",
+        text: "A systemic exploration of a project: its prospects, hidden dynamics, partnerships, roles, money, constraints, and possible next steps. The aim is to widen the view and test decisions through constellation work.",
+        icon: BriefcaseBusiness,
+      },
+      {
+        id: "alchemy",
+        title: "Alchemy of the Soul / Psychohomeopathy",
+        subtitle: "Individual work with inner states",
+        text: "An author-developed format combining imagery and systemic exploration with guidance around supportive remedies. The focus is on inner states, recurring patterns, resources, and movement toward greater wholeness.",
+        icon: Flower2,
+      },
+      {
+        id: "archetypal",
+        title: "Archetypal Constellations",
+        subtitle: "Mysteries & Initiations",
+        text: "Experiential work with archetypes, mythic imagery, ritual structure, and the transpersonal field — individually or in groups.",
+        icon: Sparkles,
+      },
     ],
-    book: "Read “Services, workflow, and ongoing support”",
-    consultation: "Free consultation",
-    consultationText: "You can start with a short conversation about your request and which format may fit.",
-    telegram: "Telegram",
+    approachKicker: "About the approach",
+    approachTitle: "One practice, three directions",
+    approachText: "Across all three formats I work with systemic fields, imagery, and close attention to dynamics. What changes is the focus: business, inner states, or the archetypal level.",
+    about: "About me",
+    consultationKicker: "First step",
+    consultation: "Start with a short conversation",
+    consultationText: "Tell me what you would like to explore, and we can choose which of the three formats fits best right now.",
+    telegram: "Message on Telegram",
     whatsapp: "WhatsApp",
-    note: "This description is based on published project materials. The exact format, price, and scope are confirmed before work begins. These materials do not replace medical diagnosis or treatment.",
+    note: "Business constellations are a systemic exploration method and do not replace financial due diligence or forecasting. Psychohomeopathy materials are educational and do not replace medical diagnosis or treatment.",
   },
 } as const;
 
@@ -79,34 +117,54 @@ export default async function ServicesPage({ params }: PageProps) {
   const current = copy[locale as Locale];
 
   return (
-    <main className="services-shell">
+    <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
 
-      <section className="services-hero">
-        <p className="homeopathy-kicker">{current.kicker}</p>
-        <h1>{current.heading}</h1>
-        <p>{current.lead}</p>
+      <section className="services-studio-hero">
+        <div className="services-studio-hero-copy">
+          <p className="homeopathy-kicker">{current.kicker}</p>
+          <h1>{current.heading}</h1>
+          <p>{current.lead}</p>
+          <Link className="services-studio-primary" href="#consultation">
+            {current.consultation}<span aria-hidden="true">→</span>
+          </Link>
+        </div>
+        <div className="services-studio-photo" aria-hidden="true">
+          <Image
+            src="/images/holistic-house/hero-olive-incense.webp"
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 767px) 100vw, 44vw"
+          />
+        </div>
       </section>
 
-      <section className="services-approach">
-        <p className="homeopathy-kicker">{current.approachKicker}</p>
-        <h2>{current.approachTitle}</h2>
-        <p>{current.approachText}</p>
-        <Link href="/books/alchemy-services-workflow">{current.book} →</Link>
-      </section>
-
-      <section className="services-grid" aria-label={current.heading}>
-        {current.cards.map((card) => (
-          <article key={card.title}>
-            <h2>{card.title}</h2>
-            <p>{card.text}</p>
+      <section className="services-studio-grid services-studio-grid--three" aria-label={current.heading}>
+        {current.cards.map(({ id, icon: Icon, title, subtitle, text }) => (
+          <article className="services-studio-card services-studio-card--detailed" id={id} key={title}>
+            <span className="services-studio-icon" aria-hidden="true"><Icon /></span>
+            <h2>{title}</h2>
+            <p className="services-studio-card-subtitle">{subtitle}</p>
+            <p>{text}</p>
           </article>
         ))}
       </section>
 
-      <section className="services-consultation" id="consultation">
+      <section className="services-studio-approach">
         <div>
-          <p className="homeopathy-kicker">{locale === "ru" ? "Первый шаг" : "First step"}</p>
+          <p className="homeopathy-kicker">{current.approachKicker}</p>
+          <h2>{current.approachTitle}</h2>
+        </div>
+        <div>
+          <p>{current.approachText}</p>
+          <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true">→</span></Link>
+        </div>
+      </section>
+
+      <section className="services-consultation services-consultation--studio" id="consultation">
+        <div>
+          <p className="homeopathy-kicker">{current.consultationKicker}</p>
           <h2>{current.consultation}</h2>
           <p>{current.consultationText}</p>
         </div>

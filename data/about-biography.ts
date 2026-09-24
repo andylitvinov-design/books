@@ -87,7 +87,7 @@ export const aboutBiography: Record<"en" | "ru", AboutContent> = {
     explore: {
       heading: "Explore my work",
       links: [
-        { label: "Book", href: "/books" },
+        { label: "Book", href: "https://designrr.page/?id=377444&token=639498968&h=5264" },
         { label: "Remedies", href: "/en/homeopathy" },
         { label: "Services", href: "/en/services" },
       ],
@@ -172,7 +172,7 @@ export const aboutBiography: Record<"en" | "ru", AboutContent> = {
     explore: {
       heading: "Исследуйте мою работу",
       links: [
-        { label: "Книга", href: "/books" },
+        { label: "Книга", href: "https://designrr.page/?id=367554&token=1057485987&h=4958" },
         { label: "Препараты", href: "/ru/homeopathy" },
         { label: "Услуги", href: "/ru/services" },
       ],

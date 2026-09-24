@@ -99,7 +99,7 @@ export default async function HomeopathyPage({ params }: PageProps) {
             <h2 id="remedies-books-title">{current.booksHeading}</h2>
             <p>{current.booksLead}</p>
           </div>
-          <Link href="/books">{current.allBooks} →</Link>
+          <Link href={"/" + locale + "/books"}>{current.allBooks} →</Link>
         </div>
         <BookShowcase books={books} locale={locale} />
       </section>

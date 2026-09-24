@@ -1,6 +1,6 @@
 "use client";
 
-import { Flower2, Sprout, Sun } from "lucide-react";
+import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -15,36 +15,41 @@ const copy = {
     eyebrow: "Бережное пространство для",
     titleTop: "Восстановления",
     titleBottom: "и внутреннего развития",
-    intro: "Личные сессии, подбор средств, поддержка тела и психики и осознанная практика — для более гармоничной жизни в согласии с собой.",
+    intro: "Бизнес-расстановки, Алхимия души и архетипическая работа — три направления для ясности, развития и более глубокого контакта с собой.",
     primary: "Записаться на сессию",
     secondary: "Смотреть услуги",
     servicesTitle: "Наши услуги",
     seeAll: "Все услуги",
     cards: [
       {
-        icon: Sprout,
-        title: "Личные сессии",
-        text: "Консультации для ясности, восстановления и роста.",
-        href: "/ru/services#consultation",
+        icon: BriefcaseBusiness,
+        title: "Бизнес-расстановки",
+        text: "Системный анализ перспектив бизнес-проектов, ролей, партнёрств, денег и возможных следующих шагов.",
+        href: "/ru/services#business",
       },
       {
         icon: Flower2,
-        title: "Подбор средств",
-        text: "Личная поддержка в выборе подходящих натуральных средств.",
-        href: "/ru/homeopathy",
+        title: "Алхимия души",
+        text: "Психогомеопатия и индивидуальная работа с внутренними состояниями в рамках авторского подхода.",
+        href: "/ru/services#alchemy",
       },
       {
-        icon: Sun,
-        title: "Программы и семинары",
-        text: "Групповые встречи для глубокой практики и внутренних перемен.",
-        href: "/ru/services",
+        icon: Sparkles,
+        title: "Архетипические расстановки",
+        text: "Мистерии и инициации: работа с архетипами, образами и трансперсональным полем.",
+        href: "/ru/services#archetypal",
       },
     ],
     learnMore: "Подробнее",
-    libraryEyebrow: "Для тех, кто хочет исследовать глубже",
-    libraryTitle: "Книги и библиотека",
-    libraryText: "Книги, справочные материалы и цифровые ресурсы для вдохновения.",
-    libraryAction: "Открыть библиотеку",
+    libraryEyebrow: "Авторская книга",
+    libraryTitle: "Алхимия души",
+    libraryText: "Моя книга о внутреннем развитии, психогомеопатии и авторском подходе к работе с состояниями.",
+    libraryAction: "Читать книгу",
+    bookUrl: "https://designrr.page/?id=367554&token=1057485987&h=4958",
+    aboutEyebrow: "Обо мне",
+    aboutTitle: "Andrii Litvinov",
+    aboutText: "Консультант, фасилитатор и преподаватель. Более 20 лет работаю с группами и практиками внутреннего развития; соединяю системные расстановки, образную работу, телесные подходы и исследование архетипов.",
+    aboutAction: "Подробнее обо мне",
     footer: "Индивидуальная работа, осознанные практики и пространство для внутреннего развития.",
   },
   en: {
@@ -53,36 +58,41 @@ const copy = {
     eyebrow: "A gentle space for",
     titleTop: "Healing and",
     titleBottom: "Inner Development",
-    intro: "Private sessions, remedy guidance, body–mind support, and thoughtful practice — for a more balanced, authentic life.",
+    intro: "Business constellations, Alchemy of the Soul, and archetypal work — three directions for clarity, development, and a deeper relationship with yourself.",
     primary: "Book a session",
     secondary: "Explore services",
     servicesTitle: "Our Services",
     seeAll: "See all services",
     cards: [
       {
-        icon: Sprout,
-        title: "Private Sessions",
-        text: "Personal consultations for clarity, healing and growth.",
-        href: "/en/services#consultation",
+        icon: BriefcaseBusiness,
+        title: "Business Constellations",
+        text: "Systemic exploration of business projects, roles, partnerships, money, and possible next steps.",
+        href: "/en/services#business",
       },
       {
         icon: Flower2,
-        title: "Remedy Guidance",
-        text: "Individual support in finding the right natural remedies.",
-        href: "/en/homeopathy",
+        title: "Alchemy of the Soul",
+        text: "Psychohomeopathy and individual work with inner states within the author-developed framework.",
+        href: "/en/services#alchemy",
       },
       {
-        icon: Sun,
-        title: "Programs & Workshops",
-        text: "Group experiences for deeper practice and transformation.",
-        href: "/en/services",
+        icon: Sparkles,
+        title: "Archetypal Constellations",
+        text: "Mysteries & Initiations: work with archetypes, imagery, and the transpersonal field.",
+        href: "/en/services#archetypal",
       },
     ],
     learnMore: "Learn more",
-    libraryEyebrow: "For those who wish to explore further",
-    libraryTitle: "Books & Library",
-    libraryText: "Inspiring books, reference materials, and digital resources.",
-    libraryAction: "Explore the library",
+    libraryEyebrow: "Author book",
+    libraryTitle: "The Power of Life",
+    libraryText: "My book on inner development, psychohomeopathy, and an integrative approach to working with human states.",
+    libraryAction: "Read the book",
+    bookUrl: "https://designrr.page/?id=377444&token=639498968&h=5264",
+    aboutEyebrow: "About",
+    aboutTitle: "Andrii Litvinov",
+    aboutText: "Consultant, facilitator, and teacher. For more than 20 years I have worked with groups and inner-development practices, combining systemic constellations, imagery, embodied approaches, and archetypal exploration.",
+    aboutAction: "About my work",
     footer: "Individual work, thoughtful practice, and a space for inner development.",
   },
 } as const;
@@ -148,6 +158,17 @@ export function HolisticHouseHome({ locale: initialLocale = "ru" }: HolisticHous
         </div>
       </section>
 
+      <section className="service-home-about" aria-labelledby="service-home-about-title">
+        <div>
+          <p className="service-home-kicker">{text.aboutEyebrow}</p>
+          <h2 id="service-home-about-title">{text.aboutTitle}</h2>
+        </div>
+        <div>
+          <p>{text.aboutText}</p>
+          <Link href={"/" + locale + "/about"}>{text.aboutAction}<span aria-hidden="true">→</span></Link>
+        </div>
+      </section>
+
       <section className="service-home-library" aria-labelledby="service-home-library-title">
         <Image
           src="/images/holistic-house/books-library.webp"
@@ -160,7 +181,7 @@ export function HolisticHouseHome({ locale: initialLocale = "ru" }: HolisticHous
           <p className="service-home-kicker">{text.libraryEyebrow}</p>
           <h2 id="service-home-library-title">{text.libraryTitle}</h2>
           <p className="service-home-library-intro">{text.libraryText}</p>
-          <Link href="/books">{text.libraryAction}<span aria-hidden="true">→</span></Link>
+          <a href={text.bookUrl}>{text.libraryAction}<span aria-hidden="true">→</span></a>
         </div>
       </section>
 

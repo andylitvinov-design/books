@@ -315,3 +315,55 @@
   .service-home-hero-copy { animation: none; }
   .service-home-button, .service-home-card, .service-home-card-action span, .service-home-library a span { transition: none; }
 }
+
+
+.service-home-about {
+  display: grid;
+  grid-template-columns: .72fr 1.28fr;
+  gap: 56px;
+  max-width: 1188px;
+  margin: 24px auto 44px;
+  border-top: 1px solid #dfd3c4;
+  border-bottom: 1px solid #dfd3c4;
+  padding: 40px 0;
+}
+.service-home-about h2 {
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(38px, 4vw, 56px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.035em;
+}
+.service-home-about > div:last-child {
+  align-self: center;
+}
+.service-home-about > div:last-child p {
+  max-width: 680px;
+  color: var(--hh-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.service-home-about a {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  color: #855139;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+@media (max-width: 1319px) {
+  .service-home-about { margin-inline: 5vw; }
+}
+@media (max-width: 767px) {
+  .service-home-about {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin: 18px 20px 28px;
+    padding: 28px 0;
+  }
+  .service-home-about h2 { font-size: 36px; }
+  .service-home-about > div:last-child p { font-size: 13px; line-height: 1.62; }
+}

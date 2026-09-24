@@ -22,21 +22,25 @@ export function MobileBottomNavigation() {
 
     syncLocale()
     window.addEventListener('ui-locale-change', syncLocale)
-    return () => window.removeEventListener('ui-locale-change', syncLocale)
+    window.addEventListener('holistic-house-ui-locale', syncLocale)
+    return () => {
+      window.removeEventListener('ui-locale-change', syncLocale)
+      window.removeEventListener('holistic-house-ui-locale', syncLocale)
+    }
   }, [])
 
   const locale: Locale = (pathLocale ?? preference) as Locale
   const items = locale === 'ru'
     ? [
         { label: 'Главная', href: '/', icon: House },
-        { label: 'Книга', href: '/books', icon: BookOpen },
+        { label: 'Книга', href: 'https://designrr.page/?id=367554&token=1057485987&h=4958', icon: BookOpen, external: true },
         { label: 'Препараты', href: '/ru/homeopathy', icon: Leaf },
         { label: 'Услуги', href: '/ru/services', icon: Sparkles },
         { label: 'Обо мне', href: '/ru/about', icon: UserRound },
       ]
     : [
         { label: 'Home', href: '/', icon: House },
-        { label: 'Book', href: '/books', icon: BookOpen },
+        { label: 'Book', href: 'https://designrr.page/?id=377444&token=639498968&h=5264', icon: BookOpen, external: true },
         { label: 'Remedies', href: '/en/homeopathy', icon: Leaf },
         { label: 'Services', href: '/en/services', icon: Sparkles },
         { label: 'About', href: '/en/about', icon: UserRound },
@@ -46,14 +50,15 @@ export function MobileBottomNavigation() {
 
   return (
     <nav aria-label={locale === 'ru' ? 'Мобильная навигация' : 'Mobile navigation'} className="mobile-bottom-navigation">
-      {items.map(({ label, href, icon: Icon }) => {
-        const current = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
-        return (
-          <Link aria-current={current ? 'page' : undefined} data-home-active={href === '/' && pathname === '/' ? 'true' : undefined} href={href} key={href}>
-            <Icon aria-hidden="true" />
-            <span>{label}</span>
-          </Link>
-        )
+      {items.map(({ label, href, icon: Icon, external }) => {
+        const current = !external && (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/'))
+        const content = <>
+          <Icon aria-hidden="true" />
+          <span>{label}</span>
+        </>
+        return external
+          ? <a href={href} key={href}>{content}</a>
+          : <Link aria-current={current ? 'page' : undefined} data-home-active={href === '/' && pathname === '/' ? 'true' : undefined} href={href} key={href}>{content}</Link>
       })}
     </nav>
   )

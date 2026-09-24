@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
-import { BookCatalog } from "@/components/book-catalog";
-import { books } from "@/data/library";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Библиотека книг — Holistic House",
-  description: "Книги, собранные из опубликованных источников: от алхимических и даосских практик до традиции Майя. Поиск по книгам и главам.",
-  alternates: { canonical: "/books" },
-};
+import { uiLocaleCookie } from "@/lib/ui-locale";
 
-export default function BooksPage() {
-  return <BookCatalog books={books} />;
+export default async function BooksRedirectPage() {
+  const preference = (await cookies()).get(uiLocaleCookie)?.value;
+  const locale = preference === "en" ? "en" : "ru";
+  redirect("/" + locale + "/books");
 }

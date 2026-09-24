@@ -8,14 +8,14 @@ type PublicSiteHeaderProps = {
 };
 
 const copy = {
-  ru: { home: "Holistic House — главная", subtitle: "Книги · препараты · услуги" },
-  en: { home: "Holistic House — home", subtitle: "Books · remedies · services" },
+  ru: { home: "Holistic House — главная", subtitle: "восстановление · практика · поддержка" },
+  en: { home: "Holistic House — home", subtitle: "healing · practice · guidance" },
 } as const;
 
 export function PublicSiteHeader({ locale }: PublicSiteHeaderProps) {
   const text = copy[locale];
   return (
-    <header className="house-header public-site-header">
+    <header className="house-header house-header--services section-site-header">
       <Link className="house-wordmark" href="/" aria-label={text.home}>
         Holistic House
         <span>{text.subtitle}</span>
