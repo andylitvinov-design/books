@@ -3348,3 +3348,25 @@
     min-height: 0;
   }
 }
+
+
+.reader-shell--localized .section-site-header {
+  margin-bottom: 28px;
+}
+.reader-source-language-note {
+  margin-bottom: 22px;
+  border-left: 2px solid #bd9270;
+  padding: 10px 0 10px 14px;
+  color: #78695c;
+  font-size: 12px;
+  line-height: 1.55;
+}
+@media (max-width: 767px) {
+  .reader-shell--localized .section-site-header {
+    margin: 0 -16px 18px;
+  }
+  .reader-source-language-note {
+    margin-bottom: 16px;
+    font-size: 11px;
+  }
+}
