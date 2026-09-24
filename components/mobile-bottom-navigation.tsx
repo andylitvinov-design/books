@@ -29,17 +29,17 @@ export function MobileBottomNavigation() {
   const items = locale === 'ru'
     ? [
         { label: 'Главная', href: '/', icon: House },
-        { label: 'Книги', href: '/books', icon: BookOpen },
+        { label: 'Книга', href: '/books', icon: BookOpen },
         { label: 'Препараты', href: '/ru/homeopathy', icon: Leaf },
         { label: 'Услуги', href: '/ru/services', icon: Sparkles },
-        { label: 'Кабинет', href: '/admin', icon: UserRound },
+        { label: 'Обо мне', href: '/ru/about', icon: UserRound },
       ]
     : [
         { label: 'Home', href: '/', icon: House },
-        { label: 'Books', href: '/books', icon: BookOpen },
+        { label: 'Book', href: '/books', icon: BookOpen },
         { label: 'Remedies', href: '/en/homeopathy', icon: Leaf },
         { label: 'Services', href: '/en/services', icon: Sparkles },
-        { label: 'Cabinet', href: '/admin', icon: UserRound },
+        { label: 'About', href: '/en/about', icon: UserRound },
       ]
 
   if (/^\/(admin|(?:ru|en)\/prescriptions)/.test(pathname)) return null

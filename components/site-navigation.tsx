@@ -17,8 +17,8 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
   const [preference, setPreference] = useState<Locale>(locale ?? "ru");
   const activeLocale = locale ?? preference;
   const labels = activeLocale === "ru"
-    ? { home: "Главная", library: "Книги", remedies: "Препараты", services: "Услуги", cabinet: "Кабинет" }
-    : { home: "Home", library: "Books", remedies: "Remedies", services: "Services", cabinet: "Cabinet" };
+    ? { home: "Главная", library: "Книга", remedies: "Препараты", services: "Услуги", about: "Обо мне" }
+    : { home: "Home", library: "Book", remedies: "Remedies", services: "Services", about: "About" };
   const localizedPath = /^\/(ru|en)(?=\/|$)/.test(pathname);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
       <Link href="/books">{labels.library}</Link>
       <Link href={"/" + activeLocale + "/homeopathy"}>{labels.remedies}</Link>
       <Link href={"/" + activeLocale + "/services"}>{labels.services}</Link>
-      <Link href="/admin">{labels.cabinet}</Link>
+      <Link href={"/" + activeLocale + "/about"}>{labels.about}</Link>
       <span aria-label={activeLocale === "ru" ? "Язык интерфейса" : "Interface language"} className="site-language-switch">
         {(["ru", "en"] as Locale[]).map((nextLocale) => localizedPath ? (
           <Link aria-current={activeLocale === nextLocale ? "true" : undefined} href={counterpart(nextLocale)} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)}>{nextLocale.toUpperCase()}</Link>

@@ -7,23 +7,25 @@ test('locale counterpart paths preserve the current localized route', async () =
 
   assert.equal(localePath('/ru/homeopathy/remedies/aconitum', 'en'), '/en/homeopathy/remedies/aconitum')
   assert.equal(localePath('/en/client/personal-selector', 'ru'), '/ru/client/personal-selector')
+  assert.equal(localePath('/ru/about', 'en'), '/en/about')
+  assert.equal(localePath('/en/about', 'ru'), '/ru/about')
   assert.equal(localePath('/books', 'en'), '/books')
 })
 
-test('public navigation exposes both UI languages and the practitioner cabinet', async () => {
+test('public navigation exposes both UI languages and About without exposing administration', async () => {
   const navigation = await readFile('components/site-navigation.tsx', 'utf8')
 
   assert.match(navigation, /Главная/)
-  assert.match(navigation, /Книги/)
+  assert.match(navigation, /Книга/)
   assert.match(navigation, /Препараты/)
   assert.match(navigation, /Услуги/)
-  assert.match(navigation, /Кабинет/)
+  assert.match(navigation, /Обо мне/)
   assert.match(navigation, /Home/)
-  assert.match(navigation, /Books/)
+  assert.match(navigation, /Book/)
   assert.match(navigation, /Remedies/)
   assert.match(navigation, /Services/)
-  assert.match(navigation, /Cabinet/)
-  assert.match(navigation, /href="\/admin"/)
+  assert.match(navigation, /About/)
+  assert.doesNotMatch(navigation, /href="\/admin"/)
   assert.match(navigation, /localePath/)
   assert.match(navigation, /document\.cookie/)
 })

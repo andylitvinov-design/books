@@ -2802,3 +2802,165 @@
 @media (max-width: 430px) {
   .remedies-book-grid { grid-template-columns: 1fr; }
 }
+
+/* Andy's editorial About page */
+.about-shell {
+  min-height: 100vh;
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: 0 32px 104px;
+}
+.about-introduction {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(18rem, .92fr);
+  align-items: start;
+  gap: clamp(2.5rem, 7vw, 7rem);
+  padding: clamp(1rem, 3vw, 2.5rem) 0 clamp(3.5rem, 8vw, 7.5rem);
+}
+.about-portrait {
+  position: relative;
+  aspect-ratio: 1079 / 1057;
+  overflow: hidden;
+  background: #d8c5ab;
+}
+.about-portrait img {
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+.about-introduction-copy {
+  padding-top: clamp(.5rem, 6vw, 6rem);
+}
+.about-kicker {
+  color: #8b6347;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.about-introduction-copy h1,
+.about-biography h2,
+.about-explore h2,
+.about-client-cabinet h2 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  color: #2c2119;
+}
+.about-introduction-copy h1 {
+  margin-top: 12px;
+  font-size: clamp(58px, 8vw, 106px);
+  line-height: .88;
+}
+.about-introduction-copy > p:not(.about-kicker) {
+  margin-top: 18px;
+  max-width: 31rem;
+  color: #55463a;
+  font-size: clamp(16px, 1.55vw, 20px);
+  line-height: 1.62;
+}
+.about-biography {
+  max-width: 49rem;
+  margin: 0 auto;
+}
+.about-biography section + section {
+  margin-top: clamp(2.7rem, 7vw, 5.5rem);
+  border-top: 1px solid #d9cdbd;
+  padding-top: clamp(1.6rem, 4vw, 2.7rem);
+}
+.about-biography h2 {
+  font-size: clamp(31px, 4.5vw, 51px);
+  line-height: 1.06;
+}
+.about-biography p,
+.about-biography li {
+  color: #55463a;
+  font-size: 16px;
+  line-height: 1.78;
+}
+.about-biography p {
+  margin-top: 17px;
+}
+.about-biography ul {
+  display: grid;
+  gap: 15px;
+  margin-top: 24px;
+  border-left: 1px solid #b69678;
+  padding-left: 24px;
+}
+.about-biography li {
+  padding-left: 4px;
+}
+.about-explore {
+  max-width: 49rem;
+  margin: clamp(4.5rem, 10vw, 9rem) auto 0;
+  border-top: 1px solid #bfa98f;
+  padding-top: clamp(1.6rem, 4vw, 2.8rem);
+}
+.about-explore h2,
+.about-client-cabinet h2 {
+  margin-top: 8px;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.08;
+}
+.about-explore nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin-top: 24px;
+}
+.about-explore a,
+.about-client-cabinet a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  color: #643f2c;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: #c79e79;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+}
+.about-explore a:hover,
+.about-client-cabinet a:hover { color: #2c2119; }
+.about-client-cabinet {
+  max-width: 49rem;
+  margin: clamp(3.5rem, 8vw, 6.5rem) auto 0;
+  border-top: 1px solid #d9cdbd;
+  padding-top: clamp(1.6rem, 4vw, 2.8rem);
+}
+.about-client-cabinet p {
+  max-width: 39rem;
+  margin-top: 13px;
+  color: #66574a;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.about-client-cabinet .about-client-cabinet-prompt {
+  margin-top: 23px;
+  color: #3d2e25;
+  font-size: 12px;
+  font-weight: 700;
+}
+@media (max-width: 767px) {
+  .about-shell {
+    padding: 0 16px calc(88px + env(safe-area-inset-bottom));
+  }
+  .about-introduction {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 0 0 52px;
+  }
+  .about-portrait { width: 100%; }
+  .about-introduction-copy { padding-top: 0; }
+  .about-introduction-copy h1 { font-size: 66px; }
+  .about-introduction-copy > p:not(.about-kicker) {
+    margin-top: 14px;
+    font-size: 16px;
+  }
+  .about-biography p,
+  .about-biography li { font-size: 15px; line-height: 1.75; }
+  .about-biography ul { gap: 13px; padding-left: 18px; }
+  .about-explore nav { display: grid; gap: 4px; }
+}
