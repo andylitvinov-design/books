@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { aboutBiography } from "@/data/about-biography";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -15,179 +17,46 @@ const videoTestimonials = [
   { id: "MIVLm1GUTtM", ru: "Юрий Гончаренко — отзыв клиента", en: "Yuri Goncharenko — client testimonial" },
 ] as const;
 
-const copy = {
+const testimonialCopy = {
   ru: {
-    title: "Обо мне — Holistic House",
-    description: "Andrii Litvinov — Jungian-oriented psychotherapist, facilitator of systemic and archetypal practices.",
-    kicker: "Обо мне",
-    heading: "Andrii Litvinov",
-    lead: "Jungian-oriented psychotherapist и фасилитатор архетипических практик. Вырос в Украине и около 20 лет живу и работаю в разных странах.",
-    intro: "Мой основной фокус — глубинная психотерапия, системные расстановки и работа с архетипами. Мне важно соединять психологическую глубину, телесный опыт и трансперсональное измерение так, чтобы практика оставалась живой, понятной и связанной с реальной жизнью.",
-    experienceTitle: "Опыт",
-    stats: [
-      { value: "24 года", label: "ведения групповых терапевтических программ — с 2002 года" },
-      { value: "22 года", label: "трансперсональных и temple-based практик — с 2004 года" },
-      { value: "15 лет", label: "семейных и бизнес-расстановок — с 2011 года" },
-      { value: "17 лет", label: "тантических воркшопов в разных школах и традициях — с 2009 года" },
-    ],
-    specializationsTitle: "Основные направления",
-    specializations: [
-      {
-        title: "Dreams Alive Psychotherapy",
-        text: "Работа с напряжением, внутренним ребёнком и ранними травматическими переживаниями через бессознательные образы и Guided Affective Imagery.",
-      },
-      {
-        title: "Body-oriented Psychotherapy",
-        text: "Работа с ранним телесным опытом, границами, поддержкой и осознанным прикосновением; важное влияние — Bodynamic Analysis.",
-      },
-      {
-        title: "Temple Therapy",
-        text: "Работа с личными и бизнес-целями через системные расстановки, храмовые архетипы, мистериальные структуры и трансперсональное поле.",
-      },
-      {
-        title: "Taoist Alchemy / Psychic Homeopathy",
-        text: "Исследование психосоматики, сложных состояний и внутренних динамик через авторскую модель Алхимии души и работу с поддерживающими средствами.",
-      },
-    ],
-    trainingTitle: "Линии обучения и влияния",
-    trainingIntro: "Есть разные школы и способы идти в глубинную работу. Для меня особенно важными стали несколько линий:",
-    training: [
-      {
-        title: "Guided Affective Imagery — Hanscarl Leuner",
-        text: "Моя основная психотерапевтическая линия: мост между юнгианской глубинной психологией, психоаналитическим мышлением и работой с образами.",
-      },
-      {
-        title: "Bodynamic Analysis — Lisbeth Marcher",
-        text: "Телесно-ориентированная линия, связывающая детские травматические паттерны, характер и конкретные зоны тела.",
-      },
-      {
-        title: "Tantra & ISTA",
-        text: "С 2009 года участвовал в тантрических школах и воркшопах в разных странах. Одним из самых сильных и трансформирующих влияний для меня стал подход ISTA.",
-      },
-      {
-        title: "Temple Studies",
-        text: "Посвящения и практика в линиях древнегреческих мистерий — Дионис, Деметра и другие храмовые архетипы — а также исследование египетской храмовой магии и мистерий.",
-      },
-      {
-        title: "Reiki Initiations",
-        text: "Многоступенчатые инициации, которые помогли почувствовать поле и поток: Tantra Reiki, Kundalini Reiki, Runic Reiki. Имею уровень Master Teacher в этих линиях.",
-      },
-    ],
-    todayTitle: "Как я работаю сейчас",
-    todayText: "В Holistic House я собрал опыт в три практических направления: бизнес-расстановки, Алхимия души / психогомеопатия и архетипические расстановки — Mysteries & Initiations. Работаю в Торонто и онлайн.",
-    services: "Смотреть услуги",
-    testimonialsKicker: "Отзывы",
-    testimonialsTitle: "Видео-отзывы",
-    testimonialsText: "Несколько видео-отзывов, ранее опубликованных на моём сайте PsiMaster.",
+    kicker: "Отзывы",
+    title: "Видео-отзывы",
+    text: "Несколько видео-отзывов, ранее опубликованных на моём сайте PsiMaster.",
     archiveTitle: "Фото и письменные отзывы",
-    archiveText: "Часть старых отзывов и учебных эссе сохранилась в архиве PsiMaster. Я оставил прямые ссылки на оригинальные публикации.",
+    archiveText: "Часть старых отзывов и учебных эссе сохранилась в архиве PsiMaster. Эти ссылки ведут к оригинальным публикациям.",
+    archiveAction: "Открыть архив PsiMaster",
     archiveCards: [
-      {
-        title: "Отзывы: сеанс образной терапии",
-        text: "Архив отзывов о личных консультациях и образной работе.",
-        href: "https://psimaster.net/node/786",
-        image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2.jpg?itok=8hSPbZ15",
-      },
-      {
-        title: "Отзывы и материалы школы",
-        text: "Архив отзывов, эссе участников и материалов старого центра PsiMaster.",
-        href: "https://psimaster.net/node/789",
-        image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2_0.jpg?itok=chWp4-7g",
-      },
+      { title: "Отзывы: сеанс образной терапии", text: "Архив отзывов о личных консультациях и образной работе.", href: "https://psimaster.net/node/786", image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2.jpg?itok=8hSPbZ15" },
+      { title: "Отзывы и материалы школы", text: "Архив отзывов, эссе участников и материалов старого центра PsiMaster.", href: "https://psimaster.net/node/789", image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2_0.jpg?itok=chWp4-7g" },
     ],
   },
   en: {
-    title: "About — Holistic House",
-    description: "Andrii Litvinov — Jungian-oriented psychotherapist and facilitator of systemic and archetypal practices.",
-    kicker: "About",
-    heading: "Andrii Litvinov",
-    lead: "Jungian-oriented psychotherapist and facilitator of archetypal practices. Raised in Ukraine, I have lived and worked internationally for around 20 years.",
-    intro: "My primary focus is depth-oriented psychotherapy, systemic constellations, and archetypal work. I am interested in bringing psychological depth, embodied experience, and the transpersonal dimension together in a way that stays alive, understandable, and connected to real life.",
-    experienceTitle: "Experience",
-    stats: [
-      { value: "24 years", label: "facilitating group therapy programs — since 2002" },
-      { value: "22 years", label: "facilitating transpersonal and temple-based practices — since 2004" },
-      { value: "15 years", label: "facilitating Family and Business Constellations — since 2011" },
-      { value: "17 years", label: "participating in tantra workshops across schools and traditions — since 2009" },
-    ],
-    specializationsTitle: "Main specializations",
-    specializations: [
-      {
-        title: "Dreams Alive Psychotherapy",
-        text: "Working with tension, Inner Child material, and early traumatic experience through unconscious imagery and Guided Affective Imagery.",
-      },
-      {
-        title: "Body-oriented Psychotherapy",
-        text: "Work with early embodied experience, boundaries, support, and conscious touch; Bodynamic Analysis has been an important influence.",
-      },
-      {
-        title: "Temple Therapy",
-        text: "Working with personal and business goals through systemic constellations, temple archetypes, mystery structures, and the transpersonal field.",
-      },
-      {
-        title: "Taoist Alchemy / Psychic Homeopathy",
-        text: "Exploring psychosomatics, complex states, and inner dynamics through my Alchemy of the Soul framework and supportive remedies.",
-      },
-    ],
-    trainingTitle: "Training lines & influences",
-    trainingIntro: "There are many ways and lineages to approach depth work. Several have been especially important in shaping my practice:",
-    training: [
-      {
-        title: "Guided Affective Imagery — Hanscarl Leuner",
-        text: "My principal psychotherapy line: a bridge between Jungian depth psychology, psychoanalytic thinking, and experiential work with imagery.",
-      },
-      {
-        title: "Bodynamic Analysis — Lisbeth Marcher",
-        text: "A body-oriented framework connecting childhood developmental patterns, character structure, and specific areas of the body.",
-      },
-      {
-        title: "Tantra & ISTA",
-        text: "Since 2009 I have taken part in tantra workshops in different schools and traditions around the world. The ISTA approach has been one of the most transformative influences for me.",
-      },
-      {
-        title: "Temple Studies",
-        text: "Initiatory and experiential study of Ancient Greek temple mysteries — Dionysus, Demeter, and other archetypal lines — together with Egyptian temple magic and mystery traditions.",
-      },
-      {
-        title: "Reiki Initiations",
-        text: "A series of initiations that helped me develop a felt sense of field and flow: Tantra Reiki, Kundalini Reiki, and Runic Reiki. I hold Master Teacher level in these lines.",
-      },
-    ],
-    todayTitle: "How I work today",
-    todayText: "At Holistic House I bring this experience together in three practical directions: Business Constellations, Alchemy of the Soul / Psychohomeopathy, and Archetypal Constellations — Mysteries & Initiations. I work in Toronto and online.",
-    services: "Explore services",
-    testimonialsKicker: "Testimonials",
-    testimonialsTitle: "Video testimonials",
-    testimonialsText: "A few video testimonials that were previously published on my PsiMaster website.",
+    kicker: "Testimonials",
+    title: "Video testimonials",
+    text: "A few video testimonials that were previously published on my PsiMaster website.",
     archiveTitle: "Photo & written reviews",
     archiveText: "Some older reviews and participant essays remain in the PsiMaster archive. These links open the original publications.",
+    archiveAction: "Open PsiMaster archive",
     archiveCards: [
-      {
-        title: "Imagery therapy & personal sessions",
-        text: "Archived reviews related to personal consultations and imagery-based work.",
-        href: "https://psimaster.net/node/786",
-        image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2.jpg?itok=8hSPbZ15",
-      },
-      {
-        title: "School reviews & participant materials",
-        text: "Archived reviews, participant essays, and materials from the earlier PsiMaster center.",
-        href: "https://psimaster.net/node/789",
-        image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2_0.jpg?itok=chWp4-7g",
-      },
+      { title: "Imagery therapy & personal sessions", text: "Archived reviews related to personal consultations and imagery-based work.", href: "https://psimaster.net/node/786", image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2.jpg?itok=8hSPbZ15" },
+      { title: "School reviews & participant materials", text: "Archived reviews, participant essays, and materials from the earlier PsiMaster center.", href: "https://psimaster.net/node/789", image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2_0.jpg?itok=chWp4-7g" },
     ],
   },
 } as const;
 
-export function generateStaticParams() { return getHomeopathyLocaleParams(); }
+export function generateStaticParams() {
+  return getHomeopathyLocaleParams();
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) return { title: "Not found" };
-  const current = copy[locale];
+
+  const current = aboutBiography[locale as Locale];
   return {
     metadataBase: metadataBaseFor(),
-    title: current.title,
-    description: current.description,
+    title: current.meta.title,
+    description: current.meta.description,
     alternates: {
       canonical: "/" + locale + "/about",
       languages: { ru: "/ru/about", en: "/en/about" },
@@ -198,131 +67,71 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function AboutPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
+
   const typedLocale = locale as Locale;
-  const current = copy[typedLocale];
+  const current = aboutBiography[typedLocale];
+  const testimonials = testimonialCopy[typedLocale];
 
   return (
-    <main className="about-shell about-shell--profile" lang={typedLocale}>
+    <main className="about-shell" lang={typedLocale}>
       <PublicSiteHeader locale={typedLocale} />
 
-      <section className="about-profile-hero">
-        <div className="about-profile-copy">
-          <p className="homeopathy-kicker">{current.kicker}</p>
-          <h1>{current.heading}</h1>
-          <p className="about-lead">{current.lead}</p>
-          <p className="about-profile-intro">{current.intro}</p>
+      <section className="about-introduction" aria-labelledby="about-title">
+        <div className="about-portrait">
+          <Image alt={current.photoAlt} fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 56vw, 660px" src="/images/holistic-house/andy-about.png" />
         </div>
-        <figure className="about-profile-portrait">
-          {/* Historical public portrait from the user's earlier PsiMaster site. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://psimaster.net/sites/default/files/resize/userfiles/1/Andy3-310x310.jpg" alt="Andrii Litvinov" />
-        </figure>
-      </section>
-
-      <section className="about-section-block" aria-labelledby="experience-title">
-        <div className="about-section-heading">
-          <p className="homeopathy-kicker">{current.experienceTitle}</p>
-          <h2 id="experience-title">{current.experienceTitle}</h2>
-        </div>
-        <div className="about-stats">
-          {current.stats.map((item) => (
-            <article key={item.label}>
-              <strong>{item.value}</strong>
-              <p>{item.label}</p>
-            </article>
-          ))}
+        <div className="about-introduction-copy">
+          <p className="about-kicker">{current.eyebrow}</p>
+          <h1 id="about-title">Andy</h1>
+          {current.intro.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         </div>
       </section>
 
-      <section className="about-section-block" aria-labelledby="specializations-title">
-        <div className="about-section-heading">
-          <p className="homeopathy-kicker">{current.specializationsTitle}</p>
-          <h2 id="specializations-title">{current.specializationsTitle}</h2>
-        </div>
-        <div className="about-specializations">
-          {current.specializations.map((item) => (
-            <article key={item.title}>
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      <article className="about-biography">
+        {current.sections.map((section) => (
+          <section key={section.heading}>
+            <h2>{section.heading}</h2>
+            {section.items && <ul>{section.items.map((item) => <li key={item}>{item}</li>)}</ul>}
+            {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+          </section>
+        ))}
+      </article>
 
-      <section className="about-training" aria-labelledby="training-title">
-        <div className="about-training-intro">
-          <p className="homeopathy-kicker">{current.trainingTitle}</p>
-          <h2 id="training-title">{current.trainingTitle}</h2>
-          <p>{current.trainingIntro}</p>
-        </div>
-        <div className="about-training-list">
-          {current.training.map((item, index) => (
-            <article key={item.title}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="about-current-work">
-        <div>
-          <p className="homeopathy-kicker">{current.todayTitle}</p>
-          <h2>{current.todayTitle}</h2>
-        </div>
-        <div>
-          <p>{current.todayText}</p>
-          <Link href={"/" + typedLocale + "/services"}>{current.services}<span aria-hidden="true">→</span></Link>
-        </div>
+      <section className="about-explore" aria-labelledby="about-explore-title">
+        <p className="about-kicker">Holistic House</p>
+        <h2 id="about-explore-title">{current.explore.heading}</h2>
+        <nav aria-label={current.explore.heading}>{current.explore.links.map((link) => <Link href={link.href} key={link.href}>{link.label}<span aria-hidden="true">→</span></Link>)}</nav>
       </section>
 
       <section className="about-testimonials" aria-labelledby="testimonials-title">
         <div className="about-section-heading">
-          <p className="homeopathy-kicker">{current.testimonialsKicker}</p>
-          <h2 id="testimonials-title">{current.testimonialsTitle}</h2>
-          <p>{current.testimonialsText}</p>
+          <p className="homeopathy-kicker">{testimonials.kicker}</p>
+          <h2 id="testimonials-title">{testimonials.title}</h2>
+          <p>{testimonials.text}</p>
         </div>
         <div className="about-video-grid">
-          {videoTestimonials.map((video) => (
-            <article key={video.id}>
-              <div className="about-video-frame">
-                <iframe
-                  src={"https://www.youtube-nocookie.com/embed/" + video.id}
-                  title={video[typedLocale]}
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </div>
-              <p>{video[typedLocale]}</p>
-            </article>
-          ))}
+          {videoTestimonials.map((video) => <article key={video.id}><div className="about-video-frame"><iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" src={"https://www.youtube-nocookie.com/embed/" + video.id} title={video[typedLocale]} /></div><p>{video[typedLocale]}</p></article>)}
         </div>
       </section>
 
       <section className="about-review-archive" aria-labelledby="archive-title">
-        <div className="about-section-heading">
-          <p className="homeopathy-kicker">{current.archiveTitle}</p>
-          <h2 id="archive-title">{current.archiveTitle}</h2>
-          <p>{current.archiveText}</p>
-        </div>
+        <div className="about-section-heading"><p className="homeopathy-kicker">{testimonials.archiveTitle}</p><h2 id="archive-title">{testimonials.archiveTitle}</h2><p>{testimonials.archiveText}</p></div>
         <div className="about-review-grid">
-          {current.archiveCards.map((card) => (
+          {testimonials.archiveCards.map((card) => (
             <a href={card.href} key={card.href} rel="noreferrer" target="_blank">
-              {/* Archived public preview image from PsiMaster. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={card.image} alt="" loading="lazy" />
-              <div>
-                <h3>{card.title}</h3>
-                <p>{card.text}</p>
-                <span>Open PsiMaster archive →</span>
-              </div>
+              <img alt="" loading="lazy" src={card.image} />
+              <div><h3>{card.title}</h3><p>{card.text}</p><span>{testimonials.archiveAction} →</span></div>
             </a>
           ))}
         </div>
+      </section>
+
+      <section className="about-client-cabinet" aria-labelledby="client-cabinet-title">
+        <h2 id="client-cabinet-title">{current.cabinet.heading}</h2>
+        <p>{current.cabinet.body}</p>
+        <p className="about-client-cabinet-prompt">{current.cabinet.prompt}</p>
+        <a href={current.cabinet.href} rel="noreferrer" target="_blank">{current.cabinet.action}<span aria-hidden="true">→</span></a>
       </section>
     </main>
   );

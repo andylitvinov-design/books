@@ -36,14 +36,14 @@ export function MobileBottomNavigation() {
         { label: 'Книга', href: 'https://designrr.page/?id=367554&token=1057485987&h=4958', icon: BookOpen, external: true },
         { label: 'Препараты', href: '/ru/homeopathy', icon: Leaf },
         { label: 'Услуги', href: '/ru/services', icon: Sparkles },
-        { label: 'Кабинет', href: '/admin', icon: UserRound },
+        { label: 'Обо мне', href: '/ru/about', icon: UserRound },
       ]
     : [
         { label: 'Home', href: '/', icon: House },
         { label: 'Book', href: 'https://designrr.page/?id=377444&token=639498968&h=5264', icon: BookOpen, external: true },
         { label: 'Remedies', href: '/en/homeopathy', icon: Leaf },
         { label: 'Services', href: '/en/services', icon: Sparkles },
-        { label: 'Cabinet', href: '/admin', icon: UserRound },
+        { label: 'About', href: '/en/about', icon: UserRound },
       ]
 
   if (/^\/(admin|(?:ru|en)\/prescriptions)/.test(pathname)) return null
