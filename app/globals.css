@@ -4090,3 +4090,284 @@
 @media (max-width: 767px) {
   .about-shell { padding: 0 16px calc(88px + env(safe-area-inset-bottom)); }
 }
+
+
+/* 2026-09-24 — personal consultation CTA + visible client cabinet entry */
+.about-consultation {
+  display: grid;
+  grid-template-columns: minmax(0,.82fr) minmax(0,1.18fr);
+  gap: clamp(24px, 5vw, 52px);
+  max-width: 58rem;
+  margin: clamp(4rem, 9vw, 7rem) auto 0;
+  overflow: hidden;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #75452f 0%, #9b6645 58%, #b88461 100%);
+  padding: clamp(28px, 5vw, 54px);
+  box-shadow: 0 22px 60px rgba(80, 48, 31, .15);
+}
+.about-consultation-copy {
+  align-self: center;
+}
+.about-consultation .about-kicker {
+  color: #f7dfcb;
+}
+.about-consultation h2 {
+  margin-top: 10px;
+  color: #fffaf4;
+  font-family: var(--font-serif);
+  font-size: clamp(38px, 5vw, 58px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.035em;
+}
+.about-consultation-copy > p:last-child {
+  margin-top: 16px;
+  color: rgba(255,250,244,.86);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.personal-consultation-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  border: 1px solid rgba(255,255,255,.6);
+  border-radius: 22px;
+  background: rgba(255,250,244,.97);
+  padding: clamp(20px, 3vw, 28px);
+  box-shadow: 0 16px 40px rgba(53, 31, 20, .12);
+}
+.personal-consultation-form label {
+  display: grid;
+  gap: 7px;
+}
+.personal-consultation-form label > span {
+  color: #4c392d;
+  font-size: 11px;
+  font-weight: 700;
+}
+.personal-consultation-form input,
+.personal-consultation-form textarea {
+  width: 100%;
+  border: 1px solid #d7c4b2;
+  border-radius: 12px;
+  background: #fffdf9;
+  padding: 12px 13px;
+  color: #33271f;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.personal-consultation-form input {
+  min-height: 45px;
+}
+.personal-consultation-form textarea {
+  min-height: 118px;
+  resize: vertical;
+  line-height: 1.55;
+}
+.personal-consultation-form input:focus,
+.personal-consultation-form textarea:focus {
+  border-color: #946044;
+  box-shadow: 0 0 0 3px rgba(148,96,68,.1);
+}
+.personal-consultation-form__wide,
+.personal-consultation-form__actions,
+.personal-consultation-form__note {
+  grid-column: 1 / -1;
+}
+.personal-consultation-form__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin-top: 2px;
+}
+.personal-consultation-form__actions button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #6f402c;
+  padding: 0 20px;
+  color: #fffaf4;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+.personal-consultation-form__actions button:hover {
+  background: #57301f;
+}
+.personal-consultation-form__actions a {
+  color: #70442d;
+  font-size: 11px;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+.personal-consultation-form__note {
+  color: #78695c;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.about-client-cabinet-login {
+  margin-top: 20px;
+  border: 1px solid #7d4b32;
+  border-radius: 999px;
+  background: #7d4b32;
+  padding: 0 18px;
+  color: #fffaf4 !important;
+  text-decoration: none !important;
+}
+.about-client-cabinet-login:hover {
+  background: #5e3725;
+  color: #fffaf4 !important;
+}
+.about-client-cabinet .about-client-cabinet-prompt {
+  margin-top: 26px;
+}
+
+.client-entry-shell {
+  min-height: 100vh;
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: 0 32px 104px;
+}
+.client-entry-card {
+  max-width: 48rem;
+  margin: clamp(2rem, 7vw, 6rem) auto 0;
+  border: 1px solid #decfbd;
+  border-radius: 30px;
+  background: #f7efe4;
+  padding: clamp(30px, 6vw, 58px);
+}
+.client-entry-card h1 {
+  margin-top: 9px;
+  color: #2c2119;
+  font-family: var(--font-serif);
+  font-size: clamp(46px, 7vw, 74px);
+  font-weight: 400;
+  line-height: .96;
+  letter-spacing: -.04em;
+}
+.client-entry-card > p:not(.about-kicker) {
+  max-width: 39rem;
+  margin-top: 18px;
+  color: #66574a;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.client-entry-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 30px;
+  border-top: 1px solid #d7c5b2;
+  padding-top: 26px;
+}
+.client-entry-form label {
+  display: grid;
+  gap: 8px;
+}
+.client-entry-form label span {
+  color: #46352a;
+  font-size: 11px;
+  font-weight: 700;
+}
+.client-entry-form input {
+  min-height: 50px;
+  width: 100%;
+  border: 1px solid #ccb7a2;
+  border-radius: 13px;
+  background: #fffaf3;
+  padding: 0 14px;
+  color: #2f241d;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.client-entry-form input:focus {
+  border-color: #8b5437;
+  box-shadow: 0 0 0 3px rgba(139,84,55,.1);
+}
+.client-entry-form button {
+  display: inline-flex;
+  min-height: 50px;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #7b4931;
+  padding: 0 21px;
+  color: #fffaf4;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+.client-entry-form button:hover {
+  background: #5e3725;
+}
+.client-entry-help,
+.client-entry-error,
+.client-entry-contact {
+  margin-top: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.55 !important;
+}
+.client-entry-error {
+  color: #9a3f31 !important;
+  font-weight: 700;
+}
+.client-entry-contact a {
+  color: #70442d;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 767px) {
+  .about-consultation {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    margin-top: 48px;
+    border-radius: 22px;
+    padding: 26px 18px 18px;
+  }
+  .about-consultation h2 {
+    font-size: 40px;
+  }
+  .personal-consultation-form {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    border-radius: 18px;
+    padding: 18px;
+  }
+  .personal-consultation-form label,
+  .personal-consultation-form__wide,
+  .personal-consultation-form__actions,
+  .personal-consultation-form__note {
+    grid-column: 1;
+  }
+  .personal-consultation-form__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .personal-consultation-form__actions button {
+    width: 100%;
+  }
+  .client-entry-shell {
+    padding: 0 16px calc(88px + env(safe-area-inset-bottom));
+  }
+  .client-entry-card {
+    margin-top: 18px;
+    border-radius: 22px;
+    padding: 28px 20px;
+  }
+  .client-entry-card h1 {
+    font-size: 50px;
+  }
+  .client-entry-form button {
+    width: 100%;
+  }
+}
