@@ -82,3 +82,15 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Translation unavailable' }, { status: 502 })
   }
 }
+
+
+export async function GET(request) {
+  const url = new URL(request.url)
+  const text = String(url.searchParams.get('q') ?? '').slice(0, 500)
+  if (!text) return NextResponse.json({ ok: true })
+  try {
+    return NextResponse.json({ translation: await translateText(text) })
+  } catch {
+    return NextResponse.json({ error: 'Translation unavailable' }, { status: 502 })
+  }
+}
