@@ -2802,3 +2802,549 @@
 @media (max-width: 430px) {
   .remedies-book-grid { grid-template-columns: 1fr; }
 }
+
+
+/* 2026-09-24 — refined Services + Practitioner Cabinet */
+.services-shell--studio {
+  max-width: 1180px;
+  padding-bottom: 96px;
+  color: #352b24;
+}
+.services-studio-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(330px, .95fr);
+  min-height: 500px;
+  margin-top: 22px;
+  overflow: hidden;
+  border: 1px solid #decfbd;
+  border-radius: 30px;
+  background: #f7efe4;
+}
+.services-studio-hero-copy {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+  padding: 58px 56px;
+}
+.services-studio-hero h1 {
+  margin-top: 12px;
+  font-family: var(--font-serif);
+  font-size: clamp(58px, 7vw, 96px);
+  font-weight: 400;
+  line-height: .95;
+  letter-spacing: -.055em;
+}
+.services-studio-hero-copy > p:last-of-type {
+  max-width: 590px;
+  margin-top: 22px;
+  color: #67584c;
+  font-size: 16px;
+  line-height: 1.72;
+}
+.services-studio-photo {
+  position: relative;
+  min-height: 100%;
+}
+.services-studio-photo img {
+  object-fit: cover;
+  object-position: 64% center;
+}
+.services-studio-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #f7efe4 0%, rgba(247,239,228,.35) 26%, transparent 58%);
+}
+.services-studio-primary {
+  display: inline-flex;
+  min-height: 50px;
+  align-items: center;
+  gap: 26px;
+  margin-top: 28px;
+  border-radius: 999px;
+  background: #9a5d3b;
+  padding: 0 22px;
+  color: #fff9f2;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.services-studio-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+.services-studio-card {
+  min-height: 245px;
+  border: 1px solid #e1d4c5;
+  border-radius: 22px;
+  background: rgba(255,252,247,.72);
+  padding: 24px;
+}
+.services-studio-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1e4d3;
+  color: #9a5d3b;
+}
+.services-studio-icon svg { width: 20px; height: 20px; stroke-width: 1.6; }
+.services-studio-card h2 {
+  margin-top: 22px;
+  font-family: var(--font-serif);
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1.08;
+}
+.services-studio-card p {
+  margin-top: 12px;
+  color: #74665a;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.services-studio-approach {
+  display: grid;
+  grid-template-columns: .8fr 1.2fr;
+  gap: 56px;
+  margin: 72px 0;
+  border-top: 1px solid #d8c9b7;
+  border-bottom: 1px solid #d8c9b7;
+  padding: 42px 0;
+}
+.services-studio-approach h2 {
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 400;
+  line-height: .98;
+  letter-spacing: -.035em;
+}
+.services-studio-approach > div:last-child {
+  align-self: center;
+}
+.services-studio-approach > div:last-child p {
+  color: #66584d;
+  font-size: 15px;
+  line-height: 1.75;
+}
+.services-studio-approach a {
+  display: inline-flex;
+  gap: 18px;
+  margin-top: 18px;
+  color: #8b5437;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.services-consultation--studio {
+  margin-top: 0;
+  border-radius: 24px;
+  background: #493a30;
+  box-shadow: 0 14px 36px rgba(69,48,34,.08);
+}
+
+/* Practitioner cabinet */
+.prescription-admin-shell {
+  color: #352b24;
+}
+.practitioner-cabinet-shell,
+.legacy-admin-shell {
+  max-width: 1180px;
+}
+.prescription-admin-header--refined {
+  display: block !important;
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+.prescription-admin-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #d9cbbb;
+}
+.prescription-admin-wordmark {
+  display: grid;
+  gap: 5px;
+  text-decoration: none !important;
+}
+.prescription-admin-wordmark strong {
+  font-family: var(--font-serif);
+  font-size: 29px;
+  font-weight: 400;
+  line-height: 1;
+  color: #352b24;
+}
+.prescription-admin-wordmark span {
+  color: #8b5a3c;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.prescription-admin-header-actions {
+  gap: 8px !important;
+}
+.prescription-admin-header-actions .site-language-switch {
+  min-height: 38px;
+  border: 1px solid #d3c2af !important;
+  border-radius: 999px;
+  background: #fffaf3 !important;
+  padding: 3px !important;
+}
+.prescription-admin-header-actions .site-language-switch button {
+  min-height: 30px !important;
+  border-radius: 999px !important;
+  padding: 0 10px !important;
+  font-size: 10px !important;
+}
+.prescription-admin-header-actions .site-language-switch button[aria-pressed="true"] {
+  background: #efe1d1;
+  text-decoration: none !important;
+}
+.prescription-admin-logout {
+  min-height: 38px !important;
+  border: 1px solid #d3c2af !important;
+  border-radius: 999px;
+  background: transparent !important;
+  padding: 0 13px !important;
+  font-size: 10px !important;
+}
+.prescription-admin-titleblock {
+  padding: 38px 0 22px;
+}
+.prescription-admin-titleblock h1 {
+  margin: 0 !important;
+  max-width: 800px;
+  font-family: var(--font-serif);
+  font-size: clamp(44px, 6vw, 72px) !important;
+  font-weight: 400;
+  line-height: .98;
+  letter-spacing: -.04em;
+}
+.prescription-admin-titleblock .prescription-admin-description {
+  max-width: 650px;
+  margin-top: 12px !important;
+  color: #746559;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.prescription-admin-navigation--tabs {
+  display: flex !important;
+  gap: 8px !important;
+  margin: 0 0 26px !important;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.prescription-admin-navigation--tabs::-webkit-scrollbar { display: none; }
+.prescription-admin-navigation--tabs a {
+  flex: 0 0 auto;
+  min-height: 36px;
+  border: 1px solid #d9c8b5;
+  border-radius: 999px;
+  background: #fffaf3;
+  padding: 9px 13px;
+  color: #70442d !important;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none !important;
+}
+.practitioner-cabinet-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 14px;
+  margin-top: 10px !important;
+  border: 0 !important;
+}
+.practitioner-cabinet-grid > a {
+  display: grid !important;
+  grid-template-columns: 48px minmax(0,1fr) !important;
+  gap: 18px !important;
+  min-height: 210px;
+  align-content: start;
+  border: 1px solid #dfd1c0 !important;
+  border-radius: 22px;
+  background: #fffaf3;
+  padding: 24px !important;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(68,47,32,.045);
+}
+.practitioner-cabinet-grid > a:hover {
+  background: #fffdf8 !important;
+  border-color: #caa98c !important;
+}
+.practitioner-cabinet-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1e4d3;
+  color: #9a5d3b;
+}
+.practitioner-cabinet-icon svg { width: 20px; height: 20px; stroke-width: 1.6; }
+.practitioner-cabinet-grid h2 {
+  font-size: 27px !important;
+  font-weight: 400;
+  line-height: 1.04;
+}
+.practitioner-cabinet-grid p {
+  margin-top: 10px !important;
+  color: #75675b !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+}
+.practitioner-cabinet-grid strong {
+  display: block;
+  margin-top: 28px;
+  color: #9a5d3b;
+  font-size: 18px;
+  font-weight: 400;
+}
+.legacy-document-list {
+  display: grid;
+  gap: 14px;
+}
+.legacy-document-card {
+  border: 1px solid #dfd1c0 !important;
+  border-radius: 20px;
+  background: #fffaf3 !important;
+  padding: 22px !important;
+}
+.legacy-document-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+.legacy-document-kicker {
+  color: #9a5d3b !important;
+  font-size: 9px !important;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.legacy-document-heading h2 {
+  margin-top: 4px !important;
+  font-family: var(--font-serif);
+  font-size: 26px !important;
+  font-weight: 400;
+}
+.legacy-document-heading > p {
+  color: #7b6c60;
+  font-size: 11px;
+}
+.legacy-assignment-form {
+  grid-template-columns: 1.3fr 1fr 110px auto !important;
+  align-items: end;
+  gap: 10px !important;
+  margin-top: 18px !important;
+}
+.legacy-assignment-form label {
+  gap: 5px !important;
+  font-size: 10px !important;
+}
+.legacy-assignment-form input,
+.legacy-assignment-form select {
+  min-height: 42px !important;
+  font-size: 13px !important;
+}
+.legacy-apply-button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: #70442d;
+  padding: 0 15px;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+}
+.legacy-next-page {
+  display: inline-block;
+  margin-top: 20px;
+  color: #8b5437;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .services-studio-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .practitioner-cabinet-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 767px) {
+  .services-shell--studio {
+    padding: 0 16px 76px;
+  }
+  .services-studio-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    margin-top: 12px;
+    border-radius: 22px;
+  }
+  .services-studio-hero-copy {
+    padding: 32px 22px 26px;
+  }
+  .services-studio-hero h1 {
+    margin-top: 8px;
+    font-size: 54px;
+  }
+  .services-studio-hero-copy > p:last-of-type {
+    margin-top: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .services-studio-primary {
+    min-height: 46px;
+    margin-top: 20px;
+    font-size: 11px;
+  }
+  .services-studio-photo {
+    min-height: 180px;
+  }
+  .services-studio-photo img {
+    object-position: 72% 62%;
+  }
+  .services-studio-photo::after {
+    background: linear-gradient(180deg, #f7efe4 0%, rgba(247,239,228,.08) 38%, transparent 72%);
+  }
+  .services-studio-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .services-studio-card {
+    min-height: 200px;
+    border-radius: 17px;
+    padding: 17px;
+  }
+  .services-studio-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .services-studio-card h2 {
+    margin-top: 15px;
+    font-size: 21px;
+  }
+  .services-studio-card p {
+    margin-top: 9px;
+    font-size: 10.5px;
+    line-height: 1.55;
+  }
+  .services-studio-approach {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 42px 0;
+    padding: 30px 0;
+  }
+  .services-studio-approach h2 {
+    font-size: 39px;
+  }
+  .services-studio-approach > div:last-child p {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  .services-consultation--studio {
+    border-radius: 20px;
+  }
+
+  .prescription-admin-shell {
+    padding: 18px 16px 36px !important;
+  }
+  .prescription-admin-topbar {
+    gap: 12px;
+    padding-bottom: 16px;
+  }
+  .prescription-admin-wordmark strong {
+    font-size: 23px;
+  }
+  .prescription-admin-wordmark span {
+    font-size: 8px;
+  }
+  .prescription-admin-header-actions {
+    flex-wrap: nowrap !important;
+  }
+  .prescription-admin-header-actions .site-language-switch {
+    min-height: 34px;
+  }
+  .prescription-admin-header-actions .site-language-switch button {
+    min-height: 26px !important;
+    padding-inline: 7px !important;
+    font-size: 9px !important;
+  }
+  .prescription-admin-logout {
+    min-height: 34px !important;
+    padding-inline: 10px !important;
+    font-size: 9px !important;
+  }
+  .prescription-admin-titleblock {
+    padding: 28px 0 16px;
+  }
+  .prescription-admin-titleblock h1 {
+    font-size: 42px !important;
+  }
+  .prescription-admin-titleblock .prescription-admin-description {
+    margin-top: 9px !important;
+    font-size: 12px;
+  }
+  .prescription-admin-navigation--tabs {
+    margin-bottom: 18px !important;
+  }
+  .prescription-admin-navigation--tabs a {
+    min-height: 32px;
+    padding: 7px 11px;
+    font-size: 9px;
+  }
+  .practitioner-cabinet-grid {
+    gap: 10px;
+  }
+  .practitioner-cabinet-grid > a {
+    grid-template-columns: 42px minmax(0,1fr) !important;
+    min-height: 0;
+    border-radius: 18px;
+    padding: 18px !important;
+  }
+  .practitioner-cabinet-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .practitioner-cabinet-grid h2 {
+    font-size: 24px !important;
+  }
+  .practitioner-cabinet-grid strong {
+    margin-top: 16px;
+  }
+  .legacy-document-card {
+    padding: 17px !important;
+  }
+  .legacy-document-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .legacy-document-heading h2 {
+    font-size: 24px !important;
+  }
+  .legacy-assignment-form {
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+  }
+  .legacy-apply-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .services-studio-grid {
+    grid-template-columns: 1fr;
+  }
+  .services-studio-card {
+    min-height: 0;
+  }
+}
