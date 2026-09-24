@@ -17,8 +17,8 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
   const [preference, setPreference] = useState<Locale>(locale ?? "ru");
   const activeLocale = locale ?? preference;
   const labels = activeLocale === "ru"
-    ? { home: "Главная", book: "Книга", remedies: "Препараты", services: "Услуги", cabinet: "Кабинет" }
-    : { home: "Home", book: "Book", remedies: "Remedies", services: "Services", cabinet: "Cabinet" };
+    ? { home: "Главная", book: "Книга", remedies: "Препараты", services: "Услуги", about: "Обо мне", cabinet: "Кабинет" }
+    : { home: "Home", book: "Book", remedies: "Remedies", services: "Services", about: "About", cabinet: "Cabinet" };
   const bookHref = activeLocale === "ru"
     ? "https://designrr.page/?id=367554&token=1057485987&h=4958"
     : "https://designrr.page/?id=377444&token=639498968&h=5264";
@@ -48,6 +48,7 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
       <a href={bookHref}>{labels.book}</a>
       <Link href={"/" + activeLocale + "/homeopathy"}>{labels.remedies}</Link>
       <Link href={"/" + activeLocale + "/services"}>{labels.services}</Link>
+      <Link href={"/" + activeLocale + "/about"}>{labels.about}</Link>
       <Link href="/admin">{labels.cabinet}</Link>
       <span aria-label={activeLocale === "ru" ? "Язык интерфейса" : "Interface language"} className="site-language-switch">
         {(["ru", "en"] as Locale[]).map((nextLocale) => localizedPath ? (
