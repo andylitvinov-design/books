@@ -1,5 +1,6 @@
 'use client'
 
+import { Archive, PlusCircle, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
@@ -8,10 +9,26 @@ import { readUiLocale } from '@/lib/ui-locale'
 
 const copy = {
   ru: {
-    title: 'КАБИНЕТ ПРАКТИКА', description: 'Ежедневная работа с клиентами и консультациями.', actions: 'Действия практика', newConsultation: 'Новая консультация', newConsultationText: 'Создать консультацию и документы для клиента.', clients: 'Клиенты', clientsText: 'Открыть историю клиента и управлять доступом к личному кабинету.', legacy: 'Нераспределённые старые документы', legacyText: 'Назначать только после явного решения владельца.',
+    title: 'Кабинет практика',
+    description: 'Клиенты, консультации и документы — в одном рабочем пространстве.',
+    actions: 'Основные действия',
+    newConsultation: 'Новая консультация',
+    newConsultationText: 'Создать консультацию и подготовить документы для клиента.',
+    clients: 'Клиенты',
+    clientsText: 'Открыть историю клиента, документы и доступ к кабинету.',
+    legacy: 'Старые документы',
+    legacyText: 'Разобрать и привязать ранее созданные документы к клиентам.',
   },
   en: {
-    title: 'PRACTITIONER CABINET', description: 'Daily client and consultation work.', actions: 'Practitioner actions', newConsultation: 'New consultation', newConsultationText: 'Create a consultation and its client documents.', clients: 'Clients', clientsText: 'Open client history and manage private cabinet access.', legacy: 'Unassigned legacy documents', legacyText: 'Assign only after an explicit owner decision.',
+    title: 'Practitioner Cabinet',
+    description: 'Clients, consultations, and documents in one calm workspace.',
+    actions: 'Main actions',
+    newConsultation: 'New consultation',
+    newConsultationText: 'Create a consultation and prepare client documents.',
+    clients: 'Clients',
+    clientsText: 'Open client history, documents, and private cabinet access.',
+    legacy: 'Legacy documents',
+    legacyText: 'Review and assign previously created documents to clients.',
   },
 }
 
@@ -26,5 +43,23 @@ export function PractitionerCabinet() {
     return () => window.removeEventListener('holistic-house-ui-locale', updateLocale)
   }, [])
 
-  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title={text.title} description={text.description} /><section aria-label={text.actions} className="practitioner-cabinet-actions"><Link href="/admin/consultations/new"><span>01</span><div><h2>{text.newConsultation}</h2><p>{text.newConsultationText}</p></div></Link><Link href="/admin/clients"><span>02</span><div><h2>{text.clients}</h2><p>{text.clientsText}</p></div></Link><Link href="/admin/clients/legacy"><span>03</span><div><h2>{text.legacy}</h2><p>{text.legacyText}</p></div></Link></section></main>
+  const actions = [
+    { href: '/admin/consultations/new', icon: PlusCircle, title: text.newConsultation, body: text.newConsultationText },
+    { href: '/admin/clients', icon: Users, title: text.clients, body: text.clientsText },
+    { href: '/admin/clients/legacy', icon: Archive, title: text.legacy, body: text.legacyText },
+  ]
+
+  return (
+    <main className="prescription-admin-shell practitioner-cabinet-shell">
+      <PrescriptionAdminHeader title={text.title} description={text.description} />
+      <section aria-label={text.actions} className="practitioner-cabinet-actions practitioner-cabinet-grid">
+        {actions.map(({ href, icon: Icon, title, body }) => (
+          <Link href={href} key={href}>
+            <span className="practitioner-cabinet-icon" aria-hidden="true"><Icon /></span>
+            <div><h2>{title}</h2><p>{body}</p><strong aria-hidden="true">→</strong></div>
+          </Link>
+        ))}
+      </section>
+    </main>
+  )
 }
