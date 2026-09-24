@@ -17,8 +17,11 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
   const [preference, setPreference] = useState<Locale>(locale ?? "ru");
   const activeLocale = locale ?? preference;
   const labels = activeLocale === "ru"
-    ? { home: "Главная", library: "Книги", remedies: "Препараты", services: "Услуги", cabinet: "Кабинет" }
-    : { home: "Home", library: "Books", remedies: "Remedies", services: "Services", cabinet: "Cabinet" };
+    ? { home: "Главная", book: "Книга", remedies: "Препараты", services: "Услуги", cabinet: "Кабинет" }
+    : { home: "Home", book: "Book", remedies: "Remedies", services: "Services", cabinet: "Cabinet" };
+  const bookHref = activeLocale === "ru"
+    ? "https://designrr.page/?id=367554&token=1057485987&h=4958"
+    : "https://designrr.page/?id=377444&token=639498968&h=5264";
   const localizedPath = /^\/(ru|en)(?=\/|$)/.test(pathname);
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
   return (
     <nav aria-label={activeLocale === "ru" ? "Основная навигация" : "Primary navigation"} className="site-navigation">
       <Link href="/">{labels.home}</Link>
-      <Link href={"/" + activeLocale + "/books"}>{labels.library}</Link>
+      <a href={bookHref}>{labels.book}</a>
       <Link href={"/" + activeLocale + "/homeopathy"}>{labels.remedies}</Link>
       <Link href={"/" + activeLocale + "/services"}>{labels.services}</Link>
       <Link href="/admin">{labels.cabinet}</Link>
