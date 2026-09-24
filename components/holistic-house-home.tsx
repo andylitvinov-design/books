@@ -41,10 +41,11 @@ const copy = {
       },
     ],
     learnMore: "Подробнее",
-    libraryEyebrow: "Для тех, кто хочет исследовать глубже",
-    libraryTitle: "Книги и библиотека",
-    libraryText: "Книги, справочные материалы и цифровые ресурсы для вдохновения.",
-    libraryAction: "Открыть библиотеку",
+    libraryEyebrow: "Авторская книга",
+    libraryTitle: "Алхимия души",
+    libraryText: "Моя книга о внутреннем развитии, психогомеопатии и авторском подходе к работе с состояниями.",
+    libraryAction: "Читать книгу",
+    bookUrl: "https://designrr.page/?id=367554&token=1057485987&h=4958",
     footer: "Индивидуальная работа, осознанные практики и пространство для внутреннего развития.",
   },
   en: {
@@ -79,10 +80,11 @@ const copy = {
       },
     ],
     learnMore: "Learn more",
-    libraryEyebrow: "For those who wish to explore further",
-    libraryTitle: "Books & Library",
-    libraryText: "Inspiring books, reference materials, and digital resources.",
-    libraryAction: "Explore the library",
+    libraryEyebrow: "Author book",
+    libraryTitle: "The Power of Life",
+    libraryText: "My book on inner development, psychohomeopathy, and an integrative approach to working with human states.",
+    libraryAction: "Read the book",
+    bookUrl: "https://designrr.page/?id=377444&token=639498968&h=5264",
     footer: "Individual work, thoughtful practice, and a space for inner development.",
   },
 } as const;
@@ -160,7 +162,7 @@ export function HolisticHouseHome({ locale: initialLocale = "ru" }: HolisticHous
           <p className="service-home-kicker">{text.libraryEyebrow}</p>
           <h2 id="service-home-library-title">{text.libraryTitle}</h2>
           <p className="service-home-library-intro">{text.libraryText}</p>
-          <Link href={"/" + locale + "/books"}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
+          <a href={text.bookUrl}>{text.libraryAction}<span aria-hidden="true">→</span></a>
         </div>
       </section>
 
