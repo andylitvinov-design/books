@@ -56,6 +56,11 @@ test('restores the four exact full Maya volume records without section ranges', 
   }
 })
 
+test('traces the published Maya HTML sources into the server reader bundle', () => {
+  const config = readFileSync('next.config.ts', 'utf8')
+  assert.match(config, /source-books\\/book-3-maya-tradition\\/outputs\\/\\*\\.html/)
+})
+
 test('renders each Maya volume from its complete sanitized source HTML with safe media URLs', async () => {
   for (const expected of mayaVolumes) {
     const book = getBookById(expected.id)
