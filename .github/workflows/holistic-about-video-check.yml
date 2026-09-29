@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - 'components/psychic-alchemy-intro-video*'
-      - 'app/[[]locale]/about/page.tsx'
+      - 'app/**/about/page.tsx'
       - 'tests/psychic-alchemy-intro-video.test.mjs'
       - '.github/workflows/holistic-about-video-check.yml'
 permissions:
