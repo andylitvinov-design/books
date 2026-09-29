@@ -13,7 +13,7 @@ function requiredEnv(name) {
   return value
 }
 
-async function jsonResponse(response, label) {
+async function parsedResponse(response, label) {
   const text = await response.text()
   let body
   try {
@@ -42,7 +42,7 @@ async function refreshAccessToken() {
     signal: AbortSignal.timeout(30000),
   })
 
-  const token = await jsonResponse(response, 'Google OAuth refresh')
+  const token = await parsedResponse(response, 'Google OAuth refresh')
   if (!token.access_token) throw new Error('Google OAuth refresh returned no access token')
   return token.access_token
 }
@@ -57,7 +57,7 @@ async function verifyEnglishChannel(accessToken) {
       cache: 'no-store',
     },
   )
-  const body = await jsonResponse(response, 'YouTube channel verification')
+  const body = await parsedResponse(response, 'YouTube channel verification')
   const items = Array.isArray(body.items) ? body.items : []
   const match = items.find((item) => normalizeHandle(item?.snippet?.customUrl) === expected)
   if (!match) {
@@ -95,6 +95,72 @@ async function downloadHeyGenVideo(sourceUrl, destination) {
   return { size: file.size, contentType }
 }
 
+async function verifyDriveFolder(accessToken, folderId) {
+  const response = await fetch(
+    'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(folderId) + '?fields=id,name,mimeType&supportsAllDrives=true',
+    {
+      headers: { authorization: 'Bearer ' + accessToken },
+      signal: AbortSignal.timeout(30000),
+      cache: 'no-store',
+    },
+  )
+  const folder = await parsedResponse(response, 'Drive archive-folder verification')
+  if (folder.mimeType !== 'application/vnd.google-apps.folder') {
+    throw new Error('driveFolderId does not point to a Google Drive folder')
+  }
+  return folder
+}
+
+async function archiveToDrive(accessToken, job, path, file) {
+  const folder = await verifyDriveFolder(accessToken, job.driveFolderId)
+  const response = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=id,name,webViewLink,parents',
+    {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ' + accessToken,
+        'content-type': 'application/json; charset=UTF-8',
+        'x-upload-content-length': String(file.size),
+        'x-upload-content-type': file.contentType,
+      },
+      body: JSON.stringify({
+        name: job.fileName,
+        parents: [job.driveFolderId],
+        appProperties: {
+          source: 'heygen',
+          target: 'youtube-en-private',
+        },
+      }),
+      signal: AbortSignal.timeout(30000),
+    },
+  )
+
+  if (!response.ok) await parsedResponse(response, 'Drive upload-session creation')
+  const location = response.headers.get('location')
+  if (!location) throw new Error('Google Drive did not return a resumable upload URL')
+
+  const upload = await fetch(location, {
+    method: 'PUT',
+    headers: {
+      authorization: 'Bearer ' + accessToken,
+      'content-type': file.contentType,
+      'content-length': String(file.size),
+    },
+    body: createReadStream(path),
+    duplex: 'half',
+    signal: AbortSignal.timeout(15 * 60 * 1000),
+  })
+  const archived = await parsedResponse(upload, 'Drive archive upload')
+  if (!archived.id) throw new Error('Google Drive returned no file ID')
+  return {
+    id: archived.id,
+    name: archived.name || job.fileName,
+    webViewLink: archived.webViewLink || '',
+    folderId: folder.id,
+    folderName: folder.name || '',
+  }
+}
+
 async function createUploadSession(accessToken, job, file) {
   const response = await fetch(
     'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
@@ -125,10 +191,7 @@ async function createUploadSession(accessToken, job, file) {
     },
   )
 
-  if (!response.ok) {
-    await jsonResponse(response, 'YouTube upload-session creation')
-  }
-
+  if (!response.ok) await parsedResponse(response, 'YouTube upload-session creation')
   const location = response.headers.get('location')
   if (!location) throw new Error('YouTube did not return a resumable upload URL')
   return location
@@ -146,7 +209,7 @@ async function uploadFile(uploadUrl, accessToken, path, file) {
     duplex: 'half',
     signal: AbortSignal.timeout(15 * 60 * 1000),
   })
-  return jsonResponse(response, 'YouTube video upload')
+  return parsedResponse(response, 'YouTube video upload')
 }
 
 async function appendSummary(result) {
@@ -155,6 +218,7 @@ async function appendSummary(result) {
   const lines = [
     '### English YouTube private upload',
     '',
+    '- Drive archive: ' + result.driveFileName + ' (' + result.driveFileId + ')',
     '- Channel: ' + result.channelTitle + ' (' + result.channelCustomUrl + ')',
     '- Video ID: ' + result.videoId,
     '- Privacy: **private**',
@@ -178,6 +242,10 @@ async function main() {
     const downloaded = await downloadHeyGenVideo(job.sourceUrl, tempVideo)
     const accessToken = await refreshAccessToken()
     const channel = await verifyEnglishChannel(accessToken)
+
+    // Archive is deliberately first. If Drive fails, YouTube publication never starts.
+    const archive = await archiveToDrive(accessToken, job, tempVideo, downloaded)
+
     const uploadUrl = await createUploadSession(accessToken, job, downloaded)
     const video = await uploadFile(uploadUrl, accessToken, tempVideo, downloaded)
 
@@ -192,6 +260,11 @@ async function main() {
       uploadedAt: new Date().toISOString(),
       target: job.target,
       title: job.title,
+      driveFileId: archive.id,
+      driveFileName: archive.name,
+      driveFileUrl: archive.webViewLink,
+      driveFolderId: archive.folderId,
+      driveFolderName: archive.folderName,
       videoId: video.id,
       youtubeUrl: 'https://youtu.be/' + video.id,
       privacyStatus: video.status?.privacyStatus || 'private',
