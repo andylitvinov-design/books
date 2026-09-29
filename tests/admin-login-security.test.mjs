@@ -43,5 +43,7 @@ test('admin sign-in uses Holistic House practitioner copy and a documented twelv
   assert.match(page, /Access code/)
   assert.match(admin, /maxAge: 60 \* 60 \* 12/)
   assert.match(admin, /maxAttempts: 5/)
+  assert.match(admin, /getPrescriptionStore/)
+  assert.match(admin, /consumeAccessAttempt/)
   assert.doesNotMatch(page, /Prescription admin/)
 })
