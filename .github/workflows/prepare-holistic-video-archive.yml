@@ -1,0 +1,97 @@
+name: Prepare approved Holistic House video archive
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/prepare-holistic-video-archive.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepare-holistic-video-archive-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download the already-approved final video without generation or publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import shutil
+          import subprocess
+          import urllib.parse
+          import urllib.request
+
+          video_id = 'fd5fcead9b067f9a0649862675a38771'
+          job = json.loads(pathlib.Path('.video-jobs/2026-09-29-psychic-alchemy-intro-final-v3.json').read_text())
+          source_url = job['sourceUrl']
+          def validate_url(value):
+              url = urllib.parse.urlparse(value)
+              if url.scheme != 'https' or url.hostname != 'files2.heygen.ai' or url.username or url.password:
+                  raise ValueError('Only the approved HTTPS HeyGen asset host is accepted')
+              if not url.path.endswith('/' + video_id + '.mp4'):
+                  raise ValueError('Unexpected video asset')
+          validate_url(source_url)
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  raise ValueError('Redirect not permitted for the approved asset')
+          out = pathlib.Path('video-archive-handoff')
+          out.mkdir(exist_ok=True)
+          stem = '2026-09-29_holistic-house_psychic-alchemy_en_avatarV_16x9_v03'
+          dest = out / (stem + '.mp4')
+          sha = hashlib.sha256()
+          size = 0
+          with urllib.request.build_opener(NoRedirect).open(source_url, timeout=60) as response, dest.open('wb') as target:
+              if response.status != 200:
+                  raise ValueError('Asset download did not succeed')
+              while True:
+                  chunk = response.read(1024 * 1024)
+                  if not chunk:
+                      break
+                  size += len(chunk)
+                  if size > 128 * 1024 * 1024:
+                      raise ValueError('Video exceeds the handoff size limit')
+                  sha.update(chunk)
+                  target.write(chunk)
+          with dest.open('rb') as source:
+              header = source.read(64)
+          if size < 100000 or b'ftyp' not in header:
+              raise ValueError('Downloaded bytes are not an MP4')
+          manifest = {
+              'heygenVideoId': video_id,
+              'fileName': dest.name,
+              'sizeBytes': size,
+              'sha256': sha.hexdigest(),
+              'driveFolderId': job['driveFolderId'],
+              'targetPage': 'https://holistichouse.vercel.app/en/about',
+              'youtubeUploaded': False,
+              'driveArchived': False,
+              'note': 'Byte handoff only. Verify media and upload MP4 to Google Drive through the connected Drive account. No TTS or video regeneration.'
+          }
+          if shutil.which('ffprobe'):
+              manifest['probe'] = json.loads(subprocess.check_output(['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(dest)]))
+          if shutil.which('ffmpeg'):
+              subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-ss', '1', '-i', str(dest), '-frames:v', '1', '-vf', 'scale=1280:-2', str(out / (stem + '_thumb.jpg'))], check=True)
+          (out / (stem + '_manifest.json')).write_text(json.dumps(manifest, indent=2) + '\n')
+          print(json.dumps({'videoId': video_id, 'sizeBytes': size, 'sha256': sha.hexdigest(), 'status': 'downloaded-only'}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: holistic-house-final-v3-handoff
+          path: video-archive-handoff/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 1
