@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PsychicAlchemyIntroVideo } from "@/components/psychic-alchemy-intro-video";
 import { aboutBiography } from "@/data/about-biography";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
@@ -92,6 +93,8 @@ export default async function AboutPage({ params }: PageProps) {
   return (
     <main className="about-shell" lang={typedLocale}>
       <PublicSiteHeader locale={typedLocale} />
+
+      {typedLocale === "en" && <PsychicAlchemyIntroVideo />}
 
       <section className="about-introduction" aria-labelledby="about-title">
         <div className="about-portrait">
