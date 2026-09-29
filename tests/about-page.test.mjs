@@ -37,9 +37,9 @@ test('publishes paired localized About routes with complete, Ontario-safe editor
   assert.ok(existsSync(new URL('../public/images/holistic-house/andy-about.png', import.meta.url)))
 })
 
-test('keeps five public mobile destinations and removes public Cabinet administration links', () => {
-  assert.match(mobileNavigation, /label: 'About', href: '\/en\/about', icon: UserRound/)
-  assert.match(mobileNavigation, /label: 'Обо мне', href: '\/ru\/about', icon: UserRound/)
+test('keeps five public mobile destinations and dedicates the account entry to Client Cabinet without exposing admin', () => {
+  assert.match(mobileNavigation, /label: 'Client Cabinet', href: '\/en\/client', icon: UserRound/)
+  assert.match(mobileNavigation, /label: 'Кабинет', href: '\/ru\/client', icon: UserRound/)
   assert.doesNotMatch(mobileNavigation, /href: '\/admin'/)
   assert.match(siteNavigation, /href=\{\"\/\" \+ activeLocale \+ "\/about"\}/)
   assert.doesNotMatch(siteNavigation, /href="\/admin"/)

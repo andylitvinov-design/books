@@ -25,6 +25,9 @@ test('public navigation exposes both UI languages and About without exposing adm
   assert.match(navigation, /Remedies/)
   assert.match(navigation, /Services/)
   assert.match(navigation, /About/)
+  assert.match(navigation, /Client Cabinet/)
+  assert.match(navigation, /Кабинет/)
+  assert.match(navigation, /\/client/)
   assert.doesNotMatch(navigation, /href="\/admin"/)
   assert.match(navigation, /localePath/)
   assert.match(navigation, /document\.cookie/)
@@ -41,6 +44,21 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(home, /Авторская книга/)
   assert.match(home, /The Power of Life/)
   assert.match(page, /uiLocale/)
+  assert.match(page, /preference === "ru" \? "ru" : "en"/)
+  assert.match(page, /Holistic House — holistic care, practice, and personal guidance/)
+})
+
+test('mobile navigation keeps five usable destinations while reserving the account destination for Client Cabinet', async () => {
+  const [mobile, styles] = await Promise.all([
+    readFile('components/mobile-bottom-navigation.tsx', 'utf8'),
+    readFile('app/holistic-house-home.css', 'utf8'),
+  ])
+
+  assert.match(mobile, /Кабинет/)
+  assert.match(mobile, /Client Cabinet/)
+  assert.match(mobile, /\/ru\/client/)
+  assert.match(mobile, /\/en\/client/)
+  assert.match(styles, /repeat\(5, minmax\(0,1fr\)\)/)
 })
 
 test('the admin entry redirects guests and shows daily practitioner actions after authentication', async () => {

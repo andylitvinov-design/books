@@ -4,13 +4,13 @@ import { HolisticHouseHome } from "@/components/holistic-house-home";
 import { uiLocaleCookie } from "@/lib/ui-locale";
 
 export const metadata: Metadata = {
-  title: "Holistic House — развитие, практики и индивидуальная работа",
-  description: "Holistic House: индивидуальные сессии, программы и воркшопы, навигация по препаратам, книги и авторские материалы.",
+  title: "Holistic House — holistic care, practice, and personal guidance",
+  description: "Holistic House: personal sessions, practical guidance, remedies, books, and thoughtful wellbeing resources.",
   alternates: { canonical: "/" },
 };
 
 export default async function HomePage() {
   const preference = (await cookies()).get(uiLocaleCookie)?.value;
-  const locale = preference === "en" ? "en" : "ru";
+  const locale = preference === "ru" ? "ru" : "en";
   return <HolisticHouseHome locale={locale} />;
 }
