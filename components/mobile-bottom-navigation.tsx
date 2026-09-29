@@ -30,6 +30,10 @@ export function MobileBottomNavigation() {
   }, [])
 
   const locale: Locale = (pathLocale ?? preference) as Locale
+
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
   const items = locale === 'ru'
     ? [
         { label: 'Главная', href: '/', icon: House },
@@ -46,7 +50,7 @@ export function MobileBottomNavigation() {
         { label: 'Client Cabinet', href: '/en/client', icon: UserRound },
       ]
 
-  if (/^\/(admin|(?:ru|en)\/prescriptions)/.test(pathname)) return null
+  if (/^\/(admin|(?:ru|en)\/prescriptions|(?:ru|en)\/client\/[^/]+)/.test(pathname)) return null
 
   return (
     <nav aria-label={locale === 'ru' ? 'Мобильная навигация' : 'Mobile navigation'} className="mobile-bottom-navigation">

@@ -33,12 +33,12 @@ const copy = {
 }
 
 export function PractitionerCabinet() {
-  const [locale, setLocale] = useState('ru')
+  const [locale, setLocale] = useState('en')
   const text = copy[locale]
 
   useEffect(() => {
-    const updateLocale = (event) => setLocale(event.detail === 'en' ? 'en' : 'ru')
-    setLocale(readUiLocale(document.cookie) === 'en' ? 'en' : 'ru')
+    const updateLocale = (event) => setLocale(event.detail === 'ru' ? 'ru' : 'en')
+    setLocale(readUiLocale(document.cookie))
     window.addEventListener('holistic-house-ui-locale', updateLocale)
     return () => window.removeEventListener('holistic-house-ui-locale', updateLocale)
   }, [])

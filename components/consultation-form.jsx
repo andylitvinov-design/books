@@ -111,7 +111,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [paymentStatus, setPaymentStatus] = useState(payment?.paymentStatus ?? 'received')
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
-  const [uiLocale, setUiLocale] = useState('ru')
+  const [uiLocale, setUiLocale] = useState('en')
 
   useEffect(() => {
     setUiLocale(readUiLocale(document.cookie))

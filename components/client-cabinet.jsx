@@ -21,8 +21,9 @@ export function ClientCabinet({ name, locale, selector, documents }) {
 
   const labels = { all: copy.all, recommendation: copy.recommendation, payment: copy.payment, report: copy.report }
   const visible = documents.filter((document) => filter === 'all' || document.type === filter)
+  const allGroups = useMemo(() => Object.entries(Object.groupBy(documents, (document) => `${document.date}|${document.consultationId}`)).sort(([left], [right]) => right.localeCompare(left)), [documents])
   const groups = useMemo(() => Object.entries(Object.groupBy(visible, (document) => `${document.date}|${document.consultationId}`)).sort(([left], [right]) => right.localeCompare(left)), [visible])
-  const latest = groups[0]?.[1]
+  const latest = allGroups[0]?.[1]
   const latestDate = latest?.[0]?.date
   const formatDate = (date) => new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${date}T12:00:00Z`))
 

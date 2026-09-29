@@ -18,6 +18,7 @@ test('client cabinet presents a private welcome, accessible category filters, da
   assert.match(cabinet, /wa\.me\/14376066502/)
   assert.match(cabinet, /client-cabinet-timeline/)
   assert.match(cabinet, /Nothing has been shared in this section yet/)
+  assert.match(cabinet, /const latest = allGroups\[0\]\?\.\[1\]/)
 })
 
 async function loadHandler(file, dependencies, exports) {

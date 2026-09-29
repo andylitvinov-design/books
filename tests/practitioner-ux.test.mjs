@@ -15,6 +15,11 @@ test('client detail prioritizes consultation and cabinet actions while separatin
   assert.match(page, /Last consultation/)
   assert.match(page, /Последняя консультация/)
   assert.match(page, /Кабинет клиента/)
+  assert.match(page, /ClientAccessDangerActions/)
+
+  const accessActions = await readFile('components/client-access-danger-actions.jsx', 'utf8')
+  assert.match(accessActions, /window\.confirm/)
+  assert.match(accessActions, /copy\.revokeConfirm/)
 })
 
 test('new consultation keeps client selection and one post-document cabinet action discoverable', async () => {

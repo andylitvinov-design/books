@@ -3,13 +3,15 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 test('locale counterpart paths preserve the current localized route', async () => {
-  const { localePath } = await import('../lib/ui-locale.js')
+  const { localePath, readUiLocale } = await import('../lib/ui-locale.js')
 
   assert.equal(localePath('/ru/homeopathy/remedies/aconitum', 'en'), '/en/homeopathy/remedies/aconitum')
   assert.equal(localePath('/en/client/personal-selector', 'ru'), '/ru/client/personal-selector')
   assert.equal(localePath('/ru/about', 'en'), '/en/about')
   assert.equal(localePath('/en/about', 'ru'), '/ru/about')
   assert.equal(localePath('/books', 'en'), '/books')
+  assert.equal(readUiLocale(), 'en')
+  assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
 test('public navigation exposes both UI languages and About without exposing administration', async () => {
@@ -58,7 +60,23 @@ test('mobile navigation keeps five usable destinations while reserving the accou
   assert.match(mobile, /Client Cabinet/)
   assert.match(mobile, /\/ru\/client/)
   assert.match(mobile, /\/en\/client/)
+  assert.match(mobile, /document\.documentElement\.lang = locale/)
+  assert.ok(mobile.includes('client\\/[^/]+'))
   assert.match(styles, /repeat\(5, minmax\(0,1fr\)\)/)
+})
+
+test('no-cookie public and practitioner entry points consistently prefer English', async () => {
+  const [books, adminHeader, practitioner, consultation] = await Promise.all([
+    readFile('app/books/page.tsx', 'utf8'),
+    readFile('components/prescription-admin-header.jsx', 'utf8'),
+    readFile('components/practitioner-cabinet.jsx', 'utf8'),
+    readFile('components/consultation-form.jsx', 'utf8'),
+  ])
+
+  assert.match(books, /preference === "ru" \? "ru" : "en"/)
+  assert.match(adminHeader, /useState\('en'\)/)
+  assert.match(practitioner, /useState\('en'\)/)
+  assert.match(consultation, /useState\('en'\)/)
 })
 
 test('the admin entry redirects guests and shows daily practitioner actions after authentication', async () => {

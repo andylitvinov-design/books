@@ -5,6 +5,6 @@ import { uiLocaleCookie } from "@/lib/ui-locale";
 
 export default async function BooksRedirectPage() {
   const preference = (await cookies()).get(uiLocaleCookie)?.value;
-  const locale = preference === "en" ? "en" : "ru";
+  const locale = preference === "ru" ? "ru" : "en";
   redirect("/" + locale + "/books");
 }
