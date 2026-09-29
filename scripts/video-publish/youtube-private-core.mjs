@@ -24,6 +24,14 @@ export function safeFileName(value, fallback = 'video.mp4') {
   return normalized || fallback
 }
 
+function normalizeDriveFolderId(value) {
+  const id = String(value ?? '').trim()
+  if (!/^[A-Za-z0-9_-]{10,}$/.test(id)) {
+    throw new Error('driveFolderId is required and must be a Google Drive folder ID')
+  }
+  return id
+}
+
 export function normalizeJob(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new Error('Job must be a JSON object')
@@ -63,6 +71,7 @@ export function normalizeJob(input) {
     language: 'en',
     categoryId: String(input.categoryId ?? '22'),
     fileName: safeFileName(input.fileName || (title + '.mp4')),
+    driveFolderId: normalizeDriveFolderId(input.driveFolderId),
     madeForKids: false,
     containsSyntheticMedia: true,
     privacyStatus: 'private',
