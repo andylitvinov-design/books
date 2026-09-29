@@ -18,6 +18,7 @@ const expectedHandle = normalizeHandle(process.env.YOUTUBE_ENGLISH_EXPECTED_HAND
 const scopes = [
   'https://www.googleapis.com/auth/youtube.upload',
   'https://www.googleapis.com/auth/youtube.readonly',
+  'https://www.googleapis.com/auth/drive',
 ]
 
 const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
@@ -90,6 +91,8 @@ const server = createServer(async (req, res) => {
       'Channel: ' + (match.snippet?.title || ''),
       'Handle: ' + (match.snippet?.customUrl || ''),
       'Channel ID: ' + match.id,
+      '',
+      'This token also has Google Drive access so the master MP4 can be archived before YouTube upload.',
       '',
       'Store these as GitHub Actions secrets:',
       'GOOGLE_YOUTUBE_CLIENT_ID=' + clientId,
