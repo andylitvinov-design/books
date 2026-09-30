@@ -12,6 +12,9 @@ jobs:
     if: github.ref == 'refs/heads/chatgpt/spanish-public-site-2026-09-30'
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      HF_HUB_DISABLE_XET: '1'
+      HF_HUB_DISABLE_TELEMETRY: '1'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,7 +22,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install ctranslate2==4.6.0 sentencepiece==0.2.0
+      - run: pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install ctranslate2==4.6.0 sentencepiece==0.2.0 transformers==4.53.3 huggingface_hub==0.34.4 sacremoses==0.1.1
       - name: Translate existing public English remedy fields offline
         run: python scripts/prepare-spanish-remedies.py
       - name: Save only public Spanish translation data on the work branch
