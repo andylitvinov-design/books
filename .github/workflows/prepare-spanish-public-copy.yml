@@ -40,5 +40,6 @@ jobs:
           name: spanish-public-copy-review
           path: |
             data/spanish-remedies.json
+            content/remedies/en/
             spanish-translation-report.json
           retention-days: 7
