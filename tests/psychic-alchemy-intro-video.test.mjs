@@ -22,8 +22,8 @@ test('full methods and CTA remain in transcript, with an AI disclosure', () => {
   for (const text of ['homeopathy with systemic constellations and hypnotherapy', 'patterns in emotions and relationships', 'read the testimonials and leave a request', 'finding new resources and solutions']) assert.ok(existingAboutIntroVideo.transcript.includes(text));
   assert.ok(component.includes('AI-assisted video'));
 });
-test('existing EN intro is managed by its video slot; biography, testimonials, form and cabinet remain', () => {
-  assert.deepEqual(builtInSiteVideoRecords().map(record => record.key), ['about-intro:en']);
+test('EN and RU About intros are managed by their locale video slots; biography, testimonials, form and cabinet remain', () => {
+  assert.deepEqual(builtInSiteVideoRecords().map(record => record.key), ['about-intro:en', 'about-intro:ru']);
   assert.match(page, /videoKey\("about-intro", typedLocale\)/);
   assert.match(page, /typedLocale === "en" && aboutIntro.heygenId === existingAboutIntroVideo.heygenId/);
   assert.match(page, /<PsychicAlchemyIntroVideo video=\{aboutIntro\}/);

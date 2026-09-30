@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { builtInSiteVideoRecords, existingAboutIntroVideo } from '../lib/site-videos/defaults.js'
+import { builtInSiteVideoRecords, existingAboutIntroVideo, existingAboutIntroVideoRu } from '../lib/site-videos/defaults.js'
 import { SiteVideoError, isSiteVideoRecord, prepareVideoChange, toPublishedSiteVideo } from '../lib/site-videos/model.js'
 import { createSiteVideoStore } from '../lib/site-videos/store.js'
 
 const namespace = 'holistic-house:site-videos:v1'
 const aboutKey = 'about-intro:en'
+const ruAboutKey = 'about-intro:ru'
 const youtubeId = 'OkLEN8Zb-sY'
 const timestamp = '2026-09-30T01:00:00.000Z'
 const environment = {
@@ -61,19 +62,20 @@ function configuredStore(database) {
   return createSiteVideoStore({ environment, fetchFn: database.fetchFn, initialRecords: builtInSiteVideoRecords() })
 }
 
-test('the built-in publication is only the existing English About intro, with no Russian fallback', async () => {
+test('the built-in publications include approved English and Russian About intros', async () => {
   const defaults = builtInSiteVideoRecords()
-  assert.equal(defaults.length, 1)
-  assert.equal(defaults[0].key, aboutKey)
-  assert.equal(defaults[0].revision, 0)
-  assert.ok(isSiteVideoRecord(defaults[0]))
+  assert.equal(defaults.length, 2)
+  assert.deepEqual(defaults.map(record => record.key), [aboutKey, ruAboutKey])
+  assert.ok(defaults.every(record => record.revision === 0 && isSiteVideoRecord(record)))
   assert.deepEqual(toPublishedSiteVideo(defaults[0]), existingAboutIntroVideo)
+  assert.deepEqual(toPublishedSiteVideo(defaults[1]), existingAboutIntroVideoRu)
   assert.equal(existingAboutIntroVideo.heygenId, 'fd5fcead9b067f9a0649862675a38771')
+  assert.equal(existingAboutIntroVideoRu.heygenId, 'd4e55c984e54b40fbeb8a21f81d27694')
   const database = restFixture()
   const store = configuredStore(database)
-  assert.equal(await store.get('about-intro:ru'), null)
+  assert.deepEqual(toPublishedSiteVideo(await store.get(ruAboutKey)), existingAboutIntroVideoRu)
   assert.equal(await store.get('home-intro:en'), null)
-  assert.deepEqual((await store.list()).map(record => record.key), [aboutKey])
+  assert.deepEqual((await store.list()).map(record => record.key), [aboutKey, ruAboutKey])
   assert.equal(database.hash.size, 0)
   assert.equal(database.commands.filter(command => command[0] === 'EVAL').length, 0)
 })
@@ -102,7 +104,7 @@ test('the first approved change persists revision one and takes precedence after
   await firstProcess.save(next, previous.revision)
   const secondProcess = configuredStore(database)
   assert.deepEqual(await secondProcess.get(aboutKey), next)
-  assert.deepEqual(await secondProcess.list(), [next])
+  assert.deepEqual((await secondProcess.list()).map(record => record.key), [aboutKey, ruAboutKey])
   const video = toPublishedSiteVideo(await secondProcess.get(aboutKey))
   assert.equal(video.youtubeId, youtubeId)
   assert.equal(video.heygenId, undefined)
@@ -132,9 +134,9 @@ test('a persisted hide overrides the built-in on both list and get after reload'
     await store.save(hidden, 0)
     const reloaded = configuredStore(database)
     assert.deepEqual(await reloaded.get(aboutKey), hidden)
-    assert.deepEqual(await reloaded.list(), [hidden])
+    assert.deepEqual((await reloaded.list()).map(record => record.key), [aboutKey, ruAboutKey])
     assert.equal(toPublishedSiteVideo(await reloaded.get(aboutKey)), undefined)
-    assert.deepEqual((await reloaded.list()).map(toPublishedSiteVideo).filter(Boolean), [])
+    assert.deepEqual((await reloaded.list()).map(toPublishedSiteVideo).filter(Boolean), [existingAboutIntroVideoRu])
     assert.deepEqual(hidden.draft, previous.draft)
   }
 })
@@ -157,7 +159,7 @@ test('malformed, private and invalid-revision overrides suppress the built-in in
       const unrelated = prepareVideoChange(null, { ...change, slot: 'home-intro' }, timestamp)
       database.hash.set(unrelated.key, JSON.stringify(unrelated))
       const store = configuredStore(database)
-      assert.deepEqual(await store.list(), [unrelated])
+      assert.deepEqual((await store.list()).map(record => record.key), [ruAboutKey, unrelated.key].sort())
       await assert.rejects(store.get(aboutKey), errorCode('storage'))
       assert.equal(database.hash.get(aboutKey), raw)
       assert.equal(database.commands.filter(command => command[0] === 'EVAL').length, 0)
