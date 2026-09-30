@@ -9,6 +9,7 @@ import "./globals.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
 import "./site-video-admin.css";
+import "./reader-responsive.css";
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),

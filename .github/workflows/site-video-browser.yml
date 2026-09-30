@@ -8,6 +8,8 @@ on:
       - 'components/psychic-alchemy-intro-video*'
       - 'app/admin/videos/**'
       - 'app/site-video*.css'
+      - 'app/reader-responsive.css'
+      - 'app/layout.tsx'
       - 'app/**/page.tsx'
       - 'middleware.ts'
       - 'scripts/verify-site-video-browser.mjs'
@@ -42,13 +44,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - run: npm ci --no-audit --no-fund
-      - run: npm install --no-save --package-lock=false --ignore-scripts @playwright/test@1.63.0
-      - run: npx playwright install --with-deps chromium
+      - name: Install isolated browser test dependencies without changing the app lockfile
+        run: |
+          npm install --prefix /tmp/video-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          ln -s /tmp/video-browser-tools/node_modules/@playwright node_modules/@playwright
+          /tmp/video-browser-tools/node_modules/.bin/playwright install --with-deps chromium
       - run: sudo apt-get install -y redis-tools
       - name: Create ephemeral local test certificate
         run: openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/video-test-key.pem -out /tmp/video-test-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
-      - name: Build actual application
+      - name: Build actual application with locked production dependencies
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
