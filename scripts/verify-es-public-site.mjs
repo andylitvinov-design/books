@@ -95,7 +95,16 @@ try {
   for (const path of routes.filter(path=>path!=='/es/client')) assert.ok(xml.includes('https://holistichouse.vercel.app'+path),path);
   for (const slug of slugs) assert.ok(xml.includes('/es/homeopathy/remedies/'+slug),slug);
   assert.ok(!xml.includes('/es/client'));
+  // CabinetPage rejects ES with notFound() before authorizeCabinetRequest.
+  // Inspect the actual denial document, including noindex: a streamed not-found
+  // response can already have sent HTTP 200 and is not a working private route.
   const privatePath = await fetch(origin+'/es/client/not-a-real-client-id', {redirect:'manual'});
-  assert.equal(privatePath.status,404,'No invented Spanish private route');
-  writeFileSync(`${evidence}/${live?'live':'local'}-es-public-results.json`,JSON.stringify({scope:live?'read-only production':'isolated production build',results,allRemedyRoutes:slugs.length,automaticTranslationLabel:true,originalBookEditions:'clearly labelled, not claimed translated',newRender:false,privateRecordsRead:false},null,2));
+  const privateHtml = await privatePath.text();
+  assert.ok([200,404].includes(privatePath.status), 'Unsupported locale must not redirect or error');
+  assert.match(privateHtml, /<h1\b[^>]*>\s*404\s*<\/h1>/, 'Unsupported private locale must render the not-found heading');
+  assert.match(privateHtml, /This page could not be found\./, 'Unsupported private locale must render the not-found message');
+  assert.match(privateHtml, /<meta\b[^>]*name="robots"[^>]*content="[^"]*noindex[^>]*>/, 'Unsupported private locale must remain non-indexable');
+  assert.doesNotMatch(privateHtml, /class="[^"]*(?:client-cabinet|prescription-access-gate|client-entry-form)/, 'No cabinet, access form or private entry in the denial document');
+  console.log('PASS: unsupported Spanish private locale renders noindex not-found, not a cabinet');
+  writeFileSync(`${evidence}/${live?'live':'local'}-es-public-results.json`,JSON.stringify({scope:live?'read-only production':'isolated production build',results,allRemedyRoutes:slugs.length,unsupportedPrivateLocale:'noindex not-found document, no cabinet',automaticTranslationLabel:true,originalBookEditions:'clearly labelled, not claimed translated',newRender:false,privateRecordsRead:false},null,2));
 } finally { if(app)app.kill('SIGTERM'); }
