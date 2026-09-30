@@ -45,7 +45,7 @@ export function applySpanishReview(original, translatedFields) {
       if (lines.has(source)) return lines.get(source);
       const reference = source.match(/^(- message\d+ — )case\.$/);
       if (reference) return reference[1] + 'caso.';
-      return line.replace(/\bSHADOW\b/g, 'Sombra').replace(/\bGuardian\b/g, 'Guardián').replace(/\bPracticum\b/g, 'prácticas');
+      return line.replace(/\bSHADOW\b/g, 'Sombra').replace(/\bGuardian\b/g, 'Guardián').replace(/\bPracticum\b/g, 'prácticas').replace(/\bhomeoterapia\b/gi, 'homeopatía');
     }).join('\n');
   }
   return fields;

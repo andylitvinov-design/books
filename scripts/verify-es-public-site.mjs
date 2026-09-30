@@ -39,10 +39,17 @@ try {
           assert.doesNotMatch(await page.locator('main').innerText(), /Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/, path);
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth+2), 'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
+          if (path === '/es') {
+            for (const language of ['en', 'ru']) {
+              const link = page.locator(`link[rel="alternate"][hreflang="${language}"]`);
+              await expect(link).toHaveAttribute('href', new RegExp('\\?lang=' + language + '$'));
+            }
+            if (width === 390) await expect(page.locator('.service-home-card-grid')).toHaveCSS('grid-template-columns', /\d+(?:\.\d+)?px/);
+          }
           await page.evaluate(() => document.fonts.ready);
           if (['/es','/es/services','/es/books','/es/homeopathy'].includes(path)) {
             const file=path.split('/').filter(Boolean).join('-');
-            await page.screenshot({ path:`${evidence}/${live?'live':'local'}-${file}-${engine}-${width}.png` });
+            await page.screenshot({ path:`${evidence}/${live?'live':'local'}-${file}-${engine}-${width}.png`, animations: 'disabled' });
           }
         }
         await page.goto(origin+'/es/homeopathy/remedies');
@@ -52,8 +59,9 @@ try {
         await expect(page).toHaveURL(/\/es\/homeopathy\/remedies\/aconitum$/);
         await expect(page.getByRole('heading',{name:'Aconitum',exact:true})).toBeVisible();
         await expect(page.locator('.remedy-content-body')).toContainText('Aconitum');
+        await expect(page.locator('.remedy-content-body')).not.toContainText('homeoterapia');
         await expect(page.locator('.remedy-source-reference')).not.toHaveAttribute('open','');
-        await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-aconitum-${engine}-${width}.png`});
+        await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-aconitum-${engine}-${width}.png`, animations:'disabled'});
         await page.locator('.site-language-switch a[lang="en"]').click();
         await expect(page).toHaveURL(/\/en\/homeopathy\/remedies\/aconitum$/);
         await page.locator('.site-language-switch a[lang="es"]').click();
@@ -66,17 +74,17 @@ try {
         if (!live) {
           await page.goto(origin+'/es/client');
           await page.getByRole('button',{name:/Entrar al área de clientes/}).click();
-          await expect(page.getByRole('alert')).toContainText('enlace válido');
+          // The Next.js route announcer is a separate alert landmark.
+          await expect(page.locator('.client-entry-form').getByRole('alert')).toContainText('enlace válido');
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,publicNavigation:'five Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,publicNavigation:'five Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }
     } finally { await browser.close(); }
   }
-  // Check every generated detail route, in bounded batches, without mutations.
   const slugs = getSpanishRemedySlugs();
   for (let i=0;i<slugs.length;i+=5) await Promise.all(slugs.slice(i,i+5).map(async slug=>{
     const response = await fetch(`${origin}/es/homeopathy/remedies/${slug}`);
