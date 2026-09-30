@@ -32,11 +32,11 @@ try {
         for (const path of routes) {
           let response;
           for (let i=0;;i++) { response = await page.goto(origin+path, { waitUntil: 'domcontentloaded', timeout: 60000 }); if (response.status()===200 && await page.locator('main[lang="es"]').count()) break; assert.ok(live && i<35, path+' missing'); await pause(5000); }
-          assert.match(await response.text(), /<html lang="es"/);
+          assert.ok(/<html lang="es"/.test(await response.text()), 'Spanish server-rendered document language: '+path);
           await expect(page.locator('html')).toHaveAttribute('lang','es');
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
           assert.deepEqual(await page.locator('.site-navigation > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), nav, path);
-          assert.doesNotMatch(await page.locator('main').innerText(), /Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/, path);
+          assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()), 'No untranslated public labels: '+path);
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth+2), 'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
           if (path === '/es') {
@@ -74,7 +74,6 @@ try {
         if (!live) {
           await page.goto(origin+'/es/client');
           await page.getByRole('button',{name:/Entrar al área de clientes/}).click();
-          // The Next.js route announcer is a separate alert landmark.
           await expect(page.locator('.client-entry-form').getByRole('alert')).toContainText('enlace válido');
           assert.ok(page.url().endsWith('/es/client'));
         }
@@ -89,23 +88,32 @@ try {
   for (let i=0;i<slugs.length;i+=5) await Promise.all(slugs.slice(i,i+5).map(async slug=>{
     const response = await fetch(`${origin}/es/homeopathy/remedies/${slug}`);
     assert.equal(response.status,200,slug); const html=await response.text();
-    assert.match(html,/<html lang="es"/); assert.ok(html.includes('Traducción automática'),slug); assert.ok(!response.url.includes('/en/'),slug);
+    assert.ok(/<html lang="es"/.test(html),'Spanish remedy document: '+slug); assert.ok(html.includes('Traducción automática'),slug); assert.ok(!response.url.includes('/en/'),slug);
   }));
   const xml=await (await fetch(origin+'/sitemap.xml')).text();
   for (const path of routes.filter(path=>path!=='/es/client')) assert.ok(xml.includes('https://holistichouse.vercel.app'+path),path);
   for (const slug of slugs) assert.ok(xml.includes('/es/homeopathy/remedies/'+slug),slug);
   assert.ok(!xml.includes('/es/client'));
-  // CabinetPage rejects ES with notFound() before authorizeCabinetRequest.
-  // Next can return either a rendered 404 or a streamed not-found error shell.
-  // Both must be genuine denial documents with noindex and no cabinet UI.
-  const privatePath = await fetch(origin+'/es/client/not-a-real-client-id', {redirect:'manual'});
-  const privateHtml = await privatePath.text();
-  assert.ok([200,404].includes(privatePath.status), 'Unsupported locale must not redirect or error');
-  const plainNotFound = /<h1\b[^>]*>\s*404\s*<\/h1>/.test(privateHtml) && /This page could not be found\./.test(privateHtml);
-  const streamedNotFound = /<html\b[^>]*id="__next_error__"/.test(privateHtml) && /<meta\b[^>]*name="next-error"[^>]*content="not-found"/.test(privateHtml) && /NEXT_HTTP_ERROR_FALLBACK;404/.test(privateHtml);
-  assert.ok(plainNotFound || streamedNotFound, 'Unsupported private locale must deliver a genuine not-found document');
-  assert.match(privateHtml, /<meta\b[^>]*name="robots"[^>]*content="[^"]*noindex[^>]*>/, 'Unsupported private locale must remain non-indexable');
-  assert.doesNotMatch(privateHtml, /class="[^"]*(?:client-cabinet|prescription-access-gate|client-entry-form)/, 'No cabinet, access form or private entry in the denial document');
-  console.log('PASS: unsupported Spanish private locale renders noindex not-found, not a cabinet');
-  writeFileSync(`${evidence}/${live?'live':'local'}-es-public-results.json`,JSON.stringify({scope:live?'read-only production':'isolated production build',results,allRemedyRoutes:slugs.length,unsupportedPrivateLocale:'noindex not-found document, no cabinet',automaticTranslationLabel:true,originalBookEditions:'clearly labelled, not claimed translated',newRender:false,privateRecordsRead:false},null,2));
+  console.log(`PASS: ${slugs.length} complete Spanish remedy routes and public sitemap`);
+  // The existing private route rejects unsupported locales before authorization.
+  // Render its real denial with Chromium: Next may stream metadata/RSC after
+  // sending HTTP 200, so regex over the transport is not the user-visible result.
+  const denialBrowser = await chromium.launch({headless:true});
+  try {
+    const denialPage = await denialBrowser.newPage();
+    const target = origin+'/es/client/not-a-real-client-id';
+    const response = await denialPage.goto(target,{waitUntil:'domcontentloaded',timeout:60000});
+    assert.ok([200,404].includes(response.status()), 'Unsupported private locale must not redirect or server-error');
+    await expect(denialPage).toHaveURL(target);
+    await expect(denialPage.getByRole('heading',{name:'404',exact:true})).toBeVisible({timeout:15000});
+    await expect(denialPage.getByText('This page could not be found.',{exact:true})).toBeVisible();
+    await expect.poll(() => denialPage.locator('meta[name="robots"]').evaluateAll(elements => elements.some(el => (el.getAttribute('content')||'').split(/[\s,]+/).includes('noindex')))).toBe(true);
+    await expect(denialPage.locator('.client-cabinet, .prescription-access-gate, .client-entry-form')).toHaveCount(0);
+    await denialPage.screenshot({path:`${evidence}/${live?'live':'local'}-es-private-locale-denied.png`});
+  } finally { await denialBrowser.close(); }
+  console.log('PASS: unsupported Spanish private locale visibly renders 404 with noindex and no cabinet');
+  writeFileSync(`${evidence}/${live?'live':'local'}-es-public-results.json`,JSON.stringify({scope:live?'read-only production':'isolated production build',results,allRemedyRoutes:slugs.length,unsupportedPrivateLocale:'browser-visible noindex 404, no cabinet',automaticTranslationLabel:true,originalBookEditions:'clearly labelled, not claimed translated',newRender:false,privateRecordsRead:false},null,2));
+} catch(error) {
+  writeFileSync(`${evidence}/${live?'live':'local'}-es-public-failure.json`,JSON.stringify({message:String(error.message).slice(0,4000),completedBrowserGroups:results},null,2));
+  throw error;
 } finally { if(app)app.kill('SIGTERM'); }
