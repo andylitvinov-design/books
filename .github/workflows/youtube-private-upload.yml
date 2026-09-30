@@ -67,8 +67,10 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: video-pipeline-${{ github.run_id }}
+          # This exact path contains sanitized reports only, never credentials/media.
           path: .video-results/*.json
-          if-no-files-found: ignore
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 7
       - name: Report an inactive connection truthfully
         if: steps.preflight.outcome != 'success'
