@@ -91,6 +91,7 @@ jobs:
           npx eslint app/es/ data/about-es.ts data/spanish-books.ts components/spanish-*.tsx components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx components/client-cabinet-entry.tsx app/page.tsx app/layout.tsx app/sitemap.ts middleware.ts lib/public-locales.ts lib/spanish-metadata.ts
           npx tsc --noEmit
       - name: Install isolated browser test dependencies without changing the app lockfile
+        timeout-minutes: 5
         run: |
           npm install --prefix /tmp/video-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
           ln -s /tmp/video-browser-tools/node_modules/@playwright node_modules/@playwright
