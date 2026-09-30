@@ -73,7 +73,9 @@ try {
     if (!response) response = await page.reload(options)
     assert.ok(response, `No document response for ${target}`)
     assert.equal(response.status(), 200, target)
-    await expect(page.locator('main')).toBeVisible()
+    // Archived source books may contain a nested main landmark of their own.
+    // Readiness concerns the outer application page, not imported source markup.
+    await expect(page.locator('main').first()).toBeVisible()
   }
   if (live) {
     for (let i = 0; ; i++) {
