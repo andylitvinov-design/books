@@ -6,7 +6,8 @@ import { SiteVideoError, isSiteVideoRecord, prepareVideoChange, toPublishedSiteV
 import { createSiteVideoStore } from '../lib/site-videos/store.js'
 
 const namespace = 'holistic-house:site-videos:v1'
-const aboutKey = 'about-intro:en'\nconst ruAboutKey = 'about-intro:ru'
+const aboutKey = 'about-intro:en'
+const ruAboutKey = 'about-intro:ru'
 const youtubeId = 'OkLEN8Zb-sY'
 const timestamp = '2026-09-30T01:00:00.000Z'
 const environment = {
@@ -103,7 +104,7 @@ test('the first approved change persists revision one and takes precedence after
   await firstProcess.save(next, previous.revision)
   const secondProcess = configuredStore(database)
   assert.deepEqual(await secondProcess.get(aboutKey), next)
-  assert.deepEqual((await secondProcess.list()).map(record => record.key), [aboutKey, ruAboutKey])\n  assert.deepEqual(await secondProcess.get(aboutKey), next)
+  assert.deepEqual((await secondProcess.list()).map(record => record.key), [aboutKey, ruAboutKey])
   const video = toPublishedSiteVideo(await secondProcess.get(aboutKey))
   assert.equal(video.youtubeId, youtubeId)
   assert.equal(video.heygenId, undefined)
