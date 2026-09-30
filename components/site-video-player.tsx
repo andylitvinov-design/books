@@ -5,11 +5,16 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { parseSiteVideoSource, siteVideoWatchUrl, type PublishedSiteVideo } from "@/lib/site-videos/model";
+import styles from "./site-video-minimal.module.css";
 
 export type SiteVideoPlayerProps = {
   video: PublishedSiteVideo;
   locale: "en" | "ru";
   compact?: boolean;
+  /** Poster-first presentation for an introduction whose page already supplies context. */
+  minimal?: boolean;
+  /** Only above-the-fold placements should eagerly load their small still image. */
+  posterPriority?: boolean;
   className?: string;
 };
 
@@ -20,7 +25,11 @@ const copy = {
     watchHeygen: "Open video on HeyGen",
     aiDisclosure: "AI-assisted video.",
     andyAiDisclosure: "AI-assisted video using Andy’s digital twin and voice.",
+    aiShort: "AI video",
+    avatarShort: "AI avatar",
     transcript: "Read transcript",
+    transcriptShort: "Transcript",
+    details: "Video details",
     duration: "Duration",
     seconds: "seconds",
     newTab: "opens in a new tab",
@@ -31,24 +40,30 @@ const copy = {
     watchHeygen: "Открыть видео в HeyGen",
     aiDisclosure: "Видео создано с помощью ИИ.",
     andyAiDisclosure: "Видео с цифровым двойником и голосом Энди, созданное с помощью ИИ.",
+    aiShort: "ИИ-видео",
+    avatarShort: "ИИ-аватар",
     transcript: "Читать текст видео",
+    transcriptShort: "Текст видео",
+    details: "О видео",
     duration: "Продолжительность",
     seconds: "сек.",
     newTab: "откроется в новой вкладке",
   },
 } as const;
 
-// This portrait/disclosure belongs only to the already-approved About introduction.
-const approvedAndyHeygenId = "fd5fcead9b067f9a0649862675a38771";
+// Match artwork to the exact approved video, never to a language alone. A future
+// replacement must not inherit another video's poster. No expiring CDN URLs here.
+const approvedAndyPosters: Readonly<Record<string, string>> = {
+  fd5fcead9b067f9a0649862675a38771: "/images/holistic-house/andy-about.png",
+  d4e55c984e54b40fbeb8a21f81d27694: "/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp",
+};
 
 function videoDuration(seconds?: number) {
   if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) return null;
-
   const total = Math.max(1, Math.round(seconds));
   const hours = Math.floor(total / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const remainder = String(total % 60).padStart(2, "0");
-
   return {
     total,
     label: hours ? `${hours}:${String(minutes).padStart(2, "0")}:${remainder}` : `${minutes}:${remainder}`,
@@ -56,7 +71,7 @@ function videoDuration(seconds?: number) {
 }
 
 /** A page cannot turn arbitrary source data into an iframe URL. */
-export function SiteVideoPlayer({ video, locale, compact = false, className }: SiteVideoPlayerProps) {
+export function SiteVideoPlayer({ video, locale, compact = false, minimal = false, posterPriority = false, className }: SiteVideoPlayerProps) {
   const watchUrl = siteVideoWatchUrl(video);
   const source = watchUrl ? parseSiteVideoSource(watchUrl) : null;
   if (!source) return null;
@@ -67,12 +82,14 @@ export function SiteVideoPlayer({ video, locale, compact = false, className }: S
       video={{ ...video, ...source }}
       locale={locale}
       compact={compact}
+      minimal={minimal}
+      posterPriority={posterPriority}
       className={className}
     />
   );
 }
 
-function PlayableSiteVideo({ video, locale, compact = false, className }: SiteVideoPlayerProps) {
+function PlayableSiteVideo({ video, locale, compact = false, minimal = false, posterPriority = false, className }: SiteVideoPlayerProps) {
   const text = copy[locale];
   const [playing, setPlaying] = useState(false);
   const [poster, setPoster] = useState<"maxres" | "hq" | null>("maxres");
@@ -81,15 +98,11 @@ function PlayableSiteVideo({ video, locale, compact = false, className }: SiteVi
   const duration = videoDuration(video.durationSeconds);
   const watchUrl = siteVideoWatchUrl(video);
   const isHeygen = Boolean(video.heygenId);
-  const isApprovedAndyIntro = video.heygenId === approvedAndyHeygenId;
+  const approvedPoster = video.heygenId ? approvedAndyPosters[video.heygenId] : undefined;
+  const isApprovedAndyIntro = Boolean(approvedPoster);
   const watchLabel = isHeygen ? text.watchHeygen : text.watch;
-  const playerParams = new URLSearchParams({
-    autoplay: "1",
-    playsinline: "1",
-    rel: "0",
-    hl: locale,
-    cc_lang_pref: video.language,
-  });
+  const aiDisclosure = isApprovedAndyIntro ? text.andyAiDisclosure : text.aiDisclosure;
+  const playerParams = new URLSearchParams({ autoplay: "1", playsinline: "1", rel: "0", hl: locale, cc_lang_pref: video.language });
   const embedUrl = isHeygen
     ? `https://app.heygen.com/embeds/${video.heygenId}`
     : `https://www.youtube-nocookie.com/embed/${video.youtubeId}?${playerParams.toString()}`;
@@ -102,9 +115,21 @@ function PlayableSiteVideo({ video, locale, compact = false, className }: SiteVi
     setPoster((current) => current === "maxres" ? "hq" : null);
   }
 
+  const externalLink = (
+    <a
+      className="site-video-watch-link"
+      href={watchUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}
+    >
+      {watchLabel}<ExternalLink aria-hidden="true" />
+    </a>
+  );
+
   return (
     <figure
-      className={["site-video-player", compact && "site-video-player--compact", className].filter(Boolean).join(" ")}
+      className={["site-video-player", compact && "site-video-player--compact", minimal && "site-video-player--minimal", minimal && styles.minimal, className].filter(Boolean).join(" ")}
       aria-labelledby={titleId}
       lang={locale}
     >
@@ -128,23 +153,19 @@ function PlayableSiteVideo({ video, locale, compact = false, className }: SiteVi
             aria-label={`${text.play}: ${video.title}`}
             onClick={() => setPlaying(true)}
           >
-            {isApprovedAndyIntro && poster ? (
+            {approvedPoster && poster ? (
               <Image
                 className="site-video-poster"
-                src="/images/holistic-house/andy-about.png"
+                src={approvedPoster}
                 alt=""
                 fill
-                loading="lazy"
+                priority={posterPriority}
+                loading={posterPriority ? undefined : "lazy"}
                 sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"}
                 onError={() => setPoster(null)}
               />
             ) : isHeygen ? (
-              <Film
-                aria-hidden="true"
-                className="site-video-generic-poster"
-                strokeWidth={0.8}
-                style={{ position: "absolute", width: "50%", height: "70%", opacity: 0.12 }}
-              />
+              <Film aria-hidden="true" className="site-video-generic-poster" strokeWidth={0.8} style={{ position: "absolute", width: "50%", height: "70%", opacity: 0.12 }} />
             ) : poster ? (
               <Image
                 key={poster}
@@ -157,7 +178,6 @@ function PlayableSiteVideo({ video, locale, compact = false, className }: SiteVi
                 sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"}
                 onError={showFallbackPoster}
                 onLoad={(event) => {
-                  // YouTube sometimes serves a small placeholder for a missing poster.
                   if (event.currentTarget.naturalWidth <= 120) showFallbackPoster();
                 }}
               />
@@ -165,46 +185,39 @@ function PlayableSiteVideo({ video, locale, compact = false, className }: SiteVi
             <span className="site-video-shade" aria-hidden="true" />
             <span className="site-video-play-prompt" aria-hidden="true">
               <span className="site-video-play-icon"><Play /></span>
-              <span className="site-video-play-label">{text.play}</span>
+              {!minimal && <span className="site-video-play-label">{text.play}</span>}
             </span>
             {duration && <span className="site-video-duration" aria-hidden="true">{duration.label}</span>}
           </button>
         )}
       </div>
 
-      <figcaption className="site-video-caption">
-        <div className="site-video-copy" lang={video.language}>
-          <p className="site-video-title" id={titleId}>{video.title}</p>
-          {video.description && <p className="site-video-description">{video.description}</p>}
-        </div>
-        {isHeygen && <p className="site-video-description site-video-ai-disclosure">{isApprovedAndyIntro ? text.andyAiDisclosure : text.aiDisclosure}</p>}
-        <div className="site-video-actions">
-          <a
-            className="site-video-watch-link"
-            href={watchUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}
-          >
-            {watchLabel}<ExternalLink aria-hidden="true" />
-          </a>
-          {duration && (
-            <time
-              className="site-video-duration-text"
-              dateTime={`PT${duration.total}S`}
-              aria-label={`${text.duration}: ${duration.total} ${text.seconds}`}
-            >
-              {duration.label}
-            </time>
-          )}
-        </div>
-        {video.transcript && (
+      {minimal ? (
+        <figcaption className="site-video-caption">
+          <span className={styles.accessibleTitle} id={titleId} lang={video.language}>{video.title}</span>
           <details className="site-video-transcript">
-            <summary>{text.transcript}<ChevronDown aria-hidden="true" /></summary>
-            <p lang={video.language}>{video.transcript}</p>
+            <summary>{video.transcript ? text.transcriptShort : text.details}<ChevronDown aria-hidden="true" /></summary>
+            <div className="site-video-more">
+              {video.transcript && <p lang={video.language}>{video.transcript}</p>}
+              <div className="site-video-actions">{externalLink}</div>
+            </div>
           </details>
-        )}
-      </figcaption>
+          {isHeygen && <span className="site-video-ai-badge" title={aiDisclosure} aria-label={aiDisclosure}>{isApprovedAndyIntro ? text.avatarShort : text.aiShort}</span>}
+        </figcaption>
+      ) : (
+        <figcaption className="site-video-caption">
+          <div className="site-video-copy" lang={video.language}>
+            <p className="site-video-title" id={titleId}>{video.title}</p>
+            {video.description && <p className="site-video-description">{video.description}</p>}
+          </div>
+          {isHeygen && <p className="site-video-description site-video-ai-disclosure">{aiDisclosure}</p>}
+          <div className="site-video-actions">
+            {externalLink}
+            {duration && <time className="site-video-duration-text" dateTime={`PT${duration.total}S`} aria-label={`${text.duration}: ${duration.total} ${text.seconds}`}>{duration.label}</time>}
+          </div>
+          {video.transcript && <details className="site-video-transcript"><summary>{text.transcript}<ChevronDown aria-hidden="true" /></summary><p lang={video.language}>{video.transcript}</p></details>}
+        </figcaption>
+      )}
     </figure>
   );
 }

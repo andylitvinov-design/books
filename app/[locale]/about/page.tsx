@@ -102,7 +102,7 @@ export default async function AboutPage({ params }: PageProps) {
 
       {aboutIntro && (typedLocale === "en" && aboutIntro.heygenId === existingAboutIntroVideo.heygenId
         ? <PsychicAlchemyIntroVideo video={aboutIntro} />
-        : <section className="site-video-block" data-video-slot="about-intro" data-video-locale={typedLocale} aria-label={aboutIntro.title}><SiteVideoPlayer video={aboutIntro} locale={typedLocale} /></section>)}
+        : <section className="site-video-block" data-video-slot="about-intro" data-video-locale={typedLocale} aria-label={aboutIntro.title}><SiteVideoPlayer video={aboutIntro} locale={typedLocale} minimal={typedLocale === "ru"} posterPriority /></section>)}
 
       <section className="about-introduction" aria-labelledby="about-title">
         <div className="about-portrait">
