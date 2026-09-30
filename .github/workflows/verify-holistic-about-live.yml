@@ -1,0 +1,135 @@
+name: Verify live Holistic House About video
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/verify-holistic-about-live.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated browser verification
+        run: |
+          mkdir -p /tmp/holistic-about-live
+          cd /tmp/holistic-about-live
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Check published page, lazy player and responsive playback
+        working-directory: /tmp/holistic-about-live
+        run: |
+          node --input-type=module <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const base = 'https://holistichouse.vercel.app';
+          const embed = 'https://app.heygen.com/embeds/fd5fcead9b067f9a0649862675a38771';
+          const browser = await chromium.launch({ headless: true });
+          const report = { target: base + '/en/about', signedIn: false, viewports: [], failures: [] };
+          await fs.mkdir('report', { recursive: true });
+          for (const [name, width, height] of [['desktop', 1440, 1050], ['mobile', 390, 844], ['narrow', 320, 780]]) {
+            const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
+            const page = await context.newPage();
+            const result = { name, width, height };
+            try {
+              let ready = false;
+              for (let attempt = 0; attempt < 16; attempt++) {
+                const response = await page.goto(base + '/en/about', { waitUntil: 'domcontentloaded', timeout: 30000 });
+                result.httpStatus = response.status();
+                if (await page.locator('#psychic-alchemy-video').count()) { ready = true; break; }
+                await page.waitForTimeout(5000);
+              }
+              assert.ok(ready, 'New video section missing after deployment wait');
+              assert.equal(result.httpStatus, 200);
+              await page.locator('#psychic-alchemy-video button').waitFor({ state: 'visible' });
+              await page.waitForTimeout(2500);
+              result.beforeClickIframes = await page.locator('iframe[src*="app.heygen.com"]').count();
+              assert.equal(result.beforeClickIframes, 0, 'Player loaded before consent click');
+              result.horizontalOverflow = await page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - innerWidth));
+              assert.ok(result.horizontalOverflow <= 1, 'Horizontal overflow');
+              result.transcript = await page.locator('#psychic-alchemy-video details').textContent();
+              assert.ok(result.transcript.includes('homeopathy with systemic constellations and hypnotherapy'));
+              assert.ok(result.transcript.includes('finding new resources and solutions'));
+              result.preserved = {
+                biography: await page.locator('.about-biography').count(),
+                testimonials: await page.locator('#testimonials-title').count(),
+                requestForm: await page.locator('.personal-consultation-form').count(),
+                cabinet: await page.locator('.about-client-cabinet').count()
+              };
+              assert.ok(Object.values(result.preserved).every(x => x === 1));
+              const poster = page.locator('#psychic-alchemy-video button');
+              result.posterLoaded = await poster.locator('img').evaluate(img => img.complete && img.naturalWidth > 0);
+              assert.ok(result.posterLoaded, 'Poster image did not load');
+              await page.screenshot({ path: `report/${name}-poster.png`, fullPage: false });
+              if (name !== 'narrow') {
+                await poster.click();
+                const iframe = page.locator('#psychic-alchemy-video iframe');
+                await iframe.waitFor({ state: 'visible', timeout: 15000 });
+                assert.equal(await iframe.getAttribute('src'), embed);
+                const box = await iframe.boundingBox();
+                result.playerRatio = box.width / box.height;
+                assert.ok(Math.abs(result.playerRatio - 16 / 9) < 0.02);
+                const handle = await iframe.elementHandle();
+                const frame = await handle.contentFrame();
+                const video = frame.locator('video').first();
+                await video.waitFor({ state: 'visible', timeout: 30000 });
+                await frame.waitForFunction(() => { const v = document.querySelector('video'); return v && v.readyState >= 2; }, null, { timeout: 30000 });
+                result.initialPlayback = await video.evaluate(v => ({ paused: v.paused, muted: v.muted, currentTime: v.currentTime, duration: v.duration }));
+                assert.ok(result.initialPlayback.paused || result.initialPlayback.muted, 'Unexpected audible autoplay');
+                result.playMethod = 'click-video';
+                await video.click();
+                await page.waitForTimeout(3500);
+                if (!(await video.evaluate(v => !v.paused && v.currentTime > 0.5))) {
+                  const play = frame.getByRole('button', { name: /^play/i }).first();
+                  if (await play.count()) {
+                    result.playMethod = 'click-play-button';
+                    await play.click();
+                    await page.waitForTimeout(3000);
+                  }
+                }
+                result.playback = await video.evaluate(v => ({ paused: v.paused, muted: v.muted, currentTime: v.currentTime, duration: v.duration, readyState: v.readyState, videoWidth: v.videoWidth, videoHeight: v.videoHeight, mediaError: v.error?.code ?? null }));
+                assert.ok(!result.playback.paused && result.playback.currentTime > 0.5, 'Actual click did not start playback');
+                assert.ok(result.playback.duration > 25 && result.playback.duration < 29);
+                assert.equal(result.playback.mediaError, null);
+                await page.screenshot({ path: `report/${name}-playing.png`, fullPage: false });
+                await video.evaluate(v => v.pause());
+              }
+              result.pass = true;
+            } catch (error) {
+              result.pass = false;
+              result.error = String(error.message);
+              report.failures.push(name + ': ' + result.error);
+              await page.screenshot({ path: `report/${name}-failure.png`, fullPage: false }).catch(() => {});
+            }
+            report.viewports.push(result);
+            await context.close();
+          }
+          const context = await browser.newContext();
+          const page = await context.newPage();
+          try {
+            const response = await page.goto(base + '/ru/about', { waitUntil: 'domcontentloaded', timeout: 30000 });
+            report.ru = { httpStatus: response.status(), englishIntroCount: await page.locator('#psychic-alchemy-video').count(), biographyCount: await page.locator('.about-biography').count() };
+            assert.equal(report.ru.httpStatus, 200);
+            assert.equal(report.ru.englishIntroCount, 0);
+            assert.equal(report.ru.biographyCount, 1);
+          } catch (error) { report.failures.push('RU: ' + String(error.message)); }
+          await browser.close();
+          report.pass = report.failures.length === 0;
+          await fs.writeFile('report/live-verification.json', JSON.stringify(report, null, 2));
+          console.log(JSON.stringify(report, null, 2));
+          if (!report.pass) process.exitCode = 1;
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: holistic-about-live-verification
+          path: /tmp/holistic-about-live/report/
+          retention-days: 3
+          if-no-files-found: error
