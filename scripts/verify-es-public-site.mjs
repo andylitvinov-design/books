@@ -1,0 +1,93 @@
+// Verify real Spanish pages, not English redirects. No live edits, real private
+// links, production form submissions, media generation or outbound messages.
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { mkdirSync, writeFileSync, createWriteStream } from 'node:fs';
+import { chromium, webkit, expect } from '@playwright/test';
+import { getSpanishRemedySlugs } from '../data/remedies-es.js';
+const live = process.argv.includes('--live');
+const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3202';
+const evidence = '/tmp/site-video-evidence';
+const results = [];
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const routes = ['/es', '/es/services', '/es/books', '/es/about', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
+const nav = ['/es', '/es/books', '/es/homeopathy', '/es/services', '/es/about'];
+mkdirSync(evidence, { recursive: true });
+let app;
+try {
+  if (!live) {
+    assert.equal(process.env.CI, 'true');
+    const log = createWriteStream(`${evidence}/es-public-local-app.log`);
+    app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3202', '-H', '127.0.0.1'], { env: { ...process.env, PRESCRIPTIONS_KV_REST_API_URL: '', PRESCRIPTIONS_KV_REST_API_TOKEN: '', PRESCRIPTIONS_ADMIN_TOKEN: '', PRESCRIPTIONS_ADMIN_PIN: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
+    app.stdout.pipe(log); app.stderr.pipe(log);
+    for (let i=0;;i++) { try { if ((await fetch(`${origin}/es`)).ok) break; } catch {} assert.ok(i<90 && app.exitCode===null, 'Local Spanish site did not start'); await pause(1000); }
+  }
+  for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]) {
+    const browser = await browserType.launch({ headless: true });
+    try {
+      for (const width of [390,1365]) {
+        const context = await browser.newContext({ viewport: { width, height: 900 }, locale: 'es-MX', serviceWorkers: 'block' });
+        const page = await context.newPage(); const errors = [];
+        page.on('pageerror', error => errors.push(error.message));
+        for (const path of routes) {
+          let response;
+          for (let i=0;;i++) { response = await page.goto(origin+path, { waitUntil: 'domcontentloaded', timeout: 60000 }); if (response.status()===200 && await page.locator('main[lang="es"]').count()) break; assert.ok(live && i<35, path+' missing'); await pause(5000); }
+          assert.match(await response.text(), /<html lang="es"/);
+          await expect(page.locator('html')).toHaveAttribute('lang','es');
+          await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
+          assert.deepEqual(await page.locator('.site-navigation > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), nav, path);
+          assert.doesNotMatch(await page.locator('main').innerText(), /Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/, path);
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth+2), 'Overflow: '+path);
+          assert.equal(await page.locator('iframe').count(),0,'No eager video');
+          await page.evaluate(() => document.fonts.ready);
+          if (['/es','/es/services','/es/books','/es/homeopathy'].includes(path)) {
+            const file=path.split('/').filter(Boolean).join('-');
+            await page.screenshot({ path:`${evidence}/${live?'live':'local'}-${file}-${engine}-${width}.png` });
+          }
+        }
+        await page.goto(origin+'/es/homeopathy/remedies');
+        const search = page.getByRole('searchbox'); await search.fill('Aconitum');
+        await expect(page.getByRole('status')).toHaveText('1 remedio');
+        await page.getByRole('link', { name: /Aconitum.*Leer el texto completo/ }).click();
+        await expect(page).toHaveURL(/\/es\/homeopathy\/remedies\/aconitum$/);
+        await expect(page.getByRole('heading',{name:'Aconitum',exact:true})).toBeVisible();
+        await expect(page.locator('.remedy-content-body')).toContainText('Aconitum');
+        await expect(page.locator('.remedy-source-reference')).not.toHaveAttribute('open','');
+        await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-aconitum-${engine}-${width}.png`});
+        await page.locator('.site-language-switch a[lang="en"]').click();
+        await expect(page).toHaveURL(/\/en\/homeopathy\/remedies\/aconitum$/);
+        await page.locator('.site-language-switch a[lang="es"]').click();
+        await expect(page).toHaveURL(/\/es\/homeopathy\/remedies\/aconitum$/);
+        await page.goto(origin+'/'); await expect(page).toHaveURL(origin+'/es');
+        await page.locator('.site-language-switch a[lang="en"]').click();
+        await expect(page).toHaveURL(/\/\?lang=en$/);
+        await expect(page.locator('html')).toHaveAttribute('lang','en');
+        await page.getByRole('link',{name:'ES',exact:true}).click(); await expect(page).toHaveURL(origin+'/es');
+        if (!live) {
+          await page.goto(origin+'/es/client');
+          await page.getByRole('button',{name:/Entrar al área de clientes/}).click();
+          await expect(page.getByRole('alert')).toContainText('enlace válido');
+          assert.ok(page.url().endsWith('/es/client'));
+        }
+        assert.deepEqual(errors,[]);
+        results.push({engine,width,routes:routes.length,publicNavigation:'five Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',overflow:false,pageErrors:0});
+        console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
+        await context.close();
+      }
+    } finally { await browser.close(); }
+  }
+  // Check every generated detail route, in bounded batches, without mutations.
+  const slugs = getSpanishRemedySlugs();
+  for (let i=0;i<slugs.length;i+=5) await Promise.all(slugs.slice(i,i+5).map(async slug=>{
+    const response = await fetch(`${origin}/es/homeopathy/remedies/${slug}`);
+    assert.equal(response.status,200,slug); const html=await response.text();
+    assert.match(html,/<html lang="es"/); assert.ok(html.includes('Traducción automática'),slug); assert.ok(!response.url.includes('/en/'),slug);
+  }));
+  const xml=await (await fetch(origin+'/sitemap.xml')).text();
+  for (const path of routes.filter(path=>path!=='/es/client')) assert.ok(xml.includes('https://holistichouse.vercel.app'+path),path);
+  for (const slug of slugs) assert.ok(xml.includes('/es/homeopathy/remedies/'+slug),slug);
+  assert.ok(!xml.includes('/es/client'));
+  const privatePath = await fetch(origin+'/es/client/not-a-real-client-id', {redirect:'manual'});
+  assert.equal(privatePath.status,404,'No invented Spanish private route');
+  writeFileSync(`${evidence}/${live?'live':'local'}-es-public-results.json`,JSON.stringify({scope:live?'read-only production':'isolated production build',results,allRemedyRoutes:slugs.length,automaticTranslationLabel:true,originalBookEditions:'clearly labelled, not claimed translated',newRender:false,privateRecordsRead:false},null,2));
+} finally { if(app)app.kill('SIGTERM'); }

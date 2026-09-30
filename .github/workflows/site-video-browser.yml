@@ -3,25 +3,32 @@ on:
   pull_request:
     paths:
       - 'lib/site-videos/**'
+      - 'lib/public-locales.ts'
+      - 'lib/spanish-metadata.ts'
       - 'components/site-video-*'
+      - 'components/spanish-*'
       - 'components/page-video.tsx'
       - 'components/psychic-alchemy-intro-video*'
       - 'components/site-navigation.tsx'
       - 'components/public-site-header.tsx'
       - 'components/mobile-bottom-navigation.tsx'
       - 'components/personal-consultation-form.tsx'
+      - 'components/client-cabinet-entry.tsx'
       - 'data/about-es.ts'
+      - 'data/spanish-*'
+      - 'data/remedies-es.*'
       - 'app/admin/videos/**'
       - 'app/site-video*.css'
       - 'app/reader-responsive.css'
       - 'app/layout.tsx'
       - 'app/sitemap.ts'
       - 'app/**/page.tsx'
+      - 'app/page.tsx'
       - 'middleware.ts'
       - 'scripts/verify-site-video-browser.mjs'
       - 'scripts/verify-ru-about-video.mjs'
-      - 'scripts/verify-es-about.mjs'
-      - 'tests/es-about.test.mjs'
+      - 'scripts/verify-es-*.mjs'
+      - 'tests/es-*.test.mjs'
       - 'tests/ru-about-video-presentation.test.mjs'
       - 'public/images/holistic-house/video-posters/**'
       - '.github/workflows/site-video-browser.yml'
@@ -29,21 +36,28 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'lib/site-videos/**'
+      - 'lib/public-locales.ts'
+      - 'lib/spanish-metadata.ts'
       - 'components/site-video-*'
+      - 'components/spanish-*'
       - 'components/site-navigation.tsx'
       - 'components/public-site-header.tsx'
       - 'components/mobile-bottom-navigation.tsx'
       - 'components/personal-consultation-form.tsx'
+      - 'components/client-cabinet-entry.tsx'
       - 'data/about-es.ts'
+      - 'data/spanish-*'
+      - 'data/remedies-es.*'
       - 'app/es/**'
       - 'app/layout.tsx'
+      - 'app/page.tsx'
       - 'app/sitemap.ts'
       - 'middleware.ts'
       - 'app/admin/videos/**'
       - 'scripts/verify-site-video-browser.mjs'
       - 'scripts/verify-ru-about-video.mjs'
-      - 'scripts/verify-es-about.mjs'
-      - 'tests/es-about.test.mjs'
+      - 'scripts/verify-es-*.mjs'
+      - 'tests/es-*.test.mjs'
       - 'tests/ru-about-video-presentation.test.mjs'
       - 'public/images/holistic-house/video-posters/**'
       - '.github/workflows/site-video-browser.yml'
@@ -52,7 +66,7 @@ permissions:
 jobs:
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 25
     services:
       redis:
         image: redis:7-alpine
@@ -73,8 +87,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Check Spanish translation and affected components
         run: |
-          node --test tests/es-about.test.mjs tests/about-page.test.mjs tests/native-*.test.mjs
-          npx eslint app/es/about/page.tsx data/about-es.ts components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx app/layout.tsx app/sitemap.ts middleware.ts
+          node --test tests/es-about.test.mjs tests/es-public-site.test.mjs tests/about-page.test.mjs tests/native-*.test.mjs
+          npx eslint app/es/ data/about-es.ts data/spanish-books.ts components/spanish-*.tsx components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx components/client-cabinet-entry.tsx app/page.tsx app/layout.tsx app/sitemap.ts middleware.ts lib/public-locales.ts lib/spanish-metadata.ts
+          npx tsc --noEmit
       - name: Install isolated browser test dependencies without changing the app lockfile
         run: |
           npm install --prefix /tmp/video-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
@@ -104,15 +119,22 @@ jobs:
         run: node scripts/verify-es-about.mjs
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Check all Spanish public destinations and remedy routes
+        run: node scripts/verify-es-public-site.mjs
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
       - name: Check production read-only after release
         if: github.event_name == 'push'
         run: node scripts/verify-site-video-browser.mjs --live
       - name: Check released RU preview read-only
         if: github.event_name == 'push'
         run: node scripts/verify-ru-about-video.mjs --live
-      - name: Check released Spanish page read-only
+      - name: Check released Spanish About read-only
         if: github.event_name == 'push'
         run: node scripts/verify-es-about.mjs --live
+      - name: Check all released Spanish public pages read-only
+        if: github.event_name == 'push'
+        run: node scripts/verify-es-public-site.mjs --live
       - uses: actions/upload-artifact@v4
         if: always()
         with:
