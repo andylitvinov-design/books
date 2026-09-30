@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Book02Reference } from "@/components/book-02-reference";
+import { PageVideo } from "@/components/page-video";
 import { TranslatedReaderContent } from "@/components/translated-reader-content";
 import { books, getBookById } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
@@ -145,7 +146,7 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
   if (!book) notFound();
 
   if (book.id === "alchemy-homeopathy-remedies") {
-    return <Book02Reference locale={locale} remedies={getBook02Remedies(locale)} entries={getRemedyDirectory(locale)} />;
+    return <Book02Reference locale={locale} remedies={getBook02Remedies(locale)} entries={getRemedyDirectory(locale)} video={<PageVideo slot="book-detail" locale={locale} entityId={book.id} />} />;
   }
 
   const display = localizedBookText(book, locale);
@@ -170,6 +171,8 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
           <div><dt>{labels.status}</dt><dd>{locale === "en" ? "published" : book.status}</dd></div>
         </dl>
       </header>
+
+      <PageVideo slot="book-detail" locale={locale} entityId={book.id} />
 
       <figure className="reader-cover">
         <img alt={labels.cover + ": " + display.title} src={coverUrl} />

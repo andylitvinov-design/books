@@ -29,11 +29,13 @@ export function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers)
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
+  const videoManager = request.nextUrl.pathname === '/admin/videos'
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentEval}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    videoManager ? "img-src 'self' data: https://i.ytimg.com" : "img-src 'self' data:",
+    videoManager ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : "frame-src 'none'",
     "font-src 'self'",
     "connect-src 'self'",
     "object-src 'none'",

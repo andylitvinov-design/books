@@ -8,8 +8,8 @@ import { readUiLocale, saveUiLocale } from '@/lib/ui-locale'
 export function PrescriptionAdminHeader({ title, description }) {
   const [locale, setLocale] = useState('ru')
   const labels = locale === 'ru'
-    ? { cabinet: 'Кабинет', newConsultation: 'Новая консультация', clients: 'Клиенты', legacy: 'Архив', logout: 'Выйти', language: 'Язык интерфейса' }
-    : { cabinet: 'Cabinet', newConsultation: 'New consultation', clients: 'Clients', legacy: 'Legacy', logout: 'Logout', language: 'Interface language' }
+    ? { cabinet: 'Кабинет', newConsultation: 'Новая консультация', clients: 'Клиенты', legacy: 'Архив', videos: 'Видео сайта', logout: 'Выйти', language: 'Язык интерфейса' }
+    : { cabinet: 'Cabinet', newConsultation: 'New consultation', clients: 'Clients', legacy: 'Legacy', videos: 'Website videos', logout: 'Logout', language: 'Interface language' }
 
   useEffect(() => setLocale(readUiLocale(document.cookie)), [])
 
@@ -47,6 +47,7 @@ export function PrescriptionAdminHeader({ title, description }) {
         <Link href="/admin/consultations/new">{labels.newConsultation}</Link>
         <Link href="/admin/clients">{labels.clients}</Link>
         <Link href="/admin/clients/legacy">{labels.legacy}</Link>
+        <Link href="/admin/videos">{labels.videos}</Link>
       </nav>
     </header>
   )
