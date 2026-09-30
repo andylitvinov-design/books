@@ -1,0 +1,79 @@
+name: Website video browser verification
+on:
+  pull_request:
+    paths:
+      - 'lib/site-videos/**'
+      - 'components/site-video-*'
+      - 'components/page-video.tsx'
+      - 'components/psychic-alchemy-intro-video*'
+      - 'app/admin/videos/**'
+      - 'app/site-video*.css'
+      - 'app/reader-responsive.css'
+      - 'app/layout.tsx'
+      - 'app/**/page.tsx'
+      - 'middleware.ts'
+      - 'scripts/verify-site-video-browser.mjs'
+      - '.github/workflows/site-video-browser.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'lib/site-videos/**'
+      - 'components/site-video-*'
+      - 'app/admin/videos/**'
+      - 'scripts/verify-site-video-browser.mjs'
+      - '.github/workflows/site-video-browser.yml'
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install isolated browser test dependencies without changing the app lockfile
+        run: |
+          npm install --prefix /tmp/video-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          ln -s /tmp/video-browser-tools/node_modules/@playwright node_modules/@playwright
+          /tmp/video-browser-tools/node_modules/.bin/playwright install --with-deps chromium
+      - run: sudo apt-get install -y redis-tools
+      - name: Create ephemeral local test certificate
+        run: openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/video-test-key.pem -out /tmp/video-test-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+      - name: Build actual application with locked production dependencies
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Exercise editor against isolated Redis
+        run: |
+          # Ephemeral runner only; adapter binds exclusively to loopback. This
+          # avoids changing the production endpoint validator or running Node
+          # as root, which would prevent use of the test-only CA certificate.
+          sudo sysctl -w net.ipv4.ip_unprivileged_port_start=443
+          node scripts/verify-site-video-browser.mjs
+        env:
+          NODE_EXTRA_CA_CERTS: /tmp/video-test-cert.pem
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Check production read-only after release
+        if: github.event_name == 'push'
+        run: node scripts/verify-site-video-browser.mjs --live
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: site-video-browser-evidence
+          path: /tmp/site-video-evidence/
+          retention-days: 7

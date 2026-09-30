@@ -3,6 +3,7 @@ import Link from "next/link";
 import { RemedyContent, RemedyEssence } from "@/components/remedy-content";
 import { RemedyClientActions } from "@/components/remedy-client-actions";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PageVideo } from "@/components/page-video";
 import { getRemedyArticleLinks } from "@/data/remedy-articles";
 import { getRelatedRemedies, getRemedyDirectory, getRemedySwitchPath } from "@/data/remedies";
 import type { Locale, Remedy } from "@/data/remedies";
@@ -66,6 +67,7 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
         <h1>{remedy.canonical_latin_name}</h1>
         {remedy.russian_common_name ? <p className="remedy-common-name">{labels.sourceName}: {remedy.russian_common_name}</p> : null}
         <RemedyEssence locale={locale} remedy={remedy} />
+        <PageVideo slot="remedy-detail" locale={locale} entityId={remedy.slug} />
         <RemedyPrimaryImage locale={locale} remedy={remedy} />
         <RemedyContent locale={locale} remedy={remedy} showEssence={false} sourceUrl={remedy.primary_source_url} variant="standalone" />
         <details className="remedy-source-reference"><summary>{labels.source}: {remedy.primary_source_message}{remedy.source_date ? ` · ${remedy.source_date}` : ""}</summary><div><strong>{remedy.source_author}</strong>{remedy.primary_source_url ? <a href={remedy.primary_source_url} rel="noreferrer" target="_blank">Telegram</a> : null}<span>{remedy.source_file}</span><span>{remedy.source_heading}</span>{remedy.source_messages ? <span>Messages: {remedy.source_messages}</span> : null}{locale === "en" ? <span>Translation provenance: {remedy.translation_provenance}; EN source: {remedy.en_source_exists}.</span> : null}</div></details>

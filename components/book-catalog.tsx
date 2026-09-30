@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, Search } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { filterLibraryBooks, getPopulatedCategories } from "@/data/library";
@@ -14,6 +15,7 @@ import type { Locale } from "@/data/remedies";
 type BookCatalogProps = {
   books: Book[];
   locale: Locale;
+  video?: ReactNode;
 };
 
 const allCategoriesValue = "all";
@@ -49,7 +51,7 @@ const copy = {
   },
 } as const;
 
-export function BookCatalog({ books, locale }: BookCatalogProps) {
+export function BookCatalog({ books, locale, video }: BookCatalogProps) {
   const text = copy[locale];
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState(allCategoriesValue);
@@ -86,6 +88,8 @@ export function BookCatalog({ books, locale }: BookCatalogProps) {
           />
         </label>
       </header>
+
+      {video}
 
       <nav aria-label={text.filters} className="catalog-filters">
         <button
