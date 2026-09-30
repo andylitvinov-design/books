@@ -44,8 +44,7 @@ try {
         response.end(JSON.stringify({ error: 'Invalid isolated test command' }))
       }
     })
-    // The production URL validator deliberately disallows nonstandard ports.
-    // Use default HTTPS locally too, rather than weakening the application rule.
+    // Match production HTTPS validation without weakening the application rule.
     server.listen(443, '127.0.0.1')
     await once(server, 'listening')
     const log = createWriteStream(`${evidence}/local-app.log`)
@@ -66,7 +65,13 @@ try {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
   async function navigate(target) {
-    const response = await page.goto(new URL(target, origin).href, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
+    let response = await page.goto(new URL(target, origin).href, options)
+    // Different placements can be anchors on the same Services page. A hash-only
+    // navigation makes no HTTP request and returns null. Reload to inspect the
+    // newly published server snapshot rather than the old document already open.
+    if (!response) response = await page.reload(options)
+    assert.ok(response, `No document response for ${target}`)
     assert.equal(response.status(), 200, target)
     await expect(page.locator('main')).toBeVisible()
   }
