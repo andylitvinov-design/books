@@ -1,25 +1,11 @@
-# Video jobs
+# Approved English video jobs
 
-Each new `.json` file in this directory is an explicit publication command for the English YouTube worker.
+Only newly added `.video-jobs/*.json` files on `codex/bootstrap-books` trigger uploads. Jobs are explicit owner-approved public-content publication commands; private/client content is prohibited. Workflow dispatch alone runs a read-only preflight.
 
-Example shape (documentation only; do not commit a sample JSON unless you intend to publish it):
+For existing Drive masters, provide `version: 1`, `target: "youtube-en-private"`, `title`, `language: "en"`, `driveFileId`, `driveFolderId` and `sha256`; omit `sourceUrl`. Optional fields: `description`, `tags`, `fileName`. Use IDs and hashes verified in ai-projects-brain #219. No executable example job is included.
 
-~~~text
-{
-  "version": 1,
-  "target": "youtube-en-private",
-  "sourceUrl": "https://files2.heygen.ai/.../video.mp4?...",
-  "title": "Video title",
-  "description": "Video description",
-  "tags": ["Holistic House", "Andy Litvinov"],
-  "language": "en",
-  "fileName": "2026-09-29_homeopathy_example_en_avatarV_16x9_v01.mp4",
-  "driveFolderId": "<current AI Videos/Homeopathy/Public/YEAR folder ID from #219 / Drive>"
-}
-~~~
+For a new approved HeyGen render, provide a current HTTPS `sourceUrl` from a HeyGen media host instead of `driveFileId`, plus `driveFolderId` and the archival `fileName`. Never include passwords or OAuth credentials. Prefer the existing Drive master for retries rather than committing another signed URL.
 
-Execution order is strict: **HeyGen download -> Drive archive -> YouTube Private**.
+Uploads remain Private. A new unaudited YouTube API project can lock them to Private; a manual visibility toggle is not a guaranteed solution. A Private upload must never replace the working website embed.
 
-The uploader rejects Public/Unlisted requests. If Drive archiving fails, YouTube upload does not start.
-
-For retries, create a new job file with a new filename instead of editing an existing job.
+Retries reuse the Drive master and persisted YouTube checkpoint. An ambiguous upload outcome stops for reconciliation rather than blindly retrying. Read `scripts/video-publish/README.md` for activation, audit and recovery gates.

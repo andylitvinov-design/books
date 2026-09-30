@@ -1,84 +1,77 @@
-name: English YouTube Private Upload
-
+name: English video pipeline
 on:
   pull_request:
     paths:
       - 'scripts/video-publish/**'
+      - 'tests/*video*pipeline*.mjs'
       - 'tests/youtube-private-upload.test.mjs'
       - '.github/workflows/youtube-private-upload.yml'
       - '.video-jobs/README.md'
   push:
-    branches:
-      - 'codex/bootstrap-books'
+    branches: ['codex/bootstrap-books']
     paths:
       - '.video-jobs/*.json'
-
+      - 'scripts/video-publish/**'
+      - '.github/workflows/youtube-private-upload.yml'
+  workflow_dispatch:
 permissions:
   contents: read
-
 concurrency:
   group: youtube-en-private-upload
   cancel-in-progress: false
-
 jobs:
   test:
-    name: Validate uploader
+    name: Validate pipeline safety
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node --test tests/youtube-private-upload.test.mjs
-
-  upload:
-    name: Upload new job to @aatapro as Private
-    if: github.event_name == 'push'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: 22}
+      - run: |
+          node --test tests/youtube-private-upload.test.mjs tests/video-pipeline-safety.test.mjs
+          for file in scripts/video-publish/*.mjs; do node --check "$file"; done
+  pipeline:
+    name: Verify connection before approved uploads
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/bootstrap-books'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       GOOGLE_YOUTUBE_CLIENT_ID: ${{ secrets.GOOGLE_YOUTUBE_CLIENT_ID }}
       GOOGLE_YOUTUBE_CLIENT_SECRET: ${{ secrets.GOOGLE_YOUTUBE_CLIENT_SECRET }}
       GOOGLE_YOUTUBE_REFRESH_TOKEN: ${{ secrets.GOOGLE_YOUTUBE_REFRESH_TOKEN }}
-      YOUTUBE_ENGLISH_EXPECTED_HANDLE: '@aatapro'
+      GOOGLE_DRIVE_ARCHIVE_FOLDER_ID: ${{ vars.GOOGLE_DRIVE_ARCHIVE_FOLDER_ID }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Check OAuth secrets
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {fetch-depth: 2, persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: 22}
+      - name: Read-only OAuth and English-channel preflight
+        id: preflight
+        continue-on-error: true
+        run: node scripts/video-publish/preflight-pipeline.mjs
+      - name: Upload only newly added approved jobs
+        if: github.event_name == 'push' && steps.preflight.outcome == 'success'
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$GOOGLE_YOUTUBE_CLIENT_ID"
-          test -n "$GOOGLE_YOUTUBE_CLIENT_SECRET"
-          test -n "$GOOGLE_YOUTUBE_REFRESH_TOKEN"
-
-      - name: Upload newly added video jobs
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t jobs < <(git diff-tree --no-commit-id --name-only --diff-filter=A -r "$GITHUB_SHA" -- '.video-jobs/*.json')
-          if [ "${#jobs[@]}" -eq 0 ]; then
-            echo "No newly added video job JSON files in this commit."
-            exit 0
-          fi
-          for job in "${jobs[@]}"; do
-            echo "Processing $job"
+          git diff --name-only --diff-filter=A HEAD^ HEAD -- '.video-jobs/*.json' > /tmp/approved-video-jobs
+          while IFS= read -r job; do
+            test -n "$job" || continue
             node scripts/video-publish/upload-youtube-private.mjs "$job"
-          done
-
-      - name: Save upload result
+          done < /tmp/approved-video-jobs
+      - name: Save sanitized readiness and recovery results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: youtube-private-${{ github.run_id }}
+          name: video-pipeline-${{ github.run_id }}
           path: .video-results/*.json
           if-no-files-found: ignore
           retention-days: 7
+      - name: Report an inactive connection truthfully
+        if: steps.preflight.outcome != 'success'
+        run: |
+          echo 'Pipeline is not activated. Read preflight.json; no video was downloaded or uploaded.'
+          exit 1
