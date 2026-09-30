@@ -96,13 +96,14 @@ try {
   for (const slug of slugs) assert.ok(xml.includes('/es/homeopathy/remedies/'+slug),slug);
   assert.ok(!xml.includes('/es/client'));
   // CabinetPage rejects ES with notFound() before authorizeCabinetRequest.
-  // Inspect the actual denial document, including noindex: a streamed not-found
-  // response can already have sent HTTP 200 and is not a working private route.
+  // Next can return either a rendered 404 or a streamed not-found error shell.
+  // Both must be genuine denial documents with noindex and no cabinet UI.
   const privatePath = await fetch(origin+'/es/client/not-a-real-client-id', {redirect:'manual'});
   const privateHtml = await privatePath.text();
   assert.ok([200,404].includes(privatePath.status), 'Unsupported locale must not redirect or error');
-  assert.match(privateHtml, /<h1\b[^>]*>\s*404\s*<\/h1>/, 'Unsupported private locale must render the not-found heading');
-  assert.match(privateHtml, /This page could not be found\./, 'Unsupported private locale must render the not-found message');
+  const plainNotFound = /<h1\b[^>]*>\s*404\s*<\/h1>/.test(privateHtml) && /This page could not be found\./.test(privateHtml);
+  const streamedNotFound = /<html\b[^>]*id="__next_error__"/.test(privateHtml) && /<meta\b[^>]*name="next-error"[^>]*content="not-found"/.test(privateHtml) && /NEXT_HTTP_ERROR_FALLBACK;404/.test(privateHtml);
+  assert.ok(plainNotFound || streamedNotFound, 'Unsupported private locale must deliver a genuine not-found document');
   assert.match(privateHtml, /<meta\b[^>]*name="robots"[^>]*content="[^"]*noindex[^>]*>/, 'Unsupported private locale must remain non-indexable');
   assert.doesNotMatch(privateHtml, /class="[^"]*(?:client-cabinet|prescription-access-gate|client-entry-form)/, 'No cabinet, access form or private entry in the denial document');
   console.log('PASS: unsupported Spanish private locale renders noindex not-found, not a cabinet');
