@@ -27,6 +27,10 @@ export function middleware(request: NextRequest) {
     'X-Content-Type-Options': 'nosniff',
   } })
   const requestHeaders = new Headers(request.headers)
+  // Overwrite any caller-supplied value. ES only claims the translated public page.
+  const pageLocale = /^\/es\/about\/?$/.test(request.nextUrl.pathname) ? 'es'
+    : request.nextUrl.pathname.match(/^\/(en|ru)(?:\/|$)/)?.[1] ?? 'ru'
+  requestHeaders.set('x-public-page-locale', pageLocale)
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
   const videoManager = request.nextUrl.pathname === '/admin/videos'

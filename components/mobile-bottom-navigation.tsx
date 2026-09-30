@@ -10,7 +10,7 @@ import { readUiLocale } from '@/lib/ui-locale'
 
 export function MobileBottomNavigation() {
   const pathname = usePathname()
-  const pathLocale = pathname.startsWith('/en/') ? 'en' : pathname.startsWith('/ru/') ? 'ru' : null
+  const pathLocale = pathname.startsWith('/en/') ? 'en' : pathname.startsWith('/ru/') ? 'ru' : /^\/es\/about\/?$/.test(pathname) ? 'es' : null
   const [preference, setPreference] = useState<Locale>('ru')
 
   useEffect(() => {
@@ -19,7 +19,6 @@ export function MobileBottomNavigation() {
       const next = custom?.detail ?? readUiLocale(document.cookie)
       setPreference(next === 'en' ? 'en' : 'ru')
     }
-
     syncLocale()
     window.addEventListener('ui-locale-change', syncLocale)
     window.addEventListener('holistic-house-ui-locale', syncLocale)
@@ -29,33 +28,38 @@ export function MobileBottomNavigation() {
     }
   }, [])
 
-  const locale: Locale = (pathLocale ?? preference) as Locale
-  const items = locale === 'ru'
+  const locale = pathLocale ?? preference
+  const items = locale === 'es'
     ? [
-        { label: 'Главная', href: '/', icon: House },
-        { label: 'Книга', href: 'https://designrr.page/?id=367554&token=1057485987&h=4958', icon: BookOpen, external: true },
-        { label: 'Препараты', href: '/ru/homeopathy', icon: Leaf },
-        { label: 'Услуги', href: '/ru/services', icon: Sparkles },
-        { label: 'Обо мне', href: '/ru/about', icon: UserRound },
+        { label: 'Inicio (EN)', href: '/?lang=en', icon: House },
+        { label: 'Libro (EN)', href: 'https://designrr.page/?id=377444&token=639498968&h=5264', icon: BookOpen, external: true },
+        { label: 'Remedios (EN)', href: '/en/homeopathy', icon: Leaf },
+        { label: 'Servicios (EN)', href: '/en/services', icon: Sparkles },
+        { label: 'Sobre mí', href: '/es/about', icon: UserRound },
       ]
-    : [
-        { label: 'Home', href: '/', icon: House },
-        { label: 'Book', href: 'https://designrr.page/?id=377444&token=639498968&h=5264', icon: BookOpen, external: true },
-        { label: 'Remedies', href: '/en/homeopathy', icon: Leaf },
-        { label: 'Services', href: '/en/services', icon: Sparkles },
-        { label: 'About', href: '/en/about', icon: UserRound },
-      ]
+    : locale === 'ru'
+      ? [
+          { label: 'Главная', href: '/', icon: House },
+          { label: 'Книга', href: 'https://designrr.page/?id=367554&token=1057485987&h=4958', icon: BookOpen, external: true },
+          { label: 'Препараты', href: '/ru/homeopathy', icon: Leaf },
+          { label: 'Услуги', href: '/ru/services', icon: Sparkles },
+          { label: 'Обо мне', href: '/ru/about', icon: UserRound },
+        ]
+      : [
+          { label: 'Home', href: '/', icon: House },
+          { label: 'Book', href: 'https://designrr.page/?id=377444&token=639498968&h=5264', icon: BookOpen, external: true },
+          { label: 'Remedies', href: '/en/homeopathy', icon: Leaf },
+          { label: 'Services', href: '/en/services', icon: Sparkles },
+          { label: 'About', href: '/en/about', icon: UserRound },
+        ]
 
   if (/^\/(admin|(?:ru|en)\/prescriptions)/.test(pathname)) return null
 
   return (
-    <nav aria-label={locale === 'ru' ? 'Мобильная навигация' : 'Mobile navigation'} className="mobile-bottom-navigation">
+    <nav aria-label={locale === 'es' ? 'Navegación móvil' : locale === 'ru' ? 'Мобильная навигация' : 'Mobile navigation'} className="mobile-bottom-navigation">
       {items.map(({ label, href, icon: Icon, external }) => {
         const current = !external && (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/'))
-        const content = <>
-          <Icon aria-hidden="true" />
-          <span>{label}</span>
-        </>
+        const content = <><Icon aria-hidden="true" /><span>{label}</span></>
         return external
           ? <a href={href} key={href}>{content}</a>
           : <Link aria-current={current ? 'page' : undefined} data-home-active={href === '/' && pathname === '/' ? 'true' : undefined} href={href} key={href}>{content}</Link>
