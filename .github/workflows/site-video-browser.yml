@@ -59,7 +59,12 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Exercise editor against isolated Redis
-        run: node scripts/verify-site-video-browser.mjs
+        run: |
+          # Ephemeral runner only; adapter binds exclusively to loopback. This
+          # avoids changing the production endpoint validator or running Node
+          # as root, which would prevent use of the test-only CA certificate.
+          sudo sysctl -w net.ipv4.ip_unprivileged_port_start=443
+          node scripts/verify-site-video-browser.mjs
         env:
           NODE_EXTRA_CA_CERTS: /tmp/video-test-cert.pem
           NEXT_TELEMETRY_DISABLED: '1'
