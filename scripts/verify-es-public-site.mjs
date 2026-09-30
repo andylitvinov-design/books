@@ -25,10 +25,8 @@ try {
     app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3202', '-H', '127.0.0.1'], { env: { ...process.env, PRESCRIPTIONS_KV_REST_API_URL: '', PRESCRIPTIONS_KV_REST_API_TOKEN: '', PRESCRIPTIONS_ADMIN_TOKEN: '', PRESCRIPTIONS_ADMIN_PIN: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
     app.stdout.pipe(log); app.stderr.pipe(log);
     for (let i=0;;i++) { try { if ((await fetch(`${auditOrigin}/es`)).ok) break; } catch {} assert.ok(i<90 && app.exitCode===null, 'Local Spanish site did not start'); await pause(1000); }
-    // Secure locale cookies must be tested over HTTPS, particularly in WebKit.
-    // Keep the production Secure flag; TLS terminates only on this CI loopback.
     proxy = createServer({key:readFileSync('/tmp/video-test-key.pem'),cert:readFileSync('/tmp/video-test-cert.pem')}, (incoming,outgoing) => {
-      const upstream = httpRequest({hostname:'127.0.0.1',port:3202,path:incoming.url,method:incoming.method,headers:{...incoming.headers,host:'127.0.0.1:3202','x-forwarded-proto':'https'}}, response => {
+      const upstream = httpRequest({hostname:'127.0.0.1',port:3202,path:incoming.url,method:incoming.method,headers:{...incoming.headers,'x-forwarded-proto':'https'}}, response => {
         outgoing.writeHead(response.statusCode || 502,response.headers); response.pipe(outgoing);
       });
       upstream.on('error',()=>{ if(!outgoing.headersSent)outgoing.writeHead(502); outgoing.end(); });
@@ -43,10 +41,19 @@ try {
         const context = await browser.newContext({viewport:{width,height:900},locale:'es-MX',serviceWorkers:'block',ignoreHTTPSErrors:!live});
         const page = await context.newPage(); const errors = [];
         page.on('pageerror', error => errors.push(error.message));
+        // Do not abort in-flight Next link prefetches with the next hard goto.
+        // All page errors still fail; no CORS or JavaScript errors are filtered.
+        const settle = () => page.waitForLoadState('networkidle',{timeout:30000});
+        async function navigate(path) {
+          await settle();
+          const response=await page.goto(origin+path,{waitUntil:'domcontentloaded',timeout:60000});
+          await settle(); return response;
+        }
+        async function click(locator) { await settle(); await locator.click(); await settle(); }
         for (const path of routes) {
           stage=`${engine} ${width} ${path}`;
           let response;
-          for (let i=0;;i++) { response = await page.goto(origin+path, {waitUntil:'domcontentloaded',timeout:60000}); if(response.status()===200 && await page.locator('main[lang="es"]').count())break; assert.ok(live && i<35,path+' missing'); await pause(5000); }
+          for (let i=0;;i++) { response=await navigate(path); if(response.status()===200 && await page.locator('main[lang="es"]').count())break; assert.ok(live && i<35,path+' missing'); await pause(5000); }
           assert.ok(/<html lang="es"/.test(await response.text()),'Spanish server-rendered document language: '+path);
           await expect(page.locator('html')).toHaveAttribute('lang','es');
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
@@ -62,10 +69,10 @@ try {
           if(['/es','/es/services','/es/books','/es/homeopathy'].includes(path))await page.screenshot({path:`${evidence}/${live?'live':'local'}-${path.split('/').filter(Boolean).join('-')}-${engine}-${width}.png`,animations:'disabled'});
         }
         stage=`${engine} ${width} search`;
-        await page.goto(origin+'/es/homeopathy/remedies');
-        await page.getByRole('searchbox').fill('Aconitum');
+        await navigate('/es/homeopathy/remedies');
+        await page.getByRole('searchbox').fill('Aconitum'); await settle();
         await expect(page.getByRole('status')).toHaveText('1 remedio');
-        await page.getByRole('link',{name:/Aconitum.*Leer el texto completo/}).click();
+        await click(page.getByRole('link',{name:/Aconitum.*Leer el texto completo/}));
         await expect(page).toHaveURL(/\/es\/homeopathy\/remedies\/aconitum$/);
         await expect(page.getByRole('heading',{name:'Aconitum',exact:true})).toBeVisible();
         await expect(page.locator('.remedy-content-body')).toContainText('Aconitum');
@@ -73,20 +80,19 @@ try {
         await expect(page.locator('.remedy-source-reference')).not.toHaveAttribute('open','');
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-aconitum-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} remembered language`;
-        await page.locator('.site-language-switch a[lang="en"]').click();
+        await click(page.locator('.site-language-switch a[lang="en"]'));
         await expect(page).toHaveURL(/\/en\/homeopathy\/remedies\/aconitum$/);
-        await page.locator('.site-language-switch a[lang="es"]').click();
+        await click(page.locator('.site-language-switch a[lang="es"]'));
         await expect(page).toHaveURL(/\/es\/homeopathy\/remedies\/aconitum$/);
-        // Wait for the public preference effect, not only the initial SSR URL.
         await expect.poll(async()=> (await context.cookies(origin)).find(cookie=>cookie.name==='holistic_house_public_locale')?.value).toBe('es');
-        await page.goto(origin+'/'); await expect(page).toHaveURL(origin+'/es');
-        await page.locator('.site-language-switch a[lang="en"]').click();
+        await navigate('/'); await expect(page).toHaveURL(origin+'/es');
+        await click(page.locator('.site-language-switch a[lang="en"]'));
         await expect(page).toHaveURL(/\/\?lang=en$/);
         await expect(page.locator('html')).toHaveAttribute('lang','en');
-        await page.getByRole('link',{name:'ES',exact:true}).click(); await expect(page).toHaveURL(origin+'/es');
+        await click(page.getByRole('link',{name:'ES',exact:true})); await expect(page).toHaveURL(origin+'/es');
         if(!live){
-          await page.goto(origin+'/es/client');
-          await page.getByRole('button',{name:/Entrar al área de clientes/}).click();
+          await navigate('/es/client');
+          await click(page.getByRole('button',{name:/Entrar al área de clientes/}));
           await expect(page.locator('.client-entry-form').getByRole('alert')).toContainText('enlace válido');
           assert.ok(page.url().endsWith('/es/client'));
         }
