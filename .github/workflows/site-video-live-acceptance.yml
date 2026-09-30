@@ -1,4 +1,4 @@
-name: Website video production acceptance
+name: Website video playback acceptance
 on:
   push:
     branches: [codex/site-video-live-acceptance]
@@ -11,10 +11,10 @@ concurrency:
   group: website-video-production-acceptance
   cancel-in-progress: false
 jobs:
-  acceptance:
+  playback:
     if: github.repository == 'andylitvinov-design/books'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -22,29 +22,15 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
-      - name: Prepare one-time encrypted credential channel
-        run: node scripts/verify-site-video-production.mjs --prepare-key
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: public-acceptance-key
-          path: /tmp/holistic-video-acceptance/public-channel.json
-          retention-days: 1
       - name: Install isolated browser tools
         run: |
           npm install --prefix /tmp/video-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
           /tmp/video-browser-tools/node_modules/.bin/playwright install --with-deps chromium
-      - name: Verify public streams and unchanged production draft round-trip
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Verify public player controls and decoded media
         run: node scripts/verify-site-video-production.mjs
-      - name: Dispose ephemeral private key
-        if: always()
-        run: rm -f /tmp/holistic-video-acceptance-private.pem
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: production-video-acceptance
-          path: |
-            /tmp/holistic-video-acceptance/results.json
-            /tmp/holistic-video-acceptance/*.png
+          name: production-video-playback
+          path: /tmp/holistic-video-playback/
           retention-days: 7
