@@ -1,13 +1,11 @@
-import type { MetadataRoute } from "next";
-import { getSitemapEntries } from "@/data/seo";
-import { metadataBaseFor } from "@/data/site-metadata";
-
+import type { MetadataRoute } from 'next';
+import { getSitemapEntries } from '@/data/seo';
+import { metadataBaseFor } from '@/data/site-metadata';
+import { getSpanishRemedySlugs } from '@/data/remedies-es';
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = metadataBaseFor();
-  const languages = Object.fromEntries(["en", "ru", "es"].map(locale => [locale, new URL(`/${locale}/about`, base).href]));
-  const entries = getSitemapEntries(base.toString()).map(entry =>
-    /^\/(en|ru)\/about$/.test(new URL(entry.url).pathname)
-      ? { ...entry, alternates: { languages } }
-      : entry);
-  return [...entries, { url: new URL("/es/about", base).href, changeFrequency: "monthly", priority: 0.8, alternates: { languages } }];
+  const base = metadataBaseFor().toString().replace(/\/$/, '');
+  const existing = getSitemapEntries(base);
+  const publicPaths = ['/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...getSpanishRemedySlugs().map(slug => `/es/homeopathy/remedies/${slug}`)];
+  const entries: MetadataRoute.Sitemap = publicPaths.map(path => ({ url: base + path, changeFrequency: 'monthly', priority: path === '/es' ? 0.8 : 0.6 }));
+  return [...new Map([...existing, ...entries].map(entry => [entry.url, entry])).values()];
 }

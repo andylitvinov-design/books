@@ -1,19 +1,15 @@
 'use client'
-
 import { useEffect, useState } from 'react'
-
 import { isNativePsiAlchemy, readNativeSavedRemedies, sharePublicRemedyUrl, writeNativeSavedRemedies } from '@/lib/native/client'
 import { mergeSavedRemedySlugs, readPublicReadingState, writePublicReadingState } from '@/lib/public-reading-state'
-
-export function RemedyClientActions({ locale, slug, knownSlugs }: { locale: 'ru' | 'en'; slug: string; knownSlugs: string[] }) {
+export function RemedyClientActions({ locale, displayLocale, slug, knownSlugs }: { locale: 'ru' | 'en'; displayLocale?: 'es'; slug: string; knownSlugs: string[] }) {
   const [saved, setSaved] = useState(false)
-  const label = locale === 'ru' ? (saved ? 'Сохранено' : 'Сохранить') : (saved ? 'Saved' : 'Save')
+  const label = displayLocale === 'es' ? (saved ? 'Guardado' : 'Guardar') : locale === 'ru' ? (saved ? 'Сохранено' : 'Сохранить') : (saved ? 'Saved' : 'Save')
   useEffect(() => {
     const known = new Set(knownSlugs)
     const browserState = readPublicReadingState(known)
     setSaved(browserState.savedSlugs.includes(slug))
     if (!isNativePsiAlchemy()) return
-
     let cancelled = false
     void readNativeSavedRemedies().then((nativeSlugs) => {
       if (cancelled) return
@@ -35,5 +31,5 @@ export function RemedyClientActions({ locale, slug, knownSlugs }: { locale: 'ru'
     if (navigator.share) await navigator.share({ url: window.location.href })
     else await navigator.clipboard?.writeText(window.location.href)
   }
-  return <div className="remedy-client-actions"><button onClick={() => void toggle()} type="button">{label}</button><button onClick={() => void share()} type="button">{locale === 'ru' ? 'Поделиться' : 'Share'}</button></div>
+  return <div className="remedy-client-actions"><button onClick={() => void toggle()} type="button">{label}</button><button onClick={() => void share()} type="button">{displayLocale === 'es' ? 'Compartir' : locale === 'ru' ? 'Поделиться' : 'Share'}</button></div>
 }
