@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { builtInSiteVideoRecords, existingAboutIntroVideo, existingAboutIntroVideoRu, existingAboutIntroVideoEs } from '../lib/site-videos/defaults.js'
+import { builtInSiteVideoRecords, existingAboutIntroVideo, existingAboutIntroVideoRu, existingAboutIntroVideoEs, existingHomeIntroVideoEn, existingServicesIntroVideoEn, existingHomeopathyIntroVideoEn } from '../lib/site-videos/defaults.js'
 import { SiteVideoError, isSiteVideoRecord, prepareVideoChange, toPublishedSiteVideo } from '../lib/site-videos/model.js'
 import { createSiteVideoStore } from '../lib/site-videos/store.js'
 
@@ -9,6 +9,10 @@ const namespace = 'holistic-house:site-videos:v1'
 const aboutKey = 'about-intro:en'
 const ruAboutKey = 'about-intro:ru'
 const esAboutKey = 'about-intro:es'
+const homeKey = 'home-intro:en'
+const servicesKey = 'services-intro:en'
+const homeopathyKey = 'homeopathy-intro:en'
+const defaultKeys = [aboutKey, esAboutKey, ruAboutKey, homeKey, servicesKey, homeopathyKey].sort()
 const youtubeId = 'OkLEN8Zb-sY'
 const timestamp = '2026-09-30T01:00:00.000Z'
 const environment = {
@@ -65,19 +69,22 @@ function configuredStore(database) {
 
 test('the built-in publications include independent English, Russian and Spanish About intros', async () => {
   const defaults = builtInSiteVideoRecords()
-  assert.equal(defaults.length, 3)
-  assert.deepEqual(defaults.map(record => record.key).sort(), [aboutKey, esAboutKey, ruAboutKey])
+  assert.equal(defaults.length, 6)
+  assert.deepEqual(defaults.map(record => record.key).sort(), defaultKeys)
   assert.ok(defaults.every(record => record.revision === 0 && isSiteVideoRecord(record)))
   assert.deepEqual(toPublishedSiteVideo(defaults[0]), existingAboutIntroVideo)
   assert.deepEqual(toPublishedSiteVideo(defaults[1]), existingAboutIntroVideoRu)
   assert.deepEqual(toPublishedSiteVideo(defaults[2]), existingAboutIntroVideoEs)
   assert.equal(existingAboutIntroVideo.heygenId, 'fd5fcead9b067f9a0649862675a38771')
   assert.equal(existingAboutIntroVideoRu.heygenId, 'd4e55c984e54b40fbeb8a21f81d27694')
+  assert.equal(existingHomeIntroVideoEn.heygenId, 'ed202847a43a96b918308aa972177b34')
+  assert.equal(existingServicesIntroVideoEn.heygenId, '48105a2f2228e7cb3a67391e97acaf8b')
+  assert.equal(existingHomeopathyIntroVideoEn.heygenId, '34df311e461509433b45929908a9097a')
   const database = restFixture()
   const store = configuredStore(database)
   assert.deepEqual(toPublishedSiteVideo(await store.get(ruAboutKey)), existingAboutIntroVideoRu)
-  assert.equal(await store.get('home-intro:en'), null)
-  assert.deepEqual((await store.list()).map(record => record.key), [aboutKey, esAboutKey, ruAboutKey])
+  assert.deepEqual(toPublishedSiteVideo(await store.get(homeKey)), existingHomeIntroVideoEn)
+  assert.deepEqual((await store.list()).map(record => record.key).sort(), defaultKeys)
   assert.equal(database.hash.size, 0)
   assert.equal(database.commands.filter(command => command[0] === 'EVAL').length, 0)
 })
@@ -106,7 +113,7 @@ test('the first approved change persists revision one and takes precedence after
   await firstProcess.save(next, previous.revision)
   const secondProcess = configuredStore(database)
   assert.deepEqual(await secondProcess.get(aboutKey), next)
-  assert.deepEqual((await secondProcess.list()).map(record => record.key), [aboutKey, esAboutKey, ruAboutKey])
+  assert.deepEqual((await secondProcess.list()).map(record => record.key).sort(), defaultKeys)
   const video = toPublishedSiteVideo(await secondProcess.get(aboutKey))
   assert.equal(video.youtubeId, youtubeId)
   assert.equal(video.heygenId, undefined)
@@ -136,9 +143,9 @@ test('a persisted hide overrides the built-in on both list and get after reload'
     await store.save(hidden, 0)
     const reloaded = configuredStore(database)
     assert.deepEqual(await reloaded.get(aboutKey), hidden)
-    assert.deepEqual((await reloaded.list()).map(record => record.key), [aboutKey, esAboutKey, ruAboutKey])
+    assert.deepEqual((await reloaded.list()).map(record => record.key).sort(), defaultKeys)
     assert.equal(toPublishedSiteVideo(await reloaded.get(aboutKey)), undefined)
-    assert.deepEqual((await reloaded.list()).map(toPublishedSiteVideo).filter(Boolean), [existingAboutIntroVideoEs, existingAboutIntroVideoRu])
+    assert.deepEqual((await reloaded.list()).map(toPublishedSiteVideo).filter(Boolean), [existingAboutIntroVideoEs, existingAboutIntroVideoRu, existingHomeIntroVideoEn, existingHomeopathyIntroVideoEn, existingServicesIntroVideoEn])
     assert.deepEqual(hidden.draft, previous.draft)
   }
 })
@@ -158,10 +165,10 @@ test('malformed, private and invalid-revision overrides suppress the built-in in
     for (const raw of corruptValues) {
       const database = restFixture({ objectResult })
       database.hash.set(aboutKey, raw)
-      const unrelated = prepareVideoChange(null, { ...change, slot: 'home-intro' }, timestamp)
+      const unrelated = prepareVideoChange(null, { ...change, slot: 'consultation' }, timestamp)
       database.hash.set(unrelated.key, JSON.stringify(unrelated))
       const store = configuredStore(database)
-      assert.deepEqual((await store.list()).map(record => record.key), [esAboutKey, ruAboutKey, unrelated.key].sort())
+      assert.deepEqual((await store.list()).map(record => record.key).sort(), [...defaultKeys.filter(key => key !== aboutKey), unrelated.key].sort())
       await assert.rejects(store.get(aboutKey), errorCode('storage'))
       assert.equal(database.hash.get(aboutKey), raw)
       assert.equal(database.commands.filter(command => command[0] === 'EVAL').length, 0)

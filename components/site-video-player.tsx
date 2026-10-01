@@ -46,6 +46,9 @@ const approvedAndyPosters: Readonly<Record<string, string>> = {
   fd5fcead9b067f9a0649862675a38771: "/images/holistic-house/andy-about.png",
   "2c251709aba74fd96ae8be43257a080b": "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
   d4e55c984e54b40fbeb8a21f81d27694: "/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp",
+  ed202847a43a96b918308aa972177b34: "/images/holistic-house/andy-about.png",
+  "48105a2f2228e7cb3a67391e97acaf8b": "/images/holistic-house/andy-about.png",
+  "34df311e461509433b45929908a9097a": "/images/holistic-house/andy-about.png",
 };
 
 function videoDuration(seconds?: number) {
