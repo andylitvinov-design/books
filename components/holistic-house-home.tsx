@@ -156,7 +156,11 @@ export function HolisticHouseHome({ locale: initialLocale = "en", introVideos = 
         </div>
       </section>
 
-      {introVideo ? <SiteVideoPlayer key={locale} video={introVideo} locale={locale} className="site-video--home" /> : null}
+      {introVideo ? (
+        <section className="site-video-block" data-video-slot="home-intro" data-video-locale={locale} aria-label={introVideo.title}>
+          <SiteVideoPlayer key={locale} video={introVideo} locale={locale} className="site-video--home" />
+        </section>
+      ) : null}
 
       <section className="service-home-services" aria-labelledby="service-home-services-title">
         <div className="service-home-section-heading">
