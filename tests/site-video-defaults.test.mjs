@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { builtInSiteVideoRecords, existingAboutIntroVideo, existingAboutIntroVideoRu, existingAboutIntroVideoEs, existingHomeIntroVideoEn, existingServicesIntroVideoEn, existingHomeopathyIntroVideoEn } from '../lib/site-videos/defaults.js'
+import { builtInSiteVideoRecords, existingAboutIntroVideo, existingAboutIntroVideoRu, existingAboutIntroVideoEs, existingHomeIntroVideoEn, existingServicesIntroVideoEn, existingHomeopathyIntroVideoEn, existingHomeIntroVideoRu, existingServicesIntroVideoRu, existingHomeopathyIntroVideoRu } from '../lib/site-videos/defaults.js'
 import { SiteVideoError, isSiteVideoRecord, prepareVideoChange, toPublishedSiteVideo } from '../lib/site-videos/model.js'
 import { createSiteVideoStore } from '../lib/site-videos/store.js'
 
@@ -12,7 +12,10 @@ const esAboutKey = 'about-intro:es'
 const homeKey = 'home-intro:en'
 const servicesKey = 'services-intro:en'
 const homeopathyKey = 'homeopathy-intro:en'
-const defaultKeys = [aboutKey, esAboutKey, ruAboutKey, homeKey, servicesKey, homeopathyKey].sort()
+const homeRuKey = 'home-intro:ru'
+const servicesRuKey = 'services-intro:ru'
+const homeopathyRuKey = 'homeopathy-intro:ru'
+const defaultKeys = [aboutKey, esAboutKey, ruAboutKey, homeKey, servicesKey, homeopathyKey, homeRuKey, servicesRuKey, homeopathyRuKey].sort()
 const youtubeId = 'OkLEN8Zb-sY'
 const timestamp = '2026-09-30T01:00:00.000Z'
 const environment = {
@@ -69,7 +72,7 @@ function configuredStore(database) {
 
 test('the built-in publications include independent English, Russian and Spanish About intros', async () => {
   const defaults = builtInSiteVideoRecords()
-  assert.equal(defaults.length, 6)
+  assert.equal(defaults.length, 9)
   assert.deepEqual(defaults.map(record => record.key).sort(), defaultKeys)
   assert.ok(defaults.every(record => record.revision === 0 && isSiteVideoRecord(record)))
   assert.deepEqual(toPublishedSiteVideo(defaults[0]), existingAboutIntroVideo)
@@ -80,6 +83,9 @@ test('the built-in publications include independent English, Russian and Spanish
   assert.equal(existingHomeIntroVideoEn.heygenId, 'ed202847a43a96b918308aa972177b34')
   assert.equal(existingServicesIntroVideoEn.heygenId, '48105a2f2228e7cb3a67391e97acaf8b')
   assert.equal(existingHomeopathyIntroVideoEn.heygenId, '34df311e461509433b45929908a9097a')
+  assert.equal(existingHomeIntroVideoRu.heygenId, '388a04b39ebf215ae656bcd22d0d0847')
+  assert.equal(existingServicesIntroVideoRu.heygenId, '79c2845577865979cd95ac40a08fc01a')
+  assert.equal(existingHomeopathyIntroVideoRu.heygenId, '0f984780d06948b1e78166e6e553e4e9')
   const database = restFixture()
   const store = configuredStore(database)
   assert.deepEqual(toPublishedSiteVideo(await store.get(ruAboutKey)), existingAboutIntroVideoRu)
@@ -145,7 +151,7 @@ test('a persisted hide overrides the built-in on both list and get after reload'
     assert.deepEqual(await reloaded.get(aboutKey), hidden)
     assert.deepEqual((await reloaded.list()).map(record => record.key).sort(), defaultKeys)
     assert.equal(toPublishedSiteVideo(await reloaded.get(aboutKey)), undefined)
-    assert.deepEqual((await reloaded.list()).map(toPublishedSiteVideo).filter(Boolean), [existingAboutIntroVideoEs, existingAboutIntroVideoRu, existingHomeIntroVideoEn, existingHomeopathyIntroVideoEn, existingServicesIntroVideoEn])
+    assert.deepEqual((await reloaded.list()).map(toPublishedSiteVideo).filter(Boolean), [existingAboutIntroVideoEs, existingAboutIntroVideoRu, existingHomeIntroVideoEn, existingHomeIntroVideoRu, existingHomeopathyIntroVideoEn, existingHomeopathyIntroVideoRu, existingServicesIntroVideoEn, existingServicesIntroVideoRu])
     assert.deepEqual(hidden.draft, previous.draft)
   }
 })
