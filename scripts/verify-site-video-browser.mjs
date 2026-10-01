@@ -97,7 +97,7 @@ try {
     const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`)
     await expect(block).toHaveCount(1)
     assert.equal(await block.locator('iframe').count(), 0)
-    await block.getByRole('button', { name: /^(Watch video|Open video):/ }).click()
+    await block.getByRole('button', { name: /^(Watch video|Open video|Смотреть видео):/ }).click()
     await expect(block.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${id}`)
   }
   pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos load exact HeyGen embeds on click`)
