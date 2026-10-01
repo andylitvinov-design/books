@@ -1,0 +1,95 @@
+name: Assemble Spanish About release
+on:
+  push:
+    branches: ['chatgpt/es-about-video-2026-10-01']
+    paths: ['.github/workflows/es-about-release-assemble.yml']
+permissions:
+  contents: write
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify patch before applying any source changes
+        run: |
+          mkdir -p /tmp/es-release
+          python - <<'PY'
+          import base64,zlib,hashlib,subprocess,json
+          from pathlib import Path
+          raw=base64.b64decode(Path('.github/es-about-release.patch.zlib.b64').read_text().strip(),validate=True)
+          patch=zlib.decompress(raw)
+          digest=hashlib.sha256(patch).hexdigest()
+          Path('/tmp/es-release/patch-check.json').write_text(json.dumps({'sha256':digest,'bytes':len(patch)}))
+          assert digest=='775b564a1e5a6c5c00a58d91f8a980bc2aa8db37f654bb4ec5945999f161bb7a','Patch does not match the locally tested source; stop without publishing'
+          Path('/tmp/es-release/patch.diff').write_bytes(patch)
+          subprocess.run(['git','apply','--unidiff-zero','--check','/tmp/es-release/patch.diff'],check=True)
+          subprocess.run(['git','apply','--unidiff-zero','/tmp/es-release/patch.diff'],check=True)
+          PY
+      - name: Verify every resulting file and prepare the approved poster
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,hashlib,base64,os,urllib.request
+          from pathlib import Path
+          expected={
+            '.github/workflows/site-video-browser.yml':'36c28ba3f61b93633582e0b1ecd3d21ee6623427c0c1db0e1c4b231ee5f5087e',
+            'app/es/about/page.tsx':'18bad6fd0b4faf81d56826101c789f785f6895925e3e8cb401d204a51b2c3624',
+            'components/site-video-manager.tsx':'05b811c7b39e8dab078f5754d9c063880d8982130fa44f7d21514c18bcf0a32c',
+            'components/site-video-player.tsx':'a1ef3f452adddb741fd18a27b3df1a5377f5981d959a28b9993c9f6220480015',
+            'lib/site-videos/defaults.d.ts':'e0172dd27eb9fb532d09320c6f7b1e2a9520d8a37921bf3795876bca97020c3e',
+            'lib/site-videos/defaults.js':'11e6060090d6df0abdaf3ba2eda3a83f4af3760d4c1e178106c1b968491c4843',
+            'lib/site-videos/model.d.ts':'3418dda96b271f7b2ca17c93d512fb2681531b3996a7d9981821007f44c2d728',
+            'lib/site-videos/model.js':'ccd91adf253a5c06c1815305ab625baa9c3d2c38d84dd6227cf05fbbafcf7f20',
+            'scripts/verify-es-about-playback.mjs':'2478d8deddaf00d6db10e3af52168b61351f01044742234b90cfbf9ee839bb17',
+            'scripts/verify-es-about.mjs':'ebc376b97f35a6cc480fbdd201d2424c860a5d3467276b5a5c538fa5167fb52b',
+            'scripts/verify-site-video-browser.mjs':'af111c7e8259444a8b7b23eec939d42fdfb171f66c256d7f73fc9aa909f1f98b',
+            'tests/es-about.test.mjs':'47456ad3ef042399abb03dde3ad25e5e1b91e295ed96488a234b507d57721e9e',
+            'tests/psychic-alchemy-intro-video.test.mjs':'9a10e38312483657da36d753dc1c6b34f449a431596d365d4d0f7beb03784e47',
+            'tests/site-video-defaults.test.mjs':'1ace1c06ea026abc7b98a5954fe77ba39f63e0d23088e1c9cb1fdf560bc37ad6',
+            'tests/site-videos.test.mjs':'61076efa06b36020d72837bd5614a2110b8d4250cdddbfc7897fa41bd99bc063'
+          }
+          for name,digest in expected.items():
+            assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==digest,name
+          req=urllib.request.Request('https://api.github.com/repos/andylitvinov-design/books/git/blobs/4d40a1896a9522392c1d09c3310425033d5e44b4',headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=30) as r: blob=json.load(r)
+          poster=base64.b64decode(blob['content'])
+          assert hashlib.sha256(poster).hexdigest()=='53646820605fbd228ec1511b11f9701cbba6127b8b79fb7863a101ee7ad5347c'
+          Path('public/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp').write_bytes(poster)
+          Path('/tmp/es-release/verified-files.json').write_text(json.dumps(expected,indent=2))
+          print('All 15 text files and the exact public poster match local review.')
+          PY
+      - name: Run public-video regression tests
+        run: node --test tests/site-videos.test.mjs tests/site-video-defaults.test.mjs tests/psychic-alchemy-intro-video.test.mjs tests/ru-about-video-presentation.test.mjs
+      - name: Create clean Git tree only, without changing any branch or production
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          expected=json.loads(Path('/tmp/es-release/verified-files.json').read_text())
+          def post(path,data):
+            req=urllib.request.Request('https://api.github.com/repos/andylitvinov-design/books/git/'+path,data=json.dumps(data).encode(),headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'},method='POST')
+            with urllib.request.urlopen(req,timeout=30) as r:return json.load(r)
+          entries=[]
+          for name in expected:
+            blob=post('blobs',{'encoding':'utf-8','content':Path(name).read_text()})
+            entries.append({'path':name,'mode':'100644','type':'blob','sha':blob['sha']})
+          entries.append({'path':'public/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp','mode':'100644','type':'blob','sha':'4d40a1896a9522392c1d09c3310425033d5e44b4'})
+          tree=post('trees',{'base_tree':'e11015e344960fc192975406f32f1b2eb3662da7','tree':entries})
+          Path('/tmp/es-release/clean-tree.json').write_text(json.dumps({'sha':tree['sha'],'baseCommit':'df8939ac08a1b5ba63a383ebd1d3b74541bed151','entries':entries},indent=2))
+          print('Clean release tree: '+tree['sha'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: es-about-release-assembly
+          path: /tmp/es-release/
+          retention-days: 3
