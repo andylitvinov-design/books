@@ -1,4 +1,4 @@
-name: Temporary EN video media bridge
+name: Temporary RU video media bridge
 on:
   push:
     branches:
@@ -9,18 +9,20 @@ jobs:
     steps:
       - name: Install ffmpeg
         run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
-      - name: Download approved English masters
+      - name: Download approved Russian masters
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p out
-          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/ed202847a43a96b918308aa972177b34.mp4?Expires=1791475554&Signature=HfXH8yEp3QgQlnOwNll5hNJKGFJcO-wGvEMO-RW1-sZIukZG7VrOHDgZLlDLJkbjRZEhC~uFqEK5X1lQnNPD3ghOT~f03ETK~Eyrsla3YLr7cXAnPERiwcxQu2TQQTUv4M0gB1GJ0gAwyKttLN-P2670-130qPPMaFb86wUFjI3JekE6xH2V58OT0hgcuG~BcOQzR5PbgEjuQROZHcNC1O-pR9juq5KpLKzcOxzZMnVVZjAdFa7jOtapy8AT7a-tg30kWWRU8WBiyVprhdSZxzhzA3~GJ15dWECXyJjddoC73vOWrQCvSTl5vk~klozvQxcO-4J-trs-7rzOFtKQUg__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_holistic-house_home_en_avatarV_16x9_v02.mp4
-          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/48105a2f2228e7cb3a67391e97acaf8b.mp4?Expires=1791475577&Signature=Q8~9VGBgGRjHOG4oNTk3~FKmlwsEdzjqReiZEqoUwN8hli4Er1c1sR6vh60mjfF0R-cnCIRxJB4~3YpAQF-ex1yrTG9oiAHZFX0QYPgsRTFA9rLjHUTZhW7vEhMnaKry~wqOqxBs6Tku6JjA5VFfuzTyNFtSz3aI5mUHL--X~rQBrGF4OgqaB9~vUhbwxGqpqJiqEXWBrtHIdwQnZ7u9QQze1lIByyyG0JIeLftLe7EMs0ZnRo2G5Nd1tKmiRKJysktdBSU43IkY~P-CpJrIllXYPSAq1cWVR4Q2xvnydk4IK0LZJtGPFb5ORkOWWPUYO5j3CJNfT7wLjC9gYuzWfA__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_holistic-house_services_en_avatarV_16x9_v02.mp4
-          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/34df311e461509433b45929908a9097a.mp4?Expires=1791475593&Signature=i7R0EKbSo8h6CxMY8Oq0sd-eJhr9Q57uZPLpUclFkLTqwnTr8B3ggOpaoBCjkxogtwSlaXN~0tx4vcuoqDSSx42cvlOVpdgWW5p5zDakmaEVseZLqvhG4Bd3wVFPnMzlWcSiNqvb51hnMhXdzyTT~ecW6wH4rC4d3reWF2-~hEVRNRm-KHWqqzDlqCxrpLp-2opYksEaHYGT~IqlH1-CGTWq2RX0LfcQKmgGuluKku26OCVe4D61nDTc8vAVNmh2GKtOILiCupfR3MZ3HsgwiQc1Pm8dCv2OeIf5OAmz4wQg9oD9rcBdT5Yy4H2gnolwSl6w2DZ5RMlxkSBLXYPEaQ__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_holistic-house_homeopathy_en_avatarV_16x9_v02.mp4
+          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/388a04b39ebf215ae656bcd22d0d0847.mp4?Expires=1791477260&Signature=dCjOIVctsCib9QvLtUaC-J4ETHx4pG4uC1xG1aWGDDAMRfWN~n5o8mIoif5UOG6wF8pJz9~1kSWbuBV1OaEAHb27nAQiak~fjO1OEHX6ROpd6-yDJVJuOwcmPwu9ZDYqJhYAQPTT575Udi4Ha6TZ-uDPigv4Wn30fKMwW0aAqV2nLOcfRdp8w-8impgk0dHCl~-5AcPTSmmjvCgDSIJiP4GGshG7l7FYkFs7XBi45oqVl95Rq29-t~G7-G9LA6qBX1TE16L6JF~PiPnnvcDIFYZbbQEj8Q5gNJhbZ1k3MIwvE~fBUxljFd1kg7-~7u06RRLO00uOaLr5o2TsA~6f2w__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_holistic-house_home_ru_avatarV_16x9_v01.mp4
+          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/79c2845577865979cd95ac40a08fc01a.mp4?Expires=1791477291&Signature=AGjQvG2Bfuq8caJF~pxJObdLR00yXQM0u5oToXAi7R6W-GFMexa0urWxYC1UEGwHVUaL0U~Rsi6vmzHxbj0mbcR9cmc~FokkG8ReziqzD6WaAMeMD8Us689LmOk~d8iiOjJIC8qfow29IHSS5PhiCufD5X8ofQrCwGuNSoDavnNv-ksbNnCuG7aPpYbGAhBaLBSWYOkwEKDVJD-iwJw6gx08yXN7tltancNOLH-X2fzYscUZ3luPNpzUw2h0VySPrhPOfxAczZbXFi2jmm0p4qKiX0b0~QshktoG9nWRl9sHZb4ipx9VoFjEjN~~OMU0R~ncAEomejcrH3rabOU1FA__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_holistic-house_services_ru_avatarV_16x9_v01.mp4
+          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/0f984780d06948b1e78166e6e553e4e9.mp4?Expires=1791477289&Signature=npoYShZreV8L-XvKe8CjUXDATxq-WYHCRkdPq74n1SvW6ZHoSppbLiBe1dN73p3JvuNPaE4aNPtJu0nUfZdXPNixSCZiEscb8eZSK4JVeVjcymTt2h-U8JyG7X6cYRQjQy4KjC57JkfCkiJgRdsO2aYCuYnKrzj2DL~pRrFQa5oqUjCfOukaEVbSF8Nn~O6q3bg-0IXG1TbN-NfU66ti6MjXamz~H9Vvk4ycUs-xqq8qzI6MlFMfVB71kNwRb33VQXtdQN7IfK-C0uwZ-MsKyIkKJaHnxSlPlvSc8OTE8F~zinc6wjJY8BFcX8d5su2a840absfPR1gnop9vJH~ThQ__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_holistic-house_homeopathy_ru_avatarV_16x9_v01.mp4
       - name: Verify media and extract posters
         shell: bash
         run: |
           set -euo pipefail
+          : > out/ffprobe.jsonl
+          : > out/sha256.txt
           for f in out/*.mp4; do
             ffprobe -v error -show_entries stream=codec_name,width,height -show_entries format=duration,size -of json "$f" >> out/ffprobe.jsonl
             sha256sum "$f" >> out/sha256.txt
@@ -31,7 +33,7 @@ jobs:
       - name: Upload media artifact
         uses: actions/upload-artifact@v4
         with:
-          name: approved-en-page-videos
+          name: approved-ru-page-videos
           path: out/
           if-no-files-found: error
           retention-days: 1
