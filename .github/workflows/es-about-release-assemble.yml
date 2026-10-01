@@ -20,10 +20,10 @@ jobs:
         run: |
           mkdir -p /tmp/es-release
           python - <<'PY'
-          import base64,zlib,hashlib,subprocess,json
+          import hashlib,subprocess,json,urllib.request
           from pathlib import Path
-          raw=base64.b64decode(Path('.github/es-about-release.patch.zlib.b64').read_text().strip(),validate=True)
-          patch=zlib.decompress(raw)
+          url='https://sdmntpreastus2.oaiusercontent.com/files/00000000-2440-81f6-bc12-9b97120c654e/raw?se=2026-10-01T13%3A08%3A52Z&sp=r&sv=2026-02-06&sr=b&scid=529419e8-f3a9-5fd8-a626-260350a228a4&skoid=c36a4874-d531-4a8d-99fc-7da0d9143d9c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-01T12%3A05%3A31Z&ske=2026-10-02T12%3A05%3A31Z&sks=b&skv=2026-02-06&sig=caALxIPLkrWsqfjd3oB9VOboR4cvqW3JO5LR/1XyjE0%3D'
+          with urllib.request.urlopen(url,timeout=30) as r:patch=r.read()
           digest=hashlib.sha256(patch).hexdigest()
           Path('/tmp/es-release/patch-check.json').write_text(json.dumps({'sha256':digest,'bytes':len(patch)}))
           assert digest=='775b564a1e5a6c5c00a58d91f8a980bc2aa8db37f654bb4ec5945999f161bb7a','Patch does not match the locally tested source; stop without publishing'
