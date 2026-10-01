@@ -155,6 +155,25 @@ export default async function ServicesPage({ params }: PageProps) {
         ))}
       </section>
 
+      {locale === "en" ? (
+        <section className="services-method-videos" id="methods" aria-labelledby="services-method-videos-title">
+          <div className="services-method-videos-heading">
+            <p className="homeopathy-kicker">Methods in more detail</p>
+            <h2 id="services-method-videos-title">Two short explanations</h2>
+          </div>
+          <div className="services-method-videos-grid">
+            <article className="services-method-video">
+              <h3>Hypnotherapy</h3>
+              <PageVideo slot="method-hypnotherapy" locale="en" />
+            </article>
+            <article className="services-method-video">
+              <h3>Systemic Constellations</h3>
+              <PageVideo slot="method-constellations" locale="en" />
+            </article>
+          </div>
+        </section>
+      ) : null}
+
       <section className="services-studio-approach">
         <div>
           <p className="homeopathy-kicker">{current.approachKicker}</p>
