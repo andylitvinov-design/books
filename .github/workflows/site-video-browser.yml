@@ -132,7 +132,7 @@ jobs:
         run: node scripts/verify-es-public-site.mjs
         env:
           NEXT_TELEMETRY_DISABLED: '1'
-      - name: Check six page previews and hydration-safe first clicks
+      - name: Check eight page previews and hydration-safe first clicks
         run: |
           node --test tests/page-video-release.test.mjs
           node scripts/verify-page-video-release.mjs
@@ -151,7 +151,7 @@ jobs:
       - name: Verify the new Spanish video streams through the public embed
         if: github.event_name == 'push'
         run: node scripts/verify-es-about-playback.mjs
-      - name: Verify all six released EN/RU videos with full natural playback
+      - name: Verify all eight released page videos with full natural playback
         if: github.event_name == 'push'
         run: node scripts/verify-page-video-release.mjs --live
       - uses: actions/upload-artifact@v4
