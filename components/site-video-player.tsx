@@ -46,13 +46,23 @@ const approvedAndyPosters: Readonly<Record<string, string>> = {
   fd5fcead9b067f9a0649862675a38771: "/images/holistic-house/andy-about.png",
   "2c251709aba74fd96ae8be43257a080b": "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
   d4e55c984e54b40fbeb8a21f81d27694: "/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp",
-  ed202847a43a96b918308aa972177b34: "/images/holistic-house/andy-about.png",
-  "48105a2f2228e7cb3a67391e97acaf8b": "/images/holistic-house/andy-about.png",
-  "34df311e461509433b45929908a9097a": "/images/holistic-house/andy-about.png",
-  "388a04b39ebf215ae656bcd22d0d0847": "/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp",
-  "79c2845577865979cd95ac40a08fc01a": "/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp",
-  "0f984780d06948b1e78166e6e553e4e9": "/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp",
+  ed202847a43a96b918308aa972177b34: "/images/holistic-house/video-posters/home-en-v2.webp",
+  "48105a2f2228e7cb3a67391e97acaf8b": "/images/holistic-house/video-posters/services-en-v2.webp",
+  "34df311e461509433b45929908a9097a": "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
+  "388a04b39ebf215ae656bcd22d0d0847": "/images/holistic-house/video-posters/home-ru-v1.webp",
+  "79c2845577865979cd95ac40a08fc01a": "/images/holistic-house/video-posters/services-ru-v1.webp",
+  "0f984780d06948b1e78166e6e553e4e9": "/images/holistic-house/video-posters/homeopathy-ru-v1.webp",
 };
+
+// Exact published page renders only; About and future editor replacements are unchanged.
+const minimalPageVideoIds = new Set([
+  "ed202847a43a96b918308aa972177b34",
+  "48105a2f2228e7cb3a67391e97acaf8b",
+  "34df311e461509433b45929908a9097a",
+  "388a04b39ebf215ae656bcd22d0d0847",
+  "79c2845577865979cd95ac40a08fc01a",
+  "0f984780d06948b1e78166e6e553e4e9",
+]);
 
 function videoDuration(seconds?: number) {
   if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) return null;
@@ -72,7 +82,7 @@ export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, 
     <PlayableSiteVideo
       key={`${source.heygenId ? "heygen:" + source.heygenId : "youtube:" + source.youtubeId}:${locale}:${video.language}`}
       video={{ ...video, ...source }} locale={locale} textLanguage={textLanguage} compact={compact}
-      minimal={minimal} posterPriority={posterPriority} className={className}
+      minimal={minimal || minimalPageVideoIds.has(source.heygenId ?? "")} posterPriority={posterPriority} className={className}
     />
   );
 }
@@ -80,6 +90,9 @@ export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, 
 function PlayableSiteVideo({ video, locale, textLanguage = video.language, compact = false, minimal = false, posterPriority = false, className }: SiteVideoPlayerProps) {
   const text = copy[locale];
   const [playing, setPlaying] = useState(false);
+  // SSR may appear before React attaches handlers on a slow connection.
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => { setInteractive(true); }, []);
   const [poster, setPoster] = useState<"maxres" | "hq" | null>("maxres");
   const playerRef = useRef<HTMLIFrameElement>(null);
   const titleId = useId();
@@ -107,7 +120,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
         {playing ? (
           <iframe ref={playerRef} className="site-video-iframe" src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
-          <button className="site-video-play" type="button" aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
+          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
             {approvedPoster && poster ? (
               <Image className="site-video-poster" src={approvedPoster} alt="" fill priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
             ) : isHeygen ? (
