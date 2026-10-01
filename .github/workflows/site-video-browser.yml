@@ -26,6 +26,8 @@ on:
       - 'app/page.tsx'
       - 'middleware.ts'
       - 'scripts/verify-site-video-browser.mjs'
+      - 'scripts/verify-page-video-release.mjs'
+      - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
       - 'scripts/verify-es-*.mjs'
       - 'tests/es-*.test.mjs'
@@ -55,6 +57,8 @@ on:
       - 'middleware.ts'
       - 'app/admin/videos/**'
       - 'scripts/verify-site-video-browser.mjs'
+      - 'scripts/verify-page-video-release.mjs'
+      - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
       - 'scripts/verify-es-*.mjs'
       - 'tests/es-*.test.mjs'
@@ -93,9 +97,7 @@ jobs:
       - name: Install isolated browser test dependencies without changing the app lockfile
         timeout-minutes: 12
         run: |
-          # The runner's Azure mirror was downloading 125 MB of packages too
-          # slowly. Use the official Ubuntu archive; keep APT signature checks.
-          # This affects only this ephemeral CI runner, never the application.
+          # Use the official Ubuntu archive only in this ephemeral runner.
           if [ -f /etc/apt/apt-mirrors.txt ]; then
             printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
           fi
@@ -130,6 +132,10 @@ jobs:
         run: node scripts/verify-es-public-site.mjs
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Check six page previews and hydration-safe first clicks
+        run: |
+          node --test tests/page-video-release.test.mjs
+          node scripts/verify-page-video-release.mjs
       - name: Check production read-only after release
         if: github.event_name == 'push'
         run: node scripts/verify-site-video-browser.mjs --live
@@ -145,6 +151,9 @@ jobs:
       - name: Verify the new Spanish video streams through the public embed
         if: github.event_name == 'push'
         run: node scripts/verify-es-about-playback.mjs
+      - name: Verify all six released EN/RU videos with full natural playback
+        if: github.event_name == 'push'
+        run: node scripts/verify-page-video-release.mjs --live
       - uses: actions/upload-artifact@v4
         if: always()
         with:
