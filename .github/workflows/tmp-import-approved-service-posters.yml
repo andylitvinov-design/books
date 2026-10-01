@@ -1,0 +1,42 @@
+name: Temporary import approved service posters
+on:
+  push:
+    branches:
+      - chatgpt/finish-six-page-videos-2026-10-01
+permissions:
+  contents: write
+  actions: read
+jobs:
+  import:
+    if: ${{ !contains(github.event.head_commit.message, '[poster-imported]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/finish-six-page-videos-2026-10-01
+      - name: Download reviewed media artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/${GITHUB_REPOSITORY}/actions/artifacts/11198922922/zip > /tmp/media.zip
+          mkdir -p /tmp/media
+          unzip -q /tmp/media.zip -d /tmp/media
+      - name: Copy and verify exact posters
+        run: |
+          set -euo pipefail
+          mkdir -p public/images/holistic-house/video-posters
+          hyp="$(find /tmp/media -type f -name '2026-10-01_psitrends_hypnotherapy_en_avatarV_16x9_v01_poster.webp' -print -quit)"
+          con="$(find /tmp/media -type f -name '2026-10-01_psitrends_constellations_en_avatarV_16x9_v01_poster.webp' -print -quit)"
+          test -n "$hyp" && test -n "$con"
+          cp "$hyp" public/images/holistic-house/video-posters/hypnotherapy-en-v1.webp
+          cp "$con" public/images/holistic-house/video-posters/constellations-en-v1.webp
+          printf '%s  %s\n'             fa1ec9b1769fd460664c2172670c11e4f5628f91d16a450c64be144fae973395 public/images/holistic-house/video-posters/hypnotherapy-en-v1.webp             dcc44198296eff227e16d5645d4b5c01d8217915d204515fd2f25afa9417fc21 public/images/holistic-house/video-posters/constellations-en-v1.webp | sha256sum -c -
+      - name: Commit posters
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/images/holistic-house/video-posters/hypnotherapy-en-v1.webp public/images/holistic-house/video-posters/constellations-en-v1.webp
+          git commit -m 'Add real posters for approved service videos [poster-imported]'
+          git push origin HEAD:chatgpt/finish-six-page-videos-2026-10-01
