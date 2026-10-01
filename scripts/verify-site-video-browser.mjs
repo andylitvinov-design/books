@@ -158,7 +158,7 @@ try {
       await target.goto(`${origin}/admin/videos`)
       await target.locator('.prescription-admin-header button[lang="en"]').click()
       await expect(target.locator('.site-video-manager')).toHaveAttribute('lang', 'en')
-      await expect(target.locator('.site-video-placement-list button')).toHaveCount(13)
+      await expect(target.locator('.site-video-placement-list button')).toHaveCount(15)
       assert.equal(await target.getByText('Video storage is currently unavailable.', { exact: false }).count(), 0)
     }
     async function choose(slot, locale = 'en', target = editor) {
@@ -195,7 +195,8 @@ try {
     await expect(editor.locator('.site-video-admin-button--primary')).toBeDisabled()
     pass('Drive playback URL rejected')
     for (const locale of ['en', 'ru']) {
-      for (const slot of SITE_VIDEO_SLOTS) {
+      const publicSlots = SITE_VIDEO_SLOTS.filter(slot => locale === 'en' || !slot.id.startsWith('method-'))
+      for (const slot of publicSlots) {
         console.log(`CHECK: publish ${slot.id}:${locale}`)
         await choose(slot, locale)
         const title = `QA ${slot.id} ${locale}`
@@ -206,7 +207,7 @@ try {
         await navigate(destination)
         await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
       }
-      pass(`All 13 ${locale.toUpperCase()} placements publish via real server actions and isolated Redis`)
+      pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions and isolated Redis`)
     }
     await choose(SITE_VIDEO_SLOTS[0])
     await editor.screenshot({ path: `${evidence}/editor-desktop.png`, fullPage: true })

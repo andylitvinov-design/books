@@ -161,7 +161,7 @@ test('mixed or malformed provider IDs fail closed and HeyGen public output keeps
 })
 
 test('slots, locales and entities have isolated, validated keys and real public page paths', () => {
-  assert.equal(SITE_VIDEO_SLOTS.length, 13)
+  assert.equal(SITE_VIDEO_SLOTS.length, 15)
   assert.ok(Object.isFrozen(SITE_VIDEO_SLOTS))
   for (const slot of SITE_VIDEO_SLOTS) {
     for (const locale of ['en', 'ru']) {
@@ -174,6 +174,8 @@ test('slots, locales and entities have isolated, validated keys and real public 
   assert.notEqual(videoKey('remedy-detail', 'en', 'arsenicum-album'), videoKey('remedy-detail', 'en', 'natrum-muriaticum'))
   assert.equal(videoPagePath('home-intro', 'en'), '/?lang=en')
   assert.equal(videoPagePath('service-business', 'ru'), '/ru/services#business')
+  assert.equal(videoPagePath('method-hypnotherapy', 'en'), '/en/services#methods')
+  assert.equal(videoPagePath('method-constellations', 'ru'), '/ru/services#methods')
   assert.equal(videoPagePath('consultation', 'en'), '/en/services#consultation')
   assert.equal(videoPagePath('remedy-detail', 'ru', 'arsenicum-album'), '/ru/homeopathy/remedies/arsenicum-album')
   assert.equal(videoPagePath('book-detail', 'en', 'example-book'), '/books/example-book?lang=en')
