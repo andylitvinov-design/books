@@ -47,6 +47,7 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
     <Link href={"/" + activeLocale + "/homeopathy"}>{labels.remedies}</Link>
     <Link href={"/" + activeLocale + "/services"}>{labels.services}</Link>
     <Link href={"/" + activeLocale + "/about"}>{labels.about}</Link>
-    <span aria-label={labels.language} className="site-language-switch">{languages.map(nextLocale => localizedPath || nextLocale === "es" ? <Link aria-current={activeLocale === nextLocale ? "true" : undefined} href={counterpart(nextLocale)} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)}>{nextLocale.toUpperCase()}</Link> : <button aria-pressed={activeLocale === nextLocale} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)} type="button">{nextLocale.toUpperCase()}</button>)}</span>
+    {/* Load a different language only on selection, not speculatively (including client-entry counterparts). */}
+    <span aria-label={labels.language} className="site-language-switch">{languages.map(nextLocale => localizedPath || nextLocale === "es" ? <Link prefetch={false} aria-current={activeLocale === nextLocale ? "true" : undefined} href={counterpart(nextLocale)} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)}>{nextLocale.toUpperCase()}</Link> : <button aria-pressed={activeLocale === nextLocale} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)} type="button">{nextLocale.toUpperCase()}</button>)}</span>
   </nav>;
 }
