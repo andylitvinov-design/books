@@ -44,6 +44,7 @@ const copy = {
 // replacement must not inherit another video's poster. No expiring CDN URLs here.
 const approvedAndyPosters: Readonly<Record<string, string>> = {
   fd5fcead9b067f9a0649862675a38771: "/images/holistic-house/andy-about.png",
+  "2c251709aba74fd96ae8be43257a080b": "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
   d4e55c984e54b40fbeb8a21f81d27694: "/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp",
 };
 
@@ -83,7 +84,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   const isApprovedAndyIntro = Boolean(approvedPoster);
   const watchLabel = isHeygen ? text.watchHeygen : text.watch;
   const aiDisclosure = isApprovedAndyIntro ? text.andyAiDisclosure : text.aiDisclosure;
-  const audioNotice = locale === "es" ? (video.language === "ru" ? "Audio en ruso" : "Audio en inglés") : "";
+  const audioNotice = locale === "es" && video.language !== "es" ? (video.language === "ru" ? "Audio en ruso" : "Audio en inglés") : "";
   const playerParams = new URLSearchParams({ autoplay: "1", playsinline: "1", rel: "0", hl: locale, cc_lang_pref: video.language });
   const embedUrl = isHeygen
     ? `https://app.heygen.com/embeds/${video.heygenId}`

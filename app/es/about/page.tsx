@@ -4,9 +4,8 @@ import Link from 'next/link';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { PersonalConsultationForm } from '@/components/personal-consultation-form';
 import { SiteVideoPlayer } from '@/components/site-video-player';
-import { aboutEs, aboutIntroEs } from '@/data/about-es';
+import { aboutEs } from '@/data/about-es';
 import { metadataBaseFor } from '@/data/site-metadata';
-import { existingAboutIntroVideo } from '@/lib/site-videos/defaults';
 import { getPublishedSiteVideos } from '@/lib/site-videos/public';
 
 export const metadata: Metadata = {
@@ -26,9 +25,8 @@ const archives = [
 const explore = [ { label: 'Libros', href: '/es/books' }, { label: 'Remedios', href: '/es/homeopathy' }, { label: 'Servicios', href: '/es/services' } ];
 export default async function SpanishAboutPage() {
   const published = await getPublishedSiteVideos();
-  const englishIntro = published['about-intro:en'];
-  // Display translation only. Keep original audio and respect hide/replacement.
-  const intro = englishIntro?.heygenId === existingAboutIntroVideo.heygenId ? { ...englishIntro, ...aboutIntroEs } : undefined;
+  // An independent Spanish publication: hiding it never restores English audio.
+  const intro = published['about-intro:es'];
   return <main className="about-shell" lang="es">
     <PublicSiteHeader locale="es" />
     {intro && <section className="site-video-block" data-video-slot="about-intro" data-video-locale="es" aria-label={intro.title}><SiteVideoPlayer video={intro} locale="es" textLanguage="es" minimal posterPriority /></section>}

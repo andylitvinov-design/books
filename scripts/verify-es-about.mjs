@@ -55,7 +55,10 @@ try {
         const intro = page.locator('[data-video-locale="es"]');
         await expect.poll(() => intro.locator('img.site-video-poster').evaluate(el => el.complete && el.naturalWidth >= 320)).toBe(true);
         assert.equal(await page.locator('iframe').count(), 0);
-        await expect(intro.locator('.site-video-ai-badge')).toContainText('Audio en inglés');
+        await expect(intro.locator('.site-video-ai-badge')).toHaveText('Avatar IA');
+        await expect(intro.locator('.site-video-duration')).toHaveText('0:31');
+        await expect(intro.locator('img.site-video-poster')).toHaveAttribute('src', /psychic-alchemy-es-v1/);
+        await expect(intro.locator('.site-video-player')).toHaveAttribute('lang', 'es');
         await expect(intro.locator('.site-video-watch-link')).not.toBeVisible();
         const summary = intro.locator('summary');
         await summary.focus(); await summary.press('Enter');
@@ -87,7 +90,7 @@ try {
           assert.equal(opened.features, 'noopener,noreferrer');
         }
         await intro.getByRole('button', { name: /^Ver vídeo:/ }).click();
-        await expect(intro.locator('iframe')).toHaveAttribute('src', 'https://app.heygen.com/embeds/fd5fcead9b067f9a0649862675a38771');
+        await expect(intro.locator('iframe')).toHaveAttribute('src', 'https://app.heygen.com/embeds/2c251709aba74fd96ae8be43257a080b');
         for (const lang of ['ru', 'en', 'es']) {
           await page.locator(`.site-language-switch a[lang="${lang}"]`).click();
           await expect(page).toHaveURL(new RegExp(`/${lang}/about$`));
@@ -95,7 +98,7 @@ try {
           await expect(page.locator('html')).toHaveAttribute('lang', lang);
         }
         assert.deepEqual(errors, []);
-        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only labels' : 'Spanish WhatsApp text intercepted, not sent', video: 'original EN audio explicitly labelled, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
+        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only labels' : 'Spanish WhatsApp text intercepted, not sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
         console.log(`PASS: ${live ? 'live' : 'local'} ES About ${engine} ${width}`);
         await context.close();
       }

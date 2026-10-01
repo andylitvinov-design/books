@@ -1,4 +1,6 @@
 export type Locale = 'en' | 'ru';
+/** Public video language; private cabinet/UI locales remain EN/RU. */
+export type VideoLocale = Locale | 'es';
 
 export interface PublishedSiteVideo {
   youtubeId: string;
@@ -6,7 +8,7 @@ export interface PublishedSiteVideo {
   title: string;
   description?: string;
   transcript?: string;
-  language: Locale;
+  language: VideoLocale;
   durationSeconds?: number;
 }
 
@@ -19,7 +21,7 @@ export interface SiteVideoDraft extends PublishedSiteVideo {
 export interface SiteVideoRecord {
   key: string;
   slot: string;
-  locale: Locale;
+  locale: VideoLocale;
   entityId: string;
   revision: number;
   draft: SiteVideoDraft | null;
@@ -29,7 +31,7 @@ export interface SiteVideoRecord {
 
 export interface SiteVideoChange {
   slot: string;
-  locale: Locale;
+  locale: VideoLocale;
   entityId?: string;
   intent: 'draft' | 'publish' | 'hide';
   youtubeUrl?: string;
@@ -59,8 +61,8 @@ export const SITE_VIDEO_SLOTS: readonly Readonly<{
   entityType?: 'remedy' | 'book';
 }>[];
 
-export function videoKey(slot: string, locale: Locale, entityId?: string): string;
-export function videoPagePath(slot: string, locale: Locale, entityId?: string): string;
+export function videoKey(slot: string, locale: VideoLocale, entityId?: string): string;
+export function videoPagePath(slot: string, locale: VideoLocale, entityId?: string): string;
 export function parseYouTubeId(source: unknown): string | null;
 export function parseSiteVideoSource(source: unknown): { youtubeId: string; heygenId?: string } | null;
 export function siteVideoWatchUrl(video: Pick<PublishedSiteVideo, 'youtubeId' | 'heygenId'>): string;

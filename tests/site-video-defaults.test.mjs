@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { builtInSiteVideoRecords, existingAboutIntroVideo, existingAboutIntroVideoRu } from '../lib/site-videos/defaults.js'
+import { builtInSiteVideoRecords, existingAboutIntroVideo, existingAboutIntroVideoRu, existingAboutIntroVideoEs } from '../lib/site-videos/defaults.js'
 import { SiteVideoError, isSiteVideoRecord, prepareVideoChange, toPublishedSiteVideo } from '../lib/site-videos/model.js'
 import { createSiteVideoStore } from '../lib/site-videos/store.js'
 
 const namespace = 'holistic-house:site-videos:v1'
 const aboutKey = 'about-intro:en'
 const ruAboutKey = 'about-intro:ru'
+const esAboutKey = 'about-intro:es'
 const youtubeId = 'OkLEN8Zb-sY'
 const timestamp = '2026-09-30T01:00:00.000Z'
 const environment = {
@@ -62,20 +63,21 @@ function configuredStore(database) {
   return createSiteVideoStore({ environment, fetchFn: database.fetchFn, initialRecords: builtInSiteVideoRecords() })
 }
 
-test('the built-in publications include approved English and Russian About intros', async () => {
+test('the built-in publications include independent English, Russian and Spanish About intros', async () => {
   const defaults = builtInSiteVideoRecords()
-  assert.equal(defaults.length, 2)
-  assert.deepEqual(defaults.map(record => record.key), [aboutKey, ruAboutKey])
+  assert.equal(defaults.length, 3)
+  assert.deepEqual(defaults.map(record => record.key).sort(), [aboutKey, esAboutKey, ruAboutKey])
   assert.ok(defaults.every(record => record.revision === 0 && isSiteVideoRecord(record)))
   assert.deepEqual(toPublishedSiteVideo(defaults[0]), existingAboutIntroVideo)
   assert.deepEqual(toPublishedSiteVideo(defaults[1]), existingAboutIntroVideoRu)
+  assert.deepEqual(toPublishedSiteVideo(defaults[2]), existingAboutIntroVideoEs)
   assert.equal(existingAboutIntroVideo.heygenId, 'fd5fcead9b067f9a0649862675a38771')
   assert.equal(existingAboutIntroVideoRu.heygenId, 'd4e55c984e54b40fbeb8a21f81d27694')
   const database = restFixture()
   const store = configuredStore(database)
   assert.deepEqual(toPublishedSiteVideo(await store.get(ruAboutKey)), existingAboutIntroVideoRu)
   assert.equal(await store.get('home-intro:en'), null)
-  assert.deepEqual((await store.list()).map(record => record.key), [aboutKey, ruAboutKey])
+  assert.deepEqual((await store.list()).map(record => record.key), [aboutKey, esAboutKey, ruAboutKey])
   assert.equal(database.hash.size, 0)
   assert.equal(database.commands.filter(command => command[0] === 'EVAL').length, 0)
 })
@@ -104,7 +106,7 @@ test('the first approved change persists revision one and takes precedence after
   await firstProcess.save(next, previous.revision)
   const secondProcess = configuredStore(database)
   assert.deepEqual(await secondProcess.get(aboutKey), next)
-  assert.deepEqual((await secondProcess.list()).map(record => record.key), [aboutKey, ruAboutKey])
+  assert.deepEqual((await secondProcess.list()).map(record => record.key), [aboutKey, esAboutKey, ruAboutKey])
   const video = toPublishedSiteVideo(await secondProcess.get(aboutKey))
   assert.equal(video.youtubeId, youtubeId)
   assert.equal(video.heygenId, undefined)
@@ -134,9 +136,9 @@ test('a persisted hide overrides the built-in on both list and get after reload'
     await store.save(hidden, 0)
     const reloaded = configuredStore(database)
     assert.deepEqual(await reloaded.get(aboutKey), hidden)
-    assert.deepEqual((await reloaded.list()).map(record => record.key), [aboutKey, ruAboutKey])
+    assert.deepEqual((await reloaded.list()).map(record => record.key), [aboutKey, esAboutKey, ruAboutKey])
     assert.equal(toPublishedSiteVideo(await reloaded.get(aboutKey)), undefined)
-    assert.deepEqual((await reloaded.list()).map(toPublishedSiteVideo).filter(Boolean), [existingAboutIntroVideoRu])
+    assert.deepEqual((await reloaded.list()).map(toPublishedSiteVideo).filter(Boolean), [existingAboutIntroVideoEs, existingAboutIntroVideoRu])
     assert.deepEqual(hidden.draft, previous.draft)
   }
 })
@@ -159,7 +161,7 @@ test('malformed, private and invalid-revision overrides suppress the built-in in
       const unrelated = prepareVideoChange(null, { ...change, slot: 'home-intro' }, timestamp)
       database.hash.set(unrelated.key, JSON.stringify(unrelated))
       const store = configuredStore(database)
-      assert.deepEqual((await store.list()).map(record => record.key), [ruAboutKey, unrelated.key].sort())
+      assert.deepEqual((await store.list()).map(record => record.key), [esAboutKey, ruAboutKey, unrelated.key].sort())
       await assert.rejects(store.get(aboutKey), errorCode('storage'))
       assert.equal(database.hash.get(aboutKey), raw)
       assert.equal(database.commands.filter(command => command[0] === 'EVAL').length, 0)
@@ -200,4 +202,23 @@ test('configured-store read errors propagate instead of substituting a potential
   })
   await assert.rejects(store.list(), errorCode('storage'))
   await assert.rejects(store.get(aboutKey), errorCode('storage'))
+})
+
+// Spanish follows the same persisted override/approval rules, with no EN fallback.
+test('Spanish hide and replacement persist independently of English and Russian', async () => {
+  const database = restFixture(), store = configuredStore(database)
+  const initial = await store.get(esAboutKey)
+  assert.equal(initial.published.language, 'es')
+  assert.equal(initial.published.heygenId, '2c251709aba74fd96ae8be43257a080b')
+  assert.equal(toPublishedSiteVideo(initial).driveUrl, undefined)
+  assert.ok(initial.draft.driveUrl.startsWith('https://drive.google.com/file/d/'))
+  const hidden = prepareVideoChange(initial, { slot: 'about-intro', locale: 'es', intent: 'hide' }, timestamp)
+  await store.save(hidden, 0)
+  const reloaded = configuredStore(database)
+  assert.equal(toPublishedSiteVideo(await reloaded.get(esAboutKey)), undefined)
+  assert.deepEqual(toPublishedSiteVideo(await reloaded.get(aboutKey)), existingAboutIntroVideo)
+  assert.deepEqual(toPublishedSiteVideo(await reloaded.get(ruAboutKey)), existingAboutIntroVideoRu)
+  const replacement = prepareVideoChange(hidden, { ...change, locale: 'es' }, timestamp)
+  await reloaded.save(replacement, 1)
+  assert.equal(toPublishedSiteVideo(await configuredStore(database).get(esAboutKey)).youtubeId, youtubeId)
 })

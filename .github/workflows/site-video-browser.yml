@@ -142,6 +142,9 @@ jobs:
       - name: Check all released Spanish public pages read-only
         if: github.event_name == 'push'
         run: node scripts/verify-es-public-site.mjs --live
+      - name: Verify the new Spanish video streams through the public embed
+        if: github.event_name == 'push'
+        run: node scripts/verify-es-about-playback.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
