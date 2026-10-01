@@ -6,7 +6,7 @@ import { Check, ExternalLink, Film, Globe2, Save } from "lucide-react";
 import { refreshSiteVideosAction, saveSiteVideoAction } from "@/app/admin/videos/actions";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { parseSiteVideoSource, siteVideoWatchUrl, SITE_VIDEO_SLOTS, videoKey, videoPagePath } from "@/lib/site-videos/model";
-import type { SiteVideoRecord } from "@/lib/site-videos/model";
+import type { SiteVideoRecord, VideoLocale } from "@/lib/site-videos/model";
 
 type Locale = "en" | "ru";
 type EntityOption = { id: string; label: Record<Locale, string> };
@@ -29,7 +29,7 @@ type FormValues = {
 
 const copy = {
   ru: {
-    language: "Язык видео и страницы", pages: "Место на сайте", en: "Английский", ru: "Русский",
+    language: "Язык видео и страницы", pages: "Место на сайте", en: "Английский", ru: "Русский", es: "Испанский",
     overview: "Готовность страниц", published: "Опубликовано", draft: "Черновик", empty: "Без видео",
     available: "страниц с видео", draftCount: "черновиков", intro: "Для каждого языка — своя ссылка. Без опубликованного видео страница остаётся в обычном виде.",
     unavailable: "Сохранение видео сейчас недоступно. Изменения не будут опубликованы. Подключение хранилища нужно проверить.",
@@ -56,7 +56,7 @@ const copy = {
     },
   },
   en: {
-    language: "Video and page language", pages: "Website placement", en: "English", ru: "Russian",
+    language: "Video and page language", pages: "Website placement", en: "English", ru: "Russian", es: "Spanish",
     overview: "Page readiness", published: "Published", draft: "Draft", empty: "No video",
     available: "pages with video", draftCount: "drafts", intro: "Each language has its own link. Pages without a published video keep their normal layout.",
     unavailable: "Video storage is currently unavailable. Changes cannot be published until the storage connection is checked.",
@@ -100,7 +100,7 @@ function valuesFor(record?: SiteVideoRecord): FormValues {
 
 export function SiteVideoManager({ initialRecords, initialLocale, storageReady, entities }: Props) {
   const [uiLocale, setUiLocale] = useState<Locale>(initialLocale);
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useState<VideoLocale>("en");
   const [slotId, setSlotId] = useState("home-intro");
   const [entityId, setEntityId] = useState("");
   const [records, setRecords] = useState(initialRecords);
@@ -195,7 +195,7 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
         <div>
           <span className="site-video-field-label" id="video-language-label"><Globe2 size={16} aria-hidden="true" />{text.language}</span>
           <div className="site-video-language-picker" role="group" aria-labelledby="video-language-label">
-            {(["en", "ru"] as const).map(language => <button key={language} type="button" aria-pressed={locale === language} disabled={pending} onClick={() => { setLocale(language); setNotice(null); }}>{text[language]}<span>{language.toUpperCase()}</span></button>)}
+            {(["en", "ru", "es"] as const).map(language => <button key={language} type="button" aria-pressed={locale === language} disabled={pending} onClick={() => { setLocale(language); if (language === "es") { setSlotId("about-intro"); setEntityId(""); } setNotice(null); }}>{text[language]}<span>{language.toUpperCase()}</span></button>)}
           </div>
         </div>
         <p className="site-video-readiness"><strong>{publishedCount}</strong> {text.available}<span> · {draftCount} {text.draftCount}</span></p>
@@ -204,7 +204,7 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
 
       <div className="site-video-manager-grid">
         <nav className="site-video-placement-list" aria-label={text.pages}>
-          {SITE_VIDEO_SLOTS.map(item => {
+          {SITE_VIDEO_SLOTS.filter(item => locale !== "es" || item.id === "about-intro").map(item => {
             const itemRecord = item.entityType ? undefined : records.find(entry => entry.key === videoKey(item.id, locale));
             const count = item.entityType ? records.filter(entry => entry.slot === item.id && entry.locale === locale && entry.published).length : 0;
             const status = itemRecord?.published ? "published" : itemRecord?.draft ? "draft" : "empty";
