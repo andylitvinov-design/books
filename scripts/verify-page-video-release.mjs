@@ -138,7 +138,7 @@ async function exercise(engine, browserType) {
     await expect(russian).toHaveCount(1);
     await expect(russian.locator('iframe')).toHaveCount(0);
     await russian.locator('.site-video-play').click();
-    await expect(russian.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${cases[3][3]}`);
+    await expect(russian.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${cases[5][3]}`);
     assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors');
     results.push({ engine, languageSwitchResetsPlayer: true, pageJavaScriptErrors: pageErrors });
   } catch (error) {
@@ -152,6 +152,6 @@ try {
   await Promise.all([exercise('chromium', chromium), exercise('webkit', webkit)]);
   writeFileSync(`${evidence}/${label}-six-page-videos.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), results }, null, 2));
   assert.ok(!results.some(item => item.failure), 'Page-video checks failed; inspect JSON');
-  assert.equal(results.filter(item => item.compact).length, 24);
-  if (live) assert.equal(results.filter(item => item.fullPlayback).length, 12);
+  assert.equal(results.filter(item => item.compact).length, 32);
+  if (live) assert.equal(results.filter(item => item.fullPlayback).length, 16);
 } finally { if (app) app.kill('SIGTERM'); }
