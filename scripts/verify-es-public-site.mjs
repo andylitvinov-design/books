@@ -40,7 +40,15 @@ try {
       for (const width of [390,1365]) {
         const context = await browser.newContext({viewport:{width,height:900},locale:'es-MX',serviceWorkers:'block',ignoreHTTPSErrors:!live});
         const page = await context.newPage(); const errors = [];
+        const unselectedClientRequests = [];
+        let watchingUnselectedClients = true;
         page.on('pageerror', error => errors.push(error.message));
+        page.on('request', request => {
+          const url = new URL(request.url());
+          if (watchingUnselectedClients && url.origin === origin && /^\/(en|ru)\/client\/?$/.test(url.pathname)) {
+            unselectedClientRequests.push({path:url.pathname,resourceType:request.resourceType()});
+          }
+        });
         // Do not abort in-flight Next link prefetches with the next hard goto.
         // All page errors still fail; no CORS or JavaScript errors are filtered.
         const settle = () => page.waitForLoadState('networkidle',{timeout:30000});
@@ -65,9 +73,27 @@ try {
             for(const language of ['en','ru'])await expect(page.locator(`link[rel="alternate"][hreflang="${language}"]`)).toHaveAttribute('href',new RegExp('\\?lang='+language+'$'));
             if(width===390)await expect(page.locator('.service-home-card-grid')).toHaveCSS('grid-template-columns',/^\d+(?:\.\d+)?px$/);
           }
+          if(path==='/es/client') {
+            // Also exercise desktop hover without clicking a language.
+            await page.locator('.site-language-switch a[lang="en"]').hover();
+            await settle();
+            await page.locator('.site-language-switch a[lang="ru"]').hover();
+            await settle();
+          }
           await page.evaluate(()=>document.fonts.ready);
           if(['/es','/es/services','/es/books','/es/homeopathy'].includes(path))await page.screenshot({path:`${evidence}/${live?'live':'local'}-${path.split('/').filter(Boolean).join('-')}-${engine}-${width}.png`,animations:'disabled'});
         }
+        assert.deepEqual(unselectedClientRequests,[], 'Client-entry language counterparts must not load before selection');
+        watchingUnselectedClients = false;
+        stage=`${engine} ${width} client-entry language selection`;
+        for (const language of ['en','ru','es']) {
+          await click(page.locator(`.site-language-switch a[lang="${language}"]`));
+          await expect(page).toHaveURL(origin+'/'+language+'/client');
+          await expect(page.locator('html')).toHaveAttribute('lang',language);
+          await expect(page.locator('.client-entry-form')).toBeVisible();
+          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Client-entry overflow: '+language);
+        }
+        await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();
@@ -97,7 +123,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

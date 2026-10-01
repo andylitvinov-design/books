@@ -45,3 +45,8 @@ test('Automatic corpus translation is labelled and does not become medical advic
   assert.match(source('data/remedies.d.ts'), /Locale = "ru" \| "en"/);
   assert.doesNotMatch(source('app/sitemap.ts'), /['"]\/es\/client['"]/);
 });
+test('Language counterparts load on selection rather than speculative client-entry prefetch', () => {
+  const navigation = source('components/site-navigation.tsx');
+  assert.match(navigation, /<Link prefetch=\{false\}[^>]*href=\{counterpart\(nextLocale\)\}/);
+  assert.match(navigation, /onClick=\{\(\) => selectLocale\(nextLocale\)\}/);
+});
