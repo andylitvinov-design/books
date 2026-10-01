@@ -42,8 +42,7 @@ async function exercise(engine, browserType) {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
   try {
-    // Hold the actual application scripts: the real SSR control must stay disabled.
-    // This reproduces a slow phone's pre-hydration window, not just a test sleep.
+    // Hold actual application scripts to reproduce a slow phone's hydration window.
     let release;
     const gate = new Promise(resolve => { release = resolve; });
     const scriptPattern = '**/_next/static/**/*.js*';
@@ -67,10 +66,10 @@ async function exercise(engine, browserType) {
       for (const [path, slot, locale, id, poster, seconds] of cases) {
         const response = await page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 60000 });
         assert.equal(response.status(), 200);
+        await page.evaluate(() => document.fonts.ready);
         const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`);
         await expect(block).toHaveCount(1);
-        const card = block.locator('.site-video-player');
-        await expect(card).toHaveClass(/site-video-player--minimal/);
+        await expect(block.locator('.site-video-player')).toHaveClass(/site-video-player--minimal/);
         const play = block.locator('button.site-video-play');
         await expect(play).toBeEnabled({ timeout: 30000 });
         assert.equal(await block.locator('iframe').count(), 0);
@@ -88,7 +87,10 @@ async function exercise(engine, browserType) {
         await expect(transcript.locator('p')).toBeVisible();
         await expect(transcript.locator('p')).toHaveAttribute('lang', locale);
         await transcript.locator('summary').click();
-        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+        await expect.poll(() => transcript.evaluate(el => el.open)).toBe(false);
+        // WebKit can report the preceding open disclosure's scroll geometry for
+        // one layout cycle. Require settled geometry, without relaxing the bound.
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth), { timeout: 5000 }).toBeLessThanOrEqual(2);
         await block.screenshot({ path: `${evidence}/${label}-${poster}-${engine}-${width}.png` });
         await play.click();
         await expect(block.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${id}`);
@@ -126,7 +128,6 @@ async function exercise(engine, browserType) {
         }
       }
     }
-    // Switching the home-page language must replace, not continue, the previous video.
     await page.goto(origin + '/?lang=en', { waitUntil: 'domcontentloaded' });
     await page.locator('[data-video-slot="home-intro"] .site-video-play').click();
     await expect(page.locator('[data-video-slot="home-intro"] iframe')).toHaveCount(1);
@@ -139,8 +140,9 @@ async function exercise(engine, browserType) {
     assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors');
     results.push({ engine, languageSwitchResetsPlayer: true, pageJavaScriptErrors: pageErrors });
   } catch (error) {
-    await page.screenshot({ path: `${evidence}/${label}-six-videos-failed-${engine}.png` }).catch(() => {});
-    results.push({ engine, failure: String(error.message).slice(0, 2500), pageErrors });
+    const geometry = await page.evaluate(() => ({ viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth, offenders: [...document.querySelectorAll('body *')].map(el => ({ tag: el.tagName, className: String(el.className).slice(0,120), rect: el.getBoundingClientRect().toJSON() })).filter(item => item.rect.width > 1 && (item.rect.right > innerWidth + 2 || item.rect.left < -2)).slice(0,25) })).catch(() => null);
+    await page.screenshot({ path: `${evidence}/${label}-six-videos-failed-${engine}.png`, fullPage: true }).catch(() => {});
+    results.push({ engine, failure: String(error.message).slice(0, 2500), pageErrors, geometry });
   } finally { await context.close(); await browser.close(); }
 }
 
