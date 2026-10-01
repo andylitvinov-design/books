@@ -28,7 +28,7 @@ jobs:
           github-token: ${{ github.token }}
           path: /tmp/approved-ru
           merge-multiple: true
-      - name: Make narrow presentation and readiness fixes
+      - name: Import exact posters and prepare player
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -69,30 +69,16 @@ jobs:
           assert text.count(old) == 1
           text = text.replace(old, '<button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive}')
           p.write_text(text)
-          w = Path('.github/workflows/site-video-browser.yml')
-          text = w.read_text()
-          marker = "      - 'scripts/verify-site-video-browser.mjs'"
-          assert text.count(marker) == 2
-          text = text.replace(marker, marker + "\n      - 'scripts/verify-page-video-release.mjs'\n      - 'tests/page-video-release.test.mjs'")
-          marker = '      - name: Check production read-only after release'
-          assert text.count(marker) == 1
-          text = text.replace(marker, '      - name: Check six page previews and hydration-safe first clicks\n        run: |\n          node --test tests/page-video-release.test.mjs\n          node scripts/verify-page-video-release.mjs\n' + marker)
-          marker = '      - uses: actions/upload-artifact@v4'
-          assert text.count(marker) == 1
-          text = text.replace(marker, "      - name: Verify all six released EN/RU videos with full natural playback\n        if: github.event_name == 'push'\n        run: node scripts/verify-page-video-release.mjs --live\n" + marker)
-          w.write_text(text)
-          # Remove this one-off importer from the final squash diff.
-          Path('.github/workflows/tmp-finish-page-videos.yml').unlink()
           PY
       - name: Verify immutable IDs and poster bytes
         run: |
           node --test tests/page-video-release.test.mjs tests/ru-about-video-presentation.test.mjs tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
           node --check scripts/verify-page-video-release.mjs
           git diff --check
-      - name: Commit scoped release changes without touching production
+      - name: Commit contents only to this work branch
         run: |
           git config user.name 'andylitvinov-design'
           git config user.email 'andy.litvinov@gmail.com'
-          git add components/site-video-player.tsx .github/workflows/site-video-browser.yml .github/workflows/tmp-finish-page-videos.yml public/images/holistic-house/video-posters/
+          git add components/site-video-player.tsx public/images/holistic-house/video-posters/
           git commit -m 'Use real six-video previews and prevent pre-hydration dead clicks'
           git push origin HEAD:refs/heads/chatgpt/finish-six-page-videos-2026-10-01
