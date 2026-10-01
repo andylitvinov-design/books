@@ -85,19 +85,22 @@ try {
       await pause(5000)
     }
   }
-  for (const [target, slot, id] of [
-    ['/?lang=en', 'home-intro', 'ed202847a43a96b918308aa972177b34'],
-    ['/en/services', 'services-intro', '48105a2f2228e7cb3a67391e97acaf8b'],
-    ['/en/homeopathy', 'homeopathy-intro', '34df311e461509433b45929908a9097a'],
+  for (const [target, slot, locale, id] of [
+    ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34'],
+    ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b'],
+    ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a'],
+    ['/?lang=ru', 'home-intro', 'ru', '388a04b39ebf215ae656bcd22d0d0847'],
+    ['/ru/services', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a'],
+    ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9'],
   ]) {
     await navigate(target)
-    const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="en"]`)
+    const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`)
     await expect(block).toHaveCount(1)
     assert.equal(await block.locator('iframe').count(), 0)
-    await block.getByRole('button', { name: /^(Watch video|Open video):/ }).click()
+    await block.getByRole('button', { name: /^(Watch video|Open video|Смотреть видео):/ }).click()
     await expect(block.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${id}`)
   }
-  pass(`${live ? 'Production' : 'Local'}: approved EN Home, Services and Homeopathy videos load exact HeyGen embeds on click`)
+  pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos load exact HeyGen embeds on click`)
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
