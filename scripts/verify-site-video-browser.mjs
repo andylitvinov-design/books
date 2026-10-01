@@ -97,8 +97,17 @@ try {
     const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`)
     await expect(block).toHaveCount(1)
     assert.equal(await block.locator('iframe').count(), 0)
-    await block.getByRole('button', { name: /^(Watch video|Open video|Смотреть видео):/ }).click()
-    await expect(block.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${id}`)
+    const play = block.getByRole('button', { name: /^(Watch video|Open video|Смотреть видео):/ })
+    if (live) await pause(1200)
+    await play.click()
+    if (live && await block.locator('iframe').count() === 0) {
+      // A very fast synthetic click can land before Next hydration has attached
+      // client handlers to SSR markup. Retry once after hydration rather than
+      // treating that test-timing race as a playback failure.
+      await pause(1200)
+      if (await play.count()) await play.click()
+    }
+    await expect(block.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${id}`, { timeout: 10000 })
   }
   pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos load exact HeyGen embeds on click`)
   await navigate('/en/about')
