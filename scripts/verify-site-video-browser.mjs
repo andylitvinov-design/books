@@ -85,6 +85,19 @@ try {
       await pause(5000)
     }
   }
+  for (const [target, slot, id] of [
+    ['/?lang=en', 'home-intro', 'ed202847a43a96b918308aa972177b34'],
+    ['/en/services', 'services-intro', '48105a2f2228e7cb3a67391e97acaf8b'],
+    ['/en/homeopathy', 'homeopathy-intro', '34df311e461509433b45929908a9097a'],
+  ]) {
+    await navigate(target)
+    const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="en"]`)
+    await expect(block).toHaveCount(1)
+    assert.equal(await block.locator('iframe').count(), 0)
+    await block.getByRole('button', { name: /^(Watch video|Open video):/ }).click()
+    await expect(block.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${id}`)
+  }
+  pass(`${live ? 'Production' : 'Local'}: approved EN Home, Services and Homeopathy videos load exact HeyGen embeds on click`)
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
