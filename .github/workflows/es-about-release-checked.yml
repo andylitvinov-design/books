@@ -1,0 +1,45 @@
+name: Assemble checked Spanish release
+on:
+  push:
+    branches: ['chatgpt/es-about-video-2026-10-01']
+    paths: ['.github/workflows/es-about-release-checked.yml']
+permissions:
+  contents: write
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify exact source, test it and prepare Git objects without publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64,zlib,hashlib,json,subprocess,yaml
+          from pathlib import Path
+          root=Path('/tmp/es-release');root.mkdir()
+          text=''.join(Path(f'.github/es-patch-parts/{i}.txt').read_text().strip() for i in range(8))
+          patch=zlib.decompress(base64.b64decode(text,validate=True))
+          digest=hashlib.sha256(patch).hexdigest()
+          (root/'patch-check.json').write_text(json.dumps({'sha256':digest,'bytes':len(patch)}))
+          assert digest=='775b564a1e5a6c5c00a58d91f8a980bc2aa8db37f654bb4ec5945999f161bb7a','Unverified source bytes'
+          (root/'patch.diff').write_bytes(patch)
+          subprocess.run(['git','apply','--unidiff-zero','--check',str(root/'patch.diff')],check=True)
+          subprocess.run(['git','apply','--unidiff-zero',str(root/'patch.diff')],check=True)
+          steps=yaml.safe_load(Path('.github/workflows/es-about-release-assemble.yml').read_text())['jobs']['assemble']['steps']
+          for index in [3,4,5]:
+            print(steps[index]['name'],flush=True)
+            subprocess.run(['bash','-e','-c',steps[index]['run']],check=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: es-about-checked-release
+          path: /tmp/es-release/
+          retention-days: 3
