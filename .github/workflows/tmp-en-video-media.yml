@@ -1,4 +1,4 @@
-name: Temporary RU video media bridge
+name: Temporary PsiTrends service media bridge
 on:
   push:
     branches:
@@ -9,14 +9,13 @@ jobs:
     steps:
       - name: Install ffmpeg
         run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
-      - name: Download approved Russian masters
+      - name: Download approved EN service masters
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p out
-          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/388a04b39ebf215ae656bcd22d0d0847.mp4?Expires=1791477260&Signature=dCjOIVctsCib9QvLtUaC-J4ETHx4pG4uC1xG1aWGDDAMRfWN~n5o8mIoif5UOG6wF8pJz9~1kSWbuBV1OaEAHb27nAQiak~fjO1OEHX6ROpd6-yDJVJuOwcmPwu9ZDYqJhYAQPTT575Udi4Ha6TZ-uDPigv4Wn30fKMwW0aAqV2nLOcfRdp8w-8impgk0dHCl~-5AcPTSmmjvCgDSIJiP4GGshG7l7FYkFs7XBi45oqVl95Rq29-t~G7-G9LA6qBX1TE16L6JF~PiPnnvcDIFYZbbQEj8Q5gNJhbZ1k3MIwvE~fBUxljFd1kg7-~7u06RRLO00uOaLr5o2TsA~6f2w__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_holistic-house_home_ru_avatarV_16x9_v01.mp4
-          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/79c2845577865979cd95ac40a08fc01a.mp4?Expires=1791477291&Signature=AGjQvG2Bfuq8caJF~pxJObdLR00yXQM0u5oToXAi7R6W-GFMexa0urWxYC1UEGwHVUaL0U~Rsi6vmzHxbj0mbcR9cmc~FokkG8ReziqzD6WaAMeMD8Us689LmOk~d8iiOjJIC8qfow29IHSS5PhiCufD5X8ofQrCwGuNSoDavnNv-ksbNnCuG7aPpYbGAhBaLBSWYOkwEKDVJD-iwJw6gx08yXN7tltancNOLH-X2fzYscUZ3luPNpzUw2h0VySPrhPOfxAczZbXFi2jmm0p4qKiX0b0~QshktoG9nWRl9sHZb4ipx9VoFjEjN~~OMU0R~ncAEomejcrH3rabOU1FA__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_holistic-house_services_ru_avatarV_16x9_v01.mp4
-          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/0f984780d06948b1e78166e6e553e4e9.mp4?Expires=1791477289&Signature=npoYShZreV8L-XvKe8CjUXDATxq-WYHCRkdPq74n1SvW6ZHoSppbLiBe1dN73p3JvuNPaE4aNPtJu0nUfZdXPNixSCZiEscb8eZSK4JVeVjcymTt2h-U8JyG7X6cYRQjQy4KjC57JkfCkiJgRdsO2aYCuYnKrzj2DL~pRrFQa5oqUjCfOukaEVbSF8Nn~O6q3bg-0IXG1TbN-NfU66ti6MjXamz~H9Vvk4ycUs-xqq8qzI6MlFMfVB71kNwRb33VQXtdQN7IfK-C0uwZ-MsKyIkKJaHnxSlPlvSc8OTE8F~zinc6wjJY8BFcX8d5su2a840absfPR1gnop9vJH~ThQ__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_holistic-house_homeopathy_ru_avatarV_16x9_v01.mp4
+          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/8c1634ce904434a91931429b6a7eefe1.mp4?Expires=1791500046&Signature=I3HKzRgsjXdyR4hLMJ6BD3DxLuWkuNpfR42Bvz1ReAdJEEyUXEltkUJvc2~KnF4hPr5W-0NzuVOnEQiJSg9sNOapYNJl3VL0Lh8P3vo7YscZInvVooXDRhko4kgoHZYNMgvZIFSXZmbPOzX-t0kttBoA~VNaJlgVNGamct0mx5-s1uuXFtj0eqxUc-d4lUyQ-m0XuhvcM5oYGlMCFDhruz3ig6MrxRj5l-9lBcgxwzomE5EUqQF87Hva93goYcy4kdkC-u5NlsSPUOIIrVr2IIrVgdd8p0-j5JLwXI-lWCIcuFqoCA9V2QMn02nEYA1bXcvAfM21XrOphlL0CBXH~g__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_psitrends_hypnotherapy_en_avatarV_16x9_v01.mp4
+          curl -fL --retry 3 'https://files2.heygen.ai/aws_pacific/avatar_tmp/29b72be65e0e493f9570e7a40a904b91/7c6b243f048b9c0581ae29619a4a89fc.mp4?Expires=1791500096&Signature=K-W-Xlf7VYgUBYHwP5-lbPRI4kbHwgpEhEy9FfiHc3qMPe6ry9IYWTIVuC8nlydFH89cSSEKVcpd22hva3ZvXgJ80ZbqNh3-bRwRYwdosvvik2ARWuIHUGWczDeon3wgbCPAgAv5ASKlvIMv0y~WdI0xZz3yi5~cxm4xQIWQTS4osJKxid4EBWO1vSFwrSlpvhAdyeWVkCuds0P3GOkcE4JJKcpEWHanf9QM0x3X4osIveHFQcMLOtkW9ILbJad~tJLJGJ3XzQGMm0GntzP2S-pM6q48Zjeebb17k1e9klYJDi7jwlbT9zvg7wdXTAxj8tC03GoRX8mnS0M3F7RXQQ__&Key-Pair-Id=K38HBHX5LX3X2H' -o out/2026-10-01_psitrends_constellations_en_avatarV_16x9_v01.mp4
       - name: Verify media and extract posters
         shell: bash
         run: |
@@ -33,7 +32,7 @@ jobs:
       - name: Upload media artifact
         uses: actions/upload-artifact@v4
         with:
-          name: approved-ru-page-videos
+          name: approved-psitrends-service-videos
           path: out/
           if-no-files-found: error
           retention-days: 1
