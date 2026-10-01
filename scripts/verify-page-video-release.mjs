@@ -13,6 +13,8 @@ mkdirSync(evidence, { recursive: true });
 const cases = [
   ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34', 'home-en-v2', 29.44],
   ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b', 'services-en-v2', 29.1],
+  ['/en/services', 'method-hypnotherapy', 'en', '8c1634ce904434a91931429b6a7eefe1', 'hypnotherapy-en-v1', 46.73],
+  ['/en/services', 'method-constellations', 'en', '7c6b243f048b9c0581ae29619a4a89fc', 'constellations-en-v1', 47.67],
   ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a', 'homeopathy-en-v2', 30.72],
   ['/?lang=ru', 'home-intro', 'ru', '388a04b39ebf215ae656bcd22d0d0847', 'home-ru-v1', 31.43],
   ['/ru/services', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a', 'services-ru-v1', 33.44],
@@ -149,7 +151,7 @@ async function exercise(engine, browserType) {
 try {
   await Promise.all([exercise('chromium', chromium), exercise('webkit', webkit)]);
   writeFileSync(`${evidence}/${label}-six-page-videos.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), results }, null, 2));
-  assert.ok(!results.some(item => item.failure), 'Six-page video checks failed; inspect JSON');
+  assert.ok(!results.some(item => item.failure), 'Page-video checks failed; inspect JSON');
   assert.equal(results.filter(item => item.compact).length, 24);
   if (live) assert.equal(results.filter(item => item.fullPlayback).length, 12);
 } finally { if (app) app.kill('SIGTERM'); }
