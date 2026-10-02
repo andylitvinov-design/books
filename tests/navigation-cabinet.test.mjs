@@ -38,6 +38,7 @@ test('public navigation exposes both UI languages and About without exposing adm
   assert.match(navigation, /document\.cookie/)
   assert.match(navigation, /site-language-menu-trigger/)
   assert.match(navigation, /<details/)
+  assert.match(navigation, /className="site-language-switch"/)
   assert.match(cabinet, /client-cabinet-next-step/)
   assert.match(cabinet, /Next step/)
   assert.match(cabinet, /Следующий шаг/)

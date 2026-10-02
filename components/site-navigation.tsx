@@ -49,9 +49,9 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
     <Link href={"/" + activeLocale + "/about"}>{labels.about}</Link>
     {!spanish && <Link className="site-cabinet-link" href={"/" + activeLocale + "/client"}>{labels.cabinet}</Link>}
     {/* Load a different language only on selection, not speculatively (including client-entry counterparts). */}
-    <details className="site-language-menu">
+    <span className="site-language-switch"><details className="site-language-menu">
       <summary className="site-language-menu-trigger" aria-label={labels.language}>{activeLocale.toUpperCase()}</summary>
       <span className="site-language-menu-list">{languages.map(nextLocale => localizedPath || nextLocale === "es" ? <Link prefetch={false} aria-current={activeLocale === nextLocale ? "true" : undefined} href={counterpart(nextLocale)} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)}>{nextLocale.toUpperCase()}</Link> : <button aria-pressed={activeLocale === nextLocale} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)} type="button">{nextLocale.toUpperCase()}</button>)}</span>
-    </details>
+    </details></span>
   </nav>;
 }
