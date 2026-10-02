@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
 import { PageVideo } from "@/components/page-video";
-import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PsychicAlchemyIntroVideo } from "@/components/psychic-alchemy-intro-video";
 import { SiteVideoPlayer } from "@/components/site-video-player";
@@ -183,7 +182,6 @@ export default async function AboutPage({ params }: PageProps) {
         <p className="about-client-cabinet-prompt">{current.cabinet.prompt}</p>
         <a href={current.cabinet.href} rel="noreferrer" target="_blank">{current.cabinet.action}<span aria-hidden="true">→</span></a>
       </section>
-      <PublicConsultationCta locale={typedLocale} />
     </main>
   );
 }
