@@ -22,6 +22,7 @@ const evidence = '/tmp/ia222-evidence'
 mkdirSync(evidence, { recursive: true })
 const token = randomBytes(32).toString('base64url'), key = randomBytes(32).toString('base64')
 const redactions = [token, key]
+const bridgeCommands = []
 const environment = { NODE_ENV: 'production', VERCEL_ENV: 'preview', PRESCRIPTIONS_KV_REST_API_URL: apiOrigin, PRESCRIPTIONS_KV_REST_API_TOKEN: token, PRESCRIPTIONS_DATA_ENCRYPTION_KEY: key, PRESCRIPTIONS_ADMIN_TOKEN: token, PRESCRIPTIONS_ADMIN_PIN: '' }
 const certificate = { key: readFileSync('/tmp/ia222-key.pem'), cert: readFileSync('/tmp/ia222-cert.pem') }
 const results = []
@@ -57,6 +58,7 @@ try {
       for await (const part of request) { raw += part; assert.ok(raw.length <= 2 * 1024 * 1024) }
       const command = JSON.parse(raw)
       assert.ok(Array.isArray(command) && ['GET', 'SET', 'MGET', 'MSET', 'SMEMBERS', 'SADD', 'EVAL', 'SCAN', 'INCR', 'EXPIRE', 'DEL', 'HGET', 'HGETALL'].includes(command[0]))
+      bridgeCommands.push(command[0])
       const result = await redis(command)
       response.writeHead(200, { 'Content-Type': 'application/json' }); response.end(JSON.stringify({ result }))
     } catch { response.writeHead(400, { 'Content-Type': 'application/json' }); response.end(JSON.stringify({ error: 'Isolated adapter failure' })) }
@@ -98,7 +100,7 @@ try {
     headers: { Host: '127.0.0.1:3203', Origin: 'http://127.0.0.1:3203', 'Content-Type': 'application/json' },
     body: JSON.stringify({ selector: links.a.selector, secret: links.a.secret }),
   })
-  assert.equal(directExchange.status, 204, 'Loopback private-link exchange must retain same-origin protection')
+  assert.equal(directExchange.status, 204, `Loopback private-link exchange must retain same-origin protection (bridge commands: ${bridgeCommands.join(',') || 'none'})`)
   browser = await chromium.launch()
   const common = { ignoreHTTPSErrors: true, serviceWorkers: 'block' }
   const publicContext = await browser.newContext(common), page = await publicContext.newPage()
