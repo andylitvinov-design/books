@@ -58,6 +58,14 @@ try {
           await settle(); return response;
         }
         async function click(locator) { await settle(); await locator.click(); await settle(); }
+        async function openLanguageMenu() {
+          const menu = page.locator('.site-language-menu');
+          if (!await menu.evaluate(element => element.open)) await click(page.locator('.site-language-menu-trigger'));
+        }
+        async function chooseLanguage(language) {
+          await openLanguageMenu();
+          await click(page.locator(`.site-language-switch a[lang="${language}"]`));
+        }
         for (const path of routes) {
           stage=`${engine} ${width} ${path}`;
           let response;
@@ -75,6 +83,7 @@ try {
           }
           if(path==='/es/client') {
             // Also exercise desktop hover without clicking a language.
+            await openLanguageMenu();
             await page.locator('.site-language-switch a[lang="en"]').hover();
             await settle();
             await page.locator('.site-language-switch a[lang="ru"]').hover();
@@ -87,7 +96,7 @@ try {
         watchingUnselectedClients = false;
         stage=`${engine} ${width} client-entry language selection`;
         for (const language of ['en','ru','es']) {
-          await click(page.locator(`.site-language-switch a[lang="${language}"]`));
+          await chooseLanguage(language);
           await expect(page).toHaveURL(origin+'/'+language+'/client');
           await expect(page.locator('html')).toHaveAttribute('lang',language);
           await expect(page.locator('.client-entry-form')).toBeVisible();
@@ -106,16 +115,16 @@ try {
         await expect(page.locator('.remedy-source-reference')).not.toHaveAttribute('open','');
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-aconitum-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} remembered language`;
-        await click(page.locator('.site-language-switch a[lang="en"]'));
+        await chooseLanguage('en');
         await expect(page).toHaveURL(/\/en\/homeopathy\/remedies\/aconitum$/);
-        await click(page.locator('.site-language-switch a[lang="es"]'));
+        await chooseLanguage('es');
         await expect(page).toHaveURL(/\/es\/homeopathy\/remedies\/aconitum$/);
         await expect.poll(async()=> (await context.cookies(origin)).find(cookie=>cookie.name==='holistic_house_public_locale')?.value).toBe('es');
         await navigate('/'); await expect(page).toHaveURL(origin+'/es');
-        await click(page.locator('.site-language-switch a[lang="en"]'));
+        await chooseLanguage('en');
         await expect(page).toHaveURL(/\/\?lang=en$/);
         await expect(page.locator('html')).toHaveAttribute('lang','en');
-        await click(page.getByRole('link',{name:'ES',exact:true})); await expect(page).toHaveURL(origin+'/es');
+        await chooseLanguage('es'); await expect(page).toHaveURL(origin+'/es');
         if(!live){
           await navigate('/es/client');
           await click(page.getByRole('button',{name:/Entrar al área de clientes/}));

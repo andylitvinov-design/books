@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { BookShowcase } from "@/components/book-showcase";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PageVideo } from "@/components/page-video";
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { RemedySearchBox } from "@/components/remedy-search-box";
 import { books } from "@/data/library";
 import { getHomeopathyLocaleParams, getRemedyDirectory, isSupportedLocale } from "@/data/remedies";
@@ -109,6 +110,7 @@ export default async function HomeopathyPage({ params }: PageProps) {
       </section>
 
       <p className="remedy-disclaimer remedies-landing-disclaimer">{current.disclaimer}</p>
+      <PublicConsultationCta locale={locale as Locale} />
     </main>
   );
 }
