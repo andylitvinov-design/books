@@ -1,0 +1,48 @@
+name: Maya reader runtime bundle
+on:
+  pull_request:
+    paths:
+      - 'next.config.ts'
+      - 'app/books/**'
+      - 'data/library.ts'
+      - 'data/reader-content.ts'
+      - 'source-books/book-3-maya-tradition/outputs/*.html'
+      - 'scripts/verify-maya-reader-release.mjs'
+      - 'tests/maya-*.test.mjs'
+      - '.github/workflows/maya-reader-bundle.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'next.config.ts'
+      - 'app/books/**'
+      - 'data/library.ts'
+      - 'data/reader-content.ts'
+      - 'source-books/book-3-maya-tradition/outputs/*.html'
+      - 'scripts/verify-maya-reader-release.mjs'
+      - 'tests/maya-*.test.mjs'
+      - '.github/workflows/maya-reader-bundle.yml'
+permissions:
+  contents: read
+jobs:
+  runtime-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: node --test tests/maya-reader-release.test.mjs tests/maya-tradition-hub.test.mjs tests/maya-volumes.test.mjs
+      - run: npm ci --no-audit --no-fund
+      - name: Build the real application
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Verify the built server trace includes all four Maya HTML sources
+        run: node scripts/verify-maya-reader-release.mjs
+      - name: Check published hub and all four readers in EN and RU, read-only
+        if: github.event_name == 'push'
+        run: node scripts/verify-maya-reader-release.mjs --live
