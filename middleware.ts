@@ -3,12 +3,14 @@ import type { NextRequest } from 'next/server'
 import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
-  return /^\/(ru|en)\/(prescriptions|client)\//.test(decoded)
+  return /^\/(ru|en)\/(prescriptions|client|app)(?:\/|$)/.test(decoded)
+    || /^\/es\/client(?:\/|$)/.test(decoded)
+    || /^\/api\/app(?:\/|$)/.test(decoded)
     || decoded.startsWith('/api/client')
     || decoded.startsWith('/api/prescriptions/')
     || decoded.startsWith('/api/prescription-access')
     || decoded.startsWith('/api/admin/')
-    || decoded.startsWith('/admin/')
+    || /^\/admin(?:\/|$)/.test(decoded)
     || decoded.startsWith('/document-preview/')
 }
 export function middleware(request: NextRequest) {
@@ -25,8 +27,6 @@ export function middleware(request: NextRequest) {
     'X-Content-Type-Options': 'nosniff',
   } })
   const requestHeaders = new Headers(request.headers)
-  // Derive the public document language only from the URL. Private locale gates
-  // and all security headers below remain unchanged.
   const pageLocale = /^\/es(?:\/|$)/.test(request.nextUrl.pathname) ? 'es'
     : request.nextUrl.pathname.match(/^\/(en|ru)(?:\/|$)/)?.[1] ?? 'ru'
   requestHeaders.set('x-public-page-locale', pageLocale)
@@ -43,7 +43,7 @@ export function middleware(request: NextRequest) {
   requestHeaders.set('Content-Security-Policy', csp)
   const response = NextResponse.next({ request: { headers: requestHeaders } })
   if (privatePath(request.nextUrl.pathname)) {
-    response.headers.set('Cache-Control', 'private, no-store, max-age=0')
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
     response.headers.set('Content-Security-Policy', csp)
     response.headers.set('Referrer-Policy', 'no-referrer')

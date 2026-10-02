@@ -21,9 +21,7 @@ export function MobileBottomNavigation() {
     return () => { window.removeEventListener('ui-locale-change', syncLocale); window.removeEventListener('holistic-house-ui-locale', syncLocale) }
   }, [])
   const locale = pathLocale ?? preference
-  useEffect(() => {
-    document.documentElement.lang = locale
-  }, [locale])
+  useEffect(() => { document.documentElement.lang = locale }, [locale])
   const items = locale === 'es' ? [
     { label: 'Inicio', href: '/es', icon: House },
     { label: 'Libros', href: '/es/books', icon: BookOpen },
@@ -43,11 +41,10 @@ export function MobileBottomNavigation() {
     { label: 'Services', href: '/en/services', icon: Sparkles },
     { label: 'Client Cabinet', href: '/en/client', icon: UserRound },
   ]
-  if (/^\/(admin|(?:ru|en)\/prescriptions|(?:ru|en)\/client\/[^/]+)/.test(pathname)) return null
+  if (/^\/(admin|(?:ru|en)\/prescriptions|(?:ru|en)\/app(?:\/|$)|(?:ru|en)\/client\/[^/]+)/.test(pathname)) return null
   return <nav aria-label={locale === 'es' ? 'Navegación móvil' : locale === 'ru' ? 'Мобильная навигация' : 'Mobile navigation'} className="mobile-bottom-navigation">{items.map(({ label, href, icon: Icon, external }) => {
     const home = href === '/' || href === '/es'
     const current = !external && (home ? pathname === href : pathname === href || pathname.startsWith(href + '/'))
     const content = <><Icon aria-hidden="true" /><span>{label}</span></>
-    return external ? <a href={href} key={href}>{content}</a> : <Link aria-current={current ? 'page' : undefined} data-home-active={home && current ? 'true' : undefined} href={href} key={href}>{content}</Link>
+    return external ? <a href={href} key={href}>{content}</a> : <Link prefetch={href.endsWith('/client') ? false : undefined} aria-current={current ? 'page' : undefined} data-home-active={home && current ? 'true' : undefined} href={href} key={href}>{content}</Link>
   })}</nav>
-}
