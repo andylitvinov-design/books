@@ -63,7 +63,10 @@ try {
   })
   bridge.listen(4443, '127.0.0.1'); await once(bridge, 'listening')
   proxy = createServer(certificate, (incoming, outgoing) => {
-    const upstream = httpRequest({ hostname: '127.0.0.1', port: 3203, path: incoming.url, method: incoming.method, headers: { ...incoming.headers, 'x-forwarded-proto': 'https' } }, response => { outgoing.writeHead(response.statusCode || 502, response.headers); response.pipe(outgoing) })
+    // Next receives the internal loopback URL. Preserve the browser's external
+    // HTTPS boundary while translating Origin only for this isolated proxy hop.
+    const upstreamOrigin = incoming.headers.origin === origin ? 'http://127.0.0.1:3203' : incoming.headers.origin
+    const upstream = httpRequest({ hostname: '127.0.0.1', port: 3203, path: incoming.url, method: incoming.method, headers: { ...incoming.headers, origin: upstreamOrigin, 'x-forwarded-proto': 'https' } }, response => { outgoing.writeHead(response.statusCode || 502, response.headers); response.pipe(outgoing) })
     upstream.on('error', () => { if (!outgoing.headersSent) outgoing.writeHead(502); outgoing.end() })
     incoming.pipe(upstream)
   })
