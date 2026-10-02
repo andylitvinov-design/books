@@ -95,6 +95,7 @@ try {
   await transitionAssessment(store, a.id, pair[0].id, 2, 'archive')
   pass('Real isolated Redis: encrypted REST adapter, fresh-adapter readback, atomic retry and compare-and-swap')
   await startApp()
+  bridgeCommands.length = 0
   const directExchange = await fetch(`http://127.0.0.1:3203/api/client-access`, {
     method: 'POST',
     headers: { Host: '127.0.0.1:3203', Origin: 'http://127.0.0.1:3203', 'Content-Type': 'application/json' },
