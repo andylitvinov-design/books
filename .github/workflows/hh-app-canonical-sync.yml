@@ -1,0 +1,46 @@
+name: R1 prepare canonical synchronization manifest
+on:
+  push:
+    branches: ['codex/holistic-house-app-r1']
+    paths: ['.github/workflows/hh-app-canonical-sync.yml']
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false, fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: node scripts/prepare-r1-canonical-sync.mjs
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:app && npm run lint
+      - name: Publish source object manifest only, never a ref
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs=require('fs'),cp=require('child_process');
+            const base='59ce68425204412a86c60404d65db1539ed84a65';
+            const git=(...args)=>cp.execFileSync('git',args,{encoding:'utf8'}).trim();
+            const files=git('diff','--cached','--name-only',base).split('\n').filter(Boolean);
+            const entries=[];
+            for(const path of files){
+              const entry=git('ls-files','--stage','--',path);
+              if(!entry){entries.push({path,mode:'100644',type:'blob',sha:null});continue}
+              const mode=entry.split(' ')[0];
+              const result=await github.rest.git.createBlob({...context.repo,content:fs.readFileSync(path,'utf8'),encoding:'utf-8'});
+              entries.push({path,mode,type:'blob',sha:result.data.sha});
+            }
+            const manifest={parent:context.sha,canonical:base,base_tree:git('rev-parse',base+'^{tree}'),tree_elements:entries};
+            fs.mkdirSync('artifacts/canonical-sync',{recursive:true});
+            fs.writeFileSync('artifacts/canonical-sync/manifest.json',JSON.stringify(manifest,null,2));
+            core.info('CANONICAL_SYNC_MANIFEST='+JSON.stringify(manifest));
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-r1-canonical-sync-manifest
+          path: artifacts/canonical-sync/
+          retention-days: 3
