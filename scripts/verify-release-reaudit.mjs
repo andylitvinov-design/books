@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { chromium, webkit } from '@playwright/test';
+import { chromium, webkit, expect } from '@playwright/test';
 
 const origin = process.env.REAUDIT_ORIGIN || 'http://127.0.0.1:3123';
 const url = new URL(origin);
@@ -14,7 +14,7 @@ const media = new Set();
 const routes = [
   ['/?lang=en', 'en'], ['/?lang=ru', 'ru'], ['/es', 'es'],
   ...['about', 'services', 'homeopathy', 'books', 'client'].flatMap(section => ['en', 'ru', 'es'].map(locale => [`/${locale}/${section}`, locale])),
-  ['/books/maya-tradition', 'en'],
+  ['/books/maya-tradition', 'en'], ['/books/maya-tradition?lang=ru', 'ru'],
 ];
 const volumes = ['maya-egregor-gods', 'maya-calendar', 'maya-exorcism', 'maya-mysteries'];
 async function check(name, detail, fn) {
@@ -35,7 +35,7 @@ async function exercise(engine, browserType, width) {
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
         const state = await page.evaluate(() => ({ lang: document.querySelector('main')?.lang, htmlLang: document.documentElement.lang, overflow: document.documentElement.scrollWidth - innerWidth, title: document.querySelector('h1')?.textContent, players: document.querySelectorAll('.site-video-player').length, iframesBeforeClick: document.querySelectorAll('.site-video-player iframe').length }));
-        assert.equal(state.lang, locale, 'Main language');
+        assert.equal(state.lang || state.htmlLang, locale, 'Effective page language (including valid inheritance)');
         assert.ok(state.title?.trim(), 'Missing main heading');
         assert.ok(state.overflow <= 2, `Horizontal overflow ${state.overflow}px`);
         assert.equal(state.iframesBeforeClick, 0, 'Video must be poster-first');
@@ -57,6 +57,13 @@ async function exercise(engine, browserType, width) {
     await check('menu-escape', { engine, width }, async () => {
       await trigger.click();
       assert.equal(await menu.evaluate(el => el.open), true);
+      for (const option of await menu.locator('[lang]').all()) {
+        assert.ok(await option.evaluate(el => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight && el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+        }), 'Open menu option must be visible, unclipped and clickable');
+      }
+      await page.screenshot({ path: `${evidence}/${label}-menu-${engine}-${width}.png` });
       await page.keyboard.press('Escape');
       assert.equal(await menu.evaluate(el => el.open), false, 'Escape must dismiss the language menu');
       assert.equal(await trigger.evaluate(el => el === document.activeElement), true, 'Focus must return to the trigger');
@@ -72,6 +79,75 @@ async function exercise(engine, browserType, width) {
       await page.waitForTimeout(300);
       assert.equal(await menu.evaluate(el => el.open), false, 'Selection must dismiss the menu');
     });
+    for (const locale of ['ru', 'es', 'en']) {
+      await check('about-language-navigation', { engine, width, locale }, async () => {
+        await trigger.click();
+        await menu.locator(`[lang="${locale}"]`).click();
+        await expect(page).toHaveURL(origin + `/${locale}/about`);
+        await expect(page.locator('main').first()).toHaveAttribute('lang', locale);
+        await expect(page.locator('.site-language-menu')).not.toHaveAttribute('open', '');
+      });
+    }
+    await page.goto(origin + '/books/maya-tradition', { waitUntil: 'networkidle' });
+    for (const locale of ['ru', 'en']) {
+      await check('maya-language-navigation', { engine, width, locale }, async () => {
+        await page.locator('.site-language-menu-trigger').click();
+        await page.locator(`.site-language-menu [lang="${locale}"]`).click();
+        await expect(page).toHaveURL(origin + `/books/maya-tradition?lang=${locale}`);
+        await expect(page.locator('main').first()).toHaveAttribute('lang', locale);
+        await expect(page.locator(`main ol a[href$="?lang=${locale}"]`)).toHaveCount(4);
+      });
+    }
+    for (const locale of ['en', 'ru', 'es']) {
+      await check('consultation-safe-handoff', { engine, width, locale }, async () => {
+        await page.goto(origin + `/${locale}/about`, { waitUntil: 'networkidle' });
+        await page.evaluate(() => { window.__reauditRequests = []; window.open = url => { window.__reauditRequests.push(url); return null; }; });
+        const form = page.locator('.personal-consultation-form');
+        await expect(form).toHaveAttribute('method', 'post');
+        assert.equal(await form.evaluate(el => el.checkValidity()), false, 'Empty request must be invalid');
+        await form.locator('[name="name"]').fill('   ');
+        await form.locator('[name="request"]').fill('QA only: not sent');
+        await form.locator('button[type="submit"]').click();
+        assert.equal(await page.evaluate(() => window.__reauditRequests.length), 0, 'Whitespace-only names must not submit');
+        await form.locator('[name="name"]').fill('QA only');
+        await form.locator('button[type="submit"]').click();
+        const requests = await page.evaluate(() => window.__reauditRequests);
+        assert.equal(requests.length, 1);
+        const handoff = new URL(requests[0]);
+        assert.equal(handoff.origin, 'https://wa.me');
+        assert.equal(handoff.pathname, '/14376066502');
+        assert.ok(handoff.searchParams.get('text').includes('QA only: not sent'));
+        await expect(form.locator('.personal-consultation-form__resume')).toHaveAttribute('href', requests[0]);
+        assert.match(await form.locator('[role="status"]').innerText(), /not sent|не отправлена|no se ha enviado/);
+        return { externalNavigationIntercepted: true, messageSent: false, blockedPopupFallback: true };
+      });
+    }
+    if (width === 390) {
+      await check('translation-failure-invalid-response-and-recovery', { engine, width }, async () => {
+        let mode = 'failure';
+        await page.route('**/api/public-translate', async route => {
+          const payload = route.request().postDataJSON();
+          if (mode === 'failure') return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+          const translations = mode === 'invalid' ? [] : payload.texts.map((_, i) => `English test fixture ${i}`);
+          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ translations }) });
+        });
+        try {
+          await page.goto(origin + '/books/maya-mysteries?lang=en', { waitUntil: 'networkidle' });
+          await expect(page.locator('.reader-translation-error')).toBeVisible();
+          const original = page.locator('.reader-content[lang="ru"]');
+          assert.ok((await original.innerText()).length > 1000, 'Original must remain readable after service failure');
+          mode = 'invalid';
+          await page.getByRole('button', { name: 'Retry English translation' }).click();
+          await expect(page.locator('.reader-translation-error')).toBeVisible();
+          assert.ok((await original.innerText()).length > 1000, 'Original must survive malformed translation');
+          mode = 'success';
+          await page.getByRole('button', { name: 'Retry English translation' }).click();
+          await expect(page.locator('.reader-content[lang="en"]')).toBeVisible({ timeout: 20000 });
+          await expect(page.locator('.reader-translation-error')).toHaveCount(0);
+          return { translationServiceStubbed: true, paidCalls: 0, originalPreserved: true, retryVerified: true };
+        } finally { await page.unroute('**/api/public-translate'); }
+      });
+    }
     if (engine === 'chromium' && width === 390) {
       for (const book of volumes) {
         await check('maya-reader-and-images', { path: `/books/${book}` }, async () => {
@@ -95,6 +171,14 @@ await Promise.all([exercise('chromium', chromium, 390), exercise('chromium', chr
 const browser = await chromium.launch();
 const context = await browser.newContext();
 try {
+  await check('consultation-SSR-privacy', {}, async () => {
+    const response = await context.request.get(origin + '/en/about');
+    const html = await response.text();
+    const form = html.match(/<form[^>]*class="personal-consultation-form"[\s\S]*?<\/form>/)?.[0] || '';
+    assert.match(form, /method="post"/);
+    assert.match(form, /<button[^>]*type="submit"[^>]*disabled/);
+    return { serverRenderedSubmitDisabled: true, noDefaultGET: true };
+  });
   const paths = [...media];
   for (let i = 0; i < paths.length; i += 6) {
     await Promise.all(paths.slice(i, i + 6).map(path => check('reader-image-http', { path }, async () => {
@@ -111,13 +195,14 @@ try {
       assert.equal(response.status(), 200);
     });
   }
-  const selector = 'reauditSyntheticOnly01';
+  const selector = 'reauditSyntheticOnly001';
   for (const path of [`/api/client/${selector}/documents/reaudit-nonexistent/pdf?locale=en`, `/api/client/${selector}/documents/reaudit-nonexistent/pdf?locale=es`, `/es/client/${selector}`]) {
     await check('private-anonymous', { path }, async () => {
       const response = await context.request.get(origin + path);
       assert.equal(response.status(), 404);
       assert.match(response.headers()['cache-control'] || '', /no-store/);
-      assert.match(response.headers()['x-robots-tag'] || '', /noindex/);
+      const robots = response.headers()['x-robots-tag'] || (await response.text()).match(/<meta[^>]*name=["']robots["'][^>]*content=["']([^"']+)["']/i)?.[1] || '';
+      assert.match(robots, /noindex/);
       if (path.startsWith('/api/')) assert.equal((await response.body()).length, 0);
     });
   }

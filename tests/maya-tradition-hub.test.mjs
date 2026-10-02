@@ -4,8 +4,9 @@ import test from 'node:test'
 
 test('the legacy Maya collection URL is restored as a public hub for the four existing readers', async () => {
   const hub = await readFile('app/books/maya-tradition/page.tsx', 'utf8')
-
-  assert.match(hub, /canonical: "\/books\/maya-tradition"/)
+  assert.match(hub, /canonical:/)
+  assert.match(hub, /\/books\/maya-tradition\?lang=ru/)
+  assert.match(hub, /hubLocale/)
   assert.match(hub, /mediaSeries === "maya"/)
   for (const id of ['maya-egregor-gods', 'maya-calendar', 'maya-exorcism', 'maya-mysteries']) assert.match(hub, new RegExp(id))
   assert.doesNotMatch(hub, /redirect\(/)

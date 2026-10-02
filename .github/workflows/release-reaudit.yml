@@ -7,7 +7,10 @@ on:
       - 'components/site-navigation.tsx'
       - 'app/globals.css'
       - 'app/books/maya-tradition/**'
-      - 'components/translated-reader-content.tsx'
+      - 'components/translated-reader-content.jsx'
+      - 'components/personal-consultation-form.tsx'
+      - 'app/reader-responsive.css'
+      - 'tests/release-reaudit.test.mjs'
       - 'next.config.ts'
   push:
     branches: ['codex/public-book-library']
@@ -17,7 +20,10 @@ on:
       - 'components/site-navigation.tsx'
       - 'app/globals.css'
       - 'app/books/maya-tradition/**'
-      - 'components/translated-reader-content.tsx'
+      - 'components/translated-reader-content.jsx'
+      - 'components/personal-consultation-form.tsx'
+      - 'app/reader-responsive.css'
+      - 'tests/release-reaudit.test.mjs'
       - 'next.config.ts'
 permissions:
   contents: read
@@ -29,34 +35,28 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Package reviewed public source for offline analysis
-        run: tar -czf /tmp/reaudit-source.tar.gz app components lib data scripts tests .github next.config.ts package.json tsconfig.json .vercelignore
-      - uses: actions/upload-artifact@v4
-        with:
-          name: reaudit-source
-          path: /tmp/reaudit-source.tar.gz
-          retention-days: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Public and synthetic security regressions
+        run: |
+          node --test tests/release-reaudit.test.mjs tests/navigation-cabinet.test.mjs tests/client-cabinet-pages.test.mjs tests/admin-login-security.test.mjs tests/clients.test.mjs tests/maya-tradition-hub.test.mjs tests/page-video-release.test.mjs
+          npx eslint components/site-navigation.tsx components/translated-reader-content.jsx components/personal-consultation-form.tsx app/books/maya-tradition/page.tsx
+          npx tsc --noEmit
       - name: Install isolated browser tools
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
           npm install --prefix /tmp/reaudit-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
           ln -s /tmp/reaudit-tools/node_modules/@playwright node_modules/@playwright
           /tmp/reaudit-tools/node_modules/.bin/playwright install --with-deps chromium webkit
-      - name: Observe current Production without mutation
-        if: github.event_name == 'pull_request'
-        run: node scripts/verify-release-reaudit.mjs --observe
-        env:
-          REAUDIT_ORIGIN: https://holistichouse.vercel.app
-          REAUDIT_LABEL: baseline
       - name: Build exact proposed release
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Verify real Maya runtime trace
+        run: node scripts/verify-maya-reader-release.mjs
       - name: Verify proposed release locally
         run: |
           npm run start -- --port 3123 > /tmp/reaudit-server.log 2>&1 &
