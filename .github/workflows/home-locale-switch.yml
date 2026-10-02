@@ -1,0 +1,60 @@
+name: Home language switch first-click regression
+on:
+  pull_request:
+    paths:
+      - 'components/holistic-house-home.tsx'
+      - 'components/site-navigation.tsx'
+      - 'app/page.tsx'
+      - 'scripts/verify-home-locale-switch.mjs'
+      - '.github/workflows/home-locale-switch.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/holistic-house-home.tsx'
+      - 'components/site-navigation.tsx'
+      - 'app/page.tsx'
+      - 'scripts/verify-home-locale-switch.mjs'
+      - '.github/workflows/home-locale-switch.yml'
+permissions:
+  contents: read
+jobs:
+  first-click:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Navigation, types and affected-component lint
+        run: |
+          node --test tests/navigation-cabinet.test.mjs tests/page-video-release.test.mjs
+          npx eslint components/holistic-house-home.tsx
+          npx tsc --noEmit
+      - name: Build the real application
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Install isolated browsers without changing app dependencies
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          fi
+          npm install --prefix /tmp/locale-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          ln -s /tmp/locale-browser-tools/node_modules/@playwright node_modules/@playwright
+          /tmp/locale-browser-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Delayed navigation cannot discard the first play click
+        run: node scripts/verify-home-locale-switch.mjs
+      - name: Repeat read-only on Production
+        if: github.event_name == 'push'
+        run: node scripts/verify-home-locale-switch.mjs --live
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-locale-switch-evidence
+          path: tmp/home-locale-switch/
+          retention-days: 7
