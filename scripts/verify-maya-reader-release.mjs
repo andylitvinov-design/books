@@ -44,8 +44,10 @@ export async function verifyLive(origin = 'https://holistichouse.vercel.app') {
     ['/books/maya-tradition', 'en'],
     ...volumes.flatMap(([slug]) => [[`/books/${slug}?lang=en`, 'en'], [`/books/${slug}`, 'ru']]),
   ];
-  // Production aliases may switch shortly after the push that started this job.
-  for (let attempt = 1; attempt <= 5; attempt++) {
+  // GitHub can finish its build before Vercel starts its queued production build.
+  // Allow a bounded two-minute alias-settling window without accepting any failed route.
+  const maxAttempts = 12;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const failures = [];
     for (const [route, locale] of routes) {
       try {
@@ -61,7 +63,7 @@ export async function verifyLive(origin = 'https://holistichouse.vercel.app') {
       }
     }
     if (!failures.length) { console.log('PASS: Maya hub and all four EN/RU readers (9 routes)'); return; }
-    if (attempt === 5) throw new Error(failures.join('\n'));
+    if (attempt === maxAttempts) throw new Error(failures.join('\n'));
     console.log(`Alias settling: retry ${attempt}; ${failures.length} route(s) not ready`);
     await new Promise(resolve => setTimeout(resolve, 10000));
   }
