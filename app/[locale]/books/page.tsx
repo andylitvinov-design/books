@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { BookCatalog } from "@/components/book-catalog";
 import { PageVideo } from "@/components/page-video";
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { books } from "@/data/library";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
@@ -43,5 +44,5 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function LocalizedBooksPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
-  return <BookCatalog books={books} locale={locale as Locale} video={<PageVideo slot="books-intro" locale={locale} />} />;
+  return <><BookCatalog books={books} locale={locale as Locale} video={<PageVideo slot="books-intro" locale={locale} />} /><PublicConsultationCta locale={locale as Locale} /></>;
 }

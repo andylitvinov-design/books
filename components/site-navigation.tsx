@@ -8,9 +8,9 @@ import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type Public
 
 type SiteNavigationProps = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
 const navigationCopy = {
-  ru: { home: "Главная", book: "Книга", remedies: "Препараты", services: "Услуги", about: "Обо мне", navigation: "Основная навигация", language: "Язык интерфейса" },
-  en: { home: "Home", book: "Book", remedies: "Remedies", services: "Services", about: "About", navigation: "Primary navigation", language: "Interface language" },
-  es: { home: "Inicio", book: "Libros", remedies: "Remedios", services: "Servicios", about: "Sobre mí", navigation: "Navegación principal", language: "Idioma de la página" },
+  ru: { home: "Главная", book: "Книга", remedies: "Препараты", services: "Услуги", about: "Обо мне", cabinet: "Кабинет", navigation: "Основная навигация", language: "Язык интерфейса" },
+  en: { home: "Home", book: "Book", remedies: "Remedies", services: "Services", about: "About", cabinet: "Client Cabinet", navigation: "Primary navigation", language: "Interface language" },
+  es: { home: "Inicio", book: "Libros", remedies: "Remedios", services: "Servicios", about: "Sobre mí", cabinet: "Client area", navigation: "Navegación principal", language: "Idioma de la página" },
 } as const;
 export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) {
   const pathname = usePathname();
@@ -47,8 +47,11 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
     <Link href={"/" + activeLocale + "/homeopathy"}>{labels.remedies}</Link>
     <Link href={"/" + activeLocale + "/services"}>{labels.services}</Link>
     <Link href={"/" + activeLocale + "/about"}>{labels.about}</Link>
-    {!spanish && <Link className="site-cabinet-link" href={"/" + activeLocale + "/client"}>{activeLocale === "ru" ? "Кабинет" : "Client Cabinet"}</Link>}
+    {!spanish && <Link className="site-cabinet-link" href={"/" + activeLocale + "/client"}>{labels.cabinet}</Link>}
     {/* Load a different language only on selection, not speculatively (including client-entry counterparts). */}
-    <span aria-label={labels.language} className="site-language-switch">{languages.map(nextLocale => localizedPath || nextLocale === "es" ? <Link prefetch={false} aria-current={activeLocale === nextLocale ? "true" : undefined} href={counterpart(nextLocale)} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)}>{nextLocale.toUpperCase()}</Link> : <button aria-pressed={activeLocale === nextLocale} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)} type="button">{nextLocale.toUpperCase()}</button>)}</span>
+    <details className="site-language-menu">
+      <summary className="site-language-menu-trigger" aria-label={labels.language}>{activeLocale.toUpperCase()}</summary>
+      <span className="site-language-menu-list">{languages.map(nextLocale => localizedPath || nextLocale === "es" ? <Link prefetch={false} aria-current={activeLocale === nextLocale ? "true" : undefined} href={counterpart(nextLocale)} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)}>{nextLocale.toUpperCase()}</Link> : <button aria-pressed={activeLocale === nextLocale} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)} type="button">{nextLocale.toUpperCase()}</button>)}</span>
+    </details>
   </nav>;
 }

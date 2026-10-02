@@ -15,7 +15,10 @@ test('locale counterpart paths preserve the current localized route', async () =
 })
 
 test('public navigation exposes both UI languages and About without exposing administration', async () => {
-  const navigation = await readFile('components/site-navigation.tsx', 'utf8')
+  const [navigation, cabinet] = await Promise.all([
+    readFile('components/site-navigation.tsx', 'utf8'),
+    readFile('components/client-cabinet.jsx', 'utf8'),
+  ])
 
   assert.match(navigation, /Главная/)
   assert.match(navigation, /Книга/)
@@ -33,6 +36,12 @@ test('public navigation exposes both UI languages and About without exposing adm
   assert.doesNotMatch(navigation, /href="\/admin"/)
   assert.match(navigation, /localePath/)
   assert.match(navigation, /document\.cookie/)
+  assert.match(navigation, /site-language-menu-trigger/)
+  assert.match(navigation, /<details/)
+  assert.match(cabinet, /client-cabinet-next-step/)
+  assert.match(cabinet, /Next step/)
+  assert.match(cabinet, /Следующий шаг/)
+  assert.doesNotMatch(cabinet, /localStorage/)
 })
 
 test('the umbrella homepage can render Russian and English chrome and copy', async () => {
@@ -142,4 +151,21 @@ test('About exposes a consultation request form and a real Client Cabinet entry 
   assert.match(entryForm, /secretPattern/)
   assert.match(consultationForm, /wa\.me\/14376066502/)
   assert.match(consultationForm, /Request a personal consultation/)
+})
+
+test('public pages share one localized consultation CTA that leads to the existing request form', async () => {
+  const [cta, styles, homeopathy, services, spanishServices] = await Promise.all([
+    readFile('components/public-consultation-cta.tsx', 'utf8'),
+    readFile('app/globals.css', 'utf8'),
+    readFile('app/[locale]/homeopathy/page.tsx', 'utf8'),
+    readFile('app/[locale]/services/page.tsx', 'utf8'),
+    readFile('app/es/services/page.tsx', 'utf8'),
+  ])
+
+  assert.match(cta, /data-consultation-cta/)
+  assert.match(cta, /\/about#personal-consultation-title/)
+  assert.match(styles, /\.public-consultation-cta/)
+  assert.match(homeopathy, /PublicConsultationCta/)
+  assert.match(services, /PublicConsultationCta/)
+  assert.match(spanishServices, /PublicConsultationCta/)
 })
