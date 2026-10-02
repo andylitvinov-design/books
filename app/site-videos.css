@@ -90,7 +90,7 @@
   background: linear-gradient(180deg, rgba(54, 37, 28, .12), rgba(54, 37, 28, .62));
 }
 
-.site-video-poster-title { position: absolute; right: 94px; bottom: 16px; left: 18px; max-width: 38rem; color: #fffaf3; font-family: var(--font-serif); font-size: clamp(18px, 2.4vw, 28px); line-height: 1.15; text-align: left; text-shadow: 0 1px 18px rgba(38, 29, 23, .55); }
+.site-video-poster-title { position: absolute; right: 94px; bottom: 16px; left: 18px; max-width: 38rem; color: #fffaf3; font-family: var(--font-serif); font-size: clamp(18px, 2.4vw, 28px); line-height: 1.15; text-align: left; text-shadow: 0 1px 18px rgba(38, 29, 23, .55); }.site-video-poster-title::before { content: attr(data-title); }
 
 .site-video-play-prompt {
   position: relative;

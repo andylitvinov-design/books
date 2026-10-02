@@ -133,7 +133,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
               <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
             ) : null}
             <span className="site-video-shade" aria-hidden="true" />
-            <span className="site-video-poster-title" aria-hidden="true">{video.title}</span>
+                <span className="site-video-poster-title" aria-hidden="true" data-title={video.title} />
             <span className="site-video-play-prompt" aria-hidden="true"><span className="site-video-play-icon"><Play /></span>{!minimal && <span className="site-video-play-label">{text.play}</span>}</span>
             {duration && <span className="site-video-duration" aria-hidden="true">{duration.label}</span>}
           </button>

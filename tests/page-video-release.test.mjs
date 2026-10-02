@@ -39,8 +39,9 @@ test('a cold SSR play control cannot accept a click before its handler is mounte
   assert.doesNotMatch(player, /Expires=|Signature=|\.mp4\?/);
 });
 test('posters keep the video title visible over the shared warm treatment', () => {
-  assert.match(player, /site-video-poster-title/);
-  assert.match(videoCss, /\.site-video-poster-title/);
+  assert.match(player, /site-video-poster-title" aria-hidden="true" data-title=\{video\.title\}/);
+  assert.doesNotMatch(player, /site-video-poster-title" aria-hidden="true">\{video\.title\}/);
+  assert.match(videoCss, /\.site-video-poster-title::before \{ content: attr\(data-title\); \}/);
   assert.match(videoCss, /rgba\(54, 37, 28, \.62\)/);
 });
 test('compact defaults are limited to these eight published renders, not About or editor replacements', () => {
