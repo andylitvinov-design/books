@@ -12,22 +12,22 @@ test('locale counterpart paths preserve the current localized route', async () =
   assert.equal(localePath('/books', 'en'), '/books')
 })
 
-test('public navigation exposes both UI languages and About without exposing administration', async () => {
-  const navigation = await readFile('components/site-navigation.tsx', 'utf8')
-
-  assert.match(navigation, /Главная/)
-  assert.match(navigation, /Книга/)
-  assert.match(navigation, /Препараты/)
-  assert.match(navigation, /Услуги/)
-  assert.match(navigation, /Обо мне/)
-  assert.match(navigation, /Home/)
-  assert.match(navigation, /Book/)
-  assert.match(navigation, /Remedies/)
-  assert.match(navigation, /Services/)
-  assert.match(navigation, /About/)
-  assert.doesNotMatch(navigation, /href="\/admin"/)
-  assert.match(navigation, /localePath/)
-  assert.match(navigation, /document\.cookie/)
+test('public navigation shares six destinations and never exposes administration', async () => {
+  const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
+  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'academy', 'about', 'cabinet'])
+  for (const locale of ['en', 'ru', 'es']) {
+    const items = getSiteNavigation(locale)
+    assert.equal(items.length, 6)
+    assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
+    assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
+    assert.equal(items.find(item => item.id === 'academy').href, 'https://psitrends.com/academy')
+    assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
+  }
+  for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
+    const source = await readFile(path, 'utf8')
+    assert.match(source, /getSiteNavigation/)
+    assert.match(source, /prefetch=\{false\}/)
+  }
 })
 
 test('the umbrella homepage can render Russian and English chrome and copy', async () => {

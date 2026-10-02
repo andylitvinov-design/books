@@ -10,6 +10,7 @@ import "./holistic-house-home.css";
 import "./site-videos.css";
 import "./site-video-admin.css";
 import "./reader-responsive.css";
+import "./ia-v2.css";
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
@@ -23,7 +24,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const lang = pageLocale === "es" || pageLocale === "en" ? pageLocale : "ru";
   return (
     <html lang={lang}>
-      <body className="font-sans"><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks />{children}<MobileBottomNavigation /></body>
+      <body className="font-sans"><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks />{children}<MobileBottomNavigation initialLocale={lang} /></body>
     </html>
   );
 }

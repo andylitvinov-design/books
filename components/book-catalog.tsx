@@ -1,4 +1,5 @@
 "use client";
+import { LibraryBackLink } from '@/components/library-hub';
 
 import Image from "next/image";
 import Link from "next/link";
@@ -69,7 +70,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
 
   return (
     <main className="catalog-shell" lang={locale}>
-      <PublicSiteHeader locale={locale} />
+      <PublicSiteHeader locale={locale} /><LibraryBackLink locale={locale} />
       <header className="catalog-header">
         <div className="catalog-header-copy">
           <p className="catalog-kicker">{text.kicker}</p>

@@ -15,7 +15,7 @@ const evidence = '/tmp/site-video-evidence';
 const results = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const routes = ['/es', '/es/services', '/es/books', '/es/about', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
-const nav = ['/es', '/es/books', '/es/homeopathy', '/es/services', '/es/about'];
+const nav = ['/es', '/es/library', '/es/services', 'https://psitrends.com/academy', '/es/about', '/es/client'];
 mkdirSync(evidence, { recursive: true });
 let app, proxy, stage = 'start';
 try {

@@ -1,3 +1,4 @@
+import { clientAssessmentSummary } from '@/lib/clients/assessments'
 import { notFound } from 'next/navigation'
 import { PrescriptionAccessGate } from '@/components/prescription-access-gate'
 import { ClientCabinet } from '@/components/client-cabinet'
@@ -12,5 +13,8 @@ export default async function CabinetPage({ params }) {
   const records = await access.store.listClientDocuments(access.client.id)
   const ru = locale === 'ru'
   const documents = records.filter(r => r.status === 'active' && r.clientId === access.client.id).map(r => ({ id: r.id, date: r.dateIssued, consultationId: r.consultationId ?? r.id, type: r.kind === 'payment' ? 'payment' : r.kind === 'report' ? 'report' : 'recommendation', title: r.kind === 'payment' ? `${r.paymentStatus === 'received' ? (ru ? 'Квитанция' : 'Receipt') : (ru ? 'Счёт' : 'Invoice')} · ${r.currency} ${(r.amount / 100).toFixed(2)}` : r.kind === 'report' ? (ru ? 'Отчёт' : 'Report') : r.recommendationType === 'bach' ? (ru ? 'Рекомендация по эссенциям Баха' : 'Bach Flower Essence Recommendation') : r.recommendationType === 'mixed' ? (ru ? 'Комплексная рекомендация' : 'Integrated Recommendation') : (ru ? 'Гомеопатическая рекомендация' : 'Homeopathic Recommendation') }))
-  return <ClientCabinet name={access.client.fullName} locale={locale} selector={selector} documents={documents} />
+  const assessments = (await access.store.listClientAssessments(access.client.id))
+    .map(record => clientAssessmentSummary(record, access.client.id)).filter(Boolean)
+    .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || a.id.localeCompare(b.id))
+  return <ClientCabinet assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} />
 }
