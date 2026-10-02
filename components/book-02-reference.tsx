@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 
 import { RemedyContent, RemedyEssence } from "@/components/remedy-content";
 import type { Locale, Remedy, RemedyDirectoryEntry } from "@/data/remedies";
@@ -11,6 +12,7 @@ type Book02ReferenceProps = {
   locale: Locale;
   remedies: Remedy[];
   entries: RemedyDirectoryEntry[];
+  video?: ReactNode;
 };
 
 const copy = {
@@ -137,7 +139,7 @@ function BookRemedyImages({ locale, remedy }: { locale: Locale; remedy: Remedy }
   </>;
 }
 
-export function Book02Reference({ locale, remedies, entries }: Book02ReferenceProps) {
+export function Book02Reference({ locale, remedies, entries, video }: Book02ReferenceProps) {
   const labels = { ...copy[locale],
     description: copy[locale].description.replace("{count}", String(remedies.length)),
     count: copy[locale].count.replace("{count}", String(remedies.length)),
@@ -160,6 +162,7 @@ export function Book02Reference({ locale, remedies, entries }: Book02ReferencePr
       <div><Link className="reader-back-link" href="/books">{labels.back}</Link><p className="reader-eyebrow">{labels.book}</p><h1>{labels.title}</h1><p>{labels.description}</p></div>
       <div className="book-reference-header-actions"><span>{labels.count}</span><Link href={`/${locale}/homeopathy/remedies`}>{labels.directory}</Link><Link href={otherLanguageHref} lang={locale === "ru" ? "en" : "ru"}>{labels.language}</Link></div>
     </header>
+    {video}
     <button aria-controls="book-remedy-drawer" aria-expanded={drawerOpen} className="book-reference-mobile-toggle" onClick={() => setDrawerOpen(true)} type="button">{labels.remedies}</button>
     {drawerOpen ? <div className="book-reference-drawer-backdrop" onClick={() => setDrawerOpen(false)}><aside aria-label={labels.remedies} aria-modal="true" className="book-reference-drawer" id="book-remedy-drawer" onClick={(event) => event.stopPropagation()} role="dialog"><div><p className="book-reference-drawer-title">{labels.remedies}</p><button aria-label={labels.close} onClick={() => setDrawerOpen(false)} type="button"><X aria-hidden="true" className="size-5" /></button></div><RemedyNavigator entries={entries} locale={locale} onNavigate={jumpFromDrawer} /></aside></div> : null}
     <div className="book-reference-layout">

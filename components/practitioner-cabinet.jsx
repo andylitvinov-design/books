@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, PlusCircle, Users } from 'lucide-react'
+import { Archive, Film, PlusCircle, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
@@ -18,6 +18,8 @@ const copy = {
     clientsText: 'Открыть историю клиента, документы и доступ к кабинету.',
     legacy: 'Старые документы',
     legacyText: 'Разобрать и привязать ранее созданные документы к клиентам.',
+    videos: 'Видео сайта',
+    videosText: 'Добавить видео на страницу, проверить и опубликовать ссылку YouTube.',
   },
   en: {
     title: 'Practitioner Cabinet',
@@ -29,6 +31,8 @@ const copy = {
     clientsText: 'Open client history, documents, and private cabinet access.',
     legacy: 'Legacy documents',
     legacyText: 'Review and assign previously created documents to clients.',
+    videos: 'Website videos',
+    videosText: 'Add a video to a page, preview it, and publish its YouTube link.',
   },
 }
 
@@ -47,6 +51,7 @@ export function PractitionerCabinet() {
     { href: '/admin/consultations/new', icon: PlusCircle, title: text.newConsultation, body: text.newConsultationText },
     { href: '/admin/clients', icon: Users, title: text.clients, body: text.clientsText },
     { href: '/admin/clients/legacy', icon: Archive, title: text.legacy, body: text.legacyText },
+    { href: '/admin/videos', icon: Film, title: text.videos, body: text.videosText },
   ]
 
   return (

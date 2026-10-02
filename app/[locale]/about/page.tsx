@@ -4,7 +4,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
+import { PageVideo } from "@/components/page-video";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PsychicAlchemyIntroVideo } from "@/components/psychic-alchemy-intro-video";
+import { SiteVideoPlayer } from "@/components/site-video-player";
+import { existingAboutIntroVideo } from "@/lib/site-videos/defaults";
+import { getPublishedSiteVideos } from "@/lib/site-videos/public";
+import { videoKey } from "@/lib/site-videos/model";
 import { aboutBiography } from "@/data/about-biography";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
@@ -88,10 +94,15 @@ export default async function AboutPage({ params }: PageProps) {
   const current = aboutBiography[typedLocale];
   const testimonials = testimonialCopy[typedLocale];
   const consultation = consultationCopy[typedLocale];
+  const aboutIntro = (await getPublishedSiteVideos())[videoKey("about-intro", typedLocale)];
 
   return (
     <main className="about-shell" lang={typedLocale}>
       <PublicSiteHeader locale={typedLocale} />
+
+      {aboutIntro && (typedLocale === "en" && aboutIntro.heygenId === existingAboutIntroVideo.heygenId
+        ? <PsychicAlchemyIntroVideo video={aboutIntro} />
+        : <section className="site-video-block" data-video-slot="about-intro" data-video-locale={typedLocale} aria-label={aboutIntro.title}><SiteVideoPlayer video={aboutIntro} locale={typedLocale} minimal={typedLocale === "ru"} posterPriority /></section>)}
 
       <section className="about-introduction" aria-labelledby="about-title">
         <div className="about-portrait">
@@ -127,7 +138,14 @@ export default async function AboutPage({ params }: PageProps) {
           <p>{testimonials.text}</p>
         </div>
         <div className="about-video-grid">
-          {videoTestimonials.map((video) => <article key={video.id}><div className="about-video-frame"><iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" src={"https://www.youtube-nocookie.com/embed/" + video.id} title={video[typedLocale]} /></div><p>{video[typedLocale]}</p></article>)}
+          {videoTestimonials.map((video) => (
+            <SiteVideoPlayer
+              key={video.id}
+              video={{ youtubeId: video.id, title: video[typedLocale], language: "ru" }}
+              locale={typedLocale}
+              compact
+            />
+          ))}
         </div>
       </section>
 
@@ -143,6 +161,8 @@ export default async function AboutPage({ params }: PageProps) {
           ))}
         </div>
       </section>
+
+      <PageVideo slot="consultation" locale={typedLocale} />
 
       <section className="about-consultation" aria-labelledby="personal-consultation-title">
         <div className="about-consultation-copy">

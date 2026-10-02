@@ -1,0 +1,135 @@
+/* An opt-in, photo-first introduction. Other video cards retain their layout. */
+.minimal {
+  max-width: 960px;
+  margin-inline: auto;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.minimal :global(.site-video-frame) {
+  border-radius: 16px;
+  box-shadow: 0 8px 26px rgba(53, 43, 36, .08);
+  isolation: isolate;
+}
+
+.minimal :global(.site-video-shade) {
+  background: linear-gradient(180deg, transparent 58%, rgba(30, 23, 18, .28));
+}
+
+/* Keep the control away from Andy's face instead of covering the portrait. */
+.minimal :global(.site-video-play-prompt) {
+  position: absolute;
+  left: 20px;
+  bottom: 18px;
+}
+
+.minimal :global(.site-video-play-icon) {
+  width: 56px;
+  height: 56px;
+  border: 1px solid rgba(255, 250, 243, .8);
+  background: rgba(255, 250, 243, .94);
+  color: #72452f;
+  box-shadow: 0 3px 14px rgba(30, 23, 18, .14);
+}
+
+.minimal :global(.site-video-play-icon svg) {
+  width: 21px;
+  height: 21px;
+  margin-left: 2px;
+}
+
+.minimal :global(.site-video-play:hover .site-video-play-icon) {
+  background: #fffaf3;
+  transform: scale(1.035);
+}
+
+.minimal :global(.site-video-duration) {
+  right: 18px;
+  bottom: 18px;
+  padding: 4px 7px;
+  background: rgba(30, 23, 18, .54);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.minimal :global(.site-video-caption) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  padding: 0 2px;
+}
+
+.minimal :global(.site-video-transcript) {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+}
+
+.minimal :global(.site-video-transcript summary) {
+  width: fit-content;
+  min-height: 44px;
+  justify-content: start;
+  gap: 6px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #76695d;
+}
+
+.minimal :global(.site-video-transcript summary svg) { width: 13px; height: 13px; }
+
+.minimal :global(.site-video-ai-badge) {
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 14px;
+  color: #76695d;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.minimal :global(.site-video-more) {
+  padding: 14px 18px 8px;
+  border: 1px solid #e5dccf;
+  border-radius: 12px;
+  background: rgba(255, 250, 243, .65);
+}
+
+.minimal :global(.site-video-transcript p) { font-size: 14px; line-height: 1.8; }
+.minimal :global(.site-video-actions) { margin-top: 0; }
+.minimal :global(.site-video-watch-link) { font-weight: 400; }
+
+.accessibleTitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 767px) {
+  .minimal :global(.site-video-frame) { border-radius: 14px; }
+  .minimal :global(.site-video-play-prompt) { left: 14px; bottom: 14px; }
+  .minimal :global(.site-video-play-icon) { width: 46px; height: 46px; }
+  .minimal :global(.site-video-play-icon svg) { width: 18px; height: 18px; }
+  .minimal :global(.site-video-duration) { right: 14px; bottom: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .minimal :global(.site-video-play:hover .site-video-play-icon) { transform: none; }
+}
+
+@media print {
+  .minimal :global(.site-video-ai-badge) { display: none; }
+}

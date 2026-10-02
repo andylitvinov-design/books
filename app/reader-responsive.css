@@ -1,0 +1,33 @@
+/* Keep original book content readable on narrow screens. Wide reference tables
+   scroll within their own surface instead of stretching the entire page. */
+.reader-shell .reader-layout > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.reader-shell .reader-header,
+.reader-shell .reader-toc,
+.reader-shell .reader-content {
+  overflow-wrap: anywhere;
+}
+.reader-shell .reader-content {
+  min-width: 0;
+  max-width: 100%;
+}
+.reader-shell .reader-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+.reader-shell .reader-content pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.reader-shell .reader-content iframe {
+  max-width: 100%;
+}
+@media (max-width: 1023px) {
+  .reader-shell .reader-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

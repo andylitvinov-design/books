@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
-
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
   return /^\/(ru|en)\/(prescriptions|client)\//.test(decoded)
@@ -12,7 +11,6 @@ function privatePath(pathname: string) {
     || decoded.startsWith('/admin/')
     || decoded.startsWith('/document-preview/')
 }
-
 export function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
@@ -27,19 +25,19 @@ export function middleware(request: NextRequest) {
     'X-Content-Type-Options': 'nosniff',
   } })
   const requestHeaders = new Headers(request.headers)
+  // Derive the public document language only from the URL. Private locale gates
+  // and all security headers below remain unchanged.
+  const pageLocale = /^\/es(?:\/|$)/.test(request.nextUrl.pathname) ? 'es'
+    : request.nextUrl.pathname.match(/^\/(en|ru)(?:\/|$)/)?.[1] ?? 'ru'
+  requestHeaders.set('x-public-page-locale', pageLocale)
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
+  const videoManager = request.nextUrl.pathname === '/admin/videos'
   const csp = [
-    "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentEval}`,
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
-    "font-src 'self'",
-    "connect-src 'self'",
-    "object-src 'none'",
-    "base-uri 'none'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
+    "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentEval}`, "style-src 'self' 'unsafe-inline'",
+    videoManager ? "img-src 'self' data: https://i.ytimg.com" : "img-src 'self' data:",
+    videoManager ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : "frame-src 'none'",
+    "font-src 'self'", "connect-src 'self'", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('Content-Security-Policy', csp)
@@ -54,5 +52,4 @@ export function middleware(request: NextRequest) {
   }
   return response
 }
-
 export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)', '/', '/books/:path*', '/sitemap.xml', '/robots.txt', '/ru/:path*', '/en/:path*', '/api/:path*', '/admin/:path*', '/document-preview/:path*'] }

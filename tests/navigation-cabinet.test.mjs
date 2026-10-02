@@ -46,8 +46,8 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(home, /Авторская книга/)
   assert.match(home, /The Power of Life/)
   assert.match(page, /uiLocale/)
-  assert.match(page, /preference === "ru" \? "ru" : "en"/)
-  assert.match(page, /Holistic House — holistic care, practice, and personal guidance/)
+  assert.match(page, /cookieStore\.get\(uiLocaleCookie\)\?\.value === "ru" \? "ru" : "en"/)
+  assert.match(page, /Holistic House — inner development, practice and personal work/)
 })
 
 test('mobile navigation keeps five usable destinations while reserving the account destination for Client Cabinet', async () => {

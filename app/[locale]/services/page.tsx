@@ -5,6 +5,7 @@ import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PageVideo } from "@/components/page-video";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -140,6 +141,8 @@ export default async function ServicesPage({ params }: PageProps) {
         </div>
       </section>
 
+      <PageVideo slot="services-intro" locale={locale} />
+
       <section className="services-studio-grid services-studio-grid--three" aria-label={current.heading}>
         {current.cards.map(({ id, icon: Icon, title, subtitle, text }) => (
           <article className="services-studio-card services-studio-card--detailed" id={id} key={title}>
@@ -147,9 +150,29 @@ export default async function ServicesPage({ params }: PageProps) {
             <h2>{title}</h2>
             <p className="services-studio-card-subtitle">{subtitle}</p>
             <p>{text}</p>
+            <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />
           </article>
         ))}
       </section>
+
+      {locale === "en" ? (
+        <section className="services-method-videos" id="methods" aria-labelledby="services-method-videos-title">
+          <div className="services-method-videos-heading">
+            <p className="homeopathy-kicker">Methods in more detail</p>
+            <h2 id="services-method-videos-title">Two short explanations</h2>
+          </div>
+          <div className="services-method-videos-grid">
+            <article className="services-method-video">
+              <h3>Hypnotherapy</h3>
+              <PageVideo slot="method-hypnotherapy" locale="en" />
+            </article>
+            <article className="services-method-video">
+              <h3>Systemic Constellations</h3>
+              <PageVideo slot="method-constellations" locale="en" />
+            </article>
+          </div>
+        </section>
+      ) : null}
 
       <section className="services-studio-approach">
         <div>
@@ -161,6 +184,8 @@ export default async function ServicesPage({ params }: PageProps) {
           <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true">→</span></Link>
         </div>
       </section>
+
+      <PageVideo slot="consultation" locale={locale} />
 
       <section className="services-consultation services-consultation--studio" id="consultation">
         <div>

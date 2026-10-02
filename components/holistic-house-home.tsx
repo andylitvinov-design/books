@@ -3,10 +3,13 @@
 import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { SiteNavigation } from "@/components/site-navigation";
+import { SiteVideoPlayer } from "@/components/site-video-player";
 import type { Locale } from "@/data/remedies";
+import type { PublishedSiteVideo } from "@/lib/site-videos/model";
 
 const copy = {
   ru: {
@@ -97,11 +100,23 @@ const copy = {
   },
 } as const;
 
-type HolisticHouseHomeProps = { locale?: Locale };
+type HolisticHouseHomeProps = {
+  locale?: Locale;
+  introVideos?: Partial<Record<Locale, PublishedSiteVideo>>;
+};
 
-export function HolisticHouseHome({ locale: initialLocale = "ru" }: HolisticHouseHomeProps) {
+export function HolisticHouseHome({ locale: initialLocale = "en", introVideos = {} }: HolisticHouseHomeProps) {
+  const router = useRouter();
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const text = copy[locale];
+  const introVideo = introVideos[locale];
+
+  function selectLocale(nextLocale: Locale) {
+    setLocale(nextLocale);
+    const target = new URL(window.location.href);
+    target.searchParams.set("lang", nextLocale);
+    router.replace(target.pathname + target.search + target.hash, { scroll: false });
+  }
 
   return (
     <main className="house-home house-home--services" lang={locale}>
@@ -110,7 +125,7 @@ export function HolisticHouseHome({ locale: initialLocale = "ru" }: HolisticHous
           Holistic House
           <span>{text.wordmark}</span>
         </Link>
-        <SiteNavigation locale={locale} onLocaleChange={setLocale} />
+        <SiteNavigation locale={locale} onLocaleChange={selectLocale} />
       </header>
 
       <section className="service-home-hero" aria-labelledby="house-title">
@@ -140,6 +155,12 @@ export function HolisticHouseHome({ locale: initialLocale = "ru" }: HolisticHous
           </div>
         </div>
       </section>
+
+      {introVideo ? (
+        <section className="site-video-block" data-video-slot="home-intro" data-video-locale={locale} aria-label={introVideo.title}>
+          <SiteVideoPlayer key={locale} video={introVideo} locale={locale} className="site-video--home" />
+        </section>
+      ) : null}
 
       <section className="service-home-services" aria-labelledby="service-home-services-title">
         <div className="service-home-section-heading">

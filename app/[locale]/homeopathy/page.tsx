@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { BookShowcase } from "@/components/book-showcase";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PageVideo } from "@/components/page-video";
 import { RemedySearchBox } from "@/components/remedy-search-box";
 import { books } from "@/data/library";
 import { getHomeopathyLocaleParams, getRemedyDirectory, isSupportedLocale } from "@/data/remedies";
@@ -79,6 +80,9 @@ export default async function HomeopathyPage({ params }: PageProps) {
         <p>{current.lead}</p>
         <RemedySearchBox entries={getRemedyDirectory(locale)} locale={locale} />
       </section>
+
+      <PageVideo slot="homeopathy-intro" locale={locale} />
+      <PageVideo slot="homeopathy-faq" locale={locale} />
 
       <section className="remedies-consultation-banner" aria-labelledby="free-consultation-title">
         <div>

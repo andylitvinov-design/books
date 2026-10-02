@@ -1,0 +1,10 @@
+/* Spanish copy is longer: retain the site's existing design while giving each
+   service a readable width on phones. Other locales remain unchanged. */
+@media (max-width: 600px) {
+  .house-home--services:lang(es) .service-home-card-grid { grid-template-columns: 1fr; gap: 12px; }
+  .house-home--services:lang(es) .service-home-card { min-height: 0; padding: 22px 24px; align-items: flex-start; text-align: left; }
+  .house-home--services:lang(es) .service-home-card h3 { max-width: none; font-size: 25px; line-height: 1.15; }
+  .house-home--services:lang(es) .service-home-card p { max-width: none; margin-block: 10px; font-size: 14px; line-height: 1.6; }
+  .house-home--services:lang(es) .service-home-card-action { font-size: 13px; min-height: 36px; }
+  .house-home--services:lang(es) .service-home-section-heading { flex-wrap: wrap; align-items: baseline; }
+}

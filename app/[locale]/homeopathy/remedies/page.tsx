@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { RemedyDirectory } from "@/components/remedy-directory";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PageVideo } from "@/components/page-video";
 import { getHomeopathyLocaleParams, getRemedyDirectory, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -32,6 +33,7 @@ export default async function RemediesPage({ params }: PageProps) {
     <main className="homeopathy-shell">
       <PublicSiteHeader locale={locale} />
       <header className="remedy-index-header"><div><p className="homeopathy-kicker">{current.kicker}</p><h1>{current.heading}</h1><p>{current.lead}</p></div></header>
+      <PageVideo slot="remedies-index" locale={locale} />
       <Suspense fallback={<p className="remedy-result-count">{current.lead}</p>}><RemedyDirectory entries={getRemedyDirectory(locale)} locale={locale} /></Suspense>
     </main>
   );

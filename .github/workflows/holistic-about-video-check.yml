@@ -1,0 +1,32 @@
+name: Holistic website video checks
+on:
+  pull_request:
+    paths:
+      - 'components/psychic-alchemy-intro-video*'
+      - 'app/**/about/page.tsx'
+      - 'tests/psychic-alchemy-intro-video.test.mjs'
+      - 'lib/site-videos/**'
+      - 'components/site-video-*'
+      - 'components/page-video.tsx'
+      - 'app/admin/videos/**'
+      - 'app/site-video*.css'
+      - 'tests/site-video*.mjs'
+      - 'middleware.ts'
+      - '.github/workflows/holistic-about-video-check.yml'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
+      - run: npm ci --no-audit --no-fund
+      - run: npx eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx
+      - run: npx tsc --noEmit
