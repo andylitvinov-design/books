@@ -1,0 +1,81 @@
+name: Release re-audit
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/release-reaudit.yml'
+      - 'scripts/verify-release-reaudit.mjs'
+      - 'components/site-navigation.tsx'
+      - 'app/globals.css'
+      - 'app/books/maya-tradition/**'
+      - 'components/translated-reader-content.tsx'
+      - 'next.config.ts'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/release-reaudit.yml'
+      - 'scripts/verify-release-reaudit.mjs'
+      - 'components/site-navigation.tsx'
+      - 'app/globals.css'
+      - 'app/books/maya-tradition/**'
+      - 'components/translated-reader-content.tsx'
+      - 'next.config.ts'
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Package reviewed public source for offline analysis
+        run: tar -czf /tmp/reaudit-source.tar.gz app components lib data scripts tests .github next.config.ts package.json tsconfig.json .vercelignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reaudit-source
+          path: /tmp/reaudit-source.tar.gz
+          retention-days: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install isolated browser tools
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
+          npm install --prefix /tmp/reaudit-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          ln -s /tmp/reaudit-tools/node_modules/@playwright node_modules/@playwright
+          /tmp/reaudit-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Observe current Production without mutation
+        if: github.event_name == 'pull_request'
+        run: node scripts/verify-release-reaudit.mjs --observe
+        env:
+          REAUDIT_ORIGIN: https://holistichouse.vercel.app
+          REAUDIT_LABEL: baseline
+      - name: Build exact proposed release
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Verify proposed release locally
+        run: |
+          npm run start -- --port 3123 > /tmp/reaudit-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" || true' EXIT
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:3123/en/about >/dev/null && break || sleep 2; done
+          node scripts/verify-release-reaudit.mjs
+        env:
+          REAUDIT_ORIGIN: http://127.0.0.1:3123
+          REAUDIT_LABEL: local
+      - name: Verify exact Production release, read-only
+        if: github.event_name == 'push'
+        run: node scripts/verify-release-reaudit.mjs
+        env:
+          REAUDIT_ORIGIN: https://holistichouse.vercel.app
+          REAUDIT_LABEL: live
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-reaudit-evidence
+          path: /tmp/release-reaudit/
+          retention-days: 7
