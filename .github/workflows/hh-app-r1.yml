@@ -2,8 +2,6 @@ name: Holistic House App R1 isolated verification
 on:
   push:
     branches: ['codex/holistic-house-app-r1']
-  pull_request:
-    paths: ['lib/app/**','lib/assessments/**','lib/profile/**','data/assessments/**','data/app-services.js','components/app/**','app/**/app/**','app/admin/app-requests/**','supabase/**','tests/app-*','tests/helpers/app-*','.github/workflows/hh-app-r1.yml','package.json','package-lock.json']
 permissions:
   contents: read
 concurrency:
@@ -18,10 +16,7 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - name: Install (lock preparation checkpoint only)
-        run: |
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          npm ci --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npm run test:app
       - name: Lint changed app modules
         run: npx --no-install eslint components/app lib/app lib/assessments lib/profile data/assessments data/app-services.js app/api/app app/admin/app-requests 'app/[locale]/app'
@@ -60,6 +55,6 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund && npm ci --no-audit --no-fund
-      - name: Execute actual SQL, restricted-role RLS, concurrency, rollback and repository persistence tests
+      - run: npm ci --no-audit --no-fund
+      - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
         run: npm run test:app:db
