@@ -2,10 +2,11 @@
 
 import { FileText, ReceiptText, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { ClientAssessments } from './client-assessments'
 
 const contactUrl = 'https://wa.me/14376066502'
 
-export function ClientCabinet({ name, locale, selector, documents }) {
+export function ClientCabinet({ name, locale, selector, documents, assessments = [] }) {
   const [filter, setFilter] = useState('all')
   const ru = locale === 'ru'
   const copy = ru
@@ -37,6 +38,7 @@ export function ClientCabinet({ name, locale, selector, documents }) {
     <section className="client-cabinet-welcome" aria-label={copy.welcome}><p>{copy.cabinet}</p><h2>{ru ? `Здравствуйте, ${name}` : `Welcome, ${name}`}</h2><span>{copy.welcome}</span>{latestDate ? <div className="client-cabinet-latest"><span>{copy.latest}</span><strong>{formatDate(latestDate)}</strong><small>{latest.length} {latest.length === 1 ? copy.document : copy.documents}</small></div> : <p className="client-cabinet-empty-intro">{copy.empty}</p>}</section>
     <nav className="client-cabinet-filters" aria-label={copy.filters}>{Object.entries(labels).map(([key, label]) => { const Icon = key === 'payment' ? ReceiptText : key === 'recommendation' ? Sparkles : FileText; return <button key={key} aria-pressed={filter === key} onClick={() => setFilter(key)}><Icon aria-hidden="true" />{label}</button> })}</nav>
     <section className="client-cabinet-timeline" aria-label={copy.timeline}><h2>{copy.timeline}</h2>{groups.map(([key, group]) => <article className="client-cabinet-consultation" key={key}><h3>{formatDate(group[0].date)}</h3>{group.map((document) => <div className="client-cabinet-document" key={document.id}><div><span>{labels[document.type]}</span><h4>{document.title}</h4></div><div className="client-cabinet-document-actions"><a href={`/${locale}/client/${selector}/documents/${document.id}`}>{copy.view}</a><a href={`/api/client/${selector}/documents/${document.id}/pdf?locale=${locale}`} download>{copy.pdf}</a></div></div>)}</article>)}{!groups.length && <p className="client-cabinet-empty">{copy.empty}</p>}</section>
+    <ClientAssessments records={assessments} locale={locale} selector={selector} />
     <footer className="client-cabinet-support"><a href={contactUrl} target="_blank" rel="noreferrer">{copy.contact}</a><a href={`${contactUrl}?text=${encodeURIComponent(ru ? 'Здравствуйте! Хочу записаться на консультацию.' : 'Hello! I would like to request a consultation.')}`} target="_blank" rel="noreferrer">{copy.request}</a></footer>
   </main>
 }

@@ -14,25 +14,22 @@ test('locale counterpart paths preserve the current localized route', async () =
   assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
-test('public navigation exposes both UI languages and About without exposing administration', async () => {
-  const navigation = await readFile('components/site-navigation.tsx', 'utf8')
-
-  assert.match(navigation, /Главная/)
-  assert.match(navigation, /Книга/)
-  assert.match(navigation, /Препараты/)
-  assert.match(navigation, /Услуги/)
-  assert.match(navigation, /Обо мне/)
-  assert.match(navigation, /Home/)
-  assert.match(navigation, /Book/)
-  assert.match(navigation, /Remedies/)
-  assert.match(navigation, /Services/)
-  assert.match(navigation, /About/)
-  assert.match(navigation, /Client Cabinet/)
-  assert.match(navigation, /Кабинет/)
-  assert.match(navigation, /\/client/)
-  assert.doesNotMatch(navigation, /href="\/admin"/)
-  assert.match(navigation, /localePath/)
-  assert.match(navigation, /document\.cookie/)
+test('public navigation shares six destinations and never exposes administration', async () => {
+  const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
+  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'academy', 'about', 'cabinet'])
+  for (const locale of ['en', 'ru', 'es']) {
+    const items = getSiteNavigation(locale)
+    assert.equal(items.length, 6)
+    assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
+    assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
+    assert.equal(items.find(item => item.id === 'academy').href, 'https://psitrends.com/academy')
+    assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
+  }
+  for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
+    const source = await readFile(path, 'utf8')
+    assert.match(source, /getSiteNavigation/)
+    assert.match(source, /prefetch=\{false\}/)
+  }
 })
 
 test('the umbrella homepage can render Russian and English chrome and copy', async () => {
@@ -50,19 +47,16 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(page, /Holistic House — inner development, practice and personal work/)
 })
 
-test('mobile navigation keeps five usable destinations while reserving the account destination for Client Cabinet', async () => {
+test('mobile navigation renders the shared six destinations without a legacy five-item grid', async () => {
   const [mobile, styles] = await Promise.all([
     readFile('components/mobile-bottom-navigation.tsx', 'utf8'),
     readFile('app/holistic-house-home.css', 'utf8'),
   ])
 
-  assert.match(mobile, /Кабинет/)
-  assert.match(mobile, /Client Cabinet/)
-  assert.match(mobile, /\/ru\/client/)
-  assert.match(mobile, /\/en\/client/)
-  assert.match(mobile, /document\.documentElement\.lang = locale/)
-  assert.ok(mobile.includes('client\\/[^/]+'))
-  assert.match(styles, /repeat\(5, minmax\(0,1fr\)\)/)
+  assert.match(mobile, /getSiteNavigation/)
+  assert.match(mobile, /CircleUserRound/)
+  assert.match(mobile, /ResizeObserver/)
+  assert.match(styles, /mobile-bottom-navigation/)
 })
 
 test('no-cookie public and practitioner entry points consistently prefer English', async () => {

@@ -20,7 +20,8 @@
     "native:check": "node --test tests/native-*.test.mjs",
     "native:sync": "cap sync",
     "native:ios:simulator": "cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build",
-    "native:android:debug": "cap sync android && cd android && ./gradlew assembleDebug --stacktrace"
+    "native:android:debug": "cap sync android && cd android && ./gradlew assembleDebug --stacktrace",
+    "verify:ia-v2": "node scripts/verify-ia-v2.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",
