@@ -15,9 +15,11 @@ test('locale counterpart paths preserve the current localized route', async () =
 })
 
 test('public navigation exposes both UI languages and About without exposing administration', async () => {
-  const [navigation, cabinet] = await Promise.all([
+  const [navigation, cabinet, esAboutVerifier, esPublicVerifier] = await Promise.all([
     readFile('components/site-navigation.tsx', 'utf8'),
     readFile('components/client-cabinet.jsx', 'utf8'),
+    readFile('scripts/verify-es-about.mjs', 'utf8'),
+    readFile('scripts/verify-es-public-site.mjs', 'utf8'),
   ])
 
   assert.match(navigation, /Главная/)
@@ -43,6 +45,8 @@ test('public navigation exposes both UI languages and About without exposing adm
   assert.match(cabinet, /Next step/)
   assert.match(cabinet, /Следующий шаг/)
   assert.doesNotMatch(cabinet, /localStorage/)
+  assert.match(esAboutVerifier, /site-language-menu-trigger/)
+  assert.match(esPublicVerifier, /site-language-menu-trigger/)
 })
 
 test('the umbrella homepage can render Russian and English chrome and copy', async () => {
