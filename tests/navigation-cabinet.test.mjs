@@ -58,8 +58,14 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
   assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(styles, /repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(styles, /white-space: nowrap/)
+  assert.match(styles, /--ia222-bottom-height,76px/)
   assert.match(styles, /safe-area-inset-bottom/)
   assert.match(styles, /scroll-margin-bottom/)
+
+  const homeStyles = await readFile('app/holistic-house-home.css', 'utf8')
+  assert.match(homeStyles, /grid-template-columns: repeat\(6, minmax\(0,1fr\)\)/)
 })
 
 test('no-cookie public and practitioner entry points consistently prefer English', async () => {
