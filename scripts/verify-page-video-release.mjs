@@ -133,7 +133,8 @@ async function exercise(engine, browserType) {
     await page.goto(origin + '/?lang=en', { waitUntil: 'domcontentloaded' });
     await page.locator('[data-video-slot="home-intro"] .site-video-play').click();
     await expect(page.locator('[data-video-slot="home-intro"] iframe')).toHaveCount(1);
-    await page.getByRole('button', { name: 'RU', exact: true }).click();
+    await page.locator('.site-language-menu-trigger').click();
+    await page.locator('.site-language-switch button[lang="ru"]').click();
     const russian = page.locator('[data-video-slot="home-intro"][data-video-locale="ru"]');
     await expect(russian).toHaveCount(1);
     await expect(russian.locator('iframe')).toHaveCount(0);

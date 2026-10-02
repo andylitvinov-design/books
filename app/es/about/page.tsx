@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { PersonalConsultationForm } from '@/components/personal-consultation-form';
+import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { SiteVideoPlayer } from '@/components/site-video-player';
 import { aboutEs } from '@/data/about-es';
 import { metadataBaseFor } from '@/data/site-metadata';
@@ -39,5 +40,6 @@ export default async function SpanishAboutPage() {
       <img alt="" loading="lazy" src={card.image} /><div><h3>{card.title}</h3><p>{card.description}</p><span>Abrir el archivo de PsiMaster →</span></div></a>)}</div></section>
     <section className="about-consultation" aria-labelledby="personal-consultation-title"><div className="about-consultation-copy"><p className="about-kicker">Trabajo personal</p><h2 id="personal-consultation-title">Consulta personal</h2><p>¿Te gustaría explorar tu situación de forma individual? Déjame una breve solicitud y me pondré en contacto contigo.</p></div><PersonalConsultationForm locale="es" /></section>
     <section className="about-client-cabinet" aria-labelledby="client-cabinet-title"><h2 id="client-cabinet-title">{aboutEs.cabinet.heading}</h2><p>{aboutEs.cabinet.body}</p><Link className="about-client-cabinet-login" href="/es/client">Entrar al área de clientes<span aria-hidden="true">→</span></Link><p className="about-client-cabinet-prompt">{aboutEs.cabinet.prompt}</p><a href={aboutEs.cabinet.href} rel="noreferrer" target="_blank">{aboutEs.cabinet.action}<span aria-hidden="true">→</span></a></section>
+    <PublicConsultationCta locale="es" />
   </main>;
 }

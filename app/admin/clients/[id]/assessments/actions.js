@@ -60,8 +60,8 @@ export async function changeAssessmentStateAction(clientId, assessmentId, _state
     const { store, client } = await ownerContext(clientId)
     locale = client.preferredLocale
     fields(data, ['operation', 'expectedRevision'])
-    await transitionAssessment(store, clientId, assessmentId, revision(data), data.get('operation'))
+    const record = await transitionAssessment(store, clientId, assessmentId, revision(data), data.get('operation'))
     refresh(clientId, assessmentId)
+    return { savedRevision: record.revision }
   } catch (error) { return { error: assessmentErrorText(error instanceof AssessmentError ? error.code : 'UNAVAILABLE', locale) } }
-  redirect(`/admin/clients/${clientId}/assessments/${assessmentId}/edit`)
 }

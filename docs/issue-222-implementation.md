@@ -1,7 +1,7 @@
 # Holistic House IA v2 implementation
 
 Source contract: andylitvinov-design/ai-projects-brain#222 revision 2.
-Base: `codex/public-book-library` at `0d48debdcf6edc2fea1da3404a8fa4e2ddb1eb07`.
+Base: `codex/public-book-library` at `5ac4e18f4673e2793644fd6ca41544b4605818d0`.
 Work branch: `chatgpt/issue-222-library-cabinet-2026-10-02`.
 
 ## Scope
@@ -36,3 +36,11 @@ Rollback by reverting the UI/service integration commit(s); keep additive `clien
 ## Explicit future work
 
 Secure binary uploads with an approved private store; client-completed questionnaires and approved scoring; private video delivery; richer follow-up views. These are not implemented or exposed as inert controls here. PsiTrends, DNS, original media and existing public video placements are unchanged.
+
+## Exact verification boundary
+
+The TLS harness translates only its one exact external test Origin to its one fixed internal Next origin. Missing/foreign Origins are not laundered into trusted ones. Forged internal origins and unknown Host values are rejected; redirect translation is restricted to the two exact loopback endpoints. Production auth, headers, cookies and allowed origins are unchanged. Both unit-level proxy cases and real positive/negative exchange requests are checked.
+
+Browser Edit and Archive remain real owner-form operations, not service-method substitutes. A same-URL save is awaited by its new server revision before reload. Artifacts include exact checkout/tree/harness blob provenance; partial runs are failures, never full acceptance.
+
+The historical run 37040527407 artifact fails at the Client A welcome heading, before resume. Earlier commentary describing that run as a resume redirect failure was incorrect and is superseded by the actual artifact and the new provenance-bearing results.

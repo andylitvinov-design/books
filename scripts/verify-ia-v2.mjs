@@ -14,6 +14,7 @@ import { createClient } from '../lib/clients/service.js'
 import { getOwnerCabinetLink, rotateCabinetAccess, revokeCabinetAccess } from '../lib/clients/access.js'
 import { createAssessment, updateAssessment, transitionAssessment } from '../lib/clients/assessments.js'
 import { getSiteNavigation } from '../lib/site-navigation-model.js'
+import { loopbackHeaders, loopbackLocation } from './ia-v2-loopback-proxy.mjs'
 assert.equal(process.env.CI, 'true', 'Only isolated CI execution is supported')
 assert.equal(process.argv.length, 2, 'No runtime URL or live mode is accepted')
 const exec = promisify(execFile)
@@ -63,7 +64,15 @@ try {
   })
   bridge.listen(4443, '127.0.0.1'); await once(bridge, 'listening')
   proxy = createServer(certificate, (incoming, outgoing) => {
-    const upstream = httpRequest({ hostname: '127.0.0.1', port: 3203, path: incoming.url, method: incoming.method, headers: { ...incoming.headers, 'x-forwarded-proto': 'https' } }, response => { outgoing.writeHead(response.statusCode || 502, response.headers); response.pipe(outgoing) })
+    let headers
+    try { headers = loopbackHeaders(incoming.headers) } catch { outgoing.writeHead(400); outgoing.end(); return }
+    const upstream = httpRequest({ hostname: '127.0.0.1', port: 3203, path: incoming.url, method: incoming.method, headers }, response => {
+      try {
+        const responseHeaders = { ...response.headers }
+        if (responseHeaders.location) responseHeaders.location = loopbackLocation(responseHeaders.location)
+        outgoing.writeHead(response.statusCode || 502, responseHeaders); response.pipe(outgoing)
+      } catch { response.resume(); outgoing.writeHead(502); outgoing.end() }
+    })
     upstream.on('error', () => { if (!outgoing.headersSent) outgoing.writeHead(502); outgoing.end() })
     incoming.pipe(upstream)
   })
@@ -92,6 +101,27 @@ try {
   browser = await chromium.launch()
   const common = { ignoreHTTPSErrors: true, serviceWorkers: 'block' }
   const publicContext = await browser.newContext(common), page = await publicContext.newPage()
+  // Bad/missing origins never acquire a session; the real application guard remains enabled.
+  const probe = await browser.newContext(common)
+  for (const badOrigin of [undefined, 'null', 'https://foreign.invalid', 'http://127.0.0.1:3444', 'https://localhost:3203']) {
+    const response = await probe.request.post(origin + '/api/client-access', {
+      headers: badOrigin === undefined ? {} : { Origin: badOrigin },
+      data: { selector: links.a.selector, secret: links.a.secret },
+    })
+    assert.ok([400, 404].includes(response.status()), 'A foreign/missing origin must fail closed')
+    assert.equal(response.headers()['set-cookie'], undefined)
+  }
+  const allowed = await probe.request.post(origin + '/api/client-access', {
+    headers: { Origin: origin }, data: { selector: links.a.selector, secret: links.a.secret },
+  })
+  assert.equal(allowed.status(), 204, 'Exact-origin link exchange must work through the TLS proxy')
+  const cookie = allowed.headers()['set-cookie']
+  assert.match(cookie, /__Host-client_access=/)
+  for (const attr of [/httponly/i, /secure/i, /samesite=strict/i, /path=\//i]) assert.match(cookie, attr)
+  assert.doesNotMatch(cookie, /domain=/i)
+  redactions.push(...(await probe.cookies()).map(c => c.value))
+  await probe.close()
+  pass('TLS proxy preserves negative same-origin checks and establishes only secure host-bound sessions')
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   assert.equal((await go(page, '/')).status(), 200)
@@ -131,15 +161,21 @@ try {
     assert.equal(res.headers()['referrer-policy'], 'no-referrer')
   }
   pass('Old public routes remain available; localized Library sitemap and exact entry privacy headers')
+  const inventory = await exec(process.execPath, ['scripts/verify-homeopathy-routes.mjs', origin])
+  pass('All original remedy/book routes: ' + inventory.stdout.trim())
   const owner = await browser.newContext(common)
   await owner.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', token).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', secure: true, httpOnly: true, sameSite: 'Strict' }])
   const admin = await owner.newPage()
   const ca = await browser.newContext(common), cb = await browser.newContext(common)
   const pa = await ca.newPage(), pb = await cb.newPage()
+  const exchangeA = pa.waitForResponse(response => response.url().endsWith('/api/client-access') && response.request().method() === 'POST')
   await go(pa, `/en/client/${links.a.selector}#${links.a.secret}`)
+  assert.equal((await exchangeA).status(), 204, 'Client A fragment exchange')
   await expect(pa.getByRole('heading', { name: 'Welcome, Synthetic Client A', exact: true })).toBeVisible()
   await expect(pa).toHaveURL(origin + `/en/client/${links.a.selector}`)
+  const exchangeB = pb.waitForResponse(response => response.url().endsWith('/api/client-access') && response.request().method() === 'POST')
   await go(pb, `/ru/client/${links.b.selector}#${links.b.secret}`)
+  assert.equal((await exchangeB).status(), 204, 'Client B fragment exchange')
   await expect(pb.getByRole('heading', { name: 'Здравствуйте, Synthetic Client B', exact: true })).toBeVisible()
   await go(admin, `/admin/clients/${a.id}/assessments/new?kind=test`)
   await admin.locator('input[name="title"]').fill('Supplied test · synthetic')
@@ -152,8 +188,17 @@ try {
   const id = admin.url().match(/\/assessments\/([^/]+)\/edit$/)[1]
   await admin.reload(); await expect(admin.locator('input[name="title"]')).toHaveValue('Supplied test · synthetic')
   await pa.reload(); assert.ok(!(await pa.content()).includes('Supplied test · synthetic'))
+  const stale = await owner.newPage()
+  await stale.goto(admin.url())
+  await expect(stale.locator('input[name="title"]')).toHaveValue('Supplied test · synthetic')
   await admin.getByRole('button', { name: 'Share with client', exact: true }).click()
   await expect(admin.getByRole('button', { name: 'Unshare', exact: true })).toBeVisible()
+  await expect(admin.locator('textarea[name="originalResult"]')).toHaveCount(0)
+  await stale.locator('input[name="title"]').fill('Stale edit must not be saved')
+  await stale.getByRole('button', { name: 'Save draft', exact: true }).click()
+  await expect(stale.getByRole('alert')).toBeVisible()
+  assert.equal((await fresh.findClientAssessment(id)).title, 'Supplied test · synthetic')
+  await stale.close()
   await pa.reload(); await expect(pa.getByRole('heading', { name: 'Supplied test · synthetic', exact: true })).toBeVisible()
   await pa.getByRole('link', { name: /Supplied test/ }).click()
   await expect(pa.getByRole('heading', { name: 'Original result', exact: true })).toBeVisible()
@@ -166,12 +211,16 @@ try {
   assert.equal(guessed.status(), 404); assert.ok(!(await guessed.text()).includes('Literal supplied'))
   const rsc = await cb.request.get(origin + `/en/client/${links.a.selector}/assessments/${id}`, { headers: { RSC: '1' } })
   assert.ok(!(await rsc.text()).includes('Literal supplied')); assert.match(rsc.headers()['cache-control'], /no-store/)
-  pass('Actual owner Draft/Share and client detail; two-client HTML/RSC isolation; literal source safely escaped')
+  pass('Actual owner Draft/Share, shared edit lock, stale-tab rejection and client detail; two-client HTML/RSC isolation; literal source safely escaped')
   await admin.getByRole('button', { name: 'Unshare', exact: true }).click()
   await expect(admin.getByRole('button', { name: 'Save draft', exact: true })).toBeVisible()
   assert.equal((await ca.request.get(origin + `/en/client/${links.a.selector}/assessments/${id}`)).status(), 404)
+  const unsharedRevision = (await fresh.findClientAssessment(id)).revision
+  await expect(admin.locator('.assessment-form input[name="expectedRevision"]')).toHaveValue(String(unsharedRevision))
   await admin.locator('textarea[name="practitionerComment"]').fill('Explicitly edited comment')
   await admin.getByRole('button', { name: 'Save draft', exact: true }).click()
+  // Await the completed same-URL save, rather than aborting a pending Server Action with reload.
+  await expect(admin.locator('.assessment-form input[name="expectedRevision"]')).toHaveValue(String(unsharedRevision + 1))
   await admin.reload(); await expect(admin.locator('textarea[name="practitionerComment"]')).toHaveValue('Explicitly edited comment')
   await admin.getByRole('button', { name: 'Archive', exact: true }).click()
   await expect(admin.getByText('This record is archived and is not visible to the client.', { exact: true })).toBeVisible()

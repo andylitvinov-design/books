@@ -140,3 +140,40 @@ test('About exposes a consultation request form and a real Client Cabinet entry 
   assert.match(consultationForm, /wa\.me\/14376066502/)
   assert.match(consultationForm, /Request a personal consultation/)
 })
+
+test('public pages share one localized consultation CTA that leads to the existing request form', async () => {
+  const [cta, styles, homeopathy, services, spanishServices] = await Promise.all([
+    readFile('components/public-consultation-cta.tsx', 'utf8'),
+    readFile('app/globals.css', 'utf8'),
+    readFile('app/[locale]/homeopathy/page.tsx', 'utf8'),
+    readFile('app/[locale]/services/page.tsx', 'utf8'),
+    readFile('app/es/services/page.tsx', 'utf8'),
+  ])
+
+  assert.match(cta, /data-consultation-cta/)
+  assert.match(cta, /\/about#personal-consultation-title/)
+  assert.match(styles, /\.public-consultation-cta/)
+  assert.match(homeopathy, /PublicConsultationCta/)
+  assert.match(services, /PublicConsultationCta/)
+  assert.match(spanishServices, /PublicConsultationCta/)
+})
+
+// Preserve PR #76's compact menu and cabinet next-step checks under shared IA data.
+test('compact language menu and cabinet next-step remain available after IA integration', async () => {
+  const [navigation, cabinet, esAboutVerifier, esPublicVerifier] = await Promise.all([
+    readFile('components/site-navigation.tsx', 'utf8'),
+    readFile('components/client-cabinet.jsx', 'utf8'),
+    readFile('scripts/verify-es-about.mjs', 'utf8'),
+    readFile('scripts/verify-es-public-site.mjs', 'utf8'),
+  ])
+  assert.match(navigation, /site-language-menu-trigger/)
+  assert.match(navigation, /<details/)
+  assert.match(navigation, /className="site-language-switch"/)
+  assert.match(cabinet, /client-cabinet-next-step/)
+  assert.match(cabinet, /Next step/)
+  assert.match(cabinet, /Следующий шаг/)
+  assert.match(cabinet, /ClientAssessments records=\{assessments\}/)
+  assert.doesNotMatch(cabinet, /localStorage/)
+  assert.match(esAboutVerifier, /site-language-menu-trigger/)
+  assert.match(esPublicVerifier, /site-language-menu-trigger/)
+})

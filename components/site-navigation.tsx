@@ -35,8 +35,11 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     {getSiteNavigation(activeLocale).map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
-    <span aria-label={text.language} className="site-language-switch">{languages.map(next => localizedPath || next === 'es'
+    <span className="site-language-switch"><details className="site-language-menu">
+      <summary className="site-language-menu-trigger" aria-label={text.language}>{activeLocale.toUpperCase()}</summary>
+      <span className="site-language-menu-list">{languages.map(next => localizedPath || next === 'es'
       ? <Link prefetch={false} aria-current={activeLocale === next ? 'true' : undefined} href={counterpart(next)} key={next} lang={next} onClick={() => selectLocale(next)}>{next.toUpperCase()}</Link>
       : <button aria-pressed={activeLocale === next} key={next} lang={next} onClick={() => selectLocale(next)} type="button">{next.toUpperCase()}</button>)}</span>
+    </details></span>
   </nav>;
 }

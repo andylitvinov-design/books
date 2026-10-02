@@ -24,8 +24,24 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Record exact tested checkout
+        run: |
+          mkdir -p /tmp/ia222-evidence
+          node --input-type=module <<'JS'
+          import { execFileSync } from 'node:child_process';
+          import { writeFileSync } from 'node:fs';
+          const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+          writeFileSync('/tmp/ia222-evidence/provenance.json', JSON.stringify({
+            commit: git('rev-parse', 'HEAD'), tree: git('rev-parse', 'HEAD^{tree}'),
+            harnessBlob: git('rev-parse', 'HEAD:scripts/verify-ia-v2.mjs'),
+            runId: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT,
+            ref: process.env.GITHUB_REF, productionAccess: false
+          }, null, 2));
+          JS
       - run: npm ci --no-audit --no-fund
       - run: npm run test:unit
+      - name: Source-content validators
+        run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - run: npm run lint
       - run: npm run native:check && npm run pwa:check
       - run: npm run build

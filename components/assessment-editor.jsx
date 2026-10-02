@@ -1,5 +1,6 @@
 'use client'
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { assessmentText } from '@/lib/clients/assessment-copy'
 export function AssessmentEditor({ action, record, requestId, documents, locale = 'en', kind = 'test' }) {
   const [state, submit, pending] = useActionState(action, { error: '' })
@@ -24,6 +25,8 @@ export function AssessmentEditor({ action, record, requestId, documents, locale 
 }
 export function AssessmentStateActions({ action, status, revision, locale = 'en' }) {
   const [state, submit, pending] = useActionState(action, { error: '' })
+  const router = useRouter()
+  useEffect(() => { if (state?.savedRevision) router.refresh() }, [router, state?.savedRevision])
   const t = assessmentText(locale)
   if (status === 'archived') return <p className="assessment-notice">{t.archiveNotice}</p>
   return <form action={submit}>
