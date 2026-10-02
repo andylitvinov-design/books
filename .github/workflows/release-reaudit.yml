@@ -4,6 +4,12 @@ on:
     paths:
       - '.github/workflows/release-reaudit.yml'
       - 'scripts/verify-release-reaudit.mjs'
+      - 'middleware.ts'
+      - 'app/[locale]/about/page.tsx'
+      - 'app/es/about/page.tsx'
+      - 'middleware.ts'
+      - 'app/[locale]/about/page.tsx'
+      - 'app/es/about/page.tsx'
       - 'components/site-navigation.tsx'
       - 'app/globals.css'
       - 'app/books/maya-tradition/**'
@@ -43,7 +49,7 @@ jobs:
       - name: Public and synthetic security regressions
         run: |
           node --test tests/release-reaudit.test.mjs tests/navigation-cabinet.test.mjs tests/client-cabinet-pages.test.mjs tests/admin-login-security.test.mjs tests/clients.test.mjs tests/maya-tradition-hub.test.mjs tests/page-video-release.test.mjs
-          npx eslint components/site-navigation.tsx components/translated-reader-content.jsx components/personal-consultation-form.tsx app/books/maya-tradition/page.tsx
+          npx eslint middleware.ts components/site-navigation.tsx components/translated-reader-content.jsx components/personal-consultation-form.tsx app/[locale]/about/page.tsx app/es/about/page.tsx app/books/maya-tradition/page.tsx
           npx tsc --noEmit
       - name: Install isolated browser tools
         run: |

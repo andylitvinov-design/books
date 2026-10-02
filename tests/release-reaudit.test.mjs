@@ -19,6 +19,20 @@ test('Maya hub changes its actual locale and reader destinations, not just the m
   assert.match(hub, /generateMetadata/);
   assert.match(read('components/site-navigation.tsx'), /pathname === "\/books\/maya-tradition"/);
 });
+test('Maya document language follows the actual unprefixed route contract', () => {
+  const middleware = read('middleware.ts');
+  assert.match(middleware, /pathname === '\/books\/maya-tradition'/);
+  assert.match(middleware, /requestedLanguage === 'ru' \? 'ru' : 'en'/);
+  assert.match(middleware, /\^\\\/books\\\/\[\^\/\]\+\$\/\.test\(pathname\)/);
+  assert.match(middleware, /requestedLanguage === 'en' \? 'en' : 'ru'/);
+});
+test('About keeps one consultation form and does not repeat the generic final CTA', () => {
+  for (const path of ['app/[locale]/about/page.tsx', 'app/es/about/page.tsx']) {
+    const source = read(path);
+    assert.equal((source.match(/<PersonalConsultationForm\b/g) ?? []).length, 1, path);
+    assert.doesNotMatch(source, /PublicConsultationCta/, path);
+  }
+});
 test('optional translation never blanks the source and can be cancelled and retried', () => {
   const reader = read('components/translated-reader-content.jsx');
   assert.match(reader, /useState\(html\)/);

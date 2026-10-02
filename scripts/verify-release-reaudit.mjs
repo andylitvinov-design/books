@@ -35,10 +35,15 @@ async function exercise(engine, browserType, width) {
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
         const state = await page.evaluate(() => ({ lang: document.querySelector('main')?.lang, htmlLang: document.documentElement.lang, overflow: document.documentElement.scrollWidth - innerWidth, title: document.querySelector('h1')?.textContent, players: document.querySelectorAll('.site-video-player').length, iframesBeforeClick: document.querySelectorAll('.site-video-player iframe').length }));
+        assert.equal(state.htmlLang, locale, 'Document language must match the visible page locale');
         assert.equal(state.lang || state.htmlLang, locale, 'Effective page language (including valid inheritance)');
         assert.ok(state.title?.trim(), 'Missing main heading');
         assert.ok(state.overflow <= 2, `Horizontal overflow ${state.overflow}px`);
         assert.equal(state.iframesBeforeClick, 0, 'Video must be poster-first');
+        if (path.endsWith('/about')) {
+          assert.equal(await page.locator('.personal-consultation-form').count(), 1, 'About must contain one consultation form');
+          assert.equal(await page.locator('.public-consultation-cta').count(), 0, 'About must not repeat the generic consultation CTA');
+        }
         assert.deepEqual(errors, [], 'Unexpected page JS error');
         for (const img of await page.locator('.site-video-poster').all()) {
           await img.scrollIntoViewIfNeeded();
@@ -175,19 +180,24 @@ async function exercise(engine, browserType, width) {
     }
     if (engine === 'chromium' && width === 390) {
       for (const book of volumes) {
-        await check('maya-reader-and-images', { path: `/books/${book}` }, async () => {
-          const response = await page.goto(origin + `/books/${book}`, { waitUntil: 'networkidle' });
-          assert.equal(response.status(), 200);
-          assert.ok((await page.locator('.reader-article').innerText()).length > 1000, 'Source text must render');
-          for (const src of await page.locator('.reader-shell img').evaluateAll(images => images.map(img => img.getAttribute('src')))) {
-            const asset = new URL(src, origin);
-            if (asset.origin === origin) media.add(asset.pathname);
-          }
-          const img = page.locator('.reader-cover img');
-          await img.scrollIntoViewIfNeeded();
-          await img.evaluate(el => el.decode());
-          return { sourceVisible: true };
-        });
+        for (const [readerPath, locale] of [[`/books/${book}?lang=en`, 'en'], [`/books/${book}`, 'ru']]) {
+          await check('maya-reader-and-images', { path: readerPath, locale }, async () => {
+            const response = await page.goto(origin + readerPath, { waitUntil: 'networkidle' });
+            assert.equal(response.status(), 200);
+            const language = await page.evaluate(() => ({ htmlLang: document.documentElement.lang, mainLang: document.querySelector('main')?.lang }));
+            assert.equal(language.htmlLang, locale, 'Reader document language');
+            assert.equal(language.mainLang, locale, 'Reader main language');
+            assert.ok((await page.locator('.reader-article').innerText()).length > 1000, 'Source text must render');
+            for (const src of await page.locator('.reader-shell img').evaluateAll(images => images.map(img => img.getAttribute('src')))) {
+              const asset = new URL(src, origin);
+              if (asset.origin === origin) media.add(asset.pathname);
+            }
+            const img = page.locator('.reader-cover img');
+            await img.scrollIntoViewIfNeeded();
+            await img.evaluate(el => el.decode());
+            return { sourceVisible: true, ...language };
+          });
+        }
       }
     }
   } finally { await context.close(); await browser.close(); }
