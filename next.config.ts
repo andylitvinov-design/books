@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
     "/books/[bookId]": [
       "./source-books/book-1-alchemy-soul/*.html",
       "./source-books/book-2-dao-books/*.html",
-      "./source-books/book-3-maya-tradition/manuscript/*.md",
+      "./source-books/book-3-maya-tradition/outputs/*.html",\n      "./source-books/book-3-maya-tradition/manuscript/*.md",
     ],
     "/media/[series]/[file]": [
       "./source-books/book-1-alchemy-soul/media/**/*",
