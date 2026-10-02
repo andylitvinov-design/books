@@ -1,0 +1,3 @@
+.temp/
+.branches/
+# Local CLI metadata only. Migrations and application source remain tracked.

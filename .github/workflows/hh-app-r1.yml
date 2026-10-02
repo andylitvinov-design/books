@@ -18,8 +18,8 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - run: npm run test:app
-      - name: Lint changed app modules
-        run: npx --no-install eslint components/app lib/app lib/assessments lib/profile data/assessments data/app-services.js app/api/app app/admin/app-requests 'app/[locale]/app'
+      - name: Lint complete repository including literal App Router paths
+        run: npm run lint
       - name: Production-mode build, app flags absent
         run: npm run build
         env: {NEXT_TELEMETRY_DISABLED: '1'}
