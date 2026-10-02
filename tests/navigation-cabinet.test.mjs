@@ -3,13 +3,15 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 test('locale counterpart paths preserve the current localized route', async () => {
-  const { localePath } = await import('../lib/ui-locale.js')
+  const { localePath, readUiLocale } = await import('../lib/ui-locale.js')
 
   assert.equal(localePath('/ru/homeopathy/remedies/aconitum', 'en'), '/en/homeopathy/remedies/aconitum')
   assert.equal(localePath('/en/client/personal-selector', 'ru'), '/ru/client/personal-selector')
   assert.equal(localePath('/ru/about', 'en'), '/en/about')
   assert.equal(localePath('/en/about', 'ru'), '/ru/about')
   assert.equal(localePath('/books', 'en'), '/books')
+  assert.equal(readUiLocale(), 'en')
+  assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
 test('public navigation exposes both UI languages and About without exposing administration', async () => {
@@ -25,6 +27,9 @@ test('public navigation exposes both UI languages and About without exposing adm
   assert.match(navigation, /Remedies/)
   assert.match(navigation, /Services/)
   assert.match(navigation, /About/)
+  assert.match(navigation, /Client Cabinet/)
+  assert.match(navigation, /Кабинет/)
+  assert.match(navigation, /\/client/)
   assert.doesNotMatch(navigation, /href="\/admin"/)
   assert.match(navigation, /localePath/)
   assert.match(navigation, /document\.cookie/)
@@ -41,6 +46,37 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(home, /Авторская книга/)
   assert.match(home, /The Power of Life/)
   assert.match(page, /uiLocale/)
+  assert.match(page, /cookieStore\.get\(uiLocaleCookie\)\?\.value === "ru" \? "ru" : "en"/)
+  assert.match(page, /Holistic House — inner development, practice and personal work/)
+})
+
+test('mobile navigation keeps five usable destinations while reserving the account destination for Client Cabinet', async () => {
+  const [mobile, styles] = await Promise.all([
+    readFile('components/mobile-bottom-navigation.tsx', 'utf8'),
+    readFile('app/holistic-house-home.css', 'utf8'),
+  ])
+
+  assert.match(mobile, /Кабинет/)
+  assert.match(mobile, /Client Cabinet/)
+  assert.match(mobile, /\/ru\/client/)
+  assert.match(mobile, /\/en\/client/)
+  assert.match(mobile, /document\.documentElement\.lang = locale/)
+  assert.ok(mobile.includes('client\\/[^/]+'))
+  assert.match(styles, /repeat\(5, minmax\(0,1fr\)\)/)
+})
+
+test('no-cookie public and practitioner entry points consistently prefer English', async () => {
+  const [books, adminHeader, practitioner, consultation] = await Promise.all([
+    readFile('app/books/page.tsx', 'utf8'),
+    readFile('components/prescription-admin-header.jsx', 'utf8'),
+    readFile('components/practitioner-cabinet.jsx', 'utf8'),
+    readFile('components/consultation-form.jsx', 'utf8'),
+  ])
+
+  assert.match(books, /preference === "ru" \? "ru" : "en"/)
+  assert.match(adminHeader, /useState\('en'\)/)
+  assert.match(practitioner, /useState\('en'\)/)
+  assert.match(consultation, /useState\('en'\)/)
 })
 
 test('the admin entry redirects guests and shows daily practitioner actions after authentication', async () => {

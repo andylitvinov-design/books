@@ -6,7 +6,7 @@ import { logout } from '@/app/admin/logout/actions'
 import { readUiLocale, saveUiLocale } from '@/lib/ui-locale'
 
 export function PrescriptionAdminHeader({ title, description }) {
-  const [locale, setLocale] = useState('ru')
+  const [locale, setLocale] = useState('en')
   const labels = locale === 'ru'
     ? { cabinet: 'Кабинет', newConsultation: 'Новая консультация', clients: 'Клиенты', legacy: 'Архив', videos: 'Видео сайта', logout: 'Выйти', language: 'Язык интерфейса' }
     : { cabinet: 'Cabinet', newConsultation: 'New consultation', clients: 'Clients', legacy: 'Legacy', videos: 'Website videos', logout: 'Logout', language: 'Interface language' }
