@@ -184,7 +184,7 @@ try {
   await admin.getByRole('button', { name: 'Unshare', exact: true }).click()
   await expect(admin.getByRole('button', { name: 'Save draft', exact: true })).toBeVisible()
   assert.equal((await ca.request.get(origin + `/en/client/${links.a.selector}/assessments/${id}`)).status(), 404)
-  await admin.reload()
+  await go(admin, `/admin/clients/${a.id}/assessments/${id}/edit?after-unshare=1`)
   await admin.locator('textarea[name="practitionerComment"]').fill('Explicitly edited comment')
   await admin.getByRole('button', { name: 'Save draft', exact: true }).click()
   await admin.reload(); await expect(admin.locator('textarea[name="practitionerComment"]')).toHaveValue('Explicitly edited comment')
