@@ -39,3 +39,35 @@ test('consultation cannot fall back to a GET containing personal fields before h
   assert.match(form, /personal-consultation-form__resume/);
   assert.match(form, /not sent/);
 });
+
+// Exercise the real network-validation function without React, source rewriting or any external request.
+const readerSource = read('components/translated-reader-content.jsx');
+const batchSource = readerSource.slice(readerSource.indexOf('async function translateBatch('), readerSource.indexOf('export function TranslatedReaderContent'));
+const { translateBatch } = await import('data:text/javascript,' + encodeURIComponent(batchSource + '\nexport { translateBatch };'));
+test('translation rejects an incomplete response without losing positional correspondence', async t => {
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: true, json: async () => ({ translations: [] }) }));
+  await assert.rejects(translateBatch(['source'], new AbortController().signal), /Invalid translation response/);
+});
+test('translation rejects non-text response entries', async t => {
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: true, json: async () => ({ translations: [null] }) }));
+  await assert.rejects(translateBatch(['source'], new AbortController().signal), /Invalid translation response/);
+});
+test('translation preserves valid response order', async t => {
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: true, json: async () => ({ translations: ['First', 'Second'] }) }));
+  assert.deepEqual(await translateBatch(['one', 'two'], new AbortController().signal), ['First', 'Second']);
+});
+test('unmount cancellation aborts the real in-flight translation request', async t => {
+  let requestSignal;
+  t.mock.method(globalThis, 'fetch', (_url, options) => new Promise((_, reject) => {
+    requestSignal = options.signal;
+    options.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+  }));
+  const controller = new AbortController();
+  const pending = translateBatch(['source'], controller.signal);
+  controller.abort();
+  await assert.rejects(pending, /aborted/);
+  assert.equal(requestSignal.aborted, true);
+});
+test('editing a prepared consultation invalidates the old handoff link', () => {
+  assert.match(read('components/personal-consultation-form.tsx'), /onInput=\{\(\) => \{ if \(preparedUrl\) setPreparedUrl\(""\); \}\}/);
+});

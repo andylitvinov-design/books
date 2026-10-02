@@ -119,17 +119,26 @@ async function exercise(engine, browserType, width) {
         assert.ok(handoff.searchParams.get('text').includes('QA only: not sent'));
         await expect(form.locator('.personal-consultation-form__resume')).toHaveAttribute('href', requests[0]);
         assert.match(await form.locator('[role="status"]').innerText(), /not sent|не отправлена|no se ha enviado/);
-        return { externalNavigationIntercepted: true, messageSent: false, blockedPopupFallback: true };
+        await form.locator('[name="request"]').fill('Updated QA only: not sent');
+        await expect(form.locator('.personal-consultation-form__resume')).toHaveCount(0);
+        return { externalNavigationIntercepted: true, messageSent: false, blockedPopupFallback: true, editedDraftInvalidatesOldLink: true };
       });
     }
     if (width === 390) {
       await check('translation-failure-invalid-response-and-recovery', { engine, width }, async () => {
         let mode = 'failure';
+        const calls = { failure: 0, invalid: 0, success: 0 };
+        let releaseInvalid;
+        const invalidGate = new Promise(resolve => { releaseInvalid = resolve; });
         await page.route('**/api/public-translate', async route => {
+          const phase = mode;
+          calls[phase]++;
           const payload = route.request().postDataJSON();
-          if (mode === 'failure') return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
-          const translations = mode === 'invalid' ? [] : payload.texts.map((_, i) => `English test fixture ${i}`);
-          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ translations }) });
+          if (phase === 'failure') return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+          if (phase === 'invalid') await invalidGate;
+          const translations = phase === 'invalid' ? [] : payload.texts.map((_, i) => `English test fixture ${i}`);
+          // A sibling failed batch may already have cancelled this request.
+          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ translations }) }).catch(() => {});
         });
         try {
           await page.goto(origin + '/books/maya-mysteries?lang=en', { waitUntil: 'networkidle' });
@@ -138,14 +147,22 @@ async function exercise(engine, browserType, width) {
           assert.ok((await original.innerText()).length > 1000, 'Original must remain readable after service failure');
           mode = 'invalid';
           await page.getByRole('button', { name: 'Retry English translation' }).click();
+          // Observe this retry's in-flight state, not the previous error still on screen.
+          await expect.poll(() => calls.invalid).toBeGreaterThan(0);
+          await expect(page.locator('.reader-translation-progress')).toBeVisible();
+          releaseInvalid();
           await expect(page.locator('.reader-translation-error')).toBeVisible();
           assert.ok((await original.innerText()).length > 1000, 'Original must survive malformed translation');
           mode = 'success';
           await page.getByRole('button', { name: 'Retry English translation' }).click();
+          await expect.poll(() => calls.success).toBeGreaterThan(0);
           await expect(page.locator('.reader-content[lang="en"]')).toBeVisible({ timeout: 20000 });
           await expect(page.locator('.reader-translation-error')).toHaveCount(0);
-          return { translationServiceStubbed: true, paidCalls: 0, originalPreserved: true, retryVerified: true };
-        } finally { await page.unroute('**/api/public-translate'); }
+          return { translationServiceStubbed: true, paidCalls: 0, originalPreserved: true, retryVerified: true, calls };
+        } catch (error) {
+          await page.screenshot({ path: `${evidence}/${label}-translation-${engine}-failed.png` });
+          throw new Error(`${error.message}; requests=${JSON.stringify(calls)}; status=${await page.locator('[role="status"]').allTextContents()}`);
+        } finally { releaseInvalid(); await page.unroute('**/api/public-translate'); }
       });
     }
     if (engine === 'chromium' && width === 390) {

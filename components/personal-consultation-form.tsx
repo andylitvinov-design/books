@@ -61,7 +61,7 @@ export function PersonalConsultationForm({ locale }: { locale: Locale | "es" }) 
   }
 
   return (
-    <form className="personal-consultation-form" method="post" onSubmit={submit} lang={locale}>
+    <form className="personal-consultation-form" method="post" onSubmit={submit} onInput={() => { if (preparedUrl) setPreparedUrl(""); }} lang={locale}>
       <label><span>{text.name}</span><input autoComplete="name" name="name" required onInvalid={(event) => { if (locale === "es") event.currentTarget.setCustomValidity("Escribe tu nombre."); }} onInput={(event) => event.currentTarget.setCustomValidity("")} /></label>
       <label><span>{text.contact}</span><input autoComplete="email" name="contact" placeholder={text.contactHint} /></label>
       <label className="personal-consultation-form__wide"><span>{text.request}</span><textarea name="request" placeholder={text.requestHint} required rows={5} onInvalid={(event) => { if (locale === "es") event.currentTarget.setCustomValidity("Cuéntame qué te gustaría trabajar."); }} onInput={(event) => event.currentTarget.setCustomValidity("")} /></label>
