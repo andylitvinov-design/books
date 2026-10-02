@@ -62,6 +62,6 @@ export async function changeAssessmentStateAction(clientId, assessmentId, _state
     fields(data, ['operation', 'expectedRevision'])
     await transitionAssessment(store, clientId, assessmentId, revision(data), data.get('operation'))
     refresh(clientId, assessmentId)
+    return { refreshed: true }
   } catch (error) { return { error: assessmentErrorText(error instanceof AssessmentError ? error.code : 'UNAVAILABLE', locale) } }
-  redirect(`/admin/clients/${clientId}/assessments/${assessmentId}/edit`)
 }
