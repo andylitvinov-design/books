@@ -1,0 +1,29 @@
+name: Integrate issue 222 on isolated work branch
+on:
+  push:
+    branches: ['chatgpt/issue-222-library-cabinet-2026-10-02']
+    paths: ['scripts/ia222-apply.py', '.github/workflows/ia-222-apply.yml']
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/chatgpt/issue-222-library-cabinet-2026-10-02'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/issue-222-library-cabinet-2026-10-02
+      - name: Apply exact source anchors on this work branch only
+        run: |
+          test "$(git branch --show-current)" = 'chatgpt/issue-222-library-cabinet-2026-10-02'
+          test -f scripts/ia222-apply.py || exit 0
+          python3 scripts/ia222-apply.py
+          rm scripts/ia222-apply.py
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Integrate Library, six-part navigation and private assessment register'
+          git push origin HEAD:refs/heads/chatgpt/issue-222-library-cabinet-2026-10-02
+          git rev-parse HEAD

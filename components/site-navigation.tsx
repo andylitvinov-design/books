@@ -1,53 +1,42 @@
 "use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import type { Locale } from "@/data/remedies";
-import { localePath, readUiLocale, saveUiLocale } from "@/lib/ui-locale";
-import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from "@/lib/public-locales";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
+import type { Locale } from '@/data/remedies';
+import { localePath, saveUiLocale } from '@/lib/ui-locale';
+import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from '@/lib/public-locales';
+import { activeNavigationId, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
+import { useNavigationLocale } from './use-navigation-locale';
 
-type SiteNavigationProps = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
-const navigationCopy = {
-  ru: { home: "Главная", book: "Книга", remedies: "Препараты", services: "Услуги", about: "Обо мне", navigation: "Основная навигация", language: "Язык интерфейса" },
-  en: { home: "Home", book: "Book", remedies: "Remedies", services: "Services", about: "About", navigation: "Primary navigation", language: "Interface language" },
-  es: { home: "Inicio", book: "Libros", remedies: "Remedios", services: "Servicios", about: "Sobre mí", navigation: "Navegación principal", language: "Idioma de la página" },
-} as const;
-export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) {
+type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
+export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const pathname = usePathname();
-  const [preference, setPreference] = useState<PublicLocale>(locale ?? "en");
+  const preference = useNavigationLocale(locale);
   const activeLocale = locale ?? preference;
-  const labels = navigationCopy[activeLocale];
-  const spanish = activeLocale === "es";
-  const bookHref = activeLocale === "ru" ? "https://designrr.page/?id=367554&token=1057485987&h=4958" : "https://designrr.page/?id=377444&token=639498968&h=5264";
+  const text = navigationCopy[activeLocale];
+  const current = activeNavigationId(pathname);
   const localizedPath = /^\/(ru|en|es)(?=\/|$)/.test(pathname);
   const available = hasSpanishCounterpart(pathname);
-  const languages: PublicLocale[] = available ? ["ru", "en", "es"] : ["ru", "en"];
+  const languages: PublicLocale[] = available ? ['ru', 'en', 'es'] : ['ru', 'en'];
   useEffect(() => {
-    if (locale === "es") { setPreference("es"); savePublicLocale("es"); return; }
-    const savedLocale = readUiLocale(document.cookie);
-    const selected: Locale = locale ?? (savedLocale === "ru" ? "ru" : "en");
-    setPreference(selected);
-    if (locale) { saveUiLocale(locale); savePublicLocale(locale); }
+    if (!locale) return;
+    savePublicLocale(locale);
+    if (locale !== 'es') saveUiLocale(locale);
   }, [locale]);
-  function selectLocale(nextLocale: PublicLocale) {
-    setPreference(nextLocale);
-    savePublicLocale(nextLocale);
-    // The existing private-cabinet preference remains strictly EN/RU.
-    if (nextLocale === "es") return;
-    saveUiLocale(nextLocale);
-    window.dispatchEvent(new CustomEvent<Locale>("ui-locale-change", { detail: nextLocale }));
-    onLocaleChange?.(nextLocale);
+  function selectLocale(next: PublicLocale) {
+    savePublicLocale(next);
+    if (next === 'es') return;
+    saveUiLocale(next);
+    window.dispatchEvent(new CustomEvent<Locale>('ui-locale-change', { detail: next }));
+    onLocaleChange?.(next);
   }
-  function counterpart(nextLocale: PublicLocale) {
-    return available ? publicCounterpart(pathname, nextLocale) : localePath(pathname, nextLocale as Locale);
-  }
-  return <nav aria-label={labels.navigation} className="site-navigation">
-    <Link href={spanish ? "/es" : "/"}>{labels.home}</Link>
-    {spanish ? <Link href="/es/books">{labels.book}</Link> : <a href={bookHref}>{labels.book}</a>}
-    <Link href={"/" + activeLocale + "/homeopathy"}>{labels.remedies}</Link>
-    <Link href={"/" + activeLocale + "/services"}>{labels.services}</Link>
-    <Link href={"/" + activeLocale + "/about"}>{labels.about}</Link>
-    {/* Load a different language only on selection, not speculatively (including client-entry counterparts). */}
-    <span aria-label={labels.language} className="site-language-switch">{languages.map(nextLocale => localizedPath || nextLocale === "es" ? <Link prefetch={false} aria-current={activeLocale === nextLocale ? "true" : undefined} href={counterpart(nextLocale)} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)}>{nextLocale.toUpperCase()}</Link> : <button aria-pressed={activeLocale === nextLocale} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)} type="button">{nextLocale.toUpperCase()}</button>)}</span>
+  const counterpart = (next: PublicLocale) => available ? publicCounterpart(pathname, next) : localePath(pathname, next as Locale);
+  return <nav aria-label={text.navigation} className="site-navigation">
+    {getSiteNavigation(activeLocale).map(item => item.external
+      ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
+      : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
+    <span aria-label={text.language} className="site-language-switch">{languages.map(next => localizedPath || next === 'es'
+      ? <Link prefetch={false} aria-current={activeLocale === next ? 'true' : undefined} href={counterpart(next)} key={next} lang={next} onClick={() => selectLocale(next)}>{next.toUpperCase()}</Link>
+      : <button aria-pressed={activeLocale === next} key={next} lang={next} onClick={() => selectLocale(next)} type="button">{next.toUpperCase()}</button>)}</span>
   </nav>;
 }
