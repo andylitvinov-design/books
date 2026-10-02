@@ -67,8 +67,8 @@ try {
   proxy = createServer(certificate, (incoming, outgoing) => {
     // The proxy terminates HTTPS. Give the internal Next hop a matching Host
     // and Origin, so its production same-origin check stays enabled unchanged.
-    const upstreamHeaders = { ...incoming.headers, host: '127.0.0.1:3203' }
-    if (incoming.method === 'POST' && incoming.url === '/api/client-access') upstreamHeaders.origin = 'http://127.0.0.1:3203'
+    const upstreamHeaders = { ...incoming.headers, host: 'localhost:3203' }
+    if (incoming.method === 'POST' && incoming.url === '/api/client-access') upstreamHeaders.origin = 'http://localhost:3203'
     const upstream = httpRequest({ hostname: '127.0.0.1', port: 3203, path: incoming.url, method: incoming.method, headers: upstreamHeaders }, response => { outgoing.writeHead(response.statusCode || 502, response.headers); response.pipe(outgoing) })
     upstream.on('error', () => { if (!outgoing.headersSent) outgoing.writeHead(502); outgoing.end() })
     incoming.pipe(upstream)
@@ -97,7 +97,7 @@ try {
   await startApp()
   bridgeCommands.length = 0
   const directExchange = await new Promise((resolve, reject) => {
-    const request = httpRequest({ hostname: '127.0.0.1', port: 3203, path: '/api/client-access', method: 'POST', headers: { Host: '127.0.0.1:3203', Origin: 'http://127.0.0.1:3203', 'Content-Type': 'application/json' } }, response => { response.resume(); response.on('end', () => resolve(response)) })
+    const request = httpRequest({ hostname: '127.0.0.1', port: 3203, path: '/api/client-access', method: 'POST', headers: { Host: 'localhost:3203', Origin: 'http://localhost:3203', 'Content-Type': 'application/json' } }, response => { response.resume(); response.on('end', () => resolve(response)) })
     request.on('error', reject); request.end(JSON.stringify({ selector: links.a.selector, secret: links.a.secret }))
   })
   assert.equal(directExchange.statusCode, 204, `Loopback private-link exchange must retain same-origin protection (bridge commands: ${bridgeCommands.join(',') || 'none'})`)
