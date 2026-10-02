@@ -6,7 +6,9 @@ import { useEffect, useRef } from 'react';
 import type { PublicLocale } from '@/lib/public-locales';
 import { activeNavigationId, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
+
 const icons = { home: House, library: BookOpen, services: Sparkles, academy: GraduationCap, about: UserRound, cabinet: CircleUserRound };
+
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname();
   const locale = useNavigationLocale(initialLocale);

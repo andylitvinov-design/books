@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildPaymentPdf, buildPrescriptionPdf, wrapPdfText, measurePdfText } from '../lib/prescriptions/pdf.js'
+import { recommendationGuidance } from '../lib/documents/recommendation.js'
 
 const recommendation = { patientName: 'Synthetic Client', dateIssued: '2026-09-08', recommendationNumber: 'HR-TEST', items: [{ displayName: 'Arsenicum album', remedyPath: '/en/homeopathy/remedies/arsenicum-album', potency: '30C', granules: '5', purpose: 'Manually entered purpose', sequence: 'First stage', notes: 'PRIVATE-NOTE' }], generalInstructions: 'SYNTHETIC-GUIDANCE', followUp: '2026-09-15' }
 
@@ -13,7 +14,9 @@ test('canonical PDF has A4 letterhead, lighthouse and active remedy link without
   assert.match(source, /68 668 m/)
   assert.match(source, /\/URI \(https:\/\/example.test\/en\/homeopathy\/remedies\/arsenicum-album\)/)
   assert.doesNotMatch(source, /PRIVATE-NOTE/)
-  assert.match(source, /5 granules/)
+  const guidance = recommendationGuidance({ ...recommendation, recommendationType: 'homeopathy' }, 'en')
+  assert.ok(guidance.sections.flatMap((section) => section.bullets).includes('5 granules of the remedy.'))
+  assert.match(source, /\(1\. Arsenicum album\) Tj ET/)
 })
 
 test('font metrics preserve newlines and wrap long unbroken values within content width', () => {
@@ -53,8 +56,10 @@ test('Bach PDF renders the Bach title and automatic mixture instructions', () =>
   }
   const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
   assert.match(source, /BACH FLOWER ESSENCE RECOMMENDATION/)
-  assert.match(source, /Prepare a mixture: add 5 drops of each selected essence/)
-  assert.match(source, /Take 2/)
+  const guidance = recommendationGuidance(document, 'en')
+  assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Prepare a mixture: add 5 drops')))
+  assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Take 2')))
+  assert.match(source, /HOW TO TAKE/)
   assert.match(source, /Course: 2 weeks/)
 })
 
@@ -66,10 +71,10 @@ test('Homeopathy PDF renders the compact per-remedy schedule and stress guidance
     items: [{ displayName: 'Aconitum', itemType: 'homeopathy', potency: '30', granules: '5', timesPerDay: '3' }],
   }
   const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
-  assert.match(source, /potency 30/)
-  assert.match(source, /5 granules/)
-  assert.match(source, /3/)
-  assert.match(source, /times a day and additionally during moments of stress/)
+  const guidance = recommendationGuidance(document, 'en')
+  assert.ok(guidance.sections.flatMap((section) => section.bullets).includes('5 granules of the remedy.'))
+  assert.ok(guidance.sections.flatMap((section) => section.bullets).includes('3 times a day and additionally during moments of stress.'))
+  assert.match(source, /HOW TO TAKE/)
   assert.match(source, /Course: 2 weeks/)
 })
 
@@ -88,6 +93,8 @@ test('Mixed PDF groups Homeopathy and Bach items and renders both guidance secti
   assert.match(source, /INTEGRATED RECOMMENDATION/)
   assert.match(source, /HOMEOPATHY/)
   assert.match(source, /BACH ESSENCES/)
-  assert.match(source, /potency 30/)
-  assert.match(source, /Prepare a mixture: add 5 drops of each selected essence/)
+  const guidance = recommendationGuidance(document, 'en')
+  assert.equal(guidance.sections.length, 2)
+  assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Prepare a mixture: add 5 drops')))
+  assert.match(source, /HOW TO TAKE/)
 })

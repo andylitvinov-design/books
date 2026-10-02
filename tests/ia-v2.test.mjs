@@ -96,14 +96,15 @@ test('current-session resume rejects expiry, rotation, revocation and missing co
   const env = { NODE_ENV: 'test', PRESCRIPTIONS_DATA_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64') }
   await getOwnerCabinetLink(store, a.id, env)
   const client = await store.findClientById(a.id)
-  const { token, session } = createCabinetSession(client)
+  const session = createCabinetSession(client)
+  const { token } = session
   await store.createCabinetSession(session, 1000)
   assert.deepEqual(await resolveCurrentCabinet(store, token), { selector: session.selector })
   assert.equal(await resolveCurrentCabinet(store, token, session.expiresAt + 1), undefined)
   await rotateCabinetAccess(store, a.id, env)
   assert.equal(await resolveCurrentCabinet(store, token), undefined)
   const next = createCabinetSession(await store.findClientById(a.id))
-  await store.createCabinetSession(next.session, 1000)
+  await store.createCabinetSession(next, 1000)
   await revokeCabinetAccess(store, a.id)
   assert.equal(await resolveCurrentCabinet(store, next.token), undefined)
   assert.equal(createPrescriptionStore({ environment: { NODE_ENV: 'production' } }), undefined)

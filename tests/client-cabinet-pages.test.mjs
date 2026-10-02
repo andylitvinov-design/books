@@ -4,6 +4,23 @@ import test from 'node:test'
 
 import { createPaymentDocument, getClientPaymentDocument } from '../lib/documents/payment.js'
 
+test('client cabinet presents a private welcome, accessible category filters, dated timeline, and quiet practitioner actions in both languages', async () => {
+  const cabinet = await readFile('components/client-cabinet.jsx', 'utf8')
+
+  assert.match(cabinet, /Your latest materials from Andy/)
+  assert.match(cabinet, /Последние материалы от Andy/)
+  assert.match(cabinet, /aria-pressed/)
+  assert.match(cabinet, /Recommendations/)
+  assert.match(cabinet, /Квитанции/)
+  assert.match(cabinet, /Latest consultation/)
+  assert.match(cabinet, /Contact practitioner/)
+  assert.match(cabinet, /Request consultation/)
+  assert.match(cabinet, /wa\.me\/14376066502/)
+  assert.match(cabinet, /client-cabinet-timeline/)
+  assert.match(cabinet, /Nothing has been shared in this section yet/)
+  assert.match(cabinet, /const latest = allGroups\[0\]\?\.\[1\]/)
+})
+
 async function loadHandler(file, dependencies, exports) {
   const source = (await readFile(new URL(file, import.meta.url), 'utf8'))
     .replace(/^import .* from .*\n/gm, '')

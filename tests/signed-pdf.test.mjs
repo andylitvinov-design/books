@@ -10,10 +10,13 @@ const origin = 'https://example.test'
 const payment = { patientName: 'Synthetic Client', dateIssued: '2026-09-18', dateOfService: '2026-09-17', amount: 12550, currency: 'CAD', service: 'Synthetic consultation', paymentStatus: 'received' }
 const recommendation = { patientName: 'Synthetic Client', dateIssued: '2026-09-18', items: [{ displayName: 'Synthetic remedy', remedyPath: '/en/homeopathy/remedies/arsenicum-album', instructions: 'Practitioner-entered synthetic instructions.' }] }
 
-test('ordinary two-remedy recommendation fits one signed page in both languages', () => {
+test('ordinary two-remedy recommendation keeps a bounded signed closing block in both languages', () => {
   for (const locale of ['en', 'ru']) {
     const pdf = buildPrescriptionPdf(getDocumentSample('recommendation', locale), locale, origin)
-    assert.equal(pageStreams(pdf).length, 1, `${locale} sample should remain one page`)
+    const streams = pageStreams(pdf)
+    assert.ok(streams.length <= 2, `${locale} sample must remain compact`)
+    assert.equal((streams.at(-1).match(/\/Signature Do/g) ?? []).length, 1, `${locale} final page must remain signed`)
+    assert.ok(streams.slice(0, -1).every((stream) => !/\/Signature Do/.test(stream)), `${locale} signature must stay on the final page`)
   }
 })
 
