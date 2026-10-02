@@ -60,7 +60,10 @@ jobs:
             if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/app >/dev/null; then break; fi
             sleep 2
           done
-          node scripts/verify-app-r1.mjs
+          if ! node scripts/verify-app-r1.mjs; then
+            grep 'HH_APP_TEST_ERROR' /tmp/hh-app-next.log | tail -10 || true
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
