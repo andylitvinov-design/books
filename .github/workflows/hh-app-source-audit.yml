@@ -1,0 +1,31 @@
+name: R1 source review artifact
+on:
+  push:
+    branches: ['codex/holistic-house-app-r1']
+    paths: ['.github/workflows/hh-app-source-audit.yml']
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-r1-reviewed-source
+          path: |
+            lib/app/
+            lib/assessments/
+            lib/profile/
+            data/assessments/
+            data/app-services.js
+            components/app/
+            components/mobile-bottom-navigation.tsx
+            app/api/app/
+            app/admin/app-requests/
+            app/[locale]/app/
+            supabase/migrations/
+            tests/app-*
+          retention-days: 3
