@@ -126,6 +126,13 @@ async function exercise(engine, browserType, width) {
     }
     if (width === 390) {
       await check('translation-failure-invalid-response-and-recovery', { engine, width }, async () => {
+        // Isolate network fixtures: service-worker-owned requests can bypass page.route.
+        // The ordinary public, form and image audits retain service workers enabled.
+        const translationContext = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
+        const page = await translationContext.newPage();
+        const networkErrors = [];
+        page.on('requestfailed', request => networkErrors.push({ url: request.url(), error: request.failure()?.errorText }));
+        page.on('pageerror', error => networkErrors.push({ error: error.message }));
         let mode = 'failure';
         const calls = { failure: 0, invalid: 0, success: 0 };
         let releaseInvalid;
@@ -142,6 +149,7 @@ async function exercise(engine, browserType, width) {
         });
         try {
           await page.goto(origin + '/books/maya-mysteries?lang=en', { waitUntil: 'networkidle' });
+          await expect.poll(() => calls.failure).toBeGreaterThan(0);
           await expect(page.locator('.reader-translation-error')).toBeVisible();
           const original = page.locator('.reader-content[lang="ru"]');
           assert.ok((await original.innerText()).length > 1000, 'Original must remain readable after service failure');
@@ -158,11 +166,11 @@ async function exercise(engine, browserType, width) {
           await expect.poll(() => calls.success).toBeGreaterThan(0);
           await expect(page.locator('.reader-content[lang="en"]')).toBeVisible({ timeout: 20000 });
           await expect(page.locator('.reader-translation-error')).toHaveCount(0);
-          return { translationServiceStubbed: true, paidCalls: 0, originalPreserved: true, retryVerified: true, calls };
+          return { translationServiceStubbed: true, paidCalls: 0, originalPreserved: true, retryVerified: true, fixtureServiceWorkersBlocked: true, calls };
         } catch (error) {
           await page.screenshot({ path: `${evidence}/${label}-translation-${engine}-failed.png` });
-          throw new Error(`${error.message}; requests=${JSON.stringify(calls)}; status=${await page.locator('[role="status"]').allTextContents()}`);
-        } finally { releaseInvalid(); await page.unroute('**/api/public-translate'); }
+          throw new Error(`${error.message}; requests=${JSON.stringify(calls)}; networkErrors=${JSON.stringify(networkErrors)}; status=${await page.locator('[role="status"]').allTextContents()}`);
+        } finally { releaseInvalid(); await translationContext.close(); }
       });
     }
     if (engine === 'chromium' && width === 390) {
