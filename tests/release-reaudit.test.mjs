@@ -23,7 +23,7 @@ test('Maya document language follows the actual unprefixed route contract', () =
   const middleware = read('middleware.ts');
   assert.match(middleware, /pathname === '\/books\/maya-tradition'/);
   assert.match(middleware, /requestedLanguage === 'ru' \? 'ru' : 'en'/);
-  assert.match(middleware, /\^\\\/books\\\/\[\^\/\]\+\$\/\.test\(pathname\)/);
+  assert.ok(middleware.includes("/^\\/books\\/[^/]+$/.test(pathname)"));
   assert.match(middleware, /requestedLanguage === 'en' \? 'en' : 'ru'/);
 });
 test('About keeps one consultation form and does not repeat the generic final CTA', () => {
