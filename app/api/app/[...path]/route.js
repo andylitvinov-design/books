@@ -5,6 +5,12 @@ import { createAppRepository } from '@/lib/app/repository'
 import { consumeRate } from '@/lib/app/database'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
+import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import {
+  publicAssessmentView,
+  readPendingReportClaim,
+  reportClaimCookieName,
+} from '@/lib/clients/assessment-share'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -99,8 +105,44 @@ async function handle(request, { params }) {
       return json(await repo.getRun(actor, path[1]))
     if (path[0] === 'results' && path.length === 2 && method === 'GET')
       return json(await repo.getResult(actor, path[1]))
+    if (joined === 'report/claim' && method === 'POST') {
+      const cookieName = reportClaimCookieName()
+      const pending = readPendingReportClaim(request.cookies.get(cookieName)?.value)
+      const finish = (data, status = 200) => {
+        const response = json(data, status)
+        response.cookies.set(cookieName, '', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 0,
+        })
+        return response
+      }
+      if (!pending) return finish({ claimed: false })
+      const store = getPrescriptionStore(),
+        record = await store?.findClientAssessment?.(pending.id),
+        client = record && await store?.findClientById(record.clientId)
+      if (
+        !record ||
+        record.status !== 'shared' ||
+        record.revision !== pending.revision ||
+        !client ||
+        client.status !== 'active'
+      )
+        return finish({ claimed: false })
+      const report = publicAssessmentView(record)
+      if (!report) return finish({ claimed: false })
+      const claimed = await repo.claimSharedReport(actor, {
+        sourceAssessmentId: record.id,
+        sourceRevision: record.revision,
+        report,
+      })
+      return finish({ claimed: true, report: claimed }, 201)
+    }
     if (method !== 'POST') throw new AppError('NOT_FOUND', 404)
     const body = await readBody(request)
+    if (joined === 'guest/import') return json(await repo.importGuestResult(actor, body), 201)
     if (joined === 'onboarding') return json(await repo.onboarding(actor, body))
     if (joined === 'preferences') return json(await repo.preferences(actor, body))
     if (joined === 'runs') return json(await repo.startRun(actor, body), 201)

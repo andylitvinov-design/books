@@ -121,10 +121,11 @@ test('direct protected admin pages redirect signed-out visitors to login instead
 })
 
 
-test('About exposes a consultation request form and a real Client Cabinet entry flow', async () => {
-  const [about, entryPage, entryForm, consultationForm] = await Promise.all([
+test('About exposes a consultation request form and a Google-first Cabinet with legacy compatibility', async () => {
+  const [about, entryPage, landing, entryForm, consultationForm] = await Promise.all([
     readFile('app/[locale]/about/page.tsx', 'utf8'),
     readFile('app/[locale]/client/page.tsx', 'utf8'),
+    readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('components/client-cabinet-entry.tsx', 'utf8'),
     readFile('components/personal-consultation-form.tsx', 'utf8'),
   ])
@@ -132,8 +133,15 @@ test('About exposes a consultation request form and a real Client Cabinet entry 
   assert.match(about, /PersonalConsultationForm/)
   assert.match(about, /about-client-cabinet-login/)
   assert.match(about, /typedLocale \+ "\/client"/)
-  assert.match(entryPage, /ClientCabinetEntry/)
+  assert.match(entryPage, /CabinetLanding/)
   assert.match(entryPage, /robots: \{ index: false, follow: false \}/)
+  assert.match(landing, /Continue with Google/)
+  assert.match(landing, /Try without signing in/)
+  assert.match(landing, /MINI_IPIP_20_EN_V1/)
+  assert.match(landing, /CURRENT_STATE_RU_V1/)
+  assert.match(landing, /cabinet-legacy-entry/)
+  assert.match(landing, /ClientCabinetEntry/)
+  assert.doesNotMatch(landing, /localStorage/)
   assert.match(entryForm, /privateLink/)
   assert.match(entryForm, /selectorPattern/)
   assert.match(entryForm, /secretPattern/)

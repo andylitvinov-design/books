@@ -7,6 +7,8 @@ import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/de
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { APP_SERVICES } from '@/data/app-services'
 
+const GUEST_RESULT_STORAGE_KEY = 'hh-guest-result:v1'
+
 export async function appFetch(path, body, method) {
   const response = await fetch(`/api/app/${path}`, {
     method: method || (body ? 'POST' : 'GET'),
@@ -62,7 +64,9 @@ export default function AppWorkspace({ locale, path = [] }) {
     [state, setState] = useState('loading'),
     [error, setError] = useState(null)
   const [busy, setBusy] = useState(false),
-    [deleted, setDeleted] = useState(false)
+    [deleted, setDeleted] = useState(false),
+    guestImport = useRef(false),
+    reportImport = useRef(false)
   const page = path[0] || 'portrait',
     recordId = path[1],
     root = `/${locale}/app`
@@ -89,6 +93,53 @@ export default function AppWorkspace({ locale, path = [] }) {
   useEffect(() => {
     load()
   }, [load])
+  useEffect(() => {
+    if (
+      state !== 'ready' ||
+      data?.account?.onboardingState !== 'active' ||
+      guestImport.current
+    )
+      return
+    let raw
+    try {
+      raw = sessionStorage.getItem(GUEST_RESULT_STORAGE_KEY)
+    } catch {
+      return
+    }
+    if (!raw) return
+    let payload
+    try {
+      payload = JSON.parse(raw)
+    } catch {
+      sessionStorage.removeItem(GUEST_RESULT_STORAGE_KEY)
+      return
+    }
+    guestImport.current = true
+    appFetch('guest/import', payload)
+      .then(async (result) => {
+        sessionStorage.removeItem(GUEST_RESULT_STORAGE_KEY)
+        await load()
+        router.replace(`${root}/results/${result.id}`)
+      })
+      .catch((e) => {
+        setError(e)
+        guestImport.current = false
+      })
+  }, [data?.account?.onboardingState, load, root, router, state])
+  useEffect(() => {
+    if (
+      state !== 'ready' ||
+      data?.account?.onboardingState !== 'active' ||
+      reportImport.current
+    )
+      return
+    reportImport.current = true
+    appFetch('report/claim', {})
+      .then(async (result) => {
+        if (result.claimed) await load()
+      })
+      .catch((e) => setError(e))
+  }, [data?.account?.onboardingState, load, state])
   useEffect(() => {
     let channel
     try {
@@ -808,6 +859,33 @@ function Portrait({ data, locale, onOpenHistory }) {
           </div>
         </>
       )}
+      {data.accountReports?.length ? (
+        <section className="hh-section hh-account-reports">
+          <h2>{locale === 'ru' ? 'Сохранённые отчёты' : 'Saved reports'}</h2>
+          <div className="hh-grid">
+            {data.accountReports.map((item) => (
+              <article className="hh-panel" key={item.id}>
+                <p className="hh-kicker">
+                  {item.report.kind === 'research_result'
+                    ? locale === 'ru' ? 'Отчёт' : 'Report'
+                    : locale === 'ru' ? 'Тест' : 'Test'}
+                </p>
+                <h3>{item.report.title}</h3>
+                <p>{item.report.occurredOn}</p>
+                <details>
+                  <summary>{locale === 'ru' ? 'Открыть отчёт' : 'Open report'}</summary>
+                  {item.report.sourceName && (
+                    <p>{item.report.sourceName}{item.report.sourceVersion ? <> · {item.report.sourceVersion}</> : null}</p>
+                  )}
+                  {item.report.description && <p className="assessment-text">{item.report.description}</p>}
+                  {item.report.originalResult && <p className="assessment-text">{item.report.originalResult}</p>}
+                  {item.report.practitionerComment && <p className="assessment-text">{item.report.practitionerComment}</p>}
+                </details>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {selected && (
         <section className="hh-panel hh-detail" aria-live="polite">
           <button className="hh-close" onClick={() => setSelected(null)}>

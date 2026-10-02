@@ -383,3 +383,35 @@ test('deletion request disables access without pretending provider data was eras
     (e) => e.code === '42501',
   )
 })
+
+test('legacy shared report claim is idempotent for one account and exclusive across accounts', async () => {
+  const sourceAssessmentId = '30000000-0000-4000-8000-000000000001'
+  const input = {
+    sourceAssessmentId,
+    sourceRevision: 2,
+    report: {
+      id: sourceAssessmentId,
+      kind: 'research_result',
+      title: 'Synthetic shared report',
+      occurredOn: '2026-10-02',
+      language: 'en',
+      sourceName: 'Synthetic source',
+      sourceVersion: 'v1',
+      description: 'Description',
+      originalResult: 'Result',
+      practitionerComment: 'Comment',
+    },
+  }
+  const first = await repo.claimSharedReport(a, input)
+  const replay = await repo.claimSharedReport(a, input)
+  assert.equal(replay.id, first.id)
+  await assert.rejects(() => repo.claimSharedReport(b, input), /REPORT_ALREADY_CLAIMED/)
+  const own = await repo.bootstrap(a)
+  assert.equal(own.accountReports.filter((item) => item.sourceAssessmentId === sourceAssessmentId).length, 1)
+  assert.equal(own.accountReports.find((item) => item.sourceAssessmentId === sourceAssessmentId).report.title, 'Synthetic shared report')
+  assert.equal((await repo.bootstrap(b)).accountReports.length, 0)
+  assert.equal(
+    (await rawAs(b, 'authenticated', (db) => db.query('select id from app.account_reports'))).rows.length,
+    0,
+  )
+})

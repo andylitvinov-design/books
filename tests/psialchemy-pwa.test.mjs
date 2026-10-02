@@ -19,6 +19,10 @@ test('keeps every private or administrative request network-only', () => {
     '/api/prescriptions/private-token/pdf',
     '/api/prescription-access',
     '/api/prescription-access/logout',
+    '/en/report/10000000-0000-4000-8000-000000000001',
+    '/ru/report/10000000-0000-4000-8000-000000000001',
+    '/api/report/10000000-0000-4000-8000-000000000001',
+    '/api/app/report/claim',
     '/admin/api/prescriptions/record/access',
     '/admin/prescriptions/record',
   ]) assert.equal(classifyPwaRequest(`https://example.test${pathname}`), 'network-only', pathname)

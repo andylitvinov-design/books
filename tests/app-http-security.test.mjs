@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { randomBytes, X509Certificate } from 'node:crypto'
 import { seal, openSealed, operationHash } from '../lib/app/crypto.js'
 import { appEnabled, getAppConfig, requireSameOrigin, testRuntime } from '../lib/app/config.js'
-import { resolveDatabaseUrl } from '../lib/app/database.js'
+import { resolveDatabaseUrl } from '../lib/app/database-url.js'
 import { readBody, safeError, PRIVATE_HEADERS } from '../lib/app/http.js'
 import { SUPABASE_ROOT_2021_CA, SUPABASE_ROOT_2021_SHA256 } from '../lib/app/supabase-ca.js'
 const config = { encryptionKey: randomBytes(32), encryptionKeyId: 'test-v1' },

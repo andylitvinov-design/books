@@ -4,9 +4,11 @@ import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
   return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
+    || /^\/(ru|en)\/report(?:\/|$)/.test(decoded)
     || /^\/(ru|en)\/prescriptions\//.test(decoded)
     || /^\/(ru|en)\/app(?:\/|$)/.test(decoded)
     || /^\/api\/app(?:\/|$)/.test(decoded)
+    || /^\/api\/report(?:\/|$)/.test(decoded)
     || decoded.startsWith('/api/client')
     || decoded.startsWith('/api/prescriptions/')
     || decoded.startsWith('/api/prescription-access')

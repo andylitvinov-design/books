@@ -1,34 +1,28 @@
-import { AppEntryLink } from '@/components/app/app-entry-link';
-import { currentCabinetAccess } from '@/lib/clients/session';
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
-import { ClientCabinetEntry } from "@/components/client-cabinet-entry";
+import { CabinetLanding } from "@/components/app/cabinet-landing";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { appEnabled } from "@/lib/app/config";
+import { currentCabinetAccess } from "@/lib/clients/session";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
 const copy = {
   en: {
-    title: "Client Cabinet — Holistic House",
-    description: "Open your private Holistic House client cabinet.",
-    kicker: "Private access",
-    heading: "Client Cabinet",
-    text: "Paste the private cabinet link you received from Andy. The link is exchanged for a secure browser session and then removed from the address bar.",
+    title: "Personal Cabinet — Holistic House",
+    description: "Google sign-in, guest self-observation tests and private Holistic House results.",
   },
   ru: {
-    title: "Кабинет клиента — Holistic House",
-    description: "Вход в приватный кабинет клиента Holistic House.",
-    kicker: "Приватный доступ",
-    heading: "Кабинет клиента",
-    text: "Вставьте приватную ссылку на кабинет, которую вы получили от Andy. Ссылка будет обменена на защищённую сессию браузера и затем удалена из адресной строки.",
+    title: "Личный кабинет — Holistic House",
+    description: "Вход через Google, тесты без регистрации и приватные результаты Holistic House.",
   },
 } as const;
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params;
@@ -52,19 +46,12 @@ export default async function ClientEntryPage({ params }: PageProps) {
 
   const session = await currentCabinetAccess();
   if (session) redirect(`/${locale}/client/${session.selector}`);
-  const typedLocale = locale as Locale;
-  const current = copy[typedLocale];
 
+  const typedLocale = locale as Locale;
   return (
-    <main className="client-entry-shell" lang={typedLocale}>
+    <main className="client-entry-shell cabinet-landing-shell" lang={typedLocale}>
       <PublicSiteHeader locale={typedLocale} />
-      <AppEntryLink locale={typedLocale} />
-      <section className="client-entry-card" aria-labelledby="client-entry-title">
-        <p className="about-kicker">{current.kicker}</p>
-        <h1 id="client-entry-title">{current.heading}</h1>
-        <p>{current.text}</p>
-        <ClientCabinetEntry locale={typedLocale} />
-      </section>
+      <CabinetLanding locale={typedLocale} appAvailable={appEnabled()} />
     </main>
   );
 }

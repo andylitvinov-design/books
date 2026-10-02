@@ -68,6 +68,14 @@ try {
  const storage=await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),caches:await Promise.all((await caches.keys()).map(async k=>(await(await caches.open(k)).keys()).map(r=>new URL(r.url).pathname)))}));assert.ok(!JSON.stringify(storage).match(/hh-app-auth|profile:first|\/api\/app|\/en\/app|\/ru\/app/));passed('no private browser storage or service-worker response cache')
  const exported=await api('export');assert.equal(exported.status,200);assert.ok(exported.data.runs.every(r=>r.accountId===first.accountId));assert.equal(exported.data.results.length,3);passed('own complete data export')
  await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ await page.goto(origin+'/en/client');await expect(page.getByRole('heading',{name:'Personal Cabinet'})).toBeVisible();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null);passed('Cabinet is Google-first and legacy private-link entry is secondary')
+ await page.getByRole('button',{name:'Start test'}).nth(1).click()
+ for(let i=0;i<20;i++){await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await page.getByRole('button',{name:i===19?'See my result':'Next',exact:true}).click()}
+ await expect(page.getByRole('heading',{name:'Personality tendencies'})).toBeVisible();passed('personality guest test completes while signed out')
+ await page.getByRole('button',{name:'Take another test'}).click();await page.getByRole('button',{name:'Start test'}).first().click()
+ for(const [i,v] of [4,6,3,5,2].entries()){await page.getByRole('button',{name:String(v),exact:true}).click();await page.getByRole('button',{name:i===4?'See my result':'Next',exact:true}).click()}
+ await expect(page.getByRole('heading',{name:'Current state'})).toBeVisible();passed('current-state guest test completes while signed out')
+ await page.getByRole('button',{name:'Save to my Cabinet'}).click();await expect(page).toHaveURL(/\/results\//,{timeout:60000});await ready();data=(await api('bootstrap')).data;assert.equal(data.results.length,4);assert.equal(await page.evaluate(()=>sessionStorage.getItem('hh-guest-result:v1')),null);passed('guest result imports once after Google sign-in and temporary browser payload is cleared')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
