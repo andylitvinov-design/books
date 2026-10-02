@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PageVideo } from "@/components/page-video";
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -200,6 +201,7 @@ export default async function ServicesPage({ params }: PageProps) {
       </section>
 
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
+      <PublicConsultationCta locale={locale as Locale} />
     </main>
   );
 }

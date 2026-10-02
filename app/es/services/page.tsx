@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { BriefcaseBusiness, Flower2, Sparkles } from 'lucide-react';
 import { PublicSiteHeader } from '@/components/public-site-header';
+import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 export const metadata = spanishMetadata('/es/services', 'Servicios — Holistic House', 'Constelaciones empresariales, Alquimia del Alma, psicohomeopatía y constelaciones arquetípicas.');
 const cards = [
@@ -15,6 +16,6 @@ export default function SpanishServicesPage() {
     <section className="services-studio-grid services-studio-grid--three" aria-label="Servicios">{cards.map(({ id, icon: Icon, title, subtitle, text }) => <article className="services-studio-card services-studio-card--detailed" id={id} key={id}><span className="services-studio-icon" aria-hidden="true"><Icon /></span><h2>{title}</h2><p className="services-studio-card-subtitle">{subtitle}</p><p>{text}</p></article>)}</section>
     <section className="services-studio-approach"><div><p className="homeopathy-kicker">Sobre el enfoque</p><h2>Una práctica, tres direcciones</h2></div><div><p>En los tres formatos trabajo con el campo sistémico, las imágenes y una atención cercana a las dinámicas. Lo que cambia es el foco: los negocios, los estados interiores o el nivel arquetípico.</p><Link href="/es/about">Sobre mí<span aria-hidden="true">→</span></Link></div></section>
     <section className="services-consultation services-consultation--studio" id="consultation"><div><p className="homeopathy-kicker">Primer paso</p><h2>Empieza con una breve conversación</h2><p>Cuéntame qué te gustaría explorar y elegiremos cuál de los tres formatos encaja mejor en este momento.</p></div><div><a href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">Escribir por Telegram</a><a href="https://wa.me/14376066502" rel="noreferrer" target="_blank">WhatsApp</a><Link href="/es/about#personal-consultation-title">Solicitar una consulta personal</Link></div></section>
-    <p className="remedy-disclaimer services-disclaimer">Las constelaciones empresariales son un método de exploración sistémica y no sustituyen el análisis financiero ni las previsiones profesionales. Los materiales de psicohomeopatía tienen una finalidad educativa y no sustituyen el diagnóstico ni el tratamiento médico.</p>
+    <p className="remedy-disclaimer services-disclaimer">Las constelaciones empresariales son un método de exploración sistémica y no sustituyen el análisis financiero ni las previsiones profesionales. Los materiales de psicohomeopatía tienen una finalidad educativa y no sustituyen el diagnóstico ni el tratamiento médico.</p><PublicConsultationCta locale="es" />
   </main>;
 }

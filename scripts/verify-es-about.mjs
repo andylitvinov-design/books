@@ -92,6 +92,7 @@ try {
         await intro.getByRole('button', { name: /^Ver vídeo:/ }).click();
         await expect(intro.locator('iframe')).toHaveAttribute('src', 'https://app.heygen.com/embeds/2c251709aba74fd96ae8be43257a080b');
         for (const lang of ['ru', 'en', 'es']) {
+          await page.locator('.site-language-menu-trigger').click();
           await page.locator(`.site-language-switch a[lang="${lang}"]`).click();
           await expect(page).toHaveURL(new RegExp(`/${lang}/about$`));
           await expect(page.locator('main')).toHaveAttribute('lang', lang);

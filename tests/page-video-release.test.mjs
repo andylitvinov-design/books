@@ -5,6 +5,8 @@ import { createHash } from 'node:crypto';
 import { builtInSiteVideoRecords } from '../lib/site-videos/defaults.js';
 
 const player = readFileSync(new URL('../components/site-video-player.tsx', import.meta.url), 'utf8');
+const videoCss = readFileSync(new URL('../app/site-videos.css', import.meta.url), 'utf8');
+const pageVideoVerifier = readFileSync(new URL('../scripts/verify-page-video-release.mjs', import.meta.url), 'utf8');
 const cases = [
   ['home-intro:en', 'ed202847a43a96b918308aa972177b34', 'home-en-v2', '8f1ae79ad0764324cbf6023db4761a8ff4e9c55c0a085259beccd671cae4da04'],
   ['services-intro:en', '48105a2f2228e7cb3a67391e97acaf8b', 'services-en-v2', 'eba5a152b8fba5293b6046f8569205cafb641c852709f284893308b6846fdad6'],
@@ -36,6 +38,16 @@ test('a cold SSR play control cannot accept a click before its handler is mounte
   assert.match(player, /disabled=\{!interactive\}/);
   assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
   assert.doesNotMatch(player, /Expires=|Signature=|\.mp4\?/);
+});
+test('posters keep the video title visible over the shared warm treatment', () => {
+  assert.match(player, /site-video-poster-title" aria-hidden="true" data-title=\{video\.title\}/);
+  assert.doesNotMatch(player, /site-video-poster-title" aria-hidden="true">\{video\.title\}/);
+  assert.match(videoCss, /\.site-video-poster-title::before \{ content: attr\(data-title\); \}/);
+  assert.match(videoCss, /rgba\(54, 37, 28, \.62\)/);
+});
+test('page-video browser verification opens the compact language menu before selecting Russian', () => {
+  assert.match(pageVideoVerifier, /site-language-menu-trigger/);
+  assert.match(pageVideoVerifier, /site-language-switch button\[lang="ru"\]/);
 });
 test('compact defaults are limited to these eight published renders, not About or editor replacements', () => {
   const block = player.split('const minimalPageVideoIds = new Set([')[1].split(']);')[0];
