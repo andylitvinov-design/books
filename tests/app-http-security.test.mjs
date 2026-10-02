@@ -1,15 +1,22 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, X509Certificate } from 'node:crypto'
 import { seal, openSealed, operationHash } from '../lib/app/crypto.js'
 import { appEnabled, getAppConfig, requireSameOrigin, testRuntime } from '../lib/app/config.js'
 import { readBody, safeError, PRIVATE_HEADERS } from '../lib/app/http.js'
+import { SUPABASE_ROOT_2021_CA, SUPABASE_ROOT_2021_SHA256 } from '../lib/app/supabase-ca.js'
 const config = { encryptionKey: randomBytes(32), encryptionKeyId: 'test-v1' },
   context = {
     accountId: '10000000-0000-4000-8000-000000000001',
     recordId: '10000000-0000-4000-8000-000000000002',
     field: 'run.context',
   }
+test('Supabase database CA is the reviewed 2021 root', () => {
+  const cert = new X509Certificate(SUPABASE_ROOT_2021_CA)
+  assert.equal(cert.subject, 'C=US\nST=Delware\nL=New Castle\nO=Supabase Inc\nCN=Supabase Root 2021 CA')
+  assert.equal(cert.issuer, cert.subject)
+  assert.equal(cert.fingerprint256, SUPABASE_ROOT_2021_SHA256)
+})
 test('encryption binds owner, record and field', () => {
   const a = seal({ note: 'Private synthetic note' }, context, config),
     b = seal({ note: 'Private synthetic note' }, context, config)
