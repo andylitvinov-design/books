@@ -37,10 +37,15 @@ test('publishes paired localized About routes with complete, Ontario-safe editor
   assert.ok(existsSync(new URL('../public/images/holistic-house/andy-about.png', import.meta.url)))
 })
 
-test('keeps five public mobile destinations and dedicates the account entry to Client Cabinet without exposing admin', () => {
-  assert.match(mobileNavigation, /label: 'Client Cabinet', href: '\/en\/client', icon: UserRound/)
-  assert.match(mobileNavigation, /label: 'Кабинет', href: '\/ru\/client', icon: UserRound/)
+test('uses the shared six-item public model without exposing admin', async () => {
+  const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
+  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'academy', 'about', 'cabinet'])
+  assert.equal(getSiteNavigation('en').find(item => item.id === 'cabinet').href, '/en/client')
+  assert.equal(getSiteNavigation('ru').find(item => item.id === 'cabinet').href, '/ru/client')
+  assert.equal(getSiteNavigation('es').find(item => item.id === 'cabinet').href, '/es/client')
+  assert.equal(getSiteNavigation('en').find(item => item.id === 'academy').href, 'https://psitrends.com/academy')
+  assert.match(mobileNavigation, /getSiteNavigation/)
   assert.doesNotMatch(mobileNavigation, /href: '\/admin'/)
-  assert.match(siteNavigation, /href=\{\"\/\" \+ activeLocale \+ "\/about"\}/)
+  assert.match(siteNavigation, /getSiteNavigation/)
   assert.doesNotMatch(siteNavigation, /href="\/admin"/)
 })

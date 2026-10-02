@@ -1,8 +1,8 @@
 # Holistic House IA v2 implementation
 
 Source contract: andylitvinov-design/ai-projects-brain#222 revision 2.
-Base: `codex/public-book-library` at `0d48debdcf6edc2fea1da3404a8fa4e2ddb1eb07`.
-Work branch: `chatgpt/issue-222-library-cabinet-2026-10-02`.
+Base: `codex/public-book-library` at `92fc2f175f500d6db5596e12eb4130aac404fa4f`.
+Work branch: `codex/issue-222-ia-v2`.
 
 ## Scope
 
@@ -21,7 +21,7 @@ Memory store parity exists for tests, not as a production durability claim. The 
 
 ## Verification
 
-Run `npm run test:unit`, `npm run lint`, `npm run native:check`, `npm run pwa:check`, `npm run build`, and `npx --no-install tsc --noEmit`.
+Run `npm run test:unit`, `npm run lint`, `npm run native:check`, `npm run pwa:check`, `npm run build`, and `npx --no-install tsc --noEmit`. The full legacy unit suite currently has unrelated existing failures in PDF, consultation, reader and Services fixtures; IA v2's targeted tests and all changed navigation expectations must pass before review.
 
 `npm run verify:ia-v2` is a write-capable **CI-only** harness. It accepts no live URL/arguments. It uses an ephemeral local Redis service (database 15), synthetic clients, loopback TLS, and production-built Next.js. It tests actual owner/client browser flows, cross-client HTML/RSC isolation, session resume/revoke/rotate, application restart and new-adapter readback. `.github/workflows/ia-v2.yml` installs its isolated browser prerequisites and creates its one-day local certificate. Artifacts contain synthetic screenshots and sanitized logs.
 

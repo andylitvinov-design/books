@@ -22,13 +22,15 @@ test('Remedies landing combines remedy search, free consultation and book covers
   assert.match(header, /SiteNavigation/)
 })
 
-test('public navigation calls the section Remedies and exposes bilingual Services', async () => {
-  const navigation = await readFile('components/site-navigation.tsx', 'utf8')
-  assert.match(navigation, /Препараты/)
-  assert.match(navigation, /Remedies/)
-  assert.match(navigation, /Услуги/)
-  assert.match(navigation, /Services/)
-  assert.match(navigation, /\/services/)
+test('public navigation groups Books and Remedies in Library and preserves Services', async () => {
+  const { activeNavigationId, getSiteNavigation } = await import('../lib/site-navigation-model.js')
+  for (const locale of ['en', 'ru', 'es']) {
+    const items = getSiteNavigation(locale)
+    assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
+    assert.equal(items.find(item => item.id === 'services').href, `/${locale}/services`)
+  }
+  assert.equal(activeNavigationId('/en/homeopathy/remedies/aconitum'), 'library')
+  assert.equal(activeNavigationId('/ru/books'), 'library')
 })
 
 test('Services page is bilingual and grounds Alchemy of the Soul in the published services book', async () => {
@@ -58,12 +60,11 @@ test('remedy pages build related links from exact mentions in source articles', 
 })
 
 
-test('mobile navigation uses Remedies hub and Services routes', async () => {
+test('mobile navigation uses the shared Library and Services routes', async () => {
   const navigation = await readFile('components/mobile-bottom-navigation.tsx', 'utf8')
-  assert.match(navigation, /'Препараты'.*homeopathy/)
-  assert.match(navigation, /'Услуги'.*services/)
-  assert.match(navigation, /'Remedies'.*homeopathy/)
-  assert.match(navigation, /'Services'.*services/)
+  assert.match(navigation, /getSiteNavigation/)
+  assert.match(navigation, /data-nav-item/)
+  assert.match(navigation, /activeNavigationId/)
 })
 
 test('English Remedies page localizes book card titles while preserving source-language book content', async () => {
