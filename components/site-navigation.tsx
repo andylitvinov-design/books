@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/data/remedies";
 import { localePath, readUiLocale, saveUiLocale } from "@/lib/ui-locale";
 import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from "@/lib/public-locales";
@@ -14,6 +14,7 @@ const navigationCopy = {
 } as const;
 export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) {
   const pathname = usePathname();
+  const menuRef = useRef<HTMLDetailsElement>(null);
   const [preference, setPreference] = useState<PublicLocale>(locale ?? "en");
   const activeLocale = locale ?? preference;
   const labels = navigationCopy[activeLocale];
@@ -29,7 +30,30 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
     setPreference(selected);
     if (locale) { saveUiLocale(locale); savePublicLocale(locale); }
   }, [locale]);
+  useEffect(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+    function dismiss(event: Event) {
+      if (event.target instanceof Node && !menu!.contains(event.target)) menu!.open = false;
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || !menu!.open) return;
+      event.preventDefault();
+      menu!.open = false;
+      menu!.querySelector<HTMLElement>("summary")?.focus();
+    }
+    document.addEventListener("pointerdown", dismiss);
+    document.addEventListener("focusin", dismiss);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", dismiss);
+      document.removeEventListener("focusin", dismiss);
+      document.removeEventListener("keydown", escape);
+    };
+  }, []);
+  useEffect(() => { if (menuRef.current) menuRef.current.open = false; }, [pathname, activeLocale]);
   function selectLocale(nextLocale: PublicLocale) {
+    if (menuRef.current) menuRef.current.open = false;
     setPreference(nextLocale);
     savePublicLocale(nextLocale);
     // The existing private-cabinet preference remains strictly EN/RU.
@@ -39,6 +63,7 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
     onLocaleChange?.(nextLocale);
   }
   function counterpart(nextLocale: PublicLocale) {
+    if (pathname === "/books/maya-tradition") return `${pathname}?lang=${nextLocale}`;
     return available ? publicCounterpart(pathname, nextLocale) : localePath(pathname, nextLocale as Locale);
   }
   return <nav aria-label={labels.navigation} className="site-navigation">
@@ -49,9 +74,9 @@ export function SiteNavigation({ locale, onLocaleChange }: SiteNavigationProps) 
     <Link href={"/" + activeLocale + "/about"}>{labels.about}</Link>
     {!spanish && <Link className="site-cabinet-link" href={"/" + activeLocale + "/client"}>{labels.cabinet}</Link>}
     {/* Load a different language only on selection, not speculatively (including client-entry counterparts). */}
-    <span className="site-language-switch"><details className="site-language-menu">
+    <span className="site-language-switch"><details className="site-language-menu" ref={menuRef}>
       <summary className="site-language-menu-trigger" aria-label={labels.language}>{activeLocale.toUpperCase()}</summary>
-      <span className="site-language-menu-list">{languages.map(nextLocale => localizedPath || nextLocale === "es" ? <Link prefetch={false} aria-current={activeLocale === nextLocale ? "true" : undefined} href={counterpart(nextLocale)} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)}>{nextLocale.toUpperCase()}</Link> : <button aria-pressed={activeLocale === nextLocale} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)} type="button">{nextLocale.toUpperCase()}</button>)}</span>
+      <span className="site-language-menu-list">{languages.map(nextLocale => localizedPath || nextLocale === "es" || !onLocaleChange ? <Link prefetch={false} aria-current={activeLocale === nextLocale ? "true" : undefined} href={counterpart(nextLocale)} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)}>{nextLocale.toUpperCase()}</Link> : <button aria-pressed={activeLocale === nextLocale} key={nextLocale} lang={nextLocale} onClick={() => selectLocale(nextLocale)} type="button">{nextLocale.toUpperCase()}</button>)}</span>
     </details></span>
   </nav>;
 }
