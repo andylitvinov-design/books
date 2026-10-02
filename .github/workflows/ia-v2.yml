@@ -25,12 +25,22 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - run: npm run test:unit
-      - run: npm run lint
-      - run: npm run native:check && npm run pwa:check
-      - run: npm run build
-      - run: npx --no-install tsc --noEmit
+      # Keep the job failed if the current full suite fails, but still collect
+      # independent IA-v2 evidence rather than hiding it behind a known baseline failure.
+      - id: unit
+        run: npm run test:unit
+      - if: ${{ !cancelled() }}
+        run: npm run lint
+      - if: ${{ !cancelled() }}
+        run: npm run native:check && npm run pwa:check
+      - id: build
+        if: ${{ !cancelled() }}
+        run: npm run build
+      - if: ${{ !cancelled() }}
+        run: npx --no-install tsc --noEmit
       - name: Isolated browser tools and Redis CLI
+        id: browser_tools
+        if: ${{ steps.build.outcome == 'success' }}
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
           npm install --prefix /tmp/ia222-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
@@ -39,6 +49,7 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y redis-tools
           openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/ia222-key.pem -out /tmp/ia222-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
       - name: Synthetic encrypted-store and owner/client browser acceptance
+        if: ${{ steps.browser_tools.outcome == 'success' }}
         run: npm run verify:ia-v2
         env:
           NODE_EXTRA_CA_CERTS: /tmp/ia222-cert.pem
