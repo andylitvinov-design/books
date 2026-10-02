@@ -182,8 +182,9 @@ async function exercise(engine, browserType, width) {
       for (const book of volumes) {
         for (const [readerPath, locale] of [[`/books/${book}?lang=en`, 'en'], [`/books/${book}`, 'ru']]) {
           await check('maya-reader-and-images', { path: readerPath, locale }, async () => {
-            const response = await page.goto(origin + readerPath, { waitUntil: 'networkidle' });
+            const response = await page.goto(origin + readerPath, { waitUntil: 'domcontentloaded', timeout: 35000 });
             assert.equal(response.status(), 200);
+            await page.locator('.reader-article').waitFor({ state: 'visible', timeout: 20000 });
             const language = await page.evaluate(() => ({ htmlLang: document.documentElement.lang, mainLang: document.querySelector('main')?.lang }));
             assert.equal(language.htmlLang, locale, 'Reader document language');
             assert.equal(language.mainLang, locale, 'Reader main language');

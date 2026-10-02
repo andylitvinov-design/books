@@ -85,3 +85,11 @@ test('unmount cancellation aborts the real in-flight translation request', async
 test('editing a prepared consultation invalidates the old handoff link', () => {
   assert.match(read('components/personal-consultation-form.tsx'), /onInput=\{\(\) => \{ if \(preparedUrl\) setPreparedUrl\(""\); \}\}/);
 });
+
+test('long Maya readers wait for rendered content instead of global network idleness', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const block = verifier.match(/check\('maya-reader-and-images'[\s\S]*?return \{ sourceVisible: true, \.\.\.language \};/)?.[0] ?? '';
+  assert.match(block, /waitUntil: 'domcontentloaded'/);
+  assert.match(block, /reader-article'\)\.waitFor/);
+  assert.doesNotMatch(block, /waitUntil: 'networkidle'/);
+});
