@@ -1,4 +1,23 @@
-# English video pipeline — activation and recovery
+# Video distribution — current bilingual route
+
+Owner decision on 2026-10-02: **both EN and RU go to @shamanic_academy** (Академия Древних Культур), channel `UCjWq6NHZTQkUr3bC3WbXXcw`, connected Metricool brand `7153286`. This supersedes the former EN→@aatapro split for public distribution. Do not change the live website's approved HeyGen embeds as part of YouTube distribution.
+
+`bilingual-publication.mjs` is the reusable planning/request schema for the connected Metricool tool. It accepts both languages, checks the exact approved master and connected channel, excludes private/client content, and distinguishes `scheduled`, `published` and playback-`verified`. `reviewed-masters.mjs` holds the original six immutable archive references. Add future masters only after explicit approval; do not regenerate a missing locale automatically.
+
+Publication procedure:
+
+1. Resolve approved master + locale; read the connected brand/channel afresh. Call `planPublication` with the durable checkpoint, if any.
+2. Read existing Drive metadata without copying it. Fetch the existing HeyGen original and stream-hash it against the archived SHA-256. A matching original may be passed directly to Metricool; its temporary delivery copy is not another Drive master. No renders, Drive uploads, sharing changes, or MP4s in Git.
+3. Under a single-publisher lock, persist a `submission-intent` record keyed by channel + master + locale BEFORE calling the connected `createScheduledPost` tool with `buildMetricoolRequest` output. Never log or commit its temporary signed URL. Preserve the exact provider ID and UUID on response. This module is a tool-assisted operator adapter, **not an installed unattended site-publish hook**.
+4. Keep current settings: Unlisted, not made for kids, AI-generated content disclosed, subscriber notifications off. Persist the requested Toronto slot; never silently switch channels or language after a failure.
+5. On any ambiguous result, reconcile the existing Metricool UUID/post and channel before further action. `submission-intent`, `uncertain` and `failed` never authorize a repeat upload. Scheduled means wait; published means verify playback; verified means reuse. Do not delete a checkpoint to force a retry.
+6. Read back the YouTube ID/title/channel and verify anonymous decoded frames, advancing time and natural completion. Save sanitized evidence. Provider `PUBLISHED` alone is not completed delivery.
+
+Run `node --test tests/bilingual-publication.test.mjs tests/youtube-private-upload.test.mjs tests/video-pipeline-safety.test.mjs`.
+
+The dated bilingual release ledger in `docs/` records the six dispatched jobs. Future publications must consult it to avoid duplicates. Review/checkpoint state must live durably outside an ephemeral agent session.
+
+## Legacy English private worker — retained, not the default distribution route
 
 This is the English @aatapro distribution worker, not a new video generator and not a replacement for the live Holistic House video editor. Generation remains approval-gated via the verified private Andrey HeyGen Digital Twin. Read ai-projects-brain #218/#219 for current voice, Look, archive IDs and publication approvals. The live website runs from `codex/public-book-library`; this worker runs from `codex/bootstrap-books`. Do not merge these branches wholesale.
 
@@ -39,4 +58,4 @@ The existing worker remains intentionally Private-only. `websiteReady=false` is 
 - `node scripts/video-publish/preflight-pipeline.mjs` — read-only.
 - `node scripts/video-publish/upload-youtube-private.mjs <approved-job.json>` — writes only for an explicit new approved upload job.
 
-No example executable job is included. Adding a `.video-jobs/*.json` file to the worker branch is an explicit upload command. Do not create it merely to test missing credentials. No paid account upgrade, new render, site deployment or Russian-channel change is part of this patch.
+No example executable legacy job is included. Adding a `.video-jobs/*.json` file to the worker branch is an explicit legacy private-upload command, not the bilingual route. Do not create it merely to test missing credentials. The legacy worker does not render, deploy websites, or configure Metricool.
