@@ -1,0 +1,13 @@
+{
+  "method": "Fresh anonymous installed Chrome context via Playwright; actual watch page; muted HTML video play; normal speed; no seeking; wait for natural ended state",
+  "channelId": "UCjWq6NHZTQkUr3bC3WbXXcw",
+  "author": "Академия Древних Культур",
+  "results": [
+    {"key":"home:en","videoId":"Y4K4piEwwA8","title":"Deeper Personal Work at Holistic House","checkedAt":"2026-10-02T16:27:39.022Z","beforeTime":0,"advancingTime":4.209456,"duration":29.461,"endedTime":29.461,"ended":true,"decodedFrames":736,"width":1280,"height":720,"error":null,"playability":"OK","channelVerified":true},
+    {"key":"services:en","videoId":"s30Y42IwPcg","title":"How I Choose the Right Method","checkedAt":"2026-10-02T16:28:18.240Z","beforeTime":0,"advancingTime":3.963316,"duration":29.141,"endedTime":29.141,"ended":true,"decodedFrames":728,"width":1280,"height":720,"error":null,"playability":"OK","channelVerified":true},
+    {"key":"homeopathy:en","videoId":"ILyRWyHtJoE","title":"My Approach to Homeopathy","checkedAt":"2026-10-02T16:29:01.027Z","beforeTime":1.989267,"advancingTime":9.360498,"duration":30.741,"endedTime":30.741,"ended":true,"decodedFrames":768,"width":1280,"height":720,"error":null,"playability":"OK","channelVerified":true}
+    ,{"key":"home:ru","videoId":"AE8Pelpo424","title":"Глубокая личная работа в Holistic House","checkedAt":"2026-10-02T16:29:40.612Z","beforeTime":0,"advancingTime":4.127934,"duration":31.461,"endedTime":31.461,"ended":true,"decodedFrames":786,"width":1280,"height":720,"error":null,"playability":"OK","channelVerified":true}
+    ,{"key":"services:ru","videoId":"Cz6SxXJNZbw","title":"Как я выбираю подходящий метод","checkedAt":"2026-10-02T16:30:21.910Z","beforeTime":1.043146,"advancingTime":5.646121,"duration":33.461,"endedTime":33.461,"ended":true,"decodedFrames":836,"width":640,"height":360,"error":null,"playability":"OK","channelVerified":true}
+    ,{"key":"homeopathy:ru","videoId":"Q9NvYECKWuc","title":"Мой подход к гомеопатии","checkedAt":"2026-10-02T16:31:13.240Z","beforeTime":0,"advancingTime":4.245333,"duration":32.001,"endedTime":32.001,"ended":true,"decodedFrames":799,"width":640,"height":360,"error":null,"playability":"OK","channelVerified":true}
+  ]
+}

@@ -1,18 +1,17 @@
-name: English video pipeline
+name: Video publication safety and legacy private preflight
 on:
   pull_request:
     paths:
       - 'scripts/video-publish/**'
       - 'tests/*video*pipeline*.mjs'
       - 'tests/youtube-private-upload.test.mjs'
+      - 'tests/bilingual-publication.test.mjs'
       - '.github/workflows/youtube-private-upload.yml'
       - '.video-jobs/README.md'
   push:
     branches: ['codex/bootstrap-books']
     paths:
       - '.video-jobs/*.json'
-      - 'scripts/video-publish/**'
-      - '.github/workflows/youtube-private-upload.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -31,7 +30,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: 22}
       - run: |
-          node --test tests/youtube-private-upload.test.mjs tests/video-pipeline-safety.test.mjs
+          node --test tests/youtube-private-upload.test.mjs tests/video-pipeline-safety.test.mjs tests/bilingual-publication.test.mjs
           for file in scripts/video-publish/*.mjs; do node --check "$file"; done
   pipeline:
     name: Verify connection before approved uploads
