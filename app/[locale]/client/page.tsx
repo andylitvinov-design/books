@@ -1,9 +1,10 @@
+import { currentCabinetAccess } from '@/lib/clients/session';
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ClientCabinetEntry } from "@/components/client-cabinet-entry";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
+import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 
@@ -26,9 +27,7 @@ const copy = {
   },
 } as const;
 
-export function generateStaticParams() {
-  return getHomeopathyLocaleParams();
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params;
@@ -50,6 +49,8 @@ export default async function ClientEntryPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
 
+  const session = await currentCabinetAccess();
+  if (session) redirect(`/${locale}/client/${session.selector}`);
   const typedLocale = locale as Locale;
   const current = copy[typedLocale];
 

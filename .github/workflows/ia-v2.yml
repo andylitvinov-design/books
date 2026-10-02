@@ -1,0 +1,66 @@
+name: Holistic House IA v2 checks
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 5
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Record exact tested checkout
+        run: |
+          mkdir -p /tmp/ia222-evidence
+          node --input-type=module <<'JS'
+          import { execFileSync } from 'node:child_process';
+          import { writeFileSync } from 'node:fs';
+          const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+          writeFileSync('/tmp/ia222-evidence/provenance.json', JSON.stringify({
+            commit: git('rev-parse', 'HEAD'), tree: git('rev-parse', 'HEAD^{tree}'),
+            harnessBlob: git('rev-parse', 'HEAD:scripts/verify-ia-v2.mjs'),
+            runId: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT,
+            ref: process.env.GITHUB_REF, productionAccess: false
+          }, null, 2));
+          JS
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:unit
+      - name: Source-content validators
+        run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
+      - run: npm run lint
+      - run: npm run native:check && npm run pwa:check
+      - run: npm run build
+      - run: npx --no-install tsc --noEmit
+      - name: Isolated browser tools and Redis CLI
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
+          npm install --prefix /tmp/ia222-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          ln -s /tmp/ia222-browser-tools/node_modules/@playwright node_modules/@playwright
+          /tmp/ia222-browser-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+          sudo apt-get update -qq && sudo apt-get install -y redis-tools
+          openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/ia222-key.pem -out /tmp/ia222-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+      - name: Synthetic encrypted-store and owner/client browser acceptance
+        run: npm run verify:ia-v2
+        env:
+          NODE_EXTRA_CA_CERTS: /tmp/ia222-cert.pem
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ia222-synthetic-evidence
+          path: /tmp/ia222-evidence/
+          retention-days: 7

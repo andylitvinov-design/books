@@ -1,3 +1,4 @@
+import { LibraryBackLink } from '@/components/library-hub';
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -73,7 +74,7 @@ export default async function HomeopathyPage({ params }: PageProps) {
 
   return (
     <main className="homeopathy-shell remedies-landing">
-      <PublicSiteHeader locale={locale} />
+      <PublicSiteHeader locale={locale} /><LibraryBackLink locale={locale} />
 
       <section className="remedies-hero">
         <p className="homeopathy-kicker">{current.kicker}</p>

@@ -1,3 +1,4 @@
+import { OwnerAssessments } from '@/components/owner-assessments'
 import { notFound, redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 
@@ -24,10 +25,10 @@ export default async function ClientDetail({ params }) {
   const store = getPrescriptionStore()
   const client = await store?.findClientById(id)
   if (!client) notFound()
-
   const documents = await store.listClientDocuments(id)
   const groups = Object.entries(Object.groupBy(documents, (document) => `${document.dateIssued}|${document.consultationId ?? document.id}`)).sort(([left], [right]) => right.localeCompare(left))
   const lastConsultation = documents.map((document) => document.dateIssued).sort().at(-1)
+  const assessments = (await store.listClientAssessments(id)).sort((left, right) => right.occurredOn.localeCompare(left.occurredOn) || right.id.localeCompare(left.id))
 
   return <main className="prescription-admin-shell client-detail-shell">
     <PrescriptionAdminHeader title={client.fullName} description={`${client.preferredLocale.toUpperCase()} · ${client.status}`} />
@@ -40,6 +41,8 @@ export default async function ClientDetail({ params }) {
     <section className="client-detail-primary-actions" aria-label={copy.primary}><a href={`/admin/consultations/new?clientId=${id}`}>{copy.new}</a><div><p>{copy.cabinet}</p><CabinetLinkActions clientId={id} locale={client.preferredLocale} /></div></section>
 
     <section className="client-detail-history"><h2>{copy.history}</h2>{groups.map(([key, records]) => <article key={key}><h3>{records[0].dateIssued}</h3>{records.map((document) => <p key={document.id}><a href={`/admin/documents/${document.id}?locale=${client.preferredLocale}`}>{document.kind === 'payment' ? `${document.paymentStatus === 'received' ? copy.receipt : copy.invoice} ${document.currency} ${(document.amount / 100).toFixed(2)}` : document.kind === 'report' ? copy.report : copy.recommendation}</a><span>{document.status}</span></p>)}</article>)}{!groups.length && <p>{copy.empty}</p>}</section>
+
+    <OwnerAssessments records={assessments} clientId={id} locale={client.preferredLocale} temporary={store.assessmentStorage === 'memory'} />
 
     <details className="client-detail-settings"><summary>{copy.settings}</summary><form action={editClientAction.bind(null, id)} className="prescription-admin-form"><label>{copy.name}<input name="fullName" required maxLength={200} defaultValue={client.fullName} /></label><label>{copy.language}<select name="preferredLocale" defaultValue={client.preferredLocale}><option value="en">EN</option><option value="ru">RU</option></select></label><label>{copy.email}<input name="email" type="email" defaultValue={client.email} /></label><label>{copy.phone}<input name="phone" defaultValue={client.phone} /></label><label>{copy.notes}<textarea name="notes" defaultValue={client.notes} /></label><label>{copy.status}<select name="status" defaultValue={client.status}><option value="active">Active</option><option value="archived">Archived</option></select></label><button>{copy.save}</button></form></details>
 

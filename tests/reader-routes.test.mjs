@@ -76,7 +76,7 @@ test('provides the server reader, not-found, and strict media route modules', as
   assert.match(readerPage, /metadataBase/)
   assert.match(readerPage, /notFound\(\)/)
   assert.match(readerPage, /loadReaderDocument/)
-  assert.match(readerPage, /\/media\/\$\{book\.mediaSeries\}/)
+  assert.match(readerPage, /const coverUrl = "\/media\/" \+ book\.mediaSeries \+ "\/" \+ book\.cover/)
   assert.match(readerPage, /Источник/)
   assert.match(readerPage, /Статус/)
   assert.match(notFoundPage, /Библиотек/)
