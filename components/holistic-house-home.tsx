@@ -1,10 +1,10 @@
 "use client";
+import { featuredBookUrls } from "@/data/featured-books";
 
 import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 import { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
@@ -48,7 +48,7 @@ const copy = {
     libraryTitle: "Алхимия души",
     libraryText: "Моя книга о внутреннем развитии, психогомеопатии и авторском подходе к работе с состояниями.",
     libraryAction: "Читать книгу",
-    bookUrl: "https://designrr.page/?id=367554&token=1057485987&h=4958",
+    bookUrl: featuredBookUrls.ru,
     aboutEyebrow: "Обо мне",
     aboutTitle: "Andrii Litvinov",
     aboutText: "Консультант, фасилитатор и преподаватель. Более 20 лет работаю с группами и практиками внутреннего развития; соединяю системные расстановки, образную работу, телесные подходы и исследование архетипов.",
@@ -91,7 +91,7 @@ const copy = {
     libraryTitle: "The Power of Life",
     libraryText: "My book on inner development, psychohomeopathy, and an integrative approach to working with human states.",
     libraryAction: "Read the book",
-    bookUrl: "https://designrr.page/?id=377444&token=639498968&h=5264",
+    bookUrl: featuredBookUrls.en,
     aboutEyebrow: "About",
     aboutTitle: "Andrii Litvinov",
     aboutText: "Consultant, facilitator, and teacher. For more than 20 years I have worked with groups and inner-development practices, combining systemic constellations, imagery, embodied approaches, and archetypal exploration.",
@@ -105,14 +105,14 @@ type HolisticHouseHomeProps = {
   introVideos?: Partial<Record<Locale, PublishedSiteVideo>>;
 };
 
-export function HolisticHouseHome({ locale: initialLocale = "en", introVideos = {} }: HolisticHouseHomeProps) {
+export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticHouseHomeProps) {
   const router = useRouter();
-  const [locale, setLocale] = useState<Locale>(initialLocale);
   const text = copy[locale];
   const introVideo = introVideos[locale];
 
   function selectLocale(nextLocale: Locale) {
-    setLocale(nextLocale);
+    // Commit the language once, with the server navigation. An optimistic local
+    // switch followed by the server-keyed remount could discard the first play click.
     const target = new URL(window.location.href);
     target.searchParams.set("lang", nextLocale);
     router.replace(target.pathname + target.search + target.hash, { scroll: false });
@@ -150,7 +150,7 @@ export function HolisticHouseHome({ locale: initialLocale = "en", introVideos = 
               {text.primary}<span aria-hidden="true">→</span>
             </Link>
             <Link className="service-home-button service-home-button--secondary" href={"/" + locale + "/services"}>
-              {text.secondary}
+              {text.secondary}<span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>

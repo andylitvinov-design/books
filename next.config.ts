@@ -16,10 +16,13 @@ const nextConfig: NextConfig = {
     "/[locale]/prescriptions/[selector]": ["./assets/documents/andrii-signature-left-90.png"],
     "/admin/documents/[id]": ["./assets/documents/andrii-signature-left-90.png"],
     "/document-preview/[kind]": ["./assets/documents/andrii-signature-left-90.png"],
-    "/books/[bookId]": [
+    // Tracing keys are route globs, not literal Next.js dynamic-segment names.
+    // Readers load these existing HTML files dynamically at request time.
+    "/books/*": [
       "./source-books/book-1-alchemy-soul/*.html",
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
+      "./source-books/book-3-maya-tradition/outputs/*.html",
     ],
     "/media/[series]/[file]": [
       "./source-books/book-1-alchemy-soul/media/**/*",

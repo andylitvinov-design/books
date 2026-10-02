@@ -28,7 +28,7 @@ jobs:
           exit 0
       - name: Test untouched canonical base with its own lockfile
         run: |
-          git worktree add --detach /tmp/hh-r1-regression-base 5ac4e18f4673e2793644fd6ca41544b4605818d0
+          git worktree add --detach /tmp/hh-r1-regression-base 59ce68425204412a86c60404d65db1539ed84a65
           cd /tmp/hh-r1-regression-base
           npm ci --no-audit --no-fund
           set +e
@@ -43,7 +43,7 @@ jobs:
           const read=name=>{const log=readFileSync(dir+name+'.tap','utf8');return {exit:Number(readFileSync(dir+name+'.exit','utf8')),tests:Number(log.match(/^# tests (\d+)/m)?.[1]||0),pass:Number(log.match(/^# pass (\d+)/m)?.[1]||0),fail:Number(log.match(/^# fail (\d+)/m)?.[1]||0),failures:[...log.matchAll(/^not ok \d+ - (.+)$/gm)].map(m=>m[1])}};
           const base=read('base'),head=read('head');
           const newFailures=head.failures.filter(name=>!base.failures.includes(name));
-          const summary={baseCommit:'5ac4e18f4673e2793644fd6ca41544b4605818d0',headCommit:process.env.GITHUB_SHA,base,head,newFailures};
+          const summary={baseCommit:'59ce68425204412a86c60404d65db1539ed84a65',headCommit:process.env.GITHUB_SHA,base,head,newFailures};
           writeFileSync(dir+'summary.json',JSON.stringify(summary,null,2));
           console.log(JSON.stringify(summary,null,2));
           if(newFailures.length || !head.tests || !base.tests || (head.exit && !head.failures.length))process.exitCode=1;

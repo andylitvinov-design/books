@@ -22,23 +22,27 @@ test('Remedies landing combines remedy search, free consultation and book covers
   assert.match(header, /SiteNavigation/)
 })
 
-test('public navigation calls the section Remedies and exposes bilingual Services', async () => {
+test('public navigation groups existing remedies inside Library and keeps bilingual Services', async () => {
   const navigation = await readFile('components/site-navigation.tsx', 'utf8')
-  assert.match(navigation, /Препараты/)
-  assert.match(navigation, /Remedies/)
-  assert.match(navigation, /Услуги/)
-  assert.match(navigation, /Services/)
-  assert.match(navigation, /\/services/)
+  const { getSiteNavigation } = await import('../lib/site-navigation-model.js')
+  assert.match(navigation, /getSiteNavigation/)
+  for (const locale of ['en', 'ru', 'es']) {
+    const items = getSiteNavigation(locale)
+    assert.equal(items.find((item) => item.id === 'library').href, `/${locale}/library`)
+    assert.equal(items.find((item) => item.id === 'services').href, `/${locale}/services`)
+  }
 })
 
 test('Services page is bilingual and grounds Alchemy of the Soul in the published services book', async () => {
   const page = await readFile('app/[locale]/services/page.tsx', 'utf8')
   assert.match(page, /Алхимия души/)
   assert.match(page, /Alchemy of the Soul/)
-  assert.match(page, /alchemy-services-workflow/)
-  assert.match(page, /Бесплатная консультация/)
-  assert.match(page, /Free consultation/)
-  assert.match(page, /published project materials/)
+  assert.match(page, /id: "alchemy"/)
+  assert.match(page, /PageVideo slot=\{"service-" \+ id\}/)
+  assert.match(page, /Начните с короткого разговора/)
+  assert.match(page, /Start with a short conversation/)
+  assert.match(page, /не заменяют медицинскую диагностику/)
+  assert.match(page, /do not replace medical diagnosis/)
 })
 
 test('remedy pages build related links from exact mentions in source articles', async () => {
@@ -58,12 +62,11 @@ test('remedy pages build related links from exact mentions in source articles', 
 })
 
 
-test('mobile navigation uses Remedies hub and Services routes', async () => {
+test('mobile navigation uses the shared Library and Services routes', async () => {
   const navigation = await readFile('components/mobile-bottom-navigation.tsx', 'utf8')
-  assert.match(navigation, /'Препараты'.*homeopathy/)
-  assert.match(navigation, /'Услуги'.*services/)
-  assert.match(navigation, /'Remedies'.*homeopathy/)
-  assert.match(navigation, /'Services'.*services/)
+  assert.match(navigation, /getSiteNavigation/)
+  assert.match(navigation, /data-nav-item/)
+  assert.match(navigation, /aria-current/)
 })
 
 test('English Remedies page localizes book card titles while preserving source-language book content', async () => {

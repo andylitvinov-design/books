@@ -31,3 +31,9 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Keep the original accessible when the optional translation service fails. */
+.reader-translation-error, .reader-translation-progress { line-height: 1.6; }
+.reader-translation-error button, .reader-translation-error a, .reader-translation-progress a { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 12px 0 0; padding: 8px 12px; border: 1px solid currentColor; border-radius: 8px; font: inherit; }
+.reader-translation-error button:focus-visible, .reader-translation-error a:focus-visible, .reader-translation-progress a:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+.personal-consultation-form__resume { display: inline-flex; align-items: center; min-height: 44px; grid-column: 1 / -1; text-decoration: underline; }

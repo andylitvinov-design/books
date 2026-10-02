@@ -14,8 +14,8 @@ const auditOrigin = live ? origin : 'http://127.0.0.1:3202';
 const evidence = '/tmp/site-video-evidence';
 const results = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const routes = ['/es', '/es/services', '/es/books', '/es/about', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
-const nav = ['/es', '/es/books', '/es/homeopathy', '/es/services', '/es/about'];
+const routes = ['/es', '/es/library', '/es/services', '/es/books', '/es/about', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
+const nav = ['/es', '/es/library', '/es/services', 'https://psitrends.com/academy', '/es/about', '/es/client'];
 mkdirSync(evidence, { recursive: true });
 let app, proxy, stage = 'start';
 try {
@@ -132,7 +132,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'six shared Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

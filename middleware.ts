@@ -3,8 +3,9 @@ import type { NextRequest } from 'next/server'
 import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
-  return /^\/(ru|en)\/(prescriptions|client|app)(?:\/|$)/.test(decoded)
-    || /^\/es\/client(?:\/|$)/.test(decoded)
+  return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
+    || /^\/(ru|en)\/prescriptions\//.test(decoded)
+    || /^\/(ru|en)\/app(?:\/|$)/.test(decoded)
     || /^\/api\/app(?:\/|$)/.test(decoded)
     || decoded.startsWith('/api/client')
     || decoded.startsWith('/api/prescriptions/')
@@ -27,8 +28,13 @@ export function middleware(request: NextRequest) {
     'X-Content-Type-Options': 'nosniff',
   } })
   const requestHeaders = new Headers(request.headers)
-  const pageLocale = /^\/es(?:\/|$)/.test(request.nextUrl.pathname) ? 'es'
-    : request.nextUrl.pathname.match(/^\/(en|ru)(?:\/|$)/)?.[1] ?? 'ru'
+  // Derive the public document language only from the URL. Private locale gates
+  // and all security headers below remain unchanged.
+  const urlLocale = request.nextUrl.pathname.match(/^\/(en|ru|es)(?:\/|$)/)?.[1]
+  const queryLocale = request.nextUrl.pathname === '/' ? request.nextUrl.searchParams.get('lang') : null
+  const preference = request.cookies.get('holistic_house_public_locale')?.value === 'es' ? 'es'
+    : request.cookies.get('holistic_house_ui_locale')?.value === 'ru' ? 'ru' : 'en'
+  const pageLocale = urlLocale ?? (['en', 'ru', 'es'].includes(queryLocale ?? '') ? queryLocale : preference) ?? 'en'
   requestHeaders.set('x-public-page-locale', pageLocale)
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
