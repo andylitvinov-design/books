@@ -1,5 +1,4 @@
 "use client";
-import { featuredBookUrls } from "@/data/featured-books";
 
 import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import Image from "next/image";
@@ -47,8 +46,8 @@ const copy = {
     libraryEyebrow: "Авторская книга",
     libraryTitle: "Алхимия души",
     libraryText: "Моя книга о внутреннем развитии, психогомеопатии и авторском подходе к работе с состояниями.",
-    libraryAction: "Читать книгу",
-    bookUrl: featuredBookUrls.ru,
+    libraryAction: "Все книги",
+    bookUrl: "/ru/books",
     aboutEyebrow: "Обо мне",
     aboutTitle: "Andrii Litvinov",
     aboutText: "Консультант, фасилитатор и преподаватель. Более 20 лет работаю с группами и практиками внутреннего развития; соединяю системные расстановки, образную работу, телесные подходы и исследование архетипов.",
@@ -90,8 +89,8 @@ const copy = {
     libraryEyebrow: "Author book",
     libraryTitle: "The Power of Life",
     libraryText: "My book on inner development, psychohomeopathy, and an integrative approach to working with human states.",
-    libraryAction: "Read the book",
-    bookUrl: featuredBookUrls.en,
+    libraryAction: "Browse books",
+    bookUrl: "/en/books",
     aboutEyebrow: "About",
     aboutTitle: "Andrii Litvinov",
     aboutText: "Consultant, facilitator, and teacher. For more than 20 years I have worked with groups and inner-development practices, combining systemic constellations, imagery, embodied approaches, and archetypal exploration.",
@@ -202,7 +201,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <p className="service-home-kicker">{text.libraryEyebrow}</p>
           <h2 id="service-home-library-title">{text.libraryTitle}</h2>
           <p className="service-home-library-intro">{text.libraryText}</p>
-          <a href={text.bookUrl}>{text.libraryAction}<span aria-hidden="true">→</span></a>
+          <Link href={text.bookUrl}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
         </div>
       </section>
 
