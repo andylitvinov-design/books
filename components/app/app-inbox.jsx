@@ -1,0 +1,101 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { APP_SERVICES } from '@/data/app-services'
+import { COPY, labelFor } from './copy'
+export default function AppInbox() {
+  const [locale, setLocale] = useState('en'),
+    [requests, setRequests] = useState([]),
+    [error, setError] = useState(false),
+    [busy, setBusy] = useState(false),
+    c = COPY[locale]
+  async function load() {
+    setError(false)
+    try {
+      const response = await fetch('/admin/app-requests/data', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      })
+      if (!response.ok) throw new Error()
+      setRequests((await response.json()).requests)
+    } catch {
+      setRequests([])
+      setError(true)
+    }
+  }
+  useEffect(() => {
+    load()
+  }, [])
+  async function update(request, status) {
+    setBusy(true)
+    try {
+      const response = await fetch('/admin/app-requests/data', {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: request.id, status, expectedRevision: request.revision }),
+      })
+      if (!response.ok) throw new Error()
+      await load()
+    } catch {
+      setError(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <main className="hh-app">
+      <header className="hh-header">
+        <a href="/admin" className="hh-brand">
+          Holistic House<span>Practitioner</span>
+        </a>
+        <button onClick={() => setLocale(locale === 'en' ? 'ru' : 'en')}>
+          {locale === 'en' ? 'RU' : 'EN'}
+        </button>
+      </header>
+      <h1>{locale === 'ru' ? 'Заявки из приложения' : 'App consultation requests'}</h1>
+      <p>
+        {locale === 'ru'
+          ? 'Здесь только заявки и явно переданные резюме. Личные ответы и полный профиль пользователя не открываются.'
+          : 'Only requests and explicitly shared summaries appear here. This inbox does not grant access to private answers or the full profile.'}
+      </p>
+      <button onClick={load}>{c.reload}</button>
+      {error && <p role="alert">{c.error}</p>}
+      {!requests.length && !error && <p>{c.emptyRequests}</p>}
+      {requests.map((request) => (
+        <article className="hh-panel hh-section" key={request.id}>
+          <span className="hh-badge">{c[request.status]}</span>
+          <h2>
+            {APP_SERVICES.find((s) => s.id === request.serviceId)?.copy[locale].title || c.request}
+          </h2>
+          <p>{new Date(request.createdAt).toLocaleString(locale)}</p>
+          <p>{request.contact}</p>
+          <p>{request.message}</p>
+          {request.sharedExcerpt && (
+            <details>
+              <summary>{c.share}</summary>
+              <p>
+                {request.sharedExcerpt.definitionKey} · {request.sharedExcerpt.measurementAt}
+              </p>
+              {request.sharedExcerpt.dimensions.map((d) => (
+                <p key={d.key}>
+                  {labelFor(d.key, locale)}: {d.value}/{d.max}
+                </p>
+              ))}
+            </details>
+          )}
+          {['requested', 'contacted'].includes(request.status) && (
+            <div className="hh-actions">
+              <button disabled={busy} onClick={() => update(request, 'contacted')}>
+                {c.contacted}
+              </button>
+              <button disabled={busy} onClick={() => update(request, 'closed')}>
+                {c.closed}
+              </button>
+            </div>
+          )}
+        </article>
+      ))}
+    </main>
+  )
+}

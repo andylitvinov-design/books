@@ -13,7 +13,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const pathname = usePathname();
   const locale = useNavigationLocale(initialLocale);
   const nav = useRef<HTMLElement>(null);
-  const hidden = /^\/(admin(?:\/|$)|(?:ru|en)\/prescriptions(?:\/|$)|document-preview(?:\/|$))/.test(pathname);
+  const hidden = /^\/(admin(?:\/|$)|(?:ru|en)\/prescriptions(?:\/|$)|(?:ru|en)\/app(?:\/|$)|document-preview(?:\/|$))/.test(pathname);
   useEffect(() => {
     const element = nav.current;
     const update = () => document.body.style.setProperty('--ia222-bottom-height', `${element?.getBoundingClientRect().height ?? 0}px`);

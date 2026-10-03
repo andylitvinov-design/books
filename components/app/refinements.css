@@ -1,0 +1,10 @@
+/* Keep focused controls readable on narrow phones and match the existing palette. */
+.hh-runner progress { appearance:none; border:0; overflow:hidden; border-radius:6px; background:#e6dbcc; color:#885841; }
+.hh-runner progress::-webkit-progress-bar { background:#e6dbcc; border-radius:6px; }
+.hh-runner progress::-webkit-progress-value { background:#885841; border-radius:6px; }
+.hh-runner progress::-moz-progress-bar { background:#885841; border-radius:6px; }
+.hh-metric > span:first-child { hyphens:auto; }
+@media (max-width:480px) {
+  .hh-runner .hh-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .hh-runner .hh-actions > button:last-child { grid-column:1 / -1; }
+}

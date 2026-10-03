@@ -21,7 +21,10 @@
     "native:sync": "cap sync",
     "native:ios:simulator": "cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build",
     "native:android:debug": "cap sync android && cd android && ./gradlew assembleDebug --stacktrace",
-    "verify:ia-v2": "node scripts/verify-ia-v2.mjs"
+    "verify:ia-v2": "node scripts/verify-ia-v2.mjs",
+    "test:app": "node --test tests/app-assessments.test.mjs tests/app-migration-contract.test.mjs tests/app-guest-report-migration.test.mjs tests/app-http-security.test.mjs tests/app-timestamps.test.mjs tests/assessment-share.test.mjs tests/report-claim-flow.test.mjs",
+    "test:app:db": "node --conditions=react-server --test --test-concurrency=1 tests/app-database.integration.mjs",
+    "app:housekeeping": "node --conditions=react-server scripts/run-app-housekeeping.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",
@@ -42,7 +45,11 @@
     "next": "^15.5.21",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.3.0"
+    "tailwind-merge": "^3.3.0",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.114.0",
+    "pg": "8.16.3",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",
@@ -59,5 +66,8 @@
     "nanoid": "3.3.18",
     "postcss": "$postcss",
     "sharp": "0.35.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

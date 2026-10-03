@@ -1,0 +1,239 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { createHash, randomUUID } from 'node:crypto'
+import {
+  ASSESSMENT_DEFINITIONS,
+  getAssessmentDefinition,
+  validateAnswers,
+  validateContext,
+} from '../lib/assessments/definitions.js'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { createAssessmentRun, saveRunAnswers, submitRun } from '../lib/assessments/run-lifecycle.js'
+import { compareResults, createProfileSnapshot, seriesFor } from '../lib/profile/history.js'
+import { canonicalJSON } from '../lib/assessments/contracts.js'
+const A = '10000000-0000-4000-8000-000000000001',
+  B = '10000000-0000-4000-8000-000000000002'
+const en = getAssessmentDefinition('hh-current-state', 'v1', 'en'),
+  ru = getAssessmentDefinition('hh-current-state', 'v1', 'ru'),
+  mini = getAssessmentDefinition('mini-ipip-20', 'v1', 'en')
+const answers = (d, v) => Object.fromEntries(d.questions.map((q) => [q.id, v]))
+const result = (d, v, day = 1, accountId = A) => ({
+  id: randomUUID(),
+  accountId,
+  measurementAt: `2026-10-${String(day).padStart(2, '0')}T12:00:00.000Z`,
+  ...scoreAssessment(d, answers(d, v)),
+})
+const rejects = (fn, code) => assert.throws(fn, (e) => e.code === code)
+test('published definitions have reproducible semantic hashes and real languages', () => {
+  for (const d of ASSESSMENT_DEFINITIONS) {
+    const { contentHash, ...body } = d
+    assert.equal(
+      contentHash,
+      'sha256:' + createHash('sha256').update(canonicalJSON(body)).digest('hex'),
+    )
+    assert.ok(['en', 'ru'].includes(d.instrumentLocale))
+  }
+  assert.notEqual(en.contentHash, ru.contentHash)
+  rejects(() => getAssessmentDefinition('hh-current-state', 'v1', 'en-ru'), 'UNKNOWN_INSTRUMENT')
+})
+test('published nested questions and factors cannot mutate', () => {
+  assert.throws(() => {
+    en.questions[0].max = 100
+  }, TypeError)
+  assert.throws(() => {
+    mini.questions[0].keyed = '-'
+  }, TypeError)
+  assert.throws(() => {
+    mini.factors[0].max = 99
+  }, TypeError)
+})
+test('state raw values are not a total or personality score', () => {
+  const r = scoreAssessment(en, answers(en, 0))
+  assert.equal(r.total, undefined)
+  assert.deepEqual(
+    r.dimensions.map((d) => d.value),
+    [0, 0, 0, 0, 0],
+  )
+  assert.ok(r.dimensions.every((d) => d.min === 0 && d.max === 10 && d.dimensionClass === 'state'))
+})
+for (const bad of [undefined, null, 0, '', [], true])
+  test(`invalid answer object: ${JSON.stringify(bad)}`, () =>
+    rejects(() => validateAnswers(en, bad), 'INVALID_OBJECT'))
+for (const bad of [null, undefined, 0.5, -1, 11, '3', false])
+  test(`invalid/missing scored value: ${String(bad)}`, () =>
+    assert.throws(() => validateAnswers(en, { ...answers(en, 5), [en.questions[0].id]: bad })))
+test('unknown fields and prototype objects cannot smuggle ownership or notes', () => {
+  rejects(() => validateAnswers(en, { ...answers(en, 3), accountId: B }), 'UNKNOWN_FIELD')
+  rejects(() => validateAnswers(en, Object.create({ [en.questions[0].id]: 5 })), 'INVALID_OBJECT')
+})
+test('context bounded and separate from scores', () => {
+  assert.deepEqual(validateContext(en, { note: '  hello  ' }), { note: 'hello' })
+  rejects(() => validateContext(en, { note: 'a'.repeat(1001) }), 'INVALID_TEXT')
+  rejects(() => validateContext(mini, { note: 'not declared' }), 'UNKNOWN_FIELD')
+  rejects(() => validateAnswers(en, { ...answers(en, 3), note: 'sensitive' }), 'UNKNOWN_FIELD')
+})
+test('Mini-IPIP independent source-derived factor and reverse-key fixture', () => {
+  const factors = [
+      'extraversion',
+      'agreeableness',
+      'conscientiousness',
+      'neuroticism',
+      'intellect_imagination',
+    ],
+    plus = new Set([1, 2, 3, 4, 5, 11, 12, 13, 14])
+  for (let n = 1; n <= 20; n++) {
+    assert.equal(mini.questions[n - 1].id, `mini-ipip-20.en.${String(n).padStart(2, '0')}`)
+    assert.equal(mini.questions[n - 1].factor, factors[(n - 1) % 5])
+    assert.equal(mini.questions[n - 1].keyed, plus.has(n) ? '+' : '-')
+  }
+  const high = Object.fromEntries(
+      Array.from({ length: 20 }, (_, i) => [
+        `mini-ipip-20.en.${String(i + 1).padStart(2, '0')}`,
+        plus.has(i + 1) ? 5 : 1,
+      ]),
+    ),
+    low = Object.fromEntries(Object.entries(high).map(([k, v]) => [k, 6 - v]))
+  assert.deepEqual(
+    scoreAssessment(mini, high).dimensions.map((d) => d.value),
+    [20, 20, 20, 20, 20],
+  )
+  assert.deepEqual(
+    scoreAssessment(mini, low).dimensions.map((d) => d.value),
+    [4, 4, 4, 4, 4],
+  )
+  assert.deepEqual(
+    scoreAssessment(mini, answers(mini, 3)).dimensions.map((d) => d.value),
+    [12, 12, 12, 12, 12],
+  )
+  assert.deepEqual(
+    scoreAssessment(mini, answers(mini, 1)).dimensions.map((d) => d.value),
+    [12, 12, 12, 12, 16],
+  )
+})
+test('unregistered scorer fails closed', () =>
+  rejects(
+    () => scoreAssessment({ ...mini, scoringKey: 'invented' }, answers(mini, 3)),
+    'INVALID_PROVENANCE',
+  ))
+test('revision lifecycle freezes exact submitted revision, supports draft clearing and rejects arrays', () => {
+  const run = createAssessmentRun({
+      id: randomUUID(),
+      accountId: A,
+      definition: en,
+      now: '2026-10-01T12:00:00.000Z',
+    }),
+    saved = saveRunAnswers(run, { [en.questions[0].id]: 4 }, { expectedRevision: 0 })
+  rejects(() => saveRunAnswers(saved, {}, { expectedRevision: 0 }), 'STALE_REVISION')
+  rejects(() => saveRunAnswers(saved, [], { expectedRevision: 1 }), 'INVALID_OBJECT')
+  assert.deepEqual(
+    saveRunAnswers(saved, { [en.questions[0].id]: null }, { expectedRevision: 1 }).answers,
+    {},
+  )
+  rejects(() => submitRun(saved, { expectedRevision: 1 }), 'REQUIRED_ANSWER')
+  const complete = saveRunAnswers(saved, answers(en, 3), { expectedRevision: 1 }),
+    submitted = submitRun(complete, { expectedRevision: 2 })
+  assert.equal(submitted.submittedRevision, 2)
+  assert.equal(submitted.revision, 3)
+  rejects(() => saveRunAnswers(submitted, answers(en, 9), { expectedRevision: 3 }), 'IMMUTABLE_RUN')
+  assert.throws(() => {
+    submitted.answers[en.questions[0].id] = 8
+  }, TypeError)
+})
+test('comparison rejects absent owners and other users', () => {
+  const r = result(en, 4),
+    p = result(en, 6)
+  rejects(
+    () => compareResults({ ...r, accountId: undefined }, { ...p, accountId: undefined }),
+    'INVALID_ID',
+  )
+  rejects(() => compareResults(r, { ...p, accountId: B }), 'OWNER_MISMATCH')
+})
+for (const field of [
+  'scoringVersion',
+  'translationVersion',
+  'resultVersion',
+  'contentHash',
+  'definitionId',
+])
+  test(`comparison rejects altered/missing ${field}`, () => {
+    const r = result(en, 4),
+      p = result(en, 6)
+    rejects(() => compareResults({ ...r, [field]: 'different' }, p), 'INVALID_PROVENANCE')
+    rejects(() => compareResults({ ...r, [field]: undefined }, p), 'INVALID_PROVENANCE')
+  })
+test('actual instrument languages are not silently equated', () =>
+  rejects(() => compareResults(result(en, 3), result(ru, 6)), 'INCOMPATIBLE_RESULTS'))
+test('exact points and source dates, not an invented improvement claim', () => {
+  const first = result(en, 7),
+    second = result(en, 4, 8),
+    delta = compareResults(second, first)
+  assert.equal(delta[0].delta, -3)
+  assert.equal(delta[0].unit, 'points')
+  assert.equal(delta[0].priorAt, first.measurementAt)
+  assert.equal(delta[0].improvement, undefined)
+  assert.equal(seriesFor([second, first], second)[0].id, first.id)
+})
+test('snapshot replaces measured axes and preserves dates for a different instrument', () => {
+  const first = result(en, 7),
+    traits = result(mini, 3, 2),
+    second = result(en, 4, 8),
+    s = createProfileSnapshot({
+      id: randomUUID(),
+      accountId: A,
+      generatedResult: second,
+      carriedResults: [first, traits],
+      createdAt: '2026-10-08T12:01:00.000Z',
+    })
+  assert.equal(s.dimensions.length, 10)
+  assert.equal(new Set(s.dimensions.map((d) => d.key)).size, 10)
+  assert.equal(s.dimensions.find((d) => d.key === 'state.tension').value, 4)
+  assert.ok(
+    s.dimensions
+      .filter((d) => d.dimensionClass === 'trait')
+      .every((d) => d.measurementAt === traits.measurementAt && !d.remeasured),
+  )
+})
+test('snapshot rejects relabelled instruments and foreign carried results', () => {
+  const state = result(en, 3),
+    traits = result(mini, 3)
+  rejects(
+    () =>
+      createProfileSnapshot({
+        id: randomUUID(),
+        accountId: A,
+        generatedResult: state,
+        carriedResults: [{ ...state, definitionKey: 'mini-ipip-20' }],
+        createdAt: state.measurementAt,
+      }),
+    'INVALID_PROVENANCE',
+  )
+  rejects(
+    () =>
+      createProfileSnapshot({
+        id: randomUUID(),
+        accountId: A,
+        generatedResult: state,
+        carriedResults: [{ ...traits, accountId: B }],
+        createdAt: state.measurementAt,
+      }),
+    'OWNER_MISMATCH',
+  )
+})
+test('duplicate carried sources collapse deterministically', () => {
+  const state = result(en, 3),
+    old = result(mini, 2),
+    newer = result(mini, 4, 2),
+    s = createProfileSnapshot({
+      id: randomUUID(),
+      accountId: A,
+      generatedResult: state,
+      carriedResults: [newer, old, newer],
+      createdAt: '2026-10-03T12:00:00.000Z',
+    })
+  assert.equal(s.dimensions.length, 10)
+  assert.ok(
+    s.dimensions
+      .filter((d) => d.dimensionClass === 'trait')
+      .every((d) => d.sourceResultId === newer.id),
+  )
+})

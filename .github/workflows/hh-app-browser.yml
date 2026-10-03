@@ -1,0 +1,74 @@
+name: Holistic House App R1 browser and database journey
+on:
+  push:
+    branches: ['codex/holistic-house-app-r1']
+permissions:
+  contents: read
+concurrency:
+  group: app-r1-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_APP_TEST_RUNTIME: isolated
+      HH_APP_ENABLED: 'true'
+      HH_APP_SIGNUPS_ENABLED: 'true'
+      HH_APP_GUEST_ENABLED: 'true'
+      HH_APP_REPORTS_ENABLED: 'true'
+      HH_APP_SUPABASE_URL: http://127.0.0.1:54329
+      HH_APP_SUPABASE_PUBLISHABLE_KEY: synthetic-publishable-key
+      HH_APP_DATABASE_URL: postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+      HH_APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      HH_APP_ALLOWED_ORIGINS: http://127.0.0.1:3100
+      HH_TEST_APP_ORIGIN: http://127.0.0.1:3100
+      PRESCRIPTIONS_ADMIN_TOKEN: synthetic-ci-admin-access-only
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - name: Isolated test tools
+        run: |
+          mkdir -p /tmp/hh-app-browser-tools
+          npm install --prefix /tmp/hh-app-browser-tools --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-app-browser-tools/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-app-browser-tools/node_modules/.bin/playwright install --with-deps chromium
+      - name: Initialize empty synthetic database
+        run: node --conditions=react-server tests/helpers/app-db-setup.mjs
+      - name: Browser journey with protocol double, never Google or production
+        run: |
+          mkdir -p artifacts/app-r1
+          node tests/helpers/app-auth-double.mjs > /tmp/hh-app-provider.log 2>&1 & PROVIDER_PID=$!
+          npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-app-next.log 2>&1 & APP_PID=$!
+          trap 'kill "$PROVIDER_PID" "$APP_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 100); do
+            if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/app >/dev/null; then break; fi
+            sleep 2
+          done
+          if ! node scripts/verify-app-r1.mjs; then
+            grep 'HH_APP_TEST_ERROR' /tmp/hh-app-next.log | tail -10 || true
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-r1-browser-synthetic-evidence
+          path: artifacts/app-r1/
+          retention-days: 7
