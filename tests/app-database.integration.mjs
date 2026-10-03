@@ -13,7 +13,8 @@ import {
   readSavedReport,
   rotateReportGrant,
 } from '../lib/app/report-flow.js'
-import { appHousekeepingStatus, runAppHousekeeping } from '../lib/app/maintenance.js'
+import * as maintenance from '../lib/app/maintenance.js'
+const { appHousekeepingStatus, runAppHousekeeping } = maintenance
 import { getAppConfig } from '../lib/app/config.js'
 import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
@@ -525,6 +526,67 @@ test('housekeeping removes expired guest payloads but preserves committed retry 
   const status = await appHousekeepingStatus(config)
   assert.equal(status.id, cleaned.id)
 })
+test('housekeeping records failed attempts and limits dependent guest-intent cleanup', async () => {
+  assert.equal(typeof maintenance.recordAppHousekeepingFailure, 'function')
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential()
+  await guestRepo.createSession(credential, {
+    adult: true,
+    necessary: true,
+    uiLocale: 'en',
+    timezone: 'UTC',
+  })
+  let run = await guestRepo.startRun(credential, {
+    definitionKey: mini.key,
+    definitionVersion: mini.version,
+    instrumentLocale: mini.instrumentLocale,
+    operationId: randomUUID(),
+  })
+  run = await guestRepo.saveRun(credential, run.id, {
+    answers: answer(mini, 3),
+    context: {},
+    progress: mini.questions.length,
+    expectedRevision: run.revision,
+    operationId: randomUUID(),
+  })
+  const result = await guestRepo.submitRun(credential, run.id, {
+    expectedRevision: run.revision,
+  })
+  for (let index = 0; index < 101; index += 1) {
+    await createGuestSaveIntent(config, credential, {
+      sourceId: result.id,
+      operationId: randomUUID(),
+    })
+  }
+  const expire = await adminClient()
+  try {
+    await expire.query(
+      "update app_private.guest_sessions set expires_at=now()-interval '1 second' where id=$1",
+      [credential.id],
+    )
+  } finally {
+    await expire.end()
+  }
+
+  const first = await runAppHousekeeping(config, { batchSize: 100 })
+  assert.equal(first.guestSessionsDeleted, 0)
+  assert.equal(first.intentsDeleted, 100)
+  const second = await runAppHousekeeping(config, { batchSize: 100 })
+  assert.ok(second.guestSessionsDeleted >= 1)
+
+  const failed = await maintenance.recordAppHousekeepingFailure(config)
+  assert.equal(failed.status, 'failed')
+  const verify = await adminClient()
+  try {
+    const row = (
+      await verify.query('select status,completed_at from app_private.housekeeping_runs where id=$1', [failed.id])
+    ).rows[0]
+    assert.equal(row.status, 'failed')
+    assert.ok(row.completed_at)
+  } finally {
+    await verify.end()
+  }
+})
 test('report save race binds one account, stays idempotent and rotation does not free ownership', async () => {
   const sourceAssessmentId = '30000000-0000-4000-8000-000000000011'
   const sourceClientId = '30000000-0000-4000-8000-000000000012'
@@ -662,4 +724,3 @@ test('deletion request disables access without pretending provider data was eras
     (e) => e.code === '42501',
   )
 })
-

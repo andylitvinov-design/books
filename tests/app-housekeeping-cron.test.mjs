@@ -84,3 +84,9 @@ test('production scheduler invokes only the guarded daily housekeeping route', (
     { path: '/api/internal/housekeeping', schedule: '0 5 * * *' },
   ])
 })
+
+test('app verification command includes the server-only cron guard suite', () => {
+  const packageJson = JSON.parse(readFileSync(`${root}/package.json`, 'utf8'))
+  assert.match(packageJson.scripts['test:app'], /--conditions=react-server/)
+  assert.match(packageJson.scripts['test:app'], /tests\/app-housekeeping-cron\.test\.mjs/)
+})
