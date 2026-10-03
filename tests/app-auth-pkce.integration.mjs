@@ -151,3 +151,29 @@ test('Production rejects placeholder and privileged keys before offering a doome
   const key='sb_publishable_'+'a'.repeat(32)
   assert.equal(getAppConfig({...env,HH_APP_SUPABASE_PUBLISHABLE_KEY:key}).publishableKey,key)
 })
+
+test('repeated starts replace stale fixed verifier chunks without dropping per-flow cookies',async()=>{
+  const stale=[{name:'hh-app-auth-code-verifier.0',value:'stale-generation'},{name:'hh-app-auth-code-verifier.1',value:'stale-tail'}]
+  const a=await start(stale), b=await start(a.cookies)
+  assert(!b.cookies.some(c=>/^hh-app-auth-code-verifier\.\d+$/.test(c.name)))
+  assert.equal(b.cookies.filter(c=>/^hh-app-auth-flow-[a-zA-Z0-9_-]+-code-verifier$/.test(c.name)).length,2)
+  assert(b.cookies.some(c=>c.name==='hh-app-auth-flows-code-verifier'))
+})
+test('gateway API-key rejection cannot create an Account or commit a session',async t=>{
+  const flow=await routeStart(), before=route.accountWrites.length
+  t.mock.method(globalThis,'fetch',async()=>Response.json({message:'Invalid API key'},{status:401}))
+  const response=await routeCallback(flow,flow.cookies)
+  assert.equal(response.headers.get('location'),origin+'/en/app?auth=failed')
+  assert.equal(route.accountWrites.length,before)
+  assert(!response.cookies.getAll().some(c=>/^hh-app-auth(\.\d+)?$/.test(c.name)&&c.value))
+})
+test('explicit missing or malformed flow never falls back to another tab verifier',async t=>{
+  const flow=await routeStart(), calls=provider(t,flow.challenge)
+  for(const id of ['', 'invalid!', 'a'.repeat(32)]){
+    const target={...flow,callback:new URL(flow.callback)}
+    target.callback.searchParams.set('sb_flow_id',id)
+    const response=await routeCallback(target,flow.cookies)
+    assert.equal(response.headers.get('location'),origin+'/en/app?auth=failed')
+  }
+  assert.equal(calls(),0)
+})
