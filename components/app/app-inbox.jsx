@@ -5,6 +5,7 @@ import { COPY, labelFor } from './copy'
 export default function AppInbox() {
   const [locale, setLocale] = useState('en'),
     [requests, setRequests] = useState([]),
+    [filter, setFilter] = useState('open'),
     [error, setError] = useState(false),
     [busy, setBusy] = useState(false),
     c = COPY[locale]
@@ -61,8 +62,12 @@ export default function AppInbox() {
       </p>
       <button onClick={load}>{c.reload}</button>
       {error && <p role="alert">{c.error}</p>}
-      {!requests.length && !error && <p>{c.emptyRequests}</p>}
-      {requests.map((request) => (
+      <div className="hh-actions" role="group" aria-label={locale === 'ru' ? 'Фильтр заявок' : 'Request filter'}>
+        {[['open', locale === 'ru' ? 'Открытые' : 'Open'], ['closed', c.closed], ['all', locale === 'ru' ? 'Все' : 'All']].map(([id, label]) => <button key={id} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label} ({id === 'open' ? requests.filter((request) => ['requested', 'contacted'].includes(request.status)).length : id === 'closed' ? requests.filter((request) => !['requested', 'contacted'].includes(request.status)).length : requests.length})</button>)}
+      </div>
+      {(() => {
+        const visible = requests.filter((request) => filter === 'all' || (filter === 'open' ? ['requested', 'contacted'].includes(request.status) : !['requested', 'contacted'].includes(request.status)))
+        return !visible.length && !error ? <p>{c.emptyRequests}</p> : visible.map((request) => (
         <article className="hh-panel hh-section" key={request.id}>
           <span className="hh-badge">{c[request.status]}</span>
           <h2>
@@ -95,7 +100,8 @@ export default function AppInbox() {
             </div>
           )}
         </article>
-      ))}
+        ))
+      })()}
     </main>
   )
 }
