@@ -210,6 +210,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         <Link className="house-wordmark" href="/">Holistic House</Link>
         <p>{text.footer}</p>
         <Link href={"/" + locale + "/services"}>{text.secondary}<span aria-hidden="true">→</span></Link>
+        <p className="service-home-footer__legal"><Link href="/privacy">Privacy</Link><span aria-hidden="true"> · </span><Link href="/terms">Terms</Link></p>
       </footer>
     </main>
   );
