@@ -22,7 +22,7 @@
     "native:ios:simulator": "cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build",
     "native:android:debug": "cap sync android && cd android && ./gradlew assembleDebug --stacktrace",
     "verify:ia-v2": "node scripts/verify-ia-v2.mjs",
-    "test:app": "node --test tests/app-assessments.test.mjs tests/app-migration-contract.test.mjs tests/app-guest-report-migration.test.mjs tests/app-http-security.test.mjs tests/app-timestamps.test.mjs tests/assessment-share.test.mjs tests/report-claim-flow.test.mjs",
+    "test:app": "node --conditions=react-server --test tests/app-assessments.test.mjs tests/app-migration-contract.test.mjs tests/app-guest-report-migration.test.mjs tests/app-http-security.test.mjs tests/app-timestamps.test.mjs tests/assessment-share.test.mjs tests/report-claim-flow.test.mjs tests/app-housekeeping-cron.test.mjs",
     "test:app:db": "node --conditions=react-server --test --test-concurrency=1 tests/app-database.integration.mjs",
     "app:housekeeping": "node --conditions=react-server scripts/run-app-housekeeping.mjs"
   },
