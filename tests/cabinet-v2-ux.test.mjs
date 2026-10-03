@@ -2,7 +2,12 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
-import { getPortraitNextStep, reportTimeline } from '../lib/app/cabinet-ux.js'
+import {
+  formatReportDate,
+  getPortraitNextStep,
+  latestCompatibleChange,
+  reportTimeline,
+} from '../lib/app/cabinet-ux.js'
 
 test('Current State v2 adds optional context without changing the five scored prompts or scorer', () => {
   const v1 = getAssessmentDefinition('hh-current-state', 'v1', 'en')
@@ -23,7 +28,7 @@ test('Current State v2 adds optional context without changing the five scored pr
   ])
 })
 
-test('portrait next step is based only on real saved state', () => {
+test('portrait next step follows the real state, request, report and repeat-time priority', () => {
   assert.equal(getPortraitNextStep({ dimensions: [], savedReports: [], requests: [] }).kind, 'state')
   assert.equal(
     getPortraitNextStep({
@@ -47,35 +52,97 @@ test('portrait next step is based only on real saved state', () => {
       savedReports: [{ id: 'report-1', occurredOn: '2026-10-01' }],
       requests: [{ id: 'request-1', status: 'contacted' }],
     }).kind,
-    'history',
+    'consultation',
+  )
+  assert.deepEqual(
+    getPortraitNextStep({
+      dimensions: [{ dimensionClass: 'state' }, { dimensionClass: 'trait' }],
+      savedReports: [{ id: 'report-1', occurredOn: '2026-10-01', unread: true }],
+      requests: [],
+    }),
+    { kind: 'report', href: '/reports/report-1' },
+  )
+  assert.deepEqual(
+    getPortraitNextStep({
+      dimensions: [
+        { dimensionClass: 'state', measurementAt: '2026-09-01T00:00:00.000Z', suggestedRepeatDays: 14 },
+        { dimensionClass: 'trait' },
+      ],
+      savedReports: [],
+      requests: [],
+      now: '2026-10-03T00:00:00.000Z',
+    }),
+    { kind: 'checkin', href: '/tests' },
   )
 })
 
-test('report timeline keeps the original report date and labels a later save separately', () => {
+test('report timeline orders original dates newest first without leaking a synthetic noon clock', () => {
   assert.deepEqual(
     reportTimeline([
       { id: 'saved-1', occurredOn: '2026-09-20', savedAt: '2026-10-03T12:00:00.000Z' },
+      { id: 'saved-2', occurredOn: '2026-10-01', savedAt: '2026-10-01T12:00:00.000Z' },
+      { id: 'saved-0', occurredOn: '2026-09-20', savedAt: '2026-10-04T12:00:00.000Z' },
     ]),
     [
       {
+        id: 'saved-2',
+        occurredOn: '2026-10-01',
+        savedAt: '2026-10-01T12:00:00.000Z',
+      },
+      {
+        id: 'saved-0',
+        occurredOn: '2026-09-20',
+        savedAt: '2026-10-04T12:00:00.000Z',
+      },
+      {
         id: 'saved-1',
-        occurredAt: '2026-09-20T12:00:00.000Z',
+        occurredOn: '2026-09-20',
         savedAt: '2026-10-03T12:00:00.000Z',
       },
     ],
   )
+  assert.equal(formatReportDate('2026-09-20', 'en-CA'), 'Sep 20, 2026')
 })
 
-test('workspace exposes a real Reports layer and versioned optional Current State context', async () => {
+test('latest change compares every compatible current-state dimension to the immediately previous result', () => {
+  assert.deepEqual(
+    latestCompatibleChange([
+      {
+        id: 'first',
+        definitionKey: 'hh-current-state',
+        definitionVersion: 'v2',
+        measurementAt: '2026-09-01T00:00:00.000Z',
+        dimensions: [{ key: 'state.resource', value: 4 }, { key: 'state.tension', value: 7 }],
+      },
+      {
+        id: 'latest',
+        definitionKey: 'hh-current-state',
+        definitionVersion: 'v2',
+        measurementAt: '2026-10-01T00:00:00.000Z',
+        dimensions: [{ key: 'state.resource', value: 6 }, { key: 'state.tension', value: 5 }],
+      },
+    ]),
+    [
+      { key: 'state.resource', previous: 4, value: 6 },
+      { key: 'state.tension', previous: 7, value: 5 },
+    ],
+  )
+})
+
+test('workspace keeps four primary sections and exposes Reports through Portrait, History and direct routes', async () => {
   const [workspace, catalog] = await Promise.all([
     readFile('components/app/app-workspace.jsx', 'utf8'),
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
   ])
 
   assert.match(workspace, /getPortraitNextStep/)
-  assert.match(workspace, /\['reports', c\.reports, '\/reports'\]/)
+  assert.doesNotMatch(workspace, /\['reports', c\.reports, '\/reports'\]/)
+  assert.match(workspace, /\['consultations', c\.consultations, '\/consultations'\]/)
   assert.match(workspace, /function ReportsIndex/)
   assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
+  assert.match(workspace, /LatestChange/)
+  assert.match(workspace, /<PortraitGuide locale=\{locale\} dimensions=\{dimensions\}/)
+  assert.match(workspace, /<ReportsFromAndy data=\{data\} locale=\{locale\}/)
   assert.match(workspace, /c\.contextAtCheckIn/)
   assert.match(workspace, /\['trigger', c\.trigger\]/)
   assert.match(workspace, /\['desired_change', c\.desiredChange\]/)

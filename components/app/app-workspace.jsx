@@ -7,7 +7,7 @@ import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/de
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { APP_SERVICES } from '@/data/app-services'
 import { AssessmentReading } from '@/components/assessment-reading'
-import { getPortraitNextStep, reportTimeline } from '@/lib/app/cabinet-ux'
+import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 export async function appFetch(path, body, method) {
   const response = await fetch(`/api/app/${path}`, {
@@ -194,7 +194,6 @@ export default function AppWorkspace({ locale, path = [] }) {
     ['portrait', c.portrait, ''],
     ['tests', c.tests, '/tests'],
     ['history', c.history, '/history'],
-    ['reports', c.reports, '/reports'],
     ['consultations', c.consultations, '/consultations'],
   ]
   return (
@@ -382,16 +381,18 @@ function SaveContinuation({ data, locale, reload }) {
       {intent && !intent.expired && (
         <>
           <p><strong>{sourceTitle}</strong></p>
+          {intent?.source?.title && <p>{ru ? 'Название отчёта' : 'Report title'}: <strong>{intent.source.title}</strong></p>}
+          {intent?.source?.occurredOn && <p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(intent.source.occurredOn, locale)}</p>}
           {intent.source?.measurementAt && (
             <p>{ru ? 'Пройдено' : 'Measured'}: {dateLabel(intent.source.measurementAt, locale)}</p>
           )}
           <p>
-            {ru ? 'Аккаунт' : 'Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
+            {ru ? 'Получающий Google-аккаунт' : 'Receiving Google Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
           </p>
           <p className="hh-muted">
             {ru
-              ? 'Будет сохранён только этот выбранный результат. Другие гостевые данные и старый Client Cabinet не импортируются.'
-              : 'Only this selected result will be saved. Other guest data and the legacy Client Cabinet are not imported.'}
+              ? 'Будет сохранён только этот выбранный отчёт. Другие гостевые данные и старый Client Cabinet не импортируются.'
+              : 'Only this report will be saved. Other guest data and the legacy Client Cabinet are not imported.'}
           </p>
           {intent.status === 'committed' && intent.resourceId ? (
             <Link className="hh-primary" href={`/${locale}/app/results/${intent.resourceId}`} prefetch={false}>
@@ -778,6 +779,8 @@ function Runner({ id, locale, onExit, onComplete }) {
           <h1>{def.optionalContext.length ? c.optional : c.result}</h1>
           <p>{def.optionalContext.length ? c.skip : c.nonDiagnostic}</p>
           {def.optionalContext.length > 0 && (
+            <details className="hh-secondary">
+              <summary>{locale === 'ru' ? 'Добавить необязательный контекст' : 'Add optional context'}</summary>
             <div className="hh-form">
               {[
                 ['current_focus', c.focus],
@@ -800,6 +803,7 @@ function Runner({ id, locale, onExit, onComplete }) {
                 </label>
               ))}
             </div>
+            </details>
           )}
         </div>
       )}
@@ -899,7 +903,15 @@ function Portrait({ data, locale, onOpenHistory }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
     dimensions = data.snapshot?.dimensions || [],
-    nextStep = getPortraitNextStep({ ...data, dimensions })
+    nextStep = getPortraitNextStep({
+      ...data,
+      dimensions: dimensions.map((dimension) => {
+        const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
+        return result
+          ? { ...dimension, measurementAt: result.measurementAt, suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays }
+          : dimension
+      }),
+    })
   return (
     <section>
       <div className="hh-heading">
@@ -919,7 +931,7 @@ function Portrait({ data, locale, onOpenHistory }) {
           <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
             {c.start}
           </Link>
-          <PortraitGuide locale={locale} />
+          <PortraitGuide locale={locale} dimensions={dimensions} />
         </article>
       ) : (
         <>
@@ -939,6 +951,8 @@ function Portrait({ data, locale, onOpenHistory }) {
               </section>
             ) : null
           })}
+          <PortraitGuide locale={locale} dimensions={dimensions} />
+          <LatestChange locale={locale} results={data.results} />
           <div className="hh-actions">
             <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
               {c.repeat}
@@ -947,25 +961,7 @@ function Portrait({ data, locale, onOpenHistory }) {
           </div>
         </>
       )}
-      {data.savedReports?.length ? (
-        <section className="hh-section hh-account-reports">
-          <h2>{locale === 'ru' ? 'Недавние отчёты' : 'Recent reports'}</h2>
-          <div className="hh-grid">
-            {[...data.savedReports].reverse().slice(0, 3).map((item) => (
-              <article className="hh-panel" key={item.id}>
-                <p className="hh-kicker">{locale === 'ru' ? 'Полученный отчёт' : 'Received report'}</p>
-                <h3>{item.occurredOn}</h3>
-                <p>
-                  {locale === 'ru' ? 'Сохранено' : 'Saved'}: {dateLabel(item.savedAt, locale)}
-                </p>
-                <Link href={`/${locale}/app/reports/${item.id}`} prefetch={false}>
-                  {locale === 'ru' ? 'Открыть отчёт' : 'Open report'}
-                </Link>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <ReportsFromAndy data={data} locale={locale} />
       {selected && (
         <section className="hh-panel hh-detail" aria-live="polite">
           <button className="hh-close" onClick={() => setSelected(null)}>
@@ -998,6 +994,7 @@ function NextStep({ locale, step }) {
     history: [c.nextHistoryTitle, c.nextHistoryText, c.viewHistory],
     report: [c.nextReportTitle, c.nextReportText, c.openReport],
     consultation: [c.nextConsultationTitle, c.nextConsultationText, c.viewConsultations],
+    checkin: [c.nextCheckinTitle, c.nextCheckinText, c.repeat],
   }[step.kind]
   return (
     <section className="hh-next-step" aria-labelledby="next-step-title">
@@ -1010,19 +1007,30 @@ function NextStep({ locale, step }) {
     </section>
   )
 }
-function PortraitGuide({ locale }) {
+function PortraitGuide({ locale, dimensions = [] }) {
   const c = COPY[locale]
+  const complete = (kind) => dimensions.some((dimension) => dimension.dimensionClass === kind)
   return (
     <section className="hh-portrait-guide" aria-labelledby="portrait-guide-title">
       <h2 id="portrait-guide-title">{c.guideTitle}</h2>
       <ul>
-        <li><strong>{c.state}</strong> — {c.guideState}</li>
-        <li><strong>{c.personality}</strong> — {c.guideTendencies}</li>
+        <li data-state={complete('state') ? 'complete' : 'current'}><strong>{c.state}</strong> — {c.guideState}</li>
+        <li data-state={complete('trait') ? 'complete' : complete('state') ? 'current' : 'future'}><strong>{c.personality}</strong> — {c.guideTendencies}</li>
         <li><strong>{c.history}</strong> — {c.guideHistory}</li>
         <li><strong>{c.reports}</strong> — {c.guideReports}</li>
       </ul>
     </section>
   )
+}
+function LatestChange({ locale, results }) {
+  const changes = latestCompatibleChange(results)
+  if (!changes.length) return null
+  return <section className="hh-section hh-panel"><h2>{locale === 'ru' ? 'Последнее изменение' : 'Latest change'}</h2><p className="hh-fine">{locale === 'ru' ? 'Последний совместимый замер рядом с предыдущим; это не объяснение причин или тренд.' : 'Latest compatible measurement beside the previous one; this does not state a cause or trend.'}</p><ul className="hh-change-list">{changes.map((change) => <li key={change.key}>{labelFor(change.key, locale)} <strong>{change.previous} → {change.value}</strong></li>)}</ul></section>
+}
+function ReportsFromAndy({ data, locale }) {
+  const reports = reportTimeline(data.savedReports).slice(0, 3)
+  const ru = locale === 'ru'
+  return <section className="hh-section hh-account-reports"><h2>{ru ? 'Отчёты от Andy' : 'Reports from Andy'}</h2>{!reports.length ? <p className="hh-fine">{ru ? 'Сохранённых отчётов пока нет. Когда вы решите сохранить переданный отчёт, он появится здесь.' : 'No reports have been saved yet. A report you choose to save will appear here.'}</p> : <div className="hh-grid">{reports.map((report) => <article className="hh-panel" key={report.id}><p className="hh-kicker">{ru ? 'Полученный отчёт' : 'Received report'}</p><h3>{formatReportDate(report.occurredOn, locale)}</h3><p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(report.occurredOn, locale)}</p>{report.available === false ? <p className="hh-fine">{ru ? 'Отчёт больше недоступен.' : 'Report no longer available.'}</p> : <Link href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{ru ? 'Открыть отчёт' : 'Open report'}</Link>}</article>)}</div>}</section>
 }
 function ResultPage({ id, locale, data }) {
   const c = COPY[locale],
@@ -1199,11 +1207,9 @@ function ReportsIndex({ data, locale }) {
           {reports.map((report) => (
             <article className="hh-panel" key={report.id}>
               <p className="hh-kicker">{c.reportFromAndy}</p>
-              <h2>{dateLabel(report.occurredAt, locale)}</h2>
+              <h2>{formatReportDate(report.occurredOn, locale)}</h2>
               <p className="hh-fine">{c.saved}: {dateLabel(report.savedAt, locale)}</p>
-              <Link className="hh-primary" href={`/${locale}/app/reports/${report.id}`} prefetch={false}>
-                {c.openReport}
-              </Link>
+              {report.available === false ? <p className="hh-fine">{locale === 'ru' ? 'Отчёт был отозван или больше недоступен.' : 'This report was withdrawn or is no longer available.'}</p> : <Link className="hh-primary" href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{c.openReport}</Link>}
             </article>
           ))}
         </div>
@@ -1245,7 +1251,7 @@ function HistoryView({ data, locale, reload }) {
     })),
     ...reportTimeline(data.savedReports).map((report) => ({
       id: report.id,
-      date: report.occurredAt,
+      date: `${report.occurredOn}T00:00:00.000Z`,
       title: c.reportFromAndy,
       href: `/${locale}/app/reports/${report.id}`,
       note: `${c.saved}: ${dateLabel(report.savedAt, locale)}`,

@@ -193,7 +193,7 @@ async function handle(request, { params }) {
     }
     if (path[0] === 'save-intents' && path.length === 2 && method === 'GET') {
       const proof = saveIntentBrowserProof(request, path[1], config)
-      return json(await readSaveIntent(config, path[1], proof))
+      return json(await readSaveIntent(config, path[1], proof, getPrescriptionStore()))
     }
 
     const guestRepo = createGuestRepository(config)
