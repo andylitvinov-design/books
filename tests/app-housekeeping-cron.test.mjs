@@ -90,3 +90,10 @@ test('app verification command includes the server-only cron guard suite', () =>
   assert.match(packageJson.scripts['test:app'], /--conditions=react-server/)
   assert.match(packageJson.scripts['test:app'], /tests\/app-housekeeping-cron\.test\.mjs/)
 })
+
+test('R1 database and browser workflows verify canonical-base pull requests', () => {
+  for (const workflow of ['hh-app-r1.yml', 'hh-app-browser.yml']) {
+    const source = readFileSync(`${root}/.github/workflows/${workflow}`, 'utf8')
+    assert.match(source, /pull_request:\s*\n\s*branches: \['codex\/public-book-library'\]/)
+  }
+})

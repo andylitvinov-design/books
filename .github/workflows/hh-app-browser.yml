@@ -2,6 +2,8 @@ name: Holistic House App R1 browser and database journey
 on:
   push:
     branches: ['codex/holistic-house-app-r1']
+  pull_request:
+    branches: ['codex/public-book-library']
 permissions:
   contents: read
 concurrency:
