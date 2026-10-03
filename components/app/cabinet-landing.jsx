@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
-import { CURRENT_STATE_EN_V1, CURRENT_STATE_RU_V1 } from '@/data/assessments/current-state-v1'
+import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 
 const UI = {
@@ -36,7 +36,9 @@ const UI = {
     contextTitle: 'Optional context',
     contextText: 'You may leave these fields blank.',
     focus: 'What is on your mind?',
+    trigger: 'What changed or seems to trigger this?',
     helps: 'What helps you?',
+    desiredChange: 'What would you like to change?',
     note: 'Anything else you want to note?',
     result: 'Your result',
     measured: 'Measured',
@@ -82,7 +84,9 @@ const UI = {
     contextTitle: 'Контекст — по желанию',
     contextText: 'Эти поля можно оставить пустыми.',
     focus: 'Что сейчас занимает ваше внимание?',
+    trigger: 'Что изменилось или что, кажется, запускает это?',
     helps: 'Что помогает вам?',
+    desiredChange: 'Что вы хотели бы изменить?',
     note: 'Что ещё важно отметить?',
     result: 'Ваш результат',
     measured: 'Дата измерения',
@@ -101,7 +105,7 @@ const UI = {
 }
 
 function definitionFor(id, locale) {
-  if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V1 : CURRENT_STATE_EN_V1
+  if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V2 : CURRENT_STATE_EN_V2
   return MINI_IPIP_20_EN_V1
 }
 
@@ -152,7 +156,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [answers, setAnswers] = useState({})
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState('catalog')
-  const [context, setContext] = useState({ current_focus: '', what_helps: '', note: '' })
+  const [context, setContext] = useState({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
   const [guestResult, setGuestResult] = useState(null)
   const [sessionExpires, setSessionExpires] = useState(null)
   const [adult, setAdult] = useState(false)
@@ -178,7 +182,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         setActive(id)
         setRun(existing)
         setAnswers(existing.answers || {})
-        setContext(existing.context || { current_focus: '', what_helps: '', note: '' })
+        setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
         setIndex(
           Math.min(
             Math.max(0, Number(existing.progress || 0)),
@@ -221,7 +225,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     })
     setRun(created)
     setAnswers(created.answers || {})
-    setContext(created.context || { current_focus: '', what_helps: '', note: '' })
+    setContext(created.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     const nextIndex = Math.min(
       Math.max(0, Number(created.progress || 0)),
       Math.max(0, def.questions.length - 1),
@@ -244,7 +248,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       if (existing) {
         setRun(existing)
         setAnswers(existing.answers || {})
-        setContext(existing.context || { current_focus: '', what_helps: '', note: '' })
+        setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
         setIndex(
           Math.min(
             Math.max(0, Number(existing.progress || 0)),
@@ -406,7 +410,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setAnswers({})
     setIndex(0)
     setPhase('catalog')
-    setContext({ current_focus: '', what_helps: '', note: '' })
+    setContext({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     setGuestResult(null)
     setSaveState('')
     setError('')
@@ -519,7 +523,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <h3>{c.contextTitle}</h3>
             <p>{c.contextText}</p>
             <label>{c.focus}<textarea value={context.current_focus} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, current_focus: e.target.value }))} /></label>
+            <label>{c.trigger}<textarea value={context.trigger} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, trigger: e.target.value }))} /></label>
             <label>{c.helps}<textarea value={context.what_helps} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, what_helps: e.target.value }))} /></label>
+            <label>{c.desiredChange}<textarea value={context.desired_change} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, desired_change: e.target.value }))} /></label>
             <label>{c.note}<textarea value={context.note} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, note: e.target.value }))} /></label>
             <div className="cabinet-test-actions">
               <button type="button" disabled={busy} onClick={() => setPhase('questions')}>{c.back}</button>
