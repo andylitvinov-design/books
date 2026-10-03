@@ -1,17 +1,19 @@
 import test, { before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { createAppRepository } from '../lib/app/repository.js'
 import { createGuestRepository } from '../lib/app/guest-repository.js'
 import { createGuestCredential } from '../lib/app/guest-session.js'
 import { createGuestSaveIntent, createReportSaveIntent } from '../lib/app/save-intents.js'
 import {
+  authorizeReportViewer,
   commitReportSaveIntent,
   exchangeReportViewer,
   issueReportGrant,
   readSavedReport,
   rotateReportGrant,
 } from '../lib/app/report-flow.js'
+import { appHousekeepingStatus, runAppHousekeeping } from '../lib/app/maintenance.js'
 import { getAppConfig } from '../lib/app/config.js'
 import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
@@ -441,6 +443,88 @@ test('guest result save is explicit, idempotent and preserves an existing accoun
     0,
   )
 })
+test('housekeeping removes expired guest payloads but preserves committed retry receipt', async () => {
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential()
+  await guestRepo.createSession(credential, {
+    adult: true,
+    necessary: true,
+    uiLocale: 'en',
+    timezone: 'UTC',
+  })
+  let run = await guestRepo.startRun(credential, {
+    definitionKey: mini.key,
+    definitionVersion: mini.version,
+    instrumentLocale: mini.instrumentLocale,
+    operationId: randomUUID(),
+  })
+  run = await guestRepo.saveRun(credential, run.id, {
+    answers: answer(mini, 3),
+    context: {},
+    progress: mini.questions.length,
+    expectedRevision: run.revision,
+    operationId: randomUUID(),
+  })
+  const result = await guestRepo.submitRun(credential, run.id, {
+    expectedRevision: run.revision,
+  })
+  const intent = await createGuestSaveIntent(config, credential, {
+    sourceId: result.id,
+    operationId: randomUUID(),
+  })
+  const admin = await adminClient()
+  let proof
+  try {
+    proof = (
+      await admin.query('select browser_secret_hash from app_private.save_intents where id=$1', [intent.id])
+    ).rows[0].browser_secret_hash
+  } finally {
+    await admin.end()
+  }
+  const saved = await repo.commitGuestSaveIntent(a, { intentId: intent.id, browserProof: proof })
+
+  const expire = await adminClient()
+  try {
+    await expire.query(
+      "update app_private.guest_sessions set expires_at=now()-interval '1 second' where id=$1",
+      [credential.id],
+    )
+  } finally {
+    await expire.end()
+  }
+
+  const cleaned = await runAppHousekeeping(config, { batchSize: 100 })
+  assert.equal(cleaned.status, 'completed')
+  assert.ok(cleaned.guestSessionsDeleted >= 1)
+
+  const verify = await adminClient()
+  try {
+    assert.equal(
+      (await verify.query('select count(*)::int as count from app_private.guest_sessions where id=$1', [credential.id])).rows[0].count,
+      0,
+    )
+    assert.equal(
+      (await verify.query('select count(*)::int as count from app_private.guest_results where id=$1', [result.id])).rows[0].count,
+      0,
+    )
+    const receipt = (
+      await verify.query(
+        'select status,source_guest_session_id,resource_id from app_private.save_intents where id=$1',
+        [intent.id],
+      )
+    ).rows[0]
+    assert.equal(receipt.status, 'committed')
+    assert.equal(receipt.source_guest_session_id, null)
+    assert.equal(receipt.resource_id, saved.id)
+  } finally {
+    await verify.end()
+  }
+
+  const replay = await repo.commitGuestSaveIntent(a, { intentId: intent.id, browserProof: proof })
+  assert.equal(replay.id, saved.id)
+  const status = await appHousekeepingStatus(config)
+  assert.equal(status.id, cleaned.id)
+})
 test('report save race binds one account, stays idempotent and rotation does not free ownership', async () => {
   const sourceAssessmentId = '30000000-0000-4000-8000-000000000011'
   const sourceClientId = '30000000-0000-4000-8000-000000000012'
@@ -518,20 +602,48 @@ test('report save race binds one account, stays idempotent and rotation does not
   assert.equal(opened.report.id, sourceAssessmentId)
   assert.equal(opened.report.relatedDocumentIds, undefined)
 
-  const rotated = await rotateReportGrant(config, store, issued.id, 7)
-  assert.equal(rotated.boundAccountId, winner.id)
-  assert.notEqual(rotated.selector, issued.selector)
+  await assert.rejects(
+    () => authorizeReportViewer(config, store, issued.selector, {
+      id: one.viewer.id,
+      secretHash: createHash('sha256').update(one.viewer.secret).digest('hex'),
+    }),
+    /REPORT_UNAVAILABLE/,
+  )
+  await assert.rejects(
+    () => exchangeReportViewer(config, store, {
+      selector: issued.selector,
+      secret: issued.secret,
+    }),
+    /REPORT_UNAVAILABLE/,
+  )
+  await assert.rejects(() => rotateReportGrant(config, store, issued.id, 7), /REPORT_UNAVAILABLE/)
+  await assert.rejects(
+    () =>
+      issueReportGrant(config, store, {
+        sourceAssessmentId,
+        locale: 'en',
+        saveAllowed: true,
+        expiresInDays: 7,
+      }),
+    /REPORT_ALREADY_BOUND/,
+  )
   const adminAfter = await adminClient()
   try {
-    assert.equal(
-      (
-        await adminAfter.query(
-          'select count(*)::int as count from app_private.report_viewer_sessions where grant_id=$1 and revoked_at is not null',
-          [issued.id],
-        )
-      ).rows[0].count,
-      2,
-    )
+    const viewers = (
+      await adminAfter.query(
+        'select count(*)::int as count from app_private.report_viewer_sessions where grant_id=$1 and revoked_at is not null',
+        [issued.id],
+      )
+    ).rows[0].count
+    assert.equal(viewers, 2)
+    const grant = (
+      await adminAfter.query(
+        'select status,bound_account_id from app_private.report_grants where id=$1',
+        [issued.id],
+      )
+    ).rows[0]
+    assert.equal(grant.status, 'revoked')
+    assert.equal(grant.bound_account_id, winner.id)
   } finally {
     await adminAfter.end()
   }

@@ -70,7 +70,7 @@ export function ReportDeliveryGrant({ grant, rotateAction, stateAction, locale =
       {grant.bound_account_id && (
         <p>{locale === 'ru' ? 'Этот отчёт уже закреплён за одним аккаунтом.' : 'This report is already bound to one account.'}</p>
       )}
-      {active && (
+      {active && !grant.bound_account_id && (
         <>
           <form action={rotateSubmit} className="assessment-actions">
             <select name="expiresInDays" defaultValue="30">
@@ -91,6 +91,13 @@ export function ReportDeliveryGrant({ grant, rotateAction, stateAction, locale =
             </button>
           </form>
         </>
+      )}
+      {grant.bound_account_id && grant.status !== 'withdrawn' && (
+        <form action={stateSubmit} className="assessment-actions">
+          <button name="operation" value="withdraw" disabled={changing}>
+            {locale === 'ru' ? 'Отозвать сам отчёт' : 'Withdraw report'}
+          </button>
+        </form>
       )}
       <FormStatus state={rotateState?.shareUrl ? rotateState : state} locale={locale} />
     </article>
