@@ -66,7 +66,6 @@ async function handle(request, { params }) {
           scopes: 'openid email profile',
           redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}`,
           skipBrowserRedirect: true,
-          queryParams: { prompt: 'select_account' },
         },
       })
       if (error || !data.url || new URL(data.url).origin !== config.supabaseUrl)
