@@ -2,6 +2,17 @@ import test, { before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { createAppRepository } from '../lib/app/repository.js'
+import { createGuestRepository } from '../lib/app/guest-repository.js'
+import { createGuestCredential } from '../lib/app/guest-session.js'
+import { createGuestSaveIntent, createReportSaveIntent } from '../lib/app/save-intents.js'
+import {
+  authorizeReportViewer,
+  commitReportSaveIntent,
+  exchangeReportViewer,
+  issueReportGrant,
+  readSavedReport,
+  rotateReportGrant,
+} from '../lib/app/report-flow.js'
 import { getAppConfig } from '../lib/app/config.js'
 import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
@@ -370,6 +381,67 @@ test('revoked session denied even when token expiry is still in the future', asy
     await db.end()
   }
 })
+test('guest result save is explicit, idempotent and preserves an existing account draft', async () => {
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential()
+  await guestRepo.createSession(credential, {
+    adult: true,
+    necessary: true,
+    uiLocale: 'en',
+    timezone: 'UTC',
+  })
+  let guestRun = await guestRepo.startRun(credential, {
+    definitionKey: en.key,
+    definitionVersion: en.version,
+    instrumentLocale: en.instrumentLocale,
+    operationId: randomUUID(),
+  })
+  guestRun = await guestRepo.saveRun(credential, guestRun.id, {
+    answers: answer(en, 4),
+    context: {},
+    progress: en.questions.length,
+    expectedRevision: guestRun.revision,
+    operationId: randomUUID(),
+  })
+  const guestResult = await guestRepo.submitRun(credential, guestRun.id, {
+    expectedRevision: guestRun.revision,
+  })
+  const intent = await createGuestSaveIntent(config, credential, {
+    sourceId: guestResult.id,
+    operationId: randomUUID(),
+  })
+  const admin = await adminClient()
+  let proof
+  try {
+    proof = (
+      await admin.query('select browser_secret_hash from app_private.save_intents where id=$1', [intent.id])
+    ).rows[0].browser_secret_hash
+  } finally {
+    await admin.end()
+  }
+
+  const accountDraft = await repo.startRun(b, {
+    definitionKey: en.key,
+    definitionVersion: en.version,
+    instrumentLocale: en.instrumentLocale,
+    operationId: randomUUID(),
+  })
+  const saved = await repo.commitGuestSaveIntent(b, { intentId: intent.id, browserProof: proof })
+  const replay = await repo.commitGuestSaveIntent(b, { intentId: intent.id, browserProof: proof })
+  assert.equal(replay.id, saved.id)
+  assert.equal(saved.measurementAt, guestResult.measurementAt)
+  const after = await repo.bootstrap(b)
+  assert.ok(after.runs.some((run) => run.id === accountDraft.id))
+  assert.equal(after.results.filter((result) => result.id === saved.id).length, 1)
+  assert.equal(
+    (
+      await rawAs(a, 'authenticated', (db) =>
+        db.query('select id from app.assessment_results where id=$1', [saved.id]),
+      )
+    ).rows.length,
+    0,
+  )
+})
 test('deletion request disables access without pretending provider data was erased', async () => {
   const result = await repo.requestDeletion(b, { confirmation: 'DELETE' })
   assert.equal(result.status, 'requested')
@@ -384,34 +456,3 @@ test('deletion request disables access without pretending provider data was eras
   )
 })
 
-test('legacy shared report claim is idempotent for one account and exclusive across accounts', async () => {
-  const sourceAssessmentId = '30000000-0000-4000-8000-000000000001'
-  const input = {
-    sourceAssessmentId,
-    sourceRevision: 2,
-    report: {
-      id: sourceAssessmentId,
-      kind: 'research_result',
-      title: 'Synthetic shared report',
-      occurredOn: '2026-10-02',
-      language: 'en',
-      sourceName: 'Synthetic source',
-      sourceVersion: 'v1',
-      description: 'Description',
-      originalResult: 'Result',
-      practitionerComment: 'Comment',
-    },
-  }
-  const first = await repo.claimSharedReport(a, input)
-  const replay = await repo.claimSharedReport(a, input)
-  assert.equal(replay.id, first.id)
-  await assert.rejects(() => repo.claimSharedReport(b, input), /REPORT_ALREADY_CLAIMED/)
-  const own = await repo.bootstrap(a)
-  assert.equal(own.accountReports.filter((item) => item.sourceAssessmentId === sourceAssessmentId).length, 1)
-  assert.equal(own.accountReports.find((item) => item.sourceAssessmentId === sourceAssessmentId).report.title, 'Synthetic shared report')
-  assert.equal((await repo.bootstrap(b)).accountReports.length, 0)
-  assert.equal(
-    (await rawAs(b, 'authenticated', (db) => db.query('select id from app.account_reports'))).rows.length,
-    0,
-  )
-})

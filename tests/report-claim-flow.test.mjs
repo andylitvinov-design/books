@@ -2,41 +2,82 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-test('direct report flow keeps bearer out of OAuth and exposes only one report', async () => {
-  const [share, view, reportApi, appApi, page, worker, middleware] = await Promise.all([
+test('report invitation uses fragment exchange, report-scoped viewer and explicit save intent', async () => {
+  const [projection, flow, view, appApi, page, migration, worker, middleware] = await Promise.all([
     readFile('lib/clients/assessment-share.js', 'utf8'),
+    readFile('lib/app/report-flow.js', 'utf8'),
     readFile('components/app/shared-report-view.jsx', 'utf8'),
-    readFile('app/api/report/[id]/route.js', 'utf8'),
     readFile('app/api/app/[...path]/route.js', 'utf8'),
     readFile('app/[locale]/report/[assessmentId]/page.jsx', 'utf8'),
+    readFile('supabase/migrations/20261003011500_hh_app_guest_report_flows.sql', 'utf8'),
     readFile('public/sw.js', 'utf8'),
     readFile('middleware.ts', 'utf8'),
   ])
 
-  assert.match(share, /#\$\{secret\}/)
-  assert.match(share, /clientId' in view|clientId/) // helper has private source data but projection below is explicit
+  assert.match(projection, /publicAssessmentView/)
+  assert.doesNotMatch(projection, /clientId:/)
+  assert.doesNotMatch(projection, /relatedDocumentIds/)
+
+  assert.match(flow, /report_grants/)
+  assert.match(flow, /report_viewer_sessions/)
+  assert.match(flow, /secret_hash/)
+  assert.match(flow, /saveAllowed/)
+  assert.match(flow, /commitReportSaveIntent/)
+  assert.match(flow, /bound_account_id/)
+  assert.match(flow, /liveSource/)
+  assert.doesNotMatch(flow, /legacy cabinet|account\.report/i)
+
   assert.match(view, /window\.location\.hash/)
   assert.match(view, /history\.replaceState/)
+  assert.match(view, /report-viewer\/exchange/)
+  assert.match(view, /report-viewer\//)
   assert.match(view, /Save this report to my Cabinet/)
-  assert.doesNotMatch(view, /body: JSON\.stringify\(\{ locale, secret/)
-  assert.match(reportApi, /httpOnly: true/)
-  assert.match(reportApi, /Referrer-Policy': 'no-referrer'/)
-  assert.match(appApi, /readPendingReportClaim/)
-  assert.match(appApi, /report\/claim/)
-  assert.match(appApi, /body: JSON\.stringify\(\{ locale \}\)|redirectTo:/)
+  assert.match(view, /save-intents/)
+  assert.match(view, /intentId/)
+  assert.doesNotMatch(view, /report\/claim/)
+  assert.doesNotMatch(view, /sessionStorage|localStorage/)
+
+  assert.match(appApi, /report-viewer\/exchange/)
+  assert.match(appApi, /createReportSaveIntent/)
+  assert.match(appApi, /commitReportSaveIntent/)
+  assert.match(appApi, /save-intents/)
+  assert.doesNotMatch(appApi, /report\/claim/)
+  assert.doesNotMatch(appApi, /guest\/import/)
+
+  assert.match(page, /\^\[A-Za-z0-9_-\]\{22\}\$/)
   assert.match(page, /robots: \{ index: false, follow: false \}/)
-  assert.match(worker, /\/api\/report\//)
-  assert.match(middleware, /api\\\/report/)
+  assert.match(migration, /create table app_private\.report_grants/)
+  assert.match(migration, /create table app_private\.report_viewer_sessions/)
+  assert.match(migration, /create table app_private\.save_intents/)
+  assert.match(migration, /create table app\.saved_reports/)
+  assert.match(worker, /\/en\/report\//)
+  assert.match(middleware, /report/)
 })
 
-test('claimed reports are attached without linking the legacy Client identity', async () => {
-  const [repository, migration] = await Promise.all([
-    readFile('lib/app/repository.js', 'utf8'),
-    readFile('supabase/migrations/20261002233000_hh_app_claimed_reports.sql', 'utf8'),
+test('Cabinet guest flow is server-backed and never auto-imports on ordinary login', async () => {
+  const [landing, workspace, guestRepo, migration, route, clientPage] = await Promise.all([
+    readFile('components/app/cabinet-landing.jsx', 'utf8'),
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+    readFile('lib/app/guest-repository.js', 'utf8'),
+    readFile('supabase/migrations/20261003011500_hh_app_guest_report_flows.sql', 'utf8'),
+    readFile('app/api/app/[...path]/route.js', 'utf8'),
+    readFile('app/[locale]/client/page.tsx', 'utf8'),
   ])
-  assert.match(repository, /claimSharedReport/)
-  assert.match(repository, /sourceAssessmentId/)
-  assert.doesNotMatch(repository.slice(repository.indexOf('async claimSharedReport'), repository.indexOf('async importGuestResult')), /clientId|fullName|email/)
-  assert.match(migration, /source_assessment_id uuid not null unique/)
-  assert.doesNotMatch(migration, /client_id/)
+
+  assert.match(landing, /guest\/session/)
+  assert.match(landing, /guest\/runs/)
+  assert.match(landing, /guest\/results/)
+  assert.match(landing, /save-intents/)
+  assert.doesNotMatch(landing, /sessionStorage|localStorage|GUEST_RESULT_STORAGE_KEY/)
+  assert.doesNotMatch(workspace, /guest\/import|report\/claim|GUEST_RESULT_STORAGE_KEY|sessionStorage/)
+  assert.match(workspace, /SaveContinuation/)
+  assert.match(workspace, /confirmed: true/)
+  assert.match(guestRepo, /app_private\.guest_sessions/)
+  assert.match(guestRepo, /app_private\.guest_runs/)
+  assert.match(guestRepo, /app_private\.guest_results/)
+  assert.match(migration, /expires_at/)
+  assert.match(route, /guest\/session/)
+  assert.match(route, /save-intents/)
+  assert.doesNotMatch(clientPage, /redirect\(/)
+  assert.match(clientPage, /legacySelector/)
 })

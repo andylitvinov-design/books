@@ -12,6 +12,6 @@ export const metadata = {
 export default async function AppPage({ params }) {
   const { locale, path = [] } = await params
   if (!['en', 'ru'].includes(locale)) notFound()
-  if (path.length > 2 || (!['tests','runs','results','history','consultations','settings'].includes(path[0]) && path.length)) notFound()
+  if (path.length > 2 || (!['tests','runs','results','history','consultations','settings','continue','reports'].includes(path[0]) && path.length)) notFound()
   return <AppWorkspace locale={locale} path={path} />
 }

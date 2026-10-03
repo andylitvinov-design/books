@@ -2,15 +2,34 @@ import { NextResponse } from 'next/server'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
+import { createGuestRepository } from '@/lib/app/guest-repository'
+import {
+  createGuestCredential,
+  guestCookieName,
+  parseGuestCookie,
+  setGuestCookie,
+} from '@/lib/app/guest-session'
 import { consumeRate } from '@/lib/app/database'
+import {
+  clearSaveIntentCookie,
+  createGuestSaveIntent,
+  createReportSaveIntent,
+  readSaveIntent,
+  saveIntentBrowserProof,
+  setSaveIntentCookie,
+} from '@/lib/app/save-intents'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
-import { AppError, onlyKeys } from '@/lib/assessments/contracts'
+import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import {
-  publicAssessmentView,
-  readPendingReportClaim,
-  reportClaimCookieName,
-} from '@/lib/clients/assessment-share'
+  authorizeReportViewer,
+  commitReportSaveIntent,
+  exchangeReportViewer,
+  parseReportViewerCookie,
+  readSavedReport,
+  removeSavedReport,
+  setReportViewerCookie,
+} from '@/lib/app/report-flow'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -28,8 +47,10 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale'])
+      onlyKeys(body, ['locale', 'intentId'])
       const locale = body.locale === 'ru' ? 'ru' : 'en'
+      const intentId = body.intentId || null
+      if (intentId !== null) requireUUID(intentId)
       await consumeRate(
         config,
         {
@@ -43,7 +64,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}`,
           skipBrowserRedirect: true,
           queryParams: { prompt: 'select_account' },
         },
@@ -55,10 +76,15 @@ async function handle(request, { params }) {
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
         locale = url.searchParams.get('locale') === 'ru' ? 'ru' : 'en',
-        code = url.searchParams.get('code')
+        code = url.searchParams.get('code'),
+        intentId = url.searchParams.get('intent')
+      if (intentId) requireUUID(intentId)
+      const destination = intentId
+        ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}`
+        : `${origin}/${locale}/app`
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.clear(
-          NextResponse.redirect(`${origin}/${locale}/app?auth=cancelled`, {
+          NextResponse.redirect(destination + (intentId ? '&auth=cancelled' : '?auth=cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -66,7 +92,7 @@ async function handle(request, { params }) {
       const { error } = await auth.client.auth.exchangeCodeForSession(code)
       if (error)
         return auth.clear(
-          NextResponse.redirect(`${origin}/${locale}/app?auth=failed`, {
+          NextResponse.redirect(destination + (intentId ? '&auth=failed' : '?auth=failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -74,7 +100,7 @@ async function handle(request, { params }) {
       const actor = await auth.verified()
       await createAppRepository(config).ensureAccount(actor)
       return auth.apply(
-        NextResponse.redirect(`${origin}/${locale}/app`, { status: 303, headers: PRIVATE_HEADERS }),
+        NextResponse.redirect(destination, { status: 303, headers: PRIVATE_HEADERS }),
       )
     }
     if (joined === 'auth/logout' && method === 'POST') {
@@ -87,6 +113,131 @@ async function handle(request, { params }) {
       })
       return auth.clear(json({ signedOut: true, serverSessionEnded: !error }, error ? 503 : 200))
     }
+
+    if (joined === 'report-viewer/exchange' && method === 'POST') {
+      const body = await readBody(request)
+      onlyKeys(body, ['selector', 'secret'])
+      const store = getPrescriptionStore()
+      if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
+      await consumeRate(
+        config,
+        {
+          op: 'report-exchange',
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
+          selector: body.selector,
+        },
+        20,
+        300,
+      )
+      const opened = await exchangeReportViewer(config, store, body)
+      const response = json({
+        report: opened.report,
+        grant: {
+          selector: opened.grant.selector,
+          saveAllowed: opened.grant.saveAllowed,
+          expiresAt: opened.grant.expiresAt,
+        },
+      })
+      return setReportViewerCookie(
+        response,
+        opened.grant.selector,
+        opened.viewer.id,
+        opened.viewer.secret,
+        opened.viewer.maxAge,
+      )
+    }
+    if (path[0] === 'report-viewer' && path.length === 2 && method === 'GET') {
+      const selector = path[1]
+      const viewer = parseReportViewerCookie(request, selector)
+      const store = getPrescriptionStore()
+      if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
+      return json(await authorizeReportViewer(config, store, selector, viewer))
+    }
+
+    if (joined === 'save-intents' && method === 'POST') {
+      const body = await readBody(request)
+      onlyKeys(body, ['sourceKind', 'sourceId', 'selector', 'operationId'])
+      let intent
+      if (body.sourceKind === 'guest_result') {
+        const credential = parseGuestCookie(request.cookies.get(guestCookieName())?.value)
+        if (!credential) throw new AppError('GUEST_SESSION_REQUIRED', 401)
+        intent = await createGuestSaveIntent(config, credential, {
+          sourceId: body.sourceId,
+          operationId: body.operationId,
+        })
+      } else if (body.sourceKind === 'delivered_report') {
+        if (typeof body.selector !== 'string') throw new AppError('REPORT_UNAVAILABLE', 404)
+        const viewer = parseReportViewerCookie(request, body.selector)
+        const store = getPrescriptionStore()
+        if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
+        const opened = await authorizeReportViewer(config, store, body.selector, viewer)
+        intent = await createReportSaveIntent(config, opened.grant, body.operationId)
+      } else {
+        throw new AppError('SOURCE_UNAVAILABLE', 400)
+      }
+      let signedIn = false
+      try {
+        await auth.verified()
+        signedIn = true
+      } catch {
+        signedIn = false
+      }
+      return setSaveIntentCookie(json({ ...intent, signedIn }, 201), intent.id, config)
+    }
+    if (path[0] === 'save-intents' && path.length === 2 && method === 'GET') {
+      const proof = saveIntentBrowserProof(request, path[1], config)
+      return json(await readSaveIntent(config, path[1], proof))
+    }
+
+    const guestRepo = createGuestRepository(config)
+    if (joined === 'guest/session' && method === 'POST') {
+      const body = await readBody(request)
+      await consumeRate(
+        config,
+        {
+          op: 'guest-session',
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
+        },
+        12,
+        3600,
+      )
+      const credential = createGuestCredential()
+      const session = await guestRepo.createSession(credential, body)
+      return setGuestCookie(json(session, 201), credential)
+    }
+    if (path[0] === 'guest') {
+      const credential = parseGuestCookie(request.cookies.get(guestCookieName())?.value)
+      if (!credential) throw new AppError('GUEST_SESSION_REQUIRED', 401)
+      await consumeRate(
+        config,
+        { op: 'guest', guest: credential.id },
+        joined.includes('/save') ? 240 : 120,
+        60,
+      )
+      if (joined === 'guest/bootstrap' && method === 'GET')
+        return json(await guestRepo.bootstrap(credential))
+      if (joined === 'guest/runs' && method === 'POST')
+        return json(await guestRepo.startRun(credential, await readBody(request)), 201)
+      if (path[1] === 'runs' && path.length === 3 && method === 'GET')
+        return json(await guestRepo.getRun(credential, path[2]))
+      if (path[1] === 'runs' && path.length === 4 && method === 'POST') {
+        const body = await readBody(request)
+        if (path[3] === 'save') return json(await guestRepo.saveRun(credential, path[2], body))
+        if (path[3] === 'submit') return json(await guestRepo.submitRun(credential, path[2], body))
+        if (path[3] === 'discard') return json(await guestRepo.discardRun(credential, path[2], body))
+      }
+      if (path[1] === 'results' && path.length === 3 && method === 'GET')
+        return json(await guestRepo.getResult(credential, path[2]))
+      if (
+        path[1] === 'results' &&
+        path.length === 4 &&
+        path[3] === 'delete' &&
+        method === 'POST'
+      )
+        return json(await guestRepo.deleteResult(credential, path[2]))
+      throw new AppError('NOT_FOUND', 404)
+    }
+
     const actor = await auth.verified(),
       repo = createAppRepository(config)
     await consumeRate(
@@ -95,9 +246,50 @@ async function handle(request, { params }) {
       joined === 'export' ? 3 : 180,
       joined === 'export' ? 3600 : 60,
     )
+    if (
+      path[0] === 'save-intents' &&
+      path.length === 3 &&
+      path[2] === 'commit' &&
+      method === 'POST'
+    ) {
+      const body = await readBody(request)
+      onlyKeys(body, ['confirmed'])
+      if (body.confirmed !== true) throw new AppError('CONFIRMATION_REQUIRED', 400)
+      const proof = saveIntentBrowserProof(request, path[1], config)
+      const intent = await readSaveIntent(config, path[1], proof)
+      let resource
+      if (intent.sourceKind === 'guest_result') {
+        resource = await repo.commitGuestSaveIntent(actor, {
+          intentId: path[1],
+          browserProof: proof,
+        })
+      } else if (intent.sourceKind === 'delivered_report') {
+        const store = getPrescriptionStore()
+        if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
+        resource = await commitReportSaveIntent(config, store, actor, path[1], proof)
+      } else {
+        throw new AppError('SOURCE_UNAVAILABLE', 409)
+      }
+      return clearSaveIntentCookie(
+        json({ saved: true, sourceKind: intent.sourceKind, resource }, 201),
+        path[1],
+      )
+    }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
     if (joined === 'export' && method === 'GET') {
-      const response = json(await repo.exportData(actor))
+      const exported = await repo.exportData(actor)
+      const store = getPrescriptionStore()
+      const savedReports = []
+      for (const ref of exported.savedReports || []) {
+        try {
+          const opened = await readSavedReport(config, store, actor, ref.id)
+          savedReports.push({ ...ref, available: true, report: opened.report })
+        } catch {
+          savedReports.push({ ...ref, available: false })
+        }
+      }
+      exported.savedReports = savedReports
+      const response = json(exported)
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
       return response
     }
@@ -105,44 +297,15 @@ async function handle(request, { params }) {
       return json(await repo.getRun(actor, path[1]))
     if (path[0] === 'results' && path.length === 2 && method === 'GET')
       return json(await repo.getResult(actor, path[1]))
-    if (joined === 'report/claim' && method === 'POST') {
-      const cookieName = reportClaimCookieName()
-      const pending = readPendingReportClaim(request.cookies.get(cookieName)?.value)
-      const finish = (data, status = 200) => {
-        const response = json(data, status)
-        response.cookies.set(cookieName, '', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 0,
-        })
-        return response
-      }
-      if (!pending) return finish({ claimed: false })
-      const store = getPrescriptionStore(),
-        record = await store?.findClientAssessment?.(pending.id),
-        client = record && await store?.findClientById(record.clientId)
-      if (
-        !record ||
-        record.status !== 'shared' ||
-        record.revision !== pending.revision ||
-        !client ||
-        client.status !== 'active'
-      )
-        return finish({ claimed: false })
-      const report = publicAssessmentView(record)
-      if (!report) return finish({ claimed: false })
-      const claimed = await repo.claimSharedReport(actor, {
-        sourceAssessmentId: record.id,
-        sourceRevision: record.revision,
-        report,
-      })
-      return finish({ claimed: true, report: claimed }, 201)
+    if (path[0] === 'reports' && path.length === 2 && method === 'GET') {
+      const store = getPrescriptionStore()
+      if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
+      return json(await readSavedReport(config, store, actor, path[1]))
     }
     if (method !== 'POST') throw new AppError('NOT_FOUND', 404)
     const body = await readBody(request)
-    if (joined === 'guest/import') return json(await repo.importGuestResult(actor, body), 201)
+    if (path[0] === 'reports' && path.length === 3 && path[2] === 'remove')
+      return json(await removeSavedReport(config, actor, path[1]))
     if (joined === 'onboarding') return json(await repo.onboarding(actor, body))
     if (joined === 'preferences') return json(await repo.preferences(actor, body))
     if (joined === 'runs') return json(await repo.startRun(actor, body), 201)

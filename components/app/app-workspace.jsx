@@ -1,13 +1,12 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { APP_SERVICES } from '@/data/app-services'
-
-const GUEST_RESULT_STORAGE_KEY = 'hh-guest-result:v1'
+import { AssessmentReading } from '@/components/assessment-reading'
 
 export async function appFetch(path, body, method) {
   const response = await fetch(`/api/app/${path}`, {
@@ -64,9 +63,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     [state, setState] = useState('loading'),
     [error, setError] = useState(null)
   const [busy, setBusy] = useState(false),
-    [deleted, setDeleted] = useState(false),
-    guestImport = useRef(false),
-    reportImport = useRef(false)
+    [deleted, setDeleted] = useState(false)
   const page = path[0] || 'portrait',
     recordId = path[1],
     root = `/${locale}/app`
@@ -93,53 +90,6 @@ export default function AppWorkspace({ locale, path = [] }) {
   useEffect(() => {
     load()
   }, [load])
-  useEffect(() => {
-    if (
-      state !== 'ready' ||
-      data?.account?.onboardingState !== 'active' ||
-      guestImport.current
-    )
-      return
-    let raw
-    try {
-      raw = sessionStorage.getItem(GUEST_RESULT_STORAGE_KEY)
-    } catch {
-      return
-    }
-    if (!raw) return
-    let payload
-    try {
-      payload = JSON.parse(raw)
-    } catch {
-      sessionStorage.removeItem(GUEST_RESULT_STORAGE_KEY)
-      return
-    }
-    guestImport.current = true
-    appFetch('guest/import', payload)
-      .then(async (result) => {
-        sessionStorage.removeItem(GUEST_RESULT_STORAGE_KEY)
-        await load()
-        router.replace(`${root}/results/${result.id}`)
-      })
-      .catch((e) => {
-        setError(e)
-        guestImport.current = false
-      })
-  }, [data?.account?.onboardingState, load, root, router, state])
-  useEffect(() => {
-    if (
-      state !== 'ready' ||
-      data?.account?.onboardingState !== 'active' ||
-      reportImport.current
-    )
-      return
-    reportImport.current = true
-    appFetch('report/claim', {})
-      .then(async (result) => {
-        if (result.claimed) await load()
-      })
-      .catch((e) => setError(e))
-  }, [data?.account?.onboardingState, load, state])
   useEffect(() => {
     let channel
     try {
@@ -287,6 +237,9 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Preferences data={data} locale={locale} onboarding onDone={load} />
       ) : (
         <>
+          {page === 'continue' && (
+            <SaveContinuation data={data} locale={locale} reload={load} />
+          )}
           {page === 'portrait' && (
             <Portrait
               data={data}
@@ -319,6 +272,9 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'results' && (
             <ResultPage key={recordId} id={recordId} locale={locale} data={data} />
           )}
+          {page === 'reports' && (
+            <SavedReportPage key={recordId} id={recordId} locale={locale} reload={load} />
+          )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} />}
           {page === 'settings' && (
@@ -343,6 +299,115 @@ export default function AppWorkspace({ locale, path = [] }) {
     </main>
   )
 }
+
+function SaveContinuation({ data, locale, reload }) {
+  const params = useSearchParams()
+  const router = useRouter()
+  const intentId = params.get('intent') || ''
+  const [intent, setIntent] = useState(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const ru = locale === 'ru'
+
+  useEffect(() => {
+    let live = true
+    if (!intentId) {
+      setError(ru ? 'Не найден результат для сохранения.' : 'No result was selected for saving.')
+      return
+    }
+    appFetch('save-intents/' + intentId)
+      .then((value) => {
+        if (!live) return
+        setIntent(value)
+        if (value.expired)
+          setError(ru ? 'Время подтверждения истекло. Вернитесь к результату и нажмите «Сохранить» ещё раз.' : 'This confirmation expired. Return to the result and choose Save again.')
+      })
+      .catch(() => {
+        if (live) setError(ru ? 'Не удалось открыть подтверждение сохранения.' : 'This save confirmation is unavailable.')
+      })
+    return () => {
+      live = false
+    }
+  }, [intentId, ru])
+
+  async function commit() {
+    if (!intentId || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      const saved = await appFetch('save-intents/' + intentId + '/commit', { confirmed: true })
+      await reload()
+      router.replace(
+        saved.sourceKind === 'delivered_report'
+          ? `/${locale}/app/reports/${saved.resource.id}`
+          : `/${locale}/app/results/${saved.resource.id}`,
+      )
+    } catch (e) {
+      setError(
+        e?.code === 'SAVE_INTENT_EXPIRED'
+          ? ru
+            ? 'Время подтверждения истекло. Вернитесь к исходному результату и повторите сохранение.'
+            : 'This confirmation expired. Return to the original result and save again.'
+          : ru
+            ? 'Не удалось сохранить результат. Исходный гостевой результат не удалён.'
+            : 'The result could not be saved. Your guest result has not been deleted.',
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const sourceTitle =
+    intent?.sourceKind === 'delivered_report'
+      ? ru
+        ? 'Полученный отчёт'
+        : 'Received report'
+      : intent?.source?.definitionKey === 'hh-current-state'
+        ? ru
+          ? 'Моё состояние сейчас'
+          : 'How I feel now'
+        : ru
+          ? 'Личностные особенности'
+          : 'Personality tendencies'
+  return (
+    <section className="hh-panel hh-entry">
+      <p className="hh-kicker">{ru ? 'Подтверждение' : 'Confirmation'}</p>
+      <h1>{ru ? 'Сохранить в личном кабинете' : 'Save to your Cabinet'}</h1>
+      {intent && !intent.expired && (
+        <>
+          <p><strong>{sourceTitle}</strong></p>
+          {intent.source?.measurementAt && (
+            <p>{ru ? 'Пройдено' : 'Measured'}: {dateLabel(intent.source.measurementAt, locale)}</p>
+          )}
+          <p>
+            {ru ? 'Аккаунт' : 'Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
+          </p>
+          <p className="hh-muted">
+            {ru
+              ? 'Будет сохранён только этот выбранный результат. Другие гостевые данные и старый Client Cabinet не импортируются.'
+              : 'Only this selected result will be saved. Other guest data and the legacy Client Cabinet are not imported.'}
+          </p>
+          {intent.status === 'committed' && intent.resourceId ? (
+            <Link className="hh-primary" href={`/${locale}/app/results/${intent.resourceId}`} prefetch={false}>
+              {ru ? 'Открыть сохранённый результат' : 'Open saved result'}
+            </Link>
+          ) : (
+            <button className="hh-primary" type="button" disabled={busy} onClick={commit}>
+              {busy ? (ru ? 'Сохраняем…' : 'Saving…') : (ru ? 'Сохранить' : 'Save')}
+            </button>
+          )}
+        </>
+      )}
+      {error && <p role="alert">{error}</p>}
+      <p className="hh-fine">
+        {ru
+          ? 'Если вы выбрали не тот Google-аккаунт, вернитесь к исходному результату и начните сохранение заново.'
+          : 'If this is not the Google account you intended, return to the original result and start Save again.'}
+      </p>
+    </section>
+  )
+}
+
 function Preferences({ data, locale, onboarding = false, onDone }) {
   const c = COPY[locale],
     [values, setValues] = useState({
@@ -369,7 +434,13 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
     setError(null)
     try {
       const body = onboarding
-        ? values
+        ? {
+            adult: values.adult,
+            necessary: values.necessary,
+            marketing: false,
+            uiLocale: locale,
+            timezone: localZone(),
+          }
         : Object.fromEntries(
             Object.entries(values).filter(([k]) => !['adult', 'necessary'].includes(k)),
           )
@@ -387,41 +458,45 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
       <h1>{onboarding ? c.continue : c.settings}</h1>
       <p>{c.privacy}</p>
       <form className="hh-form" onSubmit={submit}>
-        <label>
-          {c.name}
-          <input
-            value={values.displayName}
-            maxLength={120}
-            onChange={(e) => change('displayName', e.target.value)}
-            autoComplete="name"
-          />
-        </label>
-        <label>
-          {c.timezone}
-          <input
-            value={values.timezone}
-            required
-            maxLength={100}
-            onChange={(e) => change('timezone', e.target.value)}
-          />
-        </label>
-        <label>
-          Language / Язык
-          <select value={values.uiLocale} onChange={(e) => change('uiLocale', e.target.value)}>
-            <option value="en">English</option>
-            <option value="ru">Русский</option>
-          </select>
-        </label>
-        <label>
-          {c.goal}
-          <select value={values.goal} onChange={(e) => change('goal', e.target.value)}>
-            {['explore', 'body', 'relationships', 'resource', 'business'].map((key) => (
-              <option value={key} key={key}>
-                {c[key]}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!onboarding && (
+          <>
+            <label>
+              {c.name}
+              <input
+                value={values.displayName}
+                maxLength={120}
+                onChange={(e) => change('displayName', e.target.value)}
+                autoComplete="name"
+              />
+            </label>
+            <label>
+              {c.timezone}
+              <input
+                value={values.timezone}
+                required
+                maxLength={100}
+                onChange={(e) => change('timezone', e.target.value)}
+              />
+            </label>
+            <label>
+              Language / Язык
+              <select value={values.uiLocale} onChange={(e) => change('uiLocale', e.target.value)}>
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+              </select>
+            </label>
+            <label>
+              {c.goal}
+              <select value={values.goal} onChange={(e) => change('goal', e.target.value)}>
+                {['explore', 'body', 'relationships', 'resource', 'business'].map((key) => (
+                  <option value={key} key={key}>
+                    {c[key]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
         {onboarding && (
           <>
             <label className="hh-check">
@@ -444,14 +519,16 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
             </label>
           </>
         )}
-        <label className="hh-check">
-          <input
-            type="checkbox"
-            checked={values.marketing}
-            onChange={(e) => change('marketing', e.target.checked)}
-          />
-          {c.marketing}
-        </label>
+        {!onboarding && (
+          <label className="hh-check">
+            <input
+              type="checkbox"
+              checked={values.marketing}
+              onChange={(e) => change('marketing', e.target.checked)}
+            />
+            {c.marketing}
+          </label>
+        )}
         <button className="hh-primary" disabled={busy}>
           {busy ? c.saving : onboarding ? c.continue : c.save}
         </button>
@@ -859,28 +936,20 @@ function Portrait({ data, locale, onOpenHistory }) {
           </div>
         </>
       )}
-      {data.accountReports?.length ? (
+      {data.savedReports?.length ? (
         <section className="hh-section hh-account-reports">
-          <h2>{locale === 'ru' ? 'Сохранённые отчёты' : 'Saved reports'}</h2>
+          <h2>{locale === 'ru' ? 'Недавние отчёты' : 'Recent reports'}</h2>
           <div className="hh-grid">
-            {data.accountReports.map((item) => (
+            {[...data.savedReports].reverse().slice(0, 3).map((item) => (
               <article className="hh-panel" key={item.id}>
-                <p className="hh-kicker">
-                  {item.report.kind === 'research_result'
-                    ? locale === 'ru' ? 'Отчёт' : 'Report'
-                    : locale === 'ru' ? 'Тест' : 'Test'}
+                <p className="hh-kicker">{locale === 'ru' ? 'Полученный отчёт' : 'Received report'}</p>
+                <h3>{item.occurredOn}</h3>
+                <p>
+                  {locale === 'ru' ? 'Сохранено' : 'Saved'}: {dateLabel(item.savedAt, locale)}
                 </p>
-                <h3>{item.report.title}</h3>
-                <p>{item.report.occurredOn}</p>
-                <details>
-                  <summary>{locale === 'ru' ? 'Открыть отчёт' : 'Open report'}</summary>
-                  {item.report.sourceName && (
-                    <p>{item.report.sourceName}{item.report.sourceVersion ? <> · {item.report.sourceVersion}</> : null}</p>
-                  )}
-                  {item.report.description && <p className="assessment-text">{item.report.description}</p>}
-                  {item.report.originalResult && <p className="assessment-text">{item.report.originalResult}</p>}
-                  {item.report.practitionerComment && <p className="assessment-text">{item.report.practitionerComment}</p>}
-                </details>
+                <Link href={`/${locale}/app/reports/${item.id}`} prefetch={false}>
+                  {locale === 'ru' ? 'Открыть отчёт' : 'Open report'}
+                </Link>
               </article>
             ))}
           </div>
@@ -982,6 +1051,68 @@ function ResultPage({ id, locale, data }) {
     </section>
   )
 }
+function SavedReportPage({ id, locale, reload }) {
+  const router = useRouter()
+  const [value, setValue] = useState(null)
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const ru = locale === 'ru'
+  useEffect(() => {
+    let live = true
+    appFetch('reports/' + id)
+      .then((result) => {
+        if (live) setValue(result)
+      })
+      .catch((e) => {
+        if (live) setError(e)
+      })
+    return () => {
+      live = false
+    }
+  }, [id])
+  async function remove() {
+    setBusy(true)
+    setError(null)
+    try {
+      await appFetch('reports/' + id + '/remove', {})
+      await reload()
+      router.replace('/' + locale + '/app/history')
+    } catch (e) {
+      setError(e)
+      setBusy(false)
+    }
+  }
+  if (error?.code === 'REPORT_UNAVAILABLE' || error?.code === 'NOT_FOUND')
+    return (
+      <section className="hh-panel">
+        <h1>{ru ? 'Отчёт больше недоступен' : 'Report no longer available'}</h1>
+        <p>{ru ? 'Ссылка в истории может оставаться как запись, но содержимое было отозвано или исходный отчёт больше недоступен.' : 'The history reference may remain, but the content was withdrawn or the source report is no longer available.'}</p>
+        <Link className="hh-primary" href={'/' + locale + '/app/history'} prefetch={false}>
+          {ru ? 'Вернуться в историю' : 'Back to History'}
+        </Link>
+      </section>
+    )
+  if (error) return <p role="alert">{ru ? 'Не удалось открыть отчёт.' : 'The report could not be opened.'}</p>
+  if (!value) return <p>{ru ? 'Загружаем отчёт…' : 'Loading report…'}</p>
+  return (
+    <section className="hh-panel">
+      <p className="hh-kicker">{ru ? 'Сохранённый отчёт' : 'Saved report'}</p>
+      <AssessmentReading record={value.report} locale={locale} />
+      <p className="hh-fine">
+        {ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}
+      </p>
+      <div className="hh-actions">
+        <Link href={'/' + locale + '/app/history'} prefetch={false}>
+          {ru ? 'История' : 'History'}
+        </Link>
+        <button type="button" disabled={busy} onClick={remove}>
+          {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}
+        </button>
+      </div>
+    </section>
+  )
+}
+
 function HistoryView({ data, locale, reload }) {
   const c = COPY[locale],
     results = chronological(data.results),
@@ -1012,6 +1143,13 @@ function HistoryView({ data, locale, reload }) {
       date: r.measurementAt,
       title: r.definitionKey === 'hh-current-state' ? c.state : c.personality,
       href: `/${locale}/app/results/${r.id}`,
+    })),
+    ...(data.savedReports || []).map((report) => ({
+      id: report.id,
+      date: report.occurredOn + 'T12:00:00.000Z',
+      title: locale === 'ru' ? 'Полученный отчёт' : 'Received report',
+      href: `/${locale}/app/reports/${report.id}`,
+      note: `${locale === 'ru' ? 'Сохранено' : 'Saved'}: ${dateLabel(report.savedAt, locale)}`,
     })),
     ...data.requests.map((r) => ({
       id: r.id,

@@ -8,7 +8,6 @@ function privatePath(pathname: string) {
     || /^\/(ru|en)\/prescriptions\//.test(decoded)
     || /^\/(ru|en)\/app(?:\/|$)/.test(decoded)
     || /^\/api\/app(?:\/|$)/.test(decoded)
-    || /^\/api\/report(?:\/|$)/.test(decoded)
     || decoded.startsWith('/api/client')
     || decoded.startsWith('/api/prescriptions/')
     || decoded.startsWith('/api/prescription-access')

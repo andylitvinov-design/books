@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { SharedReportView } from '@/components/app/shared-report-view'
 import { appEnabled } from '@/lib/app/config'
-import { isClientId } from '@/lib/clients/service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -13,12 +12,12 @@ export const metadata = {
 }
 
 export default async function SharedReportPage({ params }) {
-  const { locale, assessmentId } = await params
-  if (!['en', 'ru'].includes(locale) || !isClientId(assessmentId)) notFound()
+  const { locale, assessmentId: selector } = await params
+  if (!['en', 'ru'].includes(locale) || !/^[A-Za-z0-9_-]{22}$/.test(selector || '')) notFound()
   return (
     <main className="client-entry-shell shared-report-shell" lang={locale}>
       <PublicSiteHeader locale={locale} />
-      <SharedReportView reportId={assessmentId} locale={locale} appAvailable={appEnabled()} />
+      <SharedReportView selector={selector} locale={locale} appAvailable={appEnabled()} />
     </main>
   )
 }

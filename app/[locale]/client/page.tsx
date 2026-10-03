@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { CabinetLanding } from "@/components/app/cabinet-landing";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -45,13 +45,15 @@ export default async function ClientEntryPage({ params }: PageProps) {
   if (!isSupportedLocale(locale)) notFound();
 
   const session = await currentCabinetAccess();
-  if (session) redirect(`/${locale}/client/${session.selector}`);
-
   const typedLocale = locale as Locale;
   return (
     <main className="client-entry-shell cabinet-landing-shell" lang={typedLocale}>
       <PublicSiteHeader locale={typedLocale} />
-      <CabinetLanding locale={typedLocale} appAvailable={appEnabled()} />
+      <CabinetLanding
+        locale={typedLocale}
+        appAvailable={appEnabled()}
+        legacySelector={session?.selector}
+      />
     </main>
   );
 }

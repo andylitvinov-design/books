@@ -12,7 +12,19 @@ const browser=await chromium.launch(),context=await browser.newContext({viewport
 page.on('pageerror',error=>errors.push(error.message))
 const checks=[]
 function passed(name){checks.push(name);console.log('PASS '+name)}
-async function api(path,body,ctx=context){const response=await ctx.request.fetch(origin+'/api/app/'+path,{method:body?'POST':'GET',headers:body?{Origin:origin,'Content-Type':'application/json'}:{},data:body});return{status:response.status(),data:await response.json(),headers:response.headers()}}
+async function api(path,body,ctx=context){
+ let error
+ for(let attempt=0;attempt<3;attempt++){
+  try{
+   const response=await ctx.request.fetch(origin+'/api/app/'+path,{method:body?'POST':'GET',headers:body?{Origin:origin,'Content-Type':'application/json'}:{},data:body})
+   return{status:response.status(),data:await response.json(),headers:response.headers()}
+  }catch(e){
+   error=e
+   if(attempt<2)await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)))
+  }
+ }
+ throw error
+}
 async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000})}
 async function enterTest(name='How I feel now'){
  await page.goto(origin+'/en/app/tests');await ready()
@@ -36,7 +48,7 @@ async function saveAndExit(){
 try {
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
- await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).isChecked(),false)
+ await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
  await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:'Your portrait starts with one small check-in.'})).toBeVisible();passed('supported SDK PKCE callback against isolated protocol double and unchecked consent onboarding')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
@@ -63,19 +75,22 @@ try {
  await page.getByRole('button',{name:'Send request',exact:true}).click();await expect(page.getByText('Received',{exact:true})).toBeVisible();data=(await api('bootstrap')).data;assert.equal(data.requests.length,1);assert.equal(data.requests[0].sharedExcerpt,null);passed('real consultation request without implicit profile sharing')
  const admin=await browser.newContext();await admin.addCookies([{name:'prescriptions_admin',value:createHmac('sha256',process.env.PRESCRIPTIONS_ADMIN_TOKEN).update('prescriptions-admin-v1').digest('base64url'),url:origin+'/admin',httpOnly:true,sameSite:'Strict'}]);const adminPage=await admin.newPage();await adminPage.goto(origin+'/admin/app-requests');await expect(adminPage.getByText('synthetic@example.invalid',{exact:true})).toBeVisible();await adminPage.getByRole('button',{name:'Contacted',exact:true}).click();await expect(adminPage.locator('.hh-badge')).toHaveText('Contacted');await adminPage.screenshot({path:output+'/practitioner-inbox.png',fullPage:true});passed('existing practitioner authorization and real request status inbox')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
- const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
+ const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
  const storage=await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),caches:await Promise.all((await caches.keys()).map(async k=>(await(await caches.open(k)).keys()).map(r=>new URL(r.url).pathname)))}));assert.ok(!JSON.stringify(storage).match(/hh-app-auth|profile:first|\/api\/app|\/en\/app|\/ru\/app/));passed('no private browser storage or service-worker response cache')
  const exported=await api('export');assert.equal(exported.status,200);assert.ok(exported.data.runs.every(r=>r.accountId===first.accountId));assert.equal(exported.data.results.length,3);passed('own complete data export')
  await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
- await page.goto(origin+'/en/client');await expect(page.getByRole('heading',{name:'Personal Cabinet'})).toBeVisible();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null);passed('Cabinet is Google-first and legacy private-link entry is secondary')
- await page.getByRole('button',{name:'Start test'}).nth(1).click()
- for(let i=0;i<20;i++){await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await page.getByRole('button',{name:i===19?'See my result':'Next',exact:true}).click()}
- await expect(page.getByRole('heading',{name:'Personality tendencies'})).toBeVisible();passed('personality guest test completes while signed out')
+ await page.goto(origin+'/en/client');await expect(page.getByRole('heading',{name:'Your personal space'})).toBeVisible();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null);passed('Cabinet is Google-first and legacy private-link entry is secondary')
+ await page.getByRole('button',{name:'Start test'}).nth(1).click();await expect(page.getByRole('heading',{name:'Before you start'})).toBeVisible();await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to temporary private processing',{exact:false}).check();await page.getByRole('button',{name:'Continue',exact:true}).click()
+ await expect(page.getByText('Question 1 of 20',{exact:true})).toBeVisible()
+ await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:'Next',exact:true}).click();await page.reload();await expect(page.getByText('Question 2 of 20',{exact:true})).toBeVisible();passed('guest answers and progress resume from server after reload')
+ for(let i=1;i<20;i++){await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:i===19?'See my result':'Next',exact:true}).click()}
+ await expect(page.getByRole('heading',{name:'Personality tendencies'})).toBeVisible();passed('personality guest test completes while signed out with full result')
  await page.getByRole('button',{name:'Take another test'}).click();await page.getByRole('button',{name:'Start test'}).first().click()
- for(const [i,v] of [4,6,3,5,2].entries()){await page.getByRole('button',{name:String(v),exact:true}).click();await page.getByRole('button',{name:i===4?'See my result':'Next',exact:true}).click()}
- await expect(page.getByRole('heading',{name:'Current state'})).toBeVisible();passed('current-state guest test completes while signed out')
- await page.getByRole('button',{name:'Save to my Cabinet'}).click();await expect(page).toHaveURL(/\/results\//,{timeout:60000});await ready();data=(await api('bootstrap')).data;assert.equal(data.results.length,4);assert.equal(await page.evaluate(()=>sessionStorage.getItem('hh-guest-result:v1')),null);passed('guest result imports once after Google sign-in and temporary browser payload is cleared')
+ for(const v of[4,6,3,5,2]){await page.getByRole('button',{name:String(v),exact:true}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:'Next',exact:true}).click()}
+ await expect(page.getByRole('heading',{name:'Optional context'})).toBeVisible();await page.getByLabel('Anything else you want to note?').fill('Synthetic guest context.');await page.getByRole('button',{name:'See my result',exact:true}).click();await expect(page.getByRole('heading',{name:'How I feel now'})).toBeVisible();passed('current-state guest test completes while signed out')
+ const privateStorage=await page.evaluate(()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage)}));assert.deepEqual(privateStorage,{local:[],session:[]});passed('guest flow uses no localStorage/sessionStorage canonical data')
+ await page.getByRole('button',{name:'Save to my Cabinet'}).click();await expect(page).toHaveURL(/\/app\/continue\?intent=/,{timeout:60000});await ready();await expect(page.getByRole('heading',{name:'Save to your Cabinet'})).toBeVisible();await page.getByRole('button',{name:'Save',exact:true}).click();await expect(page).toHaveURL(/\/results\//,{timeout:60000});await ready();data=(await api('bootstrap')).data;assert.equal(data.results.length,4);passed('explicit guest save intent survives Google and imports exactly one selected result')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
