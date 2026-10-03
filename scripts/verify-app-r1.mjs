@@ -1,4 +1,4 @@
-import {chromium,expect} from '@playwright/test'
+import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {createHmac} from 'node:crypto'
@@ -8,8 +8,10 @@ const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
 if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error('Only isolated loopback browser verification is permitted')
 const output='artifacts/app-r1'
 await mkdir(output,{recursive:true})
-const browser=await chromium.launch(),context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[]
-page.on('pageerror',error=>errors.push(error.message))
+const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
+const browser=await engine.launch(),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
+let page=await context.newPage()
+page.on('pageerror',error=>{errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)})
 const checks=[]
 function passed(name){checks.push(name);console.log('PASS '+name)}
 async function api(path,body,ctx=context){
@@ -25,7 +27,7 @@ async function api(path,body,ctx=context){
  }
  throw error
 }
-async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000})}
+async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
 async function enterTest(name='How I feel now'){
  await page.goto(origin+'/en/app/tests');await ready()
  const card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
@@ -54,7 +56,7 @@ try {
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
  await page.screenshot({path:output+'/current-state-runner.png',fullPage:true})
  await answerCurrent(7);await saveAndExit()
- await page.reload();await enterTest();await expect(page.getByRole('heading',{name:'How much energy and inner support do you feel right now?'})).toBeVisible();passed('saved answers and progress resume after reload')
+ await page.reload();await ready();await enterTest();await expect(page.getByRole('heading',{name:'How much energy and inner support do you feel right now?'})).toBeVisible();passed('saved answers and progress resume after reload')
  for(const v of[3,6,8,5])await answerCurrent(v)
  await page.getByLabel('Anything else you want to note?').fill('Synthetic private context, not a real person.')
  await saveAndExit();await enterTest();await expect(page.getByLabel('Anything else you want to note?')).toHaveValue('Synthetic private context, not a real person.');passed('Save and exit flushes current optional text')
@@ -79,7 +81,9 @@ try {
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
  const storage=await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),caches:await Promise.all((await caches.keys()).map(async k=>(await(await caches.open(k)).keys()).map(r=>new URL(r.url).pathname)))}));assert.ok(!JSON.stringify(storage).match(/hh-app-auth|profile:first|\/api\/app|\/en\/app|\/ru\/app/));passed('no private browser storage or service-worker response cache')
  const exported=await api('export');assert.equal(exported.status,200);assert.ok(exported.data.runs.every(r=>r.accountId===first.accountId));assert.equal(exported.data.results.length,3);passed('own complete data export')
- await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
+ await page.close();page=await context.newPage();page.on('pageerror',error=>{errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)})
  await page.goto(origin+'/en/client');await expect(page.getByRole('heading',{name:'Your personal space'})).toBeVisible();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null);passed('Cabinet is Google-first and legacy private-link entry is secondary')
  await page.getByRole('button',{name:'Start test'}).nth(1).click();await expect(page.getByRole('heading',{name:'Before you start'})).toBeVisible();await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to temporary private processing',{exact:false}).check();await page.getByRole('button',{name:'Continue',exact:true}).click()
  await expect(page.getByText('Question 1 of 20',{exact:true})).toBeVisible()

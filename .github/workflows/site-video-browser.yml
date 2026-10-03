@@ -2,6 +2,8 @@ name: Website video browser verification
 on:
   pull_request:
     paths:
+      - 'lib/app/session.js'
+      - 'app/api/app/**'
       - 'lib/site-videos/**'
       - 'lib/public-locales.ts'
       - 'lib/spanish-metadata.ts'
@@ -37,6 +39,8 @@ on:
   push:
     branches: ['codex/public-book-library']
     paths:
+      - 'lib/app/session.js'
+      - 'app/api/app/**'
       - 'lib/site-videos/**'
       - 'lib/public-locales.ts'
       - 'lib/spanish-metadata.ts'

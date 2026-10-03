@@ -82,15 +82,19 @@ async function handle(request, { params }) {
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}`
         : `${origin}/${locale}/app`
       if (url.searchParams.has('error') || !code || code.length > 4096)
-        return auth.clear(
+        return auth.apply(
           NextResponse.redirect(destination + (intentId ? '&auth=cancelled' : '?auth=cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
         )
-      const { error } = await auth.client.auth.exchangeCodeForSession(code)
+      const flowId = url.searchParams.get('sb_flow_id')
+      const { error } = await auth.client.auth.exchangeCodeForSession(
+        code,
+        flowId === null ? undefined : { flowId },
+      )
       if (error)
-        return auth.clear(
+        return auth.apply(
           NextResponse.redirect(destination + (intentId ? '&auth=failed' : '?auth=failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
