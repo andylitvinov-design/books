@@ -11,7 +11,8 @@ await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
 let page=await context.newPage()
-page.on('pageerror',error=>{errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)})
+const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
+page.on('pageerror',capturePageError)
 const checks=[]
 function passed(name){checks.push(name);console.log('PASS '+name)}
 async function api(path,body,ctx=context){
@@ -84,7 +85,7 @@ try {
  const exported=await api('export');assert.equal(exported.status,200);assert.ok(exported.data.runs.every(r=>r.accountId===first.accountId));assert.equal(exported.data.results.length,3);passed('own complete data export')
  await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
- await page.close();page=await context.newPage();page.on('pageerror',error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)})
+ await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
  await page.goto(origin+'/en/client');await expect(page.getByRole('heading',{name:'Your personal space'})).toBeVisible();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null);passed('Cabinet is Google-first and legacy private-link entry is secondary')
  await page.getByRole('button',{name:'Start test'}).nth(1).click();await expect(page.getByRole('heading',{name:'Before you start'})).toBeVisible();await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to temporary private processing',{exact:false}).check();await page.getByRole('button',{name:'Continue',exact:true}).click()
  await expect(page.getByText('Question 1 of 20',{exact:true})).toBeVisible()
