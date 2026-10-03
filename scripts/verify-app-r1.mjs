@@ -56,7 +56,7 @@ try {
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
  await page.screenshot({path:output+'/current-state-runner.png',fullPage:true})
  await answerCurrent(7);await saveAndExit()
- await page.reload();await enterTest();await expect(page.getByRole('heading',{name:'How much energy and inner support do you feel right now?'})).toBeVisible();passed('saved answers and progress resume after reload')
+ await page.reload();await ready();await enterTest();await expect(page.getByRole('heading',{name:'How much energy and inner support do you feel right now?'})).toBeVisible();passed('saved answers and progress resume after reload')
  for(const v of[3,6,8,5])await answerCurrent(v)
  await page.getByLabel('Anything else you want to note?').fill('Synthetic private context, not a real person.')
  await saveAndExit();await enterTest();await expect(page.getByLabel('Anything else you want to note?')).toHaveValue('Synthetic private context, not a real person.');passed('Save and exit flushes current optional text')
