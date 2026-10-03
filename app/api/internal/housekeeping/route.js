@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import { closeDatabase } from '@/lib/app/database'
 import { PRIVATE_HEADERS } from '@/lib/app/http'
+import { runHousekeepingCron } from '@/lib/app/housekeeping-cron'
 import {
   recordAppHousekeepingFailure,
   runAppHousekeeping,
-  runHousekeepingCron,
 } from '@/lib/app/maintenance'
 
 export const runtime = 'nodejs'

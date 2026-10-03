@@ -561,7 +561,7 @@ test('housekeeping records failed attempts and limits dependent guest-intent cle
   const expire = await adminClient()
   try {
     await expire.query(
-      "update app_private.guest_sessions set expires_at=now()-interval '1 second' where id=$1",
+      "update app_private.guest_sessions set created_at=now()-interval '8 days',expires_at=now()-interval '1 second' where id=$1",
       [credential.id],
     )
   } finally {

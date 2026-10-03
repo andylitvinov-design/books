@@ -2,16 +2,16 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import * as maintenance from '../lib/app/maintenance.js'
+import * as cron from '../lib/app/housekeeping-cron.js'
 
 const environment = { CRON_SECRET: 'synthetic-cron-secret' }
 const root = fileURLToPath(new URL('..', import.meta.url))
 
 test('housekeeping cron rejects unauthenticated requests before any work starts', async () => {
-  assert.equal(typeof maintenance.runHousekeepingCron, 'function')
+  assert.equal(typeof cron.runHousekeepingCron, 'function')
 
   let calls = 0
-  const rejected = await maintenance.runHousekeepingCron(
+  const rejected = await cron.runHousekeepingCron(
     new Request('https://holistichouse.vercel.app/api/internal/housekeeping'),
     {
       env: environment,
@@ -27,10 +27,10 @@ test('housekeeping cron rejects unauthenticated requests before any work starts'
 })
 
 test('housekeeping cron retries once and returns only a bounded receipt', async () => {
-  assert.equal(typeof maintenance.runHousekeepingCron, 'function')
+  assert.equal(typeof cron.runHousekeepingCron, 'function')
 
   let calls = 0
-  const result = await maintenance.runHousekeepingCron(
+  const result = await cron.runHousekeepingCron(
     new Request('https://holistichouse.vercel.app/api/internal/housekeeping', {
       headers: { authorization: 'Bearer synthetic-cron-secret' },
     }),
@@ -63,8 +63,8 @@ test('housekeeping cron retries once and returns only a bounded receipt', async 
 })
 
 test('housekeeping cron fails closed when its secret is not configured', async () => {
-  assert.equal(typeof maintenance.runHousekeepingCron, 'function')
-  const result = await maintenance.runHousekeepingCron(
+  assert.equal(typeof cron.runHousekeepingCron, 'function')
+  const result = await cron.runHousekeepingCron(
     new Request('https://holistichouse.vercel.app/api/internal/housekeeping', {
       headers: { authorization: 'Bearer synthetic-cron-secret' },
     }),
