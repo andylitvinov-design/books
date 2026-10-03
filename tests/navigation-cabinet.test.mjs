@@ -144,7 +144,7 @@ test('About exposes a consultation request form and a Google-first Cabinet with 
   assert.match(landing, /Continue with Google/)
   assert.match(landing, /Try without signing in/)
   assert.match(landing, /MINI_IPIP_20_EN_V1/)
-  assert.match(landing, /CURRENT_STATE_RU_V1/)
+  assert.match(landing, /CURRENT_STATE_RU_V2/)
   assert.match(landing, /cabinet-legacy-entry/)
   assert.match(landing, /ClientCabinetEntry/)
   assert.doesNotMatch(landing, /localStorage/)

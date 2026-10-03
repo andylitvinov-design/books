@@ -183,6 +183,36 @@
 .hh-heading {
   margin: 28px 0;
 }
+.hh-next-step {
+  margin: 24px 0 30px;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid #d7c1a8;
+  border-radius: 22px;
+  background: #f7f0e6;
+}
+.hh-next-step h2 {
+  margin-bottom: 8px;
+}
+.hh-next-step .hh-primary {
+  margin-top: 8px;
+}
+.hh-portrait-guide {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--hh-line);
+}
+.hh-portrait-guide ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.hh-portrait-guide li + li {
+  margin-top: 9px;
+}
+.hh-report-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
 .hh-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -502,6 +532,29 @@
 .hh-empty {
   max-width: 780px;
 }
+.hh-context-at-checkin {
+  margin: 20px 0;
+  padding: 18px;
+  border-left: 3px solid var(--hh-accent);
+  background: #f8f1e8;
+  border-radius: 0 14px 14px 0;
+}
+.hh-context-at-checkin h2 {
+  font-size: 21px;
+}
+.hh-context-at-checkin dl,
+.hh-context-at-checkin dd {
+  margin: 0;
+}
+.hh-context-at-checkin div + div {
+  margin-top: 12px;
+}
+.hh-context-at-checkin dt {
+  font-weight: 700;
+}
+.hh-context-at-checkin dd {
+  white-space: pre-wrap;
+}
 @media (max-width: 760px) {
   .hh-app {
     width: calc(100% - 28px);
@@ -509,7 +562,8 @@
     font-size: 16px;
   }
   .hh-grid,
-  .hh-services {
+  .hh-services,
+  .hh-report-list {
     grid-template-columns: 1fr;
   }
   .hh-metrics {
@@ -519,15 +573,17 @@
     grid-template-columns: 1fr;
   }
   .hh-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 3px;
     padding: 5px;
-    flex-wrap: wrap;
   }
   .hh-nav a {
     font-size: 13px;
     padding: 10px 4px;
     min-width: 0;
-    flex-basis: calc(50% - 3px);
+    min-height: 46px;
+    overflow-wrap: anywhere;
   }
   .hh-entry {
     margin: 24px auto;

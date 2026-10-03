@@ -23,11 +23,53 @@ import { APP_SERVICES } from '../data/app-services.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
   a = actor(),
-  b = actor(B, SB)
+  b = actor(B, SB),
+  v2Actor = actor('10000000-0000-4000-8000-000000000003', '20000000-0000-4000-8000-000000000003')
 const en = getAssessmentDefinition('hh-current-state', 'v1', 'en'),
+  enV2 = getAssessmentDefinition('hh-current-state', 'v2', 'en'),
   ru = getAssessmentDefinition('hh-current-state', 'v1', 'ru'),
   mini = getAssessmentDefinition('mini-ipip-20', 'v1', 'en')
 const answer = (def, value = 3) => Object.fromEntries(def.questions.map((q) => [q.id, value]))
+
+test('Current State v2 is seeded as a new immutable definition and retains encrypted optional context', async () => {
+  const db = await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)', [v2Actor.id, 'v2@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [
+      v2Actor.claims.session_id,
+      v2Actor.id,
+    ])
+  } finally {
+    await db.end()
+  }
+  await repo.ensureAccount(v2Actor)
+  await repo.onboarding(v2Actor, {
+    adult: true,
+    necessary: true,
+    marketing: false,
+    displayName: 'Synthetic v2',
+    uiLocale: 'en',
+    timezone: 'America/Toronto',
+    goal: 'explore',
+  })
+  const run = await start(v2Actor, enV2)
+  const saved = await repo.saveRun(v2Actor, run.id, {
+    answers: answer(enV2, 4),
+    context: { trigger: 'Synthetic trigger', desired_change: 'Synthetic desired change' },
+    progress: enV2.questions.length,
+    expectedRevision: run.revision,
+    operationId: randomUUID(),
+  })
+  assert.equal(saved.definitionVersion, 'v2')
+  assert.deepEqual(saved.context, { trigger: 'Synthetic trigger', desired_change: 'Synthetic desired change' })
+  const result = await repo.submitRun(v2Actor, run.id, { expectedRevision: saved.revision })
+  assert.equal(result.definitionVersion, 'v2')
+  assert.deepEqual(result.dimensions.map((dimension) => dimension.value), [4, 4, 4, 4, 4])
+  assert.deepEqual((await repo.getResult(v2Actor, result.id)).context, {
+    trigger: 'Synthetic trigger',
+    desired_change: 'Synthetic desired change',
+  })
+})
 const start = (who = a, def = en) =>
   repo.startRun(who, {
     definitionKey: def.key,

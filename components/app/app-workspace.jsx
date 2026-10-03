@@ -7,6 +7,7 @@ import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/de
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { APP_SERVICES } from '@/data/app-services'
 import { AssessmentReading } from '@/components/assessment-reading'
+import { getPortraitNextStep, reportTimeline } from '@/lib/app/cabinet-ux'
 
 export async function appFetch(path, body, method) {
   const response = await fetch(`/api/app/${path}`, {
@@ -193,6 +194,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     ['portrait', c.portrait, ''],
     ['tests', c.tests, '/tests'],
     ['history', c.history, '/history'],
+    ['reports', c.reports, '/reports'],
     ['consultations', c.consultations, '/consultations'],
   ]
   return (
@@ -273,7 +275,11 @@ export default function AppWorkspace({ locale, path = [] }) {
             <ResultPage key={recordId} id={recordId} locale={locale} data={data} />
           )}
           {page === 'reports' && (
-            <SavedReportPage key={recordId} id={recordId} locale={locale} reload={load} />
+            recordId ? (
+              <SavedReportPage key={recordId} id={recordId} locale={locale} reload={load} />
+            ) : (
+              <ReportsIndex data={data} locale={locale} />
+            )
           )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} />}
@@ -543,7 +549,7 @@ function TestCatalog({ data, locale, onStarted }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(null)
   const definitions = [
-    getAssessmentDefinition('hh-current-state', 'v1', locale),
+    getAssessmentDefinition('hh-current-state', 'v2', locale),
     getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
   ]
   async function start(def) {
@@ -775,7 +781,9 @@ function Runner({ id, locale, onExit, onComplete }) {
             <div className="hh-form">
               {[
                 ['current_focus', c.focus],
+                ['trigger', c.trigger],
                 ['what_helps', c.helps],
+                ['desired_change', c.desiredChange],
                 ['note', c.note],
               ].map(([key, label]) => (
                 <label key={key}>
@@ -890,7 +898,8 @@ function MetricCard({ dimension, locale, onSelect }) {
 function Portrait({ data, locale, onOpenHistory }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
-    dimensions = data.snapshot?.dimensions || []
+    dimensions = data.snapshot?.dimensions || [],
+    nextStep = getPortraitNextStep({ ...data, dimensions })
   return (
     <section>
       <div className="hh-heading">
@@ -902,6 +911,7 @@ function Portrait({ data, locale, onOpenHistory }) {
         <h1>{c.portrait}</h1>
         <p>{c.private}</p>
       </div>
+      <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
         <article className="hh-panel hh-empty">
           <h2>{c.empty}</h2>
@@ -909,6 +919,7 @@ function Portrait({ data, locale, onOpenHistory }) {
           <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
             {c.start}
           </Link>
+          <PortraitGuide locale={locale} />
         </article>
       ) : (
         <>
@@ -979,6 +990,40 @@ function Portrait({ data, locale, onOpenHistory }) {
     </section>
   )
 }
+function NextStep({ locale, step }) {
+  const c = COPY[locale]
+  const content = {
+    state: [c.nextStateTitle, c.nextStateText, c.start],
+    tendencies: [c.nextTendenciesTitle, c.nextTendenciesText, c.addTendencies],
+    history: [c.nextHistoryTitle, c.nextHistoryText, c.viewHistory],
+    report: [c.nextReportTitle, c.nextReportText, c.openReport],
+    consultation: [c.nextConsultationTitle, c.nextConsultationText, c.viewConsultations],
+  }[step.kind]
+  return (
+    <section className="hh-next-step" aria-labelledby="next-step-title">
+      <p className="hh-kicker">{c.nextStep}</p>
+      <h2 id="next-step-title">{content[0]}</h2>
+      <p>{content[1]}</p>
+      <Link className="hh-primary" href={`/${locale}/app${step.href}`} prefetch={false}>
+        {content[2]}
+      </Link>
+    </section>
+  )
+}
+function PortraitGuide({ locale }) {
+  const c = COPY[locale]
+  return (
+    <section className="hh-portrait-guide" aria-labelledby="portrait-guide-title">
+      <h2 id="portrait-guide-title">{c.guideTitle}</h2>
+      <ul>
+        <li><strong>{c.state}</strong> — {c.guideState}</li>
+        <li><strong>{c.personality}</strong> — {c.guideTendencies}</li>
+        <li><strong>{c.history}</strong> — {c.guideHistory}</li>
+        <li><strong>{c.reports}</strong> — {c.guideReports}</li>
+      </ul>
+    </section>
+  )
+}
 function ResultPage({ id, locale, data }) {
   const c = COPY[locale],
     [result, setResult] = useState(data.results.find((r) => r.id === id) || null),
@@ -1014,6 +1059,27 @@ function ResultPage({ id, locale, data }) {
       <h1>{result.definitionKey === 'hh-current-state' ? c.state : c.personality}</h1>
       <p>{dateLabel(result.measurementAt, locale)}</p>
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
+      {Object.entries(result.context || {}).length > 0 && (
+        <aside className="hh-context-at-checkin">
+          <h2>{c.contextAtCheckIn}</h2>
+          <dl>
+            {[
+              ['current_focus', c.focus],
+              ['trigger', c.trigger],
+              ['what_helps', c.helps],
+              ['desired_change', c.desiredChange],
+              ['note', c.note],
+            ].map(([key, label]) =>
+              result.context[key] ? (
+                <div key={key}>
+                  <dt>{label}</dt>
+                  <dd>{result.context[key]}</dd>
+                </div>
+              ) : null,
+            )}
+          </dl>
+        </aside>
+      )}
       <table className="hh-table">
         <caption>
           {c.source}: {result.definitionKey} {result.definitionVersion}
@@ -1113,6 +1179,39 @@ function SavedReportPage({ id, locale, reload }) {
   )
 }
 
+function ReportsIndex({ data, locale }) {
+  const c = COPY[locale]
+  const reports = reportTimeline(data.savedReports)
+  return (
+    <section>
+      <div className="hh-heading">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{c.reports}</h1>
+        <p>{c.reportsIntro}</p>
+      </div>
+      {!reports.length ? (
+        <article className="hh-panel hh-empty">
+          <h2>{c.reportsEmpty}</h2>
+          <p>{c.reportsEmptyText}</p>
+        </article>
+      ) : (
+        <div className="hh-report-list">
+          {reports.map((report) => (
+            <article className="hh-panel" key={report.id}>
+              <p className="hh-kicker">{c.reportFromAndy}</p>
+              <h2>{dateLabel(report.occurredAt, locale)}</h2>
+              <p className="hh-fine">{c.saved}: {dateLabel(report.savedAt, locale)}</p>
+              <Link className="hh-primary" href={`/${locale}/app/reports/${report.id}`} prefetch={false}>
+                {c.openReport}
+              </Link>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function HistoryView({ data, locale, reload }) {
   const c = COPY[locale],
     results = chronological(data.results),
@@ -1144,12 +1243,12 @@ function HistoryView({ data, locale, reload }) {
       title: r.definitionKey === 'hh-current-state' ? c.state : c.personality,
       href: `/${locale}/app/results/${r.id}`,
     })),
-    ...(data.savedReports || []).map((report) => ({
+    ...reportTimeline(data.savedReports).map((report) => ({
       id: report.id,
-      date: report.occurredOn + 'T12:00:00.000Z',
-      title: locale === 'ru' ? 'Полученный отчёт' : 'Received report',
+      date: report.occurredAt,
+      title: c.reportFromAndy,
       href: `/${locale}/app/reports/${report.id}`,
-      note: `${locale === 'ru' ? 'Сохранено' : 'Saved'}: ${dateLabel(report.savedAt, locale)}`,
+      note: `${c.saved}: ${dateLabel(report.savedAt, locale)}`,
     })),
     ...data.requests.map((r) => ({
       id: r.id,
@@ -1177,7 +1276,8 @@ function HistoryView({ data, locale, reload }) {
     <section>
       <div className="hh-heading">
         <h1>{c.history}</h1>
-        <p>{c.versionBoundary}</p>
+        <p>{c.historyIntro}</p>
+        <p className="hh-fine">{c.versionBoundary}</p>
       </div>
       {latest ? (
         <article className="hh-panel">
@@ -1243,8 +1343,8 @@ function HistoryView({ data, locale, reload }) {
           </div>
           {delta.length ? (
             <p className="hh-change">
-              {labelFor(dimension.key, locale)}: {delta.find((d) => d.key === dimension.key)?.prior}{' '}
-              → {dimension.value}{' '}
+              {c.since} {dateLabel(prior.measurementAt, locale)}: {labelFor(dimension.key, locale)}{' '}
+              {delta.find((d) => d.key === dimension.key)?.prior} → {dimension.value}{' '}
               <span>
                 ({delta.find((d) => d.key === dimension.key)?.delta > 0 ? '+' : ''}
                 {delta.find((d) => d.key === dimension.key)?.delta} {c.points})
@@ -1311,7 +1411,7 @@ function HistoryView({ data, locale, reload }) {
             {item.note && <p>{item.note}</p>}
             {item.event && (
               <details>
-                <summary>{locale === 'ru' ? 'Изменить событие' : 'Edit context'}</summary>
+                <summary>{c.editJournal}</summary>
                 <ContextForm locale={locale} reload={reload} event={item.event} />
                 <button onClick={() => deleteEvent(item.event)}>{c.delete}</button>
               </details>
@@ -1424,7 +1524,7 @@ function Consultations({ data, locale, reload }) {
     <section>
       <div className="hh-heading">
         <h1>{c.consultations}</h1>
-        <p>{c.requestNote}</p>
+        <p>{c.consultationsIntro}</p>
       </div>
       <div className="hh-grid hh-services">
         {APP_SERVICES.map((service) => (
@@ -1475,7 +1575,7 @@ function Consultations({ data, locale, reload }) {
             {['requested', 'contacted'].includes(request.status) && (
               <button onClick={() => updateRequest(request, 'cancel')}>{c.withdraw}</button>
             )}
-            <small className="hh-fine">ID: {request.id}</small>
+            <p className="hh-fine">{c.requestNote}</p>
           </article>
         ))}
       </section>
