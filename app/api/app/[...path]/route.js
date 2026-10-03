@@ -115,6 +115,7 @@ async function handle(request, { params }) {
     }
 
     if (joined === 'report-viewer/exchange' && method === 'POST') {
+      if (!config.reportsEnabled) throw new AppError('REPORT_UNAVAILABLE', 503)
       const body = await readBody(request)
       onlyKeys(body, ['selector', 'secret'])
       const store = getPrescriptionStore()
@@ -147,6 +148,7 @@ async function handle(request, { params }) {
       )
     }
     if (path[0] === 'report-viewer' && path.length === 2 && method === 'GET') {
+      if (!config.reportsEnabled) throw new AppError('REPORT_UNAVAILABLE', 503)
       const selector = path[1]
       const viewer = parseReportViewerCookie(request, selector)
       const store = getPrescriptionStore()
@@ -159,6 +161,7 @@ async function handle(request, { params }) {
       onlyKeys(body, ['sourceKind', 'sourceId', 'selector', 'operationId'])
       let intent
       if (body.sourceKind === 'guest_result') {
+        if (!config.guestEnabled) throw new AppError('GUEST_UNAVAILABLE', 503)
         const credential = parseGuestCookie(request.cookies.get(guestCookieName())?.value)
         if (!credential) throw new AppError('GUEST_SESSION_REQUIRED', 401)
         intent = await createGuestSaveIntent(config, credential, {
@@ -166,6 +169,7 @@ async function handle(request, { params }) {
           operationId: body.operationId,
         })
       } else if (body.sourceKind === 'delivered_report') {
+        if (!config.reportsEnabled) throw new AppError('REPORT_UNAVAILABLE', 503)
         if (typeof body.selector !== 'string') throw new AppError('REPORT_UNAVAILABLE', 404)
         const viewer = parseReportViewerCookie(request, body.selector)
         const store = getPrescriptionStore()
@@ -191,6 +195,7 @@ async function handle(request, { params }) {
 
     const guestRepo = createGuestRepository(config)
     if (joined === 'guest/session' && method === 'POST') {
+      if (!config.guestEnabled) throw new AppError('GUEST_UNAVAILABLE', 503)
       const body = await readBody(request)
       await consumeRate(
         config,
@@ -206,6 +211,7 @@ async function handle(request, { params }) {
       return setGuestCookie(json(session, 201), credential)
     }
     if (path[0] === 'guest') {
+      if (!config.guestEnabled) throw new AppError('GUEST_UNAVAILABLE', 503)
       const credential = parseGuestCookie(request.cookies.get(guestCookieName())?.value)
       if (!credential) throw new AppError('GUEST_SESSION_REQUIRED', 401)
       await consumeRate(

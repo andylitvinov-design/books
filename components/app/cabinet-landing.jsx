@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { CURRENT_STATE_EN_V1, CURRENT_STATE_RU_V1 } from '@/data/assessments/current-state-v1'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
@@ -163,6 +163,35 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const definition = useMemo(() => (active ? definitionFor(active, locale) : null), [active, locale])
   const question = definition?.questions[index]
   const selected = question ? answers[question.id] : undefined
+
+  useEffect(() => {
+    let live = true
+    guestFetch('guest/bootstrap')
+      .then((bootstrap) => {
+        if (!live) return
+        setSessionExpires(bootstrap.expiresAt)
+        const existing = bootstrap.runs.at(-1)
+        if (!existing) return
+        const id = existing.definitionKey === 'hh-current-state' ? 'state' : 'trait'
+        const def = definitionFor(id, locale)
+        if (existing.definitionId !== def.id) return
+        setActive(id)
+        setRun(existing)
+        setAnswers(existing.answers || {})
+        setContext(existing.context || { current_focus: '', what_helps: '', note: '' })
+        setIndex(
+          Math.min(
+            Math.max(0, Number(existing.progress || 0)),
+            Math.max(0, def.questions.length - 1),
+          ),
+        )
+        setPhase('questions')
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [locale])
 
   async function signIn(intentId = null) {
     if (!appAvailable) {

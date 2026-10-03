@@ -6,7 +6,6 @@ import { createGuestRepository } from '../lib/app/guest-repository.js'
 import { createGuestCredential } from '../lib/app/guest-session.js'
 import { createGuestSaveIntent, createReportSaveIntent } from '../lib/app/save-intents.js'
 import {
-  authorizeReportViewer,
   commitReportSaveIntent,
   exchangeReportViewer,
   issueReportGrant,
@@ -442,6 +441,102 @@ test('guest result save is explicit, idempotent and preserves an existing accoun
     0,
   )
 })
+test('report save race binds one account, stays idempotent and rotation does not free ownership', async () => {
+  const sourceAssessmentId = '30000000-0000-4000-8000-000000000011'
+  const sourceClientId = '30000000-0000-4000-8000-000000000012'
+  const reportRecord = {
+    id: sourceAssessmentId,
+    clientId: sourceClientId,
+    kind: 'research_result',
+    title: 'Synthetic delivered report',
+    occurredOn: '2026-09-20',
+    language: 'en',
+    sourceName: 'Synthetic source',
+    sourceVersion: 'v1',
+    description: 'Synthetic description',
+    originalResult: 'Synthetic result',
+    practitionerComment: 'Synthetic comment',
+    relatedDocumentIds: ['30000000-0000-4000-8000-000000000013'],
+    status: 'shared',
+    revision: 4,
+  }
+  const store = {
+    async findClientAssessment(id) {
+      return id === sourceAssessmentId ? { ...reportRecord } : undefined
+    },
+    async findClientById(id) {
+      return id === sourceClientId ? { id, status: 'active' } : undefined
+    },
+  }
+  const issued = await issueReportGrant(config, store, {
+    sourceAssessmentId,
+    locale: 'en',
+    saveAllowed: true,
+    expiresInDays: 30,
+  })
+  const one = await exchangeReportViewer(config, store, {
+    selector: issued.selector,
+    secret: issued.secret,
+  })
+  const two = await exchangeReportViewer(config, store, {
+    selector: issued.selector,
+    secret: issued.secret,
+  })
+  const intentA = await createReportSaveIntent(config, one.grant, randomUUID())
+  const intentB = await createReportSaveIntent(config, two.grant, randomUUID())
+  const admin = await adminClient()
+  let proofA, proofB
+  try {
+    const proofs = (
+      await admin.query(
+        'select id,browser_secret_hash from app_private.save_intents where id=any($1::uuid[])',
+        [[intentA.id, intentB.id]],
+      )
+    ).rows
+    proofA = proofs.find((row) => row.id === intentA.id).browser_secret_hash
+    proofB = proofs.find((row) => row.id === intentB.id).browser_secret_hash
+  } finally {
+    await admin.end()
+  }
+
+  const raced = await Promise.allSettled([
+    commitReportSaveIntent(config, store, a, intentA.id, proofA),
+    commitReportSaveIntent(config, store, b, intentB.id, proofB),
+  ])
+  assert.equal(raced.filter((item) => item.status === 'fulfilled').length, 1)
+  assert.equal(raced.filter((item) => item.status === 'rejected').length, 1)
+  assert.match(raced.find((item) => item.status === 'rejected').reason.message, /SAVE_UNAVAILABLE/)
+  const winnerIndex = raced.findIndex((item) => item.status === 'fulfilled')
+  const winner = winnerIndex === 0 ? a : b
+  const winnerIntent = winnerIndex === 0 ? intentA : intentB
+  const winnerProof = winnerIndex === 0 ? proofA : proofB
+  const saved = raced[winnerIndex].value
+  const replay = await commitReportSaveIntent(config, store, winner, winnerIntent.id, winnerProof)
+  assert.equal(replay.id, saved.id)
+  assert.equal(replay.report.title, 'Synthetic delivered report')
+  const opened = await readSavedReport(config, store, winner, saved.id)
+  assert.equal(opened.report.id, sourceAssessmentId)
+  assert.equal(opened.report.relatedDocumentIds, undefined)
+
+  const rotated = await rotateReportGrant(config, store, issued.id, 7)
+  assert.equal(rotated.boundAccountId, winner.id)
+  assert.notEqual(rotated.selector, issued.selector)
+  const adminAfter = await adminClient()
+  try {
+    assert.equal(
+      (
+        await adminAfter.query(
+          'select count(*)::int as count from app_private.report_viewer_sessions where grant_id=$1 and revoked_at is not null',
+          [issued.id],
+        )
+      ).rows[0].count,
+      2,
+    )
+  } finally {
+    await adminAfter.end()
+  }
+})
+
 test('deletion request disables access without pretending provider data was erased', async () => {
   const result = await repo.requestDeletion(b, { confirmation: 'DELETE' })
   assert.equal(result.status, 'requested')

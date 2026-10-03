@@ -44,6 +44,8 @@ jobs:
       HH_APP_TEST_RUNTIME: isolated
       HH_APP_ENABLED: 'true'
       HH_APP_SIGNUPS_ENABLED: 'true'
+      HH_APP_GUEST_ENABLED: 'true'
+      HH_APP_REPORTS_ENABLED: 'true'
       HH_APP_SUPABASE_URL: http://127.0.0.1:54329
       HH_APP_SUPABASE_PUBLISHABLE_KEY: synthetic-publishable-key
       HH_APP_DATABASE_URL: postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test
