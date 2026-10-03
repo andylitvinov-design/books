@@ -1,5 +1,4 @@
 "use client";
-import { LibraryBackLink } from '@/components/library-hub';
 
 import Image from "next/image";
 import Link from "next/link";
@@ -7,8 +6,10 @@ import { BookOpen, Search } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
+import { LibraryBackLink } from "@/components/library-hub";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { filterLibraryBooks, getPopulatedCategories } from "@/data/library";
+import { featuredBookUrls } from "@/data/featured-books";
+import { filterLibraryBooks } from "@/data/library";
 import type { Book } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
 import type { Locale } from "@/data/remedies";
@@ -19,34 +20,38 @@ type BookCatalogProps = {
   video?: ReactNode;
 };
 
-const allCategoriesValue = "all";
-
 const copy = {
   ru: {
     kicker: "Собрание текстов",
-    heading: "Библиотека",
-    lead: "Книги, собранные из опубликованных источников: от алхимических и даосских практик до традиции Майя.",
-    search: "Поиск по библиотеке",
+    heading: "Книги",
+    lead: "Все доступные книги и материалы для чтения собраны в одном каталоге — без разделения на подкатегории.",
+    search: "Поиск по каталогу",
     placeholder: "Найти книгу или главу",
-    filters: "Категории книг",
-    all: "Все книги",
     books: "Книги",
     chapters: "Разделов",
     read: "Читать",
+    authorEdition: "Авторское издание",
+    featuredTitle: "Алхимия души",
+    featuredDescription: "Полное авторское издание о внутреннем развитии, психогомеопатии и работе с состояниями.",
+    onlineEdition: "Онлайн-издание",
+    openEdition: "Открыть издание ↗",
     emptyTitle: "Ничего не найдено",
     emptyText: "Попробуйте другое название, тег или название главы.",
   },
   en: {
     kicker: "Published collection",
-    heading: "Books & Library",
-    lead: "Books and reference texts on alchemical and Daoist practices, the Maya tradition, and the project’s wider body of work.",
-    search: "Search the library",
+    heading: "Books",
+    lead: "All available books and reading materials are collected in one catalog, without separate subcategories.",
+    search: "Search the catalog",
     placeholder: "Find a book or chapter",
-    filters: "Book categories",
-    all: "All books",
     books: "Books",
     chapters: "Sections",
     read: "Read",
+    authorEdition: "Author edition",
+    featuredTitle: "The Power of Life",
+    featuredDescription: "The complete author edition on inner development, psychohomeopathy, and an integrative approach to human states.",
+    onlineEdition: "Online edition",
+    openEdition: "Open edition ↗",
     emptyTitle: "Nothing found",
     emptyText: "Try another title, tag, or chapter name.",
   },
@@ -55,18 +60,19 @@ const copy = {
 export function BookCatalog({ books, locale, video }: BookCatalogProps) {
   const text = copy[locale];
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState(allCategoriesValue);
   const deferredQuery = useDeferredValue(query);
-  const categories = useMemo(() => getPopulatedCategories(books), [books]);
   const visibleBooks = useMemo(
-    () => filterLibraryBooks(books, { category: activeCategory, query: deferredQuery }),
-    [activeCategory, books, deferredQuery],
+    () => filterLibraryBooks(books, { query: deferredQuery }),
+    [books, deferredQuery],
   );
-
-  function localizedCategory(category: string) {
-    const sample = books.find((book) => book.category === category);
-    return sample ? localizedBookText(sample, locale).category : category;
-  }
+  const normalizedQuery = deferredQuery.trim().toLocaleLowerCase();
+  const showFeatured = !normalizedQuery || [
+    text.featuredTitle,
+    text.featuredDescription,
+    text.authorEdition,
+    text.onlineEdition,
+  ].join(" ").toLocaleLowerCase().includes(normalizedQuery);
+  const hasResults = showFeatured || visibleBooks.length > 0;
 
   return (
     <main className="catalog-shell" lang={locale}>
@@ -92,30 +98,40 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
 
       {video}
 
-      <nav aria-label={text.filters} className="catalog-filters">
-        <button
-          aria-pressed={activeCategory === allCategoriesValue}
-          className="catalog-filter"
-          onClick={() => setActiveCategory(allCategoriesValue)}
-          type="button"
-        >
-          {text.all}
-        </button>
-        {categories.map((category) => (
-          <button
-            aria-pressed={activeCategory === category}
-            className="catalog-filter"
-            key={category}
-            onClick={() => setActiveCategory(category)}
-            type="button"
-          >
-            {localizedCategory(category)}
-          </button>
-        ))}
-      </nav>
-
-      {visibleBooks.length ? (
+      {hasResults ? (
         <section aria-label={text.books} className="catalog-grid">
+          {showFeatured ? (
+            <a
+              className="catalog-card"
+              href={featuredBookUrls[locale]}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={text.featuredTitle + ": " + text.openEdition}
+            >
+              <figure className="catalog-cover">
+                <Image
+                  alt={locale === "ru" ? "Обложка: " + text.featuredTitle : "Cover: " + text.featuredTitle}
+                  height={600}
+                  priority
+                  src="/images/holistic-house/books-library.webp"
+                  width={800}
+                />
+              </figure>
+              <div className="catalog-card-body">
+                <p className="catalog-card-series">{text.authorEdition}</p>
+                <h2>{text.featuredTitle}</h2>
+                <p className="catalog-card-description">{text.featuredDescription}</p>
+                <div className="catalog-card-footer">
+                  <span>
+                    <BookOpen aria-hidden="true" className="size-4" />
+                    {text.onlineEdition}
+                  </span>
+                  <span className="catalog-card-read">{text.openEdition}</span>
+                </div>
+              </div>
+            </a>
+          ) : null}
+
           {visibleBooks.map((book, index) => {
             const display = localizedBookText(book, locale);
             return (
@@ -124,7 +140,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
                   <Image
                     alt={locale === "ru" ? "Обложка: " + display.title : "Cover: " + display.title}
                     height={600}
-                    priority={index === 0}
+                    priority={!showFeatured && index === 0}
                     src={"/media/" + book.mediaSeries + "/" + book.cover}
                     width={800}
                   />
