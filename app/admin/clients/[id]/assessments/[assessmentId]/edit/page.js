@@ -14,7 +14,7 @@ import {
   rotateReportLinkAction,
   saveAssessmentAction,
 } from '../../actions'
-import { appEnabled, getAppConfig } from '@/lib/app/config'
+import { getAppConfig, reportDeliveryEnabled } from '@/lib/app/config'
 import { listReportGrants } from '@/lib/app/report-flow'
 import {
   ReportDeliveryCreate,
@@ -31,7 +31,7 @@ export default async function EditAssessment({ params }) {
   const locale = client.preferredLocale, t = assessmentText(locale)
   const docs = (await store.listClientDocuments(id)).filter(r => r.clientId === id && r.status === 'active').map(r => ({ id: r.id, label: `${r.dateIssued} · ${r.kind === 'payment' ? (locale === 'ru' ? 'Квитанция' : 'Receipt') : r.kind === 'report' ? (locale === 'ru' ? 'Отчёт' : 'Report') : (locale === 'ru' ? 'Рекомендация' : 'Recommendation')}` }))
   let grants = [], deliveryAvailable = false
-  if (record.status === 'shared' && appEnabled()) {
+  if (record.status === 'shared' && reportDeliveryEnabled()) {
     try {
       grants = await listReportGrants(getAppConfig(), assessmentId)
       deliveryAvailable = true

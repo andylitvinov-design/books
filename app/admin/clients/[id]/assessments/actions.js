@@ -89,7 +89,9 @@ async function reportGrantContext(clientId, assessmentId) {
   const record = await store.findClientAssessment(assessmentId)
   if (!record || record.clientId !== clientId || record.status !== 'shared')
     throw new AssessmentError('UNAVAILABLE')
-  return { store, client, record, config: getAppConfig() }
+  const config = getAppConfig()
+  if (!config.reportsEnabled) throw new AssessmentError('UNAVAILABLE')
+  return { store, client, record, config }
 }
 export async function issueReportLinkAction(clientId, assessmentId, _state, data) {
   let locale = 'en'

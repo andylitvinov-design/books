@@ -99,7 +99,15 @@ try {
           await chooseLanguage(language);
           await expect(page).toHaveURL(origin+'/'+language+'/client');
           await expect(page.locator('html')).toHaveAttribute('lang',language);
-          await expect(page.locator('.client-entry-form')).toBeVisible();
+          if (language === 'es') {
+            await expect(page.locator('.client-entry-form')).toBeVisible();
+          } else {
+            await expect(page.getByRole('button',{name:language==='ru'?'Продолжить с Google':'Continue with Google'})).toBeVisible();
+            const legacy = page.locator('.cabinet-legacy-entry');
+            await expect(legacy).not.toHaveAttribute('open','');
+            await legacy.locator('summary').click();
+            await expect(page.locator('.client-entry-form')).toBeVisible();
+          }
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Client-entry overflow: '+language);
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
