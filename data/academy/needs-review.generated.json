@@ -1,1 +1,7 @@
-[]
+[
+  {
+    "source": "andylitvinov-design/sales/reports/psitrends-query-inventory.json",
+    "reason": "Hidden/backup-only Joomla/Quix educational candidates still require exact source-ID reconciliation against the saved 265-candidate CMS inventory. All 42 currently enumerated live Academy program pages were fetched and migrated in this PR.",
+    "blocker": "full backup/source inventory is outside the books repository and was not available through the GitHub-only recovery path after the connected Mac went offline"
+  }
+]
