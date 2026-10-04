@@ -423,35 +423,45 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     <>
       <MoodCheckIn locale={locale} onQuickCheckin={() => begin('state')} disabled={busy} />
 
-      <section className="client-entry-card cabinet-google-card" aria-labelledby="cabinet-title">
-        <p className="about-kicker">{c.kicker}</p>
-        <h2 id="cabinet-title">{c.title}</h2>
-        <p>{c.intro}</p>
-        <button className="cabinet-google-button" type="button" onClick={() => signIn()} disabled={busy}>
-          {c.google}
+      <section className="cabinet-account-row" aria-labelledby="cabinet-title">
+        <div className="cabinet-account-copy">
+          <p className="about-kicker">{c.kicker}</p>
+          <h2 id="cabinet-title">{c.title}</h2>
+          <p>{c.intro}</p>
+          <small>{c.googleNote}</small>
+        </div>
+        <button className="cabinet-google-button cabinet-google-row-action" type="button" onClick={() => signIn()} disabled={busy}>
+          <span>{c.google}</span>
+          <span aria-hidden="true">›</span>
         </button>
-        <p className="cabinet-private-note">{c.googleNote}</p>
-        {error && phase === 'catalog' && <p className="client-entry-error" role="alert">{error}</p>}
+        {error && phase === 'catalog' && <p className="client-entry-error cabinet-account-error" role="alert">{error}</p>}
       </section>
 
-      <section className="client-entry-card cabinet-guest-tests" aria-labelledby="guest-tests-title">
-        <p className="about-kicker">{c.testsKicker}</p>
-        <h2 id="guest-tests-title">{c.tryTitle}</h2>
-        <p>{c.tryText}</p>
+      <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
+        <header className="library-heading cabinet-tests-heading">
+          <p className="about-kicker">{c.testsKicker}</p>
+          <h2 id="guest-tests-title">{c.tryTitle}</h2>
+          <p>{c.tryText}</p>
+        </header>
 
         {phase === 'catalog' && (
-          <div className="cabinet-test-grid">
-            <article className="cabinet-test-card">
-              <h3>{c.stateTitle}</h3>
-              <p>{c.stateText}</p>
-              <button type="button" disabled={busy} onClick={() => begin('state')}>{c.start}</button>
-            </article>
-            <article className="cabinet-test-card">
-              <h3>{c.traitTitle}</h3>
-              <p>{c.traitText}</p>
-              <p className="cabinet-test-note">{c.traitNotice}</p>
-              <button type="button" disabled={busy} onClick={() => begin('trait')}>{c.start}</button>
-            </article>
+          <div className="cabinet-test-list" aria-label={c.tryTitle}>
+            <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
+              <span className="cabinet-test-count" aria-hidden="true">5</span>
+              <span className="cabinet-test-row-copy">
+                <strong>{c.stateTitle}</strong>
+                <small>{c.stateText}</small>
+              </span>
+              <span className="cabinet-test-arrow" aria-hidden="true">›</span>
+            </button>
+            <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.traitTitle}`} disabled={busy} onClick={() => begin('trait')}>
+              <span className="cabinet-test-count" aria-hidden="true">20</span>
+              <span className="cabinet-test-row-copy">
+                <strong>{c.traitTitle}</strong>
+                <small>{c.traitText}</small>
+              </span>
+              <span className="cabinet-test-arrow" aria-hidden="true">›</span>
+            </button>
           </div>
         )}
 
