@@ -166,7 +166,7 @@ test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused i
   assert.match(mood, /aria-modal="true"/)
   assert.match(mood, /Do a quick check-in/)
   assert.doesNotMatch(mood, /localStorage|sessionStorage/)
-  assert.match(landing, /<MoodCheckIn locale=\\{locale\\} onQuickCheckin=\\{\\(\\) => begin\\('state'\\)\\}/)
+  assert.match(landing, /<MoodCheckIn locale=\\{locale\\} onQuickCheckin=\\{\\(\\) => begin\\('state'\\)\\} disabled=\\{busy\\}/)
   assert.match(workspace, /<MoodCheckIn/)
   assert.match(workspace, /window\\.location\\.assign\\('\/' \\+ locale \\+ '\/app\/tests'\\)/)
 })
