@@ -6,7 +6,8 @@ import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { APP_SERVICES } from '@/data/app-services'
-import { AssessmentReading } from '@/components/assessment-reading'\nimport { MoodCheckIn } from '@/components/app/mood-checkin'
+import { AssessmentReading } from '@/components/assessment-reading'
+import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 export async function appFetch(path, body, method) {
@@ -923,7 +924,12 @@ function Portrait({ data, locale, onOpenHistory }) {
         <h1>{c.portrait}</h1>
         <p>{c.private}</p>
       </div>
-      <MoodCheckIn\n        locale={locale}\n        compact\n        onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}\n      />\n      <NextStep locale={locale} step={nextStep} />
+      <MoodCheckIn
+        locale={locale}
+        compact
+        onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}
+      />
+      <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
         <article className="hh-panel hh-empty">
           <h2>{c.empty}</h2>
