@@ -38,8 +38,14 @@ test("Yggdrasil preserves the source module hierarchy", async () => {
   assert.match(text, /Taoism/i);
 });
 
-test("migration mapping keeps redirects disabled and separates Library and Services", async () => {
-  const urlMap = await readJson("data/academy/url-map.generated.json");
+test("migration mapping keeps redirects disabled, deduplicated, and separates Library and Services", async () => {
+  const [urlMap, preservation] = await Promise.all([
+    readJson("data/academy/url-map.generated.json"),
+    readJson("data/academy/preservation.generated.json"),
+  ]);
+  const backupRows = urlMap.filter((row) => String(row.classification || "").startsWith("BACKUP_"));
+  assert.equal(backupRows.length, preservation.length);
+  assert.equal(new Set(backupRows.map((row) => row.sourceUrl + "|" + row.classification)).size, backupRows.length);
   assert.ok(urlMap.some((row) => row.classification === "LIBRARY_MATERIAL"));
   assert.ok(urlMap.some((row) => row.classification === "SERVICES_MATERIAL"));
   assert.ok(urlMap.some((row) => row.classification === "REDIRECT_ONLY"));
