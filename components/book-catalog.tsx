@@ -12,11 +12,13 @@ import { featuredBookUrls } from "@/data/featured-books";
 import { filterLibraryBooks } from "@/data/library";
 import type { Book } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
+import { bookSectionLeads, bookSectionTitles, type BookSectionKey } from "@/data/library-sections";
 import type { Locale } from "@/data/remedies";
 
 type BookCatalogProps = {
   books: Book[];
   locale: Locale;
+  section?: BookSectionKey;
   video?: ReactNode;
 };
 
@@ -24,7 +26,7 @@ const copy = {
   ru: {
     kicker: "Собрание текстов",
     heading: "Книги",
-    lead: "Все доступные книги и материалы для чтения собраны в одном каталоге — без разделения на подкатегории.",
+    lead: "Все доступные книги и материалы для чтения собраны в одном каталоге.",
     search: "Поиск по каталогу",
     placeholder: "Найти книгу или главу",
     books: "Книги",
@@ -41,7 +43,7 @@ const copy = {
   en: {
     kicker: "Published collection",
     heading: "Books",
-    lead: "All available books and reading materials are collected in one catalog, without separate subcategories.",
+    lead: "All available books and reading materials are collected in one catalog.",
     search: "Search the catalog",
     placeholder: "Find a book or chapter",
     books: "Books",
@@ -57,31 +59,42 @@ const copy = {
   },
 } as const;
 
-export function BookCatalog({ books, locale, video }: BookCatalogProps) {
+export function BookCatalog({ books, locale, section, video }: BookCatalogProps) {
   const text = copy[locale];
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const visibleBooks = useMemo(
-    () => filterLibraryBooks(books, { query: deferredQuery }),
-    [books, deferredQuery],
+
+  const sectionBooks = useMemo(
+    () => section ? books.filter((book) => book.mediaSeries === section) : books,
+    [books, section],
   );
+  const visibleBooks = useMemo(
+    () => filterLibraryBooks(sectionBooks, { query: deferredQuery }),
+    [sectionBooks, deferredQuery],
+  );
+
   const normalizedQuery = deferredQuery.trim().toLocaleLowerCase();
-  const showFeatured = !normalizedQuery || [
+  const featuredMatches = [
     text.featuredTitle,
     text.featuredDescription,
     text.authorEdition,
     text.onlineEdition,
   ].join(" ").toLocaleLowerCase().includes(normalizedQuery);
+  const showFeatured = (!section || section === "alchemy") && (!normalizedQuery || featuredMatches);
   const hasResults = showFeatured || visibleBooks.length > 0;
+  const heading = section ? bookSectionTitles[locale][section] : text.heading;
+  const lead = section ? bookSectionLeads[locale][section] : text.lead;
 
   return (
     <main className="catalog-shell" lang={locale}>
-      <PublicSiteHeader locale={locale} /><LibraryBackLink locale={locale} />
+      <PublicSiteHeader locale={locale} />
+      <LibraryBackLink locale={locale} />
+
       <header className="catalog-header">
         <div className="catalog-header-copy">
           <p className="catalog-kicker">{text.kicker}</p>
-          <h1>{text.heading}</h1>
-          <p>{text.lead}</p>
+          <h1>{heading}</h1>
+          <p>{lead}</p>
         </div>
 
         <label className="catalog-search">
@@ -99,7 +112,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
       {video}
 
       {hasResults ? (
-        <section aria-label={text.books} className="catalog-grid">
+        <section aria-label={heading} className="catalog-grid">
           {showFeatured ? (
             <a
               className="catalog-card"

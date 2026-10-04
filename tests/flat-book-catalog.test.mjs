@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const source = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
 
-test('all book links funnel into one flat catalog without category filters', async () => {
+test('direct book links keep the flat catalog while Library can open a selected collection', async () => {
   const [catalog, hub, home, spanish] = await Promise.all([
     source('components/book-catalog.tsx'),
     source('components/library-hub.tsx'),
@@ -13,12 +13,14 @@ test('all book links funnel into one flat catalog without category filters', asy
   ]);
 
   assert.doesNotMatch(catalog, /getPopulatedCategories|activeCategory|catalog-filters/);
-  assert.match(catalog, /filterLibraryBooks\(books, \{ query: deferredQuery \}\)/);
+  assert.match(catalog, /section \? books\.filter\(\(book\) => book\.mediaSeries === section\) : books/);
+  assert.match(catalog, /filterLibraryBooks\(sectionBooks, \{ query: deferredQuery \}\)/);
   assert.match(catalog, /featuredBookUrls\[locale\]/);
 
   assert.doesNotMatch(hub, /featuredBookUrls|library-edition/);
-  assert.match(hub, /All available books and reading materials are collected in one catalog/);
-  assert.match(hub, /Все доступные книги и материалы для чтения собраны в одном каталоге/);
+  assert.match(hub, /section=\$\{section\}/);
+  assert.match(hub, /library-index-card/);
+  assert.match(hub, /view=videos/);
 
   assert.match(home, /bookUrl: "\/en\/books"/);
   assert.match(home, /bookUrl: "\/ru\/books"/);

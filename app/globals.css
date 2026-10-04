@@ -625,19 +625,20 @@
   .catalog-filter { @apply rounded-full px-4 py-2 text-sm text-[#6e5746] transition hover:bg-[#e6d8c5] hover:text-[#3d2c21]; }
   .catalog-filter[aria-pressed="true"] { @apply bg-[#4f3829] text-[#fffaf2]; }
 
-  .catalog-grid { @apply mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4; }
+  .catalog-grid { @apply mt-6 grid grid-cols-1 gap-3 lg:grid-cols-2; }
 
   .catalog-card {
-    @apply flex min-w-0 flex-col overflow-hidden border border-[#d5c5b0] bg-[#fffaf2] text-inherit shadow-[0_12px_28px_rgba(81,57,36,0.08)] transition duration-200 hover:-translate-y-1 hover:border-[#a77b5d] hover:shadow-[0_18px_36px_rgba(81,57,36,0.15)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#714d37];
+    @apply flex min-h-[126px] min-w-0 flex-row overflow-hidden border border-[#d5c5b0] bg-[#fffaf2] text-inherit shadow-[0_8px_20px_rgba(81,57,36,0.07)] transition duration-200 hover:-translate-y-0.5 hover:border-[#a77b5d] hover:shadow-[0_12px_26px_rgba(81,57,36,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#714d37];
   }
 
-  .catalog-cover { @apply aspect-[4/3] overflow-hidden border-b border-[#d5c5b0] bg-[#ded1bf]; }
+  .catalog-cover { @apply w-[132px] shrink-0 overflow-hidden border-r border-[#d5c5b0] bg-[#ded1bf]; }
   .catalog-cover img { @apply block size-full object-cover transition duration-500; }
   .catalog-card:hover .catalog-cover img { @apply scale-105; }
-  .catalog-card-body { @apply flex flex-1 flex-col p-5; }
-  .catalog-card h2 { @apply mt-2 font-serif text-[25px] leading-[1.12] text-[#2c2119]; }
-  .catalog-card-description { @apply mt-4 line-clamp-3 text-[15px] leading-6 text-[#5e4e40]; }
-  .catalog-card-footer { @apply mt-6 flex items-center justify-between gap-3 border-t border-[#e0d4c3] pt-4 text-sm text-[#715e4d]; }
+  .catalog-card-body { @apply flex min-w-0 flex-1 flex-col justify-center p-4; }
+  .catalog-card h2,
+  .catalog-card h3 { @apply mt-1 font-serif text-[20px] leading-[1.15] text-[#2c2119]; }
+  .catalog-card-description { @apply mt-2 line-clamp-2 text-[13px] leading-5 text-[#5e4e40]; }
+  .catalog-card-footer { @apply mt-3 flex items-center justify-between gap-3 border-t border-[#e0d4c3] pt-2 text-xs text-[#715e4d]; }
   .catalog-card-footer > span:first-child { @apply inline-flex items-center gap-2; }
   .catalog-card-read { @apply font-semibold text-[#70442d] underline decoration-[#bf9473] underline-offset-4; }
 
@@ -2606,32 +2607,32 @@
   text-underline-offset: 3px;
 }
 .remedies-book-grid {
-  grid-template-columns: repeat(3, minmax(0,1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
 }
 .remedies-book-card h3 {
-  margin-top: 8px;
+  margin-top: 4px;
   font-family: var(--font-serif);
-  font-size: 21px;
+  font-size: 20px;
   line-height: 1.15;
   color: #2c2119;
 }
-.remedies-book-card .catalog-card-body { padding: 15px; }
+.remedies-book-card .catalog-card-body { padding: 14px; }
 .remedies-book-card .catalog-card-description {
-  margin-top: 9px;
+  margin-top: 7px;
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 .remedies-book-card .catalog-card-footer {
-  margin-top: 12px;
-  padding-top: 10px;
+  margin-top: 9px;
+  padding-top: 8px;
   font-size: 10px;
 }
 .remedies-book-language-note {
-  margin-top: 8px;
+  margin-top: 6px;
   color: #8a796b;
   font-size: 9px;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 .remedies-landing-disclaimer { margin-top: 28px; }
 
@@ -2744,9 +2745,78 @@
 }
 
 @media (max-width: 900px) {
-  .remedies-book-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .remedies-book-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 767px) {
+  .catalog-shell {
+    padding: 10px 10px 88px;
+  }
+  .catalog-header {
+    gap: 14px;
+    padding-block: 18px;
+  }
+  .catalog-header h1 {
+    font-size: 38px;
+  }
+  .catalog-header-copy > p:last-child {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .catalog-search {
+    padding-block: 9px;
+  }
+  .catalog-grid {
+    margin-top: 16px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .catalog-card,
+  .remedies-book-card {
+    min-height: 74px;
+    height: 74px;
+    flex-direction: row;
+  }
+  .catalog-cover {
+    width: 78px;
+    min-width: 78px;
+    height: 72px;
+    border-right: 1px solid #d5c5b0;
+    border-bottom: 0;
+  }
+  .catalog-card-body,
+  .remedies-book-card .catalog-card-body {
+    min-width: 0;
+    overflow: hidden;
+    justify-content: center;
+    padding: 7px 10px;
+  }
+  .catalog-card-series {
+    overflow: hidden;
+    font-size: 9px;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .catalog-card h2,
+  .catalog-card h3,
+  .remedies-book-card h3 {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-top: 2px;
+    width: 100%;
+    font-size: 15px;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .catalog-card-description,
+  .catalog-card-footer,
+  .remedies-book-language-note {
+    display: none;
+  }
   .public-site-header {
     position: relative;
     align-items: flex-start;
@@ -2788,19 +2858,15 @@
     gap: 10px;
   }
   .remedies-book-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    grid-template-columns: 1fr;
+    gap: 8px;
     margin-top: 18px;
   }
-  .remedies-book-card h3 { font-size: 17px; }
-  .remedies-book-card .catalog-card-body { padding: 11px; }
-  .remedies-book-card .catalog-card-description {
-    display: none;
-  }
+  .remedies-book-card h3 { font-size: 15px; }
+  .remedies-book-card .catalog-card-body { padding: 7px 10px; }
+  .remedies-book-card .catalog-card-description,
   .remedies-book-card .catalog-card-footer {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
+    display: none;
   }
 
   .services-shell { padding: 0 16px 56px; }
