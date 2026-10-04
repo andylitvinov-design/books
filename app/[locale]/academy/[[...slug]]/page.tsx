@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { AcademyDirection, AcademyHub, AcademyPrefixDirectory } from "@/components/academy-hub";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
-import { academyCopy, academyDirections, findAcademyRecord, isPublicLocale, type AcademyDirectionId, type AcademyView } from "@/data/academy/catalog";
+import { academyCopy, academyDirections, academyDisplayTitle, findAcademyRecord, isPublicLocale, type AcademyDirectionId, type AcademyView } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import type { PublicLocale } from "@/lib/public-locales";
 
@@ -36,7 +36,7 @@ function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (slug.length === 1 && prefixCopy[slug[0]]) return prefixCopy[slug[0]][locale].title;
   if (slug.length === 1 && slug[0] === "videos") return academyCopy[locale].videoCollections;
   const record = findAcademyRecord(routeKey(slug), locale);
-  if (record) return record.title;
+  if (record) return academyDisplayTitle(record, locale);
   if (routeKey(slug) === "history/faculties") return locale === "ru" ? "Исторические факультеты и традиции" : locale === "es" ? "Facultades y tradiciones históricas" : "Historical faculties & traditions";
   return academyCopy[locale].title;
 }
@@ -65,7 +65,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   if (slug.length === 1 && slug[0] === "videos") return <AcademyHub locale={locale} view="videos" />;
   if (slug.length === 1 && directionPath[slug[0]]) return <AcademyDirection locale={locale} direction={directionPath[slug[0]]} />;
   if (slug.length === 1 && prefixCopy[slug[0]]) { const copy = prefixCopy[slug[0]][locale]; return <AcademyPrefixDirectory locale={locale} prefix={slug[0]} title={copy.title} description={copy.description} />; }
-  if (key === "history/faculties") { const history = findAcademyRecord("history", locale); if (!history) notFound(); return <AcademyRecordPage locale={locale} record={makeFacultiesRecord(history)} />; }
+  if (key === "history/faculties") { const history = findAcademyRecord("history", locale); if (!history) notFound(); return <AcademyRecordPage locale={locale} record={makeFacultiesRecord(history, locale)} />; }
   const record = findAcademyRecord(key, locale);
   if (!record) notFound();
   return <AcademyRecordPage locale={locale} record={record} />;

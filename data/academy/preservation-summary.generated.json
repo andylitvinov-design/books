@@ -4,14 +4,14 @@
   "classifiedSourceIdCount": 117,
   "unclassifiedSourceIdCount": 0,
   "classificationCounts": {
-    "Academy": 24,
+    "Academy": 26,
     "Library": 3,
     "Services": 4,
-    "Archive": 15,
-    "Duplicate": 30,
+    "Archive": 16,
+    "Duplicate": 31,
     "Private Preserve": 0,
-    "System Ignore": 3,
-    "Needs Review": 6
+    "System Ignore": 5,
+    "Needs Review": 0
   },
   "privateDataRead": false,
   "mediaHashAvailability": "No standalone backup media SHA-256 values were present in the anonymous inventory; source document hashes are retained instead.",

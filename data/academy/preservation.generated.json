@@ -22,11 +22,11 @@
     "sourceLocale": "en",
     "sourceStatus": 200,
     "sourceDecision": "REVIEW_NEEDED",
-    "preservationClassification": "Needs Review",
-    "logicalId": null,
-    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=10&option=com_quix&view=page",
-    "canonicalAcademyUrl": null,
-    "publication": "not_published_from_backup"
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/free-energy-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/reiki",
+    "canonicalAcademyUrl": "/en/academy/reiki/free-energy-healing",
+    "publication": "represented_by_existing_record"
   },
   {
     "provenanceKey": "f9985bcadc3886d8db83",
@@ -51,11 +51,11 @@
     "sourceLocale": "en",
     "sourceStatus": 200,
     "sourceDecision": "REVIEW_NEEDED",
-    "preservationClassification": "Needs Review",
-    "logicalId": null,
-    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=12&option=com_quix&view=page",
-    "canonicalAcademyUrl": null,
-    "publication": "not_published_from_backup"
+    "preservationClassification": "Academy",
+    "logicalId": "path/magister-archetypal-therapies",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/magister-sham-trpi",
+    "canonicalAcademyUrl": "/en/academy/path/magister-archetypal-therapies",
+    "publication": "represented_by_existing_record"
   },
   {
     "provenanceKey": "4064f06fc882872119cd",
@@ -80,10 +80,10 @@
     "sourceLocale": "en",
     "sourceStatus": 200,
     "sourceDecision": "REVIEW_NEEDED",
-    "preservationClassification": "Needs Review",
+    "preservationClassification": "Archive",
     "logicalId": null,
     "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=13&option=com_quix&view=page",
-    "canonicalAcademyUrl": null,
+    "canonicalAcademyUrl": "/en/academy/archive",
     "publication": "not_published_from_backup"
   },
   {
@@ -669,7 +669,7 @@
     "sourceLocale": "en",
     "sourceStatus": 200,
     "sourceDecision": "REVIEW_NEEDED",
-    "preservationClassification": "Needs Review",
+    "preservationClassification": "System Ignore",
     "logicalId": null,
     "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=81&option=com_quix&view=page",
     "canonicalAcademyUrl": null,
@@ -1928,7 +1928,7 @@
     "sourceLocale": "en",
     "sourceStatus": 200,
     "sourceDecision": "REVIEW_NEEDED",
-    "preservationClassification": "Needs Review",
+    "preservationClassification": "System Ignore",
     "logicalId": null,
     "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=273&id=81&option=com_quix&view=page",
     "canonicalAcademyUrl": null,
@@ -1982,11 +1982,11 @@
     "sourceLocale": "ru",
     "sourceStatus": 200,
     "sourceDecision": "REVIEW_NEEDED",
-    "preservationClassification": "Needs Review",
-    "logicalId": null,
-    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=278&id=87&lang=ru&option=com_quix&view=page",
-    "canonicalAcademyUrl": null,
-    "publication": "not_published_from_backup"
+    "preservationClassification": "Duplicate",
+    "logicalId": "history",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/about-us-ru",
+    "canonicalAcademyUrl": "/ru/academy/history",
+    "publication": "represented_by_existing_record"
   },
   {
     "provenanceKey": "f33bb804fc8c73b76d0d",

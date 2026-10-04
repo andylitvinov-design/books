@@ -38,8 +38,14 @@ test("Yggdrasil preserves the source module hierarchy", async () => {
   assert.match(text, /Taoism/i);
 });
 
-test("migration mapping keeps redirects disabled and separates Library and Services", async () => {
-  const urlMap = await readJson("data/academy/url-map.generated.json");
+test("migration mapping keeps redirects disabled, deduplicated, and separates Library and Services", async () => {
+  const [urlMap, preservation] = await Promise.all([
+    readJson("data/academy/url-map.generated.json"),
+    readJson("data/academy/preservation.generated.json"),
+  ]);
+  const backupRows = urlMap.filter((row) => String(row.classification || "").startsWith("BACKUP_"));
+  assert.equal(backupRows.length, preservation.length);
+  assert.equal(new Set(backupRows.map((row) => row.sourceUrl + "|" + row.classification)).size, backupRows.length);
   assert.ok(urlMap.some((row) => row.classification === "LIBRARY_MATERIAL"));
   assert.ok(urlMap.some((row) => row.classification === "SERVICES_MATERIAL"));
   assert.ok(urlMap.some((row) => row.classification === "REDIRECT_ONLY"));
@@ -59,6 +65,8 @@ test("backup-only educational sources are fully classified and reconciled withou
   assert.equal(summary.backupEvidenceRecordCount, preservation.length);
   assert.equal(summary.backupSourceIdCount, summary.classifiedSourceIdCount);
   assert.equal(summary.unclassifiedSourceIdCount, 0);
+  assert.equal(summary.classificationCounts["Needs Review"], 0);
+  assert.equal(needsReview.length, 0);
   assert.equal(summary.privateDataRead, false);
   assert.ok(summary.backupSourceIdCount >= 100);
   assert.match(summary.sourceEvidence.inventorySha256, /^[a-f0-9]{64}$/);
@@ -104,4 +112,24 @@ test("Academy mobile UI reuses compact Library rows and poster-first video", asy
   assert.match(academyCss, /@media \(max-width: 600px\)/);
   assert.match(video, /useState\(false\)/);
   assert.match(video, /youtube-nocookie\.com\/embed/);
+});
+
+
+test("Academy program titles are localized without rewriting source records", async () => {
+  const [catalog, hub, recordPage, routePage] = await Promise.all([
+    readFile("data/academy/catalog.ts", "utf8"),
+    readFile("components/academy-hub.tsx", "utf8"),
+    readFile("components/academy-record-page.tsx", "utf8"),
+    readFile("app/[locale]/academy/[[...slug]]/page.tsx", "utf8"),
+  ]);
+  assert.match(catalog, /academyProgramTitles/);
+  assert.match(catalog, /"reiki\/free-energy-healing".*Введение в энергетическую практику/);
+  assert.match(catalog, /"videos\/greek-mysteries-dionysus".*Misterios griegos — Dioniso/);
+  assert.match(catalog, /academyDisplayTitle/);
+  assert.match(hub, /academyDisplayTitle\(record, locale\)/);
+  assert.match(recordPage, /academyDisplayTitle\(record, locale\)/);
+  assert.match(recordPage, /academyPublicBlocks\(record\)/);
+  assert.match(catalog, /free online course\|limited time\|register/);
+  assert.match(routePage, /academyDisplayTitle\(record, locale\)/);
+  assert.match(recordPage, /makeFacultiesRecord\(record: AcademySourceRecord, locale: PublicLocale\)/);
 });
