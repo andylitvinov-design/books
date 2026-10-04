@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { AcademyBackLink } from "@/components/academy-hub";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { academyCopy, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
+import { academyCopy, academyDisplayTitle, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 
 function renderBlocks(blocks: AcademyBlock[]) {
