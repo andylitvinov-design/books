@@ -170,3 +170,21 @@ test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused i
   assert.ok(workspace.includes('<MoodCheckIn'))
   assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/tests')"))
 })
+
+
+test('Cabinet entry mirrors Academy hierarchy without changing the mood flow', async () => {
+  const [mood, landing, ia] = await Promise.all([
+    readFile('components/app/mood-checkin.jsx', 'utf8'),
+    readFile('components/app/cabinet-landing.jsx', 'utf8'),
+    readFile('app/ia-v2.css', 'utf8'),
+  ])
+  assert.ok(mood.includes('homeopathy-kicker hh-mood-kicker'))
+  assert.ok(landing.includes('<h2 id="cabinet-title">{c.title}</h2>'))
+  assert.ok(landing.includes("testsKicker: 'Tests'"))
+  assert.ok(landing.includes("testsKicker: 'Тесты'"))
+  assert.ok(ia.includes('Cabinet v2.3'))
+  assert.ok(ia.includes('.cabinet-landing-shell .hh-mood-checkin'))
+  assert.ok(ia.includes('.cabinet-landing-shell .cabinet-google-card'))
+  assert.ok(ia.includes('.cabinet-landing-shell .cabinet-guest-tests'))
+  assert.ok(ia.includes('max-width: 1040px'))
+})
