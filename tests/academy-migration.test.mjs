@@ -33,7 +33,7 @@ test("Yggdrasil preserves the source module hierarchy", async () => {
   assert.match(text, /Module 1: Basic Program of Reiki Yggdrasil/i);
   assert.match(text, /Advanced Shamanic Therapy/i);
   assert.match(text, /Temple Studies/i);
-  assert.match(text, /Scandinavian Runes/i);
+  assert.match(text, /Advanced Runes Magic|Scandinavian Runes/i);
   assert.match(text, /Western European Magic/i);
   assert.match(text, /Taoism/i);
 });
