@@ -11,6 +11,7 @@ import "./site-videos.css";
 import "./site-video-admin.css";
 import "./reader-responsive.css";
 import "./ia-v2.css";
+import "./academy.css";
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
