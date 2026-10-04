@@ -6,6 +6,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import {
   academyCopy,
   academyDirections,
+  academyDisplayTitle,
   recordsForDirection,
   videoRecords,
   type AcademyDirectionId,
@@ -51,7 +52,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   const items: AcademyItem[] = view === "videos"
     ? videoRecords(locale).map((record) => ({
         key: record.logicalId,
-        title: record.title,
+        title: academyDisplayTitle(record, locale),
         href: "/" + locale + "/academy/" + record.routeKey,
         image: recordImage(record),
         meta: statusLabel(record, locale),
@@ -81,7 +82,7 @@ export function AcademyDirection({ locale, direction }: { locale: PublicLocale; 
   if (!info) return null;
   const items = recordsForDirection(direction, locale).map((record) => ({
     key: record.logicalId,
-    title: record.title,
+    title: academyDisplayTitle(record, locale),
     href: "/" + locale + "/academy/" + record.routeKey,
     image: recordImage(record),
     meta: statusLabel(record, locale),
@@ -105,7 +106,7 @@ export function AcademyPrefixDirectory({ locale, prefix, title, description }: {
   ).values()];
   const items = records.map((record) => ({
     key: record.logicalId,
-    title: record.title,
+    title: academyDisplayTitle(record, locale),
     href: "/" + locale + "/academy/" + record.routeKey,
     image: recordImage(record),
     meta: statusLabel(record, locale),
