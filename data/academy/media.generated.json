@@ -2530,5 +2530,407 @@
     "mediaUrl": "https://psitrends.com/images/photo_2023-06-05_01-38-21.jpg",
     "logicalId": "archive/events",
     "status": "preserve_reference"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/XvMdX5czoOc",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/hjmVJrgEsZ8",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/u275Zz78vhs",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/wN_SNwZ1Epo",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/3Apc8P1Yudc",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/3msoUyWr6bY",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/0G_xvbuClII",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/Hk9XpeUI0BQ",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/p29qu8-dtZk",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "mediaUrl": "https://youtube.com/embed/Nx8DwWk27VY",
+    "logicalId": "reiki/master-shamanic-healing",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/XvMdX5czoOc",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/hjmVJrgEsZ8",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/u275Zz78vhs",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/3msoUyWr6bY",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/0G_xvbuClII",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/Hk9XpeUI0BQ",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/p29qu8-dtZk",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/IVvfYVz9jEE",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/fq0b9PM-EVY",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/IXBhlOSkebU",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/Nx8DwWk27VY",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/U9j5TfVuAyg",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/pViMuG9fgEk",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "mediaUrl": "https://youtube.com/embed/VCKxqCw9Bo0",
+    "logicalId": "reiki/yggdrasil/faq",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/tantra",
+    "mediaUrl": "https://youtube.com/embed/qM_nFUkYJ1k",
+    "logicalId": "reiki/tantra-reiki",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/Dk0LBmOivQo",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/1DQF5C3fX9M",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/OrdMvKn2Zg8",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/aUJde6A-9p0",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/EDTRXqmIu7E",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/YNEfA9ukv1A",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/G4Q-Wn1jUck",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/MABlg7Bkasc",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/tmUqLa_Lj3E",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/kQyEsipnzEE",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/MIVLm1GUTtM",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/LhY_5aUYI2s",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/ttQxUHopaUM",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/VABgpmn4ZYA",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/muOnIHllI7E",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "mediaUrl": "https://youtube.com/embed/i5tCw2ZsntI",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/YNEfA9ukv1A",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/G4Q-Wn1jUck",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/MABlg7Bkasc",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/tmUqLa_Lj3E",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/kQyEsipnzEE",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/MIVLm1GUTtM",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/LhY_5aUYI2s",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/ttQxUHopaUM",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/VABgpmn4ZYA",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/muOnIHllI7E",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "mediaUrl": "https://youtube.com/embed/i5tCw2ZsntI",
+    "logicalId": "mysteries/guidance-of-gods",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/artifacts",
+    "mediaUrl": "https://youtube.com/embed/Dk0LBmOivQo",
+    "logicalId": "symbolic/artifacts-talismans",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/artifacts",
+    "mediaUrl": "https://youtube.com/embed/1DQF5C3fX9M",
+    "logicalId": "symbolic/artifacts-talismans",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/artifacts",
+    "mediaUrl": "https://youtube.com/embed/OrdMvKn2Zg8",
+    "logicalId": "symbolic/artifacts-talismans",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/artifacts",
+    "mediaUrl": "https://youtube.com/embed/aUJde6A-9p0",
+    "logicalId": "symbolic/artifacts-talismans",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/artifacts",
+    "mediaUrl": "https://youtube.com/embed/fE6sD1zr1Js",
+    "logicalId": "symbolic/artifacts-talismans",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-program-2",
+    "mediaUrl": "https://youtube.com/embed/jdNDrxx4oEM",
+    "logicalId": "archive/constellations-of-love",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-program-2",
+    "mediaUrl": "https://youtube.com/embed/lrS2kC5z2h4",
+    "logicalId": "archive/constellations-of-love",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-program-2",
+    "mediaUrl": "https://youtube.com/embed/dZ8SkgpvqM4",
+    "logicalId": "archive/constellations-of-love",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-program-2",
+    "mediaUrl": "https://youtube.com/embed/hYwRNMxIMjc",
+    "logicalId": "archive/constellations-of-love",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-program-2",
+    "mediaUrl": "https://youtube.com/embed/rV7stNJJdCM",
+    "logicalId": "archive/constellations-of-love",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-program-2",
+    "mediaUrl": "https://youtube.com/embed/YGawtSaydpk",
+    "logicalId": "archive/constellations-of-love",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-details",
+    "mediaUrl": "https://youtube.com/embed/Dk0LBmOivQo",
+    "logicalId": "archive/festival-details",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
+    "mediaUrl": "https://youtube.com/embed/hVJr0YfLLaQ",
+    "logicalId": "history/student-experiences",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
+    "mediaUrl": "https://youtube.com/embed/dArVIoSKXIQ",
+    "logicalId": "history/student-experiences",
+    "status": "verified_legacy_public_embed"
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
+    "mediaUrl": "https://youtube.com/embed/IYXE7Lw_Bq4",
+    "logicalId": "history/student-experiences",
+    "status": "verified_legacy_public_embed"
   }
 ]
