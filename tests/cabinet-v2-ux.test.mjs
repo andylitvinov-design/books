@@ -148,3 +148,25 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /\['desired_change', c\.desiredChange\]/)
   assert.match(catalog, /CURRENT_STATE_EN_V2/)
 })
+
+
+test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused in landing and portrait', async () => {
+  const [mood, landing, workspace] = await Promise.all([
+    readFile('components/app/mood-checkin.jsx', 'utf8'),
+    readFile('components/app/cabinet-landing.jsx', 'utf8'),
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+  ])
+  const sad = mood.indexOf("id: 'sad'")
+  const neutral = mood.indexOf("id: 'neutral'")
+  const happy = mood.indexOf("id: 'happy'")
+  assert.ok(sad >= 0 && sad < neutral && neutral < happy)
+  assert.match(mood, /Welcome Home/)
+  assert.match(mood, /How are you feeling today\\?/)
+  assert.match(mood, /role="dialog"/)
+  assert.match(mood, /aria-modal="true"/)
+  assert.match(mood, /Do a quick check-in/)
+  assert.doesNotMatch(mood, /localStorage|sessionStorage/)
+  assert.match(landing, /<MoodCheckIn locale=\\{locale\\} onQuickCheckin=\\{\\(\\) => begin\\('state'\\)\\}/)
+  assert.match(workspace, /<MoodCheckIn/)
+  assert.match(workspace, /window\\.location\\.assign\\('\/' \\+ locale \\+ '\/app\/tests'\\)/)
+})
