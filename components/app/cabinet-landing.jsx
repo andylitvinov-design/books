@@ -446,7 +446,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
         {phase === 'catalog' && (
           <div className="cabinet-test-list" aria-label={c.tryTitle}>
-            <button className="cabinet-test-row" type="button" disabled={busy} onClick={() => begin('state')}>
+            <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
               <span className="cabinet-test-count" aria-hidden="true">5</span>
               <span className="cabinet-test-row-copy">
                 <strong>{c.stateTitle}</strong>
@@ -454,7 +454,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </span>
               <span className="cabinet-test-arrow" aria-hidden="true">›</span>
             </button>
-            <button className="cabinet-test-row" type="button" disabled={busy} onClick={() => begin('trait')}>
+            <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.traitTitle}`} disabled={busy} onClick={() => begin('trait')}>
               <span className="cabinet-test-count" aria-hidden="true">20</span>
               <span className="cabinet-test-row-copy">
                 <strong>{c.traitTitle}</strong>
