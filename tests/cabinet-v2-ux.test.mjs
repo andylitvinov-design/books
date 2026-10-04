@@ -188,3 +188,22 @@ test('Cabinet entry mirrors Academy hierarchy without changing the mood flow', a
   assert.ok(ia.includes('.cabinet-landing-shell .cabinet-guest-tests'))
   assert.ok(ia.includes('max-width: 1040px'))
 })
+
+
+test('Cabinet catalog uses Academy-style switch and compact list rows', async () => {
+  const [landing, ia] = await Promise.all([
+    readFile('components/app/cabinet-landing.jsx', 'utf8'),
+    readFile('app/ia-v2.css', 'utf8'),
+  ])
+  assert.ok(landing.includes('className="cabinet-account-row"'))
+  assert.ok(landing.includes('className="cabinet-test-list"'))
+  assert.ok(landing.includes('className="cabinet-test-row"'))
+  assert.ok(landing.includes('className="cabinet-test-count"'))
+  assert.ok(landing.includes('aria-hidden="true">5</span>'))
+  assert.ok(landing.includes('aria-hidden="true">20</span>'))
+  assert.ok(!landing.includes('className="cabinet-test-grid"'))
+  assert.ok(ia.includes('Cabinet v2.4'))
+  assert.ok(ia.includes('border-radius: 999px'))
+  assert.ok(ia.includes('.cabinet-test-row'))
+  assert.ok(ia.includes('grid-template-columns: 76px minmax(0, 1fr) 24px'))
+})
