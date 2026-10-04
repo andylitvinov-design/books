@@ -14,6 +14,7 @@ const UI = {
     google: 'Continue with Google',
     googleNote: 'An account keeps your results across devices. You can try the tests below without signing in.',
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
+    testsKicker: 'Tests',
     tryTitle: 'Try without signing in',
     tryText: 'Complete either test and see the full result before deciding whether to create an account.',
     stateTitle: 'How I feel now',
@@ -62,6 +63,7 @@ const UI = {
     google: 'Продолжить с Google',
     googleNote: 'Аккаунт сохраняет результаты между устройствами. Тесты ниже можно попробовать без регистрации.',
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
+    testsKicker: 'Тесты',
     tryTitle: 'Пройти без регистрации',
     tryText: 'Пройдите любой тест и получите полный результат до решения о создании аккаунта.',
     stateTitle: 'Моё состояние сейчас',
@@ -423,7 +425,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
       <section className="client-entry-card cabinet-google-card" aria-labelledby="cabinet-title">
         <p className="about-kicker">{c.kicker}</p>
-        <h1 id="cabinet-title">{c.title}</h1>
+        <h2 id="cabinet-title">{c.title}</h2>
         <p>{c.intro}</p>
         <button className="cabinet-google-button" type="button" onClick={() => signIn()} disabled={busy}>
           {c.google}
@@ -433,7 +435,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       </section>
 
       <section className="client-entry-card cabinet-guest-tests" aria-labelledby="guest-tests-title">
-        <p className="about-kicker">{c.tryTitle}</p>
+        <p className="about-kicker">{c.testsKicker}</p>
         <h2 id="guest-tests-title">{c.tryTitle}</h2>
         <p>{c.tryText}</p>
 
