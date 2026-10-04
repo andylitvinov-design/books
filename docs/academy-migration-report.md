@@ -5,8 +5,9 @@ Generated for Academy v1 from the live PsiTrends Academy corpus.
 - Live Academy pages migrated: **42**
 - Source locales: **EN 19 / RU 23**
 - Legacy URL decisions: **53**
-- Media/image references inventoried: **422**
+- Media/image references inventoried: **489**
 - Hidden/backup reconciliation blockers: **1**
+- Verified legacy public video embeds: **67**
 - New HeyGen renders: **0**
 - PsiTrends redirects changed: **0**
 
