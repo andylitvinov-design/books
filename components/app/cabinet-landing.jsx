@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
+import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 
@@ -418,6 +419,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   return (
     <>
+      <MoodCheckIn locale={locale} onQuickCheckin={() => begin('state')} disabled={busy} />
+
       <section className="client-entry-card cabinet-google-card" aria-labelledby="cabinet-title">
         <p className="about-kicker">{c.kicker}</p>
         <h1 id="cabinet-title">{c.title}</h1>
