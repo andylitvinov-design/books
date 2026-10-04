@@ -374,7 +374,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/adv/reiki",
-    "skippedRiskyBlocks": 21
+    "skippedRiskyBlocks": 21,
+    "backupProvenance": [
+      {
+        "provenanceKey": "5ac87cb0d14a30774837",
+        "sourceUrl": "https://psitrends.com/index.php?id=30&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "30",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "213",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "a99b43f97b6467196058a686addd2b8cb7140a32c84a1b590344bdd102d723f5",
+        "sourceVisibleTextHash": "01c28ce57188df03bb2e19872d6c2d38d75b2f658069aed90e10a20fef20128e"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/adv/prog-taory",
@@ -1039,7 +1059,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/adv/prog-taory",
-    "skippedRiskyBlocks": 33
+    "skippedRiskyBlocks": 33,
+    "backupProvenance": [
+      {
+        "provenanceKey": "5bdbe4ca85d0db226adb",
+        "sourceUrl": "https://psitrends.com/index.php?id=31&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "31",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "214",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "a3bdca4a0cb8cd054d6c42209062f683c7d053f0fe632c8e1a04f61aee9e817e",
+        "sourceVisibleTextHash": "9ed8127f6c59c8762e438b2b8b030d672d987acd9b8db19a52d6301339e34d81"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/master-taory",
@@ -1484,7 +1524,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/master-taory",
-    "skippedRiskyBlocks": 42
+    "skippedRiskyBlocks": 42,
+    "backupProvenance": [
+      {
+        "provenanceKey": "69b4fada31576ed25769",
+        "sourceUrl": "https://psitrends.com/index.php?id=40&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "40",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "222",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "c8d5ae32fa64234b748c5440da6a14417a74726c204246c7a24bef8b110853bf",
+        "sourceVisibleTextHash": "98d03f88ea020a4299ca7b4cc1cfd530632e8c30aa37b2213381a793b9c1b0bc"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/magister-sham-trpi",
@@ -1585,7 +1645,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/magister-sham-trpi",
-    "skippedRiskyBlocks": 3
+    "skippedRiskyBlocks": 3,
+    "backupProvenance": [
+      {
+        "provenanceKey": "58acd703a6c7f0473b5d",
+        "sourceUrl": "https://psitrends.com/index.php?id=41&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "41",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "223",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "d2366bc83f44799417e581d01d4c65ce6305f98d964ea0baf46717a38897d5d9",
+        "sourceVisibleTextHash": "6f9899607f0058883fda221eb8b771af83e6516ac350d169a477df5cf615c63d"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/tantra",
@@ -1698,7 +1778,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/tantra",
-    "skippedRiskyBlocks": 2
+    "skippedRiskyBlocks": 2,
+    "backupProvenance": [
+      {
+        "provenanceKey": "f24436c09122047eb0ec",
+        "sourceUrl": "https://psitrends.com/index.php?id=50&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "50",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "228",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "dc1a404e663ff609be5303db09d01f9f5c2cee5f8138d5e133cf7f735d74864c",
+        "sourceVisibleTextHash": "7b22d0a5f9361f4fb7036d395b62a13c98601482f086ab1d9106738255608659"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
@@ -1839,7 +1939,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
-    "skippedRiskyBlocks": 16
+    "skippedRiskyBlocks": 16,
+    "backupProvenance": [
+      {
+        "provenanceKey": "689019311b8a7409c3b8",
+        "sourceUrl": "https://psitrends.com/index.php?id=54&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "54",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "231",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "9bdff40924888e6cf77bdfea2541e0cb4353a606b1e0dfbfe39c7a1b8aef5757",
+        "sourceVisibleTextHash": "e8ff7ecc4b1b5325ecd48217b61053df72604fefbda5b0cbeaa243bd670d4b8c"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/shkola-rejki-iggdrasil",
@@ -2432,7 +2552,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/shkola-rejki-iggdrasil",
-    "skippedRiskyBlocks": 21
+    "skippedRiskyBlocks": 21,
+    "backupProvenance": [
+      {
+        "provenanceKey": "5bdbe4ca85d0db226adb",
+        "sourceUrl": "https://psitrends.com/index.php?id=31&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "31",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "214",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "a3bdca4a0cb8cd054d6c42209062f683c7d053f0fe632c8e1a04f61aee9e817e",
+        "sourceVisibleTextHash": "9ed8127f6c59c8762e438b2b8b030d672d987acd9b8db19a52d6301339e34d81"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/tantra-ru",
@@ -2452,7 +2592,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/tantra-ru",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "f24436c09122047eb0ec",
+        "sourceUrl": "https://psitrends.com/index.php?id=50&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "50",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "228",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "dc1a404e663ff609be5303db09d01f9f5c2cee5f8138d5e133cf7f735d74864c",
+        "sourceVisibleTextHash": "7b22d0a5f9361f4fb7036d395b62a13c98601482f086ab1d9106738255608659"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/adv/myst",
@@ -2553,7 +2713,8 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/adv/myst",
-    "skippedRiskyBlocks": 4
+    "skippedRiskyBlocks": 4,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/mysteries/mysteries-of-love",
@@ -2654,7 +2815,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/mysteries/mysteries-of-love",
-    "skippedRiskyBlocks": 2
+    "skippedRiskyBlocks": 2,
+    "backupProvenance": [
+      {
+        "provenanceKey": "7595cf6b95cf56f47013",
+        "sourceUrl": "https://psitrends.com/index.php?id=56&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "56",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "312",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "71a5b2d432fc1ba5c6ee08c4cdd79c271daeca79806e351fee3ad17d5ec3a4e5",
+        "sourceVisibleTextHash": "942ff1a98a9cdda0d2cb573f6815042aa2b1c0eb19039d4bfdfcc317e0d501e1"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
@@ -3063,7 +3244,8 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
-    "skippedRiskyBlocks": 29
+    "skippedRiskyBlocks": 29,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
@@ -3083,7 +3265,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "ddfed6a42a3cd585ff31",
+        "sourceUrl": "https://psitrends.com/index.php?id=52&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "52",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "229",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "b4ae2bef98205004048ded80544ff130f6a6ea7fa8b5e0460e9a4883204fd72f",
+        "sourceVisibleTextHash": "5075de18dd468db0665fd712d67e04dbe94572908f525eacab0c56663efef926"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/hypno-love-ru",
@@ -3103,7 +3305,8 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/hypno-love-ru",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/gypno-egypt",
@@ -3123,7 +3326,22 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/gypno-egypt",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "22c8ee7412e28739d4be",
+        "sourceUrl": "https://psitrends.com/index.php?id=68&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "68",
+            "language": "*"
+          }
+        ],
+        "sourceContentHash": "bfaca31f7b6b1c9754e689b1cf1ccc8f03142d4a1ed4ebaffcc88616e671619e",
+        "sourceVisibleTextHash": "f2ff922e17aceaeee5f6f87a96b471f305c24e6ae33fdb256a7491ee46829eef"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-gretsii",
@@ -3376,7 +3594,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-gretsii",
-    "skippedRiskyBlocks": 2
+    "skippedRiskyBlocks": 2,
+    "backupProvenance": [
+      {
+        "provenanceKey": "f54fe8a5a10482e1222f",
+        "sourceUrl": "https://psitrends.com/index.php?id=112&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "112",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "314",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "db71d22fb51b01fa9be56e212515e06708ccc4b80a4f5b952844c7b9bf5f52df",
+        "sourceVisibleTextHash": "3693c5cfac3ec9f55125f37fe6785c95daa40641b373126ca838115a13fd6af3"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-egipta",
@@ -3469,7 +3707,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-egipta",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "1e079751487caaa5e1c8",
+        "sourceUrl": "https://psitrends.com/index.php?id=111&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "111",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "317",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "3cdaa9d2fb3e7defcac4e30a129d99c02014f8d422d917361b8d0cfc87a024ec",
+        "sourceVisibleTextHash": "7ea112bc4da39ab2c7147a877ba07ff99f9809a0449b30388b1c13d09056e934"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
@@ -3489,7 +3747,8 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/ru/misterii/malye-misterii-arkhetipy-lyubvi",
@@ -3509,7 +3768,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/misterii/malye-misterii-arkhetipy-lyubvi",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "7595cf6b95cf56f47013",
+        "sourceUrl": "https://psitrends.com/index.php?id=56&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "56",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "312",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "71a5b2d432fc1ba5c6ee08c4cdd79c271daeca79806e351fee3ad17d5ec3a4e5",
+        "sourceVisibleTextHash": "942ff1a98a9cdda0d2cb573f6815042aa2b1c0eb19039d4bfdfcc317e0d501e1"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/misterii/bolshie-misterii-arkhetipy-bogov",
@@ -3529,7 +3808,8 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/misterii/bolshie-misterii-arkhetipy-bogov",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/studies/adv/runes-business",
@@ -3614,7 +3894,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/adv/runes-business",
-    "skippedRiskyBlocks": 1
+    "skippedRiskyBlocks": 1,
+    "backupProvenance": [
+      {
+        "provenanceKey": "77ac674e3ce02d72c295",
+        "sourceUrl": "https://psitrends.com/index.php?id=44&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "44",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "227",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "2e4d8624915979aa18c2c3c62152fec6a124ed25a44aefbc9df21eb47484856e",
+        "sourceVisibleTextHash": "36a227def636ce68eb30bb89454511a14f9a90417c3fb796e16ca357c536c158"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/adv/elemental-en",
@@ -4031,7 +4331,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/adv/elemental-en",
-    "skippedRiskyBlocks": 24
+    "skippedRiskyBlocks": 24,
+    "backupProvenance": [
+      {
+        "provenanceKey": "0bc0e53137237f4531b6",
+        "sourceUrl": "https://psitrends.com/index.php?id=71&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "71",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "262",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "b256dd5aea0aee2215be7c5ebe602f2dab55fd956f2c628e79b0d5e9df12efb0",
+        "sourceVisibleTextHash": "73609ad59f5be9a47ff9b50f0d02e65f64ef08f22e30d162fac54bb4f70486b9"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/adv/elemental-water",
@@ -4051,7 +4371,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/adv/elemental-water",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "be5e6abacfd3fda5556d",
+        "sourceUrl": "https://psitrends.com/index.php?id=72&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "72",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "264",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "f2643bf788f46a115eda88c0edbd7d7c4783f2078cc0a7c86e8c6abda376946e",
+        "sourceVisibleTextHash": "d564548fc4ba8b6526701fa9328745aa2945fe025f92b69139daf96e9f72e6e6"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/adv/artifacts",
@@ -4071,7 +4411,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/adv/artifacts",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "af51ca7036dd61eb121f",
+        "sourceUrl": "https://psitrends.com/index.php?id=131&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "131",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "342",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "64c6211ffcadcf0f7ac3078cb0eca88216c8b413bd380ee332780abf30f5445c",
+        "sourceVisibleTextHash": "2e45f6c1dd47b6bec882705ebebc153136dde15cdd12dde0c9a99f16869ca391"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/runes-business-ru",
@@ -4091,7 +4451,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/runes-business-ru",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "77ac674e3ce02d72c295",
+        "sourceUrl": "https://psitrends.com/index.php?id=44&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "44",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "227",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "2e4d8624915979aa18c2c3c62152fec6a124ed25a44aefbc9df21eb47484856e",
+        "sourceVisibleTextHash": "36a227def636ce68eb30bb89454511a14f9a90417c3fb796e16ca357c536c158"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/element",
@@ -4111,7 +4491,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/element",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "0bc0e53137237f4531b6",
+        "sourceUrl": "https://psitrends.com/index.php?id=71&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "71",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "262",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "b256dd5aea0aee2215be7c5ebe602f2dab55fd956f2c628e79b0d5e9df12efb0",
+        "sourceVisibleTextHash": "73609ad59f5be9a47ff9b50f0d02e65f64ef08f22e30d162fac54bb4f70486b9"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/skoly/severnaya-magiya-run",
@@ -4216,7 +4616,8 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/skoly/severnaya-magiya-run",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/studies/meditations-of-the-sun",
@@ -4285,7 +4686,45 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/meditations-of-the-sun",
-    "skippedRiskyBlocks": 4
+    "skippedRiskyBlocks": 4,
+    "backupProvenance": [
+      {
+        "provenanceKey": "10cae280086f61577254",
+        "sourceUrl": "https://psitrends.com/index.php?id=98&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "98",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "288",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "ba18020fb1c58e4d2d105ff427d9dcfeac635aea1f57836e9db4a600c66bb869",
+        "sourceVisibleTextHash": "dcbafdb37cff94986c5553c02ebbd0648d33d5392bbe11b63f37b6e358d20ae2"
+      },
+      {
+        "provenanceKey": "cd6aa44d0660d53e5953",
+        "sourceUrl": "https://psitrends.com/index.php?id=108&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "108",
+            "language": "en-GB"
+          },
+          {
+            "type": "menu_exact",
+            "id": "307",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "83e432dd02372e95f6225e40004e02b0f529d759a9a58ff9ee89c75482507d57",
+        "sourceVisibleTextHash": "a2cbb9f67e2dd18eea719a8c457410fbaeee3307e53990b8a0c1927fb15df68b"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/video-kursy/meditatsii-solntsa",
@@ -4362,7 +4801,45 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/video-kursy/meditatsii-solntsa",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "10cae280086f61577254",
+        "sourceUrl": "https://psitrends.com/index.php?id=98&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "98",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "288",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "ba18020fb1c58e4d2d105ff427d9dcfeac635aea1f57836e9db4a600c66bb869",
+        "sourceVisibleTextHash": "dcbafdb37cff94986c5553c02ebbd0648d33d5392bbe11b63f37b6e358d20ae2"
+      },
+      {
+        "provenanceKey": "cd6aa44d0660d53e5953",
+        "sourceUrl": "https://psitrends.com/index.php?id=108&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "108",
+            "language": "en-GB"
+          },
+          {
+            "type": "menu_exact",
+            "id": "307",
+            "language": "en-GB"
+          }
+        ],
+        "sourceContentHash": "83e432dd02372e95f6225e40004e02b0f529d759a9a58ff9ee89c75482507d57",
+        "sourceVisibleTextHash": "a2cbb9f67e2dd18eea719a8c457410fbaeee3307e53990b8a0c1927fb15df68b"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-grecheskie-misterii-kanal-demetry",
@@ -4435,7 +4912,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/video-kursy/kurs-grecheskie-misterii-kanal-demetry",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "d92c77818da6dcd714d4",
+        "sourceUrl": "https://psitrends.com/index.php?id=99&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "99",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "292",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "bf4100c7384cae26fe135a0afc27bd36f1fb8f04c26cf2b1f021fb5a651af62f",
+        "sourceVisibleTextHash": "57b6e9cfd027057621290c114052961ba74e4fd8f47f834b1812b729b71c775f"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-misterii-dionisa",
@@ -4524,7 +5021,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/video-kursy/kurs-misterii-dionisa",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "153dc7622e0505d3f737",
+        "sourceUrl": "https://psitrends.com/index.php?id=104&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "104",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "297",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "9c4b1a8ec9b8337391deba60fd725c83775131e6d35fa42be49c2ebd5d6d5cd3",
+        "sourceVisibleTextHash": "820dac60be8ff25de9b53ccca0bfd0a8659a38d0a1c1f5f4e56f4bc6f15fd9f6"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-zhrechestvo-egipta-osiris",
@@ -4613,7 +5130,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/video-kursy/kurs-zhrechestvo-egipta-osiris",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "cec3e0b0b06b0f552954",
+        "sourceUrl": "https://psitrends.com/index.php?id=103&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "103",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "296",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "e4a9618af495807850bb9ad2aa778954b7320ad45d6daa45b18a66d8c7c694a9",
+        "sourceVisibleTextHash": "815672ca65e1f0184e2f4b0835832151313a2d3f0bb78dc574efb4cb16183ff0"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-sila-planet",
@@ -4734,7 +5271,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/video-kursy/kurs-sila-planet",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "6b9ea3c373926e0a8865",
+        "sourceUrl": "https://psitrends.com/index.php?id=100&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "100",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "293",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "42ee12f38cc122bc4cd0a7b185165f3d582cbc1fad7275f0bde5cb94fe35f121",
+        "sourceVisibleTextHash": "19b4713dfe2349c081b48e0579331fd151a5232cfa70b3c517ea5881b154ddfb"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/video-kursy/meditatsii-sily-i-zashchity",
@@ -4823,7 +5380,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/video-kursy/meditatsii-sily-i-zashchity",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "946284235e253865e129",
+        "sourceUrl": "https://psitrends.com/index.php?id=101&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "101",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "294",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "6c398582f2553208d14ac79ef3591bfd77545f0b047f9eb581ccaffbc6088ea7",
+        "sourceVisibleTextHash": "f122004c429d7ce826186e3a48e213d5df094ec6fa17b14d096ce8d17ef55738"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/video-kursy/arkhetipy-majya",
@@ -4904,7 +5481,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/video-kursy/arkhetipy-majya",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "b6feabb44b63d4a8f163",
+        "sourceUrl": "https://psitrends.com/index.php?id=102&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "102",
+            "language": "ru-RU"
+          },
+          {
+            "type": "menu_exact",
+            "id": "295",
+            "language": "ru-RU"
+          }
+        ],
+        "sourceContentHash": "04fe47f0979f39da63a8cb250cf3b44ee9a21baa980892339961b46a3c8c5061",
+        "sourceVisibleTextHash": "f3a8fe24e432da36e68e3fbffb3d22fffd392ca9bda7bcb15efcbfbcd076ddbe"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/ru/%D1%81ourse-swap",
@@ -4924,7 +5521,27 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/%D1%81ourse-swap",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": [
+      {
+        "provenanceKey": "746980c5b96674a8c003",
+        "sourceUrl": "https://psitrends.com/index.php?id=70&option=com_quix&view=page",
+        "sourceIds": [
+          {
+            "type": "quix",
+            "id": "70",
+            "language": "*"
+          },
+          {
+            "type": "menu_exact",
+            "id": "260",
+            "language": "*"
+          }
+        ],
+        "sourceContentHash": "f335d10b5877eb1c4e5b0b885bd705c9000c37ec6181df337fb411b9a5753772",
+        "sourceVisibleTextHash": "68c511f846d508f1a5cc57bb5795e83d947dcc182d0aec842ef743960dbb6573"
+      }
+    ]
   },
   {
     "sourceUrl": "https://psitrends.com/studies/about-us",
@@ -5541,7 +6158,8 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/studies/about-us",
-    "skippedRiskyBlocks": 42
+    "skippedRiskyBlocks": 42,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/about-us-ru",
@@ -5561,7 +6179,8 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/about-us-ru",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
@@ -5581,7 +6200,8 @@
     "status": "availability_unknown",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/fest",
@@ -5601,7 +6221,8 @@
     "status": "historical",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/fest",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/fest-program-2",
@@ -5621,7 +6242,8 @@
     "status": "historical",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/fest-program-2",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/fest-details",
@@ -5641,7 +6263,8 @@
     "status": "historical",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/fest-details",
-    "skippedRiskyBlocks": 0
+    "skippedRiskyBlocks": 0,
+    "backupProvenance": []
   },
   {
     "sourceUrl": "https://psitrends.com/stud-prog/trpy-events",
@@ -6002,6 +6625,7 @@
     "status": "historical",
     "httpStatus": 200,
     "finalUrl": "https://psitrends.com/stud-prog/trpy-events",
-    "skippedRiskyBlocks": 21
+    "skippedRiskyBlocks": 21,
+    "backupProvenance": []
   }
 ]

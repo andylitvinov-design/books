@@ -46,6 +46,38 @@ test("migration mapping keeps redirects disabled and separates Library and Servi
   assert.ok(urlMap.every((row) => row.redirectNow === false));
 });
 
+test("backup-only educational sources are fully classified and reconciled without new Academy routes", async () => {
+  const [records, preservation, summary, needsReview, sourceManifest] = await Promise.all([
+    readJson("data/academy/sources.generated.json"),
+    readJson("data/academy/preservation.generated.json"),
+    readJson("data/academy/preservation-summary.generated.json"),
+    readJson("data/academy/needs-review.generated.json"),
+    readFile("docs/academy-source-manifest.csv", "utf8"),
+  ]);
+  const classes = new Set(["Academy", "Library", "Services", "Archive", "Duplicate", "Private Preserve", "System Ignore", "Needs Review"]);
+  assert.ok(preservation.length >= 80);
+  assert.equal(summary.backupEvidenceRecordCount, preservation.length);
+  assert.equal(summary.backupSourceIdCount, summary.classifiedSourceIdCount);
+  assert.equal(summary.unclassifiedSourceIdCount, 0);
+  assert.equal(summary.privateDataRead, false);
+  assert.ok(summary.backupSourceIdCount >= 100);
+  assert.match(summary.sourceEvidence.inventorySha256, /^[a-f0-9]{64}$/);
+  assert.match(summary.sourceEvidence.urlMapSha256, /^[a-f0-9]{64}$/);
+  assert.match(summary.sourceEvidence.backupManifestSha256, /^[a-f0-9]{64}$/);
+  for (const source of preservation) {
+    assert.ok(classes.has(source.preservationClassification));
+    assert.ok(source.sourceIds.length);
+    assert.match(source.sourceContentHash, /^[a-f0-9]{64}$/);
+  }
+  for (const source of preservation.filter((row) => row.preservationClassification === "Academy")) {
+    assert.ok(records.some((record) => record.logicalId === source.logicalId));
+    assert.ok(source.canonicalAcademyUrl);
+  }
+  assert.deepEqual(needsReview.map((row) => row.provenanceKey).sort(), preservation.filter((row) => row.preservationClassification === "Needs Review").map((row) => row.provenanceKey).sort());
+  assert.match(sourceManifest, /preservationClassification/);
+  assert.ok(records.some((record) => record.backupProvenance?.length));
+});
+
 test("native Academy routes replace the old external navigation destination", async () => {
   const [navigation, localeSource, page, sitemap] = await Promise.all([
     readFile("lib/site-navigation-model.js", "utf8"),

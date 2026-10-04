@@ -1,32 +1,28 @@
 # Holistic House Academy migration report
 
-Generated for Academy v1 from the live PsiTrends Academy corpus.
+## Preservation reconciliation
 
-- Live Academy pages migrated: **42**
-- Source locales: **EN 19 / RU 23**
-- Legacy URL decisions: **53**
-- Media/image references inventoried: **489**
-- Hidden/backup reconciliation blockers: **1**
-- Verified legacy public video embeds: **67**
-- New HeyGen renders: **0**
-- PsiTrends redirects changed: **0**
+- Backup-only educational source records: **85**
+- Joomla/Quix source identifiers reconciled: **117 / 117**
+- Source inventory SHA-256: **147a3cf4da8487bc133792c98f0d2956cfc6e653d60d62cc4d266daae5a8de96**
+- PsiTrends URL map SHA-256: **55bed202a91027650b42152722ff37aeaf1960679f6d06b52265fa8e06873ef6**
+- Joomla backup manifest SHA-256: **762fdfe8bc4d2dd7a0d562044101b5c50575e5810bc49ce371a6c1601ddcea47**
 
-## URL classification
-- ACADEMY_HISTORICAL: **33**
-- ACADEMY_VIDEO: **9**
-- GENERAL_ARCHIVE: **1**
-- LIBRARY_MATERIAL: **2**
-- REDIRECT_ONLY: **5**
-- SERVICES_MATERIAL: **3**
+## Classification
 
-## Scope completed
-
-All 42 currently enumerated public Academy/training pages in the fixed migration map were fetched and converted into structured source-backed records. The public Academy can render without a runtime dependency on PsiTrends.
-
-## Remaining preservation blocker
-
-The saved sales CMS inventory documents a wider pool of 265 published/query candidates from Joomla/Quix. Exact source-ID-by-source-ID reconciliation of hidden/backup-only educational candidates remains blocked in this GitHub-only recovery path after the connected Mac went offline. This is recorded in `data/academy/needs-review.generated.json` and must not be described as a complete hidden-corpus migration.
+- Academy: **24**
+- Library: **3**
+- Services: **4**
+- Archive: **15**
+- Duplicate: **30**
+- Private Preserve: **0**
+- System Ignore: **3**
+- Needs Review: **6**
 
 ## Safety
 
-Legacy prices, registration blocks and higher-risk certification/health/outcome claims are filtered from migrated public copy by deterministic rules during source extraction. Source URL and a deterministic content fingerprint are retained per migrated page. Library and Services destinations remain canonical for material that should not be duplicated into Academy.
+- Only exact Joomla/Quix-to-existing-logical-ID matches are attached to Academy records.
+- Duplicate context variants, services, library material and archive records are preserved but not published as new Academy content.
+- Needs Review is the exact unresolved subset; no private/user/session data was read.
+- No PsiTrends redirects or production data were changed; no video was generated.
+- Standalone backup media hashes were unavailable, so source-document SHA-256 is retained with each media reference.
