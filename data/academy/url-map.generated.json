@@ -1,0 +1,320 @@
+[
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/reiki",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/free-energy-healing",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/prog-taory",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/yggdrasil",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/master-shamanic-healing",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/magister-sham-trpi",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/path/magister-archetypal-therapies",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/tantra",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/tantra-reiki",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/yggdrasil/faq",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/shkola-rejki-iggdrasil",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/reiki/yggdrasil",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/tantra-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/reiki/tantra-reiki",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/myst",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/applied/archetypal-attunements",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/mysteries-of-love",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/mysteries/archetypes-of-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/mysteries/archetypes-of-gods",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/initiations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/hypno-love-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/hypno-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/gypno-egypt",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/egyptian-hypno-course",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-gretsii",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/traditions/greece",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-egipta",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/traditions/egypt",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/guidance-of-gods",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/malye-misterii-arkhetipy-lyubvi",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/archetypes-of-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/bolshie-misterii-arkhetipy-bogov",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/archetypes-of-gods",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/runes-business",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/runes/runes-business",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/elemental-en",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/elements/elemental-magic",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/elemental-water",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/elements/water",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/artifacts",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/symbolic/artifacts-talismans",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/runes-business-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/runes/runes-business",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/element",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/elements/elemental-magic",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/skoly/severnaya-magiya-run",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/runes/northern-runes",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/en/academy/videos/sun-meditations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/meditatsii-solntsa",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/sun-meditations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-grecheskie-misterii-kanal-demetry",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/greek-mysteries-demeter",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-misterii-dionisa",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/greek-mysteries-dionysus",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-zhrechestvo-egipta-osiris",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/egypt-osiris",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-sila-planet",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/planetary-power",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/meditatsii-sily-i-zashchity",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/strength-protection",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/arkhetipy-majya",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/maya-archetypes",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/%D1%81ourse-swap",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/energy-pump-ups",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/about-us",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/history",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/about-us-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/history",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/history/student-experiences",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/archive/festival",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-program-2",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/archive/constellations-of-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-details",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/archive/festival-details",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/stud-prog/trpy-events",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/archive/events",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/books",
+    "classification": "LIBRARY_MATERIAL",
+    "target": "/en/library",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/knigi",
+    "classification": "LIBRARY_MATERIAL",
+    "target": "/ru/library",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/business",
+    "classification": "SERVICES_MATERIAL",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/therapy",
+    "classification": "SERVICES_MATERIAL",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/express",
+    "classification": "SERVICES_MATERIAL",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/events",
+    "classification": "GENERAL_ARCHIVE",
+    "target": null,
+    "redirectNow": false
+  }
+]
