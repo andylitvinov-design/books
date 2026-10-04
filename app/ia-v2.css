@@ -73,3 +73,254 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   .assessment-form { min-width: 0; }
 }
 @media print { .ia222-bottom-navigation { display: none !important; } body:has(.ia222-bottom-navigation) { padding-bottom: 0 !important; } }
+
+
+/* Cabinet v2.3 — use the same light page rhythm as Library / Academy. */
+.cabinet-landing-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px clamp(14px, 4vw, 42px) 96px;
+}
+.cabinet-landing-shell .hh-mood-checkin {
+  max-width: 42rem;
+  margin: 28px 0 18px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+.cabinet-landing-shell .hh-mood-kicker {
+  margin: 0 0 8px;
+  color: #8b5a3c;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.cabinet-landing-shell .hh-mood-checkin h1 {
+  margin: 8px 0 12px;
+  font-size: clamp(38px, 6vw, 58px);
+  line-height: 1.08;
+  letter-spacing: -.03em;
+}
+.cabinet-landing-shell .hh-mood-question {
+  margin: 0;
+  color: #65564a;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.cabinet-landing-shell .hh-mood-row {
+  width: min(520px, 100%);
+  margin-top: 20px;
+  gap: 10px;
+}
+.cabinet-landing-shell .hh-mood-button {
+  min-height: 88px;
+  border-color: #ded5c9;
+  border-radius: 16px;
+  background: #fffcf6;
+  box-shadow: none;
+  font-size: 11px;
+}
+.cabinet-landing-shell .hh-mood-button:hover {
+  border-color: #b58b6e;
+  background: #fffcf6;
+  box-shadow: 0 8px 20px rgba(74,51,35,.07);
+}
+.cabinet-landing-shell .hh-mood-emoji {
+  font-size: 34px;
+}
+.cabinet-landing-shell .cabinet-google-card {
+  max-width: 42rem;
+  margin: 18px 0 0;
+  border: 1px solid #ded5c9;
+  border-radius: 16px;
+  background: #fffcf6;
+  padding: 20px 22px;
+}
+.cabinet-landing-shell .cabinet-google-card h2 {
+  margin: 5px 0 8px;
+  color: #352820;
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.12;
+}
+.cabinet-landing-shell .cabinet-google-card > p:not(.about-kicker) {
+  margin-top: 8px;
+  color: #65564a;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.cabinet-landing-shell .cabinet-google-button {
+  min-height: 46px;
+  margin-top: 16px;
+  border-radius: 12px;
+  padding: 0 18px;
+  background: #4f3829;
+  font-size: 12px;
+}
+.cabinet-landing-shell .cabinet-google-button:hover {
+  background: #624735;
+}
+.cabinet-landing-shell .cabinet-guest-tests {
+  max-width: none;
+  margin: 32px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+.cabinet-landing-shell .cabinet-guest-tests h2 {
+  margin: 8px 0 8px;
+  font-size: clamp(30px, 4.5vw, 42px);
+  line-height: 1.08;
+}
+.cabinet-landing-shell .cabinet-guest-tests > p:not(.about-kicker) {
+  max-width: 42rem;
+  margin-top: 8px;
+  color: #65564a;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.cabinet-landing-shell .cabinet-test-grid {
+  gap: 10px;
+  margin-top: 16px;
+}
+.cabinet-landing-shell .cabinet-test-card {
+  min-height: 166px;
+  border-color: #ded5c9;
+  border-radius: 16px;
+  background: #fffcf6;
+  padding: 18px;
+}
+.cabinet-landing-shell .cabinet-test-card h3 {
+  margin: 0 0 7px;
+  font-size: 22px;
+  line-height: 1.15;
+}
+.cabinet-landing-shell .cabinet-test-card p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.cabinet-landing-shell .cabinet-test-card button,
+.cabinet-landing-shell .cabinet-test-actions button,
+.cabinet-landing-shell .cabinet-text-button {
+  min-height: 42px;
+  border-color: #d7c7b5;
+  border-radius: 12px;
+  background: #fffcf6;
+  color: #70442d;
+}
+.cabinet-landing-shell .cabinet-test-card button:hover,
+.cabinet-landing-shell .cabinet-test-actions button:hover,
+.cabinet-landing-shell .cabinet-text-button:hover {
+  border-color: #b58b6e;
+}
+.cabinet-landing-shell .cabinet-legacy-entry {
+  max-width: 42rem;
+  margin: 28px 0 0;
+  border: 0;
+  border-top: 1px solid #ded5c9;
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 0 0;
+}
+.cabinet-landing-shell .cabinet-legacy-entry > summary {
+  color: #70442d;
+  font-size: 12px;
+}
+.hh-app .hh-mood-checkin--compact {
+  margin: 0 0 22px;
+  border: 1px solid var(--hh-line);
+  border-radius: 16px;
+  background: var(--hh-paper);
+  padding: 20px;
+  box-shadow: none;
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-row {
+  width: min(440px, 100%);
+  margin-top: 16px;
+  gap: 8px;
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-button {
+  min-height: 78px;
+  border-radius: 14px;
+  background: #fffcf6;
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-emoji {
+  font-size: 30px;
+}
+@media (max-width: 600px) {
+  .cabinet-landing-shell {
+    padding: 10px 10px 94px;
+  }
+  .cabinet-landing-shell .hh-mood-checkin {
+    margin: 18px 4px 14px;
+    padding: 0;
+  }
+  .cabinet-landing-shell .hh-mood-checkin h1 {
+    margin-bottom: 8px;
+    font-size: 38px;
+  }
+  .cabinet-landing-shell .hh-mood-question {
+    font-size: 13px;
+  }
+  .cabinet-landing-shell .hh-mood-row {
+    margin-top: 14px;
+    gap: 7px;
+  }
+  .cabinet-landing-shell .hh-mood-button {
+    min-height: 76px;
+    border-radius: 12px;
+    padding: 9px 3px;
+    font-size: 9.5px;
+  }
+  .cabinet-landing-shell .hh-mood-emoji {
+    font-size: 29px;
+  }
+  .cabinet-landing-shell .cabinet-google-card {
+    margin: 14px 4px 0;
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .cabinet-landing-shell .cabinet-google-card h2 {
+    font-size: 23px;
+  }
+  .cabinet-landing-shell .cabinet-google-button {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 13px;
+  }
+  .cabinet-landing-shell .cabinet-guest-tests {
+    margin: 24px 4px 0;
+  }
+  .cabinet-landing-shell .cabinet-guest-tests h2 {
+    font-size: 30px;
+  }
+  .cabinet-landing-shell .cabinet-test-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 13px;
+  }
+  .cabinet-landing-shell .cabinet-test-card {
+    min-height: 0;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .cabinet-landing-shell .cabinet-test-card h3 {
+    font-size: 20px;
+  }
+  .cabinet-landing-shell .cabinet-legacy-entry {
+    margin: 22px 4px 0;
+  }
+  .hh-app .hh-mood-checkin--compact {
+    padding: 17px;
+  }
+  .hh-app .hh-mood-checkin--compact .hh-mood-button {
+    min-height: 72px;
+  }
+}
