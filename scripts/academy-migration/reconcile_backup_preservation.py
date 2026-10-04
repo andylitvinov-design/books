@@ -21,9 +21,10 @@ ROUTES = {
     "111":"traditions/egypt", "112":"traditions/greece", "131":"symbolic/artifacts-talismans",
     "34":"history/student-experiences", "53":"mysteries/archetypes-of-love", "57":"mysteries/archetypes-of-gods",
     "61":"mysteries/initiations", "62":"runes/runes-business", "67":"mysteries/egyptian-hypno-course", "91":"reiki/yggdrasil",
+    "10":"reiki/free-energy-healing", "12":"path/magister-archetypal-therapies", "87":"history",
 }
 LIBRARY, SERVICES = {"109","93"}, {"73","115"}
-ARCHIVE, SYSTEM, REVIEW = {"16","21","35","36","38","39","94","121","122","139"}, {"75","84"}, {"10","12","13","81","87"}
+ARCHIVE, SYSTEM, REVIEW = {"13","16","21","35","36","38","39","94","121","122","139"}, {"75","81","84"}, set()
 CLASSES = ("Academy", "Library", "Services", "Archive", "Duplicate", "Private Preserve", "System Ignore", "Needs Review")
 
 def sha(path):
@@ -69,10 +70,10 @@ def main():
         if not KEY.search(text): continue
         kind, logical = classify(raw); loc = locale(raw); ids = raw.get("source_ids") or []
         key = hashlib.sha256(f"{raw['url']}|{raw.get('content_sha256')}|{index}".encode()).hexdigest()[:20]
-        canonical = next((r["sourceUrl"] for r in records if r.get("logicalId") == logical), raw["url"])
-        candidates.append({"provenanceKey":key,"sourceUrl":raw["url"],"sourceIds":ids,"sourceIdKeys":[f"{x.get('type')}:{x.get('id')}:{x.get('language','*')}" for x in ids],"sourceTitle":raw.get("title"),"sourceH1":raw.get("h1") or [],"sourceContentHash":raw.get("content_sha256"),"sourceVisibleTextHash":raw.get("visible_text_sha256"),"sourceDuplicateGroup":raw.get("exact_text_duplicate_group"),"sourceLocale":loc,"sourceStatus":raw.get("status"),"sourceDecision":raw.get("decision"),"preservationClassification":kind,"logicalId":logical,"canonicalPsiTrendsUrl":canonical,"canonicalAcademyUrl":target(kind, logical, loc),"publication":"represented_by_existing_record" if kind == "Academy" else "not_published_from_backup"})
+        canonical = next((r["sourceUrl"] for r in records if r.get("logicalId") == logical and r.get("sourceLocale") == loc), next((r["sourceUrl"] for r in records if r.get("logicalId") == logical), raw["url"]))
+        candidates.append({"provenanceKey":key,"sourceUrl":raw["url"],"sourceIds":ids,"sourceIdKeys":[f"{x.get('type')}:{x.get('id')}:{x.get('language','*')}" for x in ids],"sourceTitle":raw.get("title"),"sourceH1":raw.get("h1") or [],"sourceContentHash":raw.get("content_sha256"),"sourceVisibleTextHash":raw.get("visible_text_sha256"),"sourceDuplicateGroup":raw.get("exact_text_duplicate_group"),"sourceLocale":loc,"sourceStatus":raw.get("status"),"sourceDecision":raw.get("decision"),"preservationClassification":kind,"logicalId":logical,"canonicalPsiTrendsUrl":canonical,"canonicalAcademyUrl":target(kind, logical, loc),"publication":"represented_by_existing_record" if kind in {"Academy","Duplicate"} else "not_published_from_backup"})
     for record in records:
-        record["backupProvenance"] = [{k:b[k] for k in ("provenanceKey","sourceUrl","sourceIds","sourceContentHash","sourceVisibleTextHash")} for b in candidates if b["preservationClassification"] == "Academy" and b["logicalId"] == record.get("logicalId")]
+        record["backupProvenance"] = [{k:b[k] for k in ("provenanceKey","sourceUrl","sourceIds","sourceContentHash","sourceVisibleTextHash")} for b in candidates if b["preservationClassification"] == "Academy" and b["logicalId"] == record.get("logicalId") and b["sourceLocale"] == record.get("sourceLocale")]
     by_source = {record["sourceUrl"]:record.get("contentHash") for record in records}
     for item in media: item["sourceDocumentSha256"] = by_source.get(item["sourceUrl"])
     backup_url_rows = [{"sourceUrl":b["sourceUrl"],"sourceIds":b["sourceIds"],"classification":"BACKUP_"+b["preservationClassification"].upper().replace(" ","_"),"preservationClassification":b["preservationClassification"],"logicalId":b["logicalId"],"canonicalPsiTrendsUrl":b["canonicalPsiTrendsUrl"],"target":b["canonicalAcademyUrl"],"redirectNow":False} for b in candidates]
