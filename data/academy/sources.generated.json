@@ -1271,14 +1271,6 @@
       },
       {
         "type": "h2",
-        "text": "BOOK YOUR SESSION"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
-      },
-      {
-        "type": "h2",
         "text": "ABOUT THE SCHOOL"
       },
       {
@@ -1435,14 +1427,6 @@
       },
       {
         "type": "h2",
-        "text": "BOOK YOUR SESSION"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
-      },
-      {
-        "type": "h2",
         "text": "Testimonials"
       },
       {
@@ -1492,14 +1476,6 @@
       {
         "type": "p",
         "text": "clients and a final examination."
-      },
-      {
-        "type": "h2",
-        "text": "Book your session"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
       }
     ],
     "contentHash": "fnv32:d83e1c8c",
@@ -1592,23 +1568,7 @@
       },
       {
         "type": "h2",
-        "text": "BOOK YOUR SESSION"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
-      },
-      {
-        "type": "h2",
         "text": "ABOUT THE SCHOOL"
-      },
-      {
-        "type": "h2",
-        "text": "BOOK YOUR SESSION"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
       },
       {
         "type": "h2",
@@ -1617,14 +1577,6 @@
       {
         "type": "h2",
         "text": "ABOUT YOUR TEACHER"
-      },
-      {
-        "type": "h2",
-        "text": "Book your session"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
       }
     ],
     "contentHash": "fnv32:ff0c780c",
@@ -1718,10 +1670,6 @@
       {
         "type": "h2",
         "text": "WHY WE ARE SHARING TANTRA REIKI\r\nIN BASIC SHAMANIC HEALING \r\nPROGRAM?"
-      },
-      {
-        "type": "h2",
-        "text": "REGISTRATION"
       },
       {
         "type": "h2",
@@ -2509,14 +2457,14 @@
   {
     "sourceUrl": "https://psitrends.com/studies/adv/myst",
     "path": "/studies/adv/myst",
-    "linkText": "mysteries and initiations",
+    "linkText": "Archetypal Attunements",
     "classification": "ACADEMY_HISTORICAL",
     "routeKey": "applied/archetypal-attunements",
     "direction": "applied",
     "logicalId": "applied/archetypal-attunements",
     "sourceLocale": "en",
     "sourceTitle": "Mysteries And Initiations - Academy Of Ancient Cultures",
-    "title": "mysteries and initiations",
+    "title": "Archetypal Attunements",
     "content": [
       {
         "type": "h1",
@@ -2697,14 +2645,6 @@
       },
       {
         "type": "h2",
-        "text": "BOOK YOUR SESSION"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
-      },
-      {
-        "type": "h2",
         "text": "ABOUT SCHOOL"
       }
     ],
@@ -2719,14 +2659,14 @@
   {
     "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
     "path": "/mysteries/great-mysteries-archetypes-of-the-gods",
-    "linkText": "ARCHETYPAL DIAGNOSTICS & SUPPORT SESSION.",
+    "linkText": "Great Mysteries: Archetypes of the Gods",
     "classification": "ACADEMY_HISTORICAL",
     "routeKey": "mysteries/archetypes-of-gods",
     "direction": "mysteries",
     "logicalId": "mysteries/archetypes-of-gods",
     "sourceLocale": "en",
     "sourceTitle": "Archetypal Diagnostics & Support Session",
-    "title": "ARCHETYPAL DIAGNOSTICS & SUPPORT SESSION.",
+    "title": "Great Mysteries: Archetypes of the Gods",
     "content": [
       {
         "type": "h1",
@@ -2867,14 +2807,6 @@
       {
         "type": "p",
         "text": "It can be on you or on the situation, and I suggest a ritual on how you can consolidate this effect yourself."
-      },
-      {
-        "type": "h2",
-        "text": "BOOK YOUR SESSION"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
       },
       {
         "type": "p",
@@ -3122,23 +3054,7 @@
       },
       {
         "type": "h2",
-        "text": "BOOK YOUR SESSION"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
-      },
-      {
-        "type": "h2",
         "text": "Reviews"
-      },
-      {
-        "type": "h2",
-        "text": "Book your session"
-      },
-      {
-        "type": "h4",
-        "text": "schedule your first consultation"
       }
     ],
     "contentHash": "fnv32:968a709f",
@@ -3618,14 +3534,14 @@
   {
     "sourceUrl": "https://psitrends.com/studies/adv/runes-business",
     "path": "/studies/adv/runes-business",
-    "linkText": "RUNES & BUISINESS",
+    "linkText": "Runes & Business",
     "classification": "ACADEMY_HISTORICAL",
     "routeKey": "runes/runes-business",
     "direction": "symbolic",
     "logicalId": "runes/runes-business",
     "sourceLocale": "en",
     "sourceTitle": "Runes & Buisiness - Academy Of Ancient Temple Arts",
-    "title": "RUNES & BUISINESS",
+    "title": "Runes & Business",
     "content": [
       {
         "type": "h1",
@@ -3677,19 +3593,11 @@
       },
       {
         "type": "h2",
-        "text": "COSTS:"
-      },
-      {
-        "type": "h2",
         "text": "NDIVIDUAL WORK"
       },
       {
         "type": "h2",
         "text": "GROUP STUDY:"
-      },
-      {
-        "type": "h2",
-        "text": "REGISTRATION"
       },
       {
         "type": "h2",
@@ -3711,14 +3619,14 @@
   {
     "sourceUrl": "https://psitrends.com/studies/adv/elemental-en",
     "path": "/studies/adv/elemental-en",
-    "linkText": "Working with a goal + Elemental Power",
+    "linkText": "Elemental Magic Course",
     "classification": "ACADEMY_HISTORICAL",
     "routeKey": "elements/elemental-magic",
     "direction": "symbolic",
     "logicalId": "elements/elemental-magic",
     "sourceLocale": "en",
     "sourceTitle": "Working With A Goal & Elemental Power - Academy Of Archetypal Technologies",
-    "title": "Working with a goal + Elemental Power",
+    "title": "Elemental Magic Course",
     "content": [
       {
         "type": "h1",
@@ -3987,10 +3895,6 @@
       {
         "type": "p",
         "text": "We increase the scale of personal influence."
-      },
-      {
-        "type": "h2",
-        "text": "PRICE"
       },
       {
         "type": "p",
@@ -4369,10 +4273,6 @@
       {
         "type": "p",
         "text": "You can join a team of practitioners, Reiki Masters, practitioners of the Tradition of Carlos Castaneda."
-      },
-      {
-        "type": "h2",
-        "text": "BOOK YOUR SESSION"
       },
       {
         "type": "h4",
@@ -5646,14 +5546,14 @@
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/about-us-ru",
     "path": "/ru/cat-train-ru/about-us-ru",
-    "linkText": "About us - Academy Of Temple Arts",
+    "linkText": "Академия Храмовых Искусств",
     "classification": "ACADEMY_HISTORICAL",
     "routeKey": "history",
     "direction": "school",
     "logicalId": "history",
     "sourceLocale": "ru",
     "sourceTitle": "About us - Academy Of Temple Arts",
-    "title": "About us - Academy Of Temple Arts",
+    "title": "Академия Храмовых Искусств",
     "content": [],
     "contentHash": "fnv32:1e02dc33",
     "hashAlgorithm": "fnv1a32",
@@ -5666,14 +5566,14 @@
   {
     "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
     "path": "/ru/cat-train-ru/advanced-ru/review-maat-ru",
-    "linkText": "Отзывы Мистов Курс МААТ",
+    "linkText": "Исторические отзывы студентов МААТ",
     "classification": "ACADEMY_HISTORICAL",
     "routeKey": "history/student-experiences",
     "direction": "school",
     "logicalId": "history/student-experiences",
     "sourceLocale": "ru",
     "sourceTitle": "Отзывы Мистов Курс МААТ",
-    "title": "Отзывы Мистов Курс МААТ",
+    "title": "Исторические отзывы студентов МААТ",
     "content": [],
     "contentHash": "fnv32:c3f2b492",
     "hashAlgorithm": "fnv1a32",
@@ -5726,14 +5626,14 @@
   {
     "sourceUrl": "https://psitrends.com/fest-details",
     "path": "/fest-details",
-    "linkText": "Fest Details",
+    "linkText": "Festival Details",
     "classification": "ACADEMY_HISTORICAL",
     "routeKey": "archive/festival-details",
     "direction": "archive",
     "logicalId": "archive/festival-details",
     "sourceLocale": "en",
     "sourceTitle": "Fest Details",
-    "title": "Fest Details",
+    "title": "Festival Details",
     "content": [],
     "contentHash": "fnv32:34c7b824",
     "hashAlgorithm": "fnv1a32",
@@ -5746,14 +5646,14 @@
   {
     "sourceUrl": "https://psitrends.com/stud-prog/trpy-events",
     "path": "/stud-prog/trpy-events",
-    "linkText": "ARCHETYPAL THERAPY ACADEMY NEAREST EVENTS",
+    "linkText": "Academy Events Archive",
     "classification": "ACADEMY_HISTORICAL",
     "routeKey": "archive/events",
     "direction": "archive",
     "logicalId": "archive/events",
     "sourceLocale": "en",
     "sourceTitle": "Archetypal Therapy Academy Nearest Events",
-    "title": "ARCHETYPAL THERAPY ACADEMY NEAREST EVENTS",
+    "title": "Academy Events Archive",
     "content": [
       {
         "type": "h1",
@@ -6074,10 +5974,6 @@
       {
         "type": "p",
         "text": "Free Participation for volunteers."
-      },
-      {
-        "type": "h2",
-        "text": "REGISTRATION"
       },
       {
         "type": "p",
