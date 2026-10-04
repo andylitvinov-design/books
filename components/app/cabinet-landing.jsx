@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
+import { ClientCabinetEntry } from '@/components/client-cabinet-entry'\nimport { MoodCheckIn } from '@/components/app/mood-checkin'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 
