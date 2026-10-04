@@ -122,6 +122,8 @@ test("Academy program titles are localized without rewriting source records", as
   assert.match(catalog, /academyDisplayTitle/);
   assert.match(hub, /academyDisplayTitle\(record, locale\)/);
   assert.match(recordPage, /academyDisplayTitle\(record, locale\)/);
+  assert.match(recordPage, /academyPublicBlocks\(record\)/);
+  assert.match(catalog, /free online course\|limited time\|register/);
   assert.match(routePage, /academyDisplayTitle\(record, locale\)/);
   assert.match(recordPage, /makeFacultiesRecord\(record: AcademySourceRecord, locale: PublicLocale\)/);
 });
