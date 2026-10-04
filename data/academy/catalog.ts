@@ -100,6 +100,16 @@ export const academyCopy = {
 const sourceRecords = sources as AcademySourceRecord[];
 const mediaRecords = media as AcademyMediaRecord[];
 
+const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
+
+export function academyPublicBlocks(record: AcademySourceRecord) {
+  return record.content.filter((block) => !academyPublicOmitPattern.test(block.text));
+}
+
+export function academyPublicOmittedCount(record: AcademySourceRecord) {
+  return record.content.length - academyPublicBlocks(record).length;
+}
+
 export function isPublicLocale(value: string): value is PublicLocale { return value === "en" || value === "ru" || value === "es"; }
 export function getAcademyRecords(): AcademySourceRecord[] { return sourceRecords; }
 function localeRank(record: AcademySourceRecord, locale: PublicLocale) { if (locale !== "es" && record.sourceLocale === locale) return 0; if (record.sourceLocale === "en") return 1; return 2; }
