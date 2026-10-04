@@ -418,6 +418,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   return (
     <>
+      <MoodCheckIn locale={locale} onQuickCheckin={() => begin('state')} disabled={busy} />
+
       <section className="client-entry-card cabinet-google-card" aria-labelledby="cabinet-title">
         <p className="about-kicker">{c.kicker}</p>
         <h1 id="cabinet-title">{c.title}</h1>
