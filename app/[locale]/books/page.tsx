@@ -5,11 +5,15 @@ import { BookCatalog } from "@/components/book-catalog";
 import { PageVideo } from "@/components/page-video";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { books } from "@/data/library";
+import { parseBookSection } from "@/data/library-sections";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 
-type PageProps = { params: Promise<{ locale: string }> };
+type PageProps = {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ section?: string | string[] }>;
+};
 
 const meta = {
   ru: {
@@ -41,8 +45,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function LocalizedBooksPage({ params }: PageProps) {
-  const { locale } = await params;
+export default async function LocalizedBooksPage({ params, searchParams }: PageProps) {
+  const [{ locale }, query] = await Promise.all([params, searchParams]);
   if (!isSupportedLocale(locale)) notFound();
-  return <><BookCatalog books={books} locale={locale as Locale} video={<PageVideo slot="books-intro" locale={locale} />} /><PublicConsultationCta locale={locale as Locale} /></>;
+
+  const section = parseBookSection(query.section);
+
+  return (
+    <>
+      <BookCatalog
+        books={books}
+        locale={locale as Locale}
+        section={section}
+        video={section ? undefined : <PageVideo slot="books-intro" locale={locale} />}
+      />
+      <PublicConsultationCta locale={locale as Locale} />
+    </>
+  );
 }
