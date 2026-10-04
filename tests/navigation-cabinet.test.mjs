@@ -22,7 +22,8 @@ test('public navigation shares six destinations and never exposes administration
     assert.equal(items.length, 6)
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
-    assert.equal(items.find(item => item.id === 'academy').href, 'https://psitrends.com/academy')
+    assert.equal(items.find(item => item.id === 'academy').href, `/${locale}/academy`)
+    assert.equal(items.find(item => item.id === 'academy').external, false)
     assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
   }
   for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
