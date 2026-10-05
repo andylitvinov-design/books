@@ -50,6 +50,13 @@ test('the public Home and Services surfaces consume the single local acquisition
   assert.match(styles, /\.service-home-self-check/)
 })
 
+test('the local acquisition service cards use only registered page-video slots', () => {
+  const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8')
+
+  assert.doesNotMatch(services, /PageVideo slot=\{"service-" \+ id\}/)
+  assert.match(services, /service-business/)
+})
+
 test('event instrumentation is consent-gated and has no personal-data payload path', () => {
   const source = readFileSync(new URL('../components/acquisition-event-link.tsx', import.meta.url), 'utf8')
 
