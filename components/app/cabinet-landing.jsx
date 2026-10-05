@@ -733,10 +733,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                     : 'This is a personal baseline. Compatible repeat measurements can show change over time.'}
                 </p>
               </div>
-              <div className="cabinet-result-grid">
+              <div className="cabinet-result-grid" data-count={Math.min(guestResult.dimensions.length, 3)}>
                 {guestResult.dimensions.map((dimension) => (
                   <section key={dimension.key}>
-                    <span>{resultLabel(definition, dimension)}</span>
+                    <h5>{resultLabel(definition, dimension)}</h5>
                     <div className="cabinet-result-score">
                       <strong>{dimension.value}</strong>
                       <small>/ {dimension.max}</small>
