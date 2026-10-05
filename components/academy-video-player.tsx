@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Play } from "lucide-react";
 import { useState } from "react";
 
@@ -21,7 +22,14 @@ export function AcademyVideoPlayer({ youtubeId, title }: { youtubeId: string; ti
   }
   return (
     <button className="academy-video-poster" onClick={() => setPlaying(true)} type="button" aria-label={"Play: " + title}>
-      <img alt="" loading="lazy" src={"https://i.ytimg.com/vi/" + safeId + "/hqdefault.jpg"} />
+      <Image
+        alt=""
+        height={270}
+        loading="lazy"
+        sizes="(max-width: 600px) 100vw, 380px"
+        src={"https://i.ytimg.com/vi/" + safeId + "/hqdefault.jpg"}
+        width={480}
+      />
       <span><Play aria-hidden="true" />{title}</span>
     </button>
   );
