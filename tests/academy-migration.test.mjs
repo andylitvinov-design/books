@@ -395,3 +395,17 @@ test("Academy renderer uses localized translations before source-language fallba
   assert.match(catalog, /Переведено с оригинального англоязычного источника PsiTrends/);
   assert.match(catalog, /Translated from the original Russian PsiTrends source/);
 });
+
+
+test("every Academy logical route has localized English and Russian titles", async () => {
+  const [sources, psimaster, catalog] = await Promise.all([
+    readJson("data/academy/sources.generated.json"),
+    readJson("data/academy/psimaster-sources.generated.json"),
+    readFile("data/academy/catalog.ts", "utf8"),
+  ]);
+  const ids = [...new Set([...sources, ...psimaster].map((row) => row.logicalId))];
+  assert.equal(ids.length, 56);
+  for (const id of ids) {
+    assert.match(catalog, new RegExp('"' + id.replaceAll("/", "\\/") + '": \\{ en:'));
+  }
+});
