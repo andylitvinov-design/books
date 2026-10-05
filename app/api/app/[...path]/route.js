@@ -14,6 +14,7 @@ import { consumeRate } from '@/lib/app/database'
 import {
   clearSaveIntentCookie,
   createGuestSaveIntent,
+  createLegacyDocumentSaveIntent,
   createReportSaveIntent,
   readSaveIntent,
   saveIntentBrowserProof,
@@ -22,6 +23,7 @@ import {
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { authorizePrescription, prescriptionSessionCookieName } from '@/lib/prescriptions/session'
 import { issueTrustedAdminSession } from '@/lib/prescriptions/admin-session'
 import {
   authorizeReportViewer,
@@ -33,6 +35,11 @@ import {
   setReportViewerCookie,
 } from '@/lib/app/report-flow'
 import { practitionerDestination } from '@/lib/app/practitioner-access'
+import {
+  commitLegacyDocumentSaveIntent,
+  readSavedDocument,
+  removeSavedDocument,
+} from '@/lib/app/legacy-document-flow'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -190,6 +197,13 @@ async function handle(request, { params }) {
         if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
         const opened = await authorizeReportViewer(config, store, body.selector, viewer)
         intent = await createReportSaveIntent(config, opened.grant, body.operationId)
+      } else if (body.sourceKind === 'legacy_document') {
+        if (typeof body.selector !== 'string') throw new AppError('DOCUMENT_UNAVAILABLE', 404)
+        const store = getPrescriptionStore()
+        const token = request.cookies.get(prescriptionSessionCookieName())?.value
+        const record = await authorizePrescription(store, body.selector, token)
+        if (!record?.clientId) throw new AppError('DOCUMENT_UNAVAILABLE', 404)
+        intent = await createLegacyDocumentSaveIntent(config, record, body.operationId)
       } else {
         throw new AppError('SOURCE_UNAVAILABLE', 400)
       }
@@ -290,6 +304,10 @@ async function handle(request, { params }) {
         const store = getPrescriptionStore()
         if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
         resource = await commitReportSaveIntent(config, store, actor, path[1], proof)
+      } else if (intent.sourceKind === 'legacy_document') {
+        const store = getPrescriptionStore()
+        if (!store?.findById) throw new AppError('DOCUMENT_UNAVAILABLE', 404)
+        resource = await commitLegacyDocumentSaveIntent(config, store, actor, path[1], proof)
       } else {
         throw new AppError('SOURCE_UNAVAILABLE', 409)
       }
@@ -337,10 +355,18 @@ async function handle(request, { params }) {
       if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
       return json(await readSavedReport(config, store, actor, path[1]))
     }
+    if (path[0] === 'documents' && path.length === 2 && method === 'GET') {
+      const store = getPrescriptionStore()
+      if (!store?.findById) throw new AppError('DOCUMENT_UNAVAILABLE', 404)
+      const locale = new URL(request.url).searchParams.get('locale') === 'ru' ? 'ru' : 'en'
+      return json(await readSavedDocument(config, store, actor, path[1], locale))
+    }
     if (method !== 'POST') throw new AppError('NOT_FOUND', 404)
     const body = await readBody(request)
     if (path[0] === 'reports' && path.length === 3 && path[2] === 'remove')
       return json(await removeSavedReport(config, actor, path[1]))
+    if (path[0] === 'documents' && path.length === 3 && path[2] === 'remove')
+      return json(await removeSavedDocument(config, actor, path[1]))
     if (joined === 'onboarding') return json(await repo.onboarding(actor, body))
     if (joined === 'preferences') return json(await repo.preferences(actor, body))
     if (joined === 'mood') return json(await repo.moodCheckin(actor, body), 201)

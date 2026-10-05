@@ -4,7 +4,7 @@ import { paymentNarrative, formatPaymentAmount } from '@/lib/documents/payment'
 import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
 
-export function PaymentDocument({ document, locale, selector, autoPrint = false, admin = false }) {
+export function PaymentDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null }) {
   const ru = locale === 'ru'
   const received = document.paymentStatus === 'received'
   const title = received ? (ru ? 'КВИТАНЦИЯ' : 'RECEIPT') : (ru ? 'СЧЁТ НА ОПЛАТУ' : 'INVOICE')
@@ -12,7 +12,7 @@ export function PaymentDocument({ document, locale, selector, autoPrint = false,
   return <main className="prescription-shell canonical-shell">
     {!admin && selector && <div className="prescription-toolbar">
       <Link href={`/${alternateLocale}/prescriptions/${selector}`}>{alternateLocale.toUpperCase()}</Link>
-      <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />
+      <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />{cabinetAction}
     </div>}
     <article className="canonical-document canonical-payment">
       <DocumentAutoPrint enabled={admin && autoPrint} /><DocumentLetterhead /><h1>{title}</h1>
