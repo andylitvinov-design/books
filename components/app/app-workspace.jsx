@@ -250,8 +250,10 @@ export default function AppWorkspace({ locale, path = [] }) {
               onOpenHistory={() => router.push(root + '/history')}
             />
           )}
-          {page === 'practice' && data.practitioner?.enabled && (
-            <PractitionerTools locale={locale} />
+          {page === 'practice' && (
+            data.practitioner?.enabled
+              ? <PractitionerTools locale={locale} />
+              : <section className="hh-panel"><h1>{c.notFound}</h1></section>
           )}
           {page === 'tests' && (
             <TestCatalog
