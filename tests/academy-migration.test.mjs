@@ -133,3 +133,14 @@ test("Academy program titles are localized without rewriting source records", as
   assert.match(routePage, /academyDisplayTitle\(record, locale\)/);
   assert.match(recordPage, /makeFacultiesRecord\(record: AcademySourceRecord, locale: PublicLocale\)/);
 });
+
+
+test("Tantra Reiki has curated bilingual source-backed course content instead of an empty shell", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  assert.match(catalog, /"reiki\/tantra-reiki"/);
+  assert.match(catalog, /Nine levels of study/);
+  assert.match(catalog, /Девять ступеней/);
+  assert.match(catalog, /Level 9 — Fullness of Unity/);
+  assert.match(catalog, /9 ступень — Полнота Единства/);
+  assert.match(catalog, /academySourceBlocks\(record\)/);
+});
