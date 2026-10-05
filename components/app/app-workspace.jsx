@@ -973,6 +973,12 @@ function Runner({ id, locale, onExit, onComplete }) {
           {Math.min(index + 1, def.questions.length + 1)} / {def.questions.length + 1}
         </p>
       </header>
+      {def.source?.copyright && (
+        <aside className="hh-instrument-attribution">
+          <small>{def.source.copyright}</small>
+          {def.source.citation && <small>{def.source.citation}</small>}
+        </aside>
+      )}
       <p className="hh-muted">
         {def.key === 'hh-current-state'
           ? c.rightNow
