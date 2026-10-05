@@ -19,7 +19,7 @@ import {
   startableCatalog,
 } from '@/data/assessments/catalog'
 import { recommendAfterResult, recommendForMood, moodTrend } from '@/lib/assessments/recommendations'
-import { buildProfileSummary, profileCompletionRecommendations } from '@/lib/profile/summary'
+import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 
 export async function appFetch(path, body, method) {
@@ -1277,7 +1277,7 @@ function ProfileOverview({ profile, locale, onStartAssessment }) {
                         <small>{row.min}–{row.max}</small>
                       </td>
                       <td>
-                        {Number.isFinite(Number(row.priorValue)) ? (
+                        {row.priorValue !== null && Number.isFinite(Number(row.priorValue)) ? (
                           <>
                             <strong>{profileNumber(row.priorValue)}</strong>
                             <small>{row.priorMeasurementAt ? dateLabel(row.priorMeasurementAt, locale) : ''}</small>
@@ -1287,7 +1287,7 @@ function ProfileOverview({ profile, locale, onStartAssessment }) {
                         )}
                       </td>
                       <td>
-                        {Number.isFinite(Number(row.delta)) ? <strong>{profileDelta(row.delta)}</strong> : <span>—</span>}
+                        {row.delta !== null && Number.isFinite(Number(row.delta)) ? <strong>{profileDelta(row.delta)}</strong> : <span>—</span>}
                       </td>
                       <td>
                         <time dateTime={row.measurementAt}>{dateLabel(row.measurementAt, locale)}</time>
