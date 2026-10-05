@@ -46,8 +46,8 @@ export function ReportDeliveryCreate({ action, locale = 'en' }) {
       </form>
       <p className="assessment-notice">
         {locale === 'ru'
-          ? 'Важно: любой, у кого есть полная ссылка, сможет прочитать этот отчёт до её отключения/истечения. Сохранение одного отчёта не подтверждает личность клиента и не связывает весь старый кабинет.'
-          : 'Anyone with the complete link can read this report until it expires or is disabled. Saving one report does not verify client identity or link the whole legacy Cabinet.'}
+          ? 'Важно: любой, у кого есть полная ссылка, сможет прочитать этот отчёт до её отключения/истечения. При явном сохранении карточка клиента связывается с выбранным Google-аккаунтом, но остальные старые документы автоматически не открываются.'
+          : 'Anyone with the complete link can read this report until it expires or is disabled. An explicit Save links the client profile to the chosen Google Account, but other legacy documents are not opened automatically.'}
       </p>
       <FormStatus state={state} locale={locale} />
     </section>
