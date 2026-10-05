@@ -311,3 +311,41 @@ test("all six PsiMaster legacy video-course families are restored", async () => 
   assert.equal(media.filter((row) => row.logicalId === "videos/energy-pump-ups").length, 2);
   assert.equal(new Set(media.map((row) => row.videoId)).size, 41);
 });
+
+
+test("PsiMaster English and Russian course bodies stay structurally equivalent", async () => {
+  const [sources, translations] = await Promise.all([
+    readJson("data/academy/psimaster-sources.generated.json"),
+    readJson("data/academy/psimaster-translations.generated.json"),
+  ]);
+  assert.equal(sources.length, 22);
+  assert.equal(Object.keys(translations).length, 22);
+  for (const source of sources) {
+    const en = translations[source.logicalId]?.en;
+    assert.ok(en, `missing EN translation: ${source.logicalId}`);
+    assert.equal(en.length, source.content.length, `block count: ${source.logicalId}`);
+    assert.deepEqual(en.map((block) => block.type), source.content.map((block) => block.type), `block structure: ${source.logicalId}`);
+    assert.doesNotMatch(en.map((block) => block.text).join("\n"), /[А-Яа-яЁё]/, `Cyrillic leaked into EN: ${source.logicalId}`);
+  }
+});
+
+test("PsiMaster bilingual renderer selects localized body text by locale", async () => {
+  const [catalog, page] = await Promise.all([
+    readFile("data/academy/catalog.ts", "utf8"),
+    readFile("components/academy-record-page.tsx", "utf8"),
+  ]);
+  assert.match(catalog, /psimasterTranslations/);
+  assert.match(catalog, /record\.sourceProvider === "psimaster" && locale === "en"/);
+  assert.match(catalog, /Translated from the original Russian PsiMaster source/);
+  assert.match(page, /academyPublicBlocks\(record, locale\)/);
+  assert.match(page, /academyPublicOmittedCount\(record, locale\)/);
+});
+
+test("PsiMaster legacy video titles have English and Russian parity", async () => {
+  const media = await readJson("data/academy/psimaster-media.generated.json");
+  assert.equal(media.length, 45);
+  assert.ok(media.every((row) => row.lessonTitle && row.lessonTitleEn));
+  assert.doesNotMatch(media.map((row) => row.lessonTitleEn).join("\n"), /[А-Яа-яЁё]/);
+  const page = await readFile("components/academy-record-page.tsx", "utf8");
+  assert.match(page, /locale === "ru" \? item\.lessonTitle : \(item\.lessonTitleEn \?\? item\.lessonTitle\)/);
+});
