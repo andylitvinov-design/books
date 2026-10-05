@@ -41,6 +41,7 @@ export type AcademyMediaRecord = {
   sourceProvider?: "psitrends" | "psimaster" | "reiki-yggdrasil-canonical";
   sourceTaxonomyId?: string;
   lessonTitle?: string;
+  lessonTitleEn?: string;
   order?: number;
   extractionMethod?: string;
 };
