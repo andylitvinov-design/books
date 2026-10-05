@@ -1,0 +1,1600 @@
+[
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12455",
+    "path": "/service?shs_term_node_tid_depth=12455",
+    "linkText": "Высокая мудрость Египетских Богов",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "mysteries/egypt/high-wisdom",
+    "direction": "mysteries",
+    "logicalId": "mysteries/egypt/high-wisdom",
+    "sourceLocale": "ru",
+    "sourceTitle": "Высокая мудрость Египетских Богов - PsiMaster",
+    "title": "Высокая мудрость Египетских Богов",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Высокая мудрость Египетских Богов"
+      },
+      {
+        "type": "p",
+        "text": "Историческая программа PsiMaster по египетской символической традиции. Сохраняется как учебный архив без старых обещаний исцеления и сверхъестественного эффекта."
+      },
+      {
+        "type": "h2",
+        "text": "7 модулей"
+      },
+      {
+        "type": "h3",
+        "text": "1. Осирис"
+      },
+      {
+        "type": "p",
+        "text": "Очищение и завершение старого этапа; образы Ка, Ба, Иб и Хайбид в языке курса."
+      },
+      {
+        "type": "h3",
+        "text": "2. Маат"
+      },
+      {
+        "type": "p",
+        "text": "Порядок, баланс и внутренние ориентиры."
+      },
+      {
+        "type": "h3",
+        "text": "3. Гор"
+      },
+      {
+        "type": "p",
+        "text": "Действие, творчество и запуск дела."
+      },
+      {
+        "type": "h3",
+        "text": "4. Исида"
+      },
+      {
+        "type": "p",
+        "text": "Стратегия и нестандартные решения."
+      },
+      {
+        "type": "h3",
+        "text": "5. Хатхор и Тефнут"
+      },
+      {
+        "type": "p",
+        "text": "Поддержка, забота и восстановление как символические темы."
+      },
+      {
+        "type": "h3",
+        "text": "6. Тот"
+      },
+      {
+        "type": "p",
+        "text": "Знание, письмо, символические формулы и артефакты."
+      },
+      {
+        "type": "h3",
+        "text": "7. Амун-Ра и Мин-Ра"
+      },
+      {
+        "type": "p",
+        "text": "Масштаб и выход за привычные рамки."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12455",
+    "skippedRiskyBlocks": 8,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12455",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "f60fd982"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12399",
+    "path": "/service?shs_term_node_tid_depth=12399",
+    "linkText": "Красота и Сила Античности. Греция и Рим",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "mysteries/greece-rome/beauty-and-power",
+    "direction": "mysteries",
+    "logicalId": "mysteries/greece-rome/beauty-and-power",
+    "sourceLocale": "ru",
+    "sourceTitle": "Красота и Сила Античности. Греция и Рим - PsiMaster",
+    "title": "Красота и Сила Античности. Греция и Рим",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Красота и Сила Античности. Греция и Рим"
+      },
+      {
+        "type": "p",
+        "text": "Шестимодульная программа PsiMaster, использующая образы античной мифологии как материал для архетипической и образной работы."
+      },
+      {
+        "type": "h2",
+        "text": "1. Базовые архетипы"
+      },
+      {
+        "type": "li",
+        "text": "Кибела"
+      },
+      {
+        "type": "li",
+        "text": "Зевс"
+      },
+      {
+        "type": "li",
+        "text": "Персефона / Кора"
+      },
+      {
+        "type": "li",
+        "text": "Эрос"
+      },
+      {
+        "type": "h2",
+        "text": "2. Архетипы любви"
+      },
+      {
+        "type": "li",
+        "text": "Артемида"
+      },
+      {
+        "type": "li",
+        "text": "Гермес"
+      },
+      {
+        "type": "li",
+        "text": "Афина"
+      },
+      {
+        "type": "li",
+        "text": "Арес / Марс"
+      },
+      {
+        "type": "h2",
+        "text": "3. Архетипы красоты"
+      },
+      {
+        "type": "li",
+        "text": "Музы, грации и сатиры"
+      },
+      {
+        "type": "li",
+        "text": "Дионис"
+      },
+      {
+        "type": "li",
+        "text": "Афродита"
+      },
+      {
+        "type": "li",
+        "text": "Аполлон"
+      },
+      {
+        "type": "h2",
+        "text": "4. Страсть жизни"
+      },
+      {
+        "type": "li",
+        "text": "Деметра"
+      },
+      {
+        "type": "li",
+        "text": "Пан"
+      },
+      {
+        "type": "li",
+        "text": "Менады"
+      },
+      {
+        "type": "li",
+        "text": "Посейдон"
+      },
+      {
+        "type": "h2",
+        "text": "5. Путь Героя"
+      },
+      {
+        "type": "li",
+        "text": "Геракл"
+      },
+      {
+        "type": "li",
+        "text": "Персефона"
+      },
+      {
+        "type": "li",
+        "text": "Орфей"
+      },
+      {
+        "type": "li",
+        "text": "Эрос и Психея"
+      },
+      {
+        "type": "h2",
+        "text": "6. Жизнь и перерождение"
+      },
+      {
+        "type": "li",
+        "text": "Аид"
+      },
+      {
+        "type": "li",
+        "text": "Геката"
+      },
+      {
+        "type": "li",
+        "text": "Кронос"
+      },
+      {
+        "type": "li",
+        "text": "Гера и Гестия"
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12399",
+    "skippedRiskyBlocks": 6,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12399",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "058e9344"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12329",
+    "path": "/service?shs_term_node_tid_depth=12329",
+    "linkText": "Северные Скандинавские мистерии рун",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "symbolic/scandinavian-mysteries",
+    "direction": "symbolic",
+    "logicalId": "symbolic/scandinavian-mysteries",
+    "sourceLocale": "ru",
+    "sourceTitle": "Северные Скандинавские мистерии рун - PsiMaster",
+    "title": "Северные Скандинавские мистерии рун",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Северные Скандинавские мистерии рун"
+      },
+      {
+        "type": "p",
+        "text": "Отдельная программа PsiMaster по рунической символике и архетипам Севера."
+      },
+      {
+        "type": "h2",
+        "text": "10 рун курса"
+      },
+      {
+        "type": "li",
+        "text": "Кена"
+      },
+      {
+        "type": "li",
+        "text": "Иса"
+      },
+      {
+        "type": "li",
+        "text": "Феху"
+      },
+      {
+        "type": "li",
+        "text": "Уруз"
+      },
+      {
+        "type": "li",
+        "text": "Перт"
+      },
+      {
+        "type": "li",
+        "text": "Тейваз"
+      },
+      {
+        "type": "li",
+        "text": "Соул"
+      },
+      {
+        "type": "li",
+        "text": "Гебо"
+      },
+      {
+        "type": "li",
+        "text": "Йера"
+      },
+      {
+        "type": "li",
+        "text": "Ингуз"
+      },
+      {
+        "type": "h2",
+        "text": "Архетипическая линия"
+      },
+      {
+        "type": "p",
+        "text": "Бальдр → Фрейр → Тор → Один как историческая символическая модель взросления и мужской идентичности."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12329",
+    "skippedRiskyBlocks": 6,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12329",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "30374d4f"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12400",
+    "path": "/service?shs_term_node_tid_depth=12400",
+    "linkText": "Славянские сказки и мистерии",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "mysteries/slavic/fairy-tales-mysteries",
+    "direction": "mysteries",
+    "logicalId": "mysteries/slavic/fairy-tales-mysteries",
+    "sourceLocale": "ru",
+    "sourceTitle": "Славянские сказки и мистерии - PsiMaster",
+    "title": "Славянские сказки и мистерии",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Славянские сказки и мистерии"
+      },
+      {
+        "type": "p",
+        "text": "Архетипическая программа вокруг сюжетов славянских сказок и мифов."
+      },
+      {
+        "type": "h2",
+        "text": "Часть 1. Основание мира"
+      },
+      {
+        "type": "li",
+        "text": "Алатырь-камень"
+      },
+      {
+        "type": "li",
+        "text": "Дух-помощник / тотем"
+      },
+      {
+        "type": "li",
+        "text": "Путь в нижний мир"
+      },
+      {
+        "type": "li",
+        "text": "Мёртвая вода"
+      },
+      {
+        "type": "li",
+        "text": "Живая вода"
+      },
+      {
+        "type": "li",
+        "text": "Ведагон"
+      },
+      {
+        "type": "li",
+        "text": "Горний мир — предки и Род"
+      },
+      {
+        "type": "h2",
+        "text": "Часть 2. Высшие Предки"
+      },
+      {
+        "type": "p",
+        "text": "Велес, Ярило, Лада, Макошь и другие фигуры традиции."
+      },
+      {
+        "type": "h2",
+        "text": "Часть 3. Мистерии сказок и мифов"
+      },
+      {
+        "type": "p",
+        "text": "Углубление через символические сюжеты и архетипические расстановки."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12400",
+    "skippedRiskyBlocks": 5,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12400",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "d934a503"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12392",
+    "path": "/service?shs_term_node_tid_depth=12392",
+    "linkText": "Мистерии Майя и Ацтеков. Шепот Пернатого Змея",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "mysteries/maya-aztec/feathered-serpent",
+    "direction": "mysteries",
+    "logicalId": "mysteries/maya-aztec/feathered-serpent",
+    "sourceLocale": "ru",
+    "sourceTitle": "Мистерии Майя и Ацтеков. Шепот Пернатого Змея - PsiMaster",
+    "title": "Мистерии Майя и Ацтеков. Шепот Пернатого Змея",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Мистерии Майя и Ацтеков. Шепот Пернатого Змея"
+      },
+      {
+        "type": "p",
+        "text": "Исторический курс PsiMaster по пантеону Майя/Ацтеков и работе с целью."
+      },
+      {
+        "type": "h2",
+        "text": "Ключевые фигуры"
+      },
+      {
+        "type": "li",
+        "text": "Иик / Эхекатль"
+      },
+      {
+        "type": "li",
+        "text": "Чаак / Тлалок"
+      },
+      {
+        "type": "li",
+        "text": "Кинич Ахау / Ягуар"
+      },
+      {
+        "type": "li",
+        "text": "Иш-Чель"
+      },
+      {
+        "type": "li",
+        "text": "Ишиим / Юм Кааш"
+      },
+      {
+        "type": "li",
+        "text": "Ицамна"
+      },
+      {
+        "type": "li",
+        "text": "Кетцалькоатль"
+      },
+      {
+        "type": "li",
+        "text": "Шолотль"
+      },
+      {
+        "type": "h2",
+        "text": "Дополнительные темы"
+      },
+      {
+        "type": "li",
+        "text": "К'ух"
+      },
+      {
+        "type": "li",
+        "text": "Змей Видения"
+      },
+      {
+        "type": "li",
+        "text": "Календарные циклы Майя"
+      },
+      {
+        "type": "h2",
+        "text": "Видео-лекции"
+      },
+      {
+        "type": "p",
+        "text": "Сохранились лекции о Кетцалькоатле, принципах работы, Шолотле, Солнце и Юм Кааш; медиа привязываются после проверки ID."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12392",
+    "skippedRiskyBlocks": 7,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12392",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "a60da324"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12343",
+    "path": "/service?shs_term_node_tid_depth=12343",
+    "linkText": "Западная магия и Мистерии Арканов Таро",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "symbolic/tarot/major-arcana-mysteries",
+    "direction": "symbolic",
+    "logicalId": "symbolic/tarot/major-arcana-mysteries",
+    "sourceLocale": "ru",
+    "sourceTitle": "Западная магия и Мистерии Арканов Таро - PsiMaster",
+    "title": "Западная магия и Мистерии Арканов Таро",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Западная магия и Мистерии Арканов Таро"
+      },
+      {
+        "type": "p",
+        "text": "Отдельный курс PsiMaster по Старшим Арканам и Древу Сефирот; не дублирует курс Младших Арканов/Стихий."
+      },
+      {
+        "type": "h2",
+        "text": "Старшие Арканы как символические модели"
+      },
+      {
+        "type": "p",
+        "text": "Арканы используются как архетипические перспективы для самонаблюдения, выбора, отношений и целей."
+      },
+      {
+        "type": "h3",
+        "text": "Пример: VI Аркан"
+      },
+      {
+        "type": "p",
+        "text": "В исходном курсе связан с Хокмой и Хесед, будущим, гармонией и направлением движения."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12343",
+    "skippedRiskyBlocks": 5,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12343",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "22ce4814"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12410",
+    "path": "/service?shs_term_node_tid_depth=12410",
+    "linkText": "Зороастризм и Магия Востока",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "mysteries/zoroastrism/eastern-magic",
+    "direction": "mysteries",
+    "logicalId": "mysteries/zoroastrism/eastern-magic",
+    "sourceLocale": "ru",
+    "sourceTitle": "Зороастризм и Магия Востока - PsiMaster",
+    "title": "Зороастризм и Магия Востока",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Зороастризм и Магия Востока"
+      },
+      {
+        "type": "p",
+        "text": "Исторический марафон PsiMaster по образам света, порядка, истины и ясности. Медицинские формулировки старого периода не переносятся."
+      },
+      {
+        "type": "h2",
+        "text": "Фигуры курса"
+      },
+      {
+        "type": "li",
+        "text": "Аша"
+      },
+      {
+        "type": "li",
+        "text": "Чиста"
+      },
+      {
+        "type": "li",
+        "text": "Митра"
+      },
+      {
+        "type": "li",
+        "text": "Рашну"
+      },
+      {
+        "type": "li",
+        "text": "Сраоша"
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12410",
+    "skippedRiskyBlocks": 8,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12410",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "1ba5a659"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12407",
+    "path": "/service?shs_term_node_tid_depth=12407",
+    "linkText": "Демиурги Творения. Гипнокоучинг для бизнеса",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/business/demiurges-of-creation",
+    "direction": "applied",
+    "logicalId": "applied/business/demiurges-of-creation",
+    "sourceLocale": "ru",
+    "sourceTitle": "Демиурги Творения. Гипнокоучинг для бизнеса - PsiMaster",
+    "title": "Демиурги Творения. Гипнокоучинг для бизнеса",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Демиурги Творения. Гипнокоучинг для бизнеса"
+      },
+      {
+        "type": "p",
+        "text": "Applied-программа, где мифологические и Таро-образы используются как рамки анализа бизнес-задач."
+      },
+      {
+        "type": "h2",
+        "text": "1. Демиурги древних традиций"
+      },
+      {
+        "type": "p",
+        "text": "Ра; Эрос и Яйцо Смысла; Вишну; Пернатый Змей; Митра; афро-карибская традиция; Алатырь."
+      },
+      {
+        "type": "h2",
+        "text": "2. Порталы стихий"
+      },
+      {
+        "type": "p",
+        "text": "Огонь, Вода, Воздух, Земля и историческая фигура Тролля."
+      },
+      {
+        "type": "h2",
+        "text": "3. Античность и новые возможности"
+      },
+      {
+        "type": "p",
+        "text": "Гермес/Меркурий, Фортуна, Тихе, Нептун, Афина, Ника, Зевс."
+      },
+      {
+        "type": "h2",
+        "text": "4. Арканы в бизнесе"
+      },
+      {
+        "type": "p",
+        "text": "1, 10, 19, 7, 15, 6 и 4 Арканы."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12407",
+    "skippedRiskyBlocks": 7,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12407",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "3f532d6c"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12425",
+    "path": "/service?shs_term_node_tid_depth=12425",
+    "linkText": "Большие фигуры",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/archetypal-therapy/big-figures",
+    "direction": "applied",
+    "logicalId": "applied/archetypal-therapy/big-figures",
+    "sourceLocale": "ru",
+    "sourceTitle": "Большие фигуры - PsiMaster",
+    "title": "Большие фигуры",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Большие фигуры"
+      },
+      {
+        "type": "p",
+        "text": "Большая historical/applied программа архетипической работы."
+      },
+      {
+        "type": "h2",
+        "text": "1A. Демиурги"
+      },
+      {
+        "type": "p",
+        "text": "Хронос, Эрос, Кетцалькоатль, I Аркан"
+      },
+      {
+        "type": "h2",
+        "text": "1B. Сила стихий"
+      },
+      {
+        "type": "p",
+        "text": "Огонь, Воздух, Земля, Вода"
+      },
+      {
+        "type": "h2",
+        "text": "1C. Сила Солнца"
+      },
+      {
+        "type": "p",
+        "text": "Ра, Гелиос, Митра, Кинич Ахау"
+      },
+      {
+        "type": "h2",
+        "text": "2A. Женские инициации"
+      },
+      {
+        "type": "p",
+        "text": "Артемида, Афродита, Афина, Гера"
+      },
+      {
+        "type": "h2",
+        "text": "2B. Материнство"
+      },
+      {
+        "type": "p",
+        "text": "Деметра, Хатхор, Кибела, III Аркан"
+      },
+      {
+        "type": "h2",
+        "text": "3A. Мужские инициации"
+      },
+      {
+        "type": "p",
+        "text": "Геракл, Арес/Марс, Аполлон, Гор"
+      },
+      {
+        "type": "h2",
+        "text": "3B. Владыки"
+      },
+      {
+        "type": "p",
+        "text": "Один, Зевс/Юпитер, Нептун, IV Аркан"
+      },
+      {
+        "type": "h2",
+        "text": "4. Любовь и полнота жизни"
+      },
+      {
+        "type": "p",
+        "text": "Эрос, Психея, Фрейя/Фрейр, Дионис, Пан, Мин/Ярило"
+      },
+      {
+        "type": "h2",
+        "text": "5. Власть и деньги"
+      },
+      {
+        "type": "p",
+        "text": "Исида, Гор, Гермес/Меркурий, Гефест, Ньерд"
+      },
+      {
+        "type": "h2",
+        "text": "6. Исторический блок «Сила здоровья»"
+      },
+      {
+        "type": "p",
+        "text": "Маат, Ахура Мазда, Эйр, Асклепий, Осирис, Тефнут — как символические темы, не медицинские обещания"
+      },
+      {
+        "type": "h2",
+        "text": "7. Знание и предназначение"
+      },
+      {
+        "type": "p",
+        "text": "Норны, Гна, Тот, Аид/Геката и ряд Арканов"
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12425",
+    "skippedRiskyBlocks": 8,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12425",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "fc41c901"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12060",
+    "path": "/service?shs_term_node_tid_depth=12060",
+    "linkText": "Тантрическое целительство",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/tantric-healing",
+    "direction": "applied",
+    "logicalId": "applied/tantric-healing",
+    "sourceLocale": "ru",
+    "sourceTitle": "Тантрическое целительство - PsiMaster",
+    "title": "Тантрическое целительство",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Тантрическое целительство"
+      },
+      {
+        "type": "p",
+        "text": "Историческая исследовательская программа телесно-ориентированных и символических практик; название источника сохраняется, но курс не представлен как медицинское лечение."
+      },
+      {
+        "type": "h2",
+        "text": "7 этапов"
+      },
+      {
+        "type": "li",
+        "text": "Контакт с собой, чувствами и желаниями"
+      },
+      {
+        "type": "li",
+        "text": "Контакт с миром и потребностями внутреннего ребёнка"
+      },
+      {
+        "type": "li",
+        "text": "Мужской и женский круг"
+      },
+      {
+        "type": "li",
+        "text": "Практики в паре и границы"
+      },
+      {
+        "type": "li",
+        "text": "Творческая / сексуальная энергия"
+      },
+      {
+        "type": "li",
+        "text": "Архетипы Египта и Греции"
+      },
+      {
+        "type": "li",
+        "text": "Манифестация жизненности"
+      },
+      {
+        "type": "h2",
+        "text": "4 модуля"
+      },
+      {
+        "type": "li",
+        "text": "Египетская традиция"
+      },
+      {
+        "type": "li",
+        "text": "Дионисийские мистерии"
+      },
+      {
+        "type": "li",
+        "text": "Северные мистерии"
+      },
+      {
+        "type": "li",
+        "text": "Ведическая тантра"
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12060",
+    "skippedRiskyBlocks": 7,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12060",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "db1d9d6c"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12345",
+    "path": "/service?shs_term_node_tid_depth=12345",
+    "linkText": "Кундалини Рейки — базовый курс",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "reiki/kundalini-reiki",
+    "direction": "reiki",
+    "logicalId": "reiki/kundalini-reiki",
+    "sourceLocale": "ru",
+    "sourceTitle": "Кундалини Рейки — базовый курс - PsiMaster",
+    "title": "Кундалини Рейки — базовый курс",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Кундалини Рейки — базовый курс"
+      },
+      {
+        "type": "p",
+        "text": "Отдельный трёхступенчатый курс PsiMaster. Медицинские, ДНК- и дистанционно-лечебные утверждения исходника не публикуются как факты."
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 1"
+      },
+      {
+        "type": "p",
+        "text": "Расслабление, внимание к телу, символика чакр и самостоятельная практика."
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 2"
+      },
+      {
+        "type": "p",
+        "text": "Исторический курс описывает усиление Kundalini-образа и практику «Баланс»."
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 3 / Master"
+      },
+      {
+        "type": "p",
+        "text": "Расширенный уровень с названиями дополнительных настроек: Diamond Reiki, Crystal Reiki, DNA Reiki, Past Life Reiki и др. — только как элементы исторической традиции."
+      },
+      {
+        "type": "h2",
+        "text": "Этическая рамка"
+      },
+      {
+        "type": "p",
+        "text": "Исходный текст отдельно отмечает, что практику не следует направлять другому человеку без его просьбы."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12345",
+    "skippedRiskyBlocks": 18,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12345",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "033a4d1b"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12362",
+    "path": "/service?shs_term_node_tid_depth=12362",
+    "linkText": "Курс энергетических массажей",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/energy-massage",
+    "direction": "applied",
+    "logicalId": "applied/energy-massage",
+    "sourceLocale": "ru",
+    "sourceTitle": "Курс энергетических массажей - PsiMaster",
+    "title": "Курс энергетических массажей",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Курс энергетических массажей"
+      },
+      {
+        "type": "p",
+        "text": "Исторический практический курс, сочетающий разогрев тела, телесное внимание и язык Reiki/energy-work."
+      },
+      {
+        "type": "h2",
+        "text": "Базовая структура"
+      },
+      {
+        "type": "li",
+        "text": "Разогрев тела и настройка внимания"
+      },
+      {
+        "type": "li",
+        "text": "Практики телесного ресурса"
+      },
+      {
+        "type": "li",
+        "text": "Парная практика и наблюдение за ощущениями"
+      },
+      {
+        "type": "p",
+        "text": "Не представлен как медицинский массаж или лечение."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12362",
+    "skippedRiskyBlocks": 5,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12362",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "bd945ed4"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12403",
+    "path": "/service?shs_term_node_tid_depth=12403",
+    "linkText": "Телесная психотерапия (Бодинамика)",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/body-psychotherapy-bodynamics",
+    "direction": "applied",
+    "logicalId": "applied/body-psychotherapy-bodynamics",
+    "sourceLocale": "ru",
+    "sourceTitle": "Телесная психотерапия (Бодинамика) - PsiMaster",
+    "title": "Телесная психотерапия (Бодинамика)",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Телесная психотерапия (Бодинамика)"
+      },
+      {
+        "type": "p",
+        "text": "Архивная программа о телесных ощущениях, ранних переживаниях, границах и поддержке внутреннего ребёнка."
+      },
+      {
+        "type": "h2",
+        "text": "Темы"
+      },
+      {
+        "type": "li",
+        "text": "Контакт с телом и ощущениями"
+      },
+      {
+        "type": "li",
+        "text": "Ранние этапы развития"
+      },
+      {
+        "type": "li",
+        "text": "Границы и автономия"
+      },
+      {
+        "type": "li",
+        "text": "Получение поддержки"
+      },
+      {
+        "type": "li",
+        "text": "Телесные реакции на стресс"
+      },
+      {
+        "type": "p",
+        "text": "Перенесено без обещаний излечения травм через прикосновение."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12403",
+    "skippedRiskyBlocks": 6,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12403",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "e1582a1c"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12405",
+    "path": "/service?shs_term_node_tid_depth=12405",
+    "linkText": "Образная терапия. Символдрама",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/imagery-therapy-symboldrama",
+    "direction": "applied",
+    "logicalId": "applied/imagery-therapy-symboldrama",
+    "sourceLocale": "ru",
+    "sourceTitle": "Образная терапия. Символдрама - PsiMaster",
+    "title": "Образная терапия. Символдрама",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Образная терапия. Символдрама"
+      },
+      {
+        "type": "p",
+        "text": "Пяти-модульная программа работы с образами и воображением."
+      },
+      {
+        "type": "h2",
+        "text": "1. Фундамент личности"
+      },
+      {
+        "type": "p",
+        "text": "Луг, цветок, безопасное место"
+      },
+      {
+        "type": "h2",
+        "text": "2. Жизненная сила"
+      },
+      {
+        "type": "p",
+        "text": "Ручей, место силы, источник, оазис, купель"
+      },
+      {
+        "type": "h2",
+        "text": "3. Импульс развития"
+      },
+      {
+        "type": "p",
+        "text": "Гора, дом, опушка леса"
+      },
+      {
+        "type": "h2",
+        "text": "4. Мужская / женская идентичность"
+      },
+      {
+        "type": "p",
+        "text": "Сосуд, меч, мастерская, родовые образы"
+      },
+      {
+        "type": "h2",
+        "text": "5. Любовь и отношения"
+      },
+      {
+        "type": "p",
+        "text": "Озеро, два берега, парные мотивы"
+      },
+      {
+        "type": "p",
+        "text": "Старые медицинские гарантии, цены и рекламные формулировки не переносятся."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12405",
+    "skippedRiskyBlocks": 7,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12405",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "78f454b1"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12408",
+    "path": "/service?shs_term_node_tid_depth=12408",
+    "linkText": "Гипнотерапия и регрессии прошлых жизней",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/hypnotherapy-regressions",
+    "direction": "applied",
+    "logicalId": "applied/hypnotherapy-regressions",
+    "sourceLocale": "ru",
+    "sourceTitle": "Гипнотерапия и регрессии прошлых жизней - PsiMaster",
+    "title": "Гипнотерапия и регрессии прошлых жизней",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Гипнотерапия и регрессии прошлых жизней"
+      },
+      {
+        "type": "p",
+        "text": "Архивная страница PsiMaster объединяет гипнотерапевтическую, образную и регрессионную работу."
+      },
+      {
+        "type": "h2",
+        "text": "Ключевая рамка"
+      },
+      {
+        "type": "p",
+        "text": "Образы «прошлых жизней» сохраняются как субъективный образный материал бессознательного, а не утверждение об их объективной реальности."
+      },
+      {
+        "type": "h2",
+        "text": "Связанные методы"
+      },
+      {
+        "type": "li",
+        "text": "Гипнотерапевтическое исследование стрессовых реакций"
+      },
+      {
+        "type": "li",
+        "text": "Образная терапия"
+      },
+      {
+        "type": "li",
+        "text": "Системные/бизнес-расстановки в историческом контексте"
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12408",
+    "skippedRiskyBlocks": 6,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12408",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "567699be"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12449",
+    "path": "/service?shs_term_node_tid_depth=12449",
+    "linkText": "Сексуальная энергетика и Греческие Боги Любви",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/sexual-energy-greek-gods",
+    "direction": "applied",
+    "logicalId": "applied/sexual-energy-greek-gods",
+    "sourceLocale": "ru",
+    "sourceTitle": "Сексуальная энергетика и Греческие Боги Любви - PsiMaster",
+    "title": "Сексуальная энергетика и Греческие Боги Любви",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Сексуальная энергетика и Греческие Боги Любви"
+      },
+      {
+        "type": "p",
+        "text": "Семимодульный исторический курс с греческими архетипами как символическим языком жизненности, отношений и творчества."
+      },
+      {
+        "type": "h2",
+        "text": "7 модулей"
+      },
+      {
+        "type": "li",
+        "text": "Асклепий и Гигея"
+      },
+      {
+        "type": "li",
+        "text": "Дионис"
+      },
+      {
+        "type": "li",
+        "text": "Пан и Эрос"
+      },
+      {
+        "type": "li",
+        "text": "Аполлон и Афродита"
+      },
+      {
+        "type": "li",
+        "text": "Деметра и Лето"
+      },
+      {
+        "type": "li",
+        "text": "Музы и вакханки"
+      },
+      {
+        "type": "li",
+        "text": "Приап — историческая амулетная и сексуальная символика"
+      },
+      {
+        "type": "p",
+        "text": "Заявления о здоровье, потенции, омоложении и гарантированном воздействии исключены."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12449",
+    "skippedRiskyBlocks": 9,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12449",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "865c6f5a"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12462",
+    "path": "/service?shs_term_node_tid_depth=12462",
+    "linkText": "Курс Архетипической терапии",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/archetypal-therapy/program",
+    "direction": "applied",
+    "logicalId": "applied/archetypal-therapy/program",
+    "sourceLocale": "ru",
+    "sourceTitle": "Курс Архетипической терапии - PsiMaster",
+    "title": "Курс Архетипической терапии",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Курс Архетипической терапии"
+      },
+      {
+        "type": "p",
+        "text": "Исторический курс, опирающийся на юнгианскую идею архетипов и символический материал бессознательного."
+      },
+      {
+        "type": "h2",
+        "text": "Инструменты"
+      },
+      {
+        "type": "li",
+        "text": "Наблюдение и свободные ассоциации"
+      },
+      {
+        "type": "li",
+        "text": "Работа с образами воображения"
+      },
+      {
+        "type": "li",
+        "text": "Символдрама"
+      },
+      {
+        "type": "li",
+        "text": "Эмоционально-образная терапия"
+      },
+      {
+        "type": "li",
+        "text": "Гипнотерапия"
+      },
+      {
+        "type": "li",
+        "text": "Системные расстановки"
+      },
+      {
+        "type": "h2",
+        "text": "Архетип и тень"
+      },
+      {
+        "type": "p",
+        "text": "Исследование скрытых или подавленных частей личности и способов их интеграции."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12462",
+    "skippedRiskyBlocks": 7,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12462",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "aec101b5"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12412",
+    "path": "/service?shs_term_node_tid_depth=12412",
+    "linkText": "Марафон «Круг Эроса»",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "archive/circle-of-eros",
+    "direction": "archive",
+    "logicalId": "archive/circle-of-eros",
+    "sourceLocale": "ru",
+    "sourceTitle": "Марафон «Круг Эроса» - PsiMaster",
+    "title": "Марафон «Круг Эроса»",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Марафон «Круг Эроса»"
+      },
+      {
+        "type": "p",
+        "text": "Закрытый исторический марафон PsiMaster по архетипу Эроса и сексуальной энергетике; старые цены и регистрация не переносятся."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "archive_only",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12412",
+    "skippedRiskyBlocks": 8,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12412",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "28ab1e7c"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12454",
+    "path": "/service?shs_term_node_tid_depth=12454",
+    "linkText": "Марафон Мечты в энергиях Диониса",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "archive/dionysus-dreams-marathon",
+    "direction": "archive",
+    "logicalId": "archive/dionysus-dreams-marathon",
+    "sourceLocale": "ru",
+    "sourceTitle": "Марафон Мечты в энергиях Диониса - PsiMaster",
+    "title": "Марафон Мечты в энергиях Диониса",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Марафон Мечты в энергиях Диониса"
+      },
+      {
+        "type": "p",
+        "text": "Исторический недельный марафон, где образ Диониса использовался как символ удовольствия, жизненности и творческого импульса."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "archive_only",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12454",
+    "skippedRiskyBlocks": 8,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12454",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "b96c7214"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12394",
+    "path": "/service?shs_term_node_tid_depth=12394",
+    "linkText": "Клуб «Храм Любви». Дионисийская Тантра",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "archive/dionysian-tantra-club",
+    "direction": "archive",
+    "logicalId": "archive/dionysian-tantra-club",
+    "sourceLocale": "ru",
+    "sourceTitle": "Клуб «Храм Любви». Дионисийская Тантра - PsiMaster",
+    "title": "Клуб «Храм Любви». Дионисийская Тантра",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Клуб «Храм Любви». Дионисийская Тантра"
+      },
+      {
+        "type": "p",
+        "text": "Исторический групповой формат, соединявший античную дионисийскую символику и европейскую тантрическую школу."
+      }
+    ],
+    "reviewState": "source_backed_curated",
+    "status": "archive_only",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12394",
+    "skippedRiskyBlocks": 7,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12394",
+    "hashAlgorithm": "fnv1a32-curated",
+    "contentHash": "f7391ab2"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12308",
+    "path": "/service?shs_term_node_tid_depth=12308",
+    "linkText": "Образная терапия — Зазеркалье",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/imagery-therapy/mirrorland",
+    "direction": "applied",
+    "logicalId": "applied/imagery-therapy/mirrorland",
+    "sourceLocale": "ru",
+    "sourceTitle": "Образная терапия — Зазеркалье - PsiMaster",
+    "title": "Образная терапия — Зазеркалье",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Образная терапия — Зазеркалье"
+      },
+      {
+        "type": "p",
+        "text": "Четырёхступенчатая историческая программа PsiMaster по эмоционально-образной работе. Сохраняется как образовательный curriculum без старых терапевтических гарантий, отзывов-обещаний и цен."
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 1. Дорога к Себе"
+      },
+      {
+        "type": "li",
+        "text": "Мужчина и Женщина"
+      },
+      {
+        "type": "li",
+        "text": "Круг Счастья"
+      },
+      {
+        "type": "li",
+        "text": "Сила Духа"
+      },
+      {
+        "type": "li",
+        "text": "Законы Богатства"
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 2. Зазеркалье — Возврат силы"
+      },
+      {
+        "type": "li",
+        "text": "Страшный лес — образ Тени и страхов"
+      },
+      {
+        "type": "li",
+        "text": "Животное в цепях — привязанности"
+      },
+      {
+        "type": "li",
+        "text": "Источник силы / вектор развития"
+      },
+      {
+        "type": "li",
+        "text": "Мужской и женский поток"
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 3. Сборка личности"
+      },
+      {
+        "type": "li",
+        "text": "Хорошее Я — Плохое Я"
+      },
+      {
+        "type": "li",
+        "text": "Больное и здоровое животное"
+      },
+      {
+        "type": "li",
+        "text": "Уставшее Я и творческое Я"
+      },
+      {
+        "type": "li",
+        "text": "Несчастное Я и Счастливое Я"
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 4. Большие фигуры"
+      },
+      {
+        "type": "li",
+        "text": "Жизнь — Смерть"
+      },
+      {
+        "type": "li",
+        "text": "Секс, страсть и ненависть"
+      },
+      {
+        "type": "li",
+        "text": "Доверие и Контроль / Любовь и Власть"
+      },
+      {
+        "type": "li",
+        "text": "Я и Они / предназначение"
+      },
+      {
+        "type": "li",
+        "text": "Счастье и Свобода"
+      }
+    ],
+    "hashAlgorithm": "fnv1a32-curated",
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12308",
+    "skippedRiskyBlocks": 10,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12308",
+    "contentHash": "b142d451"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12389",
+    "path": "/service?shs_term_node_tid_depth=12389",
+    "linkText": "Славянский шаманизм",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "mysteries/slavic/shamanism",
+    "direction": "mysteries",
+    "logicalId": "mysteries/slavic/shamanism",
+    "sourceLocale": "ru",
+    "sourceTitle": "Славянский шаманизм - PsiMaster",
+    "title": "Славянский шаманизм",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Славянский шаманизм"
+      },
+      {
+        "type": "p",
+        "text": "Отдельный двенадцатизанятийный курс PsiMaster по славянским мифологическим образам и шаманской символике. Практики представлены как историко-образный материал, а не как проверенные сверхъестественные технологии."
+      },
+      {
+        "type": "h2",
+        "text": "Модуль 1"
+      },
+      {
+        "type": "li",
+        "text": "Алатырь-камень"
+      },
+      {
+        "type": "li",
+        "text": "Нижний мир / Сбор Души"
+      },
+      {
+        "type": "li",
+        "text": "Верхний мир / Ведагон"
+      },
+      {
+        "type": "li",
+        "text": "Мёртвая вода"
+      },
+      {
+        "type": "h2",
+        "text": "Модуль 2"
+      },
+      {
+        "type": "li",
+        "text": "Живая вода"
+      },
+      {
+        "type": "li",
+        "text": "Тотем / животное силы"
+      },
+      {
+        "type": "li",
+        "text": "Сила трав"
+      },
+      {
+        "type": "li",
+        "text": "Горний Мир / Предки"
+      },
+      {
+        "type": "h2",
+        "text": "Модуль 3"
+      },
+      {
+        "type": "li",
+        "text": "Велес"
+      },
+      {
+        "type": "li",
+        "text": "Ярило"
+      },
+      {
+        "type": "li",
+        "text": "Лада"
+      },
+      {
+        "type": "li",
+        "text": "Макошь"
+      }
+    ],
+    "hashAlgorithm": "fnv1a32-curated",
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12389",
+    "skippedRiskyBlocks": 7,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12389",
+    "contentHash": "1f228352"
+  }
+]
