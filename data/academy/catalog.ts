@@ -1,5 +1,7 @@
 import sources from "./sources.generated.json";
 import media from "./media.generated.json";
+import psimasterSources from "./psimaster-sources.generated.json";
+import psimasterMedia from "./psimaster-media.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 export type AcademyDirectionId = "reiki" | "mysteries" | "symbolic" | "applied" | "school" | "archive";
@@ -26,6 +28,8 @@ export type AcademySourceRecord = {
   httpStatus?: number | null;
   finalUrl?: string;
   skippedRiskyBlocks?: number;
+  sourceProvider?: "psitrends" | "psimaster" | "reiki-yggdrasil-canonical";
+  sourceTaxonomyId?: string;
 };
 
 export type AcademyMediaRecord = {
@@ -33,6 +37,11 @@ export type AcademyMediaRecord = {
   mediaUrl: string;
   logicalId: string;
   status: string;
+  sourceProvider?: "psitrends" | "psimaster" | "reiki-yggdrasil-canonical";
+  sourceTaxonomyId?: string;
+  lessonTitle?: string;
+  order?: number;
+  extractionMethod?: string;
 };
 
 export const academyDirections: Array<{
@@ -52,6 +61,18 @@ export const academyDirections: Array<{
 
 export const academyProgramTitles: Record<string, Record<PublicLocale, string>> = {
   "applied/archetypal-attunements": { en: "Archetypal Attunements", ru: "Архетипические настройки", es: "Sintonizaciones arquetípicas" },
+  "applied/archetypal-therapy/program": { en: "Archetypal Therapy", ru: "Архетипическая терапия", es: "Terapia arquetípica" },
+  "applied/archetypal-therapy/big-figures": { en: "Big Figures — Archetypal Program", ru: "Большие фигуры — архетипическая программа", es: "Grandes figuras — programa arquetípico" },
+  "applied/body-psychotherapy-bodynamics": { en: "Body Psychotherapy — Bodynamics Archive", ru: "Телесная психотерапия — Бодинамика", es: "Psicoterapia corporal — Bodynamics" },
+  "applied/business/demiurges-of-creation": { en: "Demiurges of Creation — Business Hypno-Coaching", ru: "Демиурги Творения — гипнокоучинг для бизнеса", es: "Demiurgos de la creación — hipnocoaching empresarial" },
+  "applied/energy-massage": { en: "Energy Massage — Historical Course", ru: "Энергетические массажи — исторический курс", es: "Masaje energético — curso histórico" },
+  "applied/hypnotherapy-regressions": { en: "Hypnotherapy & Regression Imagery", ru: "Гипнотерапия и регрессионные образы", es: "Hipnoterapia e imágenes regresivas" },
+  "applied/imagery-therapy-symboldrama": { en: "Imagery Therapy — Symboldrama", ru: "Образная терапия — Символдрама", es: "Terapia de imágenes — Symboldrama" },
+  "applied/sexual-energy-greek-gods": { en: "Sexual Energy & Greek Love Archetypes", ru: "Сексуальная энергетика и Греческие Боги Любви", es: "Energía sexual y arquetipos griegos del amor" },
+  "applied/tantric-healing": { en: "Tantric Healing — Historical Program", ru: "Тантрическое целительство — историческая программа", es: "Sanación tántrica — programa histórico" },
+  "archive/circle-of-eros": { en: "Circle of Eros — Historical Marathon", ru: "Круг Эроса — исторический марафон", es: "Círculo de Eros — maratón histórico" },
+  "archive/dionysian-tantra-club": { en: "Temple of Love — Dionysian Tantra Archive", ru: "Храм Любви — архив Дионисийской Тантры", es: "Templo del Amor — archivo de Tantra Dionisíaco" },
+  "archive/dionysus-dreams-marathon": { en: "Dreams in Dionysus — Historical Marathon", ru: "Марафон Мечты в энергиях Диониса", es: "Sueños con Dioniso — maratón histórico" },
   "archive/constellations-of-love": { en: "Constellations of Love — Historical Program", ru: "Расстановки любви — историческая программа", es: "Constelaciones del amor — programa histórico" },
   "archive/events": { en: "Academy Events Archive", ru: "Архив мероприятий Академии", es: "Archivo de eventos de la Academia" },
   "archive/festival": { en: "Festival Archive", ru: "Архив фестиваля", es: "Archivo del festival" },
@@ -61,6 +82,12 @@ export const academyProgramTitles: Record<string, Record<PublicLocale, string>> 
   "history": { en: "Academy of Temple Arts — History", ru: "История Академии храмовых искусств", es: "Historia de la Academia de Artes del Templo" },
   "history/student-experiences": { en: "Student Experiences — MAAT Archive", ru: "Отзывы студентов — архив МААТ", es: "Experiencias de estudiantes — archivo MAAT" },
   "mysteries/archetypes-of-gods": { en: "Great Mysteries: Archetypes of the Gods", ru: "Большие мистерии: Архетипы Богов", es: "Grandes misterios: Arquetipos de los dioses" },
+  "mysteries/egypt/high-wisdom": { en: "High Wisdom of the Egyptian Gods", ru: "Высокая мудрость Египетских Богов", es: "Alta sabiduría de los dioses egipcios" },
+  "mysteries/greece-rome/beauty-and-power": { en: "Beauty & Power of Antiquity — Greece & Rome", ru: "Красота и Сила Античности — Греция и Рим", es: "Belleza y poder de la Antigüedad — Grecia y Roma" },
+  "mysteries/maya-aztec/feathered-serpent": { en: "Maya & Aztec Mysteries — Feathered Serpent", ru: "Мистерии Майя и Ацтеков — Пернатый Змей", es: "Misterios mayas y aztecas — Serpiente Emplumada" },
+  "mysteries/slavic/fairy-tales-mysteries": { en: "Slavic Fairy Tales & Mysteries", ru: "Славянские сказки и мистерии", es: "Cuentos y misterios eslavos" },
+  "mysteries/slavic/shamanism": { en: "Slavic Shamanism — Historical Course", ru: "Славянский шаманизм — исторический курс", es: "Chamanismo eslavo — curso histórico" },
+  "mysteries/zoroastrism/eastern-magic": { en: "Zoroastrianism & Eastern Magic", ru: "Зороастризм и Магия Востока", es: "Zoroastrismo y magia oriental" },
   "mysteries/archetypes-of-love": { en: "Lesser Mysteries: Archetypes of Love", ru: "Малые мистерии: Архетипы любви", es: "Misterios menores: Arquetipos del amor" },
   "mysteries/egyptian-hypno-course": { en: "Egyptian Hypno-Coaching Course", ru: "Гипно-коучинг: Египетский курс", es: "Hipnocoaching: curso egipcio" },
   "mysteries/guidance-of-gods": { en: "Guidance of the Gods", ru: "Подсказки Богов", es: "Guía de los dioses" },
@@ -69,12 +96,15 @@ export const academyProgramTitles: Record<string, Record<PublicLocale, string>> 
   "path/magister-archetypal-therapies": { en: "Historical Magister Program — Archetypal Therapies & Shamanism", ru: "Историческая программа Magister — архетипические терапии и шаманизм", es: "Programa histórico Magister — terapias arquetípicas y chamanismo" },
   "reiki/free-energy-healing": { en: "Energy Healing — Introductory Course", ru: "Введение в энергетическую практику", es: "Introducción a la práctica energética" },
   "reiki/master-shamanic-healing": { en: "Reiki Yggdrasil — Shamanic Practice Program", ru: "Рейки Иггдрасиль — программа шаманской практики", es: "Reiki Yggdrasil — programa de práctica chamánica" },
+  "reiki/kundalini-reiki": { en: "Kundalini Reiki — Historical Course", ru: "Кундалини Рейки — исторический курс", es: "Kundalini Reiki — curso histórico" },
   "reiki/tantra-reiki": { en: "Tantra Reiki", ru: "Тантра Рейки", es: "Tantra Reiki" },
   "reiki/yggdrasil": { en: "Tao Reiki Yggdrasil", ru: "Дао Рейки Иггдрасиль", es: "Tao Reiki Yggdrasil" },
   "reiki/yggdrasil/faq": { en: "Reiki Yggdrasil — FAQ", ru: "Рейки Иггдрасиль — вопросы и ответы", es: "Reiki Yggdrasil — preguntas frecuentes" },
   "runes/northern-runes": { en: "Northern Rune Tradition", ru: "Северная магия рун", es: "Tradición rúnica del norte" },
   "runes/runes-business": { en: "Runes & Business", ru: "Руны и бизнес", es: "Runas y negocios" },
   "symbolic/artifacts-talismans": { en: "Artifacts & Talismans", ru: "Артефакты и талисманы", es: "Artefactos y talismanes" },
+  "symbolic/scandinavian-mysteries": { en: "Scandinavian Runic Mysteries", ru: "Северные Скандинавские мистерии рун", es: "Misterios rúnicos escandinavos" },
+  "symbolic/tarot/major-arcana-mysteries": { en: "Western Magic & Major Arcana Mysteries", ru: "Западная магия и Мистерии Арканов Таро", es: "Magia occidental y misterios de los Arcanos Mayores" },
   "traditions/egypt": { en: "Mysteries of Egypt", ru: "Мистерии Египта", es: "Misterios de Egipto" },
   "traditions/greece": { en: "Mysteries of Greece", ru: "Мистерии Греции", es: "Misterios de Grecia" },
   "videos/egypt-osiris": { en: "Egypt — Osiris", ru: "Египет — Осирис", es: "Egipto — Osiris" },
@@ -92,13 +122,13 @@ export function academyDisplayTitle(record: AcademySourceRecord, locale: PublicL
 }
 
 export const academyCopy = {
-  en: { title: "Academy", lead: "Structured learning paths from the PsiTrends teaching archive, now organized inside Holistic House.", programs: "Programs", videos: "Videos", allPrograms: "Learning directions", videoCollections: "Video courses & meditations", back: "Academy", source: "Original PsiTrends source", sourceLanguage: "Original material in", en: "English", ru: "Russian", historical: "Historical program", availability_unknown: "Availability unknown", current: "Current", archive_only: "Archive only", needs_review: "Needs review", filtered: "Legacy prices, registration or claims were omitted from the public migration.", reading: "Library & reading", services: "Individual work", noContent: "The source page is preserved in the migration manifest, but its body needs manual review before publication." },
-  ru: { title: "Академия", lead: "Учебные направления из архива PsiTrends, теперь структурированные внутри Holistic House.", programs: "Программы", videos: "Видео", allPrograms: "Направления обучения", videoCollections: "Видео-курсы и медитации", back: "Академия", source: "Оригинальный источник PsiTrends", sourceLanguage: "Оригинальный материал на", en: "английском", ru: "русском", historical: "Историческая программа", availability_unknown: "Актуальность уточняется", current: "Актуальная", archive_only: "Только архив", needs_review: "Требует проверки", filtered: "Старые цены, регистрационные блоки и спорные заявления не перенесены в публичный текст.", reading: "Библиотека и материалы", services: "Индивидуальная работа", noContent: "Источник сохранён в манифесте миграции, но текст требует ручной проверки перед публикацией." },
-  es: { title: "Academia", lead: "Rutas de aprendizaje del archivo de PsiTrends, ahora organizadas dentro de Holistic House.", programs: "Programas", videos: "Videos", allPrograms: "Áreas de aprendizaje", videoCollections: "Videocursos y meditaciones", back: "Academia", source: "Fuente original de PsiTrends", sourceLanguage: "Material original en", en: "inglés", ru: "ruso", historical: "Programa histórico", availability_unknown: "Disponibilidad por confirmar", current: "Actual", archive_only: "Solo archivo", needs_review: "Pendiente de revisión", filtered: "Los precios, formularios de inscripción y afirmaciones antiguas se omitieron de la migración pública.", reading: "Biblioteca y lecturas", services: "Trabajo individual", noContent: "La fuente está preservada en el manifiesto de migración, pero el texto requiere revisión manual antes de publicarse." },
+  en: { title: "Academy", lead: "Structured learning paths from the PsiTrends and PsiMaster teaching archives, now organized inside Holistic House.", programs: "Programs", videos: "Videos", allPrograms: "Learning directions", videoCollections: "Video courses & meditations", back: "Academy", source: "Original source", sourceLanguage: "Original material in", en: "English", ru: "Russian", historical: "Historical program", availability_unknown: "Availability unknown", current: "Current", archive_only: "Archive only", needs_review: "Needs review", filtered: "Legacy prices, registration or claims were omitted from the public migration.", reading: "Library & reading", services: "Individual work", noContent: "The source page is preserved in the migration manifest, but its body needs manual review before publication." },
+  ru: { title: "Академия", lead: "Учебные направления из архивов PsiTrends и PsiMaster, теперь структурированные внутри Holistic House.", programs: "Программы", videos: "Видео", allPrograms: "Направления обучения", videoCollections: "Видео-курсы и медитации", back: "Академия", source: "Оригинальный источник", sourceLanguage: "Оригинальный материал на", en: "английском", ru: "русском", historical: "Историческая программа", availability_unknown: "Актуальность уточняется", current: "Актуальная", archive_only: "Только архив", needs_review: "Требует проверки", filtered: "Старые цены, регистрационные блоки и спорные заявления не перенесены в публичный текст.", reading: "Библиотека и материалы", services: "Индивидуальная работа", noContent: "Источник сохранён в манифесте миграции, но текст требует ручной проверки перед публикацией." },
+  es: { title: "Academia", lead: "Rutas de aprendizaje de los archivos de PsiTrends y PsiMaster, ahora organizadas dentro de Holistic House.", programs: "Programas", videos: "Videos", allPrograms: "Áreas de aprendizaje", videoCollections: "Videocursos y meditaciones", back: "Academia", source: "Fuente original", sourceLanguage: "Material original en", en: "inglés", ru: "ruso", historical: "Programa histórico", availability_unknown: "Disponibilidad por confirmar", current: "Actual", archive_only: "Solo archivo", needs_review: "Pendiente de revisión", filtered: "Los precios, formularios de inscripción y afirmaciones antiguas se omitieron de la migración pública.", reading: "Biblioteca y lecturas", services: "Trabajo individual", noContent: "La fuente está preservada en el manifiesto de migración, pero el texto requiere revisión manual antes de publicarse." },
 } as const;
 
-const sourceRecords = sources as AcademySourceRecord[];
-const mediaRecords = media as AcademyMediaRecord[];
+const sourceRecords = [...(sources as AcademySourceRecord[]), ...(psimasterSources as AcademySourceRecord[])];
+const mediaRecords = [...(media as AcademyMediaRecord[]), ...(psimasterMedia as AcademyMediaRecord[])];
 
 const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademySourceRecord["sourceLocale"], AcademyBlock[]>>>> = {
   "reiki/tantra-reiki": {
