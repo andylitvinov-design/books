@@ -62,6 +62,7 @@ function goSignedOut(setData) {
 export default function AppWorkspace({ locale, path = [] }) {
   const c = COPY[locale],
     router = useRouter(),
+    searchParams = useSearchParams(),
     [data, setData] = useState(null),
     [state, setState] = useState('loading'),
     [error, setError] = useState(null)
@@ -130,7 +131,10 @@ export default function AppWorkspace({ locale, path = [] }) {
     setBusy(true)
     setError(null)
     try {
-      const result = await appFetch('auth/start', { locale })
+      const result = await appFetch('auth/start', {
+        locale,
+        serviceId: searchParams.get('service') || null,
+      })
       window.location.assign(result.redirectUrl)
     } catch (e) {
       setError(e)
@@ -290,7 +294,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             )
           )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} />}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} />}
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
@@ -1556,10 +1560,15 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload }) {
+function Consultations({ data, locale, reload, initialServiceId = '' }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
     [error, setError] = useState(null)
+  useEffect(() => {
+    if (!initialServiceId || selected) return
+    const service = (data.services || []).find((item) => item.id === initialServiceId)
+    if (service) setSelected(service)
+  }, [data.services, initialServiceId, selected])
   async function updateRequest(request, action) {
     try {
       await appFetch('requests/' + request.id, { action, expectedRevision: request.revision })
