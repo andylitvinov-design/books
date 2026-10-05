@@ -9,8 +9,8 @@ import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 
 const UI = {
   en: {
-    kicker: 'Your space',
-    title: 'Save your progress',
+    kicker: 'Account',
+    title: 'Your personal space',
     intro: 'Keep your results and history across devices.',
     google: 'Continue with Google',
     googleNote: 'Optional — the quick checks below work without signing in.',
@@ -58,8 +58,8 @@ const UI = {
     error: 'Something could not be saved or loaded. Please retry.',
   },
   ru: {
-    kicker: 'Ваше пространство',
-    title: 'Сохранить прогресс',
+    kicker: 'Аккаунт',
+    title: 'Ваше личное пространство',
     intro: 'Сохраняйте результаты и историю между устройствами.',
     google: 'Продолжить с Google',
     googleNote: 'Необязательно — быстрые тесты ниже работают без регистрации.',
