@@ -3,11 +3,12 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 test('Remedies landing combines remedy search, free consultation and book covers in both locales', async () => {
-  const [page, search, books, header] = await Promise.all([
+  const [page, search, books, header, consultationCta] = await Promise.all([
     readFile('app/[locale]/homeopathy/page.tsx', 'utf8'),
     readFile('components/remedy-search-box.tsx', 'utf8'),
     readFile('components/book-showcase.tsx', 'utf8'),
     readFile('components/public-site-header.tsx', 'utf8'),
+    readFile('components/public-consultation-cta.tsx', 'utf8'),
   ])
   assert.match(page, /heading: "Препараты"/)
   assert.match(page, /heading: "Remedies"/)
@@ -15,8 +16,9 @@ test('Remedies landing combines remedy search, free consultation and book covers
   assert.match(page, /BookShowcase/)
   assert.match(page, /Бесплатная консультация/)
   assert.match(page, /Free consultation/)
-  assert.match(page, /t\.me\/AndyTherapist/)
-  assert.match(page, /wa\.me\/14376066502/)
+  assert.match(page, /PublicConsultationCta/)
+  assert.match(consultationCta, /t\.me\/AndyTherapist/)
+  assert.match(consultationCta, /wa\.me\/14376066502/)
   assert.match(search, /Find a homeopathic remedy/)
   assert.match(books, /catalog-cover/)
   assert.match(header, /SiteNavigation/)
@@ -39,6 +41,11 @@ test('Services page is bilingual and grounds Alchemy of the Soul in the publishe
   assert.match(page, /Alchemy of the Soul/)
   assert.match(page, /id: "alchemy"/)
   assert.match(page, /PageVideo slot=\{"service-" \+ id\}/)
+  assert.match(page, /id="available-services"/)
+  assert.match(page, /marketplaceServices\.map/)
+  assert.match(page, /app\/consultations\?service=/)
+  assert.match(page, /Заказать/)
+  assert.match(page, /Request/)
   assert.match(page, /Начните с короткого разговора/)
   assert.match(page, /Start with a short conversation/)
   assert.match(page, /не заменяют медицинскую диагностику/)
