@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronRight, HeartPulse, Fingerprint } from 'lucide-react'
+import Image from 'next/image'
+import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
@@ -15,13 +16,13 @@ const UI = {
     google: 'Continue with Google',
     googleNote: 'Optional — the quick checks below work without signing in.',
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
-    testsKicker: 'Tests',
-    tryTitle: 'Try without signing in',
-    tryText: 'Start without signing in. You can save a result later if you want.',
-    stateTitle: 'How I feel now',
-    stateText: '5 questions · your current state',
-    traitTitle: 'Personality tendencies',
-    traitText: '20 questions · personality tendencies',
+    testsKicker: 'Psychic Health',
+    tryTitle: 'Psychic Health Monitoring',
+    tryText: 'Short repeatable self-checks build a dated personal timeline, so you can see what changes over time.',
+    stateTitle: 'Current State Check',
+    stateText: '5 questions · ~1 min',
+    traitTitle: 'Personality Baseline',
+    traitText: '20 questions · ~3 min',
     traitNotice: 'This questionnaire uses the English original. It is a brief self-report, not an IQ test or diagnosis.',
     start: 'Start test',
     consentTitle: 'Before you start',
@@ -64,13 +65,13 @@ const UI = {
     google: 'Продолжить с Google',
     googleNote: 'Необязательно — быстрые тесты ниже работают без регистрации.',
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
-    testsKicker: 'Тесты',
-    tryTitle: 'Пройти без регистрации',
-    tryText: 'Можно начать без регистрации и сохранить результат позже.',
-    stateTitle: 'Моё состояние сейчас',
-    stateText: '5 вопросов · ваше состояние сейчас',
-    traitTitle: 'Личностные особенности',
-    traitText: '20 вопросов · личностные особенности',
+    testsKicker: 'Psychic Health',
+    tryTitle: 'Psychic Health Monitoring',
+    tryText: 'Короткие повторяемые самооценки с датой: со временем из них складывается личная динамика состояния.',
+    stateTitle: 'Состояние сейчас',
+    stateText: '5 вопросов · ~1 мин',
+    traitTitle: 'Личностный профиль',
+    traitText: '20 вопросов · ~3 мин',
     traitNotice: 'Опрос использует английский оригинал. Это краткий самоотчёт, а не IQ-тест и не диагноз.',
     start: 'Начать тест',
     consentTitle: 'Перед началом',
@@ -106,6 +107,13 @@ const UI = {
     nonDiagnostic: 'Только самонаблюдение. Эти тесты не ставят медицинский диагноз и не являются каналом экстренной помощи.',
     error: 'Не удалось загрузить или сохранить данные. Повторите попытку.',
   },
+}
+
+function testArtwork(locale, id) {
+  const suffix = locale === 'ru' ? 'ru-v1' : 'en-v2'
+  return id === 'state'
+    ? `/images/holistic-house/video-posters/home-${suffix}.webp`
+    : `/images/holistic-house/video-posters/services-${suffix}.webp`
 }
 
 function definitionFor(id, locale) {
@@ -448,7 +456,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         {phase === 'catalog' && (
           <div className="cabinet-test-list" aria-label={c.tryTitle}>
             <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
-              <span className="cabinet-test-icon cabinet-test-icon--state" aria-hidden="true"><HeartPulse /></span>
+              <span className="cabinet-test-image" aria-hidden="true">
+                <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'state')} />
+              </span>
               <span className="cabinet-test-row-copy">
                 <strong>{c.stateTitle}</strong>
                 <small>{c.stateText}</small>
@@ -456,7 +466,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
             </button>
             <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.traitTitle}`} disabled={busy} onClick={() => begin('trait')}>
-              <span className="cabinet-test-icon cabinet-test-icon--trait" aria-hidden="true"><Fingerprint /></span>
+              <span className="cabinet-test-image" aria-hidden="true">
+                <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'trait')} />
+              </span>
               <span className="cabinet-test-row-copy">
                 <strong>{c.traitTitle}</strong>
                 <small>{c.traitText}</small>

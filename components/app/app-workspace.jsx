@@ -1,5 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
@@ -554,6 +555,10 @@ function TestCatalog({ data, locale, onStarted }) {
     getAssessmentDefinition('hh-current-state', 'v2', locale),
     getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
   ]
+  const monitoringIntro =
+    locale === 'ru'
+      ? 'Короткие повторяемые самооценки формируют личную историю наблюдений и помогают видеть изменения со временем.'
+      : 'Short repeatable self-checks build your personal history, so you can see what changes over time.'
   async function start(def) {
     setBusy(true)
     setError(null)
@@ -573,44 +578,68 @@ function TestCatalog({ data, locale, onStarted }) {
     }
   }
   return (
-    <section>
-      <div className="hh-heading">
-        <p className="hh-kicker">Holistic House</p>
-        <h1>{c.tests}</h1>
-        <p>{c.continueLater}</p>
+    <section className="hh-monitoring">
+      <div className="hh-heading hh-monitoring-heading">
+        <p className="hh-kicker">Psychic Health</p>
+        <h1>Psychic Health Monitoring</h1>
+        <p>{monitoringIntro}</p>
+        <p className="hh-fine">{c.continueLater}</p>
       </div>
-      <div className="hh-grid">
+      <div className="hh-monitoring-grid">
         {definitions.map((def) => {
           const isState = def.key === 'hh-current-state',
             draft = data.runs.find((x) => x.definitionId === def.id),
-            completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
+            completed = data.results.filter((x) => x.definitionId === def.id).at(-1),
+            title = isState
+              ? locale === 'ru'
+                ? 'Состояние сейчас'
+                : 'Current State Check'
+              : locale === 'ru'
+                ? 'Личностный профиль'
+                : 'Personality Baseline',
+            meta = isState
+              ? locale === 'ru'
+                ? '5 вопросов · ~1 мин'
+                : '5 questions · ~1 min'
+              : locale === 'ru'
+                ? '20 вопросов · ~3 мин · EN'
+                : '20 questions · ~3 min · EN',
+            image = isState
+              ? locale === 'ru'
+                ? '/images/holistic-house/video-posters/home-ru-v1.webp'
+                : '/images/holistic-house/video-posters/home-en-v2.webp'
+              : locale === 'ru'
+                ? '/images/holistic-house/video-posters/services-ru-v1.webp'
+                : '/images/holistic-house/video-posters/services-en-v2.webp'
           return (
-            <article className="hh-panel" key={def.id}>
-              <p className="hh-kicker">
-                {isState ? '5' : '20'} {locale === 'ru' ? 'вопросов' : 'questions'} ·{' '}
-                {def.instrumentLocale.toUpperCase()}
-              </p>
-              <h2>{isState ? c.state : c.personality}</h2>
-              <p>{isState ? c.stateDescription : c.traitDescription}</p>
-              {!isState && <p className="hh-notice">{c.traitNotice}</p>}
-              {completed && (
-                <p className="hh-fine">
-                  {c.latest}: {dateLabel(completed.measurementAt, locale)}
-                </p>
-              )}
-              <div className="hh-actions">
-                <button
-                  className="hh-primary"
-                  disabled={busy}
-                  onClick={() => (draft ? onStarted(draft) : start(def))}
-                >
-                  {draft ? c.resume : completed ? c.repeat : c.start}
-                </button>
+            <article className="hh-monitoring-card" key={def.id}>
+              <div className="hh-monitoring-photo" aria-hidden="true">
+                <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={image} />
+              </div>
+              <div className="hh-monitoring-card-body">
+                <p className="hh-monitoring-meta">{meta}</p>
+                <h2>{title}</h2>
+                <p>{isState ? c.stateDescription : c.traitDescription}</p>
+                {!isState && <p className="hh-notice">{c.traitNotice}</p>}
                 {completed && (
-                  <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
-                    {c.view}
-                  </Link>
+                  <p className="hh-fine">
+                    {c.latest}: {dateLabel(completed.measurementAt, locale)}
+                  </p>
                 )}
+                <div className="hh-actions">
+                  <button
+                    className="hh-primary"
+                    disabled={busy}
+                    onClick={() => (draft ? onStarted(draft) : start(def))}
+                  >
+                    {draft ? c.resume : completed ? c.repeat : c.start}
+                  </button>
+                  {completed && (
+                    <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
+                      {c.view}
+                    </Link>
+                  )}
+                </div>
               </div>
             </article>
           )

@@ -29,7 +29,7 @@ async function api(path,body,ctx=context){
  throw error
 }
 async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
-async function enterTest(name='How I feel now'){
+async function enterTest(name='Current State Check'){
  await page.goto(origin+'/en/app/tests');await ready()
  const card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
  await card.getByRole('button',{name:/Start|Continue|Take again/}).click()
@@ -69,7 +69,7 @@ try {
  await page.setViewportSize({width:390,height:844});await enterTest();for(const v of[4,6,3,5,2])await answerCurrent(v);await page.getByRole('button',{name:'Save my result'}).click();await expect(page).toHaveURL(/\/results\//)
  let data=(await api('bootstrap')).data;assert.equal(data.results.length,2);assert.equal(data.results[0].id,first.id);assert.equal(new Set(data.snapshot.dimensions.map(d=>d.key)).size,5);passed('second run keeps original baseline and unique profile axes')
  await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await page.screenshot({path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
- await enterTest('Personality tendencies');await expect(page.getByText('Describe how you generally see yourself',{exact:false})).toBeVisible()
+ await enterTest('Personality Baseline');await expect(page.getByText('Describe how you generally see yourself',{exact:false})).toBeVisible()
  await page.screenshot({path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
  await page.getByRole('button',{name:'Save my result'}).click();await expect(page).toHaveURL(/\/results\//);data=(await api('bootstrap')).data;const trait=data.results.find(r=>r.definitionKey==='mini-ipip-20');assert.deepEqual(trait.dimensions.map(d=>d.value),[12,12,12,12,12]);assert.equal(data.snapshot.dimensions.length,10);await page.goto(origin+'/en/app');await ready();await expect(page.getByRole('heading',{name:'View changes over time'})).toBeVisible();passed('Mini-IPIP twenty-item original scale with real server scoring and next-step progression')
@@ -91,10 +91,10 @@ try {
  await expect(page.getByText('Question 1 of 20',{exact:true})).toBeVisible()
  await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:'Next',exact:true}).click();await page.reload();await expect(page.getByText('Question 2 of 20',{exact:true})).toBeVisible();passed('guest answers and progress resume from server after reload')
  for(let i=1;i<20;i++){await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:i===19?'See my result':'Next',exact:true}).click()}
- await expect(page.getByRole('heading',{name:'Personality tendencies'})).toBeVisible();passed('personality guest test completes while signed out with full result')
+ await expect(page.getByRole('heading',{name:'Personality Baseline'})).toBeVisible();passed('personality guest test completes while signed out with full result')
  await page.getByRole('button',{name:'Take another test'}).click();await page.getByRole('button',{name:'Start test'}).first().click()
  for(const v of[4,6,3,5,2]){await page.getByRole('button',{name:String(v),exact:true}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:'Next',exact:true}).click()}
- await expect(page.getByRole('heading',{name:'Optional context'})).toBeVisible();await page.getByLabel('Anything else you want to note?').fill('Synthetic guest context.');await page.getByRole('button',{name:'See my result',exact:true}).click();await expect(page.getByRole('heading',{name:'How I feel now'})).toBeVisible();passed('current-state guest test completes while signed out')
+ await expect(page.getByRole('heading',{name:'Optional context'})).toBeVisible();await page.getByLabel('Anything else you want to note?').fill('Synthetic guest context.');await page.getByRole('button',{name:'See my result',exact:true}).click();await expect(page.getByRole('heading',{name:'Current State Check'})).toBeVisible();passed('current-state guest test completes while signed out')
  const privateStorage=await page.evaluate(()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage)}));assert.deepEqual(privateStorage,{local:[],session:[]});passed('guest flow uses no localStorage/sessionStorage canonical data')
  await page.getByRole('button',{name:'Save to my Cabinet'}).click();await expect(page).toHaveURL(/\/app\/continue\?intent=/,{timeout:60000});await ready();await expect(page.getByRole('heading',{name:'Save to your Cabinet'})).toBeVisible();await page.getByRole('button',{name:'Save',exact:true}).click();await expect(page).toHaveURL(/\/results\//,{timeout:60000});await ready();data=(await api('bootstrap')).data;assert.equal(data.results.length,4);passed('explicit guest save intent survives Google and imports exactly one selected result')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
