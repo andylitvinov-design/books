@@ -19,3 +19,5 @@ taxonomyId,sourceUrl,logicalId,direction,status,title,contentHash,hashAlgorithm,
 "12412","https://psimaster.net/service?shs_term_node_tid_depth=12412","archive/circle-of-eros","archive","archive_only","Марафон «Круг Эроса»","28ab1e7c","fnv1a32-curated","source_backed_curated","8"
 "12454","https://psimaster.net/service?shs_term_node_tid_depth=12454","archive/dionysus-dreams-marathon","archive","archive_only","Марафон Мечты в энергиях Диониса","b96c7214","fnv1a32-curated","source_backed_curated","8"
 "12394","https://psimaster.net/service?shs_term_node_tid_depth=12394","archive/dionysian-tantra-club","archive","archive_only","Клуб «Храм Любви». Дионисийская Тантра","f7391ab2","fnv1a32-curated","source_backed_curated","7"
+"12308","https://psimaster.net/service?shs_term_node_tid_depth=12308","applied/imagery-therapy/mirrorland","applied","historical","Образная терапия — Зазеркалье","b142d451","fnv1a32-curated","source_backed_curated","10"
+"12389","https://psimaster.net/service?shs_term_node_tid_depth=12389","mysteries/slavic/shamanism","mysteries","historical","Славянский шаманизм","1f228352","fnv1a32-curated","source_backed_curated","7"
