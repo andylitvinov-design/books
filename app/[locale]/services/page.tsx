@@ -17,6 +17,7 @@ import type { PublicService } from "@/lib/practitioners/public-types";
 type PageProps = { params: Promise<{ locale: string }> };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+// Production release marker: Wu Xing marketplace featured service.
 
 const copy = {
   ru: {
