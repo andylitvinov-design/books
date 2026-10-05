@@ -685,6 +685,30 @@
   max-width: 260px;
   font-size: 17px;
 }
+.hh-result-consultation {
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid var(--hh-line);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fffaf3 0%, #f7efe4 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 22px;
+}
+.hh-result-consultation h2 {
+  margin: 4px 0 8px;
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+.hh-result-consultation p:last-child {
+  margin-bottom: 0;
+}
+.hh-result-consultation-action {
+  white-space: nowrap;
+  text-align: center;
+}
+
 .hh-result-recommendation {
   margin: 24px 0;
   border: 1px solid var(--hh-line);
@@ -738,6 +762,14 @@
   }
   .hh-mood-history-strip {
     align-items: flex-start;
+  }
+  .hh-result-consultation {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 18px;
+  }
+  .hh-result-consultation-action {
+    width: 100%;
   }
   .hh-mood-history-dots {
     max-width: 150px;
