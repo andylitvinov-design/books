@@ -21,7 +21,7 @@ import {
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
-import { issueTrustedAdminSession } from '@/lib/prescriptions/admin'
+import { issueTrustedAdminSession } from '@/lib/prescriptions/admin-session'
 import {
   authorizeReportViewer,
   commitReportSaveIntent,
