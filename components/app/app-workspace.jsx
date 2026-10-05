@@ -173,6 +173,13 @@ export default function AppWorkspace({ locale, path = [] }) {
         <h1>{c.loading}</h1>
       </main>
     )
+  if (state === 'ready' && !data)
+    return (
+      <main className="hh-app" aria-busy="true">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{c.loading}</h1>
+      </main>
+    )
   if (state !== 'ready')
     return (
       <main className="hh-app">
