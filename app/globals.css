@@ -4892,6 +4892,64 @@
   background: #7b4931;
   color: #fffaf4;
 }
+
+.hh-mood-save-state {
+  margin: 0 0 16px;
+  color: #806f61;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.hh-mood-test-options {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.hh-mood-test-option {
+  width: 100%;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid #d7c4b1;
+  border-radius: 14px;
+  background: #fffdfa;
+  padding: 12px 14px;
+  color: #4b382c;
+  text-align: left;
+  cursor: pointer;
+}
+.hh-mood-test-option:hover {
+  border-color: #a98266;
+  background: #fff7ee;
+}
+.hh-mood-test-option > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.hh-mood-test-option strong {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.hh-mood-test-option small {
+  color: #867466;
+  font-size: 10px;
+}
+.hh-mood-test-option em {
+  color: #6c5c50;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.35;
+}
+.hh-mood-test-option b {
+  flex: 0 0 auto;
+  color: #9a755e;
+  font-size: 24px;
+  font-weight: 400;
+}
 .hh-mood-actions {
   display: flex;
   flex-wrap: wrap;
