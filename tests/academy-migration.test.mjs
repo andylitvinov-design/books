@@ -162,3 +162,17 @@ test("sparse Academy records use curated recovery and never outrank a substantiv
   assert.match(catalog, /compareAcademyRecords/);
   assert.match(catalog, /Number\(!academyRecordHasBody\(a\)\)/);
 });
+
+
+test("cross-locale Academy fallbacks are curated before publication", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  for (const id of ["mysteries/archetypes-of-gods","elements/elemental-magic","history"]) {
+    assert.match(catalog, new RegExp('"'+id.replaceAll("/", "\\/")+'"'));
+  }
+  assert.match(catalog, /Great Mysteries — Archetypes of the Gods/);
+  assert.match(catalog, /Большие мистерии — Архетипы Богов/);
+  assert.match(catalog, /Elemental Magic — course structure/);
+  assert.match(catalog, /Магия Стихий — структура курса/);
+  assert.match(catalog, /Academy of Temple Arts — historical structure/);
+  assert.match(catalog, /Академия Храмовых Искусств — историческая структура/);
+});
