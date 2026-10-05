@@ -8,6 +8,7 @@ import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/de
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
+import PsiMonitoring from '@/components/app/psi-monitoring'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
@@ -206,7 +207,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   const nav = [
     ['portrait', c.portrait, ''],
-    ['tests', c.tests, '/tests'],
+    ['monitoring', c.monitoring, '/monitoring'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
   ]
@@ -269,6 +270,14 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'practice' && <PracticeWorkspace locale={locale} />}
+          {page === 'monitoring' && (
+            <PsiMonitoring
+              data={data}
+              locale={locale}
+              instrumentKey={recordId}
+              onStarted={(run) => router.push(root + '/runs/' + run.id)}
+            />
+          )}
           {page === 'tests' && (
             <TestCatalog
               data={data}
@@ -1047,7 +1056,7 @@ function Portrait({ data, locale, onOpenHistory }) {
       <MoodCheckIn
         locale={locale}
         compact
-        onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}
+        onQuickCheckin={() => window.location.assign('/' + locale + '/app/monitoring')}
       />
       {data.practitioner && <OwnerTools locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
@@ -1297,9 +1306,14 @@ function ResultPage({ id, locale, data }) {
       </table>
       {!previous && <p>{c.noChange}</p>}
       <p className="hh-fine">{c.versionBoundary}</p>
-      <Link className="hh-primary" href={`/${locale}/app/history`} prefetch={false}>
-        {c.history}
-      </Link>
+      <div className="hh-actions">
+        <Link className="hh-primary" href={'/' + locale + '/app/monitoring/' + result.definitionKey} prefetch={false}>
+          {c.viewTrend}
+        </Link>
+        <Link href={'/' + locale + '/app/history'} prefetch={false}>
+          {c.history}
+        </Link>
+      </div>
     </section>
   )
 }
