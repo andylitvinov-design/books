@@ -12,6 +12,7 @@ import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import type { PublicService } from "@/lib/practitioners/public-types";
 
 type PageProps = { params: Promise<{ locale: string }> };
 export const dynamic = "force-dynamic";
@@ -121,7 +122,7 @@ export default async function ServicesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const current = copy[locale as Locale];
-  let offerings = [];
+  let offerings: PublicService[] = [];
   try {
     offerings = await createPractitionerRepository(getAppConfig()).listPublicServices(locale);
   } catch {
