@@ -176,3 +176,11 @@ test("cross-locale Academy fallbacks are curated before publication", async () =
   assert.match(catalog, /Academy of Temple Arts — historical structure/);
   assert.match(catalog, /Академия Храмовых Искусств — историческая структура/);
 });
+
+
+test("Academy media falls back across locale variants when the local source has no video", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  assert.match(catalog, /const exact = mediaRecords\.filter/);
+  assert.match(catalog, /exact\.some\(\(item\) => youtubeIdFromUrl\(item\.mediaUrl\)\)/);
+  assert.match(catalog, /mediaRecords\.filter\(\(item\) => item\.logicalId === record\.logicalId\)/);
+});
