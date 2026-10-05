@@ -30,6 +30,7 @@ const config = getAppConfig(),
 const en = getAssessmentDefinition('hh-current-state', 'v1', 'en'),
   enV2 = getAssessmentDefinition('hh-current-state', 'v2', 'en'),
   ru = getAssessmentDefinition('hh-current-state', 'v1', 'ru'),
+  weekly = getAssessmentDefinition('hh-weekly-pulse', 'v1', 'en'),
   mini = getAssessmentDefinition('mini-ipip-20', 'v1', 'en')
 const answer = (def, value = 3) => Object.fromEntries(def.questions.map((q) => [q.id, value]))
 
@@ -138,6 +139,67 @@ test('actual grants: own reads allowed; account status and identity updates deni
     0,
   )
 })
+test('Psi-Monitoring mood is private/idempotent and Weekly Pulse persists through the canonical runner', async () => {
+  const operationId = randomUUID()
+  const firstMood = await repo.moodCheckin(a, {
+    mood: 'sad',
+    category: null,
+    timezone: 'America/Toronto',
+    sourceSurface: 'monitoring',
+    operationId,
+  })
+  const updatedMood = await repo.moodCheckin(a, {
+    mood: 'sad',
+    category: 'energy',
+    timezone: 'America/Toronto',
+    sourceSurface: 'monitoring',
+    operationId,
+  })
+  assert.equal(updatedMood.id, firstMood.id)
+  assert.equal(updatedMood.category, 'energy')
+  assert.equal((await repo.bootstrap(a)).moodCheckins[0].id, firstMood.id)
+  assert.equal(
+    (await rawAs(b, 'authenticated', (db) => db.query('select id from app.mood_checkins'))).rows.length,
+    0,
+  )
+
+  const weeklyRun = await start(a, weekly)
+  const weeklySaved = await repo.saveRun(a, weeklyRun.id, {
+    answers: answer(weekly, 5),
+    context: {},
+    progress: weekly.questions.length,
+    expectedRevision: weeklyRun.revision,
+    operationId: randomUUID(),
+  })
+  const weeklyResult = await repo.submitRun(a, weeklyRun.id, {
+    expectedRevision: weeklySaved.revision,
+  })
+  assert.equal(weeklyResult.definitionKey, 'hh-weekly-pulse')
+  assert.equal(weeklyResult.dimensions.length, 8)
+  assert.deepEqual(
+    [...new Set(weeklyResult.dimensions.map((dimension) => dimension.dimensionClass))].sort(),
+    ['function', 'resources', 'state', 'symptoms'],
+  )
+
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential()
+  await guestRepo.createSession(credential, {
+    adult: true,
+    necessary: true,
+    uiLocale: 'en',
+    timezone: 'America/Toronto',
+  })
+  const guestMood = await guestRepo.moodCheckin(credential, {
+    mood: 'happy',
+    category: 'relationships',
+    timezone: 'America/Toronto',
+    sourceSurface: 'cabinet_landing',
+    operationId: randomUUID(),
+  })
+  assert.equal(guestMood.mood, 'happy')
+  assert.equal((await guestRepo.bootstrap(credential)).moodCheckins.length, 1)
+})
+
 test('blocked account cannot self-unblock or create/read private results', async () => {
   const db = await adminClient()
   try {
