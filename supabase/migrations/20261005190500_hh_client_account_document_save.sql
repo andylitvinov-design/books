@@ -17,7 +17,9 @@ create index if not exists client_account_bindings_account
 revoke all on app_private.client_account_bindings from public,anon,authenticated,hh_app_inbox;
 grant select,insert,update on app_private.client_account_bindings to hh_app_backend;
 
--- Historical saved-report claims remain unbound; association begins only after the new explicit Save flow.\n\nalter table app_private.save_intents
+-- Historical saved-report claims remain unbound; association begins only after the new explicit Save flow.
+
+alter table app_private.save_intents
   add column if not exists source_legacy_client_id uuid,
   add column if not exists source_hash text;
 
