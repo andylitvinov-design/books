@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { AcademyBackLink } from "@/components/academy-hub";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -59,6 +60,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
         <footer className="academy-source-footer">{record.skippedRiskyBlocks || publicOmittedCount ? <p>{text.filtered}</p> : null}<a href={record.sourceUrl} rel="noreferrer" target="_blank">{text.source}<span aria-hidden="true">↗</span></a>{record.contentHash ? <code>{record.hashAlgorithm ?? "hash"} {record.contentHash}</code> : null}</footer>
       </article>
+      <PublicConsultationCta locale={locale} />
     </main>
   );
 }
