@@ -188,20 +188,8 @@ export default async function ServicesPage({ params }: PageProps) {
 
       <PageVideo slot="consultation" locale={locale} />
 
-      <section className="services-consultation services-consultation--studio" id="consultation">
-        <div>
-          <p className="homeopathy-kicker">{current.consultationKicker}</p>
-          <h2>{current.consultation}</h2>
-          <p>{current.consultationText}</p>
-        </div>
-        <div>
-          <a href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">{current.telegram}</a>
-          <a href="https://wa.me/14376066502" rel="noreferrer" target="_blank">{current.whatsapp}</a>
-        </div>
-      </section>
-
+      <PublicConsultationCta locale={locale as Locale} id="consultation" />
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
-      <PublicConsultationCta locale={locale as Locale} />
     </main>
   );
 }
