@@ -217,6 +217,14 @@ function dateLabel(value, locale) {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(value))
 }
 
+function localZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
+  }
+}
+
 function itemDefinition(item, locale) {
   if (!item.startable) return null
   return getAssessmentDefinition(
@@ -338,7 +346,8 @@ export default function PsiMonitoring({ data, locale, instrumentKey, onStarted }
 }
 
 function MonitoringDashboard({ data, locale, c, onStarted }) {
-  const [moodSignal, setMoodSignal] = useState(null)
+  const [moodSignal, setMoodSignal] = useState(data.moodCheckins?.[0] || null)
+  const [moodError, setMoodError] = useState('')
   const plan = useMemo(
     () => monitoringPlan({ results: data.results, runs: data.runs, locale }),
     [data.results, data.runs, locale],
@@ -369,6 +378,26 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
     ['completed', 'up_to_date', 'due_soon', 'due_now'].includes(entry.state),
   ).length
 
+  async function persistMood(payload) {
+    setMoodError('')
+    try {
+      const saved = await monitoringFetch('mood', {
+        ...payload,
+        timezone: localZone(),
+        sourceSurface: 'monitoring',
+      })
+      setMoodSignal(saved)
+      return saved
+    } catch {
+      setMoodError(
+        locale === 'ru'
+          ? 'Не удалось сохранить настроение. Повторите попытку.'
+          : 'Your mood could not be saved. Please retry.',
+      )
+      throw new Error('MOOD_SAVE_FAILED')
+    }
+  }
+
   return (
     <section className="hh-psi">
       <div className="hh-heading hh-psi-heading">
@@ -378,7 +407,14 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
         <p className="hh-fine">{c.privacy}</p>
       </div>
 
-      <MoodCheckIn locale={locale} compact onQuickCheckin={setMoodSignal} />
+      <MoodCheckIn
+        locale={locale}
+        compact
+        latestMood={moodSignal}
+        onMoodChange={persistMood}
+        onQuickCheckin={(payload) => setMoodSignal((current) => ({ ...(current || {}), ...payload }))}
+      />
+      {moodError && <p className="hh-psi-error" role="alert">{moodError}</p>}
 
       <section className="hh-psi-recommended" aria-labelledby="psi-recommended-title">
         <p className="hh-kicker">{c.recommended}</p>
