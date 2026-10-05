@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { MindBodyMonitorStrip } from "@/components/mind-body-monitor-strip";\nimport { SiteNavigation } from "@/components/site-navigation";
+import { MindBodyMonitorStrip } from "@/components/mind-body-monitor-strip";
+import { SiteNavigation } from "@/components/site-navigation";
 import type { PublicLocale } from "@/lib/public-locales";
 const copy = {
   ru: { home: "Holistic House — главная", subtitle: "восстановление · практика · поддержка" },
