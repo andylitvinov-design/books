@@ -1,6 +1,7 @@
 import test, { before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { createAppRepository } from '../lib/app/repository.js'
 import { createGuestRepository } from '../lib/app/guest-repository.js'
 import { createGuestCredential } from '../lib/app/guest-session.js'
@@ -94,6 +95,17 @@ async function save(run, who = a, value = 3) {
 let firstResult
 before(async () => {
   await setup()
+  const migrationDb = await adminClient()
+  try {
+    await migrationDb.query(
+      await readFile(
+        new URL('../supabase/migrations/20261005190500_hh_client_account_document_save.sql', import.meta.url),
+        'utf8',
+      ),
+    )
+  } finally {
+    await migrationDb.end()
+  }
   for (const who of [a, b]) {
     await repo.ensureAccount(who)
     await repo.onboarding(who, {
