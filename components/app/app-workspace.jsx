@@ -1346,6 +1346,7 @@ function SavedPaymentDocument({ document, locale }) {
         <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
         <div><dt>{ru ? 'Дата документа' : 'Date issued'}</dt><dd>{document.dateIssued}</dd></div>
         <div><dt>{ru ? 'Услуга' : 'Service'}</dt><dd>{document.service}</dd></div>
+        {document.consultations && <div><dt>{ru ? 'Количество консультаций' : 'Consultations'}</dt><dd>{document.consultations}</dd></div>}
         <div><dt>{received ? (ru ? 'Получено' : 'Amount received') : (ru ? 'К оплате' : 'Amount due')}</dt><dd>{document.currency} {amount}</dd></div>
         {document.dateOfService && <div><dt>{ru ? 'Дата услуги' : 'Date of service'}</dt><dd>{document.dateOfService}</dd></div>}
         {document.paymentMethod && <div><dt>{ru ? 'Способ оплаты' : 'Payment method'}</dt><dd>{document.paymentMethod}</dd></div>}
@@ -1364,7 +1365,10 @@ function SavedRecommendationDocument({ document, locale }) {
       <dl className="hh-saved-document-details">
         <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
         <div><dt>{ru ? 'Дата' : 'Date'}</dt><dd>{document.dateIssued}</dd></div>
+        {document.patientDob && <div><dt>{ru ? 'Дата рождения' : 'Date of birth'}</dt><dd>{document.patientDob}</dd></div>}
         {document.recommendationNumber && <div><dt>{ru ? 'Номер' : 'Number'}</dt><dd>{document.recommendationNumber}</dd></div>}
+        {document.practitionerName && <div><dt>{ru ? 'Специалист' : 'Practitioner'}</dt><dd>{document.practitionerName}{document.practitionerRole ? ' · ' + document.practitionerRole : ''}</dd></div>}
+        {document.practitionerContact && <div><dt>{ru ? 'Контакт' : 'Contact'}</dt><dd>{document.practitionerContact}</dd></div>}
       </dl>
       <div className="hh-saved-recommendation-list">
         {(document.items || []).map((item, index) => (
@@ -1372,6 +1376,8 @@ function SavedRecommendationDocument({ document, locale }) {
             <h2>{index + 1}. {item.displayName}</h2>
             <dl className="hh-saved-document-details">
               {item.potency && <div><dt>{ru ? 'Потенция' : 'Potency'}</dt><dd>{item.potency}</dd></div>}
+              {item.granules && <div><dt>{ru ? 'Гранулы' : 'Granules'}</dt><dd>{item.granules}</dd></div>}
+              {item.timesPerDay && <div><dt>{ru ? 'Раз в день' : 'Times per day'}</dt><dd>{item.timesPerDay}</dd></div>}
               {item.dosage && <div><dt>{ru ? 'Дозировка' : 'Dosage'}</dt><dd>{item.dosage}</dd></div>}
               {item.frequency && <div><dt>{ru ? 'Частота' : 'Frequency'}</dt><dd>{item.frequency}</dd></div>}
               {item.duration && <div><dt>{ru ? 'Длительность' : 'Duration'}</dt><dd>{item.duration}</dd></div>}
