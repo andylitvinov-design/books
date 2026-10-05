@@ -8,9 +8,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/2GMLhPrEJ3s",
     "videoId": "2GMLhPrEJ3s",
-    "title": "Бесплатная медитация. Связь с учителем 2.",
     "order": 1,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Бесплатная медитация. Связь с учителем 2."
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -21,9 +21,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/8XN-EFpSt8M",
     "videoId": "8XN-EFpSt8M",
-    "title": "Медитация Сила Огня — Марс.",
     "order": 2,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Медитация Сила Огня — Марс."
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -34,9 +34,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/h8r_fIVWM0U",
     "videoId": "h8r_fIVWM0U",
-    "title": "Круг Огня — бесплатная медитация.",
     "order": 3,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Круг Огня — бесплатная медитация."
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -47,9 +47,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/owG8gBIQ2hU",
     "videoId": "owG8gBIQ2hU",
-    "title": "Защита и Активизация — бесплатная медитация.",
     "order": 4,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Защита и Активизация — бесплатная медитация."
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -60,9 +60,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/3Lc38_-SqD0",
     "videoId": "3Lc38_-SqD0",
-    "title": "Медитация Сила Огня — Меркурий.",
     "order": 5,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Медитация Сила Огня — Меркурий."
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -73,9 +73,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/ziXmEWe3Dh0",
     "videoId": "ziXmEWe3Dh0",
-    "title": "Круг денег (Золотой храм) — цикл медитаций",
     "order": 6,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Круг денег (Золотой храм) — цикл медитаций"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -86,9 +86,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/ocks6JP2lD8",
     "videoId": "ocks6JP2lD8",
-    "title": "Медитация Сила Юпитера",
     "order": 7,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Медитация Сила Юпитера"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -99,9 +99,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/-volI7wYbl0",
     "videoId": "-volI7wYbl0",
-    "title": "Медитация — Энергия Любви.",
     "order": 8,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Медитация — Энергия Любви."
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -112,9 +112,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/R1krHd3JRXc",
     "videoId": "R1krHd3JRXc",
-    "title": "Медитация — Сила Сатурна.",
     "order": 9,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Медитация — Сила Сатурна."
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -125,9 +125,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/uN5BFjdKVvY",
     "videoId": "uN5BFjdKVvY",
-    "title": "Жизненная Сила — бесплатная медитация.",
     "order": 10,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Жизненная Сила — бесплатная медитация."
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -138,9 +138,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/6wNdBVoYt50",
     "videoId": "6wNdBVoYt50",
-    "title": "Медитация на Солнце.",
     "order": 11,
-    "extractionMethod": "iframe_src"
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Медитация на Солнце."
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12312",
@@ -151,9 +151,9 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/95peObUizeE",
     "videoId": "95peObUizeE",
-    "title": "Марафоны Энергопрактик Онлайн",
     "order": 1,
-    "extractionMethod": "watch_link"
+    "extractionMethod": "watch_link",
+    "lessonTitle": "Марафоны Энергопрактик Онлайн"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12312",
@@ -164,8 +164,8 @@
     "platform": "youtube",
     "mediaUrl": "https://www.youtube.com/embed/ZYGjw0PtvdM",
     "videoId": "ZYGjw0PtvdM",
-    "title": "Марафон Чисток. Практика работы с Чакрой Аджна",
     "order": 2,
-    "extractionMethod": "watch_link"
+    "extractionMethod": "watch_link",
+    "lessonTitle": "Марафон Чисток. Практика работы с Чакрой Аджна"
   }
 ]
