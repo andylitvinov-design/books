@@ -8,6 +8,7 @@ import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/de
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
+import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -559,17 +560,35 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
   )
 }
 function TestCatalog({ data, locale, onStarted }) {
-  const c = COPY[locale],
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(null)
+  const c = COPY[locale]
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const [view, setView] = useState('recommended')
   const definitions = [
     getAssessmentDefinition('hh-current-state', 'v2', locale),
     getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
   ]
   const monitoringIntro =
     locale === 'ru'
-      ? 'Короткие повторяемые самооценки формируют личную историю наблюдений и помогают видеть изменения со временем.'
-      : 'Short repeatable self-checks build your personal history, so you can see what changes over time.'
+      ? 'Начните с одного полезного замера. Дальше выбирайте только то, что действительно хотите отслеживать.'
+      : 'Start with one useful measurement. Go deeper only into the areas you actually want to track.'
+  const tabs =
+    locale === 'ru'
+      ? [
+          ['recommended', 'Рекомендуем'],
+          ['all', 'Все доступные'],
+          ['areas', 'По областям'],
+          ['completed', 'Пройденные'],
+        ]
+      : [
+          ['recommended', 'Recommended'],
+          ['all', 'All available'],
+          ['areas', 'By area'],
+          ['completed', 'Completed'],
+        ]
+  const quickArea = MONITOR_AREAS.find((area) => area.key === 'quick')
+  const personalityArea = MONITOR_AREAS.find((area) => area.key === 'personality')
+
   async function start(def) {
     setBusy(true)
     setError(null)
@@ -588,74 +607,128 @@ function TestCatalog({ data, locale, onStarted }) {
       setBusy(false)
     }
   }
+
+  function cardFor(def, { recommended = false } = {}) {
+    const isState = def.key === 'hh-current-state'
+    const draft = data.runs.find((x) => x.definitionId === def.id)
+    const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
+    const title = isState
+      ? locale === 'ru'
+        ? 'Состояние сейчас'
+        : 'Current State Check'
+      : locale === 'ru'
+        ? 'Личностный профиль'
+        : 'Personality Baseline'
+    const meta = isState
+      ? locale === 'ru'
+        ? '5 вопросов · ~1 мин'
+        : '5 questions · ~1 min'
+      : locale === 'ru'
+        ? '20 вопросов · ~3 мин · EN'
+        : '20 questions · ~3 min · EN'
+    const image = isState
+      ? locale === 'ru'
+        ? '/images/holistic-house/video-posters/home-ru-v1.webp'
+        : '/images/holistic-house/video-posters/home-en-v2.webp'
+      : locale === 'ru'
+        ? '/images/holistic-house/video-posters/services-ru-v1.webp'
+        : '/images/holistic-house/video-posters/services-en-v2.webp'
+    return (
+      <article className={`hh-monitoring-card${recommended ? ' hh-monitoring-card--recommended' : ''}`} key={def.id}>
+        <div className="hh-monitoring-photo" aria-hidden="true">
+          <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={image} />
+        </div>
+        <div className="hh-monitoring-card-body">
+          {recommended && <p className="hh-monitoring-recommended">{locale === 'ru' ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
+          <p className="hh-monitoring-meta">{meta}</p>
+          <h2>{title}</h2>
+          <p>{isState ? c.stateDescription : c.traitDescription}</p>
+          {!isState && <p className="hh-notice">{c.traitNotice}</p>}
+          {completed && (
+            <p className="hh-fine">
+              {c.latest}: {dateLabel(completed.measurementAt, locale)}
+            </p>
+          )}
+          <div className="hh-actions">
+            <button
+              className="hh-primary"
+              disabled={busy}
+              onClick={() => (draft ? onStarted(draft) : start(def))}
+            >
+              {draft ? c.resume : completed ? c.repeat : c.start}
+            </button>
+            {completed && (
+              <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
+                {c.view}
+              </Link>
+            )}
+          </div>
+        </div>
+      </article>
+    )
+  }
+
+  const completedDefinitions = definitions.filter((def) =>
+    data.results.some((result) => result.definitionId === def.id),
+  )
+
   return (
     <section className="hh-monitoring">
       <div className="hh-heading hh-monitoring-heading">
-        <p className="hh-kicker">Psychic Health</p>
-        <h1>Psychic Health Monitoring</h1>
+        <p className="hh-kicker">{locale === 'ru' ? 'Монитор состояния' : 'Mind–Body Monitor'}</p>
+        <h1>{locale === 'ru' ? 'Тесты и самонаблюдение' : 'Tests & self-checks'}</h1>
         <p>{monitoringIntro}</p>
         <p className="hh-fine">{c.continueLater}</p>
       </div>
-      <div className="hh-monitoring-grid">
-        {definitions.map((def) => {
-          const isState = def.key === 'hh-current-state',
-            draft = data.runs.find((x) => x.definitionId === def.id),
-            completed = data.results.filter((x) => x.definitionId === def.id).at(-1),
-            title = isState
-              ? locale === 'ru'
-                ? 'Состояние сейчас'
-                : 'Current State Check'
-              : locale === 'ru'
-                ? 'Личностный профиль'
-                : 'Personality Baseline',
-            meta = isState
-              ? locale === 'ru'
-                ? '5 вопросов · ~1 мин'
-                : '5 questions · ~1 min'
-              : locale === 'ru'
-                ? '20 вопросов · ~3 мин · EN'
-                : '20 questions · ~3 min · EN',
-            image = isState
-              ? locale === 'ru'
-                ? '/images/holistic-house/video-posters/home-ru-v1.webp'
-                : '/images/holistic-house/video-posters/home-en-v2.webp'
-              : locale === 'ru'
-                ? '/images/holistic-house/video-posters/services-ru-v1.webp'
-                : '/images/holistic-house/video-posters/services-en-v2.webp'
-          return (
-            <article className="hh-monitoring-card" key={def.id}>
-              <div className="hh-monitoring-photo" aria-hidden="true">
-                <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={image} />
-              </div>
-              <div className="hh-monitoring-card-body">
-                <p className="hh-monitoring-meta">{meta}</p>
-                <h2>{title}</h2>
-                <p>{isState ? c.stateDescription : c.traitDescription}</p>
-                {!isState && <p className="hh-notice">{c.traitNotice}</p>}
-                {completed && (
-                  <p className="hh-fine">
-                    {c.latest}: {dateLabel(completed.measurementAt, locale)}
-                  </p>
-                )}
-                <div className="hh-actions">
-                  <button
-                    className="hh-primary"
-                    disabled={busy}
-                    onClick={() => (draft ? onStarted(draft) : start(def))}
-                  >
-                    {draft ? c.resume : completed ? c.repeat : c.start}
-                  </button>
-                  {completed && (
-                    <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
-                      {c.view}
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </article>
-          )
-        })}
-      </div>
+
+      <nav className="hh-monitoring-tabs" aria-label={locale === 'ru' ? 'Фильтр тестов' : 'Test filters'}>
+        {tabs.map(([id, label]) => (
+          <button type="button" key={id} aria-pressed={view === id} onClick={() => setView(id)}>
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {view === 'recommended' && (
+        <div className="hh-monitoring-grid">
+          {cardFor(definitions[0], { recommended: true })}
+          {cardFor(definitions[1])}
+        </div>
+      )}
+
+      {view === 'all' && (
+        <div className="hh-monitoring-grid">{definitions.map((def) => cardFor(def))}</div>
+      )}
+
+      {view === 'areas' && (
+        <div className="hh-monitoring-areas">
+          <section>
+            <h2>{quickArea?.[locale] || quickArea?.en}</h2>
+            <div className="hh-monitoring-grid">{cardFor(definitions[0])}</div>
+          </section>
+          <section>
+            <h2>{personalityArea?.[locale] || personalityArea?.en}</h2>
+            <div className="hh-monitoring-grid">{cardFor(definitions[1])}</div>
+          </section>
+          <p className="hh-fine">
+            {locale === 'ru'
+              ? 'Дополнительные области появляются здесь только после проверки формы, прав на использование и требований безопасности.'
+              : 'Additional areas appear here only after the questionnaire, usage rights and safety requirements are verified.'}
+          </p>
+        </div>
+      )}
+
+      {view === 'completed' && (
+        completedDefinitions.length ? (
+          <div className="hh-monitoring-grid">{completedDefinitions.map((def) => cardFor(def))}</div>
+        ) : (
+          <article className="hh-panel hh-empty">
+            <h2>{locale === 'ru' ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2>
+            <p>{locale === 'ru' ? 'Начните с короткой проверки состояния.' : 'Start with the quick state check.'}</p>
+          </article>
+        )
+      )}
+
       {error && <p role="alert">{message(error, c)}</p>}
     </section>
   )
