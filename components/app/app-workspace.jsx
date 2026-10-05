@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
+import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
@@ -1012,6 +1013,235 @@ function Runner({ id, locale, onExit, onComplete }) {
     </section>
   )
 }
+function profileNumber(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '—'
+  return Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(1).replace(/\.0$/, '')
+}
+function profileDelta(value) {
+  if (value === null || value === undefined) return '—'
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '—'
+  return `${numeric > 0 ? '+' : ''}${profileNumber(numeric)}`
+}
+function ProfileOverview({ profile, locale }) {
+  const ru = locale === 'ru'
+  const axisCopy = {
+    state: ru ? 'Состояние' : 'State',
+    symptoms: ru ? 'Симптомы и нагрузка' : 'Symptoms & load',
+    function: ru ? 'Функционирование' : 'Functioning',
+    resources: ru ? 'Ресурсы' : 'Resources',
+    trait: ru ? 'Личностные особенности' : 'Personality',
+  }
+  const axisOrder = new Map(Object.keys(axisCopy).map((key, index) => [key, index]))
+  const rows = [...profile.rows].sort(
+    (a, b) =>
+      (axisOrder.get(a.dimensionClass) ?? 99) - (axisOrder.get(b.dimensionClass) ?? 99) ||
+      String(a.sourceConstruct || a.key).localeCompare(String(b.sourceConstruct || b.key)),
+  )
+
+  return (
+    <section className="hh-profile-overview" aria-labelledby="profile-overview-title">
+      <header className="hh-profile-overview-head">
+        <div>
+          <p className="hh-kicker">{ru ? 'Мой профиль' : 'My profile'}</p>
+          <h2 id="profile-overview-title">
+            {ru ? 'Все результаты в одной схеме' : 'All your results in one view'}
+          </h2>
+          <p>
+            {ru
+              ? 'Последние результаты по всем доступным шкалам собраны вместе. Предыдущее значение появляется только тогда, когда версия теста и сама шкала совместимы.'
+              : 'Your latest measurements across available scales are brought together here. A previous value appears only when the test version and scale are compatible.'}
+          </p>
+        </div>
+        <div className="hh-profile-coverage" aria-label={ru ? 'Заполненность профиля' : 'Profile coverage'}>
+          <strong>{profile.coveragePercent}%</strong>
+          <span>{profile.coveredAxes.length} / 5 {ru ? 'слоёв' : 'layers'}</span>
+        </div>
+      </header>
+
+      <div className="hh-profile-progress" aria-hidden="true">
+        <i style={{ width: `${profile.coveragePercent}%` }} />
+      </div>
+
+      <section className="hh-profile-map" aria-labelledby="profile-map-title">
+        <div className="hh-profile-section-heading">
+          <div>
+            <p className="hh-kicker">{ru ? 'График' : 'Profile map'}</p>
+            <h3 id="profile-map-title">{ru ? 'Последнее и предыдущее' : 'Latest vs previous'}</h3>
+          </div>
+          <p>
+            {ru
+              ? 'Каждая шкала показана на собственной позиции 0–100 для удобства графика. Это не общий балл здоровья: у разных шкал разный смысл направления.'
+              : 'Each scale is mapped to its own 0–100 position for visualization only. This is not a combined health score; different scales have different directions.'}
+          </p>
+        </div>
+        {rows.length ? (
+          <div className="hh-profile-chart-list">
+            {rows.map((row) => (
+              <div className="hh-profile-chart-row" key={row.key}>
+                <div className="hh-profile-chart-label">
+                  <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
+                  <strong>{row.sourceConstruct || labelFor(row.key, locale)}</strong>
+                </div>
+                <div
+                  className="hh-profile-chart-track"
+                  role="img"
+                  aria-label={
+                    `${row.sourceConstruct || labelFor(row.key, locale)}: ${profileNumber(row.value)} / ${row.max}`
+                  }
+                >
+                  <i style={{ width: `${row.currentPercent || 0}%` }} />
+                  {Number.isFinite(row.priorPercent) && (
+                    <b
+                      style={{ left: `${row.priorPercent}%` }}
+                      title={
+                        ru
+                          ? `Предыдущее: ${profileNumber(row.priorValue)} / ${row.max}`
+                          : `Previous: ${profileNumber(row.priorValue)} / ${row.max}`
+                      }
+                    />
+                  )}
+                </div>
+                <div className="hh-profile-chart-values">
+                  <strong>{profileNumber(row.value)} / {row.max}</strong>
+                  <span>
+                    {row.priorValue !== null
+                      ? `${ru ? 'было' : 'was'} ${profileNumber(row.priorValue)} · ${profileDelta(row.delta)}`
+                      : ru
+                        ? 'первый замер'
+                        : 'first measurement'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="hh-fine">
+            {ru ? 'После первого теста здесь появится сводный график.' : 'Your combined chart will appear after the first completed check.'}
+          </p>
+        )}
+      </section>
+
+      <section className="hh-profile-table-section" aria-labelledby="profile-table-title">
+        <div className="hh-profile-section-heading">
+          <div>
+            <p className="hh-kicker">{ru ? 'Таблица' : 'Table'}</p>
+            <h3 id="profile-table-title">{ru ? 'Все шкалы' : 'All measurements'}</h3>
+          </div>
+          <p>
+            {ru
+              ? 'В таблице остаются исходные баллы каждой шкалы, дата последнего замера и корректное сравнение с предыдущим.'
+              : 'The table keeps each scale’s original score, latest date and a compatible comparison with the previous measurement.'}
+          </p>
+        </div>
+        {rows.length ? (
+          <div className="hh-profile-table-wrap">
+            <table className="hh-profile-table">
+              <thead>
+                <tr>
+                  <th>{ru ? 'Показатель' : 'Measure'}</th>
+                  <th>{ru ? 'Последнее' : 'Latest'}</th>
+                  <th>{ru ? 'Предыдущее' : 'Previous'}</th>
+                  <th>{ru ? 'Разница' : 'Difference'}</th>
+                  <th>{ru ? 'Дата' : 'Date'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const definition = getDefinitionById(row.sourceDefinitionId)
+                  return (
+                    <tr key={row.key}>
+                      <th scope="row">
+                        <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
+                        <strong>{row.sourceConstruct || labelFor(row.key, locale)}</strong>
+                        <span>{definition.title || definition.key}</span>
+                      </th>
+                      <td><strong>{profileNumber(row.value)}</strong><small>{row.min}–{row.max}</small></td>
+                      <td>
+                        {row.priorValue !== null ? (
+                          <>
+                            <strong>{profileNumber(row.priorValue)}</strong>
+                            <small>{row.priorMeasurementAt ? dateLabel(row.priorMeasurementAt, locale) : ''}</small>
+                          </>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </td>
+                      <td>{row.delta !== null ? <strong>{profileDelta(row.delta)}</strong> : <span>—</span>}</td>
+                      <td><time dateTime={row.measurementAt}>{dateLabel(row.measurementAt, locale)}</time></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="hh-fine">{ru ? 'Пока нет завершённых тестов.' : 'No completed tests yet.'}</p>
+        )}
+      </section>
+
+      <section className="hh-profile-recommendations" aria-labelledby="profile-recommendations-title">
+        <div className="hh-profile-section-heading">
+          <div>
+            <p className="hh-kicker">{ru ? 'Что ещё пройти' : 'What to add next'}</p>
+            <h3 id="profile-recommendations-title">
+              {profile.complete
+                ? ru ? 'Основные слои профиля собраны' : 'Core profile layers are covered'
+                : ru ? 'Тесты, которые лучше всего достроят профиль' : 'Tests that best complete your profile'}
+            </h3>
+          </div>
+          <p>
+            {profile.complete
+              ? ru
+                ? 'Обязательных следующих тестов нет. Повторные замеры нужны только для наблюдения динамики.'
+                : 'There is no required next test. Repeat measurements are useful only when you want to track change.'
+              : ru
+                ? 'Приоритет учитывает, сколько недостающих слоёв добавит тест. Не нужно проходить все тесты подряд.'
+                : 'Priority reflects how many missing layers a test adds. You do not need to take every test.'}
+          </p>
+        </div>
+        {profile.recommendations.length ? (
+          <div className="hh-profile-recommendation-grid">
+            {profile.recommendations.map((recommendation, index) => (
+              <article key={recommendation.key}>
+                <div>
+                  <small>{ru ? `Приоритет ${index + 1}` : `Priority ${index + 1}`}</small>
+                  <h4>{recommendation.item.title[locale] || recommendation.item.title.en}</h4>
+                  <p>{recommendation.reason}</p>
+                  <span>
+                    {recommendation.item.questionCount} {ru ? 'вопросов' : 'questions'} · ~{recommendation.item.durationMinutes} {ru ? 'мин' : 'min'}
+                    {recommendation.item.instrumentLocale === 'en' && locale === 'ru' ? ' · EN' : ''}
+                  </span>
+                </div>
+                <Link
+                  className="hh-primary"
+                  href={`/${locale}/app/monitoring/${recommendation.key}`}
+                  prefetch={false}
+                >
+                  {ru ? 'Открыть тест' : 'Open test'}
+                </Link>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="hh-profile-complete">
+            <span aria-hidden="true">✓</span>
+            <div>
+              <strong>{ru ? 'Профиль можно развивать через динамику' : 'Your profile can now grow through history'}</strong>
+              <p>
+                {ru
+                  ? 'Следующий полезный шаг — повторять совместимые шкалы со временем и смотреть изменения.'
+                  : 'The next useful step is to repeat compatible scales over time and compare changes.'}
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
+    </section>
+  )
+}
+
 function MetricCard({ dimension, locale, onSelect }) {
   const c = COPY[locale],
     def = getDefinitionById(dimension.sourceDefinitionId)
@@ -1050,6 +1280,7 @@ function Portrait({ data, locale, onOpenHistory }) {
           : dimension
       }),
     })
+  const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
   return (
     <section>
       <div className="hh-heading">
@@ -1074,6 +1305,7 @@ function Portrait({ data, locale, onOpenHistory }) {
         }
         onQuickCheckin={() => window.location.assign('/' + locale + '/app/monitoring')}
       />
+      <ProfileOverview profile={profile} locale={locale} />
       {data.practitioner && <OwnerTools locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
