@@ -312,6 +312,9 @@ export default function AppWorkspace({ locale, path = [] }) {
               <ReportsIndex data={data} locale={locale} />
             )
           )}
+          {page === 'documents' && recordId && (
+            <SavedDocumentPage key={recordId} id={recordId} locale={locale} reload={load} />
+          )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} />}
           {page === 'settings' && (
@@ -377,17 +380,23 @@ function SaveContinuation({ data, locale, reload }) {
       router.replace(
         saved.sourceKind === 'delivered_report'
           ? `/${locale}/app/reports/${saved.resource.id}`
-          : `/${locale}/app/results/${saved.resource.id}`,
+          : saved.sourceKind === 'legacy_document'
+            ? `/${locale}/app/documents/${saved.resource.id}`
+            : `/${locale}/app/results/${saved.resource.id}`,
       )
     } catch (e) {
       setError(
         e?.code === 'SAVE_INTENT_EXPIRED'
           ? ru
-            ? 'Время подтверждения истекло. Вернитесь к исходному результату и повторите сохранение.'
-            : 'This confirmation expired. Return to the original result and save again.'
-          : ru
-            ? 'Не удалось сохранить результат. Исходный гостевой результат не удалён.'
-            : 'The result could not be saved. Your guest result has not been deleted.',
+            ? 'Время подтверждения истекло. Вернитесь к исходному документу и повторите сохранение.'
+            : 'This confirmation expired. Return to the original item and save again.'
+          : e?.code === 'CLIENT_ACCOUNT_ALREADY_LINKED'
+            ? ru
+              ? 'Эта карточка клиента уже связана с другим Google-аккаунтом. Свяжитесь с Andy, чтобы проверить привязку.'
+              : 'This client profile is already linked to another Google Account. Contact Andy to review the link.'
+            : ru
+              ? 'Не удалось сохранить выбранный материал.'
+              : 'The selected item could not be saved.',
       )
     } finally {
       setBusy(false)
@@ -399,6 +408,12 @@ function SaveContinuation({ data, locale, reload }) {
       ? ru
         ? 'Полученный отчёт'
         : 'Received report'
+      : intent?.sourceKind === 'legacy_document'
+        ? intent?.source?.documentKind === 'receipt'
+          ? ru ? 'Квитанция' : 'Receipt'
+          : intent?.source?.documentKind === 'invoice'
+            ? ru ? 'Счёт' : 'Invoice'
+            : ru ? 'Рекомендация' : 'Recommendation'
       : intent?.source?.definitionKey === 'hh-current-state'
         ? ru
           ? 'Моё состояние сейчас'
@@ -422,13 +437,27 @@ function SaveContinuation({ data, locale, reload }) {
             {ru ? 'Получающий Google-аккаунт' : 'Receiving Google Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
           </p>
           <p className="hh-muted">
-            {ru
-              ? 'Будет сохранён только этот выбранный отчёт. Другие гостевые данные и старый Client Cabinet не импортируются.'
-              : 'Only this report will be saved. Other guest data and the legacy Client Cabinet are not imported.'}
+            {intent?.sourceKind === 'guest_result'
+              ? (ru
+                  ? 'Будет сохранён только этот выбранный результат.'
+                  : 'Only this selected result will be saved.')
+              : (ru
+                  ? 'Будет сохранён только этот выбранный материал. Ваша карточка клиента у Andy будет связана с этим Google-аккаунтом; остальные старые документы автоматически не открываются.'
+                  : 'Only this selected item will be saved. Your client profile with Andy will be linked to this Google Account; other legacy documents are not opened automatically.')}
           </p>
           {intent.status === 'committed' && intent.resourceId ? (
-            <Link className="hh-primary" href={`/${locale}/app/results/${intent.resourceId}`} prefetch={false}>
-              {ru ? 'Открыть сохранённый результат' : 'Open saved result'}
+            <Link
+              className="hh-primary"
+              href={
+                intent.sourceKind === 'delivered_report'
+                  ? `/${locale}/app/reports/${intent.resourceId}`
+                  : intent.sourceKind === 'legacy_document'
+                    ? `/${locale}/app/documents/${intent.resourceId}`
+                    : `/${locale}/app/results/${intent.resourceId}`
+              }
+              prefetch={false}
+            >
+              {ru ? 'Открыть сохранённый материал' : 'Open saved item'}
             </Link>
           ) : (
             <button className="hh-primary" type="button" disabled={busy} onClick={commit}>
@@ -1777,6 +1806,132 @@ function ResultPage({ id, locale, data }) {
     </section>
   )
 }
+function SavedPaymentDocument({ document, locale }) {
+  const ru = locale === 'ru'
+  const received = document.paymentStatus === 'received'
+  const amount = (Number(document.amount || 0) / 100)
+    .toFixed(2)
+    .replace('.', ru ? ',' : '.')
+  return (
+    <article className="hh-panel hh-saved-client-document">
+      <p className="hh-kicker">Holistic House</p>
+      <h1>{received ? (ru ? 'Квитанция' : 'Receipt') : (ru ? 'Счёт' : 'Invoice')}</h1>
+      <dl className="hh-saved-document-details">
+        <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
+        <div><dt>{ru ? 'Дата документа' : 'Date issued'}</dt><dd>{document.dateIssued}</dd></div>
+        <div><dt>{ru ? 'Услуга' : 'Service'}</dt><dd>{document.service}</dd></div>
+        {document.consultations && <div><dt>{ru ? 'Количество консультаций' : 'Consultations'}</dt><dd>{document.consultations}</dd></div>}
+        <div><dt>{received ? (ru ? 'Получено' : 'Amount received') : (ru ? 'К оплате' : 'Amount due')}</dt><dd>{document.currency} {amount}</dd></div>
+        {document.dateOfService && <div><dt>{ru ? 'Дата услуги' : 'Date of service'}</dt><dd>{document.dateOfService}</dd></div>}
+        {document.paymentMethod && <div><dt>{ru ? 'Способ оплаты' : 'Payment method'}</dt><dd>{document.paymentMethod}</dd></div>}
+        {document.documentNumber && <div><dt>{ru ? 'Номер' : 'Number'}</dt><dd>{document.documentNumber}</dd></div>}
+      </dl>
+    </article>
+  )
+}
+
+function SavedRecommendationDocument({ document, locale }) {
+  const ru = locale === 'ru'
+  return (
+    <article className="hh-panel hh-saved-client-document">
+      <p className="hh-kicker">Holistic House</p>
+      <h1>{ru ? 'Рекомендация' : 'Recommendation'}</h1>
+      <dl className="hh-saved-document-details">
+        <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
+        <div><dt>{ru ? 'Дата' : 'Date'}</dt><dd>{document.dateIssued}</dd></div>
+        {document.patientDob && <div><dt>{ru ? 'Дата рождения' : 'Date of birth'}</dt><dd>{document.patientDob}</dd></div>}
+        {document.recommendationNumber && <div><dt>{ru ? 'Номер' : 'Number'}</dt><dd>{document.recommendationNumber}</dd></div>}
+        {document.practitionerName && <div><dt>{ru ? 'Специалист' : 'Practitioner'}</dt><dd>{document.practitionerName}{document.practitionerRole ? ' · ' + document.practitionerRole : ''}</dd></div>}
+        {document.practitionerContact && <div><dt>{ru ? 'Контакт' : 'Contact'}</dt><dd>{document.practitionerContact}</dd></div>}
+      </dl>
+      <div className="hh-saved-recommendation-list">
+        {(document.items || []).map((item, index) => (
+          <section key={index}>
+            <h2>{index + 1}. {item.displayName}</h2>
+            <dl className="hh-saved-document-details">
+              {item.potency && <div><dt>{ru ? 'Потенция' : 'Potency'}</dt><dd>{item.potency}</dd></div>}
+              {item.granules && <div><dt>{ru ? 'Гранулы' : 'Granules'}</dt><dd>{item.granules}</dd></div>}
+              {item.timesPerDay && <div><dt>{ru ? 'Раз в день' : 'Times per day'}</dt><dd>{item.timesPerDay}</dd></div>}
+              {item.dosage && <div><dt>{ru ? 'Дозировка' : 'Dosage'}</dt><dd>{item.dosage}</dd></div>}
+              {item.frequency && <div><dt>{ru ? 'Частота' : 'Frequency'}</dt><dd>{item.frequency}</dd></div>}
+              {item.duration && <div><dt>{ru ? 'Длительность' : 'Duration'}</dt><dd>{item.duration}</dd></div>}
+              {item.sequence && <div><dt>{ru ? 'Последовательность' : 'Sequence'}</dt><dd>{item.sequence}</dd></div>}
+              {item.instructions && <div><dt>{ru ? 'Инструкция' : 'Instructions'}</dt><dd>{item.instructions}</dd></div>}
+              {item.purpose && <div><dt>{ru ? 'Назначение' : 'Purpose'}</dt><dd>{item.purpose}</dd></div>}
+            </dl>
+          </section>
+        ))}
+      </div>
+      {document.generalInstructions && <section className="hh-saved-document-note"><h2>{ru ? 'Общие рекомендации' : 'General guidance'}</h2><p>{document.generalInstructions}</p></section>}
+      {document.followUp && <p className="hh-fine">{ru ? 'Контроль' : 'Follow-up'}: {document.followUp}</p>}
+    </article>
+  )
+}
+
+function SavedDocumentPage({ id, locale, reload }) {
+  const router = useRouter()
+  const [value, setValue] = useState(null)
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const ru = locale === 'ru'
+  useEffect(() => {
+    let live = true
+    appFetch('documents/' + id + '?locale=' + locale)
+      .then((result) => {
+        if (live) setValue(result)
+      })
+      .catch((e) => {
+        if (live) setError(e)
+      })
+    return () => {
+      live = false
+    }
+  }, [id, locale])
+  async function remove() {
+    setBusy(true)
+    setError(null)
+    try {
+      await appFetch('documents/' + id + '/remove', {})
+      await reload()
+      router.replace('/' + locale + '/app/history')
+    } catch (e) {
+      setError(e)
+      setBusy(false)
+    }
+  }
+  if (error?.code === 'DOCUMENT_UNAVAILABLE' || error?.code === 'NOT_FOUND')
+    return (
+      <section className="hh-panel">
+        <h1>{ru ? 'Документ больше недоступен' : 'Document no longer available'}</h1>
+        <p>{ru ? 'Запись может оставаться в истории, но исходный документ был отозван или больше недоступен.' : 'The history reference may remain, but the source document was revoked or is no longer available.'}</p>
+        <Link className="hh-primary" href={'/' + locale + '/app/history'} prefetch={false}>
+          {ru ? 'Вернуться в историю' : 'Back to History'}
+        </Link>
+      </section>
+    )
+  if (error) return <p role="alert">{ru ? 'Не удалось открыть документ.' : 'The document could not be opened.'}</p>
+  if (!value) return <p>{ru ? 'Загружаем документ…' : 'Loading document…'}</p>
+  return (
+    <section>
+      <div className="hh-panel">
+        <p className="hh-kicker">{ru ? 'Сохранённый документ' : 'Saved document'}</p>
+        <p className="hh-fine">{ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}</p>
+      </div>
+      {value.kind === 'receipt' || value.kind === 'invoice'
+        ? <SavedPaymentDocument document={value.document} locale={locale} />
+        : <SavedRecommendationDocument document={value.document} locale={locale} />}
+      <div className="hh-panel hh-actions">
+        <Link href={'/' + locale + '/app/history'} prefetch={false}>
+          {ru ? 'История' : 'History'}
+        </Link>
+        <button type="button" disabled={busy} onClick={remove}>
+          {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}
+        </button>
+      </div>
+    </section>
+  )
+}
+
 function SavedReportPage({ id, locale, reload }) {
   const router = useRouter()
   const [value, setValue] = useState(null)
@@ -1917,6 +2072,18 @@ function HistoryView({ data, locale, reload }) {
       title: c.reportFromAndy,
       href: `/${locale}/app/reports/${report.id}`,
       note: `${c.saved}: ${dateLabel(report.savedAt, locale)}`,
+    })),
+    ...(data.savedDocuments || []).map((document) => ({
+      id: document.id,
+      date: `${document.occurredOn}T00:00:00.000Z`,
+      title:
+        document.kind === 'receipt'
+          ? (locale === 'ru' ? 'Квитанция от Andy' : 'Receipt from Andy')
+          : document.kind === 'invoice'
+            ? (locale === 'ru' ? 'Счёт от Andy' : 'Invoice from Andy')
+            : (locale === 'ru' ? 'Рекомендация от Andy' : 'Recommendation from Andy'),
+      href: `/${locale}/app/documents/${document.id}`,
+      note: `${c.saved}: ${dateLabel(document.savedAt, locale)}`,
     })),
     ...data.requests.map((r) => ({
       id: r.id,
