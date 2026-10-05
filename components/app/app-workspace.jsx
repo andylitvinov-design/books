@@ -11,6 +11,8 @@ import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
+import { monitoringCatalogItem } from '@/data/assessments/catalog'
+import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { TEST_RECOMMENDATION_FOCUS, rankAssessmentDefinitions } from '@/lib/assessments/test-recommendations'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
@@ -618,10 +620,18 @@ function TestCatalog({ data, locale, onStarted }) {
   const [depth, setDepth] = useState('balanced')
   const [personalized, setPersonalized] = useState(null)
   const definitions = [
-    getAssessmentDefinition('hh-current-state', 'v2', locale),
-    getAssessmentDefinition('hh-weekly-pulse', 'v1', locale),
-    getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
-  ]
+    ['hh-current-state', 'v2', locale],
+    ['hh-weekly-pulse', 'v1', locale],
+    ['mini-ipip-20', 'v1', 'en'],
+    ['phq-4', 'v1', 'en'],
+    ['k6', 'v1', 'en'],
+    ['phq-9', 'v1', 'en'],
+    ['gad-7', 'v1', 'en'],
+    ['hh-resource-pulse', 'v1', locale],
+    ['hh-monthly-profile', 'v1', locale],
+  ].map(([key, version, instrumentLocale]) =>
+    getAssessmentDefinition(key, version, instrumentLocale),
+  )
   const ru = locale === 'ru'
   const monitoringIntro = ru
     ? 'Начните с одного полезного замера. Дальше выбирайте только то, что действительно хотите отслеживать.'
@@ -699,23 +709,22 @@ function TestCatalog({ data, locale, onStarted }) {
   }
 
   function cardFor(def, { recommended = false, rank = null } = {}) {
+    const item = monitoringCatalogItem(def.key)
     const isState = def.key === 'hh-current-state'
     const isWeekly = def.key === 'hh-weekly-pulse'
+    const isTrait = def.key === 'mini-ipip-20'
     const draft = data.runs.find((x) => x.definitionId === def.id)
     const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
-    const title = isState
-      ? (ru ? 'Состояние сейчас' : 'Current State Check')
-      : isWeekly
-        ? c.weekly
-        : (ru ? 'Личностный профиль' : 'Personality Baseline')
-    const meta = isState
-      ? (ru ? '5 вопросов · ~1 мин' : '5 questions · ~1 min')
-      : isWeekly
-        ? (ru ? '8 вопросов · ~2 мин' : '8 questions · ~2 min')
-        : (ru ? '20 вопросов · ~3 мин · EN' : '20 questions · ~3 min · EN')
-    const image = isState || isWeekly
-      ? (ru ? '/images/holistic-house/video-posters/home-ru-v1.webp' : '/images/holistic-house/video-posters/home-en-v2.webp')
-      : (ru ? '/images/holistic-house/video-posters/services-ru-v1.webp' : '/images/holistic-house/video-posters/services-en-v2.webp')
+    const title = item?.title?.[locale] || item?.title?.en || def.title
+    const questionCount = item?.questionCount || def.questions.length
+    const duration = item?.durationMinutes
+    const meta =
+      `${questionCount} ${ru ? 'вопросов' : 'questions'}` +
+      (duration ? ` · ~${duration} ${ru ? 'мин' : 'min'}` : '') +
+      (def.instrumentLocale !== locale ? ` · ${def.instrumentLocale.toUpperCase()}` : '')
+    const image = item?.axis === 'baseline'
+      ? (ru ? '/images/holistic-house/video-posters/services-ru-v1.webp' : '/images/holistic-house/video-posters/services-en-v2.webp')
+      : (ru ? '/images/holistic-house/video-posters/home-ru-v1.webp' : '/images/holistic-house/video-posters/home-en-v2.webp')
 
     return (
       <article className={`hh-monitoring-card${recommended ? ' hh-monitoring-card--recommended' : ''}`} key={def.id}>
@@ -727,8 +736,9 @@ function TestCatalog({ data, locale, onStarted }) {
           {recommended && <p className="hh-monitoring-recommended">{ru ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
           <p className="hh-monitoring-meta">{meta}</p>
           <h2>{title}</h2>
-          <p>{isState ? c.stateDescription : isWeekly ? c.weeklyDescription : c.traitDescription}</p>
-          {!isState && !isWeekly && <p className="hh-notice">{c.traitNotice}</p>}
+          <p>{item?.description?.[locale] || item?.description?.en || (isState ? c.stateDescription : isWeekly ? c.weeklyDescription : c.traitDescription)}</p>
+          {isTrait && <p className="hh-notice">{c.traitNotice}</p>}
+          {def.source?.copyright && <p className="hh-fine">{def.source.copyright}</p>}
           {completed && <p className="hh-fine">{c.latest}: {dateLabel(completed.measurementAt, locale)}</p>}
           <div className="hh-actions">
             <button className="hh-primary" disabled={busy} onClick={() => (draft ? onStarted(draft) : start(def))}>
@@ -858,6 +868,7 @@ function Runner({ id, locale, onExit, onComplete }) {
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
     [showDiscard, setShowDiscard] = useState(false),
+    [safetyAcknowledged, setSafetyAcknowledged] = useState(false),
     [mode, setMode] = useState(null)
   const operation = useRef(null),
     inflight = useRef(false)
@@ -901,6 +912,7 @@ function Runner({ id, locale, onExit, onComplete }) {
     try {
       const value = await appFetch('runs/' + id)
       setRun(value)
+      if (value.safetySignal) setSafetyAcknowledged(false)
       setContext(value.context || {})
       setStatus(c.saved)
     } catch (e) {
@@ -1004,6 +1016,23 @@ function Runner({ id, locale, onExit, onComplete }) {
       </section>
     )
 
+  if (run.safetySignal && !safetyAcknowledged) {
+    const safety = SAFETY_COPY[locale] || SAFETY_COPY.en
+    return (
+      <section className="hh-panel hh-safety" role="alert" aria-live="assertive">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{safety.title}</h1>
+        <p>{safety.text}</p>
+        <p><strong>{safety.urgent}</strong></p>
+        <p>{safety.support}</p>
+        <div className="hh-actions">
+          <a className="hh-primary" href="tel:988">988</a>
+          <a href="sms:988">{locale === 'ru' ? 'Написать 988' : 'Text 988'}</a>
+          <button type="button" onClick={() => setSafetyAcknowledged(true)}>{safety.continue}</button>
+        </div>
+      </section>
+    )
+  }
   const min = question?.min ?? def.answerScale?.min,
     max = question?.max ?? def.answerScale?.max,
     partCount = Math.min(4, Math.max(1, def.questions.length)),
@@ -1052,7 +1081,7 @@ function Runner({ id, locale, onExit, onComplete }) {
       <header className="hh-runner-head">
         <div className="hh-runner-topline">
           <p className="hh-kicker">
-            {def.key === 'hh-current-state' ? c.state : def.key === 'hh-weekly-pulse' ? c.weekly : c.personality} ·{' '}
+            {(monitoringCatalogItem(def.key)?.title?.[locale] || monitoringCatalogItem(def.key)?.title?.en || def.title)} ·{' '}
             {def.instrumentLocale.toUpperCase()}
           </p>
           {!isContext && (
@@ -1459,7 +1488,7 @@ function MetricCard({ dimension, locale, onSelect }) {
     def = getDefinitionById(dimension.sourceDefinitionId)
   return (
     <button className="hh-metric" onClick={() => onSelect(dimension)}>
-      <span>{labelFor(dimension.key, locale)}</span>
+      <span>{dimension.sourceConstruct || labelFor(dimension.key, locale)}</span>
       <strong>
         {dimension.value}
         <small> / {dimension.max}</small>
@@ -1781,7 +1810,7 @@ function ResultPage({ id, locale, data }) {
             return (
               <tr key={d.key}>
                 <th scope="row">
-                  {labelFor(d.key, locale)}
+                  {d.sourceConstruct || labelFor(d.key, locale)}
                   <small>{explanationFor(d.key, locale)}</small>
                 </th>
                 <td>
@@ -2156,7 +2185,7 @@ function HistoryView({ data, locale, reload }) {
               <select value={dimension.key} onChange={(e) => setDimensionKey(e.target.value)}>
                 {latest.dimensions.map((d) => (
                   <option key={d.key} value={d.key}>
-                    {labelFor(d.key, locale)}
+                    {d.sourceConstruct || labelFor(d.key, locale)}
                   </option>
                 ))}
               </select>
@@ -2178,7 +2207,7 @@ function HistoryView({ data, locale, reload }) {
           </div>
           {delta.length ? (
             <p className="hh-change">
-              {c.since} {dateLabel(prior.measurementAt, locale)}: {labelFor(dimension.key, locale)}{' '}
+              {c.since} {dateLabel(prior.measurementAt, locale)}: {dimension.sourceConstruct || labelFor(dimension.key, locale)}{' '}
               {delta.find((d) => d.key === dimension.key)?.prior} → {dimension.value}{' '}
               <span>
                 ({delta.find((d) => d.key === dimension.key)?.delta > 0 ? '+' : ''}
@@ -2193,7 +2222,7 @@ function HistoryView({ data, locale, reload }) {
               className="hh-chart"
               viewBox="0 0 640 200"
               role="img"
-              aria-label={`${labelFor(dimension.key, locale)} — ${c.history}`}
+              aria-label={`${dimension.sourceConstruct || labelFor(dimension.key, locale)} — ${c.history}`}
             >
               <line x1="30" y1="170" x2="610" y2="170" />
               <polyline points={points.map((p) => `${x(p)},${y(p)}`).join(' ')} />
@@ -2208,7 +2237,7 @@ function HistoryView({ data, locale, reload }) {
           )}
           <table className="hh-table">
             <caption>
-              {labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
+              {dimension.sourceConstruct || labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
             </caption>
             <thead>
               <tr>
@@ -2512,7 +2541,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
               </p>
               {shared.dimensions.map((d) => (
                 <p key={d.key}>
-                  {labelFor(d.key, locale)}: {d.value} / {d.max}
+                  {d.sourceConstruct || labelFor(d.key, locale)}: {d.value} / {d.max}
                 </p>
               ))}
             </div>
