@@ -71,6 +71,32 @@ create table if not exists app.saved_documents(
   account_id uuid not null references app.accounts(id) on delete cascade,
   source_document_id uuid not null unique,
   legacy_client_id uuid not null,
+  source_hash text not null check(source_hash ~ '^sha256:[a-f0-9]{64} check(document_kind in('receipt','invoice','recommendation')),
+  occurred_on date not null,
+  saved_at timestamptz not null default now(),
+  opened_at timestamptz,
+  removed_at timestamptz,
+  unique(account_id,source_document_id)
+);
+
+alter table app.saved_documents enable row level security;
+revoke all on app.saved_documents from public,anon,authenticated;
+grant select on app.saved_documents to authenticated,hh_app_backend;
+grant insert,update(opened_at,removed_at) on app.saved_documents to hh_app_backend;
+
+create policy own_saved_documents_read on app.saved_documents
+  for select to authenticated,hh_app_backend
+  using(account_id=(select auth.uid()) and (select app_private.account_active()));
+create policy own_saved_documents_insert on app.saved_documents
+  for insert to hh_app_backend
+  with check(account_id=(select auth.uid()) and (select app_private.account_active()));
+create policy own_saved_documents_update on app.saved_documents
+  for update to hh_app_backend
+  using(account_id=(select auth.uid()) and (select app_private.account_active()))
+  with check(account_id=(select auth.uid()) and (select app_private.account_active()));
+
+commit;
+),
   document_kind text not null check(document_kind in('receipt','invoice','recommendation')),
   occurred_on date not null,
   saved_at timestamptz not null default now(),
