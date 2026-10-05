@@ -33,6 +33,24 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+function safeAppReturnTo(value, locale) {
+  const root = `/${locale}/app`
+  if (typeof value !== 'string' || value.length > 1200) return root
+  try {
+    const parsed = new URL(value, 'https://holistic-house-return.local')
+    if (parsed.origin !== 'https://holistic-house-return.local') return root
+    if (!(parsed.pathname === root || parsed.pathname.startsWith(root + '/'))) return root
+    return `${parsed.pathname}${parsed.search}`
+  } catch {
+    return root
+  }
+}
+
+function withAuthStatus(destination, status) {
+  return `${destination}${destination.includes('?') ? '&' : '?'}auth=${status}`
+}
+
 async function handle(request, { params }) {
   let auth
   try {
@@ -47,9 +65,10 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId'])
+      onlyKeys(body, ['locale', 'intentId', 'returnTo'])
       const locale = body.locale === 'ru' ? 'ru' : 'en'
       const intentId = body.intentId || null
+      const returnTo = safeAppReturnTo(body.returnTo, locale)
       if (intentId !== null) requireUUID(intentId)
       await consumeRate(
         config,
@@ -64,7 +83,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : `&return_to=${encodeURIComponent(returnTo)}`}`,
           skipBrowserRedirect: true,
         },
       })
@@ -76,14 +95,15 @@ async function handle(request, { params }) {
       const url = new URL(request.url),
         locale = url.searchParams.get('locale') === 'ru' ? 'ru' : 'en',
         code = url.searchParams.get('code'),
-        intentId = url.searchParams.get('intent')
+        intentId = url.searchParams.get('intent'),
+        returnTo = safeAppReturnTo(url.searchParams.get('return_to'), locale)
       if (intentId) requireUUID(intentId)
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}`
-        : `${origin}/${locale}/app`
+        : `${origin}${returnTo}`
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.apply(
-          NextResponse.redirect(destination + (intentId ? '&auth=cancelled' : '?auth=cancelled'), {
+          NextResponse.redirect(withAuthStatus(destination, 'cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -95,7 +115,7 @@ async function handle(request, { params }) {
       )
       if (error)
         return auth.apply(
-          NextResponse.redirect(destination + (intentId ? '&auth=failed' : '?auth=failed'), {
+          NextResponse.redirect(withAuthStatus(destination, 'failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
