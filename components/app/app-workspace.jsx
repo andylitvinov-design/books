@@ -10,6 +10,8 @@ import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
+import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
+import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -580,15 +582,14 @@ function TestCatalog({ data, locale, onStarted }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [view, setView] = useState('recommended')
-  const definitions = [
-    getAssessmentDefinition('hh-current-state', 'v2', locale),
-    getAssessmentDefinition('hh-weekly-pulse', 'v1', locale),
-    getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
-  ]
-  const monitoringIntro =
-    locale === 'ru'
-      ? 'Начните с одного полезного замера. Дальше выбирайте только то, что действительно хотите отслеживать.'
-      : 'Start with one useful measurement. Go deeper only into the areas you actually want to track.'
+  const entries = MONITORING_CATALOG.filter((item) => item.startable).map((item) => ({
+    item,
+    def: getAssessmentDefinition(
+      item.key,
+      item.version,
+      item.instrumentLocale === 'dynamic' ? locale : item.instrumentLocale,
+    ),
+  }))
   const tabs =
     locale === 'ru'
       ? [
@@ -603,10 +604,8 @@ function TestCatalog({ data, locale, onStarted }) {
           ['areas', 'By area'],
           ['completed', 'Completed'],
         ]
-  const quickArea = MONITOR_AREAS.find((area) => area.key === 'quick')
-  const personalityArea = MONITOR_AREAS.find((area) => area.key === 'personality')
 
-  async function start(def) {
+  async function startAssessment(def) {
     setBusy(true)
     setError(null)
     try {
@@ -625,38 +624,19 @@ function TestCatalog({ data, locale, onStarted }) {
     }
   }
 
-  function cardFor(def, { recommended = false } = {}) {
-    const isState = def.key === 'hh-current-state'
-    const isWeekly = def.key === 'hh-weekly-pulse'
-    const draft = data.runs.find((x) => x.definitionId === def.id)
-    const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
-    const title = isState
-      ? locale === 'ru'
-        ? 'Состояние сейчас'
-        : 'Current State Check'
-      : isWeekly
-        ? c.weekly
-        : locale === 'ru'
-          ? 'Личностный профиль'
-          : 'Personality Baseline'
-    const meta = isState
-      ? locale === 'ru'
-        ? '5 вопросов · ~1 мин'
-        : '5 questions · ~1 min'
-      : isWeekly
+  function cardFor({ item, def }, { recommended = false } = {}) {
+    const draft = data.runs.find((run) => run.definitionId === def.id)
+    const completed = data.results.filter((result) => result.definitionId === def.id).at(-1)
+    const title = item.title[locale] || item.title.en
+    const description = item.description[locale] || item.description.en
+    const image =
+      item.axis === 'baseline'
         ? locale === 'ru'
-          ? '8 вопросов · ~2 мин'
-          : '8 questions · ~2 min'
+          ? '/images/holistic-house/video-posters/services-ru-v1.webp'
+          : '/images/holistic-house/video-posters/services-en-v2.webp'
         : locale === 'ru'
-          ? '20 вопросов · ~3 мин · EN'
-          : '20 questions · ~3 min · EN'
-    const image = isState || isWeekly
-      ? locale === 'ru'
-        ? '/images/holistic-house/video-posters/home-ru-v1.webp'
-        : '/images/holistic-house/video-posters/home-en-v2.webp'
-      : locale === 'ru'
-        ? '/images/holistic-house/video-posters/services-ru-v1.webp'
-        : '/images/holistic-house/video-posters/services-en-v2.webp'
+          ? '/images/holistic-house/video-posters/home-ru-v1.webp'
+          : '/images/holistic-house/video-posters/home-en-v2.webp'
     return (
       <article className={`hh-monitoring-card${recommended ? ' hh-monitoring-card--recommended' : ''}`} key={def.id}>
         <div className="hh-monitoring-photo" aria-hidden="true">
@@ -664,95 +644,73 @@ function TestCatalog({ data, locale, onStarted }) {
         </div>
         <div className="hh-monitoring-card-body">
           {recommended && <p className="hh-monitoring-recommended">{locale === 'ru' ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
-          <p className="hh-monitoring-meta">{meta}</p>
+          <p className="hh-monitoring-meta">
+            {item.questionCount} {locale === 'ru' ? 'вопросов' : 'questions'} · ~{item.durationMinutes} {locale === 'ru' ? 'мин' : 'min'}
+            {def.instrumentLocale !== locale ? ` · ${def.instrumentLocale.toUpperCase()}` : ''}
+          </p>
           <h2>{title}</h2>
-          <p>{isState ? c.stateDescription : isWeekly ? c.weeklyDescription : c.traitDescription}</p>
-          {!isState && !isWeekly && <p className="hh-notice">{c.traitNotice}</p>}
-          {completed && (
-            <p className="hh-fine">
-              {c.latest}: {dateLabel(completed.measurementAt, locale)}
-            </p>
-          )}
+          <p>{description}</p>
+          {def.source?.copyright && <p className="hh-fine">{def.source.copyright}</p>}
+          {completed && <p className="hh-fine">{c.latest}: {dateLabel(completed.measurementAt, locale)}</p>}
           <div className="hh-actions">
-            <button
-              className="hh-primary"
-              disabled={busy}
-              onClick={() => (draft ? onStarted(draft) : start(def))}
-            >
+            <button className="hh-primary" disabled={busy} onClick={() => (draft ? onStarted(draft) : startAssessment(def))}>
               {draft ? c.resume : completed ? c.repeat : c.start}
             </button>
-            {completed && (
-              <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
-                {c.view}
-              </Link>
-            )}
+            {completed && <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>{c.view}</Link>}
           </div>
         </div>
       </article>
     )
   }
 
-  const completedDefinitions = definitions.filter((def) =>
+  const completed = entries.filter(({ def }) =>
     data.results.some((result) => result.definitionId === def.id),
   )
+  const recommended = entries
+    .filter(({ item, def }) => {
+      const hasDraft = data.runs.some((run) => run.definitionId === def.id)
+      const hasResult = data.results.some((result) => result.definitionId === def.id)
+      return hasDraft || !hasResult || ['state', 'symptoms', 'resources'].includes(item.axis)
+    })
+    .slice(0, 3)
+  const axisGroups = [
+    ['state', locale === 'ru' ? 'Состояние' : 'State'],
+    ['symptoms', locale === 'ru' ? 'Симптомы и нагрузка' : 'Symptoms & load'],
+    ['function', locale === 'ru' ? 'Функционирование' : 'Functioning'],
+    ['resources', locale === 'ru' ? 'Ресурсы и восстановление' : 'Resources & recovery'],
+    ['baseline', locale === 'ru' ? 'Baseline' : 'Baseline'],
+  ]
 
   return (
     <section className="hh-monitoring">
       <div className="hh-heading hh-monitoring-heading">
         <p className="hh-kicker">{locale === 'ru' ? 'Монитор состояния' : 'Mind–Body Monitor'}</p>
         <h1>{locale === 'ru' ? 'Тесты и самонаблюдение' : 'Tests & self-checks'}</h1>
-        <p>{monitoringIntro}</p>
+        <p>{locale === 'ru' ? 'Начните с одного полезного замера. Более глубокие тесты проходите только когда они действительно нужны.' : 'Start with one useful measurement. Take deeper checks only when they are actually useful.'}</p>
         <p className="hh-fine">{c.continueLater}</p>
       </div>
 
       <nav className="hh-monitoring-tabs" aria-label={locale === 'ru' ? 'Фильтр тестов' : 'Test filters'}>
         {tabs.map(([id, label]) => (
-          <button type="button" key={id} aria-pressed={view === id} onClick={() => setView(id)}>
-            {label}
-          </button>
+          <button type="button" key={id} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>
         ))}
       </nav>
 
-      {view === 'recommended' && (
-        <div className="hh-monitoring-grid">
-          {cardFor(definitions[0], { recommended: true })}
-          {cardFor(definitions[1])}
-        </div>
-      )}
-
-      {view === 'all' && (
-        <div className="hh-monitoring-grid">{definitions.map((def) => cardFor(def))}</div>
-      )}
-
+      {view === 'recommended' && <div className="hh-monitoring-grid">{recommended.map((entry, index) => cardFor(entry, { recommended: index === 0 }))}</div>}
+      {view === 'all' && <div className="hh-monitoring-grid">{entries.map((entry) => cardFor(entry))}</div>}
       {view === 'areas' && (
         <div className="hh-monitoring-areas">
-          <section>
-            <h2>{quickArea?.[locale] || quickArea?.en}</h2>
-            <div className="hh-monitoring-grid">{cardFor(definitions[0])}{cardFor(definitions[1])}</div>
-          </section>
-          <section>
-            <h2>{personalityArea?.[locale] || personalityArea?.en}</h2>
-            <div className="hh-monitoring-grid">{cardFor(definitions[2])}</div>
-          </section>
-          <p className="hh-fine">
-            {locale === 'ru'
-              ? 'Дополнительные области появляются здесь только после проверки формы, прав на использование и требований безопасности.'
-              : 'Additional areas appear here only after the questionnaire, usage rights and safety requirements are verified.'}
-          </p>
+          {axisGroups.map(([axis, title]) => {
+            const group = entries.filter(({ item }) => item.axis === axis || item.resultAxes?.includes(axis))
+            return group.length ? <section key={axis}><h2>{title}</h2><div className="hh-monitoring-grid">{group.map((entry) => cardFor(entry))}</div></section> : null
+          })}
         </div>
       )}
-
       {view === 'completed' && (
-        completedDefinitions.length ? (
-          <div className="hh-monitoring-grid">{completedDefinitions.map((def) => cardFor(def))}</div>
-        ) : (
-          <article className="hh-panel hh-empty">
-            <h2>{locale === 'ru' ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2>
-            <p>{locale === 'ru' ? 'Начните с короткой проверки состояния.' : 'Start with the quick state check.'}</p>
-          </article>
-        )
+        completed.length
+          ? <div className="hh-monitoring-grid">{completed.map((entry) => cardFor(entry))}</div>
+          : <article className="hh-panel hh-empty"><h2>{locale === 'ru' ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2></article>
       )}
-
       {error && <p role="alert">{message(error, c)}</p>}
     </section>
   )
@@ -764,7 +722,8 @@ function Runner({ id, locale, onExit, onComplete }) {
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
-    [showDiscard, setShowDiscard] = useState(false)
+    [showDiscard, setShowDiscard] = useState(false),
+    [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
     inflight = useRef(false)
   async function load() {
@@ -772,6 +731,7 @@ function Runner({ id, locale, onExit, onComplete }) {
     try {
       const value = await appFetch('runs/' + id)
       setRun(value)
+      if (value.safetySignal) setSafetyAcknowledged(false)
       setContext(value.context || {})
       setStatus(c.saved)
     } catch (e) {
@@ -868,13 +828,30 @@ function Runner({ id, locale, onExit, onComplete }) {
         </Link>
       </section>
     )
+  if (run.safetySignal && !safetyAcknowledged) {
+    const safety = SAFETY_COPY[locale] || SAFETY_COPY.en
+    return (
+      <section className="hh-panel hh-safety" role="alert" aria-live="assertive">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{safety.title}</h1>
+        <p>{safety.text}</p>
+        <p><strong>{safety.urgent}</strong></p>
+        <p>{safety.support}</p>
+        <div className="hh-actions">
+          <a className="hh-primary" href="tel:988">988</a>
+          <a href="sms:988">{locale === 'ru' ? 'Написать 988' : 'Text 988'}</a>
+          <button type="button" onClick={() => setSafetyAcknowledged(true)}>{safety.continue}</button>
+        </div>
+      </section>
+    )
+  }
   const min = question?.min ?? def.answerScale?.min,
     max = question?.max ?? def.answerScale?.max
   return (
     <section className="hh-runner hh-panel">
       <header>
         <p className="hh-kicker">
-          {def.key === 'hh-current-state' ? c.state : def.key === 'hh-weekly-pulse' ? c.weekly : c.personality} ·{' '}
+          {(monitoringCatalogItem(def.key)?.title?.[locale] || monitoringCatalogItem(def.key)?.title?.en || def.title)} ·{' '}
           {def.instrumentLocale.toUpperCase()}
         </p>
         <progress
@@ -886,7 +863,7 @@ function Runner({ id, locale, onExit, onComplete }) {
           {Math.min(index + 1, def.questions.length + 1)} / {def.questions.length + 1}
         </p>
       </header>
-      <p className="hh-muted">{def.key === 'hh-current-state' ? c.rightNow : def.key === 'hh-weekly-pulse' ? c.pastWeek : c.general}</p>
+      <p className="hh-muted">{def.timeframe === 'past-7-days' ? c.pastWeek : def.timeframe === 'right-now' ? c.rightNow : c.general}</p>
       {question ? (
         <fieldset disabled={busy || Boolean(operation.current)}>
           <legend>
@@ -1017,7 +994,7 @@ function MetricCard({ dimension, locale, onSelect }) {
     def = getDefinitionById(dimension.sourceDefinitionId)
   return (
     <button className="hh-metric" onClick={() => onSelect(dimension)}>
-      <span>{labelFor(dimension.key, locale)}</span>
+      <span>{dimension.sourceConstruct || labelFor(dimension.key, locale)}</span>
       <strong>
         {dimension.value}
         <small> / {dimension.max}</small>
@@ -1311,7 +1288,7 @@ function ResultPage({ id, locale, data }) {
             return (
               <tr key={d.key}>
                 <th scope="row">
-                  {labelFor(d.key, locale)}
+                  {d.sourceConstruct || labelFor(d.key, locale)}
                   <small>{explanationFor(d.key, locale)}</small>
                 </th>
                 <td>
@@ -1548,7 +1525,7 @@ function HistoryView({ data, locale, reload }) {
               <select value={dimension.key} onChange={(e) => setDimensionKey(e.target.value)}>
                 {latest.dimensions.map((d) => (
                   <option key={d.key} value={d.key}>
-                    {labelFor(d.key, locale)}
+                    {d.sourceConstruct || labelFor(d.key, locale)}
                   </option>
                 ))}
               </select>
@@ -1570,7 +1547,7 @@ function HistoryView({ data, locale, reload }) {
           </div>
           {delta.length ? (
             <p className="hh-change">
-              {c.since} {dateLabel(prior.measurementAt, locale)}: {labelFor(dimension.key, locale)}{' '}
+              {c.since} {dateLabel(prior.measurementAt, locale)}: {dimension.sourceConstruct || labelFor(dimension.key, locale)}{' '}
               {delta.find((d) => d.key === dimension.key)?.prior} → {dimension.value}{' '}
               <span>
                 ({delta.find((d) => d.key === dimension.key)?.delta > 0 ? '+' : ''}
@@ -1585,7 +1562,7 @@ function HistoryView({ data, locale, reload }) {
               className="hh-chart"
               viewBox="0 0 640 200"
               role="img"
-              aria-label={`${labelFor(dimension.key, locale)} — ${c.history}`}
+              aria-label={`${dimension.sourceConstruct || labelFor(dimension.key, locale)} — ${c.history}`}
             >
               <line x1="30" y1="170" x2="610" y2="170" />
               <polyline points={points.map((p) => `${x(p)},${y(p)}`).join(' ')} />
@@ -1600,7 +1577,7 @@ function HistoryView({ data, locale, reload }) {
           )}
           <table className="hh-table">
             <caption>
-              {labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
+              {dimension.sourceConstruct || labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
             </caption>
             <thead>
               <tr>
@@ -1904,7 +1881,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
               </p>
               {shared.dimensions.map((d) => (
                 <p key={d.key}>
-                  {labelFor(d.key, locale)}: {d.value} / {d.max}
+                  {d.sourceConstruct || labelFor(d.key, locale)}: {d.value} / {d.max}
                 </p>
               ))}
             </div>
