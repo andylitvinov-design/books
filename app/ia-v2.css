@@ -74,7 +74,7 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 }
 @media print { .ia222-bottom-navigation { display: none !important; } body:has(.ia222-bottom-navigation) { padding-bottom: 0 !important; } }
 
-/* Cabinet v2.5 — clean Academy-style composition. */
+/* Cabinet v2.6 — shared white mood card across public and signed-in Cabinet. */
 .cabinet-landing-shell {
   max-width: 1040px;
   margin: 0 auto;
@@ -82,69 +82,70 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 }
 .cabinet-landing-shell .hh-mood-checkin {
   max-width: 42rem;
-  margin: 28px 0 18px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
+  margin: 24px 0 18px;
+  border: 1px solid #ded1c2;
+  border-radius: 18px;
+  background: #fffdfa;
+  padding: 22px;
+  box-shadow: 0 8px 24px rgba(68, 47, 33, .035);
 }
 .cabinet-landing-shell .hh-mood-kicker {
-  margin: 0 0 7px;
-  color: #8b5a3c;
+  margin: 0 0 10px;
+  color: #846f5f;
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .13em;
+  font-weight: 750;
+  letter-spacing: .14em;
   text-transform: uppercase;
 }
-.cabinet-landing-shell .hh-mood-checkin h1 {
-  margin: 7px 0 8px;
-  color: #2f231c;
-  font-size: clamp(38px, 5.5vw, 52px);
-  line-height: 1.04;
-  letter-spacing: -.035em;
-}
-.cabinet-landing-shell .hh-mood-question {
+.cabinet-landing-shell .hh-mood-title {
   margin: 0;
-  color: #6b5b4f;
-  font-family: inherit;
-  font-size: 15px;
-  line-height: 1.5;
+  color: #352820;
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 4.6vw, 40px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -.025em;
 }
 .cabinet-landing-shell .hh-mood-row {
-  width: min(560px, 100%);
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
-  margin-top: 15px;
-  border: 1px solid #d8c9b7;
-  border-radius: 999px;
-  background: #f6eee3;
-  padding: 3px;
+  gap: 10px;
+  margin-top: 18px;
 }
 .cabinet-landing-shell .hh-mood-button {
-  min-height: 46px;
+  min-height: 92px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  padding: 5px 9px;
-  color: #58463a;
+  gap: 8px;
+  border: 1px solid #ddcdbb;
+  border-radius: 18px;
+  background: #fffaf4;
+  padding: 11px 8px;
+  color: #4f3e33;
   font-size: 11px;
-  box-shadow: none;
+  font-weight: 700;
+  box-shadow: 0 5px 14px rgba(75, 53, 38, .045);
+  transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease, background .14s ease;
 }
-.cabinet-landing-shell .hh-mood-button:hover,
+.cabinet-landing-shell .hh-mood-button:hover {
+  transform: translateY(-1px);
+  border-color: #b99578;
+  background: #fff7ee;
+  box-shadow: 0 9px 18px rgba(75, 53, 38, .08);
+}
+.cabinet-landing-shell .hh-mood-button:active {
+  transform: translateY(1px);
+}
 .cabinet-landing-shell .hh-mood-button:focus-visible {
-  border: 0;
-  background: #fffcf6;
-  box-shadow: 0 4px 12px rgba(56,39,28,.08);
+  outline: 2px solid #70442d;
+  outline-offset: 3px;
 }
 .cabinet-landing-shell .hh-mood-emoji {
-  font-size: 22px;
+  font-size: 34px;
+  line-height: 1;
 }
 
 .cabinet-signin-strip {
@@ -329,34 +330,72 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   font-weight: 700;
 }
 
-/* Signed-in Portrait reuses the same quieter mood language. */
+/* Signed-in Portrait uses the same white mood card as the public Cabinet entry. */
 .hh-app .hh-mood-checkin--compact {
   margin: 0 0 22px;
   border: 1px solid var(--hh-line);
-  border-radius: 16px;
-  background: var(--hh-paper);
-  padding: 18px;
-  box-shadow: none;
+  border-radius: 18px;
+  background: #fffdfa;
+  padding: 22px;
+  box-shadow: 0 8px 24px rgba(68, 47, 33, .035);
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-kicker {
+  margin: 0 0 10px;
+  color: #846f5f;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-title {
+  margin: 0;
+  color: #352820;
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 4.6vw, 40px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -.025em;
 }
 .hh-app .hh-mood-checkin--compact .hh-mood-row {
-  width: min(440px, 100%);
-  margin-top: 14px;
-  gap: 3px;
-  border: 1px solid #d8c9b7;
-  border-radius: 999px;
-  background: #f6eee3;
-  padding: 3px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
 }
 .hh-app .hh-mood-checkin--compact .hh-mood-button {
-  min-height: 44px;
-  flex-direction: row;
-  gap: 6px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #ddcdbb;
+  border-radius: 18px;
+  background: #fffaf4;
+  padding: 11px 8px;
+  color: #4f3e33;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 5px 14px rgba(75, 53, 38, .045);
+  transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease, background .14s ease;
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-button:hover {
+  transform: translateY(-1px);
+  border-color: #b99578;
+  background: #fff7ee;
+  box-shadow: 0 9px 18px rgba(75, 53, 38, .08);
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-button:active {
+  transform: translateY(1px);
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-button:focus-visible {
+  outline: 2px solid #70442d;
+  outline-offset: 3px;
 }
 .hh-app .hh-mood-checkin--compact .hh-mood-emoji {
-  font-size: 21px;
+  font-size: 34px;
+  line-height: 1;
 }
 
 @media (max-width: 760px) {
@@ -370,27 +409,45 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
     padding: 10px 10px 94px;
   }
   .cabinet-landing-shell .hh-mood-checkin {
-    margin: 17px 4px 12px;
+    margin: 16px 4px 12px;
+    padding: 20px 18px;
   }
-  .cabinet-landing-shell .hh-mood-checkin h1 {
-    margin-bottom: 6px;
-    font-size: 40px;
-  }
-  .cabinet-landing-shell .hh-mood-question {
-    font-size: 13px;
+  .cabinet-landing-shell .hh-mood-title {
+    font-size: 32px;
   }
   .cabinet-landing-shell .hh-mood-row {
-    width: 100%;
-    margin-top: 11px;
+    gap: 8px;
+    margin-top: 16px;
   }
   .cabinet-landing-shell .hh-mood-button {
-    min-height: 42px;
-    gap: 5px;
-    padding: 4px 5px;
-    font-size: 9.5px;
+    min-height: 84px;
+    gap: 7px;
+    border-radius: 16px;
+    padding: 10px 5px;
+    font-size: 10px;
   }
   .cabinet-landing-shell .hh-mood-emoji {
-    font-size: 20px;
+    font-size: 31px;
+  }
+  .hh-app .hh-mood-checkin--compact {
+    padding: 20px 18px;
+  }
+  .hh-app .hh-mood-checkin--compact .hh-mood-title {
+    font-size: 32px;
+  }
+  .hh-app .hh-mood-checkin--compact .hh-mood-row {
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .hh-app .hh-mood-checkin--compact .hh-mood-button {
+    min-height: 84px;
+    gap: 7px;
+    border-radius: 16px;
+    padding: 10px 5px;
+    font-size: 10px;
+  }
+  .hh-app .hh-mood-checkin--compact .hh-mood-emoji {
+    font-size: 31px;
   }
 
   .cabinet-signin-strip {

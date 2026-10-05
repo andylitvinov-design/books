@@ -118,14 +118,11 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
         className={'hh-mood-checkin' + (compact ? ' hh-mood-checkin--compact' : '')}
         aria-labelledby={titleId}
       >
-        {compact ? <p className="hh-mood-kicker">{c.welcome}</p> : <p className="homeopathy-kicker hh-mood-kicker">Holistic House</p>}
+        <p className="hh-mood-kicker">{c.welcome}</p>
         {compact ? (
-          <h2 id={titleId}>{c.question}</h2>
+          <h2 className="hh-mood-title" id={titleId}>{c.question}</h2>
         ) : (
-          <>
-            <h1 id={titleId}>{c.welcome}</h1>
-            <p className="hh-mood-question">{c.question}</p>
-          </>
+          <h1 className="hh-mood-title" id={titleId}>{c.question}</h1>
         )}
         <div className="hh-mood-row" role="group" aria-label={c.question}>
           {moods.map((mood) => (
