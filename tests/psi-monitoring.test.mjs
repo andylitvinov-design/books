@@ -12,10 +12,12 @@ import {
   axisOverview,
 } from '../lib/assessments/monitoring.js'
 import { monitoringCatalogItem } from '../data/assessments/catalog.js'
+import { validateMoodInput } from '../lib/app/mood.js'
 
 const accountId = '10000000-0000-4000-8000-000000000001'
 const state = getAssessmentDefinition('hh-current-state', 'v2', 'en')
 const legacyState = getAssessmentDefinition('hh-current-state', 'v1', 'en')
+const weekly = getAssessmentDefinition('hh-weekly-pulse', 'v1', 'en')
 const mini = getAssessmentDefinition('mini-ipip-20', 'v1', 'en')
 const answers = (def, value) =>
   Object.fromEntries(def.questions.map((question) => [question.id, value]))
@@ -33,6 +35,48 @@ test('monitoring catalog keeps future instruments metadata-only and current chec
   assert.equal(monitoringCatalogItem('hh-weekly-pulse').startable, true)
   for (const key of ['phq-4', 'k6', 'mspss', 'scs-sf', 'functioning-review'])
     assert.equal(monitoringCatalogItem(key).startable, false)
+})
+
+test('HH Weekly Pulse is original, versioned and keeps axes separate without a total score', () => {
+  const scored = scoreAssessment(weekly, answers(weekly, 5))
+  assert.equal(scored.total, undefined)
+  assert.equal(scored.dimensions.length, 8)
+  assert.deepEqual(
+    [...new Set(scored.dimensions.map((dimension) => dimension.dimensionClass))].sort(),
+    ['function', 'resources', 'state', 'symptoms'],
+  )
+  assert.ok(scored.dimensions.every((dimension) => dimension.value === 5))
+})
+
+test('mood contract is bounded and idempotency-ready', () => {
+  const operationId = randomUUID()
+  assert.deepEqual(
+    validateMoodInput({
+      mood: 'happy',
+      category: 'relationships',
+      timezone: 'America/Toronto',
+      sourceSurface: 'monitoring',
+      operationId,
+    }),
+    {
+      mood: 'happy',
+      category: 'relationships',
+      timezone: 'America/Toronto',
+      sourceSurface: 'monitoring',
+      operationId,
+    },
+  )
+  assert.throws(
+    () =>
+      validateMoodInput({
+        mood: 'diagnosed',
+        category: null,
+        timezone: 'America/Toronto',
+        sourceSurface: 'monitoring',
+        operationId,
+      }),
+    /INVALID_MOOD/,
+  )
 })
 
 test('due status distinguishes not completed, current, due and stable baseline', () => {
