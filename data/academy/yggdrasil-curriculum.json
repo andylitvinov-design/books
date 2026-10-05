@@ -1,0 +1,162 @@
+{
+  "source": {
+    "repository": "andylitvinov-design/reiki-yggdrasil",
+    "branch": "main",
+    "commit": "3fd7960aa77862c38f8a5754b64c3a79f5e0c96a",
+    "file": "src/data/reikiKnowledgeBase.js",
+    "site": "https://reiki-yggdrasil.vercel.app/",
+    "totalLevels": 7,
+    "totalSteps": 37
+  },
+  "levels": [
+    {
+      "id": 1,
+      "title": {
+        "en": "Basic Reiki Yggdrasil Program",
+        "ru": "Базовая программа Рейки Иггдрасиль",
+        "es": "Programa básico de Reiki Yggdrasil"
+      },
+      "theme": {
+        "en": "Health, intuition, protection, cleansing, money activation, power, vision and the master level.",
+        "ru": "Здоровье, интуиция, защита, очищение, денежная активация, сила, видение и мастерский уровень.",
+        "es": "Salud, intuición, protección, limpieza, activación del dinero, poder, visión y nivel de maestro."
+      },
+      "stepLabel": { "en": "Level", "ru": "Уровень", "es": "Nivel" },
+      "steps": [
+        { "number": 1, "title": { "en": "Health · Intuition · Protection", "ru": "Здоровье · Интуиция · Защита", "es": "Salud · Intuición · Protección" } },
+        { "number": 2, "title": { "en": "Cleansing · Money Activation", "ru": "Очищение · Денежная активация", "es": "Limpieza · Activación del dinero" } },
+        { "number": 3, "title": { "en": "Predestination · Power", "ru": "Предопределение · Сила", "es": "Predestinación · Poder" } },
+        { "number": 4, "title": { "en": "Extrasensory Vision", "ru": "Сверхчувственное видение", "es": "Visión extrasensorial" } },
+        { "number": 5, "title": { "en": "Master Level", "ru": "Уровень мастера", "es": "Nivel de maestro" } }
+      ]
+    },
+    {
+      "id": 2,
+      "title": {
+        "en": "Instructor Course",
+        "ru": "Инструкторский курс",
+        "es": "Curso de instructor"
+      },
+      "theme": {
+        "en": "Healing, resources, relationships, life force, sexual energy and energy management.",
+        "ru": "Целительство, ресурсы, отношения, жизненная сила, сексуальная энергетика и управление энергией.",
+        "es": "Sanación, recursos, relaciones, fuerza vital, energía sexual y gestión de la energía."
+      },
+      "stepLabel": { "en": "Step", "ru": "Ступень", "es": "Etapa" },
+      "steps": [
+        { "number": 1, "title": { "en": "Healing", "ru": "Целительство", "es": "Sanación" } },
+        { "number": 2, "title": { "en": "Golden Calf", "ru": "Золотой телец", "es": "Becerro de oro" } },
+        { "number": 3, "title": { "en": "Man and Woman", "ru": "Мужчина и женщина", "es": "Hombre y mujer" } },
+        { "number": 4, "title": { "en": "Life Force", "ru": "Жизненная сила", "es": "Fuerza vital" } },
+        { "number": 5, "title": { "en": "Sexual Energy", "ru": "Сексуальная энергетика", "es": "Energía sexual" } },
+        { "number": 6, "title": { "en": "Fireball · Energy Management", "ru": "Файербол. Управление энергией", "es": "Fireball · Gestión de la energía" } }
+      ]
+    },
+    {
+      "id": 3,
+      "title": {
+        "en": "Temple Magic",
+        "ru": "Храмовая магия",
+        "es": "Magia de templo"
+      },
+      "theme": {
+        "en": "Egregores and Egyptian, Greek, Toltec and Sufi traditions.",
+        "ru": "Эгрегоры, египетская, греческая, толтекская и суфийская традиции.",
+        "es": "Egregores y tradiciones egipcia, griega, tolteca y sufí."
+      },
+      "stepLabel": { "en": "Step", "ru": "Ступень", "es": "Etapa" },
+      "steps": [
+        { "number": 1, "title": { "en": "Working with Egregores", "ru": "Работа с эгрегорами", "es": "Trabajo con egregores" } },
+        { "number": 2, "title": { "en": "Egyptian Magic", "ru": "Египетская магия", "es": "Magia egipcia" } },
+        { "number": 3, "title": { "en": "Greek Magic · Zodiac", "ru": "Греческая магия. Зодиак", "es": "Magia griega · Zodiaco" } },
+        { "number": 4, "title": { "en": "Toltec Magic", "ru": "Толтекская магия", "es": "Magia tolteca" } },
+        { "number": 5, "title": { "en": "Sufism", "ru": "Суфизм", "es": "Sufismo" } }
+      ]
+    },
+    {
+      "id": 4,
+      "title": {
+        "en": "Eastern Magic",
+        "ru": "Восточная магия",
+        "es": "Magia oriental"
+      },
+      "theme": {
+        "en": "Chinese medicine, divination, Kundalini and money magic.",
+        "ru": "Китайская медицина, прогнозирование, кундалини и денежная магия.",
+        "es": "Medicina china, adivinación, Kundalini y magia del dinero."
+      },
+      "stepLabel": { "en": "Step", "ru": "Ступень", "es": "Etapa" },
+      "steps": [
+        { "number": 1, "title": { "en": "Chinese Medicine 1 · Elements", "ru": "Китайская медицина 1. Элементы", "es": "Medicina china 1 · Elementos" } },
+        { "number": 2, "title": { "en": "Chinese Medicine 2 · Power", "ru": "Китайская медицина 2. Сила", "es": "Medicina china 2 · Poder" } },
+        { "number": 3, "title": { "en": "Chinese Divination · I Ching", "ru": "Китайское прогнозирование. И Цзин", "es": "Adivinación china · I Ching" } },
+        { "number": 4, "title": { "en": "Kundalini", "ru": "Кундалини", "es": "Kundalini" } },
+        { "number": 5, "title": { "en": "Money Magic", "ru": "Денежная магия", "es": "Magia del dinero" } }
+      ]
+    },
+    {
+      "id": 5,
+      "title": {
+        "en": "Western European Magic · Kabbalah & Tarot",
+        "ru": "Западноевропейская магия. Каббала и Таро",
+        "es": "Magia de Europa occidental · Cábala y Tarot"
+      },
+      "theme": {
+        "en": "Tarot, elements, the Tree of Sephiroth and divination practice.",
+        "ru": "Таро, стихии, Дерево Сефирот и предсказательная практика.",
+        "es": "Tarot, elementos, Árbol de las Sefirot y práctica adivinatoria."
+      },
+      "stepLabel": { "en": "Step", "ru": "Ступень", "es": "Etapa" },
+      "steps": [
+        { "number": 1, "title": { "en": "Major Arcana of Tarot", "ru": "Великие арканы Таро", "es": "Arcanos mayores del Tarot" } },
+        { "number": 2, "title": { "en": "Powers of the Elements", "ru": "Силы стихий", "es": "Poderes de los elementos" } },
+        { "number": 3, "title": { "en": "Tree of Sephiroth", "ru": "Дерево Сефирот", "es": "Árbol de las Sefirot" } },
+        { "number": 4, "title": { "en": "Higher Arcana of Tarot", "ru": "Высшие арканы Таро", "es": "Arcanos superiores del Tarot" } },
+        { "number": 5, "title": { "en": "Tarot Divination", "ru": "Предсказания в Таро", "es": "Adivinación con Tarot" } }
+      ]
+    },
+    {
+      "id": 6,
+      "title": {
+        "en": "Advanced Rune Magic",
+        "ru": "Продвинутая магия рун",
+        "es": "Magia rúnica avanzada"
+      },
+      "theme": {
+        "en": "Runes, worlds of the Yggdrasil Tree, the Circle of Power, divination and healing.",
+        "ru": "Руны, миры Древа Иггдрасиль, круг силы, предсказание и исцеление.",
+        "es": "Runas, mundos del Árbol Yggdrasil, Círculo de Poder, adivinación y sanación."
+      },
+      "stepLabel": { "en": "Step", "ru": "Ступень", "es": "Etapa" },
+      "steps": [
+        { "number": 1, "title": { "en": "Runes & Runic Tradition", "ru": "Руны и руническая традиция", "es": "Runas y tradición rúnica" } },
+        { "number": 2, "title": { "en": "Worlds of the Yggdrasil Tree", "ru": "Миры Древа Иггдрасиль", "es": "Mundos del Árbol Yggdrasil" } },
+        { "number": 3, "title": { "en": "Circle of Power", "ru": "Круг силы", "es": "Círculo de poder" } },
+        { "number": 4, "title": { "en": "Runic Divination", "ru": "Руническое предсказание", "es": "Adivinación rúnica" } },
+        { "number": 5, "title": { "en": "Runic Healing", "ru": "Руническое исцеление", "es": "Sanación rúnica" } }
+      ]
+    },
+    {
+      "id": 7,
+      "title": {
+        "en": "High Magic",
+        "ru": "Высшая магия",
+        "es": "Alta magia"
+      },
+      "theme": {
+        "en": "Teleportation, astral flight, clairvoyance, helpers, Slavic magic and civilizations.",
+        "ru": "Телепорт, астральный полет, ясновидение, помощники, славянская магия и цивилизации.",
+        "es": "Teletransporte, vuelo astral, clarividencia, ayudantes, magia eslava y civilizaciones."
+      },
+      "stepLabel": { "en": "Step", "ru": "Ступень", "es": "Etapa" },
+      "steps": [
+        { "number": 1, "title": { "en": "Teleport · Astral Flight · Clairvoyance", "ru": "Телепорт. Астральный полет. Ясновидение", "es": "Teletransporte · Vuelo astral · Clarividencia" } },
+        { "number": 2, "title": { "en": "Machine Hall · Strengthening Vision", "ru": "Машинный зал. Укрепление видения", "es": "Sala de máquinas · Fortalecimiento de la visión" } },
+        { "number": 3, "title": { "en": "Ifrits · Creating Helpers", "ru": "Ифриты. Создание помощников", "es": "Ifrits · Creación de ayudantes" } },
+        { "number": 4, "title": { "en": "Slavic Magic 1", "ru": "Славянская магия 1", "es": "Magia eslava 1" } },
+        { "number": 5, "title": { "en": "Slavic Magic 2", "ru": "Славянская магия 2", "es": "Magia eslava 2" } },
+        { "number": 6, "title": { "en": "Civilizations", "ru": "Цивилизации", "es": "Civilizaciones" } }
+      ]
+    }
+  ]
+}
