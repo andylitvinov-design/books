@@ -7,7 +7,7 @@ Date: 2026-10-05
 - Public PsiMaster service/taxonomy URLs discovered: **147**
 - Curated source-backed Academy routes added: **22**
 - Existing video-course families backfilled: **7 logical media records** (6 legacy course families + Energy Pump-Ups archive)
-- Verified legacy public YouTube records: **44**
+- Verified legacy public YouTube records: **45**
 - New HeyGen renders: **0**
 - Large MP4 files copied to GitHub: **0**
 
@@ -53,7 +53,7 @@ Recovered public YouTube media:
 - Planetary Power: **11**
 - Greek Mysteries — Demeter: **5**
 - Strength & Protection: **7**
-- Maya Archetypes: **5**
+- Maya Archetypes: **6**
 - Egypt — Osiris: **7**
 - Mysteries of Dionysus: **7**
 - Energy Pump-Ups / free marathon archive: **2**
