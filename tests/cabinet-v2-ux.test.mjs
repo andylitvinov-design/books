@@ -231,3 +231,42 @@ test('public and signed-in Cabinet share a white mood card with three separate m
   assert.ok(ia.includes('min-height: 92px'))
   assert.ok(!ia.includes('border-radius: 999px;\n  background: #f6eee3;\n  padding: 3px;'))
 })
+
+
+test('verified practitioner account exposes existing client and document tools only inside My Portrait', async () => {
+  const [workspace, route, repository, access, admin] = await Promise.all([
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+    readFile('app/api/app/[...path]/route.js', 'utf8'),
+    readFile('lib/app/repository.js', 'utf8'),
+    readFile('lib/app/practitioner-access.js', 'utf8'),
+    readFile('lib/prescriptions/admin.js', 'utf8'),
+  ])
+
+  assert.match(workspace, /data\.practitioner && <OwnerTools/)
+  assert.match(workspace, /Clients/)
+  assert.match(workspace, /New consultation/)
+  assert.match(workspace, /Recommendation \/ prescription/)
+  assert.match(workspace, /Receipt \/ Invoice/)
+  assert.match(workspace, /appFetch\('practitioner\/open'/)
+
+  assert.match(route, /joined === 'practitioner\/open'/)
+  assert.match(route, /repo\.isPractitioner\(actor\)/)
+  assert.match(route, /issueTrustedAdminSession/)
+  assert.doesNotMatch(route, /practitioner\/access/)
+
+  assert.match(repository, /practitionerEmailAllowed/)
+  assert.match(repository, /practitioner,/)
+  assert.match(repository, /async isPractitioner\(actor\)/)
+
+  assert.match(access, /createHash\('sha256'\)/)
+  assert.match(access, /timingSafeEqual/)
+  assert.match(access, /clients: '\/admin\/clients'/)
+  assert.match(access, /consultation: '\/admin\/consultations\/new'/)
+  assert.match(access, /recommendation: '\/admin\/prescriptions\/new'/)
+  assert.match(access, /payment: '\/admin\/payments\/new'/)
+  assert.doesNotMatch(access, /@gmail\.com/)
+
+  assert.match(admin, /issueTrustedAdminSession/)
+  assert.match(admin, /path: '\/admin'/)
+  assert.match(admin, /maxAge: 60 \* 60 \* 12/)
+})
