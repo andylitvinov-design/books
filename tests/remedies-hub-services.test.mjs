@@ -3,11 +3,12 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 test('Remedies landing combines remedy search, free consultation and book covers in both locales', async () => {
-  const [page, search, books, header] = await Promise.all([
+  const [page, search, books, header, cta] = await Promise.all([
     readFile('app/[locale]/homeopathy/page.tsx', 'utf8'),
     readFile('components/remedy-search-box.tsx', 'utf8'),
     readFile('components/book-showcase.tsx', 'utf8'),
     readFile('components/public-site-header.tsx', 'utf8'),
+    readFile('components/public-consultation-cta.tsx', 'utf8'),
   ])
   assert.match(page, /heading: "Препараты"/)
   assert.match(page, /heading: "Remedies"/)
@@ -15,8 +16,9 @@ test('Remedies landing combines remedy search, free consultation and book covers
   assert.match(page, /BookShowcase/)
   assert.match(page, /Бесплатная консультация/)
   assert.match(page, /Free consultation/)
-  assert.match(page, /t\.me\/AndyTherapist/)
-  assert.match(page, /wa\.me\/14376066502/)
+  assert.match(page, /PublicConsultationCta/)
+  assert.match(cta, /t\.me\/AndyTherapist/)
+  assert.match(cta, /wa\.me\/14376066502/)
   assert.match(search, /Find a homeopathic remedy/)
   assert.match(books, /catalog-cover/)
   assert.match(header, /SiteNavigation/)
