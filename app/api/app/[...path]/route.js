@@ -22,11 +22,6 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import {
-  clearAdminSession,
-  establishAdminSessionForVerifiedPractitioner,
-  isVerifiedPractitionerActor,
-} from '@/lib/prescriptions/admin'
-import {
   authorizeReportViewer,
   commitReportSaveIntent,
   exchangeReportViewer,
@@ -38,6 +33,15 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+function normalizedEmail(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : ''
+}
+
+function isVerifiedPractitionerActor(actor) {
+  const configured = normalizedEmail(process.env.HH_PRACTITIONER_OWNER_EMAIL)
+  return Boolean(configured && normalizedEmail(actor?.email) === configured)
+}
 
 const practitionerTargets = new Set([
   '/admin',
@@ -139,7 +143,10 @@ async function handle(request, { params }) {
       const { error } = await auth.client.auth.signOut({
         scope: body.allDevices ? 'global' : 'local',
       })
-      if (practitioner) await clearAdminSession()
+      if (practitioner) {
+        const { clearAdminSession } = await import('@/lib/prescriptions/admin')
+        await clearAdminSession()
+      }
       return auth.clear(json({ signedOut: true, serverSessionEnded: !error }, error ? 503 : 200))
     }
 
@@ -325,6 +332,7 @@ async function handle(request, { params }) {
       const body = await readBody(request)
       onlyKeys(body, ['target'])
       const redirectUrl = practitionerTarget(body.target)
+      const { establishAdminSessionForVerifiedPractitioner } = await import('@/lib/prescriptions/admin')
       if (!await establishAdminSessionForVerifiedPractitioner(actor))
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
       return json({ redirectUrl })
