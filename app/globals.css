@@ -5265,3 +5265,15 @@
   font-weight: 400;
 }
 
+
+.hh-instrument-attribution {
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border-left: 2px solid #d8c6b3;
+  color: #6f6257;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.hh-instrument-attribution small { display: block; }
