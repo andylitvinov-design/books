@@ -229,6 +229,24 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
+  async function handleGuestMoodChange(payload) {
+    setPendingMood(payload)
+    try {
+      const saved = await guestFetch('guest/mood', {
+        ...payload,
+        timezone: localZone(),
+        sourceSurface: 'cabinet_landing',
+      })
+      setLatestGuestMood(saved)
+      setPendingMood(null)
+      return saved
+    } catch (e) {
+      if (e.status === 401 || e.code === 'GUEST_SESSION_REQUIRED') return null
+      setError(c.error)
+      return null
+    }
+  }
+
   async function persistGuestMood(payload = pendingMood) {
     if (!payload) return null
     try {
@@ -453,8 +471,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       <MoodCheckIn
         locale={locale}
         latestMood={latestGuestMood}
-        onMoodChange={(payload) => setPendingMood(payload)}
-        onDismiss={() => setPendingMood(null)}
+        onMoodChange={handleGuestMoodChange}
+        onDismiss={(payload) => {
+          if (pendingMood?.operationId === payload.operationId) setPendingMood(null)
+        }}
         onQuickCheckin={(payload) => {
           setPendingMood(payload)
           begin('state', payload)
