@@ -127,7 +127,7 @@ test('recommendation is deterministic and prefers an explicitly active run', () 
 test('recommendation returns nothing when all currently startable checks are current', () => {
   const recommendation = recommendMonitoring({
     locale: 'en',
-    results: [result(state, 4, 4), result(mini, 3, 2)],
+    results: [result(state, 4, 4), result(weekly, 5, 4), result(mini, 3, 2)],
     now: '2026-10-05T12:00:00.000Z',
   })
   assert.equal(recommendation, null)
