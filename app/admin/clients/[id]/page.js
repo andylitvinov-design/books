@@ -8,6 +8,8 @@ import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { uiLocaleCookie } from '@/lib/ui-locale'
+import { appEnabled, getAppConfig } from '@/lib/app/config'
+import { getLegacyClientBinding } from '@/lib/app/client-account-binding'
 
 import { editClientAction, revokeClientAction, rotateClientAction } from '../actions'
 
@@ -18,13 +20,21 @@ export default async function ClientDetail({ params }) {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const ru = (await cookies()).get(uiLocaleCookie)?.value === 'ru'
   const copy = ru
-    ? { overview: 'Карточка клиента', language: 'Язык', last: 'Последняя консультация', none: 'Консультаций пока нет', access: 'Доступ', primary: 'Основные действия', new: 'Новая консультация', cabinet: 'Кабинет клиента', history: 'История документов', empty: 'Для клиента пока нет документов.', settings: 'Редактировать данные клиента', name: 'Имя', email: 'Email', phone: 'Телефон', notes: 'Заметки только для практика', status: 'Статус', save: 'Сохранить', changes: 'Изменение доступа', rotation: 'Ротация отключит предыдущую ссылку и все сессии кабинета. История сохранится.', rotate: 'Обновить ссылку кабинета', rotateConfirm: 'Обновить ссылку кабинета? Предыдущая ссылка и все сессии будут отключены.', revoke: 'Отозвать доступ', revokeConfirm: 'Отозвать доступ к кабинету? Клиент больше не сможет открыть свои материалы.', receipt: 'Квитанция', invoice: 'Счёт', report: 'Отчёт', recommendation: 'Гомеопатическая рекомендация' }
-    : { overview: 'Client overview', language: 'Preferred language', last: 'Last consultation', none: 'No consultations yet', access: 'Access', primary: 'Primary client actions', new: 'New consultation', cabinet: 'Client cabinet', history: 'Document history', empty: 'No documents have been created for this client yet.', settings: 'Edit client details', name: 'Name', email: 'Email', phone: 'Phone', notes: 'Owner-only notes', status: 'Status', save: 'Save client', changes: 'Access changes', rotation: 'Rotating invalidates the previous link and all cabinet sessions. History is preserved.', rotate: 'Rotate cabinet link', rotateConfirm: 'Rotate the cabinet link? The previous link and all cabinet sessions will be invalidated.', revoke: 'Revoke cabinet access', revokeConfirm: 'Revoke cabinet access? The client will no longer be able to open their materials.', receipt: 'Receipt', invoice: 'Invoice', report: 'Report', recommendation: 'Homeopathic Recommendation' }
+    ? { overview: 'Карточка клиента', language: 'Язык', last: 'Последняя консультация', none: 'Консультаций пока нет', access: 'Доступ', primary: 'Основные действия', new: 'Новая консультация', cabinet: 'Кабинет клиента', history: 'История документов', empty: 'Для клиента пока нет документов.', settings: 'Редактировать данные клиента', name: 'Имя', email: 'Email', phone: 'Телефон', notes: 'Заметки только для практика', status: 'Статус', save: 'Сохранить', changes: 'Изменение доступа', rotation: 'Ротация отключит предыдущую ссылку и все сессии кабинета. История сохранится.', rotate: 'Обновить ссылку кабинета', rotateConfirm: 'Обновить ссылку кабинета? Предыдущая ссылка и все сессии будут отключены.', revoke: 'Отозвать доступ', revokeConfirm: 'Отозвать доступ к кабинету? Клиент больше не сможет открыть свои материалы.', receipt: 'Квитанция', invoice: 'Счёт', report: 'Отчёт', recommendation: 'Гомеопатическая рекомендация', googleCabinet: 'Google-кабинет', linked: 'Связан', notLinked: 'Не связан' }
+    : { overview: 'Client overview', language: 'Preferred language', last: 'Last consultation', none: 'No consultations yet', access: 'Access', primary: 'Primary client actions', new: 'New consultation', cabinet: 'Client cabinet', history: 'Document history', empty: 'No documents have been created for this client yet.', settings: 'Edit client details', name: 'Name', email: 'Email', phone: 'Phone', notes: 'Owner-only notes', status: 'Status', save: 'Save client', changes: 'Access changes', rotation: 'Rotating invalidates the previous link and all cabinet sessions. History is preserved.', rotate: 'Rotate cabinet link', rotateConfirm: 'Rotate the cabinet link? The previous link and all cabinet sessions will be invalidated.', revoke: 'Revoke cabinet access', revokeConfirm: 'Revoke cabinet access? The client will no longer be able to open their materials.', receipt: 'Receipt', invoice: 'Invoice', report: 'Report', recommendation: 'Homeopathic Recommendation', googleCabinet: 'Google Cabinet', linked: 'Linked', notLinked: 'Not linked' }
 
   const { id } = await params
   const store = getPrescriptionStore()
   const client = await store?.findClientById(id)
   if (!client) notFound()
+  let googleBinding = { linked: false }
+  if (appEnabled()) {
+    try {
+      googleBinding = await getLegacyClientBinding(getAppConfig(), id)
+    } catch {
+      googleBinding = { linked: false }
+    }
+  }
   const documents = await store.listClientDocuments(id)
   const groups = Object.entries(Object.groupBy(documents, (document) => `${document.dateIssued}|${document.consultationId ?? document.id}`)).sort(([left], [right]) => right.localeCompare(left))
   const lastConsultation = documents.map((document) => document.dateIssued).sort().at(-1)
@@ -34,7 +44,7 @@ export default async function ClientDetail({ params }) {
     <PrescriptionAdminHeader title={client.fullName} description={`${client.preferredLocale.toUpperCase()} · ${client.status}`} />
 
     <section className="client-detail-summary" aria-label={copy.overview}>
-      <dl><div><dt>{copy.language}</dt><dd>{client.preferredLocale.toUpperCase()}</dd></div><div><dt>{copy.last}</dt><dd>{lastConsultation ?? copy.none}</dd></div><div><dt>{copy.access}</dt><dd>{client.status}</dd></div></dl>
+      <dl><div><dt>{copy.language}</dt><dd>{client.preferredLocale.toUpperCase()}</dd></div><div><dt>{copy.last}</dt><dd>{lastConsultation ?? copy.none}</dd></div><div><dt>{copy.access}</dt><dd>{client.status}</dd></div><div><dt>{copy.googleCabinet}</dt><dd>{googleBinding.linked ? copy.linked : copy.notLinked}</dd></div></dl>
       {(client.email || client.phone) && <p className="client-detail-contact">{[client.email, client.phone].filter(Boolean).join(' · ')}</p>}
     </section>
 

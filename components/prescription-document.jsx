@@ -4,7 +4,7 @@ import { DocumentAutoPrint } from './document-auto-print'
 import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
 
-export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false }) {
+export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = recommendationGuidance(document, locale)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
@@ -21,7 +21,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   return <main className="prescription-shell canonical-shell">
     {!admin && selector && <div className="prescription-toolbar">
       <Link href={`/${alternateLocale}/prescriptions/${selector}`}>{alternateLocale.toUpperCase()}</Link>
-      <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />
+      <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />{cabinetAction}
     </div>}
     <article className="canonical-document">
       <DocumentAutoPrint enabled={admin && autoPrint} /><DocumentLetterhead />

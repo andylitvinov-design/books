@@ -255,7 +255,21 @@
 
 @layer utilities {
   .prescription-shell { @apply mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-10; }
-  .prescription-toolbar { @apply mb-5 flex items-center justify-between gap-3 text-sm font-semibold text-[#70442d]; }
+  .prescription-toolbar { @apply mb-5 flex flex-wrap items-center justify-between gap-3 text-sm font-semibold text-[#70442d]; }
+  .prescription-save-to-cabinet { @apply ml-auto flex max-w-full flex-col items-start gap-1 rounded-2xl border border-[#cdbca8] bg-[#fffaf3] px-3 py-2 text-xs font-normal text-[#5d5046]; }
+  .prescription-save-to-cabinet button { @apply min-h-10 rounded-xl bg-[#70442d] px-4 text-sm font-semibold text-white hover:bg-[#563b2a] disabled:opacity-60; }
+  .prescription-save-to-cabinet span { @apply max-w-[24rem] leading-5; }
+  .hh-saved-client-document { @apply mt-4; }
+  .hh-saved-client-document > h1 { @apply mt-2 font-serif text-3xl; }
+  .hh-saved-document-details { @apply mt-5 grid gap-4 sm:grid-cols-2; }
+  .hh-saved-document-details > div { @apply rounded-xl border border-[#d8c9b8] bg-white/60 px-4 py-3; }
+  .hh-saved-document-details dt { @apply text-xs font-semibold uppercase tracking-[0.08em] text-[#765d4a]; }
+  .hh-saved-document-details dd { @apply mt-1 whitespace-pre-wrap text-base leading-6; }
+  .hh-saved-recommendation-list { @apply mt-6 divide-y divide-[#d8c9b8]; }
+  .hh-saved-recommendation-list > section { @apply py-5; }
+  .hh-saved-recommendation-list h2, .hh-saved-document-note h2 { @apply font-serif text-xl; }
+  .hh-saved-document-note { @apply mt-6 border-t border-[#d8c9b8] pt-5; }
+  .hh-saved-document-note p { @apply mt-2 whitespace-pre-wrap leading-7; }
   .prescription-toolbar > a { @apply min-h-11 border border-[#b99373] px-4 py-3; }
   .prescription-actions { @apply flex flex-wrap gap-2; }
   .prescription-actions a, .prescription-actions button { @apply inline-flex min-h-11 items-center border border-[#70442d] bg-[#fffaf3] px-4 text-sm font-semibold text-[#563b2a] hover:bg-[#f1e3d0]; }
