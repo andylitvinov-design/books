@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { RemedyClientActions } from '@/components/remedy-client-actions';
 import { SpanishRemedyContent } from '@/components/spanish-remedy-content';
@@ -36,5 +37,5 @@ export default async function SpanishRemedyPage({ params }: Props) {
     ))}</div></section>}
     {related.length > 0 && <section className="remedy-related"><h2>Remedios relacionados</h2><ul>{related.map(item => <li key={item.slug}><Link href={`/es/homeopathy/remedies/${item.slug}`}>{item.canonical_latin_name}</Link></li>)}</ul></section>}
     <p className="remedy-disclaimer">Este material no sustituye el diagnóstico, el tratamiento ni el consejo de un profesional cualificado. No cambies un tratamiento prescrito basándote en este archivo.</p>
-  </article></main>;
+  </article><PublicConsultationCta locale="es" /></main>;
 }

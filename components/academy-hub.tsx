@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import {
   academyCopy,
@@ -73,6 +74,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
       </nav>
       <header className="library-heading"><p className="homeopathy-kicker">Holistic House</p><h1>{text.title}</h1><p>{text.lead}</p></header>
       <AcademyIndex items={items} label={view === "videos" ? text.videoCollections : text.allPrograms} />
+      <PublicConsultationCta locale={locale} />
     </main>
   );
 }
@@ -92,6 +94,7 @@ export function AcademyDirection({ locale, direction }: { locale: PublicLocale; 
       <PublicSiteHeader locale={locale} /><AcademyBackLink locale={locale} />
       <header className="library-heading academy-direction-heading"><p className="homeopathy-kicker">{academyCopy[locale].title}</p><h1>{info.title[locale]}</h1><p>{info.description[locale]}</p></header>
       <AcademyIndex items={items} label={info.title[locale]} />
+      <PublicConsultationCta locale={locale} />
     </main>
   );
 }
@@ -116,6 +119,7 @@ export function AcademyPrefixDirectory({ locale, prefix, title, description }: {
       <PublicSiteHeader locale={locale} /><AcademyBackLink locale={locale} />
       <header className="library-heading academy-direction-heading"><p className="homeopathy-kicker">{academyCopy[locale].title}</p><h1>{title}</h1><p>{description}</p></header>
       <AcademyIndex items={items} label={title} />
+      <PublicConsultationCta locale={locale} />
     </main>
   );
 }
