@@ -176,8 +176,15 @@ test('mood trend keeps only the latest check-in for each local day', () => {
 })
 
 test('axis overview keeps State, Symptoms, Function, Resources and Baseline separate', () => {
+  const overview = axisOverview({ locale: 'en' })
   assert.deepEqual(
-    axisOverview({ locale: 'en' }).map((entry) => entry.axis),
+    overview.map((entry) => entry.axis),
     ['state', 'symptoms', 'function', 'resources', 'baseline'],
   )
+  for (const axis of ['state', 'symptoms', 'function', 'resources'])
+    assert.ok(
+      overview.find((entry) => entry.axis === axis).items.some(
+        ({ item }) => item.key === 'hh-weekly-pulse',
+      ),
+    )
 })
