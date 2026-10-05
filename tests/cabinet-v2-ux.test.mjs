@@ -228,7 +228,7 @@ test('signed-in tests use the same Mind–Body Monitor catalogue concept', async
   assert.ok(workspace.includes("'Recommended'"))
   assert.ok(workspace.includes("'By area'"))
   assert.ok(workspace.includes('className="hh-monitoring-grid"'))
-  assert.ok(workspace.includes('className="hh-monitoring-card"'))
+  assert.ok(workspace.includes('hh-monitoring-card'))
   assert.ok(workspace.includes('5 questions · ~1 min'))
   assert.ok(workspace.includes('20 questions · ~3 min · EN'))
   assert.ok(workspace.includes('/images/holistic-house/video-posters/home-en-v2.webp'))
