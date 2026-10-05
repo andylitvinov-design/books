@@ -9,6 +9,8 @@ import { getClientPrescription } from '@/lib/prescriptions/service'
 import { authorizePrescriptionRequest } from '@/lib/prescriptions/session'
 
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { appEnabled } from '@/lib/app/config'
+import { SavePrivateDocumentControl } from '@/components/app/save-private-document-control'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +27,9 @@ export default async function ClientPrescriptionPage({ params, searchParams }) {
   const document = record?.kind === 'payment' ? getClientPaymentDocument(record, locale) : getClientPrescription(record, locale)
   if (!document) return <PrescriptionAccessGate locale={locale} selector={selector} />
   const { print } = await searchParams
-  if (record.kind === 'payment') return <PaymentDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} />
-  return <PrescriptionDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} />
+  const cabinetAction = record.clientId && appEnabled()
+    ? <SavePrivateDocumentControl selector={selector} locale={locale} appAvailable />
+    : null
+  if (record.kind === 'payment') return <PaymentDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} cabinetAction={cabinetAction} />
+  return <PrescriptionDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} cabinetAction={cabinetAction} />
 }

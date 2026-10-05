@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { createAppRepository } from '../lib/app/repository.js'
 import { createGuestRepository } from '../lib/app/guest-repository.js'
 import { createGuestCredential } from '../lib/app/guest-session.js'
-import { createGuestSaveIntent, createReportSaveIntent } from '../lib/app/save-intents.js'
+import { createGuestSaveIntent, createLegacyDocumentSaveIntent, createReportSaveIntent } from '../lib/app/save-intents.js'
 import {
   authorizeReportViewer,
   commitReportSaveIntent,
@@ -21,6 +21,11 @@ import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-set
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
+import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
+import { commitLegacyDocumentSaveIntent, readSavedDocument } from '../lib/app/legacy-document-flow.js'
+import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
+import { createPaymentDocument } from '../lib/documents/payment.js'
+import { legacyDocumentSourceHash } from '../lib/app/legacy-document.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
   practiceRepo = createPractitionerRepository(config),
@@ -198,6 +203,138 @@ test('Psi-Monitoring mood is private/idempotent and Weekly Pulse persists throug
   })
   assert.equal(guestMood.mood, 'happy')
   assert.equal((await guestRepo.bootstrap(credential)).moodCheckins.length, 1)
+})
+
+test('explicit save can bind one legacy Client to one Google Account without silent reassignment', async () => {
+  const legacyClientId = randomUUID()
+  const sourceId = randomUUID()
+  const first = await transaction(config, a, (db) =>
+    bindLegacyClientToAccount(db, a, {
+      legacyClientId,
+      sourceKind: 'legacy_document',
+      sourceId,
+    }),
+  )
+  assert.equal(first.legacyClientId, legacyClientId)
+  assert.equal(first.linked, true)
+
+  const repeated = await transaction(config, a, (db) =>
+    bindLegacyClientToAccount(db, a, {
+      legacyClientId,
+      sourceKind: 'legacy_document',
+      sourceId,
+    }),
+  )
+  assert.equal(repeated.linked, true)
+
+  await assert.rejects(
+    () =>
+      transaction(config, b, (db) =>
+        bindLegacyClientToAccount(db, b, {
+          legacyClientId,
+          sourceKind: 'legacy_document',
+          sourceId,
+        }),
+      ),
+    (error) => error?.code === 'CLIENT_ACCOUNT_ALREADY_LINKED',
+  )
+
+  const db = await adminClient()
+  try {
+    const row = (
+      await db.query(
+        'select account_id from app_private.client_account_bindings where legacy_client_id=$1',
+        [legacyClientId],
+      )
+    ).rows[0]
+    assert.equal(row.account_id, A)
+  } finally {
+    await db.end()
+  }
+})
+
+test('private receipt save links legacy Client to one Account and reopens from Google Cabinet', async () => {
+  const legacyClientId = randomUUID()
+  const record = {
+    ...createPaymentDocument(
+      {
+        patientName: 'Synthetic Receipt Client',
+        dateOfService: '2026-10-05',
+        dateIssued: '2026-10-05',
+        amount: '125.50',
+        service: 'Synthetic consultation',
+        paymentStatus: 'received',
+        status: 'active',
+      },
+      '2026-10-05T18:00:00.000Z',
+    ),
+    clientId: legacyClientId,
+  }
+  const store = createMemoryPrescriptionStore([record])
+
+  const intent = await createLegacyDocumentSaveIntent(config, record, randomUUID())
+  const db = await adminClient()
+  let proof
+  try {
+    proof = (
+      await db.query(
+        'select browser_secret_hash from app_private.save_intents where id=$1',
+        [intent.id],
+      )
+    ).rows[0]?.browser_secret_hash
+  } finally {
+    await db.end()
+  }
+  assert.match(proof, /^[a-f0-9]{64}$/)
+
+  const saved = await commitLegacyDocumentSaveIntent(config, store, a, intent.id, proof)
+  const opened = await readSavedDocument(config, store, a, saved.id, 'en')
+  assert.equal(opened.kind, 'receipt')
+  assert.equal(opened.document.patientName, 'Synthetic Receipt Client')
+  assert.equal(opened.document.amount, 12550)
+
+  const verifyDb = await adminClient()
+  try {
+    const binding = (
+      await verifyDb.query(
+        'select account_id from app_private.client_account_bindings where legacy_client_id=$1',
+        [legacyClientId],
+      )
+    ).rows[0]
+    assert.equal(binding.account_id, A)
+    const ref = (
+      await verifyDb.query(
+        'select account_id,source_document_id,legacy_client_id,source_hash from app.saved_documents where id=$1',
+        [saved.id],
+      )
+    ).rows[0]
+    assert.deepEqual(ref, {
+      account_id: A,
+      source_document_id: record.id,
+      legacy_client_id: legacyClientId,
+      source_hash: legacyDocumentSourceHash(record),
+    })
+  } finally {
+    await verifyDb.end()
+  }
+
+  const secondIntent = await createLegacyDocumentSaveIntent(config, record, randomUUID())
+  const proofDb = await adminClient()
+  let secondProof
+  try {
+    secondProof = (
+      await proofDb.query(
+        'select browser_secret_hash from app_private.save_intents where id=$1',
+        [secondIntent.id],
+      )
+    ).rows[0]?.browser_secret_hash
+  } finally {
+    await proofDb.end()
+  }
+  await assert.rejects(
+    () => commitLegacyDocumentSaveIntent(config, store, b, secondIntent.id, secondProof),
+    (error) => error?.code === 'CLIENT_ACCOUNT_ALREADY_LINKED',
+  )
 })
 
 test('blocked account cannot self-unblock or create/read private results', async () => {
