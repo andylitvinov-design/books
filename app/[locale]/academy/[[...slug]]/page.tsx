@@ -17,8 +17,8 @@ const prefixCopy: Record<string, Record<PublicLocale, { title: string; descripti
     es: { title: "Tradiciones antiguas", description: "Material histórico organizado por tradición cultural." },
   },
   runes: {
-    en: { title: "Runes", description: "Runic study programs from the PsiTrends teaching archive." },
-    ru: { title: "Руны", description: "Учебные программы по рунам из архива PsiTrends." },
+    en: { title: "Runes", description: "Runic study programs preserved from the Academy teaching archives." },
+    ru: { title: "Руны", description: "Учебные программы по рунам из архивов Академии." },
     es: { title: "Runas", description: "Programas de estudio de runas del archivo de PsiTrends." },
   },
   elements: {
