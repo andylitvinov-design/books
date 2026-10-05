@@ -121,7 +121,7 @@ export default async function ServicesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const current = copy[locale as Locale];
-  let offerings: any[] = [];
+  let offerings = [];
   try {
     offerings = await createPractitionerRepository(getAppConfig()).listPublicServices(locale);
   } catch {
