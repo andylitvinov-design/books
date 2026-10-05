@@ -349,12 +349,17 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       })
       setSessionExpires(session.expiresAt)
       if (pendingMood) {
-        const savedMood = await guestFetch('guest/mood', pendingMood)
-        setGuestData((value) => ({
-          ...value,
-          moodCheckins: [...value.moodCheckins.filter((item) => item.id !== savedMood.id), savedMood],
-        }))
-        setPendingMood(null)
+        try {
+          const savedMood = await guestFetch('guest/mood', pendingMood)
+          setGuestData((value) => ({
+            ...value,
+            moodCheckins: [...value.moodCheckins.filter((item) => item.id !== savedMood.id), savedMood],
+          }))
+        } catch {
+          // Mood is optional context and must never block the assessment itself.
+        } finally {
+          setPendingMood(null)
+        }
       }
       await startRun(definition)
     } catch {
