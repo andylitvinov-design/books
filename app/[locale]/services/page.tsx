@@ -10,6 +10,7 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { APP_SERVICES } from "@/data/app-services";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
@@ -20,6 +21,14 @@ const copy = {
     kicker: "Три направления работы",
     heading: "Услуги",
     lead: "Три формата для разных задач: бизнес и решения, внутренние состояния и развитие, архетипическая и трансперсональная работа.",
+    marketplaceKicker: "Доступные услуги",
+    marketplaceTitle: "Выберите услугу",
+    marketplaceIntro: "Отправьте запрос прямо из Holistic House. В личном кабинете можно добавить сообщение и, только по вашему выбору, поделиться одним сохранённым результатом.",
+    marketplacePractitioner: "Мастер",
+    marketplaceBy: "Andy · Andrii Litvinov",
+    marketplacePrice: "Стоимость подтверждается после запроса",
+    marketplaceRequest: "Заказать услугу",
+    marketplaceDetails: "Подробнее",
     cards: [
       {
         id: "business",
@@ -60,6 +69,14 @@ const copy = {
     kicker: "Three directions of work",
     heading: "Services",
     lead: "Three formats for different needs: business and decision-making, inner states and development, and archetypal / transpersonal exploration.",
+    marketplaceKicker: "Available services",
+    marketplaceTitle: "Choose a service",
+    marketplaceIntro: "Send a request directly from Holistic House. In your private Cabinet you can add a note and, only if you choose, share one saved result.",
+    marketplacePractitioner: "Practitioner",
+    marketplaceBy: "Andy · Andrii Litvinov",
+    marketplacePrice: "Price confirmed after request",
+    marketplaceRequest: "Request service",
+    marketplaceDetails: "Learn more",
     cards: [
       {
         id: "business",
@@ -95,6 +112,12 @@ const copy = {
     note: "Business constellations are a systemic exploration method and do not replace financial due diligence or forecasting. Psychohomeopathy materials are educational and do not replace medical diagnosis or treatment.",
   },
 } as const;
+
+function detailsAnchorFor(category: string) {
+  if (category === "business_situation_constellation") return "business";
+  if (category === "homeopathy_consultation") return "alchemy";
+  return "archetypal";
+}
 
 export function generateStaticParams() { return getHomeopathyLocaleParams(); }
 
@@ -139,6 +162,42 @@ export default async function ServicesPage({ params }: PageProps) {
             priority
             sizes="(max-width: 767px) 100vw, 44vw"
           />
+        </div>
+      </section>
+
+      <section className="services-marketplace" aria-labelledby="services-marketplace-title">
+        <div className="services-marketplace-heading">
+          <p className="homeopathy-kicker">{current.marketplaceKicker}</p>
+          <h2 id="services-marketplace-title">{current.marketplaceTitle}</h2>
+          <p>{current.marketplaceIntro}</p>
+        </div>
+
+        <div className="services-marketplace-grid">
+          {APP_SERVICES.map((service) => (
+            <article className="services-marketplace-card" key={service.id}>
+              <div className="services-marketplace-provider">
+                <span>{current.marketplacePractitioner}</span>
+                <strong>{current.marketplaceBy}</strong>
+              </div>
+              <h3>{service.copy[locale].title}</h3>
+              <p className="services-marketplace-description">{service.copy[locale].description}</p>
+              <p className="services-marketplace-price">{current.marketplacePrice}</p>
+              <div className="services-marketplace-actions">
+                <Link
+                  className="services-marketplace-request"
+                  href={`/${locale}/app/consultations?service=${service.id}`}
+                >
+                  {current.marketplaceRequest}<span aria-hidden="true">→</span>
+                </Link>
+                <Link
+                  className="services-marketplace-details"
+                  href={`#${detailsAnchorFor(service.category)}`}
+                >
+                  {current.marketplaceDetails}
+                </Link>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
