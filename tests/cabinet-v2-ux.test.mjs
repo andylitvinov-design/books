@@ -151,6 +151,9 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /\['trigger', c\.trigger\]/)
   assert.match(workspace, /\['desired_change', c\.desiredChange\]/)
   assert.match(catalog, /startableCatalog\(\{ guest: true \}\)/)
+  assert.match(catalog, /Заказать консультацию специалиста/)
+  assert.match(catalog, /Your result stays private and is not shared automatically/)
+  assert.match(catalog, /cabinet-result-consultation/)
 })
 
 
