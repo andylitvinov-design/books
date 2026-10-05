@@ -2,48 +2,61 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("Holistic House Yggdrasil curriculum mirrors the canonical 7-level / 37-step structure", async () => {
+test("Yggdrasil full source parity", async () => {
   const curriculum = JSON.parse(await readFile("data/academy/yggdrasil-curriculum.json", "utf8"));
-
+  const steps = curriculum.levels.flatMap((level) => level.steps);
   assert.equal(curriculum.source.repository, "andylitvinov-design/reiki-yggdrasil");
-  assert.equal(curriculum.source.branch, "main");
   assert.equal(curriculum.source.commit, "3fd7960aa77862c38f8a5754b64c3a79f5e0c96a");
-  assert.equal(curriculum.source.file, "src/data/reikiKnowledgeBase.js");
   assert.equal(curriculum.source.totalLevels, 7);
   assert.equal(curriculum.source.totalSteps, 37);
-  assert.equal(curriculum.levels.length, 7);
-  assert.equal(curriculum.levels.reduce((sum, level) => sum + level.steps.length, 0), 37);
-
-  assert.deepEqual(
-    curriculum.levels.map((level) => level.steps.length),
-    [5, 6, 5, 5, 5, 5, 6]
-  );
-
-  assert.equal(curriculum.levels[0].title.ru, "Базовая программа Рейки Иггдрасиль");
-  assert.equal(curriculum.levels[1].title.ru, "Инструкторский курс");
-  assert.equal(curriculum.levels[2].title.ru, "Храмовая магия");
-  assert.equal(curriculum.levels[3].title.ru, "Восточная магия");
-  assert.equal(curriculum.levels[4].title.ru, "Западноевропейская магия. Каббала и Таро");
-  assert.equal(curriculum.levels[5].title.ru, "Продвинутая магия рун");
-  assert.equal(curriculum.levels[6].title.ru, "Высшая магия");
-
-  assert.equal(curriculum.levels[0].steps[4].title.ru, "Уровень мастера");
-  assert.equal(curriculum.levels[6].steps[5].title.ru, "Цивилизации");
+  assert.equal(curriculum.source.totalSettings, 177);
+  assert.equal(curriculum.source.totalVideos, 79);
+  assert.deepEqual(curriculum.levels.map((level) => level.steps.length), [5, 6, 5, 5, 5, 5, 6]);
+  assert.equal(steps.length, 37);
+  for (const step of steps) {
+    assert.ok(step.sourceText.intro);
+    assert.ok(step.sourceText.meaning);
+    assert.ok(step.sourceText.result);
+    assert.ok(step.sourceText.opens.length);
+    assert.ok(step.sourceText.skills.length);
+    assert.ok(step.settings.length);
+    for (const setting of step.settings) {
+      assert.ok(setting.title);
+      assert.ok(setting.description);
+      assert.ok(setting.effect);
+    }
+    for (const video of step.video?.videos ?? []) {
+      assert.ok(video.url.startsWith("https://"));
+      assert.ok(video.youtubeId);
+      assert.ok(video.posterUrl.includes(video.youtubeId));
+    }
+  }
+  assert.equal(curriculum.practiceExercises.length, 3);
+  assert.equal(curriculum.studentCollections.mandalas.length, 3);
+  assert.equal(curriculum.studentCollections.artifacts.length, 3);
 });
 
-test("Yggdrasil Academy page uses the canonical curriculum instead of rendering the legacy 10-module body", async () => {
-  const [recordPage, component, css] = await Promise.all([
+test("Yggdrasil page renders full content and poster-first videos", async () => {
+  const [recordPage, component, css, player, middleware, nextConfig] = await Promise.all([
     readFile("components/academy-record-page.tsx", "utf8"),
     readFile("components/yggdrasil-curriculum.tsx", "utf8"),
     readFile("app/academy.css", "utf8"),
+    readFile("components/academy-video-player.tsx", "utf8"),
+    readFile("middleware.ts", "utf8"),
+    readFile("next.config.ts", "utf8"),
   ]);
-
-  assert.match(recordPage, /record\.routeKey === "reiki\/yggdrasil"/);
-  assert.match(recordPage, /<YggdrasilCurriculum locale=\{locale\} \/>/);
-  assert.match(recordPage, /isCanonicalYggdrasil \? \[\] : academyPublicBlocks\(record\)/);
-  assert.match(component, /7 levels · 37 steps/);
-  assert.match(component, /7 уровней · 37 ступеней/);
-  assert.match(component, /older 10-module PsiTrends outline/);
-  assert.match(css, /\.yggdrasil-levels/);
-  assert.match(css, /\.yggdrasil-step-list/);
+  assert.ok(recordPage.includes('record.routeKey === "reiki/yggdrasil"'));
+  assert.ok(component.includes("sourceText"));
+  assert.ok(component.includes("step.settings.map"));
+  assert.ok(component.includes("AcademyVideoPlayer"));
+  assert.ok(component.includes("practiceExercises"));
+  assert.ok(component.includes("studentCollections"));
+  assert.ok(css.includes(".yggdrasil-settings-grid"));
+  assert.ok(css.includes(".yggdrasil-video-grid"));
+  assert.ok(css.includes(".yggdrasil-practice-grid"));
+  assert.ok(player.includes('import Image from "next/image"'));
+  assert.ok(player.includes("youtube-nocookie.com/embed"));
+  assert.ok(player.includes("i.ytimg.com/vi"));
+  assert.ok(middleware.includes("academyVideoPage"));
+  assert.ok(nextConfig.includes('hostname: "i.ytimg.com"'));
 });

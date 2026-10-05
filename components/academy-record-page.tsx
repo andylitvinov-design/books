@@ -30,6 +30,7 @@ function renderBlocks(blocks: AcademyBlock[]) {
 }
 
 function statusLabel(record: AcademySourceRecord, locale: PublicLocale) {
+  if (record.routeKey === "reiki/yggdrasil") return academyCopy[locale].current;
   return academyCopy[locale][record.status] ?? academyCopy[locale].historical;
 }
 
@@ -60,7 +61,26 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         {isCanonicalYggdrasil ? <YggdrasilCurriculum locale={locale} /> : hasBody ? <div className="academy-source-content">{renderBlocks(publicBlocks)}</div> : <p className="academy-empty-source">{text.noContent}</p>}
         {videos.length ? <section className="academy-media-section" aria-label={text.videos}><h2>{text.videos}</h2><div className="academy-video-grid">{videos.map((video, index) => <AcademyVideoPlayer key={video.id} youtubeId={video.id} title={academyDisplayTitle(record, locale) + " — video " + (index + 1)} />)}</div></section> : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
-        <footer className="academy-source-footer">{record.skippedRiskyBlocks || publicOmittedCount ? <p>{text.filtered}</p> : null}<a href={record.sourceUrl} rel="noreferrer" target="_blank">{text.source}<span aria-hidden="true">↗</span></a>{record.contentHash ? <code>{record.hashAlgorithm ?? "hash"} {record.contentHash}</code> : null}</footer>
+        <footer className="academy-source-footer">
+          {isCanonicalYggdrasil ? (
+            <>
+              <a href="https://reiki-yggdrasil.vercel.app/" rel="noreferrer" target="_blank">
+                {locale === "ru" ? "Актуальный сайт Reiki Yggdrasil" : locale === "es" ? "Sitio actual de Reiki Yggdrasil" : "Current Reiki Yggdrasil site"}
+                <span aria-hidden="true">↗</span>
+              </a>
+              <a className="academy-secondary-source" href={record.sourceUrl} rel="noreferrer" target="_blank">
+                {locale === "ru" ? "Исторический источник PsiTrends" : locale === "es" ? "Fuente histórica de PsiTrends" : "Historical PsiTrends source"}
+                <span aria-hidden="true">↗</span>
+              </a>
+            </>
+          ) : (
+            <>
+              {record.skippedRiskyBlocks || publicOmittedCount ? <p>{text.filtered}</p> : null}
+              <a href={record.sourceUrl} rel="noreferrer" target="_blank">{text.source}<span aria-hidden="true">↗</span></a>
+            </>
+          )}
+          {isCanonicalYggdrasil ? <code>reiki-yggdrasil@3fd7960aa77862c38f8a5754b64c3a79f5e0c96a</code> : record.contentHash ? <code>{record.hashAlgorithm ?? "hash"} {record.contentHash}</code> : null}
+        </footer>
       </article>
       <PublicConsultationCta locale={locale} />
     </main>

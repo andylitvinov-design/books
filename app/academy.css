@@ -32,6 +32,7 @@
 .academy-source-footer { border-top: 1px solid #ded1c2; padding-top: 20px; color: #76685b; font-size: 11px; line-height: 1.5; }
 .academy-source-footer p { margin-bottom: 9px; }
 .academy-source-footer a { display: inline-flex; gap: 6px; color: #70442d; text-decoration: underline; text-underline-offset: 3px; }
+.academy-source-footer .academy-secondary-source { margin-left: 16px; color: #8a7769; }
 .academy-source-footer code { display: block; margin-top: 10px; overflow-wrap: anywhere; color: #8d8176; font-size: 9px; }
 .academy-outline { margin: 22px 0 8px; border: 1px solid #ded1c2; background: #fffaf3; padding: 16px 18px; }
 .academy-outline > p { color: #8b5a3c; font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
@@ -47,21 +48,56 @@
 .yggdrasil-curriculum-intro h2 { margin: 6px 0 10px; color: #2c2119; font-family: var(--font-serif); font-size: clamp(30px, 5vw, 44px); font-weight: 400; line-height: 1.05; }
 .yggdrasil-curriculum-intro > p:not(.homeopathy-kicker) { max-width: 680px; margin: 0; color: #5f5045; font-family: var(--font-serif); font-size: 16px; line-height: 1.6; }
 .yggdrasil-curriculum-intro > small { display: block; margin-top: 10px; color: #8c7b6d; font-size: 10px; line-height: 1.4; }
-.yggdrasil-levels { display: grid; gap: 9px; margin-top: 18px; }
+.yggdrasil-source-stats { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+.yggdrasil-source-stats span { border: 1px solid #d8c9b5; border-radius: 999px; background: #fffaf3; padding: 5px 9px; color: #765b49; font-size: 10px; font-weight: 700; }
+.yggdrasil-source-language { margin-top: 10px !important; color: #806f62 !important; font-family: inherit !important; font-size: 11px !important; line-height: 1.45 !important; }
+.yggdrasil-levels { display: grid; gap: 10px; margin-top: 18px; }
 .yggdrasil-level { overflow: hidden; border: 1px solid #d8c9b5; background: #fffaf3; }
-.yggdrasil-level summary { display: grid; grid-template-columns: 44px minmax(0,1fr) 24px; gap: 12px; align-items: center; min-height: 72px; padding: 10px 12px; cursor: pointer; list-style: none; }
-.yggdrasil-level summary::-webkit-details-marker { display: none; }
+.yggdrasil-level-summary { display: grid; grid-template-columns: 44px minmax(0,1fr) 24px; gap: 12px; align-items: center; min-height: 72px; padding: 10px 12px; cursor: pointer; list-style: none; }
+.yggdrasil-level-summary::-webkit-details-marker, .yggdrasil-step > summary::-webkit-details-marker { display: none; }
 .yggdrasil-level-number { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid #cdbca8; border-radius: 50%; color: #7b4d34; font-family: var(--font-serif); font-size: 15px; }
 .yggdrasil-level-copy { min-width: 0; }
 .yggdrasil-level-copy strong { display: block; color: #352820; font-family: var(--font-serif); font-size: 18px; font-weight: 500; line-height: 1.15; }
 .yggdrasil-level-copy small { display: block; margin-top: 4px; color: #806d5e; font-size: 10px; line-height: 1.35; }
-.yggdrasil-level-toggle { color: #8b5a3c; font-size: 24px; font-weight: 300; line-height: 1; text-align: center; transition: transform .18s ease; }
-.yggdrasil-level[open] .yggdrasil-level-toggle { transform: rotate(45deg); }
-.yggdrasil-step-list { display: grid; gap: 0; margin: 0; padding: 0 12px 10px 68px; list-style: none; }
-.yggdrasil-step-list li { display: grid; grid-template-columns: 28px minmax(0,1fr); gap: 10px; align-items: start; border-top: 1px solid #e6dbcf; padding: 10px 0; }
-.yggdrasil-step-list li > span { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: #f2e7da; color: #7b4d34; font-size: 10px; font-weight: 700; }
-.yggdrasil-step-list li small { display: block; color: #9a8878; font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-.yggdrasil-step-list li strong { display: block; margin-top: 2px; color: #4b392d; font-family: var(--font-serif); font-size: 15px; font-weight: 500; line-height: 1.25; }
+.yggdrasil-level-toggle, .yggdrasil-step-toggle { color: #8b5a3c; font-size: 24px; font-weight: 300; line-height: 1; text-align: center; transition: transform .18s ease; }
+.yggdrasil-level[open] > .yggdrasil-level-summary .yggdrasil-level-toggle, .yggdrasil-step[open] > summary .yggdrasil-step-toggle { transform: rotate(45deg); }
+.yggdrasil-step-list { display: grid; gap: 0; border-top: 1px solid #e5d9cc; padding: 0 12px 12px 68px; }
+.yggdrasil-step { border-bottom: 1px solid #e5d9cc; }
+.yggdrasil-step:last-child { border-bottom: 0; }
+.yggdrasil-step > summary { display: grid; grid-template-columns: 28px minmax(0,1fr) 22px; gap: 10px; align-items: center; min-height: 54px; padding: 9px 0; cursor: pointer; list-style: none; }
+.yggdrasil-step-number { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: #f2e7da; color: #7b4d34; font-size: 10px; font-weight: 700; }
+.yggdrasil-step > summary small { display: block; color: #9a8878; font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.yggdrasil-step > summary strong { display: block; margin-top: 2px; color: #4b392d; font-family: var(--font-serif); font-size: 15px; font-weight: 500; line-height: 1.25; }
+.yggdrasil-step-toggle { font-size: 18px; }
+.yggdrasil-step-body { margin: 0 0 12px 38px; border-left: 1px solid #d9c8b7; padding: 4px 0 12px 16px; color: #4e433a; }
+.yggdrasil-step-overview { padding: 6px 0 14px; }
+.yggdrasil-step-intro { max-width: 650px; margin: 7px 0 0; font-family: var(--font-serif); font-size: 16px; line-height: 1.58; }
+.yggdrasil-info-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin-top: 14px; }
+.yggdrasil-info-card { min-width: 0; border: 1px solid #e2d5c7; background: rgba(255,255,255,.55); padding: 12px; }
+.yggdrasil-info-card h5, .yggdrasil-setting-card h5 { margin: 0; color: #5d3d2c; font-family: var(--font-serif); font-size: 15px; font-weight: 600; line-height: 1.25; }
+.yggdrasil-info-card p, .yggdrasil-info-card li { margin: 6px 0 0; color: #66584d; font-size: 12px; line-height: 1.5; }
+.yggdrasil-info-card ul { margin: 0; padding-left: 1rem; }
+.yggdrasil-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #e5d9cc; padding: 16px 0 9px; }
+.yggdrasil-section-heading h4 { margin: 0; color: #3c2c22; font-family: var(--font-serif); font-size: 20px; font-weight: 500; }
+.yggdrasil-section-heading span { display: grid; min-width: 26px; height: 26px; place-items: center; border-radius: 999px; background: #f2e7da; color: #76513c; font-size: 10px; font-weight: 700; }
+.yggdrasil-settings-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.yggdrasil-setting-card { border: 1px solid #e1d4c6; background: #fffdf9; padding: 11px; }
+.yggdrasil-setting-card p { margin: 6px 0 0; color: #66584d; font-size: 11px; line-height: 1.45; }
+.yggdrasil-setting-card small { display: block; margin-top: 7px; border-top: 1px solid #eee4da; padding-top: 7px; color: #8a7464; font-size: 10px; line-height: 1.4; }
+.yggdrasil-video-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+.yggdrasil-video-source, .yggdrasil-no-video { margin: 9px 0 0; color: #806f62; font-size: 10px; line-height: 1.45; }
+.yggdrasil-support-section { margin-top: 30px; border-top: 1px solid #ded1c2; padding-top: 24px; }
+.yggdrasil-support-section > h3 { margin: 6px 0 6px; color: #2c2119; font-family: var(--font-serif); font-size: 30px; font-weight: 400; }
+.yggdrasil-support-section > p:not(.homeopathy-kicker) { margin: 0; color: #6d5d50; font-size: 12px; line-height: 1.5; }
+.yggdrasil-practice-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; margin-top: 14px; }
+.yggdrasil-practice-grid article, .yggdrasil-collection-grid article { border: 1px solid #d8c9b5; background: #fffaf3; padding: 13px; }
+.yggdrasil-practice-grid span { color: #9a775d; font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.yggdrasil-practice-grid h4, .yggdrasil-collection-grid h4 { margin: 5px 0 0; color: #4a3427; font-family: var(--font-serif); font-size: 17px; font-weight: 500; }
+.yggdrasil-practice-grid p { margin: 5px 0 0; color: #746256; font-size: 11px; line-height: 1.45; }
+.yggdrasil-collection-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin-top: 14px; }
+.yggdrasil-collection-grid article > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #eadfd4; margin-top: 9px; padding-top: 9px; }
+.yggdrasil-collection-grid strong { color: #5e4a3b; font-family: var(--font-serif); font-size: 13px; font-weight: 500; }
+.yggdrasil-collection-grid small { flex: none; color: #9a8878; font-size: 9px; }
 
 @media (max-width: 600px) {
   .academy-shell { padding-bottom: 94px; }
@@ -76,12 +112,17 @@
   .academy-video-grid, .academy-history-links, .academy-resource-links { grid-template-columns: 1fr; }
   .yggdrasil-curriculum { padding-top: 14px; }
   .yggdrasil-curriculum-intro h2 { font-size: 30px; }
-  .yggdrasil-level summary { grid-template-columns: 38px minmax(0,1fr) 20px; gap: 9px; min-height: 64px; padding: 8px 9px; }
+  .yggdrasil-level-summary { grid-template-columns: 38px minmax(0,1fr) 20px; gap: 9px; min-height: 64px; padding: 8px 9px; }
   .yggdrasil-level-number { width: 36px; height: 36px; font-size: 13px; }
   .yggdrasil-level-copy strong { font-size: 16px; }
   .yggdrasil-level-copy small { font-size: 9px; }
-  .yggdrasil-step-list { padding: 0 9px 8px 56px; }
-  .yggdrasil-step-list li { grid-template-columns: 24px minmax(0,1fr); gap: 8px; padding: 9px 0; }
-  .yggdrasil-step-list li > span { width: 22px; height: 22px; font-size: 9px; }
-  .yggdrasil-step-list li strong { font-size: 14px; }
+  .yggdrasil-step-list { padding: 0 8px 8px 48px; }
+  .yggdrasil-step > summary { grid-template-columns: 24px minmax(0,1fr) 18px; gap: 7px; min-height: 49px; }
+  .yggdrasil-step-number { width: 22px; height: 22px; font-size: 9px; }
+  .yggdrasil-step > summary strong { font-size: 14px; }
+  .yggdrasil-step-body { margin-left: 30px; padding-left: 10px; }
+  .yggdrasil-step-intro { font-size: 15px; }
+  .yggdrasil-info-grid, .yggdrasil-settings-grid, .yggdrasil-video-grid, .yggdrasil-collection-grid, .yggdrasil-practice-grid { grid-template-columns: 1fr; }
+  .yggdrasil-setting-card, .yggdrasil-info-card { padding: 10px; }
+  .yggdrasil-support-section > h3 { font-size: 26px; }
 }
