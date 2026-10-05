@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { bookSectionTitles, type BookSectionKey } from "@/data/library-sections";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -136,6 +137,7 @@ export function LibraryHub({ locale, view = "books" }: { locale: PublicLocale; v
       <LibraryIndex items={items} label={view === "videos" ? text.videos : text.sections} />
 
       <p className="library-note">{text.note}</p>
+      <PublicConsultationCta locale={locale} />
     </main>
   );
 }
