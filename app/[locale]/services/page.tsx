@@ -10,8 +10,12 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { getAppConfig } from "@/lib/app/config";
+import { createPractitionerRepository } from "@/lib/practitioners/repository";
 
 type PageProps = { params: Promise<{ locale: string }> };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const copy = {
   ru: {
@@ -117,6 +121,12 @@ export default async function ServicesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const current = copy[locale as Locale];
+  let offerings: any[] = [];
+  try {
+    offerings = await createPractitionerRepository(getAppConfig()).listPublicServices(locale);
+  } catch {
+    offerings = [];
+  }
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
@@ -174,6 +184,35 @@ export default async function ServicesPage({ params }: PageProps) {
           </div>
         </section>
       ) : null}
+
+      <section className="services-method-videos" id="practitioners" aria-labelledby="services-practitioners-title">
+        <div className="services-method-videos-heading">
+          <p className="homeopathy-kicker">{locale === "ru" ? "Сеть Holistic House" : "Holistic House network"}</p>
+          <h2 id="services-practitioners-title">{locale === "ru" ? "Услуги и практики" : "Services & practitioners"}</h2>
+          <p>{locale === "ru" ? "Выберите сначала формат поддержки, затем специалиста. Публичные профили и услуги проходят модерацию." : "Choose the kind of support first, then the practitioner. Public profiles and services are moderated."}</p>
+        </div>
+        {offerings.length ? (
+          <div className="services-studio-grid services-studio-grid--three">
+            {offerings.map((service) => (
+              <article className="services-studio-card services-studio-card--detailed" key={service.id}>
+                <p className="homeopathy-kicker">{service.practitionerName}</p>
+                <h3>{service.copy.title}</h3>
+                <p className="services-studio-card-subtitle">{service.professionalTitle}</p>
+                <p>{service.copy.shortDescription}</p>
+                <p className="remedy-disclaimer">
+                  {[service.deliveryFormat === "in_person" ? (locale === "ru" ? "Очно" : "In person") : service.deliveryFormat === "hybrid" ? (locale === "ru" ? "Онлайн / очно" : "Online / in person") : "Online", service.locationLabel, service.durationMinutes ? service.durationMinutes + " min" : "", service.pricingMode !== "contact" && service.confirmedPrice != null ? ((service.pricingMode === "from" ? (locale === "ru" ? "от " : "from ") : "") + (service.currency || "") + " " + service.confirmedPrice) : ""].filter(Boolean).join(" · ")}
+                </p>
+                <Link href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>
+                  {locale === "ru" ? "Открыть услугу" : "View service"}<span aria-hidden="true">→</span>
+                </Link>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p>{locale === "ru" ? "Каталог практиков сейчас обновляется." : "The practitioner catalogue is being updated."}</p>
+        )}
+        <p><Link href={"/" + locale + "/masters"}>{locale === "ru" ? "Все практики" : "View all practitioners"}<span aria-hidden="true">→</span></Link></p>
+      </section>
 
       <section className="services-studio-approach">
         <div>
