@@ -627,6 +627,12 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             </p>
             <progress max={definition.questions.length} value={index + 1} />
             <h3>{question.text}</h3>
+            {definition.source?.copyright && (
+              <aside className="hh-instrument-attribution">
+                <small>{definition.source.copyright}</small>
+                {definition.source.citation && <small>{definition.source.citation}</small>}
+              </aside>
+            )}
             {definition.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
             <div className={definition.key === 'mini-ipip-20' ? 'cabinet-answer-list' : 'cabinet-answer-scale'}>
               {answerLabels(definition, question).map((option) => (
