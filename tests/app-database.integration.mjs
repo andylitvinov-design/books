@@ -163,15 +163,15 @@ test('Psi-Monitoring mood is private/idempotent and Weekly Pulse persists throug
     0,
   )
 
-  const weeklyRun = await start(a, weekly)
-  const weeklySaved = await repo.saveRun(a, weeklyRun.id, {
+  const weeklyRun = await start(v2Actor, weekly)
+  const weeklySaved = await repo.saveRun(v2Actor, weeklyRun.id, {
     answers: answer(weekly, 5),
     context: {},
     progress: weekly.questions.length,
     expectedRevision: weeklyRun.revision,
     operationId: randomUUID(),
   })
-  const weeklyResult = await repo.submitRun(a, weeklyRun.id, {
+  const weeklyResult = await repo.submitRun(v2Actor, weeklyRun.id, {
     expectedRevision: weeklySaved.revision,
   })
   assert.equal(weeklyResult.definitionKey, 'hh-weekly-pulse')
