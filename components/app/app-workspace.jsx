@@ -7,6 +7,8 @@ import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { AssessmentReading } from '@/components/assessment-reading'
+import { PaymentDocument } from '@/components/payment-document'
+import { PrescriptionDocument } from '@/components/prescription-document'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
@@ -301,6 +303,9 @@ export default function AppWorkspace({ locale, path = [] }) {
               <ReportsIndex data={data} locale={locale} />
             )
           )}
+          {page === 'documents' && recordId && (
+            <SavedDocumentPage key={recordId} id={recordId} locale={locale} reload={load} />
+          )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} />}
           {page === 'settings' && (
@@ -366,17 +371,23 @@ function SaveContinuation({ data, locale, reload }) {
       router.replace(
         saved.sourceKind === 'delivered_report'
           ? `/${locale}/app/reports/${saved.resource.id}`
-          : `/${locale}/app/results/${saved.resource.id}`,
+          : saved.sourceKind === 'legacy_document'
+            ? `/${locale}/app/documents/${saved.resource.id}`
+            : `/${locale}/app/results/${saved.resource.id}`,
       )
     } catch (e) {
       setError(
         e?.code === 'SAVE_INTENT_EXPIRED'
           ? ru
-            ? 'Время подтверждения истекло. Вернитесь к исходному результату и повторите сохранение.'
-            : 'This confirmation expired. Return to the original result and save again.'
-          : ru
-            ? 'Не удалось сохранить результат. Исходный гостевой результат не удалён.'
-            : 'The result could not be saved. Your guest result has not been deleted.',
+            ? 'Время подтверждения истекло. Вернитесь к исходному документу и повторите сохранение.'
+            : 'This confirmation expired. Return to the original item and save again.'
+          : e?.code === 'CLIENT_ACCOUNT_ALREADY_LINKED'
+            ? ru
+              ? 'Эта карточка клиента уже связана с другим Google-аккаунтом. Свяжитесь с Andy, чтобы проверить привязку.'
+              : 'This client profile is already linked to another Google Account. Contact Andy to review the link.'
+            : ru
+              ? 'Не удалось сохранить выбранный материал.'
+              : 'The selected item could not be saved.',
       )
     } finally {
       setBusy(false)
@@ -388,6 +399,12 @@ function SaveContinuation({ data, locale, reload }) {
       ? ru
         ? 'Полученный отчёт'
         : 'Received report'
+      : intent?.sourceKind === 'legacy_document'
+        ? intent?.source?.documentKind === 'receipt'
+          ? ru ? 'Квитанция' : 'Receipt'
+          : intent?.source?.documentKind === 'invoice'
+            ? ru ? 'Счёт' : 'Invoice'
+            : ru ? 'Рекомендация' : 'Recommendation'
       : intent?.source?.definitionKey === 'hh-current-state'
         ? ru
           ? 'Моё состояние сейчас'
@@ -411,13 +428,27 @@ function SaveContinuation({ data, locale, reload }) {
             {ru ? 'Получающий Google-аккаунт' : 'Receiving Google Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
           </p>
           <p className="hh-muted">
-            {ru
-              ? 'Будет сохранён только этот выбранный отчёт. Другие гостевые данные и старый Client Cabinet не импортируются.'
-              : 'Only this report will be saved. Other guest data and the legacy Client Cabinet are not imported.'}
+            {intent?.sourceKind === 'guest_result'
+              ? (ru
+                  ? 'Будет сохранён только этот выбранный результат.'
+                  : 'Only this selected result will be saved.')
+              : (ru
+                  ? 'Будет сохранён только этот выбранный материал. Ваша карточка клиента у Andy будет связана с этим Google-аккаунтом; остальные старые документы автоматически не открываются.'
+                  : 'Only this selected item will be saved. Your client profile with Andy will be linked to this Google Account; other legacy documents are not opened automatically.')}
           </p>
           {intent.status === 'committed' && intent.resourceId ? (
-            <Link className="hh-primary" href={`/${locale}/app/results/${intent.resourceId}`} prefetch={false}>
-              {ru ? 'Открыть сохранённый результат' : 'Open saved result'}
+            <Link
+              className="hh-primary"
+              href={
+                intent.sourceKind === 'delivered_report'
+                  ? `/${locale}/app/reports/${intent.resourceId}`
+                  : intent.sourceKind === 'legacy_document'
+                    ? `/${locale}/app/documents/${intent.resourceId}`
+                    : `/${locale}/app/results/${intent.resourceId}`
+              }
+              prefetch={false}
+            >
+              {ru ? 'Открыть сохранённый материал' : 'Open saved item'}
             </Link>
           ) : (
             <button className="hh-primary" type="button" disabled={busy} onClick={commit}>
@@ -1303,6 +1334,70 @@ function ResultPage({ id, locale, data }) {
     </section>
   )
 }
+function SavedDocumentPage({ id, locale, reload }) {
+  const router = useRouter()
+  const [value, setValue] = useState(null)
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const ru = locale === 'ru'
+  useEffect(() => {
+    let live = true
+    appFetch('documents/' + id + '?locale=' + locale)
+      .then((result) => {
+        if (live) setValue(result)
+      })
+      .catch((e) => {
+        if (live) setError(e)
+      })
+    return () => {
+      live = false
+    }
+  }, [id, locale])
+  async function remove() {
+    setBusy(true)
+    setError(null)
+    try {
+      await appFetch('documents/' + id + '/remove', {})
+      await reload()
+      router.replace('/' + locale + '/app/history')
+    } catch (e) {
+      setError(e)
+      setBusy(false)
+    }
+  }
+  if (error?.code === 'DOCUMENT_UNAVAILABLE' || error?.code === 'NOT_FOUND')
+    return (
+      <section className="hh-panel">
+        <h1>{ru ? 'Документ больше недоступен' : 'Document no longer available'}</h1>
+        <p>{ru ? 'Запись может оставаться в истории, но исходный документ был отозван или больше недоступен.' : 'The history reference may remain, but the source document was revoked or is no longer available.'}</p>
+        <Link className="hh-primary" href={'/' + locale + '/app/history'} prefetch={false}>
+          {ru ? 'Вернуться в историю' : 'Back to History'}
+        </Link>
+      </section>
+    )
+  if (error) return <p role="alert">{ru ? 'Не удалось открыть документ.' : 'The document could not be opened.'}</p>
+  if (!value) return <p>{ru ? 'Загружаем документ…' : 'Loading document…'}</p>
+  return (
+    <section>
+      <div className="hh-panel">
+        <p className="hh-kicker">{ru ? 'Сохранённый документ' : 'Saved document'}</p>
+        <p className="hh-fine">{ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}</p>
+      </div>
+      {value.kind === 'receipt' || value.kind === 'invoice'
+        ? <PaymentDocument document={value.document} locale={locale} />
+        : <PrescriptionDocument document={value.document} locale={locale} />}
+      <div className="hh-panel hh-actions">
+        <Link href={'/' + locale + '/app/history'} prefetch={false}>
+          {ru ? 'История' : 'History'}
+        </Link>
+        <button type="button" disabled={busy} onClick={remove}>
+          {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}
+        </button>
+      </div>
+    </section>
+  )
+}
+
 function SavedReportPage({ id, locale, reload }) {
   const router = useRouter()
   const [value, setValue] = useState(null)
@@ -1433,6 +1528,18 @@ function HistoryView({ data, locale, reload }) {
       title: c.reportFromAndy,
       href: `/${locale}/app/reports/${report.id}`,
       note: `${c.saved}: ${dateLabel(report.savedAt, locale)}`,
+    })),
+    ...(data.savedDocuments || []).map((document) => ({
+      id: document.id,
+      date: `${document.occurredOn}T00:00:00.000Z`,
+      title:
+        document.kind === 'receipt'
+          ? (locale === 'ru' ? 'Квитанция от Andy' : 'Receipt from Andy')
+          : document.kind === 'invoice'
+            ? (locale === 'ru' ? 'Счёт от Andy' : 'Invoice from Andy')
+            : (locale === 'ru' ? 'Рекомендация от Andy' : 'Recommendation from Andy'),
+      href: `/${locale}/app/documents/${document.id}`,
+      note: `${c.saved}: ${dateLabel(document.savedAt, locale)}`,
     })),
     ...data.requests.map((r) => ({
       id: r.id,
