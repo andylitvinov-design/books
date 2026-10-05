@@ -2,6 +2,8 @@ import sources from "./sources.generated.json";
 import media from "./media.generated.json";
 import psimasterSources from "./psimaster-sources.generated.json";
 import psimasterMedia from "./psimaster-media.generated.json";
+import psimasterTranslations from "./psimaster-translations.generated.json";
+import legacyTranslations from "./legacy-translations.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 export type AcademyDirectionId = "reiki" | "mysteries" | "symbolic" | "applied" | "school" | "archive";
@@ -40,6 +42,7 @@ export type AcademyMediaRecord = {
   sourceProvider?: "psitrends" | "psimaster" | "reiki-yggdrasil-canonical";
   sourceTaxonomyId?: string;
   lessonTitle?: string;
+  lessonTitleEn?: string;
   order?: number;
   extractionMethod?: string;
 };
@@ -68,6 +71,7 @@ export const academyProgramTitles: Record<string, Record<PublicLocale, string>> 
   "applied/energy-massage": { en: "Energy Massage — Historical Course", ru: "Энергетические массажи — исторический курс", es: "Masaje energético — curso histórico" },
   "applied/hypnotherapy-regressions": { en: "Hypnotherapy & Regression Imagery", ru: "Гипнотерапия и регрессионные образы", es: "Hipnoterapia e imágenes regresivas" },
   "applied/imagery-therapy-symboldrama": { en: "Imagery Therapy — Symboldrama", ru: "Образная терапия — Символдрама", es: "Terapia de imágenes — Symboldrama" },
+  "applied/imagery-therapy/mirrorland": { en: "Imagery Therapy — Mirrorland", ru: "Образная терапия — Зазеркалье", es: "Terapia de imágenes — Más allá del espejo" },
   "applied/sexual-energy-greek-gods": { en: "Sexual Energy & Greek Love Archetypes", ru: "Сексуальная энергетика и Греческие Боги Любви", es: "Energía sexual y arquetipos griegos del amor" },
   "applied/tantric-healing": { en: "Tantric Healing — Historical Program", ru: "Тантрическое целительство — историческая программа", es: "Sanación tántrica — programa histórico" },
   "archive/circle-of-eros": { en: "Circle of Eros — Historical Marathon", ru: "Круг Эроса — исторический марафон", es: "Círculo de Eros — maratón histórico" },
@@ -665,7 +669,23 @@ const academySupplementalPublicBlocks: Partial<Record<string, Partial<Record<Aca
   }
 };
 
-function academySourceBlocks(record: AcademySourceRecord) {
+const psimasterTranslationRecords = psimasterTranslations as Partial<Record<string, { en?: AcademyBlock[] }>>;
+const legacyTranslationRecords = legacyTranslations as Partial<Record<string, Partial<Record<"en" | "ru", AcademyBlock[]>>>>;
+
+function academyLocalizedTranslation(record: AcademySourceRecord, locale?: PublicLocale) {
+  if (locale !== "en" && locale !== "ru") return undefined;
+  if (record.sourceProvider === "psimaster" && locale === "en") {
+    return psimasterTranslationRecords[record.logicalId]?.en;
+  }
+  if (record.sourceProvider !== "psimaster" && record.sourceLocale !== locale) {
+    return legacyTranslationRecords[record.logicalId]?.[locale];
+  }
+  return undefined;
+}
+
+function academySourceBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
+  const translated = academyLocalizedTranslation(record, locale);
+  if (translated?.length) return translated;
   const base = academyCuratedPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? record.content;
   const supplement = academySupplementalPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? [];
   return [...base, ...supplement];
@@ -674,13 +694,13 @@ function academySourceBlocks(record: AcademySourceRecord) {
 // Curated + supplemental blocks above are source-backed recovery from live PsiTrends and preserved Joomla/Quix evidence.
 const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|^loading\.\.\.$|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
 
-export function academyPublicBlocks(record: AcademySourceRecord) {
-  return academySourceBlocks(record).filter((block) => !academyPublicOmitPattern.test(block.text));
+export function academyPublicBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
+  return academySourceBlocks(record, locale).filter((block) => !academyPublicOmitPattern.test(block.text));
 }
 
-export function academyPublicOmittedCount(record: AcademySourceRecord) {
-  const blocks = academySourceBlocks(record);
-  return blocks.length - academyPublicBlocks(record).length;
+export function academyPublicOmittedCount(record: AcademySourceRecord, locale?: PublicLocale) {
+  const blocks = academySourceBlocks(record, locale);
+  return blocks.length - academyPublicBlocks(record, locale).length;
 }
 
 export function isPublicLocale(value: string): value is PublicLocale { return value === "en" || value === "ru" || value === "es"; }
@@ -705,4 +725,15 @@ export function mediaForRecord(record: AcademySourceRecord) {
   return mediaRecords.filter((item) => item.logicalId === record.logicalId);
 }
 export function youtubeIdFromUrl(url: string) { const match = url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/); return match?.[1]; }
-export function sourceLanguageNotice(record: AcademySourceRecord, locale: PublicLocale) { if (locale !== "es" && record.sourceLocale === locale) return null; return academyCopy[locale].sourceLanguage + " " + academyCopy[locale][record.sourceLocale] + "."; }
+export function sourceLanguageNotice(record: AcademySourceRecord, locale: PublicLocale) {
+  if ((locale === "en" || locale === "ru") && academyLocalizedTranslation(record, locale)?.length) {
+    if (locale === "ru") return record.sourceProvider === "psimaster"
+      ? "Переведено с оригинального русскоязычного источника PsiMaster."
+      : "Переведено с оригинального англоязычного источника PsiTrends.";
+    return record.sourceProvider === "psimaster"
+      ? "Translated from the original Russian PsiMaster source."
+      : "Translated from the original Russian PsiTrends source.";
+  }
+  if (locale !== "es" && record.sourceLocale === locale) return null;
+  return academyCopy[locale].sourceLanguage + " " + academyCopy[locale][record.sourceLocale] + ".";
+}

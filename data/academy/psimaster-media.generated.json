@@ -10,7 +10,8 @@
     "videoId": "J_15bfhzOuU",
     "order": 1,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Осирис — День 1"
+    "lessonTitle": "Осирис — День 1",
+    "lessonTitleEn": "Osiris — Day 1"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12472",
@@ -23,7 +24,8 @@
     "videoId": "peUV2sXZz8U",
     "order": 2,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Осирис — День 2"
+    "lessonTitle": "Осирис — День 2",
+    "lessonTitleEn": "Osiris — Day 2"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12472",
@@ -36,7 +38,8 @@
     "videoId": "NXJhSRHJuvI",
     "order": 3,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Осирис — День 3"
+    "lessonTitle": "Осирис — День 3",
+    "lessonTitleEn": "Osiris — Day 3"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12472",
@@ -49,7 +52,8 @@
     "videoId": "eSyTIB8N4CE",
     "order": 4,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Осирис — День 4"
+    "lessonTitle": "Осирис — День 4",
+    "lessonTitleEn": "Osiris — Day 4"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12472",
@@ -62,7 +66,8 @@
     "videoId": "ASjDN9T168I",
     "order": 5,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Осирис — День 5"
+    "lessonTitle": "Осирис — День 5",
+    "lessonTitleEn": "Osiris — Day 5"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12472",
@@ -75,7 +80,8 @@
     "videoId": "dcUlSN-uHQM",
     "order": 6,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Осирис — День 6"
+    "lessonTitle": "Осирис — День 6",
+    "lessonTitleEn": "Osiris — Day 6"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12472",
@@ -88,7 +94,8 @@
     "videoId": "GIr0BEj4dEg",
     "order": 7,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Осирис — День 7"
+    "lessonTitle": "Осирис — День 7",
+    "lessonTitleEn": "Osiris — Day 7"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12312",
@@ -101,7 +108,8 @@
     "videoId": "95peObUizeE",
     "order": 1,
     "extractionMethod": "watch_link",
-    "lessonTitle": "Марафоны Энергопрактик Онлайн"
+    "lessonTitle": "Марафоны Энергопрактик Онлайн",
+    "lessonTitleEn": "Online Energy-Practice Marathons"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12312",
@@ -114,7 +122,8 @@
     "videoId": "ZYGjw0PtvdM",
     "order": 2,
     "extractionMethod": "watch_link",
-    "lessonTitle": "Марафон Чисток. Практика работы с Чакрой Аджна"
+    "lessonTitle": "Марафон Чисток. Практика работы с Чакрой Аджна",
+    "lessonTitleEn": "Cleansing Marathon — Ajna Chakra Practice"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12478",
@@ -127,7 +136,8 @@
     "videoId": "7ROoZxXysWY",
     "order": 1,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Три этапа ритуала: Анодос, Нестея, Калигения"
+    "lessonTitle": "Три этапа ритуала: Анодос, Нестея, Калигения",
+    "lessonTitleEn": "Three stages of the ritual: Anodos, Nesteia, Kalligeneia"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12478",
@@ -140,7 +150,8 @@
     "videoId": "TGk8t3ZamPE",
     "order": 2,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Посейдон, Пан, Мойры, Деспина и Арион"
+    "lessonTitle": "Посейдон, Пан, Мойры, Деспина и Арион",
+    "lessonTitleEn": "Poseidon, Pan, the Moirai, Despoina and Arion"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12478",
@@ -153,7 +164,8 @@
     "videoId": "pTM7IpwDi2w",
     "order": 3,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Келей, Печь, Амрита, Колесница, Триптолем"
+    "lessonTitle": "Келей, Печь, Амрита, Колесница, Триптолем",
+    "lessonTitleEn": "Celeus, the Furnace, Amrita, the Chariot and Triptolemus"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12478",
@@ -166,7 +178,8 @@
     "videoId": "nQZYVyVCq9A",
     "order": 4,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Гелиус, Геката и Факел, Элизиум, Аид, Персефона"
+    "lessonTitle": "Гелиус, Геката и Факел, Элизиум, Аид, Персефона",
+    "lessonTitleEn": "Helios, Hecate and the Torch, Elysium, Hades and Persephone"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12478",
@@ -179,7 +192,8 @@
     "videoId": "blzlYK9YeC0",
     "order": 5,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Колос, Кролик, Голубь, Гранат, Мак, Нарцисс"
+    "lessonTitle": "Колос, Кролик, Голубь, Гранат, Мак, Нарцисс",
+    "lessonTitleEn": "Ear of Grain, Rabbit, Dove, Pomegranate, Poppy and Narcissus"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12471",
@@ -192,7 +206,8 @@
     "videoId": "qipPFBpRNF8",
     "order": 1,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Дионис — Введение"
+    "lessonTitle": "Дионис — Введение",
+    "lessonTitleEn": "Dionysus — Introduction"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12471",
@@ -205,7 +220,8 @@
     "videoId": "sH-LjZwgNOI",
     "order": 2,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Дионис — День 2"
+    "lessonTitle": "Дионис — День 2",
+    "lessonTitleEn": "Dionysus — Day 2"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12471",
@@ -218,7 +234,8 @@
     "videoId": "Yw8k00ZNGC8",
     "order": 3,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Дионис — День 3"
+    "lessonTitle": "Дионис — День 3",
+    "lessonTitleEn": "Dionysus — Day 3"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12471",
@@ -231,7 +248,8 @@
     "videoId": "9vIsfbGLTnA",
     "order": 4,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Дионис — День 4"
+    "lessonTitle": "Дионис — День 4",
+    "lessonTitleEn": "Dionysus — Day 4"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12471",
@@ -244,7 +262,8 @@
     "videoId": "d8o8dOUzEnw",
     "order": 5,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Дионис — День 5. Сатиры и Менады"
+    "lessonTitle": "Дионис — День 5. Сатиры и Менады",
+    "lessonTitleEn": "Dionysus — Day 5: Satyrs and Maenads"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12471",
@@ -257,7 +276,8 @@
     "videoId": "mOSWavaWkvs",
     "order": 6,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Дионис — День 6. Музыка Диониса"
+    "lessonTitle": "Дионис — День 6. Музыка Диониса",
+    "lessonTitleEn": "Dionysus — Day 6: Music of Dionysus"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12471",
@@ -270,7 +290,8 @@
     "videoId": "_9y1lR0lpPA",
     "order": 7,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Дионис — День 7. Любовь и Друзья"
+    "lessonTitle": "Дионис — День 7. Любовь и Друзья",
+    "lessonTitleEn": "Dionysus — Day 7: Love and Friends"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12327",
@@ -283,7 +304,8 @@
     "videoId": "9w6AmFXaL2U",
     "order": 1,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Рождение Кетцалькоатля"
+    "lessonTitle": "Рождение Кетцалькоатля",
+    "lessonTitleEn": "Birth of Quetzalcoatl"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12327",
@@ -296,7 +318,8 @@
     "videoId": "w32jiN4ejCg",
     "order": 2,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Круг Пернатого Змея. 1 неделя"
+    "lessonTitle": "Круг Пернатого Змея. 1 неделя",
+    "lessonTitleEn": "Circle of the Feathered Serpent — Week 1"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12327",
@@ -309,7 +332,8 @@
     "videoId": "JbslP34kygE",
     "order": 3,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Кетцалькоатль 2"
+    "lessonTitle": "Кетцалькоатль 2",
+    "lessonTitleEn": "Quetzalcoatl 2"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12327",
@@ -322,7 +346,8 @@
     "videoId": "eMpcOkZgtmU",
     "order": 4,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Кетцалькоатль и Шолотль. Часть 2"
+    "lessonTitle": "Кетцалькоатль и Шолотль. Часть 2",
+    "lessonTitleEn": "Quetzalcoatl and Xolotl — Part 2"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12327",
@@ -335,7 +360,8 @@
     "videoId": "8YQt8FcbkM0",
     "order": 5,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Бог Солнца Майя и Ацтеков — Тонатио и Кинич Ахау"
+    "lessonTitle": "Бог Солнца Майя и Ацтеков — Тонатио и Кинич Ахау",
+    "lessonTitleEn": "Maya and Aztec Sun God — Tonatiuh and Kinich Ahau"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12327",
@@ -348,7 +374,8 @@
     "videoId": "TaK8avHqq7Q",
     "order": 6,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Бог Жизни Майя — Юм Кааш"
+    "lessonTitle": "Бог Жизни Майя — Юм Кааш",
+    "lessonTitleEn": "Maya God of Life — Yum Kaax"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -361,7 +388,8 @@
     "videoId": "2GMLhPrEJ3s",
     "order": 1,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Бесплатная медитация. Связь с учителем 2."
+    "lessonTitle": "Бесплатная медитация. Связь с учителем 2.",
+    "lessonTitleEn": "Meditation — Connection with the Teacher 2"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -374,7 +402,8 @@
     "videoId": "8XN-EFpSt8M",
     "order": 2,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Медитация Сила Огня — Марс."
+    "lessonTitle": "Медитация Сила Огня — Марс.",
+    "lessonTitleEn": "Fire Power Meditation — Mars"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -387,7 +416,8 @@
     "videoId": "h8r_fIVWM0U",
     "order": 3,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Круг Огня — бесплатная медитация."
+    "lessonTitle": "Круг Огня — бесплатная медитация.",
+    "lessonTitleEn": "Circle of Fire — Meditation"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -400,7 +430,8 @@
     "videoId": "owG8gBIQ2hU",
     "order": 4,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Защита и Активизация — бесплатная медитация."
+    "lessonTitle": "Защита и Активизация — бесплатная медитация.",
+    "lessonTitleEn": "Protection and Activation — Meditation"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -413,7 +444,8 @@
     "videoId": "3Lc38_-SqD0",
     "order": 5,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Медитация Сила Огня — Меркурий."
+    "lessonTitle": "Медитация Сила Огня — Меркурий.",
+    "lessonTitleEn": "Fire Power Meditation — Mercury"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -426,7 +458,8 @@
     "videoId": "ziXmEWe3Dh0",
     "order": 6,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Круг денег (Золотой храм)."
+    "lessonTitle": "Круг денег (Золотой храм).",
+    "lessonTitleEn": "Circle of Money (Golden Temple)"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -439,7 +472,8 @@
     "videoId": "ocks6JP2lD8",
     "order": 7,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Медитация Сила Юпитера."
+    "lessonTitle": "Медитация Сила Юпитера.",
+    "lessonTitleEn": "Power of Jupiter Meditation"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -452,7 +486,8 @@
     "videoId": "-volI7wYbl0",
     "order": 8,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Медитация — Энергия Любви."
+    "lessonTitle": "Медитация — Энергия Любви.",
+    "lessonTitleEn": "Meditation — Energy of Love"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -465,7 +500,8 @@
     "videoId": "R1krHd3JRXc",
     "order": 9,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Медитация — Сила Сатурна."
+    "lessonTitle": "Медитация — Сила Сатурна.",
+    "lessonTitleEn": "Meditation — Power of Saturn"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -478,7 +514,8 @@
     "videoId": "uN5BFjdKVvY",
     "order": 10,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Жизненная Сила — бесплатная медитация."
+    "lessonTitle": "Жизненная Сила — бесплатная медитация.",
+    "lessonTitleEn": "Life Force — Meditation"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
@@ -491,7 +528,8 @@
     "videoId": "6wNdBVoYt50",
     "order": 11,
     "extractionMethod": "iframe_src",
-    "lessonTitle": "Медитация на Солнце."
+    "lessonTitle": "Медитация на Солнце.",
+    "lessonTitleEn": "Sun Meditation"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12468",
@@ -504,7 +542,8 @@
     "videoId": "h8r_fIVWM0U",
     "order": 1,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Круг Огня — бесплатная медитация"
+    "lessonTitle": "Круг Огня — бесплатная медитация",
+    "lessonTitleEn": "Circle of Fire — Meditation"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12468",
@@ -517,7 +556,8 @@
     "videoId": "8XN-EFpSt8M",
     "order": 2,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Медитация Сила Огня — Марс"
+    "lessonTitle": "Медитация Сила Огня — Марс",
+    "lessonTitleEn": "Fire Power Meditation — Mars"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12468",
@@ -530,7 +570,8 @@
     "videoId": "uN5BFjdKVvY",
     "order": 3,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Жизненная Сила — бесплатная медитация"
+    "lessonTitle": "Жизненная Сила — бесплатная медитация",
+    "lessonTitleEn": "Life Force — Meditation"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12468",
@@ -543,7 +584,8 @@
     "videoId": "ziXmEWe3Dh0",
     "order": 4,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Круг денег (Золотой храм)"
+    "lessonTitle": "Круг денег (Золотой храм)",
+    "lessonTitleEn": "Circle of Money (Golden Temple)"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12468",
@@ -556,7 +598,8 @@
     "videoId": "lOkX_8TM-FA",
     "order": 5,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Медитация на Солнце 1"
+    "lessonTitle": "Медитация на Солнце 1",
+    "lessonTitleEn": "Sun Meditation 1"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12468",
@@ -569,7 +612,8 @@
     "videoId": "DPdDGnU4DL8",
     "order": 6,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Медитация на Солнце 2"
+    "lessonTitle": "Медитация на Солнце 2",
+    "lessonTitleEn": "Sun Meditation 2"
   },
   {
     "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12468",
@@ -582,6 +626,7 @@
     "videoId": "1oshNCVzHR8",
     "order": 7,
     "extractionMethod": "watch_link_dom",
-    "lessonTitle": "Медитация на Солнце 3"
+    "lessonTitle": "Медитация на Солнце 3",
+    "lessonTitleEn": "Sun Meditation 3"
   }
 ]

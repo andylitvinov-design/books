@@ -38,14 +38,19 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   const text = academyCopy[locale];
   const sourceNotice = sourceLanguageNotice(record, locale);
   const videos = mediaForRecord(record)
-    .map((item) => ({ id: youtubeIdFromUrl(item.mediaUrl), url: item.mediaUrl, lessonTitle: item.lessonTitle, order: item.order }))
+    .map((item) => ({
+      id: youtubeIdFromUrl(item.mediaUrl),
+      url: item.mediaUrl,
+      lessonTitle: locale === "ru" ? item.lessonTitle : (item.lessonTitleEn ?? item.lessonTitle),
+      order: item.order,
+    }))
     .filter((item): item is { id: string; url: string; lessonTitle: string | undefined; order: number | undefined } => Boolean(item.id))
     .filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index)
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
     .slice(0, 48);
   const isCanonicalYggdrasil = record.routeKey === "reiki/yggdrasil";
-  const publicBlocks = isCanonicalYggdrasil ? [] : academyPublicBlocks(record);
-  const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record);
+  const publicBlocks = isCanonicalYggdrasil ? [] : academyPublicBlocks(record, locale);
+  const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record, locale);
   const hasBody = publicBlocks.some((block) => block.type !== "h1");
   const outline = publicBlocks.map((block, index) => ({ block, index })).filter(({ block }) => block.type === "h2" || block.type === "h3").slice(0, 32);
 

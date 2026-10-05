@@ -128,7 +128,7 @@ test("Academy program titles are localized without rewriting source records", as
   assert.match(catalog, /academyDisplayTitle/);
   assert.match(hub, /academyDisplayTitle\(record, locale\)/);
   assert.match(recordPage, /academyDisplayTitle\(record, locale\)/);
-  assert.match(recordPage, /academyPublicBlocks\(record\)/);
+  assert.match(recordPage, /academyPublicBlocks\(record, locale\)/);
   assert.match(catalog, /free online course\|limited time\|register/);
   assert.match(routePage, /academyDisplayTitle\(record, locale\)/);
   assert.match(recordPage, /makeFacultiesRecord\(record: AcademySourceRecord, locale: PublicLocale\)/);
@@ -310,4 +310,102 @@ test("all six PsiMaster legacy video-course families are restored", async () => 
   }
   assert.equal(media.filter((row) => row.logicalId === "videos/energy-pump-ups").length, 2);
   assert.equal(new Set(media.map((row) => row.videoId)).size, 41);
+});
+
+
+test("PsiMaster English and Russian course bodies stay structurally equivalent", async () => {
+  const [sources, translations] = await Promise.all([
+    readJson("data/academy/psimaster-sources.generated.json"),
+    readJson("data/academy/psimaster-translations.generated.json"),
+  ]);
+  assert.equal(sources.length, 22);
+  assert.equal(Object.keys(translations).length, 22);
+  for (const source of sources) {
+    const en = translations[source.logicalId]?.en;
+    assert.ok(en, `missing EN translation: ${source.logicalId}`);
+    assert.equal(en.length, source.content.length, `block count: ${source.logicalId}`);
+    assert.deepEqual(en.map((block) => block.type), source.content.map((block) => block.type), `block structure: ${source.logicalId}`);
+    assert.doesNotMatch(en.map((block) => block.text).join("\n"), /[А-Яа-яЁё]/, `Cyrillic leaked into EN: ${source.logicalId}`);
+  }
+});
+
+test("PsiMaster bilingual renderer selects localized body text by locale", async () => {
+  const [catalog, page] = await Promise.all([
+    readFile("data/academy/catalog.ts", "utf8"),
+    readFile("components/academy-record-page.tsx", "utf8"),
+  ]);
+  assert.match(catalog, /psimasterTranslations/);
+  assert.match(catalog, /record\.sourceProvider === "psimaster" && locale === "en"/);
+  assert.match(catalog, /Translated from the original Russian PsiMaster source/);
+  assert.match(page, /academyPublicBlocks\(record, locale\)/);
+  assert.match(page, /academyPublicOmittedCount\(record, locale\)/);
+});
+
+test("PsiMaster legacy video titles have English and Russian parity", async () => {
+  const media = await readJson("data/academy/psimaster-media.generated.json");
+  assert.equal(media.length, 45);
+  assert.ok(media.every((row) => row.lessonTitle && row.lessonTitleEn));
+  assert.doesNotMatch(media.map((row) => row.lessonTitleEn).join("\n"), /[А-Яа-яЁё]/);
+  const page = await readFile("components/academy-record-page.tsx", "utf8");
+  assert.match(page, /locale === "ru" \? item\.lessonTitle : \(item\.lessonTitleEn \?\? item\.lessonTitle\)/);
+});
+
+
+test("every single-language PsiTrends route has an opposite-language presentation", async () => {
+  const [sources, translations] = await Promise.all([
+    readJson("data/academy/sources.generated.json"),
+    readJson("data/academy/legacy-translations.generated.json"),
+  ]);
+  const byId = new Map();
+  for (const row of sources) {
+    const set = byId.get(row.logicalId) ?? new Set();
+    set.add(row.sourceLocale);
+    byId.set(row.logicalId, set);
+  }
+  const singleLanguage = [...byId.entries()].filter(([, locales]) => locales.size === 1);
+  assert.equal(singleLanguage.length, 26);
+  assert.equal(Object.keys(translations).length, 26);
+  for (const [logicalId, locales] of singleLanguage) {
+    const sourceLocale = [...locales][0];
+    const targetLocale = sourceLocale === "en" ? "ru" : "en";
+    const blocks = translations[logicalId]?.[targetLocale];
+    assert.ok(blocks?.length, `missing ${targetLocale} translation: ${logicalId}`);
+    if (targetLocale === "en") {
+      assert.doesNotMatch(blocks.map((block) => block.text).join("\n"), /[А-Яа-яЁё]/, `Cyrillic leaked into EN: ${logicalId}`);
+    }
+  }
+});
+
+test("legacy Academy translations remain free of stale sales/contact copy", async () => {
+  const translations = await readJson("data/academy/legacy-translations.generated.json");
+  const body = Object.values(translations)
+    .flatMap((locales) => Object.values(locales))
+    .flat()
+    .map((block) => block.text)
+    .join("\n");
+  assert.doesNotMatch(body, /t\.me\/|viber|whatsapp|\$\d|\b\d+\s*(?:usd|eur|уе)\b/i);
+});
+
+test("Academy renderer uses localized translations before source-language fallback", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  assert.match(catalog, /legacyTranslations/);
+  assert.match(catalog, /academyLocalizedTranslation/);
+  assert.match(catalog, /record\.sourceProvider !== "psimaster" && record\.sourceLocale !== locale/);
+  assert.match(catalog, /legacyTranslationRecords\[record\.logicalId\]\?\.\[locale\]/);
+  assert.match(catalog, /Переведено с оригинального англоязычного источника PsiTrends/);
+  assert.match(catalog, /Translated from the original Russian PsiTrends source/);
+});
+
+
+test("every Academy logical route has localized English and Russian titles", async () => {
+  const [sources, psimaster, catalog] = await Promise.all([
+    readJson("data/academy/sources.generated.json"),
+    readJson("data/academy/psimaster-sources.generated.json"),
+    readFile("data/academy/catalog.ts", "utf8"),
+  ]);
+  const ids = [...new Set([...sources, ...psimaster].map((row) => row.logicalId))];
+  assert.equal(ids.length, 56);
+  for (const id of ids) {
+    assert.match(catalog, new RegExp('"' + id.replaceAll("/", "\\/") + '": \\{ en:'));
+  }
 });
