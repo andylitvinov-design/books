@@ -861,3 +861,86 @@ test('deletion request disables access without pretending provider data was eras
     (e) => e.code === '42501',
   )
 })
+
+test('account mood check-ins are idempotent, private, exported and cross-account isolated', async () => {
+  const operationId = randomUUID()
+  const payload = {
+    mood: 'neutral',
+    category: 'energy',
+    occurredAt: '2026-10-05T16:00:00.000Z',
+    timezone: 'America/Toronto',
+    sourceSurface: 'portrait',
+    operationId,
+  }
+  const one = await repo.moodCheckin(a, payload)
+  const replay = await repo.moodCheckin(a, payload)
+  assert.equal(one.id, replay.id)
+
+  await assert.rejects(
+    () => repo.moodCheckin(a, { ...payload, mood: 'sad' }),
+    /IDEMPOTENCY_CONFLICT/,
+  )
+
+  const own = await repo.bootstrap(a)
+  assert.ok(own.moodCheckins.some((item) => item.id === one.id))
+  const other = await repo.bootstrap(b)
+  assert.ok(!other.moodCheckins.some((item) => item.id === one.id))
+
+  assert.equal(
+    (
+      await rawAs(a, 'authenticated', (db) =>
+        db.query('select id from app.mood_checkins where id=$1', [one.id]),
+      )
+    ).rows.length,
+    1,
+  )
+  assert.equal(
+    (
+      await rawAs(b, 'authenticated', (db) =>
+        db.query('select id from app.mood_checkins where id=$1', [one.id]),
+      )
+    ).rows.length,
+    0,
+  )
+  await assert.rejects(
+    () =>
+      rawAs(a, 'authenticated', (db) =>
+        db.query(
+          "insert into app.mood_checkins(account_id,mood,occurred_at,timezone,source_surface,operation_id) values($1,'happy',now(),'UTC','portrait',$2)",
+          [A, randomUUID()],
+        ),
+      ),
+    (e) => e.code === '42501',
+  )
+
+  const exported = await repo.exportData(a)
+  assert.ok(exported.moodCheckins.some((item) => item.id === one.id))
+})
+
+test('guest mood requires a consented guest session and stays inside that temporary authority', async () => {
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential()
+  const payload = {
+    mood: 'sad',
+    category: null,
+    occurredAt: '2026-10-05T17:00:00.000Z',
+    timezone: 'America/Toronto',
+    sourceSurface: 'cabinet_landing',
+    operationId: randomUUID(),
+  }
+  await assert.rejects(() => guestRepo.moodCheckin(credential, payload), /GUEST_SESSION_REQUIRED/)
+
+  await guestRepo.createSession(credential, {
+    adult: true,
+    necessary: true,
+    uiLocale: 'en',
+    timezone: 'America/Toronto',
+  })
+  const saved = await guestRepo.moodCheckin(credential, payload)
+  const replay = await guestRepo.moodCheckin(credential, payload)
+  assert.equal(saved.id, replay.id)
+
+  const boot = await guestRepo.bootstrap(credential)
+  assert.ok(boot.moodCheckins.some((item) => item.id === saved.id))
+  assert.ok(boot.moodCheckins.every((item) => item.expiresAt))
+})
