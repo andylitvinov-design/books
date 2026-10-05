@@ -17,22 +17,7 @@ create index if not exists client_account_bindings_account
 revoke all on app_private.client_account_bindings from public,anon,authenticated,hh_app_inbox;
 grant select,insert,update on app_private.client_account_bindings to hh_app_backend;
 
-with unambiguous as (
-  select g.source_client_id,
-         min(g.bound_account_id::text)::uuid as account_id,
-         min(g.source_assessment_id::text)::uuid as source_id
-  from app_private.report_grants g
-  where g.bound_account_id is not null
-  group by g.source_client_id
-  having count(distinct g.bound_account_id)=1
-)
-insert into app_private.client_account_bindings
-  (legacy_client_id,account_id,first_source_kind,first_source_id)
-select source_client_id,account_id,'delivered_report',source_id
-from unambiguous
-on conflict(legacy_client_id) do nothing;
-
-alter table app_private.save_intents
+-- Historical saved-report claims remain unbound; association begins only after the new explicit Save flow.\n\nalter table app_private.save_intents
   add column if not exists source_legacy_client_id uuid,
   add column if not exists source_hash text;
 
