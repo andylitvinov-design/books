@@ -44,8 +44,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
     .slice(0, 48);
   const isCanonicalYggdrasil = record.routeKey === "reiki/yggdrasil";
-  const publicBlocks = isCanonicalYggdrasil ? [] : academyPublicBlocks(record);
-  const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record);
+  const publicBlocks = isCanonicalYggdrasil ? [] : academyPublicBlocks(record, locale);
+  const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record, locale);
   const hasBody = publicBlocks.some((block) => block.type !== "h1");
   const outline = publicBlocks.map((block, index) => ({ block, index })).filter(({ block }) => block.type === "h2" || block.type === "h3").slice(0, 32);
 
