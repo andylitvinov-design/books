@@ -11,6 +11,7 @@ import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
+import { TEST_RECOMMENDATION_FOCUS, rankAssessmentDefinitions } from '@/lib/assessments/test-recommendations'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -578,32 +579,63 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
 }
 function TestCatalog({ data, locale, onStarted }) {
   const c = COPY[locale]
+  const searchParams = useSearchParams()
+  const mode = searchParams.get('mode')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const [view, setView] = useState('recommended')
+  const [view, setView] = useState(mode === 'all' ? 'all' : 'recommended')
+  const [showRecommender, setShowRecommender] = useState(mode === 'recommendations')
+  const [selectedFocus, setSelectedFocus] = useState([])
+  const [depth, setDepth] = useState('balanced')
+  const [personalized, setPersonalized] = useState(null)
   const definitions = [
     getAssessmentDefinition('hh-current-state', 'v2', locale),
     getAssessmentDefinition('hh-weekly-pulse', 'v1', locale),
     getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
   ]
-  const monitoringIntro =
-    locale === 'ru'
-      ? 'Начните с одного полезного замера. Дальше выбирайте только то, что действительно хотите отслеживать.'
-      : 'Start with one useful measurement. Go deeper only into the areas you actually want to track.'
-  const tabs =
-    locale === 'ru'
-      ? [
-          ['recommended', 'Рекомендуем'],
-          ['all', 'Все доступные'],
-          ['areas', 'По областям'],
-          ['completed', 'Пройденные'],
-        ]
-      : [
-          ['recommended', 'Recommended'],
-          ['all', 'All available'],
-          ['areas', 'By area'],
-          ['completed', 'Completed'],
-        ]
+  const ru = locale === 'ru'
+  const monitoringIntro = ru
+    ? 'Начните с одного полезного замера. Дальше выбирайте только то, что действительно хотите отслеживать.'
+    : 'Start with one useful measurement. Go deeper only into the areas you actually want to track.'
+  const recommendationCopy = ru
+    ? {
+        action: 'Подобрать тесты',
+        title: 'Какие темы сейчас важнее?',
+        text: 'Выберите одну или несколько зон и желаемую глубину. Доступные тесты будут расставлены по приоритету.',
+        depth: 'Глубина',
+        quick: 'Коротко',
+        balanced: 'Средне',
+        deep: 'Глубже',
+        build: 'Показать рекомендации',
+        ranked: 'Ваш рекомендуемый порядок',
+        rankedText: 'Порядок основан только на выбранных темах и глубине. Это навигация по тестам, а не диагноз.',
+        rank: 'Приоритет',
+        choose: 'Выберите хотя бы одну тему.',
+        privacy: 'Выбранные зоны используются только для этой сортировки и не сохраняются в профиле.',
+        forMe: 'Для меня',
+      }
+    : {
+        action: 'Get test recommendations',
+        title: 'What matters most right now?',
+        text: 'Choose one or more areas and your preferred depth. Available tests will be ranked for you.',
+        depth: 'Depth',
+        quick: 'Short',
+        balanced: 'Medium',
+        deep: 'Deeper',
+        build: 'Show my recommendations',
+        ranked: 'Your recommended order',
+        rankedText: 'The order is based only on the themes and depth you selected. It helps navigate tests; it is not a diagnosis.',
+        rank: 'Priority',
+        choose: 'Choose at least one area.',
+        privacy: 'Your selected areas are used only for this ranking and are not saved to your profile.',
+        forMe: 'For me',
+      }
+  const tabs = [
+    ...(personalized ? [['personalized', recommendationCopy.forMe]] : []),
+    ...(ru
+      ? [['recommended', 'Рекомендуем'], ['all', 'Все доступные'], ['areas', 'По областям'], ['completed', 'Пройденные']]
+      : [['recommended', 'Recommended'], ['all', 'All available'], ['areas', 'By area'], ['completed', 'Completed']]),
+  ]
   const quickArea = MONITOR_AREAS.find((area) => area.key === 'quick')
   const personalityArea = MONITOR_AREAS.find((area) => area.key === 'personality')
 
@@ -611,14 +643,12 @@ function TestCatalog({ data, locale, onStarted }) {
     setBusy(true)
     setError(null)
     try {
-      onStarted(
-        await appFetch('runs', {
-          definitionKey: def.key,
-          definitionVersion: def.version,
-          instrumentLocale: def.instrumentLocale,
-          operationId: crypto.randomUUID(),
-        }),
-      )
+      onStarted(await appFetch('runs', {
+        definitionKey: def.key,
+        definitionVersion: def.version,
+        instrumentLocale: def.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      }))
     } catch (e) {
       setError(e)
     } finally {
@@ -626,67 +656,56 @@ function TestCatalog({ data, locale, onStarted }) {
     }
   }
 
-  function cardFor(def, { recommended = false } = {}) {
+  function toggleFocus(key) {
+    setSelectedFocus((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+    )
+    setPersonalized(null)
+  }
+
+  function buildRecommendations() {
+    if (!selectedFocus.length) return
+    setPersonalized(rankAssessmentDefinitions(definitions, { focus: selectedFocus, depth }))
+    setView('personalized')
+  }
+
+  function cardFor(def, { recommended = false, rank = null } = {}) {
     const isState = def.key === 'hh-current-state'
     const isWeekly = def.key === 'hh-weekly-pulse'
     const draft = data.runs.find((x) => x.definitionId === def.id)
     const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
     const title = isState
-      ? locale === 'ru'
-        ? 'Состояние сейчас'
-        : 'Current State Check'
+      ? (ru ? 'Состояние сейчас' : 'Current State Check')
       : isWeekly
         ? c.weekly
-        : locale === 'ru'
-          ? 'Личностный профиль'
-          : 'Personality Baseline'
+        : (ru ? 'Личностный профиль' : 'Personality Baseline')
     const meta = isState
-      ? locale === 'ru'
-        ? '5 вопросов · ~1 мин'
-        : '5 questions · ~1 min'
+      ? (ru ? '5 вопросов · ~1 мин' : '5 questions · ~1 min')
       : isWeekly
-        ? locale === 'ru'
-          ? '8 вопросов · ~2 мин'
-          : '8 questions · ~2 min'
-        : locale === 'ru'
-          ? '20 вопросов · ~3 мин · EN'
-          : '20 questions · ~3 min · EN'
+        ? (ru ? '8 вопросов · ~2 мин' : '8 questions · ~2 min')
+        : (ru ? '20 вопросов · ~3 мин · EN' : '20 questions · ~3 min · EN')
     const image = isState || isWeekly
-      ? locale === 'ru'
-        ? '/images/holistic-house/video-posters/home-ru-v1.webp'
-        : '/images/holistic-house/video-posters/home-en-v2.webp'
-      : locale === 'ru'
-        ? '/images/holistic-house/video-posters/services-ru-v1.webp'
-        : '/images/holistic-house/video-posters/services-en-v2.webp'
+      ? (ru ? '/images/holistic-house/video-posters/home-ru-v1.webp' : '/images/holistic-house/video-posters/home-en-v2.webp')
+      : (ru ? '/images/holistic-house/video-posters/services-ru-v1.webp' : '/images/holistic-house/video-posters/services-en-v2.webp')
+
     return (
       <article className={`hh-monitoring-card${recommended ? ' hh-monitoring-card--recommended' : ''}`} key={def.id}>
         <div className="hh-monitoring-photo" aria-hidden="true">
           <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={image} />
         </div>
         <div className="hh-monitoring-card-body">
-          {recommended && <p className="hh-monitoring-recommended">{locale === 'ru' ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
+          {rank && <p className="hh-monitoring-rank">{recommendationCopy.rank} #{rank}</p>}
+          {recommended && <p className="hh-monitoring-recommended">{ru ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
           <p className="hh-monitoring-meta">{meta}</p>
           <h2>{title}</h2>
           <p>{isState ? c.stateDescription : isWeekly ? c.weeklyDescription : c.traitDescription}</p>
           {!isState && !isWeekly && <p className="hh-notice">{c.traitNotice}</p>}
-          {completed && (
-            <p className="hh-fine">
-              {c.latest}: {dateLabel(completed.measurementAt, locale)}
-            </p>
-          )}
+          {completed && <p className="hh-fine">{c.latest}: {dateLabel(completed.measurementAt, locale)}</p>}
           <div className="hh-actions">
-            <button
-              className="hh-primary"
-              disabled={busy}
-              onClick={() => (draft ? onStarted(draft) : start(def))}
-            >
+            <button className="hh-primary" disabled={busy} onClick={() => (draft ? onStarted(draft) : start(def))}>
               {draft ? c.resume : completed ? c.repeat : c.start}
             </button>
-            {completed && (
-              <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
-                {c.view}
-              </Link>
-            )}
+            {completed && <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>{c.view}</Link>}
           </div>
         </div>
       </article>
@@ -700,19 +719,68 @@ function TestCatalog({ data, locale, onStarted }) {
   return (
     <section className="hh-monitoring">
       <div className="hh-heading hh-monitoring-heading">
-        <p className="hh-kicker">{locale === 'ru' ? 'Монитор состояния' : 'Mind–Body Monitor'}</p>
-        <h1>{locale === 'ru' ? 'Тесты и самонаблюдение' : 'Tests & self-checks'}</h1>
+        <p className="hh-kicker">{ru ? 'Монитор состояния' : 'Mind–Body Monitor'}</p>
+        <h1>{ru ? 'Тесты и самонаблюдение' : 'Tests & self-checks'}</h1>
         <p>{monitoringIntro}</p>
         <p className="hh-fine">{c.continueLater}</p>
+        <button className="hh-secondary hh-recommendation-toggle" type="button" onClick={() => setShowRecommender((value) => !value)}>
+          {recommendationCopy.action}
+        </button>
       </div>
 
-      <nav className="hh-monitoring-tabs" aria-label={locale === 'ru' ? 'Фильтр тестов' : 'Test filters'}>
+      {showRecommender && (
+        <section className="hh-test-recommender" aria-labelledby="test-recommender-title">
+          <div>
+            <p className="hh-kicker">{recommendationCopy.action}</p>
+            <h2 id="test-recommender-title">{recommendationCopy.title}</h2>
+            <p>{recommendationCopy.text}</p>
+          </div>
+          <div className="hh-test-focus-grid">
+            {TEST_RECOMMENDATION_FOCUS.map((item) => (
+              <button type="button" key={item.key} aria-pressed={selectedFocus.includes(item.key)} onClick={() => toggleFocus(item.key)}>
+                {item.label[locale] || item.label.en}
+              </button>
+            ))}
+          </div>
+          <fieldset className="hh-test-depth">
+            <legend>{recommendationCopy.depth}</legend>
+            {[
+              ['quick', recommendationCopy.quick],
+              ['balanced', recommendationCopy.balanced],
+              ['deep', recommendationCopy.deep],
+            ].map(([key, label]) => (
+              <button type="button" key={key} aria-pressed={depth === key} onClick={() => { setDepth(key); setPersonalized(null) }}>
+                {label}
+              </button>
+            ))}
+          </fieldset>
+          <div className="hh-test-recommender-footer">
+            <button className="hh-primary" type="button" disabled={!selectedFocus.length} onClick={buildRecommendations}>
+              {recommendationCopy.build}
+            </button>
+            {!selectedFocus.length && <span>{recommendationCopy.choose}</span>}
+            <small>{recommendationCopy.privacy}</small>
+          </div>
+        </section>
+      )}
+
+      <nav className="hh-monitoring-tabs" aria-label={ru ? 'Фильтр тестов' : 'Test filters'}>
         {tabs.map(([id, label]) => (
-          <button type="button" key={id} aria-pressed={view === id} onClick={() => setView(id)}>
-            {label}
-          </button>
+          <button type="button" key={id} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>
         ))}
       </nav>
+
+      {view === 'personalized' && personalized && (
+        <section className="hh-ranked-tests" aria-labelledby="ranked-tests-title">
+          <header>
+            <h2 id="ranked-tests-title">{recommendationCopy.ranked}</h2>
+            <p>{recommendationCopy.rankedText}</p>
+          </header>
+          <div className="hh-monitoring-grid">
+            {personalized.map((item, index) => cardFor(item.definition, { recommended: index === 0, rank: index + 1 }))}
+          </div>
+        </section>
+      )}
 
       {view === 'recommended' && (
         <div className="hh-monitoring-grid">
@@ -721,9 +789,7 @@ function TestCatalog({ data, locale, onStarted }) {
         </div>
       )}
 
-      {view === 'all' && (
-        <div className="hh-monitoring-grid">{definitions.map((def) => cardFor(def))}</div>
-      )}
+      {view === 'all' && <div className="hh-monitoring-grid">{definitions.map((def) => cardFor(def))}</div>}
 
       {view === 'areas' && (
         <div className="hh-monitoring-areas">
@@ -736,7 +802,7 @@ function TestCatalog({ data, locale, onStarted }) {
             <div className="hh-monitoring-grid">{cardFor(definitions[2])}</div>
           </section>
           <p className="hh-fine">
-            {locale === 'ru'
+            {ru
               ? 'Дополнительные области появляются здесь только после проверки формы, прав на использование и требований безопасности.'
               : 'Additional areas appear here only after the questionnaire, usage rights and safety requirements are verified.'}
           </p>
@@ -744,16 +810,13 @@ function TestCatalog({ data, locale, onStarted }) {
       )}
 
       {view === 'completed' && (
-        completedDefinitions.length ? (
-          <div className="hh-monitoring-grid">{completedDefinitions.map((def) => cardFor(def))}</div>
-        ) : (
-          <article className="hh-panel hh-empty">
-            <h2>{locale === 'ru' ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2>
-            <p>{locale === 'ru' ? 'Начните с короткой проверки состояния.' : 'Start with the quick state check.'}</p>
-          </article>
-        )
+        completedDefinitions.length
+          ? <div className="hh-monitoring-grid">{completedDefinitions.map((def) => cardFor(def))}</div>
+          : <article className="hh-panel hh-empty">
+              <h2>{ru ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2>
+              <p>{ru ? 'Начните с короткой проверки состояния.' : 'Start with the quick state check.'}</p>
+            </article>
       )}
-
       {error && <p role="alert">{message(error, c)}</p>}
     </section>
   )
@@ -1387,6 +1450,31 @@ function MetricCard({ dimension, locale, onSelect }) {
     </button>
   )
 }
+function AssessmentEntryActions({ locale }) {
+  const ru = locale === 'ru'
+  const root = `/${locale}/app/tests`
+  return (
+    <section className="hh-assessment-entry" aria-labelledby="assessment-entry-title">
+      <div className="hh-assessment-entry-heading">
+        <p className="hh-kicker">{ru ? 'Оценка и мониторинг' : 'Assessment & monitoring'}</p>
+        <h2 id="assessment-entry-title">{ru ? 'Что вы хотите сделать?' : 'What would you like to do?'}</h2>
+      </div>
+      <div className="hh-assessment-entry-grid">
+        <Link className="hh-assessment-entry-card" href={`${root}?mode=all`} prefetch={false}>
+          <strong>{ru ? 'Пройти оценку / личный анализ' : 'Get assessment / personal analysis'}</strong>
+          <span>{ru ? 'Открыть упорядоченный список всех доступных тестов.' : 'Open the ordered list of all tests available in your Cabinet.'}</span>
+          <b aria-hidden="true">→</b>
+        </Link>
+        <Link className="hh-assessment-entry-card hh-assessment-entry-card--accent" href={`${root}?mode=recommendations`} prefetch={false}>
+          <strong>{ru ? 'Подобрать тесты' : 'Get test recommendations'}</strong>
+          <span>{ru ? 'Выберите важные зоны и глубину — доступные тесты будут расставлены по приоритету.' : 'Choose your key areas and preferred depth, then see available tests ranked for you.'}</span>
+          <b aria-hidden="true">→</b>
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 function Portrait({ data, locale, onOpenHistory }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
@@ -1426,6 +1514,7 @@ function Portrait({ data, locale, onOpenHistory }) {
         onQuickCheckin={() => window.location.assign('/' + locale + '/app/monitoring')}
       />
       <ProfileOverview profile={profile} locale={locale} />
+      <AssessmentEntryActions locale={locale} />
       {data.practitioner && <OwnerTools locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (

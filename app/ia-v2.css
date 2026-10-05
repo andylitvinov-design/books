@@ -1407,6 +1407,165 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   }
 }
 
+
+/* Cabinet assessment entry + privacy-preserving test recommender. */
+.hh-assessment-entry { margin: 0 0 24px; }
+.hh-assessment-entry-heading { margin-bottom: 10px; }
+.hh-assessment-entry-heading h2 {
+  margin: 5px 0 0;
+  font-family: var(--font-serif);
+  font-size: clamp(25px, 3.6vw, 34px);
+  font-weight: 400;
+  line-height: 1.1;
+}
+.hh-assessment-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
+}
+.hh-assessment-entry-card {
+  min-height: 118px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 22px;
+  grid-template-rows: auto 1fr;
+  gap: 6px 12px;
+  align-items: start;
+  border: 1px solid var(--hh-line, #ded5c9);
+  border-radius: 16px;
+  background: #fffdfa;
+  padding: 18px;
+  color: #352820;
+  text-decoration: none;
+  box-shadow: 0 7px 20px rgba(74,51,35,.04);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.hh-assessment-entry-card:hover {
+  transform: translateY(-1px);
+  border-color: #b58b6e;
+  box-shadow: 0 10px 24px rgba(74,51,35,.08);
+}
+.hh-assessment-entry-card--accent { background: #f8efe5; }
+.hh-assessment-entry-card strong {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.12;
+}
+.hh-assessment-entry-card span {
+  color: #756659;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.hh-assessment-entry-card b {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #8b6850;
+  font-size: 20px;
+  font-weight: 400;
+}
+.hh-recommendation-toggle { margin-top: 14px; }
+.hh-test-recommender {
+  margin: 0 0 20px;
+  border: 1px solid #ded1c2;
+  border-radius: 18px;
+  background: #fffdfa;
+  padding: 20px;
+}
+.hh-test-recommender > div:first-child,
+.hh-ranked-tests > header { max-width: 44rem; }
+.hh-test-recommender h2,
+.hh-ranked-tests h2 {
+  margin: 4px 0 7px;
+  font-family: var(--font-serif);
+  font-size: clamp(25px, 3.5vw, 34px);
+  font-weight: 400;
+  line-height: 1.12;
+}
+.hh-test-recommender > div:first-child > p:last-child,
+.hh-ranked-tests header p {
+  color: #6f6155;
+  line-height: 1.5;
+}
+.hh-test-focus-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.hh-test-focus-grid button,
+.hh-test-depth button {
+  min-height: 40px;
+  border: 1px solid #d7c7b5;
+  border-radius: 999px;
+  background: #fffcf6;
+  padding: 8px 13px;
+  color: #5b4739;
+  font: inherit;
+  font-size: 12px;
+}
+.hh-test-focus-grid button[aria-pressed="true"],
+.hh-test-depth button[aria-pressed="true"] {
+  border-color: #70442d;
+  background: #70442d;
+  color: #fffaf2;
+}
+.hh-test-depth {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.hh-test-depth legend {
+  width: 100%;
+  margin-bottom: 7px;
+  color: #6f6155;
+  font-size: 12px;
+  font-weight: 700;
+}
+.hh-test-recommender-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+.hh-test-recommender-footer span {
+  color: #8b5a49;
+  font-size: 11px;
+}
+.hh-test-recommender-footer small {
+  flex-basis: 100%;
+  color: #8a7a6e;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.hh-ranked-tests { margin-top: 16px; }
+.hh-ranked-tests > header { margin-bottom: 12px; }
+.hh-monitoring-rank {
+  margin: 0 0 4px;
+  color: #70442d !important;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.hh-assessment-entry-card:focus-visible,
+.hh-test-focus-grid button:focus-visible,
+.hh-test-depth button:focus-visible {
+  outline: 2px solid #70442d;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .hh-assessment-entry-grid { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .hh-assessment-entry-card { min-height: 104px; padding: 15px; }
+  .hh-assessment-entry-card strong { font-size: 19px; }
+  .hh-test-recommender { padding: 16px; }
+  .hh-test-focus-grid { gap: 6px; }
+}
+
 /* Cabinet test runner v2 — shared Quick / Guided interaction model. */
 .cabinet-landing-shell .hh-test-mode-intro { max-width:38rem; }
 .cabinet-landing-shell .hh-test-mode-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:20px 0 12px; }
