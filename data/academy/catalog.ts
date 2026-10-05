@@ -354,6 +354,112 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
       { type: "p", text: "Creating shrine-like compositions and symbolic figures used as anchors for contemplative or ritual practice." },
       { type: "p", text: "Promotional promises, business case-study outcomes and claims of immediate magical efficacy from the legacy page are deliberately excluded." }
     ]
+  },
+  "mysteries/archetypes-of-gods": {
+    en: [
+      { type: "h2", text: "Great Mysteries — Archetypes of the Gods" },
+      { type: "p", text: "This PsiTrends archive presents mythic gods and pantheons as symbolic frameworks for reflecting on a personal, relational or project question. Holistic House preserves the material as archetypal and historical study, not as a claim of supernatural prediction or guaranteed influence." },
+      { type: "h2", text: "Traditions represented" },
+      { type: "p", text: "The source moves between Greek, Egyptian, Scandinavian, Taoist, Maya/Aztec and Sephirotic imagery, treating each system as a different symbolic language for examining a situation." },
+      { type: "h2", text: "Basic process" },
+      { type: "h3", text: "1. Formulate the question" },
+      { type: "p", text: "Clarify the situation, define the goal and identify what needs a new perspective." },
+      { type: "h3", text: "2. Choose an archetypal lens" },
+      { type: "p", text: "A mythic figure or tradition is selected as a symbolic point of view for associations, questions and alternative interpretations." },
+      { type: "h3", text: "3. Integrate into action" },
+      { type: "p", text: "The useful part of the symbolic reading is translated into observations, choices or practical next steps that can be tested in ordinary life." },
+      { type: "h2", text: "Egyptian archetypes in the archive" },
+      { type: "p", text: "The page associates Isis with solutions and relationships, Hathor with support and desire, Maat with balance and truth, Thoth with knowledge, Horus with action, Ra with scale and Osiris with endings and release." },
+      { type: "h2", text: "Video archive" },
+      { type: "p", text: "The original page also preserved a large set of legacy videos demonstrating how these archetypal ideas were presented in the Academy." },
+      { type: "p", text: "Old prices, diagnostic promises, energetic-impact claims and case-study outcome claims are intentionally omitted from this public recovery." }
+    ],
+    ru: [
+      { type: "h2", text: "Большие мистерии — Архетипы Богов" },
+      { type: "p", text: "Архив PsiTrends использует мифологических богов и пантеоны как символические рамки для исследования личного, отношенческого или проектного вопроса. В Holistic House материал сохраняется как архетипическое и историческое исследование, а не как обещание сверхъестественного прогноза или гарантированного воздействия." },
+      { type: "h2", text: "Какие традиции представлены" },
+      { type: "p", text: "В источнике встречаются греческая, египетская, скандинавская, даосская традиции, образы Майя и Ацтеков и Сефиротическая модель. Каждая рассматривается как отдельный символический язык для взгляда на ситуацию." },
+      { type: "h2", text: "Базовый процесс" },
+      { type: "h3", text: "1. Сформулировать вопрос" },
+      { type: "p", text: "Уточнить ситуацию, цель и то, где нужен новый взгляд или решение." },
+      { type: "h3", text: "2. Выбрать архетипическую оптику" },
+      { type: "p", text: "Мифологическая фигура или традиция используется как символическая точка зрения для ассоциаций, вопросов и альтернативных интерпретаций." },
+      { type: "h3", text: "3. Перевести материал в действия" },
+      { type: "p", text: "Полезные наблюдения превращаются в конкретные варианты выбора или следующие шаги, которые можно проверять в реальной жизни." },
+      { type: "h2", text: "Египетские архетипы в архиве" },
+      { type: "p", text: "Исида связывается с решениями и отношениями, Хатхор — с поддержкой и желанием, Маат — с балансом и истиной, Тот — со знанием, Гор — с действием, Ра — с масштабом, Осирис — с завершением и отпусканием." },
+      { type: "h2", text: "Видео-архив" },
+      { type: "p", text: "На исходной странице сохранён большой набор старых видео, показывающих, как эти архетипические идеи преподавались в Академии." },
+      { type: "p", text: "Старые цены, обещания диагностики, энергетического воздействия и гарантированных результатов кейсов намеренно не переносятся в публичный текст." }
+    ]
+  },
+  "elements/elemental-magic": {
+    en: [
+      { type: "h2", text: "Elemental Magic — course overview" },
+      { type: "p", text: "The PsiTrends archive presents Elemental Magic through the Minor Arcana of Tarot and the Sephirotic tradition. Each card is treated as a symbolic state or perspective that can be explored through imagery, glyphs, reflection and practice." },
+      { type: "h2", text: "Learning method" },
+      { type: "p", text: "For each degree the historical material explains the idea of the card, gives key glyphs for concentration and sometimes a short verse used as a mnemonic or focusing device." },
+      { type: "p", text: "The sequence progresses from lower numbered cards toward higher degrees and court cards, with later exercises building on earlier symbolic study." },
+      { type: "h2", text: "Four elemental lenses" },
+      { type: "h3", text: "Air" },
+      { type: "p", text: "Associated in the course with options, ideas, movement of thought and seeing alternative paths." },
+      { type: "h3", text: "Fire" },
+      { type: "p", text: "Associated with energy, motivation, initiative and the impulse to act." },
+      { type: "h3", text: "Earth" },
+      { type: "p", text: "Associated with structure, material reality, stability and practical implementation." },
+      { type: "h3", text: "Water" },
+      { type: "p", text: "Associated with memory, personal narrative, perception, emotional context and the development of an existing process." },
+      { type: "h2", text: "Practice orientation" },
+      { type: "p", text: "The educational value of the archive is in using a consistent symbolic system to slow down, compare perspectives and articulate what a situation means to the practitioner." },
+      { type: "p", text: "Legacy promotions, prices, health claims and promises that the practice will directly change external events are excluded from this public version." }
+    ],
+    ru: [
+      { type: "h2", text: "Магия Стихий — обзор курса" },
+      { type: "p", text: "В архиве PsiTrends Магия Стихий рассматривается через Малые Арканы Таро и Сефиротическую традицию. Каждая карта используется как символическое состояние или точка зрения, которую исследуют через образы, глифы, рефлексию и практику." },
+      { type: "h2", text: "Как построено обучение" },
+      { type: "p", text: "Для каждой ступени исторический материал объясняет идею карты, предлагает ключевые глифы для концентрации и иногда короткий стих как мнемоническую или фокусирующую практику." },
+      { type: "p", text: "Последовательность движется от младших числовых карт к более высоким градусам и придворным картам; последующие упражнения опираются на предыдущие." },
+      { type: "h2", text: "Четыре стихийные оптики" },
+      { type: "h3", text: "Воздух" },
+      { type: "p", text: "В курсе связывается с вариантами, идеями, движением мысли и поиском альтернативных путей." },
+      { type: "h3", text: "Огонь" },
+      { type: "p", text: "Связывается с энергией, мотивацией, инициативой и импульсом к действию." },
+      { type: "h3", text: "Земля" },
+      { type: "p", text: "Связывается со структурой, материальной реальностью, устойчивостью и практической реализацией." },
+      { type: "h3", text: "Вода" },
+      { type: "p", text: "Связывается с памятью, личной историей, восприятием, эмоциональным контекстом и развитием уже идущего процесса." },
+      { type: "h2", text: "Смысл практики" },
+      { type: "p", text: "Образовательная ценность архива — в последовательном использовании символической системы, чтобы замедлиться, сравнить разные точки зрения и яснее сформулировать смысл ситуации для самого практикующего." },
+      { type: "p", text: "Старые акции, цены, заявления о здоровье и обещания прямого изменения внешних событий исключены из этой публичной версии." }
+    ]
+  },
+  "history": {
+    en: [
+      { type: "h2", text: "Academy history — archive overview" },
+      { type: "p", text: "This page preserves the Academy’s own historical description from PsiTrends. It should be read as institutional archive material rather than independent verification of every lineage, title or historical claim." },
+      { type: "h2", text: "How the Academy describes its approach" },
+      { type: "p", text: "The archive presents a progressive initiation-based learning model combining symbolic, contemplative and partner practice. Reiki Yggdrasil is described as one of the frameworks used to organise material from several older esoteric and temple traditions." },
+      { type: "h2", text: "Study areas" },
+      { type: "p", text: "Historical faculties include Egyptian temple studies, Greek and Roman mysteries, spiritual traditions, Tantra and Vedic material, Slavic imagery traditions, Scandinavian runes, Taoist and Sufi material, and studies related to Indigenous American and Mesoamerican symbolism." },
+      { type: "h2", text: "Specializations" },
+      { type: "p", text: "The archive groups applied work into business and archetypal consulting, relationships and Tantra, personal and spiritual development, symbolic readings and astrology, lucid-dream and imaginal practices, artifact-making, and broader historical/esoteric research." },
+      { type: "h2", text: "Learning style" },
+      { type: "p", text: "Across the archive, students were expected to combine theory with personal practice, partner exercises, reflective writing and supervised application. The surviving pages also contain many older promotional and professional claims that are not repeated here as current facts." },
+      { type: "p", text: "Holistic House keeps this history to show where the present library and Academy material came from while separating historical self-description from current services and current professional credentials." }
+    ],
+    ru: [
+      { type: "h2", text: "История Академии — архивный обзор" },
+      { type: "p", text: "Эта страница сохраняет собственное историческое описание Академии из PsiTrends. Его следует читать как институциональный архив, а не как независимую проверку каждой линии, квалификации или исторического утверждения." },
+      { type: "h2", text: "Как Академия описывала свой подход" },
+      { type: "p", text: "В архиве представлена ступенчатая модель обучения через инициации, символическую, созерцательную и парную практику. Рейки Иггдрасиль описывается как одна из систем, через которую структурировались материалы нескольких эзотерических и храмовых традиций." },
+      { type: "h2", text: "Направления обучения" },
+      { type: "p", text: "Исторические факультеты включали Египетские храмовые исследования, Греческие и Римские мистерии, духовные традиции, Тантру и Ведическое наследие, Славянские образные практики, Скандинавские руны, Даосские и Суфийские материалы, а также символические традиции коренных культур Америки и Мезоамерики." },
+      { type: "h2", text: "Специализации" },
+      { type: "p", text: "В архиве прикладные направления объединялись вокруг бизнеса и архетипического консультирования, отношений и Тантры, личностного и духовного развития, символических чтений и астрологии, практик сновидения и воображения, создания артефактов и более широких историко-эзотерических исследований." },
+      { type: "h2", text: "Стиль обучения" },
+      { type: "p", text: "В разных материалах повторяется сочетание теории, личной практики, упражнений с партнёрами, письменной рефлексии и супервизируемого применения. В исходных страницах также много старых рекламных и профессиональных заявлений, которые здесь не повторяются как актуальные факты." },
+      { type: "p", text: "Holistic House сохраняет эту историю, чтобы было понятно происхождение нынешней библиотеки и материалов Академии, отделяя историческое самоописание от современных услуг и текущих профессиональных квалификаций." }
+    ]
   }
 };
 
