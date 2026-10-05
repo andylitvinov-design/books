@@ -64,7 +64,7 @@ test('Google save bridge is item-scoped and persists a private Client to Account
   assert.match(reportFlow, /sourceKind: 'delivered_report'/)
 
   assert.match(saveIntents, /createLegacyDocumentSaveIntent/)
-  assert.match(saveIntents, /source_kind='legacy_document'/)
+  assert.match(saveIntents, /row\.source_kind === 'legacy_document'/)
   assert.match(saveIntents, /source_legacy_client_id/)
   assert.match(saveIntents, /source_hash/)
   assert.match(documentFlow, /bindLegacyClientToAccount/)
