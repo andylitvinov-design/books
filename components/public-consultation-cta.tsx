@@ -25,12 +25,12 @@ const copy = {
   },
 } as const;
 
-export function PublicConsultationCta({ locale }: { locale: "en" | "ru" | "es" }) {
+export function PublicConsultationCta({ locale, id }: { locale: "en" | "ru" | "es"; id?: string }) {
   const text = copy[locale];
   const whatsappUrl = `https://wa.me/14376066502?text=${encodeURIComponent(text.message)}`;
 
   return (
-    <aside className="public-consultation-cta" aria-label={text.title} data-consultation-cta lang={locale}>
+    <aside className="public-consultation-cta" id={id} aria-label={text.title} data-consultation-cta lang={locale}>
       <div className="public-consultation-cta__copy">
         <p>{text.eyebrow}</p>
         <h2>{text.title}</h2>
