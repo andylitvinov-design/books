@@ -14,6 +14,14 @@ import { APP_SERVICES } from "@/data/app-services";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
+type MarketplaceService = {
+  id: string;
+  category: string;
+  copy: Record<Locale, { title: string; description: string }>;
+};
+
+const marketplaceServices = APP_SERVICES as readonly MarketplaceService[];
+
 const copy = {
   ru: {
     title: "Услуги — Holistic House",
@@ -139,7 +147,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ServicesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
-  const current = copy[locale as Locale];
+  const language = locale as Locale;
+  const current = copy[language];
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
@@ -173,14 +182,14 @@ export default async function ServicesPage({ params }: PageProps) {
         </div>
 
         <div className="services-marketplace-grid">
-          {APP_SERVICES.map((service) => (
+          {marketplaceServices.map((service) => (
             <article className="services-marketplace-card" key={service.id}>
               <div className="services-marketplace-provider">
                 <span>{current.marketplacePractitioner}</span>
                 <strong>{current.marketplaceBy}</strong>
               </div>
-              <h3>{service.copy[locale].title}</h3>
-              <p className="services-marketplace-description">{service.copy[locale].description}</p>
+              <h3>{service.copy[language].title}</h3>
+              <p className="services-marketplace-description">{service.copy[language].description}</p>
               <p className="services-marketplace-price">{current.marketplacePrice}</p>
               <div className="services-marketplace-actions">
                 <Link
