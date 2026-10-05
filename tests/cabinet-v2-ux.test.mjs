@@ -138,6 +138,7 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /getPortraitNextStep/)
   assert.doesNotMatch(workspace, /\['reports', c\.reports, '\/reports'\]/)
   assert.match(workspace, /\['consultations', c\.consultations, '\/consultations'\]/)
+  assert.match(workspace, /\['monitoring', c\.monitoring, '\/monitoring'\]/)
   assert.match(workspace, /function ReportsIndex/)
   assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
   assert.match(workspace, /LatestChange/)
@@ -168,7 +169,7 @@ test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused i
   assert.doesNotMatch(mood, /localStorage|sessionStorage/)
   assert.ok(landing.includes("<MoodCheckIn locale={locale} onQuickCheckin={() => begin('state')} disabled={busy} />"))
   assert.ok(workspace.includes('<MoodCheckIn'))
-  assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/tests')"))
+  assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/monitoring')"))
 })
 
 
