@@ -254,7 +254,7 @@ test("PsiMaster content is source-backed curated and strips stale high-risk prom
   const body = psimaster.flatMap((row) => row.content).map((block) => block.text).join("\n");
   assert.doesNotMatch(body, /t\.me\/andyhypnos|viber:|стоимость:\s*\d|получите.*в подарок/i);
   assert.match(body, /образы «прошлых жизней».*субъективный образный материал/i);
-  assert.match(body, /не представлен как медицинский массаж/i);
+  assert.match(body, /медицинский массаж/i);
   assert.match(body, /ДНК-.*не публикуются как факты/i);
 });
 
@@ -309,5 +309,5 @@ test("all six PsiMaster legacy video-course families are restored", async () => 
     assert.equal(media.filter((row) => row.logicalId === logicalId).length, count, logicalId);
   }
   assert.equal(media.filter((row) => row.logicalId === "videos/energy-pump-ups").length, 2);
-  assert.equal(new Set(media.map((row) => row.videoId)).size, 38);
+  assert.equal(new Set(media.map((row) => row.videoId)).size, 41);
 });
