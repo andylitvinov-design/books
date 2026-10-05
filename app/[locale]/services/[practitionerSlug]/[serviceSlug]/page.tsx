@@ -42,7 +42,7 @@ export default async function ServiceDetail({params}:PageProps){
         <h1>{service.copy.title}</h1>
         <p>{service.copy.shortDescription}</p>
         <div className="hh-actions">
-          <Link className="services-studio-primary" href={`/${locale}/app/consultations`}>{ru?"Запросить услугу":"Request this service"}<span aria-hidden="true">→</span></Link>
+          <Link className="services-studio-primary" href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{ru?"Запросить услугу":"Request this service"}<span aria-hidden="true">→</span></Link>
           <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":"About practitioner"}</Link>
         </div>
       </div>
