@@ -67,6 +67,10 @@ const UI = {
     source: 'Source',
     save: 'Save to my Cabinet',
     saveHint: 'Saving is optional. Only this selected result will be attached to the Google account you confirm.',
+    consultKicker: 'If you would like to discuss your result',
+    consultTitle: 'Book a consultation with a specialist',
+    consultText: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
+    consultAction: 'Choose a specialist',
     temporary: 'Available temporarily in this browser until',
     restart: 'Take another test',
     delete: 'Delete temporary result',
@@ -132,6 +136,10 @@ const UI = {
     source: 'Источник',
     save: 'Сохранить в личном кабинете',
     saveHint: 'Сохранение необязательно. Только этот выбранный результат будет добавлен в подтверждённый Google-аккаунт.',
+    consultKicker: 'Если хочется обсудить результат',
+    consultTitle: 'Заказать консультацию специалиста',
+    consultText: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
+    consultAction: 'Выбрать специалиста',
     temporary: 'Временно доступно в этом браузере до',
     restart: 'Пройти другой тест',
     delete: 'Удалить временный результат',
@@ -726,40 +734,91 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         )}
 
         {phase === 'result' && guestResult && definition && (
-          <div className="cabinet-guest-result">
-            <p className="about-kicker">{c.result}</p>
-            <h3>{definition.key === 'hh-current-state' ? c.stateTitle : c.traitTitle}</h3>
-            <p>{c.measured}: {new Date(guestResult.measurementAt).toLocaleString(locale)}</p>
-            <p className="cabinet-test-note">
-              {c.source}: {guestResult.definitionKey} · {guestResult.instrumentLocale?.toUpperCase()} · {guestResult.definitionVersion}
-            </p>
-            <div className="cabinet-result-grid">
-              {guestResult.dimensions.map((dimension) => (
-                <div key={dimension.key}>
-                  <span>{resultLabel(definition, dimension)}</span>
-                  <strong>{dimension.value}</strong>
-                  <small>{dimension.min}–{dimension.max}</small>
+          <article className="cabinet-guest-result cabinet-result-page">
+            <header className="cabinet-result-hero">
+              <div>
+                <p className="about-kicker">{c.result}</p>
+                <h3>{definition.key === 'hh-current-state' ? c.stateTitle : c.traitTitle}</h3>
+                <p className="cabinet-result-intro">
+                  {locale === 'ru'
+                    ? 'Ваш личный замер состояния — спокойно, без ярлыков и автоматических выводов.'
+                    : 'Your personal measurement — calm, private and without automatic labels.'}
+                </p>
+              </div>
+              <div className="cabinet-result-meta">
+                <span>{new Date(guestResult.measurementAt).toLocaleString(locale)}</span>
+                <span>{guestResult.instrumentLocale?.toUpperCase()}</span>
+              </div>
+            </header>
+
+            <section className="cabinet-result-section" aria-labelledby="guest-result-values">
+              <div className="cabinet-result-section-heading">
+                <div>
+                  <p className="about-kicker">{locale === 'ru' ? 'Результаты' : 'Results'}</p>
+                  <h4 id="guest-result-values">{locale === 'ru' ? 'Ваши показатели' : 'Your measurements'}</h4>
                 </div>
-              ))}
+                <p>
+                  {locale === 'ru'
+                    ? 'Это личная точка отсчёта. Повторные совместимые замеры помогут увидеть изменения со временем.'
+                    : 'This is a personal baseline. Compatible repeat measurements can show change over time.'}
+                </p>
+              </div>
+              <div className="cabinet-result-grid" data-count={Math.min(guestResult.dimensions.length, 3)}>
+                {guestResult.dimensions.map((dimension) => (
+                  <section key={dimension.key}>
+                    <h5>{resultLabel(definition, dimension)}</h5>
+                    <div className="cabinet-result-score">
+                      <strong>{dimension.value}</strong>
+                      <small>/ {dimension.max}</small>
+                    </div>
+                    <div className="cabinet-result-scale">
+                      <span>{locale === 'ru' ? 'Шкала' : 'Scale'} {dimension.min}–{dimension.max}</span>
+                      <b>{locale === 'ru' ? 'Первый замер' : 'Baseline'}</b>
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </section>
+
+            <div className="cabinet-result-actions-grid">
+              <section className="cabinet-result-save-panel">
+                <p className="about-kicker">{locale === 'ru' ? 'Сохранить динамику' : 'Keep your history'}</p>
+                <h4>{locale === 'ru' ? 'Сохранить результат в кабинете' : 'Save this result to your Cabinet'}</h4>
+                <p>{c.saveHint}</p>
+                <button className="cabinet-save-result" type="button" onClick={saveToCabinet} disabled={busy}>
+                  {c.save}
+                </button>
+              </section>
+
+              <aside className="cabinet-result-consultation" aria-label={c.consultTitle}>
+                <p className="about-kicker">{c.consultKicker}</p>
+                <h4>{c.consultTitle}</h4>
+                <p>{c.consultText}</p>
+                <Link className="cabinet-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
+                  {c.consultAction}
+                </Link>
+              </aside>
             </div>
-            <button className="cabinet-save-result" type="button" onClick={saveToCabinet} disabled={busy}>
-              {c.save}
-            </button>
-            <p className="cabinet-test-note">{c.saveHint}</p>
-            {(guestResult.expiresAt || sessionExpires) && (
+
+            <footer className="cabinet-result-footer">
               <p className="cabinet-test-note">
-                {c.temporary} {new Date(guestResult.expiresAt || sessionExpires).toLocaleString(locale)}.
+                {c.source}: {guestResult.definitionKey} · {guestResult.definitionVersion} · {guestResult.instrumentLocale?.toUpperCase()}
               </p>
-            )}
-            <div className="cabinet-test-actions">
-              <button className="cabinet-text-button" type="button" disabled={busy} onClick={resetToCatalog}>
-                {c.restart}
-              </button>
-              <button className="cabinet-text-button" type="button" disabled={busy} onClick={deleteResult}>
-                {c.delete}
-              </button>
-            </div>
-          </div>
+              {(guestResult.expiresAt || sessionExpires) && (
+                <p className="cabinet-test-note">
+                  {c.temporary} {new Date(guestResult.expiresAt || sessionExpires).toLocaleString(locale)}.
+                </p>
+              )}
+              <div className="cabinet-test-actions">
+                <button className="cabinet-text-button" type="button" disabled={busy} onClick={resetToCatalog}>
+                  {c.restart}
+                </button>
+                <button className="cabinet-text-button" type="button" disabled={busy} onClick={deleteResult}>
+                  {c.delete}
+                </button>
+              </div>
+            </footer>
+          </article>
         )}
         {error && phase !== 'catalog' && <p className="client-entry-error" role="alert">{error}</p>}
         <p className="cabinet-test-note">{c.nonDiagnostic}</p>
