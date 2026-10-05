@@ -444,6 +444,124 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
       { type: "p", text: "Исторически отдельно выделялись отношения и Тантра, архетипическая практика и личностное развитие, астрология и символическое восприятие, создание артефактов и исследовательская работа." },
       { type: "p", text: "Holistic House сохраняет этот архив для образовательной преемственности. Старые заявления о скорости обучения, институциональных подтверждениях, квалификациях и терапевтических результатах не переносятся как текущие гарантии." }
     ]
+  },
+  "path/magister-archetypal-therapies": {
+    en: [
+      { type: "h2", text: "Magister of Shamanic Therapies — program map" },
+      { type: "p", text: "The PsiTrends archive presents this as the broad advanced Academy curriculum built around Reiki Yggdrasil, temple studies, symbolic systems and comparative spiritual traditions. The original page contains extensive legacy certification and efficacy language; the structure below preserves the educational map without carrying those claims forward." },
+      { type: "h2", text: "Eight study areas" },
+      { type: "li", text: "Greek heritage and temple mysteries" },
+      { type: "li", text: "Ancient Egyptian heritage" },
+      { type: "li", text: "Indian and Vedic heritage" },
+      { type: "li", text: "Scandinavian runes and the Yggdrasil tradition" },
+      { type: "li", text: "Western European tradition, Kabbalah and Tarot" },
+      { type: "li", text: "Taoism and Chinese medicine" },
+      { type: "li", text: "Slavic magic and shamanic imagery" },
+      { type: "li", text: "American shamanism and Toltec material" },
+      { type: "h2", text: "Module 1 — Master of Runic Reiki Yggdrasil" },
+      { type: "p", text: "The archived levels move from health, intuition and protection into clearing, symbolic money themes, personal power, sexuality and intellect, then to extrasensory vision/regression imagery and a final master-level connection-with-gods theme." },
+      { type: "h2", text: "Module 2 — Advanced Energy Healing" },
+      { type: "p", text: "Historical sub-levels include advanced healing, life-force and planetary imagery, masculine/feminine and relationship themes, money-stream symbolism, energy management / Fireball, and sexual-energy practice." },
+      { type: "h2", text: "Module 3 — Temple Studies" },
+      { type: "p", text: "The source lists egregor/religious-symbol study, Ancient Egyptian temple therapy, zodiac and planetary symbolism, Kundalini material and Tantra Reiki." },
+      { type: "h2", text: "Module 4 — Scandinavian Runes" },
+      { type: "p", text: "Runic healing, runic prediction and the worlds of the Yggdrasil tree form the core of the Northern-tradition module." },
+      { type: "h2", text: "Module 5 — Western European Tradition: Tarot" },
+      { type: "p", text: "Great Arcana, elemental symbolism, the Sephiroth tree, higher Tarot material and prediction practice are grouped here as one symbolic-study sequence." },
+      { type: "h2", text: "Module 6 — Taoism and Chinese Heritage" },
+      { type: "p", text: "This part of the archive connects holistic Chinese-medicine principles, body–mind harmony, Chinese forecasting and I Ching study." },
+      { type: "h2", text: "Module 7 — Slavic Magic & Shamanism" },
+      { type: "p", text: "Myths, legends, fairy-tale imagery, dream material and transformational mystery work form the Slavic-study module." },
+      { type: "h2", text: "Module 8 — American Shamanism / Toltec Material" },
+      { type: "p", text: "The advanced archive lists a symbolic 'Machinery Room' or place-of-power practice, ritual helpers, Toltec material, historical money-magic modules and Sufi material." },
+      { type: "p", text: "Old prices, duration promises, qualification/certification claims and statements of guaranteed therapeutic or supernatural effectiveness are intentionally excluded from the current Holistic House presentation." }
+    ]
+  },
+  "videos/energy-pump-ups": {
+    ru: [
+      { type: "h2", text: "Видео-курс «Подкачки» — сохранившаяся структура" },
+      { type: "p", text: "На исходной странице PsiTrends сами встроенные материалы сейчас технически не загружаются, но сохранилось оглавление курса. Holistic House сохраняет его как исторический индекс и не придумывает отсутствующие описания уроков." },
+      { type: "h3", text: "Солнечные медитации" },
+      { type: "h3", text: "Жизненная сила" },
+      { type: "h3", text: "Защита и деньги" },
+      { type: "h3", text: "Сила огня" },
+      { type: "h3", text: "Круг огня" },
+      { type: "h3", text: "Планетарные подкачки" },
+      { type: "h3", text: "Связь с учителем" },
+      { type: "p", text: "Это архивное оглавление. Доступность оригинальных видео требует отдельного восстановления источников; сломанные технические блоки PsiTrends не переносятся." }
+    ]
+  },
+  "history/student-experiences": {
+    ru: [
+      { type: "h2", text: "Исторические отзывы студентов" },
+      { type: "p", text: "Текстовая часть старой страницы PsiTrends сейчас практически не сохранилась, однако в архиве миграции подтверждены три публичных видео-отзыва. Поэтому страница оформляется как исторический видео-архив, а не как пустая учебная программа." },
+      { type: "p", text: "Отзывы отражают личный опыт участников прежних программ Академии и не являются гарантией результата для других людей." }
+    ]
+  },
+  "archive/festival": {
+    en: [
+      { type: "h2", text: "London Festival of Holistic Temple Arts — historical archive" },
+      { type: "p", text: "This archived PsiTrends page documented a week-long London gathering held 9–15 July, bringing together Reiki, constellations, imagery work, symbolic traditions and body-oriented practices." },
+      { type: "h2", text: "Historical program" },
+      { type: "h3", text: "Sunday" },
+      { type: "p", text: "Reiki Therapy Club followed by Shamanic Constellations: Temple of Love & Money." },
+      { type: "h3", text: "Monday" },
+      { type: "p", text: "Dreams Temple / Imagerial Hypnotherapy." },
+      { type: "h3", text: "Wednesday" },
+      { type: "p", text: "Shamanic Constellations: Animal of Your Power." },
+      { type: "h3", text: "Thursday" },
+      { type: "p", text: "Money Magic Club with Runic Reiki as part of the historical program." },
+      { type: "h3", text: "Friday" },
+      { type: "p", text: "Tarot Mysteries School, including a class around the Star / 17th Arcana." },
+      { type: "h3", text: "Saturday" },
+      { type: "p", text: "Family Constellations, Love Magic Club / Tantra Reiki, a Temple Mysteries session around Eros or Aphrodite, and Shamanic Bodywork." },
+      { type: "h2", text: "What the festival was intended to connect" },
+      { type: "p", text: "The source describes a meeting point for enthusiasts of ancient temple traditions, family and business constellations, imagery psychotherapy/hypnotherapy, Reiki systems, bodywork and experiential group formats." },
+      { type: "p", text: "This is a historical archive only. Old dates, London location, donation language, registration contacts and promotional offers are not current event information." }
+    ]
+  },
+  "archive/constellations-of-love": {
+    en: [
+      { type: "h2", text: "Constellations of Love — historical program" },
+      { type: "p", text: "The surviving PsiTrends page describes an experiential constellation program using relationship themes and archetypal imagery to explore desire, closeness, autonomy and personal history." },
+      { type: "h2", text: "Program themes" },
+      { type: "h3", text: "Session 1 — Eros and hidden desire" },
+      { type: "p", text: "Exploration of attraction, neglected wishes and the parts of oneself that may be difficult to acknowledge." },
+      { type: "h3", text: "Session 2 — Love and sex" },
+      { type: "p", text: "Fears, limitations, pleasure, vitality and permission to experience intimacy." },
+      { type: "h3", text: "Session 3 — Yin & Yang / feminine and masculine" },
+      { type: "p", text: "Receiving and acting, openness to love, creativity, sensitivity and inner masculine/feminine qualities." },
+      { type: "h3", text: "Session 4 — Love and rejection" },
+      { type: "p", text: "Expectations of acceptance or rejection and how those expectations can shape relationships." },
+      { type: "h3", text: "Session 5 — Freedom and connection" },
+      { type: "p", text: "The tension between wanting closeness and protecting autonomy." },
+      { type: "h3", text: "Session 6 — Life and death" },
+      { type: "p", text: "Change, endings, transition and making room for a new phase of life." },
+      { type: "h2", text: "Inner-child framing in the original archive" },
+      { type: "p", text: "The page also links eye contact and constellation work with reflection on early experiences of acceptance, trust, autonomy and desire. Holistic House preserves this as the historical conceptual framing of the program, not as a diagnostic or guaranteed therapeutic claim." },
+      { type: "p", text: "Old event registration, donation requests and claims of healing are excluded. Six verified legacy public videos remain attached to this archive record." }
+    ]
+  },
+  "archive/festival-details": {
+    en: [
+      { type: "h2", text: "Festival details — historical program notes" },
+      { type: "p", text: "This page expanded the London festival schedule with background notes on several sessions. The original copy mixed educational descriptions with old prices, promotional claims and registration details; only the program content is preserved here." },
+      { type: "h3", text: "Kundalini Reiki introduction" },
+      { type: "p", text: "The Sunday program introduced Kundalini Reiki as a combination of Reiki practice and Kundalini-oriented energy imagery, intended as an entry point before more advanced Academy material." },
+      { type: "h3", text: "Love & Money constellations" },
+      { type: "p", text: "Systemic constellations were presented in a theatre-like group format for exploring questions around money, relationships and the underlying structure of a situation." },
+      { type: "h3", text: "Dreams Temple" },
+      { type: "p", text: "Imagery / hypnotherapy themes focused on inner images, dreams and symbolic sources of personal strength." },
+      { type: "h3", text: "Animal of Power" },
+      { type: "p", text: "A shamanic-constellation session used the 'animal of power' image as a symbolic resource and reflection tool." },
+      { type: "h3", text: "Money Magic / Runic Reiki" },
+      { type: "p", text: "A historical session combined money-related reflection with the symbolic language of Runic Reiki." },
+      { type: "h3", text: "Tarot Mysteries — The Star" },
+      { type: "p", text: "A Tarot-focused class explored the Star / 17th Arcana and symbolic forces of nature." },
+      { type: "h3", text: "Love Magic / Tantra Reiki and Eros or Aphrodite" },
+      { type: "p", text: "The Saturday material combined Tantra Reiki themes with a Temple Mysteries session centred on Eros or Aphrodite." },
+      { type: "p", text: "This is historical context only. Old prices, claims that one system is stronger than another, health/outcome promises and registration instructions are intentionally omitted." }
+    ]
   }
 };
 
@@ -451,7 +569,7 @@ function academySourceBlocks(record: AcademySourceRecord) {
   return academyCuratedPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? record.content;
 }
 
-const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
+const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|^loading\.\.\.$|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
 
 export function academyPublicBlocks(record: AcademySourceRecord) {
   return academySourceBlocks(record).filter((block) => !academyPublicOmitPattern.test(block.text));
