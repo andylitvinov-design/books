@@ -1390,5 +1390,211 @@
     "sourceTaxonomyId": "12394",
     "hashAlgorithm": "fnv1a32-curated",
     "contentHash": "f7391ab2"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12308",
+    "path": "/service?shs_term_node_tid_depth=12308",
+    "linkText": "Образная терапия — Зазеркалье",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "applied/imagery-therapy/mirrorland",
+    "direction": "applied",
+    "logicalId": "applied/imagery-therapy/mirrorland",
+    "sourceLocale": "ru",
+    "sourceTitle": "Образная терапия — Зазеркалье - PsiMaster",
+    "title": "Образная терапия — Зазеркалье",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Образная терапия — Зазеркалье"
+      },
+      {
+        "type": "p",
+        "text": "Четырёхступенчатая историческая программа PsiMaster по эмоционально-образной работе. Сохраняется как образовательный curriculum без старых терапевтических гарантий, отзывов-обещаний и цен."
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 1. Дорога к Себе"
+      },
+      {
+        "type": "li",
+        "text": "Мужчина и Женщина"
+      },
+      {
+        "type": "li",
+        "text": "Круг Счастья"
+      },
+      {
+        "type": "li",
+        "text": "Сила Духа"
+      },
+      {
+        "type": "li",
+        "text": "Законы Богатства"
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 2. Зазеркалье — Возврат силы"
+      },
+      {
+        "type": "li",
+        "text": "Страшный лес — образ Тени и страхов"
+      },
+      {
+        "type": "li",
+        "text": "Животное в цепях — привязанности"
+      },
+      {
+        "type": "li",
+        "text": "Источник силы / вектор развития"
+      },
+      {
+        "type": "li",
+        "text": "Мужской и женский поток"
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 3. Сборка личности"
+      },
+      {
+        "type": "li",
+        "text": "Хорошее Я — Плохое Я"
+      },
+      {
+        "type": "li",
+        "text": "Больное и здоровое животное"
+      },
+      {
+        "type": "li",
+        "text": "Уставшее Я и творческое Я"
+      },
+      {
+        "type": "li",
+        "text": "Несчастное Я и Счастливое Я"
+      },
+      {
+        "type": "h2",
+        "text": "Ступень 4. Большие фигуры"
+      },
+      {
+        "type": "li",
+        "text": "Жизнь — Смерть"
+      },
+      {
+        "type": "li",
+        "text": "Секс, страсть и ненависть"
+      },
+      {
+        "type": "li",
+        "text": "Доверие и Контроль / Любовь и Власть"
+      },
+      {
+        "type": "li",
+        "text": "Я и Они / предназначение"
+      },
+      {
+        "type": "li",
+        "text": "Счастье и Свобода"
+      }
+    ],
+    "hashAlgorithm": "fnv1a32-curated",
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12308",
+    "skippedRiskyBlocks": 10,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12308",
+    "contentHash": "b142d451"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12389",
+    "path": "/service?shs_term_node_tid_depth=12389",
+    "linkText": "Славянский шаманизм",
+    "classification": "PSIMASTER_ACADEMY",
+    "routeKey": "mysteries/slavic/shamanism",
+    "direction": "mysteries",
+    "logicalId": "mysteries/slavic/shamanism",
+    "sourceLocale": "ru",
+    "sourceTitle": "Славянский шаманизм - PsiMaster",
+    "title": "Славянский шаманизм",
+    "content": [
+      {
+        "type": "h1",
+        "text": "Славянский шаманизм"
+      },
+      {
+        "type": "p",
+        "text": "Отдельный двенадцатизанятийный курс PsiMaster по славянским мифологическим образам и шаманской символике. Практики представлены как историко-образный материал, а не как проверенные сверхъестественные технологии."
+      },
+      {
+        "type": "h2",
+        "text": "Модуль 1"
+      },
+      {
+        "type": "li",
+        "text": "Алатырь-камень"
+      },
+      {
+        "type": "li",
+        "text": "Нижний мир / Сбор Души"
+      },
+      {
+        "type": "li",
+        "text": "Верхний мир / Ведагон"
+      },
+      {
+        "type": "li",
+        "text": "Мёртвая вода"
+      },
+      {
+        "type": "h2",
+        "text": "Модуль 2"
+      },
+      {
+        "type": "li",
+        "text": "Живая вода"
+      },
+      {
+        "type": "li",
+        "text": "Тотем / животное силы"
+      },
+      {
+        "type": "li",
+        "text": "Сила трав"
+      },
+      {
+        "type": "li",
+        "text": "Горний Мир / Предки"
+      },
+      {
+        "type": "h2",
+        "text": "Модуль 3"
+      },
+      {
+        "type": "li",
+        "text": "Велес"
+      },
+      {
+        "type": "li",
+        "text": "Ярило"
+      },
+      {
+        "type": "li",
+        "text": "Лада"
+      },
+      {
+        "type": "li",
+        "text": "Макошь"
+      }
+    ],
+    "hashAlgorithm": "fnv1a32-curated",
+    "reviewState": "source_backed_curated",
+    "status": "historical",
+    "httpStatus": 200,
+    "finalUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12389",
+    "skippedRiskyBlocks": 7,
+    "sourceProvider": "psimaster",
+    "sourceTaxonomyId": "12389",
+    "contentHash": "1f228352"
   }
 ]
