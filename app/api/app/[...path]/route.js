@@ -292,7 +292,7 @@ async function handle(request, { params }) {
       onlyKeys(body, ['destination'])
       const destination = practitionerDestination[body.destination]
       if (!destination) throw new AppError('NOT_FOUND', 404)
-      if (!await repo.isPractitioner(actor)) throw new AppError('ACCESS_DENIED', 403)
+      if (!await repo.isPractitioner(actor)) throw new AppError('NOT_FOUND', 404)
       const response = json({ redirectUrl: destination })
       if (!issueTrustedAdminSession(response, { secure: !config.test }))
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
