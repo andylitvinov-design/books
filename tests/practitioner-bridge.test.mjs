@@ -25,8 +25,8 @@ test('verified app practitioner bridge never exposes admin credentials or public
   assert.match(route, /throw new AppError\('NOT_FOUND', 404\)/)
 
   assert.match(adminSession, /issueTrustedAdminSession/)
-  assert.match(adminSession, /PRESCRIPTIONS_ADMIN_TOKEN \\|\\| environment\\.PRESCRIPTIONS_ADMIN_PIN/)
-  assert.match(adminSession, /path: '\\/admin'/)
+  assert.ok(adminSession.includes('PRESCRIPTIONS_ADMIN_TOKEN || environment.PRESCRIPTIONS_ADMIN_PIN'))
+  assert.ok(adminSession.includes("path: '/admin'"))
   assert.doesNotMatch(workspace, /PRESCRIPTIONS_ADMIN_(?:PIN|TOKEN)/)
 
   assert.match(workspace, /data\.practitioner && <OwnerTools/)
