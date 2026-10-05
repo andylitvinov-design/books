@@ -12,7 +12,7 @@ import {
   deterministicPatterns,
   axisOverview,
 } from '../lib/assessments/monitoring.js'
-import { monitoringCatalogItem } from '../data/assessments/catalog.js'
+import { MONITORING_CATALOG, monitoringCatalogItem } from '../data/assessments/catalog.js'
 import { validateMoodInput } from '../lib/app/mood.js'
 
 const accountId = '10000000-0000-4000-8000-000000000001'
@@ -30,11 +30,20 @@ const result = (def, value, day) => ({
   ...scoreAssessment(def, answers(def, value)),
 })
 
-test('monitoring catalog keeps future instruments metadata-only and current checks startable', () => {
-  assert.equal(monitoringCatalogItem('hh-current-state').startable, true)
-  assert.equal(monitoringCatalogItem('mini-ipip-20').startable, true)
-  assert.equal(monitoringCatalogItem('hh-weekly-pulse').startable, true)
-  for (const key of ['phq-4', 'k6', 'mspss', 'scs-sf', 'functioning-review'])
+test('monitoring catalog exposes the nine cleared checks and keeps uncleared measures metadata-only', () => {
+  const active = MONITORING_CATALOG.filter((item) => item.startable).map((item) => item.key).sort()
+  assert.deepEqual(active, [
+    'gad-7',
+    'hh-current-state',
+    'hh-monthly-profile',
+    'hh-resource-pulse',
+    'hh-weekly-pulse',
+    'k6',
+    'mini-ipip-20',
+    'phq-4',
+    'phq-9',
+  ])
+  for (const key of ['mspss', 'scs-sf', 'functioning-review'])
     assert.equal(monitoringCatalogItem(key).startable, false)
 })
 
@@ -126,9 +135,14 @@ test('recommendation is deterministic and prefers an explicitly active run', () 
 })
 
 test('recommendation returns nothing when all currently startable checks are current', () => {
+  const results = MONITORING_CATALOG.filter((item) => item.startable).map((item, index) => {
+    const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
+    const def = getAssessmentDefinition(item.key, item.version, locale)
+    return result(def, 1, Math.max(1, 4 - (index % 2)))
+  })
   const recommendation = recommendMonitoring({
     locale: 'en',
-    results: [result(state, 4, 4), result(weekly, 5, 4), result(mini, 3, 2)],
+    results,
     now: '2026-10-05T12:00:00.000Z',
   })
   assert.equal(recommendation, null)

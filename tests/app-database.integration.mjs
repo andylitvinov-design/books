@@ -19,6 +19,7 @@ import { getAppConfig } from '../lib/app/config.js'
 import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
 import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
@@ -1059,4 +1060,49 @@ test('deletion request disables access without pretending provider data was eras
       ),
     (e) => e.code === '42501',
   )
+})
+
+
+function minimumMonitoringAnswers(definition) {
+  return Object.fromEntries(
+    definition.questions.map((question) => [
+      question.id,
+      question.min ?? definition.answerScale?.min ?? 0,
+    ]),
+  )
+}
+
+test('every published monitoring test completes through the repository and returns a readable result', async () => {
+  const items = MONITORING_CATALOG.filter((item) => item.startable)
+  assert.equal(items.length, 9)
+  const created = []
+
+  for (const item of items) {
+    const instrumentLocale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
+    const definition = getAssessmentDefinition(item.key, item.version, instrumentLocale)
+    const run = await repo.startRun(a, {
+      definitionKey: definition.key,
+      definitionVersion: definition.version,
+      instrumentLocale: definition.instrumentLocale,
+      operationId: randomUUID(),
+    })
+    const saved = await repo.saveRun(a, run.id, {
+      answers: minimumMonitoringAnswers(definition),
+      context: {},
+      progress: definition.questions.length,
+      expectedRevision: run.revision,
+      operationId: randomUUID(),
+    })
+    const result = await repo.submitRun(a, run.id, { expectedRevision: saved.revision })
+    assert.equal(result.definitionKey, item.key)
+    assert.equal(result.definitionVersion, item.version)
+    assert.equal(result.instrumentLocale, instrumentLocale)
+    assert.ok(result.dimensions.length > 0, item.key + ' must have result dimensions')
+    assert.deepEqual((await repo.getResult(a, result.id)).dimensions, result.dimensions)
+    created.push(result.id)
+  }
+
+  const bootstrap = await repo.bootstrap(a)
+  for (const id of created)
+    assert.ok(bootstrap.results.some((result) => result.id === id), id + ' missing from history')
 })
