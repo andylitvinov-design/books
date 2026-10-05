@@ -182,8 +182,8 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
   assert.ok(mood.includes('className="hh-mood-title"'))
   assert.ok(!mood.includes('homeopathy-kicker hh-mood-kicker'))
   assert.ok(landing.includes('<h2 id="cabinet-title">{c.title}</h2>'))
-  assert.ok(landing.includes("testsKicker: 'Tests'"))
-  assert.ok(landing.includes("testsKicker: 'Тесты'"))
+  assert.ok(landing.includes("testsKicker: 'Psychic Health'"))
+  assert.ok(landing.includes("tryTitle: 'Psychic Health Monitoring'"))
   assert.ok(landing.includes("title: 'Your personal space'"))
   assert.ok(landing.includes("title: 'Ваше личное пространство'"))
   assert.ok(ia.includes('Cabinet v2.6'))
@@ -194,7 +194,7 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
   assert.ok(!ia.includes('Cabinet v2.4'))
 })
 
-test('Cabinet catalog keeps accessible Academy-style icon rows', async () => {
+test('Cabinet catalog uses accessible image-led Psychic Health Monitoring cards', async () => {
   const [landing, ia] = await Promise.all([
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('app/ia-v2.css', 'utf8'),
@@ -202,16 +202,31 @@ test('Cabinet catalog keeps accessible Academy-style icon rows', async () => {
   assert.ok(landing.includes('className="cabinet-signin-strip"'))
   assert.ok(landing.includes('className="cabinet-test-list"'))
   assert.ok(landing.includes('className="cabinet-test-row"'))
-  assert.ok(landing.includes('HeartPulse'))
-  assert.ok(landing.includes('Fingerprint'))
+  assert.ok(landing.includes("import Image from 'next/image'"))
+  assert.ok(landing.includes('className="cabinet-test-image"'))
+  assert.ok(landing.includes("stateText: '5 questions · ~1 min'"))
+  assert.ok(landing.includes("traitText: '20 questions · ~3 min'"))
   assert.ok(landing.includes('aria-label={`${c.start}: ${c.stateTitle}`}'))
   assert.ok(landing.includes('aria-label={`${c.start}: ${c.traitTitle}`}'))
   assert.ok(!landing.includes('className="cabinet-test-count"'))
   assert.ok(!landing.includes('className="cabinet-account-row"'))
-  assert.ok(ia.includes('.cabinet-test-icon'))
-  assert.ok(ia.includes('grid-template-columns: 82px minmax(0,1fr) 28px'))
+  assert.ok(ia.includes('.cabinet-test-image'))
+  assert.ok(ia.includes('grid-template-columns: 128px minmax(0,1fr) 28px'))
+  assert.ok(ia.includes('.hh-monitoring-grid'))
+  assert.ok(ia.includes('.hh-monitoring-card'))
 })
 
+
+test('signed-in tests use the same Psychic Health Monitoring image-card concept', async () => {
+  const workspace = await readFile('components/app/app-workspace.jsx', 'utf8')
+  assert.ok(workspace.includes('<h1>Psychic Health Monitoring</h1>'))
+  assert.ok(workspace.includes('className="hh-monitoring-grid"'))
+  assert.ok(workspace.includes('className="hh-monitoring-card"'))
+  assert.ok(workspace.includes('5 questions · ~1 min'))
+  assert.ok(workspace.includes('20 questions · ~3 min · EN'))
+  assert.ok(workspace.includes('/images/holistic-house/video-posters/home-en-v2.webp'))
+  assert.ok(workspace.includes('/images/holistic-house/video-posters/services-en-v2.webp'))
+})
 
 test('public and signed-in Cabinet share a white mood card with three separate mood buttons', async () => {
   const [mood, ia] = await Promise.all([
