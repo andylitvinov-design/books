@@ -232,7 +232,7 @@ test("backup-only Academy records remain fully reconciled after preservation rec
 
 test("PsiMaster Academy corpus is integrated without duplicating canonical Yggdrasil", async () => {
   const psimaster = await readJson("data/academy/psimaster-sources.generated.json");
-  assert.equal(psimaster.length, 20);
+  assert.equal(psimaster.length, 22);
   for (const logicalId of [
     "mysteries/egypt/high-wisdom",
     "mysteries/greece-rome/beauty-and-power",
@@ -261,6 +261,7 @@ test("PsiMaster content is source-backed curated and strips stale high-risk prom
 test("PsiMaster legacy video manifest restores public YouTube media", async () => {
   const media = await readJson("data/academy/psimaster-media.generated.json");
   const planetary = media.filter((row) => row.logicalId === "videos/planetary-power");
+  assert.equal(media.length, 44);
   assert.equal(planetary.length, 11);
   for (const id of ["2GMLhPrEJ3s","8XN-EFpSt8M","h8r_fIVWM0U","owG8gBIQ2hU","3Lc38_-SqD0","ziXmEWe3Dh0","ocks6JP2lD8","-volI7wYbl0","R1krHd3JRXc","uN5BFjdKVvY","6wNdBVoYt50"]) {
     assert.ok(media.some((row) => row.mediaUrl.endsWith("/" + id)), id);
@@ -278,4 +279,34 @@ test("Academy catalog and page merge PsiMaster sources/media and keep full lesso
   assert.match(catalog, /sourceProvider\?:/);
   assert.match(page, /slice\(0, 48\)/);
   assert.match(page, /video\.lessonTitle/);
+});
+
+
+test("PsiMaster taxonomy inventory reconciles all discovered public term IDs", async () => {
+  const inventory = await readJson("data/academy/psimaster-inventory.generated.json");
+  assert.equal(inventory.discoveredPublicTermCount, 147);
+  assert.equal(inventory.records.length, 147);
+  assert.equal(inventory.classificationCounts.Academy, 22);
+  assert.equal(inventory.classificationCounts.AcademyVideo, 7);
+  assert.equal(inventory.classificationCounts.AcademyMissingBody, 1);
+  assert.ok(inventory.records.every((row) => row.classification && row.action));
+  const missing = inventory.records.find((row) => row.sourceTaxonomyId === "12434");
+  assert.equal(missing.classification, "AcademyMissingBody");
+});
+
+test("all six PsiMaster legacy video-course families are restored", async () => {
+  const media = await readJson("data/academy/psimaster-media.generated.json");
+  const expected = {
+    "videos/planetary-power": 11,
+    "videos/greek-mysteries-demeter": 5,
+    "videos/strength-protection": 7,
+    "videos/maya-archetypes": 5,
+    "videos/egypt-osiris": 7,
+    "videos/greek-mysteries-dionysus": 7,
+  };
+  for (const [logicalId, count] of Object.entries(expected)) {
+    assert.equal(media.filter((row) => row.logicalId === logicalId).length, count, logicalId);
+  }
+  assert.equal(media.filter((row) => row.logicalId === "videos/energy-pump-ups").length, 2);
+  assert.equal(new Set(media.map((row) => row.videoId)).size, 37);
 });
