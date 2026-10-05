@@ -993,7 +993,7 @@ function MetricCard({ dimension, locale, onSelect }) {
     def = getDefinitionById(dimension.sourceDefinitionId)
   return (
     <button className="hh-metric" onClick={() => onSelect(dimension)}>
-      <span>{labelFor(dimension.key, locale)}</span>
+      <span>{dimension.sourceConstruct || labelFor(dimension.key, locale)}</span>
       <strong>
         {dimension.value}
         <small> / {dimension.max}</small>
@@ -1013,19 +1013,52 @@ function MetricCard({ dimension, locale, onSelect }) {
     </button>
   )
 }
-function Portrait({ data, locale, onOpenHistory }) {
-  const c = COPY[locale],
-    [selected, setSelected] = useState(null),
-    dimensions = data.snapshot?.dimensions || [],
-    nextStep = getPortraitNextStep({
-      ...data,
-      dimensions: dimensions.map((dimension) => {
-        const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
-        return result
-          ? { ...dimension, measurementAt: result.measurementAt, suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays }
-          : dimension
+function Portrait({
+  data,
+  locale,
+  onOpenHistory,
+  onMoodSelected,
+  onStartAssessment,
+  onAllTests,
+}) {
+  const c = COPY[locale]
+  const [selected, setSelected] = useState(null)
+  const dimensions = data.snapshot?.dimensions || []
+  const checkins = data.moodCheckins || []
+  const latestMood = checkins.at(-1)
+  const recentMood = moodTrend(checkins, data.account.timezone || 'UTC').slice(-14)
+  const getMoodRecommendations = useCallback(
+    ({ mood, category }) =>
+      recommendForMood({
+        mood,
+        category,
+        results: data.results,
+        runs: data.runs,
+        locale,
+        guest: false,
       }),
-    })
+    [data.results, data.runs, locale],
+  )
+  const nextStep = getPortraitNextStep({
+    ...data,
+    dimensions: dimensions.map((dimension) => {
+      const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
+      return result
+        ? {
+            ...dimension,
+            measurementAt: result.measurementAt,
+            suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays,
+          }
+        : dimension
+    }),
+  })
+  const groups = [
+    ['state', c.state],
+    ['symptoms', locale === 'ru' ? 'Симптомы и нагрузка' : 'Symptoms & load'],
+    ['function', locale === 'ru' ? 'Функционирование' : 'Functioning'],
+    ['resources', locale === 'ru' ? 'Ресурсы' : 'Resources'],
+    ['trait', c.personality],
+  ]
   return (
     <section>
       <div className="hh-heading">
@@ -1040,8 +1073,29 @@ function Portrait({ data, locale, onOpenHistory }) {
       <MoodCheckIn
         locale={locale}
         compact
-        onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}
+        getRecommendations={getMoodRecommendations}
+        onMoodSelected={onMoodSelected}
+        onStartTest={onStartAssessment}
+        onAllTests={onAllTests}
       />
+      {latestMood && (
+        <section className="hh-mood-history-strip" aria-label={locale === 'ru' ? 'Последнее настроение' : 'Latest mood'}>
+          <span className="hh-mood-history-latest" aria-hidden="true">{moodEmoji(latestMood.mood)}</span>
+          <div>
+            <strong>{moodLabel(latestMood.mood, locale)}</strong>
+            <small>{dateLabel(latestMood.occurredAt, locale)}</small>
+          </div>
+          {recentMood.length > 1 && (
+            <div className="hh-mood-history-dots" aria-label={locale === 'ru' ? 'Последние отметки' : 'Recent check-ins'}>
+              {recentMood.map((item) => (
+                <span key={item.day} title={item.day + ' · ' + moodLabel(item.mood, locale)}>
+                  {moodEmoji(item.mood)}
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
       {data.practitioner && <OwnerTools locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
@@ -1055,10 +1109,7 @@ function Portrait({ data, locale, onOpenHistory }) {
         </article>
       ) : (
         <>
-          {[
-            ['state', c.state],
-            ['trait', c.personality],
-          ].map(([kind, title]) => {
+          {groups.map(([kind, title]) => {
             const found = dimensions.filter((d) => d.dimensionClass === kind)
             return found.length ? (
               <section key={kind} className="hh-section">
@@ -1087,8 +1138,8 @@ function Portrait({ data, locale, onOpenHistory }) {
           <button className="hh-close" onClick={() => setSelected(null)}>
             {c.close}
           </button>
-          <h2>{labelFor(selected.key, locale)}</h2>
-          <p>{explanationFor(selected.key, locale)}</p>
+          <h2>{selected.sourceConstruct || labelFor(selected.key, locale)}</h2>
+          {explanationFor(selected.key, locale) && <p>{explanationFor(selected.key, locale)}</p>}
           <p>
             {c.measured}: {dateLabel(selected.measurementAt, locale)}
           </p>
