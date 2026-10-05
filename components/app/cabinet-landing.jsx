@@ -186,22 +186,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       .then((bootstrap) => {
         if (!live) return
         setSessionExpires(bootstrap.expiresAt)
-        const existing = bootstrap.runs.at(-1)
-        if (!existing) return
-        const id = existing.definitionKey === 'hh-current-state' ? 'state' : 'trait'
-        const def = definitionFor(id, locale)
-        if (existing.definitionId !== def.id) return
-        setActive(id)
-        setRun(existing)
-        setAnswers(existing.answers || {})
-        setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
-        setIndex(
-          Math.min(
-            Math.max(0, Number(existing.progress || 0)),
-            Math.max(0, def.questions.length - 1),
-          ),
-        )
-        setPhase('questions')
+        // Keep the external Cabinet on the test catalog even when a guest run exists.
+        // A saved draft resumes only after the visitor explicitly chooses that test card.
       })
       .catch(() => {})
     return () => {
