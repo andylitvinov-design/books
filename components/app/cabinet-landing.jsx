@@ -432,20 +432,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     <>
       <MoodCheckIn locale={locale} onQuickCheckin={() => begin('state')} disabled={busy} />
 
-      <section className="cabinet-signin-strip" aria-labelledby="cabinet-title">
-        <div className="cabinet-signin-copy">
-          <p className="about-kicker">{c.kicker}</p>
-          <h2 id="cabinet-title">{c.title}</h2>
-          <p>{c.intro}</p>
-          <small>{c.googleNote}</small>
-        </div>
-        <button className="cabinet-google-button cabinet-google-inline" type="button" onClick={() => signIn()} disabled={busy}>
-          <span>{c.google}</span>
-          <ChevronRight aria-hidden="true" />
-        </button>
-        {error && phase === 'catalog' && <p className="client-entry-error cabinet-account-error" role="alert">{error}</p>}
-      </section>
-
       <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
         <header className="library-heading cabinet-tests-heading">
           <p className="about-kicker">{c.testsKicker}</p>
@@ -600,6 +586,20 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         )}
         {error && phase !== 'catalog' && <p className="client-entry-error" role="alert">{error}</p>}
         <p className="cabinet-test-note">{c.nonDiagnostic}</p>
+      </section>
+
+      <section className="cabinet-signin-strip" aria-labelledby="cabinet-title">
+        <div className="cabinet-signin-copy">
+          <p className="about-kicker">{c.kicker}</p>
+          <h2 id="cabinet-title">{c.title}</h2>
+          <p>{c.intro}</p>
+          <small>{c.googleNote}</small>
+        </div>
+        <button className="cabinet-google-button cabinet-google-inline" type="button" onClick={() => signIn()} disabled={busy}>
+          <span>{c.google}</span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        {error && phase === 'catalog' && <p className="client-entry-error cabinet-account-error" role="alert">{error}</p>}
       </section>
 
       <details className="client-entry-card cabinet-legacy-entry">
