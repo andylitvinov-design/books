@@ -223,7 +223,7 @@ export default async function ServicesPage({ params }: PageProps) {
                   : service.deliveryFormat === "hybrid"
                     ? (locale === "ru" ? "Онлайн / очно" : "Online / in person")
                     : "Online";
-              const isFree = service.pricingMode !== "contact" && service.confirmedPrice === 0;
+              const isFree = service.pricingMode === "free" || (service.pricingMode !== "contact" && service.confirmedPrice === 0);
               const price =
                 isFree
                   ? (locale === "ru" ? "Бесплатно" : "Free")
@@ -264,7 +264,7 @@ export default async function ServicesPage({ params }: PageProps) {
                       className="services-marketplace-request"
                       href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}
                     >
-                      {locale === "ru" ? "Заказать" : "Request"}<span aria-hidden="true">→</span>
+                      {isFree ? (locale === "ru" ? "Запросить бесплатно" : "Request free service") : (locale === "ru" ? "Заказать" : "Request")}<span aria-hidden="true">→</span>
                     </Link>
                     <Link
                       className="services-marketplace-details"
