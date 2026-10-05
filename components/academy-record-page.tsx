@@ -38,10 +38,11 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   const text = academyCopy[locale];
   const sourceNotice = sourceLanguageNotice(record, locale);
   const videos = mediaForRecord(record)
-    .map((item) => ({ id: youtubeIdFromUrl(item.mediaUrl), url: item.mediaUrl }))
-    .filter((item): item is { id: string; url: string } => Boolean(item.id))
+    .map((item) => ({ id: youtubeIdFromUrl(item.mediaUrl), url: item.mediaUrl, lessonTitle: item.lessonTitle, order: item.order }))
+    .filter((item): item is { id: string; url: string; lessonTitle?: string; order?: number } => Boolean(item.id))
     .filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index)
-    .slice(0, 8);
+    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+    .slice(0, 48);
   const isCanonicalYggdrasil = record.routeKey === "reiki/yggdrasil";
   const publicBlocks = isCanonicalYggdrasil ? [] : academyPublicBlocks(record);
   const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record);
@@ -59,7 +60,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         {outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
         {record.routeKey === "history" ? <section className="academy-history-links" aria-label="Academy history"><Link href={"/" + locale + "/academy/history/faculties"}>{locale === "ru" ? "Исторические факультеты и традиции" : locale === "es" ? "Facultades y tradiciones históricas" : "Historical faculties & traditions"}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/academy/history/student-experiences"}>{locale === "ru" ? "Исторические отзывы студентов" : locale === "es" ? "Experiencias históricas de estudiantes" : "Historical student experiences"}<span aria-hidden="true">→</span></Link></section> : null}
         {isCanonicalYggdrasil ? <YggdrasilCurriculum locale={locale} /> : hasBody ? <div className="academy-source-content">{renderBlocks(publicBlocks)}</div> : <p className="academy-empty-source">{text.noContent}</p>}
-        {videos.length ? <section className="academy-media-section" aria-label={text.videos}><h2>{text.videos}</h2><div className="academy-video-grid">{videos.map((video, index) => <AcademyVideoPlayer key={video.id} youtubeId={video.id} title={academyDisplayTitle(record, locale) + " — video " + (index + 1)} />)}</div></section> : null}
+        {videos.length ? <section className="academy-media-section" aria-label={text.videos}><h2>{text.videos}</h2><div className="academy-video-grid">{videos.map((video, index) => <AcademyVideoPlayer key={video.id} youtubeId={video.id} title={video.lessonTitle ?? academyDisplayTitle(record, locale) + " — video " + (index + 1)} />)}</div></section> : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
         <footer className="academy-source-footer">
           {isCanonicalYggdrasil ? (
