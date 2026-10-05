@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { Book02Reference } from "@/components/book-02-reference";
 import { PageVideo } from "@/components/page-video";
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { TranslatedReaderContent } from "@/components/translated-reader-content";
 import { books, getBookById } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
@@ -146,7 +147,7 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
   if (!book) notFound();
 
   if (book.id === "alchemy-homeopathy-remedies") {
-    return <Book02Reference locale={locale} remedies={getBook02Remedies(locale)} entries={getRemedyDirectory(locale)} video={<PageVideo slot="book-detail" locale={locale} entityId={book.id} />} />;
+    return <><Book02Reference locale={locale} remedies={getBook02Remedies(locale)} entries={getRemedyDirectory(locale)} video={<PageVideo slot="book-detail" locale={locale} entityId={book.id} />} /><PublicConsultationCta locale={locale} /></>;
   }
 
   const display = localizedBookText(book, locale);
@@ -194,6 +195,7 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
           <TranslatedReaderContent html={document.content} locale={locale} />
         </article>
       </div>
+      <PublicConsultationCta locale={locale} />
     </main>
   );
 }
