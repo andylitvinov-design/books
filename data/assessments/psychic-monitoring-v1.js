@@ -45,7 +45,7 @@ export const PHQ4_EN_V1 = deepFreeze({
   ],
   optionalContext: [],
   suggestedRepeatDays: 14,
-  contentHash: 'sha256:fbc77f2ee5aa303b67c706f3661fb0d86a5751b5d1cf8287c5efaecf4538ffad',
+  contentHash: 'sha256:a18df8048a4b70fd34ab27e8344efea51e538deab3f1f37219171e34d31d4bcf',
 })
 
 export const K6_EN_V1 = deepFreeze({
@@ -82,7 +82,7 @@ export const K6_EN_V1 = deepFreeze({
   ],
   optionalContext: [],
   suggestedRepeatDays: 30,
-  contentHash: 'sha256:834b0c9ea9190f123857664e5ff8051eec19522ae607f560fbd2c6c1a487d5ad',
+  contentHash: 'sha256:6800408e36b71bf632eb9ab19f7e5668232f41c0f5755d5382ec13e5df439516',
 })
 
 export const PHQ9_EN_V1 = deepFreeze({
@@ -122,7 +122,7 @@ export const PHQ9_EN_V1 = deepFreeze({
   ],
   optionalContext: [],
   suggestedRepeatDays: 14,
-  contentHash: 'sha256:0526afb5336369322766c783e03e811de8608ca6c903b0000373a23200371930',
+  contentHash: 'sha256:04e213b6b64ccc7534d493d3c567d3adc7ca7a5e606c8ef2990449c4ee812b58',
 })
 
 export const GAD7_EN_V1 = deepFreeze({
@@ -160,7 +160,7 @@ export const GAD7_EN_V1 = deepFreeze({
   ],
   optionalContext: [],
   suggestedRepeatDays: 14,
-  contentHash: 'sha256:c31134e7976c600976c5aedbc2a79360ff2220c6319e8d58efc7e4e78fde760f',
+  contentHash: 'sha256:e94b48a147790054e4b114402e855e56e732238a67a18b2f74945d80244f6db1',
 })
 
 const weeklyQuestions = {
@@ -210,8 +210,8 @@ function weeklyDefinition(locale, id, hash) {
   })
 }
 
-export const HH_WEEKLY_EN_V1 = weeklyDefinition('en','918a6d1c-a0d4-4dbb-9eca-6d040b70ed61','sha256:58df841d4ee95b7253a69ef9b12b3cd6fb331c5ea9614ee98ce0024211cd2ce8')
-export const HH_WEEKLY_RU_V1 = weeklyDefinition('ru','ed045c44-073b-4d47-8468-6a3cfb39170f','sha256:6caf07be03df5e0b35b65d2559c44863aa5d6f239bef0ba2834d7689e8af51da')
+export const HH_WEEKLY_EN_V1 = weeklyDefinition('en','918a6d1c-a0d4-4dbb-9eca-6d040b70ed61','sha256:5f1ffe14693ac425c27859458c853bef08a44f9c09238ff648dc03eef4406b5a')
+export const HH_WEEKLY_RU_V1 = weeklyDefinition('ru','ed045c44-073b-4d47-8468-6a3cfb39170f','sha256:53f8fbc366e0991458b1ce9866205c01ebf11b869e9b422618e02a9b3b698710')
 
 const resourceQuestions = {
   en: [
@@ -246,8 +246,8 @@ function resourceDefinition(locale,id,hash) {
     questions,optionalContext:[],suggestedRepeatDays:14,contentHash:hash,
   })
 }
-export const HH_RESOURCE_EN_V1=resourceDefinition('en','435985a5-94fc-4c2b-9a7f-a2e6c33f94be','sha256:839d2bc20e99f3d4bb125fe84d2706f57c04021e01de5dc16064ceb512f63f48')
-export const HH_RESOURCE_RU_V1=resourceDefinition('ru','aa30b3c7-f35a-4b52-a335-9a74366c2927','sha256:af701277ff655b330c2a973ec818bba86f5504f2aa76752f4d04c37d5e79861e')
+export const HH_RESOURCE_EN_V1=resourceDefinition('en','435985a5-94fc-4c2b-9a7f-a2e6c33f94be','sha256:80621529165c1c239cf93a30129ece25d010da05a01bd71e560231a3711d7afb')
+export const HH_RESOURCE_RU_V1=resourceDefinition('ru','aa30b3c7-f35a-4b52-a335-9a74366c2927','sha256:bdba0d174efd8c4acc1bdd950a329949c0ed5fc9c4c237bd66a78b36f28f7c1b')
 
 const monthlyDomains = {
   en: [
@@ -290,5 +290,5 @@ function monthlyDefinition(locale,id,hash){
     scoring:{dimensions},questions,optionalContext,suggestedRepeatDays:30,contentHash:hash,
   })
 }
-export const HH_MONTHLY_EN_V1=monthlyDefinition('en','b84c55bf-4872-4271-8dd7-261861697bea','sha256:916212aa4f201d0da2726e30d1a28995dc9a90b734edef1917df7d3ab0ddee51')
-export const HH_MONTHLY_RU_V1=monthlyDefinition('ru','c87d81ea-2ab4-4ad4-923d-5598a9239d08','sha256:1100b8e8cbb1aa99b09c5f6a541b3daffd5c562cc689576c47a09356310f38c6')
+export const HH_MONTHLY_EN_V1=monthlyDefinition('en','b84c55bf-4872-4271-8dd7-261861697bea','sha256:d42a6dcd75854b7d5026d71147b34c02419a6073b7d10f1644b22dc55a0175d9')
+export const HH_MONTHLY_RU_V1=monthlyDefinition('ru','c87d81ea-2ab4-4ad4-923d-5598a9239d08','sha256:d931e58fe2f27a7d0f253109486b9196aa72bb663ef5444639f663bed6a36349')
