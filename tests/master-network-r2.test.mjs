@@ -45,6 +45,12 @@ test('R2 supports a true free service without fake zero-price currency', () => {
     ...service,
     confirmedPrice:0,
   }, { complete:true }), error => error?.code === 'INVALID_PRICE')
+  assert.throws(() => validateServiceDraft({
+    ...service,
+    pricingMode:'contact',
+    confirmedPrice:25,
+    currency:'CAD',
+  }, { complete:true }), error => error?.code === 'INVALID_PRICE')
 })
 
 test('R2 migration preserves original Andy and service identities and adds scoped RLS', async () => {
