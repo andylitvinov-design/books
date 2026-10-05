@@ -228,3 +228,54 @@ test("backup-only Academy records remain fully reconciled after preservation rec
   assert.equal(summary.unclassifiedSourceIdCount, 0);
   assert.equal(summary.classificationCounts["Needs Review"], 0);
 });
+
+
+test("PsiMaster Academy corpus is integrated without duplicating canonical Yggdrasil", async () => {
+  const psimaster = await readJson("data/academy/psimaster-sources.generated.json");
+  assert.equal(psimaster.length, 20);
+  for (const logicalId of [
+    "mysteries/egypt/high-wisdom",
+    "mysteries/greece-rome/beauty-and-power",
+    "symbolic/scandinavian-mysteries",
+    "mysteries/slavic/fairy-tales-mysteries",
+    "mysteries/maya-aztec/feathered-serpent",
+    "symbolic/tarot/major-arcana-mysteries",
+    "mysteries/zoroastrism/eastern-magic",
+    "applied/business/demiurges-of-creation",
+    "applied/archetypal-therapy/big-figures",
+    "reiki/kundalini-reiki",
+  ]) assert.ok(psimaster.some((row) => row.logicalId === logicalId), logicalId);
+  assert.ok(!psimaster.some((row) => row.logicalId === "reiki/yggdrasil"), "PsiMaster must not replace canonical Yggdrasil");
+  assert.ok(psimaster.every((row) => row.sourceProvider === "psimaster"));
+});
+
+test("PsiMaster content is source-backed curated and strips stale high-risk promotion", async () => {
+  const psimaster = await readJson("data/academy/psimaster-sources.generated.json");
+  const body = psimaster.flatMap((row) => row.content).map((block) => block.text).join("\n");
+  assert.doesNotMatch(body, /t\.me\/andyhypnos|viber:|стоимость:\s*\d|получите.*в подарок/i);
+  assert.match(body, /образы «прошлых жизней».*субъективный образный материал/i);
+  assert.match(body, /не представлен как медицинский массаж/i);
+  assert.match(body, /ДНК-.*не публикуются как факты/i);
+});
+
+test("PsiMaster legacy video manifest restores public YouTube media", async () => {
+  const media = await readJson("data/academy/psimaster-media.generated.json");
+  const planetary = media.filter((row) => row.logicalId === "videos/planetary-power");
+  assert.equal(planetary.length, 11);
+  for (const id of ["2GMLhPrEJ3s","8XN-EFpSt8M","h8r_fIVWM0U","owG8gBIQ2hU","3Lc38_-SqD0","ziXmEWe3Dh0","ocks6JP2lD8","-volI7wYbl0","R1krHd3JRXc","uN5BFjdKVvY","6wNdBVoYt50"]) {
+    assert.ok(media.some((row) => row.mediaUrl.endsWith("/" + id)), id);
+  }
+  assert.ok(media.every((row) => row.status === "verified_legacy_public_embed"));
+});
+
+test("Academy catalog and page merge PsiMaster sources/media and keep full lesson sequences", async () => {
+  const [catalog, page] = await Promise.all([
+    readFile("data/academy/catalog.ts", "utf8"),
+    readFile("components/academy-record-page.tsx", "utf8"),
+  ]);
+  assert.match(catalog, /psimasterSources/);
+  assert.match(catalog, /psimasterMedia/);
+  assert.match(catalog, /sourceProvider\?:/);
+  assert.match(page, /slice\(0, 48\)/);
+  assert.match(page, /video\.lessonTitle/);
+});
