@@ -19,6 +19,7 @@ import { getAppConfig } from '../lib/app/config.js'
 import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { startableCatalog, definitionLocaleFor } from '../data/assessments/catalog.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
 const config = getAppConfig(),
@@ -941,4 +942,94 @@ test('guest mood requires a consented guest session and stays inside that tempor
   const boot = await guestRepo.bootstrap(credential)
   assert.ok(boot.moodCheckins.some((item) => item.id === saved.id))
   assert.ok(boot.moodCheckins.every((item) => item.expiresAt))
+})
+
+
+function minimumValidAnswers(definition) {
+  return Object.fromEntries(
+    definition.questions.map((question) => [
+      question.id,
+      question.min ?? definition.answerScale?.min ?? 0,
+    ]),
+  )
+}
+
+test('every startable Account assessment completes and returns a durable result', async () => {
+  const entries = startableCatalog({ guest: false })
+  assert.equal(entries.length, 9)
+  const resultIds = []
+  for (const entry of entries) {
+    const locale = definitionLocaleFor(entry, 'en')
+    assert.ok(locale, entry.key + ' must have an executable locale')
+    const definition = getAssessmentDefinition(entry.key, entry.version, locale)
+    assert.equal(definition.questions.length, entry.questionCount, entry.key + ' question count')
+    const run = await repo.startRun(a, {
+      definitionKey: definition.key,
+      definitionVersion: definition.version,
+      instrumentLocale: definition.instrumentLocale,
+      operationId: randomUUID(),
+    })
+    const saved = await repo.saveRun(a, run.id, {
+      answers: minimumValidAnswers(definition),
+      context: {},
+      progress: definition.questions.length,
+      expectedRevision: run.revision,
+      operationId: randomUUID(),
+    })
+    const result = await repo.submitRun(a, run.id, { expectedRevision: saved.revision })
+    assert.equal(result.definitionKey, entry.key)
+    assert.equal(result.definitionVersion, entry.version)
+    assert.equal(result.instrumentLocale, locale)
+    assert.ok(result.dimensions.length > 0, entry.key + ' must return scored dimensions')
+    const fetched = await repo.getResult(a, result.id)
+    assert.deepEqual(fetched.dimensions, result.dimensions, entry.key + ' result must be readable')
+    resultIds.push(result.id)
+  }
+  const bootstrap = await repo.bootstrap(a)
+  for (const id of resultIds)
+    assert.ok(bootstrap.results.some((result) => result.id === id), id + ' must appear in Account history')
+})
+
+test('every guest-eligible assessment completes and returns a temporary result', async () => {
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential()
+  await guestRepo.createSession(credential, {
+    adult: true,
+    necessary: true,
+    uiLocale: 'en',
+    timezone: 'America/Toronto',
+  })
+  const entries = startableCatalog({ guest: true })
+  assert.equal(entries.length, 6)
+  const resultIds = []
+  for (const entry of entries) {
+    const locale = definitionLocaleFor(entry, 'en')
+    assert.ok(locale, entry.key + ' must have an executable guest locale')
+    const definition = getAssessmentDefinition(entry.key, entry.version, locale)
+    const run = await guestRepo.startRun(credential, {
+      definitionKey: definition.key,
+      definitionVersion: definition.version,
+      instrumentLocale: definition.instrumentLocale,
+      operationId: randomUUID(),
+    })
+    const saved = await guestRepo.saveRun(credential, run.id, {
+      answers: minimumValidAnswers(definition),
+      context: {},
+      progress: definition.questions.length,
+      expectedRevision: run.revision,
+      operationId: randomUUID(),
+    })
+    const result = await guestRepo.submitRun(credential, run.id, {
+      expectedRevision: saved.revision,
+    })
+    assert.equal(result.definitionKey, entry.key)
+    assert.ok(result.dimensions.length > 0, entry.key + ' guest result must contain scores')
+    const fetched = await guestRepo.getResult(credential, result.id)
+    assert.deepEqual(fetched.dimensions, result.dimensions, entry.key + ' guest result must be readable')
+    assert.ok(fetched.expiresAt, entry.key + ' guest result must remain temporary')
+    resultIds.push(result.id)
+  }
+  const bootstrap = await guestRepo.bootstrap(credential)
+  for (const id of resultIds)
+    assert.ok(bootstrap.results.some((result) => result.id === id), id + ' must appear in guest history')
 })
