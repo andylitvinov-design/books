@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { ChevronRight, HeartPulse, Fingerprint } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
@@ -9,18 +10,18 @@ import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 const UI = {
   en: {
     kicker: 'Your space',
-    title: 'Your personal space',
-    intro: 'Notice how you feel, keep your results and see what changes over time.',
+    title: 'Save your progress',
+    intro: 'Keep your results and history across devices.',
     google: 'Continue with Google',
-    googleNote: 'An account keeps your results across devices. You can try the tests below without signing in.',
+    googleNote: 'Optional — the quick checks below work without signing in.',
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
     testsKicker: 'Tests',
-    tryTitle: 'Try without signing in',
-    tryText: 'Complete either test and see the full result before deciding whether to create an account.',
+    tryTitle: 'Quick self-checks',
+    tryText: 'Start without signing in. You can save a result later if you want.',
     stateTitle: 'How I feel now',
-    stateText: '5 short questions about resource, tension, fatigue and how much your current difficulty affects daily life.',
+    stateText: '5 questions · your current state',
     traitTitle: 'Personality tendencies',
-    traitText: '20-item Mini-IPIP self-report in the original English wording.',
+    traitText: '20 questions · personality tendencies',
     traitNotice: 'This questionnaire uses the English original. It is a brief self-report, not an IQ test or diagnosis.',
     start: 'Start test',
     consentTitle: 'Before you start',
@@ -58,18 +59,18 @@ const UI = {
   },
   ru: {
     kicker: 'Ваше пространство',
-    title: 'Ваше личное пространство',
-    intro: 'Замечайте своё состояние, сохраняйте результаты и наблюдайте изменения со временем.',
+    title: 'Сохранить прогресс',
+    intro: 'Сохраняйте результаты и историю между устройствами.',
     google: 'Продолжить с Google',
-    googleNote: 'Аккаунт сохраняет результаты между устройствами. Тесты ниже можно попробовать без регистрации.',
+    googleNote: 'Необязательно — быстрые тесты ниже работают без регистрации.',
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
     testsKicker: 'Тесты',
-    tryTitle: 'Пройти без регистрации',
-    tryText: 'Пройдите любой тест и получите полный результат до решения о создании аккаунта.',
+    tryTitle: 'Быстрая самопроверка',
+    tryText: 'Можно начать без регистрации и сохранить результат позже.',
     stateTitle: 'Моё состояние сейчас',
-    stateText: '5 коротких вопросов о ресурсе, напряжении, усталости и влиянии текущей трудности на жизнь.',
+    stateText: '5 вопросов · ваше состояние сейчас',
     traitTitle: 'Личностные особенности',
-    traitText: '20 утверждений Mini-IPIP в исходной английской формулировке.',
+    traitText: '20 вопросов · личностные особенности',
     traitNotice: 'Опрос использует английский оригинал. Это краткий самоотчёт, а не IQ-тест и не диагноз.',
     start: 'Начать тест',
     consentTitle: 'Перед началом',
@@ -423,16 +424,16 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     <>
       <MoodCheckIn locale={locale} onQuickCheckin={() => begin('state')} disabled={busy} />
 
-      <section className="cabinet-account-row" aria-labelledby="cabinet-title">
-        <div className="cabinet-account-copy">
+      <section className="cabinet-signin-strip" aria-labelledby="cabinet-title">
+        <div className="cabinet-signin-copy">
           <p className="about-kicker">{c.kicker}</p>
           <h2 id="cabinet-title">{c.title}</h2>
           <p>{c.intro}</p>
           <small>{c.googleNote}</small>
         </div>
-        <button className="cabinet-google-button cabinet-google-row-action" type="button" onClick={() => signIn()} disabled={busy}>
+        <button className="cabinet-google-button cabinet-google-inline" type="button" onClick={() => signIn()} disabled={busy}>
           <span>{c.google}</span>
-          <span aria-hidden="true">›</span>
+          <ChevronRight aria-hidden="true" />
         </button>
         {error && phase === 'catalog' && <p className="client-entry-error cabinet-account-error" role="alert">{error}</p>}
       </section>
@@ -447,20 +448,20 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         {phase === 'catalog' && (
           <div className="cabinet-test-list" aria-label={c.tryTitle}>
             <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
-              <span className="cabinet-test-count" aria-hidden="true">5</span>
+              <span className="cabinet-test-icon cabinet-test-icon--state" aria-hidden="true"><HeartPulse /></span>
               <span className="cabinet-test-row-copy">
                 <strong>{c.stateTitle}</strong>
                 <small>{c.stateText}</small>
               </span>
-              <span className="cabinet-test-arrow" aria-hidden="true">›</span>
+              <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
             </button>
             <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.traitTitle}`} disabled={busy} onClick={() => begin('trait')}>
-              <span className="cabinet-test-count" aria-hidden="true">20</span>
+              <span className="cabinet-test-icon cabinet-test-icon--trait" aria-hidden="true"><Fingerprint /></span>
               <span className="cabinet-test-row-copy">
                 <strong>{c.traitTitle}</strong>
                 <small>{c.traitText}</small>
               </span>
-              <span className="cabinet-test-arrow" aria-hidden="true">›</span>
+              <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
             </button>
           </div>
         )}
