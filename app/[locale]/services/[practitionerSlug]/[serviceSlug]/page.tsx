@@ -33,7 +33,7 @@ export default async function ServiceDetail({params}:PageProps){
   if(!value)notFound();
   const {service,practitioner}=value,ru=locale==="ru";
   const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");
-  const isFree=service.pricingMode!=="contact"&&service.confirmedPrice===0;
+  const isFree=service.pricingMode==="free"||(service.pricingMode!=="contact"&&service.confirmedPrice===0);
   const price=isFree?(ru?"Бесплатно":"Free"):service.pricingMode!=="contact"&&service.confirmedPrice!=null?`${service.pricingMode==="from"?(ru?"от ":"from "):""}${service.currency||""} ${service.confirmedPrice}`:ru?"Стоимость согласуется до записи":"Price agreed before booking";
   return <main className="services-shell services-shell--studio" lang={locale}>
     <PublicSiteHeader locale={locale}/>
@@ -43,7 +43,7 @@ export default async function ServiceDetail({params}:PageProps){
         <h1>{service.copy.title}</h1>
         <p>{service.copy.shortDescription}</p>
         <div className="hh-actions">
-          <Link className="services-studio-primary" href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Пройти бесплатно":"Start free"):(ru?"Запросить услугу":"Request this service")}<span aria-hidden="true">→</span></Link>
+          <Link className="services-studio-primary" href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Запросить бесплатно":"Request free service"):(ru?"Запросить услугу":"Request this service")}<span aria-hidden="true">→</span></Link>
           <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":"About practitioner"}</Link>
         </div>
       </div>
