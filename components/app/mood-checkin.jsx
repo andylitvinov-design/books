@@ -153,7 +153,7 @@ export function MoodCheckIn({
       document.removeEventListener('keydown', onKeyDown)
       trigger?.focus?.()
     }
-  }, [activeMood])
+  }, [activeMood, onDismissMood])
 
   function closeDialog({ dismiss = true } = {}) {
     if (dismiss) onDismissMood?.()
