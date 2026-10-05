@@ -1288,7 +1288,7 @@ function ResultPage({ id, locale, data }) {
             return (
               <tr key={d.key}>
                 <th scope="row">
-                  {labelFor(d.key, locale)}
+                  {d.sourceConstruct || labelFor(d.key, locale)}
                   <small>{explanationFor(d.key, locale)}</small>
                 </th>
                 <td>
@@ -1525,7 +1525,7 @@ function HistoryView({ data, locale, reload }) {
               <select value={dimension.key} onChange={(e) => setDimensionKey(e.target.value)}>
                 {latest.dimensions.map((d) => (
                   <option key={d.key} value={d.key}>
-                    {labelFor(d.key, locale)}
+                    {d.sourceConstruct || labelFor(d.key, locale)}
                   </option>
                 ))}
               </select>
@@ -1547,7 +1547,7 @@ function HistoryView({ data, locale, reload }) {
           </div>
           {delta.length ? (
             <p className="hh-change">
-              {c.since} {dateLabel(prior.measurementAt, locale)}: {labelFor(dimension.key, locale)}{' '}
+              {c.since} {dateLabel(prior.measurementAt, locale)}: {dimension.sourceConstruct || labelFor(dimension.key, locale)}{' '}
               {delta.find((d) => d.key === dimension.key)?.prior} → {dimension.value}{' '}
               <span>
                 ({delta.find((d) => d.key === dimension.key)?.delta > 0 ? '+' : ''}
@@ -1562,7 +1562,7 @@ function HistoryView({ data, locale, reload }) {
               className="hh-chart"
               viewBox="0 0 640 200"
               role="img"
-              aria-label={`${labelFor(dimension.key, locale)} — ${c.history}`}
+              aria-label={`${dimension.sourceConstruct || labelFor(dimension.key, locale)} — ${c.history}`}
             >
               <line x1="30" y1="170" x2="610" y2="170" />
               <polyline points={points.map((p) => `${x(p)},${y(p)}`).join(' ')} />
@@ -1577,7 +1577,7 @@ function HistoryView({ data, locale, reload }) {
           )}
           <table className="hh-table">
             <caption>
-              {labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
+              {dimension.sourceConstruct || labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
             </caption>
             <thead>
               <tr>
@@ -1881,7 +1881,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
               </p>
               {shared.dimensions.map((d) => (
                 <p key={d.key}>
-                  {labelFor(d.key, locale)}: {d.value} / {d.max}
+                  {d.sourceConstruct || labelFor(d.key, locale)}: {d.value} / {d.max}
                 </p>
               ))}
             </div>
