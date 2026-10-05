@@ -90,6 +90,7 @@ export function MoodCheckIn({
   disabled = false,
   getRecommendations,
   onMoodSelected,
+  onDismissMood,
   onStartTest,
   onAllTests,
 }) {
@@ -127,8 +128,10 @@ export function MoodCheckIn({
     function onKeyDown(event) {
       if (event.key === 'Escape') {
         event.preventDefault()
+        onDismissMood?.()
         setSelected(null)
         setCategory('')
+        setSaveState('')
         return
       }
       if (event.key !== 'Tab') return
@@ -152,7 +155,8 @@ export function MoodCheckIn({
     }
   }, [activeMood])
 
-  function closeDialog() {
+  function closeDialog({ dismiss = true } = {}) {
+    if (dismiss) onDismissMood?.()
     setCategory('')
     setSelected(null)
     setSaveState('')
@@ -169,12 +173,12 @@ export function MoodCheckIn({
   }
 
   function chooseTest(candidate) {
-    closeDialog()
+    closeDialog({ dismiss: false })
     onStartTest?.(candidate)
   }
 
   function showAllTests() {
-    closeDialog()
+    closeDialog({ dismiss: false })
     onAllTests?.()
   }
 
