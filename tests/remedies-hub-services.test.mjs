@@ -40,7 +40,7 @@ test('Services page is bilingual and grounds Alchemy of the Soul in the publishe
   assert.match(page, /Алхимия души/)
   assert.match(page, /Alchemy of the Soul/)
   assert.match(page, /id: "alchemy"/)
-  assert.match(page, /"business-decision-constellations": "service-business"/)
+  assert.match(page, /PageVideo slot=\{"service-" \+ id\}/)
   assert.match(page, /services-marketplace-featured/)
   assert.match(page, /free-wu-xing-diagnostic/)
   assert.match(page, /Пройти бесплатно/)

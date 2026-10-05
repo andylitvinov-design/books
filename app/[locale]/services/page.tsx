@@ -106,10 +106,6 @@ const copy = {
   },
 } as const;
 
-const serviceVideoSlots: Partial<Record<string, string>> = {
-  "business-decision-constellations": "service-business",
-};
-
 export function generateStaticParams() { return getHomeopathyLocaleParams(); }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -298,15 +294,25 @@ export default async function ServicesPage({ params }: PageProps) {
       <section className="services-studio-grid services-studio-grid--three" aria-label={current.heading}>
         {entry.services.map(({ id, title, subtitle, text }) => {
           const Icon = id === "business-decision-constellations" ? BriefcaseBusiness : id === "reiki-energy-work" ? Flower2 : Sparkles;
-          const videoSlot = serviceVideoSlots[id];
           return <article className="services-studio-card services-studio-card--detailed" id={id} key={id}>
             <span className="services-studio-icon" aria-hidden="true"><Icon /></span>
             <h2>{title}</h2>
             <p className="services-studio-card-subtitle">{subtitle}</p>
             <p>{text}</p>
-            {videoSlot ? <PageVideo slot={videoSlot} locale={locale} className="site-video--service-card" /> : null}
           </article>;
         })}
+      </section>
+
+      <section className="services-studio-grid services-studio-grid--three" aria-label={locale === "ru" ? "Дополнительные направления" : "Additional directions"}>
+        {current.cards.map(({ id, icon: Icon, title, subtitle, text }) => (
+          <article className="services-studio-card services-studio-card--detailed" id={id} key={title}>
+            <span className="services-studio-icon" aria-hidden="true"><Icon /></span>
+            <h2>{title}</h2>
+            <p className="services-studio-card-subtitle">{subtitle}</p>
+            <p>{text}</p>
+            <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />
+          </article>
+        ))}
       </section>
 
       {locale === "en" ? (

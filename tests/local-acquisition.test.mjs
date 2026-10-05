@@ -52,9 +52,13 @@ test('the public Home and Services surfaces consume the single local acquisition
 
 test('the local acquisition service cards use only registered page-video slots', () => {
   const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8')
+  const acquisitionCardsStart = services.indexOf('{entry.services.map')
+  const acquisitionCardsEnd = services.indexOf('</section>', acquisitionCardsStart)
+  const acquisitionCards = services.slice(acquisitionCardsStart, acquisitionCardsEnd)
 
-  assert.doesNotMatch(services, /PageVideo slot=\{"service-" \+ id\}/)
-  assert.match(services, /service-business/)
+  assert.doesNotMatch(acquisitionCards, /PageVideo/)
+  assert.match(services, /current\.cards\.map/)
+  assert.match(services, /PageVideo slot=\{"service-" \+ id\}/)
 })
 
 test('event instrumentation is consent-gated and has no personal-data payload path', () => {
