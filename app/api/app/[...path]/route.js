@@ -350,6 +350,7 @@ async function handle(request, { params }) {
     if (joined === 'requests') return json(await repo.createRequest(actor, body), 201)
     if (path[0] === 'requests' && path.length === 2)
       return json(await repo.updateRequest(actor, path[1], body))
+    if (joined === 'practice/onboarding') return json(await practiceRepo.onboarding(actor, body))
     if (joined === 'practice/profile') {
       if (body.action === 'submit')
         return json(await practiceRepo.submitProfile(actor, { expectedRevision: body.expectedRevision }))
