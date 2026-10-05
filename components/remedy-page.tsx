@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { RemedyContent, RemedyEssence } from "@/components/remedy-content";
 import { RemedyClientActions } from "@/components/remedy-client-actions";
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PageVideo } from "@/components/page-video";
 import { getRemedyArticleLinks } from "@/data/remedy-articles";
@@ -76,6 +77,7 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
         <p className="remedy-disclaimer">{labels.disclaimer}</p>
         {articles.length ? <section className="remedy-article-note"><h2>{labels.articles}</h2><p>{labels.articleNote}</p><ul>{articles.map((article) => <li key={article.href}><Link href={article.href}><strong>{article.title}</strong><span>{article.bookTitle}</span></Link></li>)}</ul></section> : null}
       </article>
+      <PublicConsultationCta locale={locale} />
     </main>
   );
 }

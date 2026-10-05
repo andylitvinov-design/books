@@ -2,6 +2,8 @@ name: Holistic House App R1 browser and database journey
 on:
   push:
     branches: ['codex/holistic-house-app-r1']
+  pull_request:
+    branches: ['codex/public-book-library']
 permissions:
   contents: read
 concurrency:
@@ -9,6 +11,10 @@ concurrency:
   cancel-in-progress: true
 jobs:
   browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -22,6 +28,7 @@ jobs:
           --health-cmd "pg_isready -U postgres -d hh_app_test"
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
+      HH_TEST_BROWSER: ${{ matrix.browser }}
       CI: 'true'
       NODE_ENV: development
       NEXT_TELEMETRY_DISABLED: '1'
@@ -49,7 +56,7 @@ jobs:
           mkdir -p /tmp/hh-app-browser-tools
           npm install --prefix /tmp/hh-app-browser-tools --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-app-browser-tools/node_modules/@playwright node_modules/@playwright
-          /tmp/hh-app-browser-tools/node_modules/.bin/playwright install --with-deps chromium
+          /tmp/hh-app-browser-tools/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Initialize empty synthetic database
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
       - name: Browser journey with protocol double, never Google or production
@@ -69,6 +76,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: app-r1-browser-synthetic-evidence
+          name: app-r1-browser-synthetic-evidence-${{ matrix.browser }}
           path: artifacts/app-r1/
           retention-days: 7

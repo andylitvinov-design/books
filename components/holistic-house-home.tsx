@@ -5,6 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { MindBodyMonitorHome } from "@/components/mind-body-monitor-home";
+import { MindBodyMonitorStrip } from "@/components/mind-body-monitor-strip";
 import { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import type { Locale } from "@/data/remedies";
@@ -126,6 +129,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </Link>
         <SiteNavigation locale={locale} onLocaleChange={selectLocale} />
       </header>
+      <MindBodyMonitorStrip locale={locale} />
 
       <section className="service-home-hero" aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
@@ -154,6 +158,8 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           </div>
         </div>
       </section>
+
+      <MindBodyMonitorHome locale={locale} />
 
       {introVideo ? (
         <section className="site-video-block" data-video-slot="home-intro" data-video-locale={locale} aria-label={introVideo.title}>
@@ -204,6 +210,8 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <Link href={text.bookUrl}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
         </div>
       </section>
+
+      <PublicConsultationCta locale={locale} />
 
       <footer className="service-home-footer">
         <Link className="house-wordmark" href="/">Holistic House</Link>

@@ -1,24 +1,35 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
-import { CURRENT_STATE_EN_V1, CURRENT_STATE_RU_V1 } from '@/data/assessments/current-state-v1'
+import { MoodCheckIn } from '@/components/app/mood-checkin'
+import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
+import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 
 const UI = {
   en: {
-    kicker: 'Your space',
+    kicker: 'Account',
     title: 'Your personal space',
-    intro: 'Notice how you feel, keep your results and see what changes over time.',
+    intro: 'Keep your results and history across devices.',
     google: 'Continue with Google',
-    googleNote: 'An account keeps your results across devices. You can try the tests below without signing in.',
+    googleNote: 'Optional — the quick checks below work without signing in.',
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
-    tryTitle: 'Try without signing in',
-    tryText: 'Complete either test and see the full result before deciding whether to create an account.',
-    stateTitle: 'How I feel now',
-    stateText: '5 short questions about resource, tension, fatigue and how much your current difficulty affects daily life.',
-    traitTitle: 'Personality tendencies',
-    traitText: '20-item Mini-IPIP self-report in the original English wording.',
+    testsKicker: 'Mind–Body Monitor',
+    tryTitle: 'Your Mind–Body Monitor',
+    tryText: 'Start with one useful check-in. Save results only if you want to build a personal timeline over time.',
+    recommended: 'Recommended now',
+    otherChecks: 'Other self-checks',
+    areasTitle: 'What you can monitor',
+    areasText: 'More areas appear only when a real questionnaire is ready and safe to use.',
+    wuXing: 'Personal Wu Xing profile',
+    stateTitle: 'Current State Check',
+    stateText: '5 questions · ~1 min',
+    traitTitle: 'Personality Baseline',
+    traitText: '20 questions · ~3 min',
     traitNotice: 'This questionnaire uses the English original. It is a brief self-report, not an IQ test or diagnosis.',
     start: 'Start test',
     consentTitle: 'Before you start',
@@ -36,7 +47,9 @@ const UI = {
     contextTitle: 'Optional context',
     contextText: 'You may leave these fields blank.',
     focus: 'What is on your mind?',
+    trigger: 'What changed or seems to trigger this?',
     helps: 'What helps you?',
+    desiredChange: 'What would you like to change?',
     note: 'Anything else you want to note?',
     result: 'Your result',
     measured: 'Measured',
@@ -53,18 +66,24 @@ const UI = {
     error: 'Something could not be saved or loaded. Please retry.',
   },
   ru: {
-    kicker: 'Ваше пространство',
+    kicker: 'Аккаунт',
     title: 'Ваше личное пространство',
-    intro: 'Замечайте своё состояние, сохраняйте результаты и наблюдайте изменения со временем.',
+    intro: 'Сохраняйте результаты и историю между устройствами.',
     google: 'Продолжить с Google',
-    googleNote: 'Аккаунт сохраняет результаты между устройствами. Тесты ниже можно попробовать без регистрации.',
+    googleNote: 'Необязательно — быстрые тесты ниже работают без регистрации.',
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
-    tryTitle: 'Пройти без регистрации',
-    tryText: 'Пройдите любой тест и получите полный результат до решения о создании аккаунта.',
-    stateTitle: 'Моё состояние сейчас',
-    stateText: '5 коротких вопросов о ресурсе, напряжении, усталости и влиянии текущей трудности на жизнь.',
-    traitTitle: 'Личностные особенности',
-    traitText: '20 утверждений Mini-IPIP в исходной английской формулировке.',
+    testsKicker: 'Монитор состояния',
+    tryTitle: 'Ваш монитор состояния',
+    tryText: 'Начните с одной полезной проверки. Сохраняйте результаты только если хотите наблюдать личную динамику со временем.',
+    recommended: 'Рекомендуем сейчас',
+    otherChecks: 'Другие самопроверки',
+    areasTitle: 'Что можно отслеживать',
+    areasText: 'Новые области появляются только когда реальный опросник готов и безопасен для использования.',
+    wuXing: 'Личный профиль У-Син',
+    stateTitle: 'Состояние сейчас',
+    stateText: '5 вопросов · ~1 мин',
+    traitTitle: 'Личностный профиль',
+    traitText: '20 вопросов · ~3 мин',
     traitNotice: 'Опрос использует английский оригинал. Это краткий самоотчёт, а не IQ-тест и не диагноз.',
     start: 'Начать тест',
     consentTitle: 'Перед началом',
@@ -82,7 +101,9 @@ const UI = {
     contextTitle: 'Контекст — по желанию',
     contextText: 'Эти поля можно оставить пустыми.',
     focus: 'Что сейчас занимает ваше внимание?',
+    trigger: 'Что изменилось или что, кажется, запускает это?',
     helps: 'Что помогает вам?',
+    desiredChange: 'Что вы хотели бы изменить?',
     note: 'Что ещё важно отметить?',
     result: 'Ваш результат',
     measured: 'Дата измерения',
@@ -100,8 +121,15 @@ const UI = {
   },
 }
 
+function testArtwork(locale, id) {
+  const suffix = locale === 'ru' ? 'ru-v1' : 'en-v2'
+  return id === 'state'
+    ? `/images/holistic-house/video-posters/home-${suffix}.webp`
+    : `/images/holistic-house/video-posters/services-${suffix}.webp`
+}
+
 function definitionFor(id, locale) {
-  if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V1 : CURRENT_STATE_EN_V1
+  if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V2 : CURRENT_STATE_EN_V2
   return MINI_IPIP_20_EN_V1
 }
 
@@ -152,7 +180,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [answers, setAnswers] = useState({})
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState('catalog')
-  const [context, setContext] = useState({ current_focus: '', what_helps: '', note: '' })
+  const [context, setContext] = useState({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
   const [guestResult, setGuestResult] = useState(null)
   const [sessionExpires, setSessionExpires] = useState(null)
   const [adult, setAdult] = useState(false)
@@ -170,22 +198,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       .then((bootstrap) => {
         if (!live) return
         setSessionExpires(bootstrap.expiresAt)
-        const existing = bootstrap.runs.at(-1)
-        if (!existing) return
-        const id = existing.definitionKey === 'hh-current-state' ? 'state' : 'trait'
-        const def = definitionFor(id, locale)
-        if (existing.definitionId !== def.id) return
-        setActive(id)
-        setRun(existing)
-        setAnswers(existing.answers || {})
-        setContext(existing.context || { current_focus: '', what_helps: '', note: '' })
-        setIndex(
-          Math.min(
-            Math.max(0, Number(existing.progress || 0)),
-            Math.max(0, def.questions.length - 1),
-          ),
-        )
-        setPhase('questions')
+        // Keep the external Cabinet on the test catalog even when a guest run exists.
+        // A saved draft resumes only after the visitor explicitly chooses that test card.
       })
       .catch(() => {})
     return () => {
@@ -221,7 +235,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     })
     setRun(created)
     setAnswers(created.answers || {})
-    setContext(created.context || { current_focus: '', what_helps: '', note: '' })
+    setContext(created.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     const nextIndex = Math.min(
       Math.max(0, Number(created.progress || 0)),
       Math.max(0, def.questions.length - 1),
@@ -244,7 +258,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       if (existing) {
         setRun(existing)
         setAnswers(existing.answers || {})
-        setContext(existing.context || { current_focus: '', what_helps: '', note: '' })
+        setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
         setIndex(
           Math.min(
             Math.max(0, Number(existing.progress || 0)),
@@ -406,7 +420,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setAnswers({})
     setIndex(0)
     setPhase('catalog')
-    setContext({ current_focus: '', what_helps: '', note: '' })
+    setContext({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     setGuestResult(null)
     setSaveState('')
     setError('')
@@ -414,36 +428,60 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   return (
     <>
-      <section className="client-entry-card cabinet-google-card" aria-labelledby="cabinet-title">
-        <p className="about-kicker">{c.kicker}</p>
-        <h1 id="cabinet-title">{c.title}</h1>
-        <p>{c.intro}</p>
-        <button className="cabinet-google-button" type="button" onClick={() => signIn()} disabled={busy}>
-          {c.google}
-        </button>
-        <p className="cabinet-private-note">{c.googleNote}</p>
-        {error && phase === 'catalog' && <p className="client-entry-error" role="alert">{error}</p>}
-      </section>
+      <MoodCheckIn locale={locale} onQuickCheckin={() => begin('state')} disabled={busy} />
 
-      <section className="client-entry-card cabinet-guest-tests" aria-labelledby="guest-tests-title">
-        <p className="about-kicker">{c.tryTitle}</p>
-        <h2 id="guest-tests-title">{c.tryTitle}</h2>
-        <p>{c.tryText}</p>
+      <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
+        <header className="library-heading cabinet-tests-heading">
+          <p className="about-kicker">{c.testsKicker}</p>
+          <h2 id="guest-tests-title">{c.tryTitle}</h2>
+          <p>{c.tryText}</p>
+        </header>
 
         {phase === 'catalog' && (
-          <div className="cabinet-test-grid">
-            <article className="cabinet-test-card">
-              <h3>{c.stateTitle}</h3>
-              <p>{c.stateText}</p>
-              <button type="button" disabled={busy} onClick={() => begin('state')}>{c.start}</button>
-            </article>
-            <article className="cabinet-test-card">
-              <h3>{c.traitTitle}</h3>
-              <p>{c.traitText}</p>
-              <p className="cabinet-test-note">{c.traitNotice}</p>
-              <button type="button" disabled={busy} onClick={() => begin('trait')}>{c.start}</button>
-            </article>
-          </div>
+          <>
+            <div className="cabinet-monitor-recommended">
+              <p className="cabinet-monitor-label">{c.recommended}</p>
+              <button className="cabinet-test-row cabinet-test-row--recommended" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
+                <span className="cabinet-test-image" aria-hidden="true">
+                  <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'state')} />
+                </span>
+                <span className="cabinet-test-row-copy">
+                  <strong>{c.stateTitle}</strong>
+                  <small>{c.stateText}</small>
+                </span>
+                <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="cabinet-test-list" aria-label={c.otherChecks}>
+              <p className="cabinet-monitor-label">{c.otherChecks}</p>
+              <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.traitTitle}`} disabled={busy} onClick={() => begin('trait')}>
+                <span className="cabinet-test-image" aria-hidden="true">
+                  <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'trait')} />
+                </span>
+                <span className="cabinet-test-row-copy">
+                  <strong>{c.traitTitle}</strong>
+                  <small>{c.traitText}</small>
+                </span>
+                <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="cabinet-monitor-areas" aria-labelledby="cabinet-monitor-areas-title">
+              <div>
+                <p className="cabinet-monitor-label" id="cabinet-monitor-areas-title">{c.areasTitle}</p>
+                <p className="cabinet-test-note">{c.areasText}</p>
+              </div>
+              <div className="cabinet-monitor-area-list" aria-label={c.areasTitle}>
+                {MONITOR_AREAS.slice(0, 8).map((area) => (
+                  <span key={area.key}>{area[locale] || area.en}</span>
+                ))}
+              </div>
+              <Link className="cabinet-monitor-wuxing" href={`/${locale}/wu-xing`}>
+                {c.wuXing}<ChevronRight aria-hidden="true" />
+              </Link>
+            </div>
+          </>
         )}
 
         {phase === 'consent' && (
@@ -519,7 +557,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <h3>{c.contextTitle}</h3>
             <p>{c.contextText}</p>
             <label>{c.focus}<textarea value={context.current_focus} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, current_focus: e.target.value }))} /></label>
+            <label>{c.trigger}<textarea value={context.trigger} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, trigger: e.target.value }))} /></label>
             <label>{c.helps}<textarea value={context.what_helps} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, what_helps: e.target.value }))} /></label>
+            <label>{c.desiredChange}<textarea value={context.desired_change} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, desired_change: e.target.value }))} /></label>
             <label>{c.note}<textarea value={context.note} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, note: e.target.value }))} /></label>
             <div className="cabinet-test-actions">
               <button type="button" disabled={busy} onClick={() => setPhase('questions')}>{c.back}</button>
@@ -566,6 +606,20 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         )}
         {error && phase !== 'catalog' && <p className="client-entry-error" role="alert">{error}</p>}
         <p className="cabinet-test-note">{c.nonDiagnostic}</p>
+      </section>
+
+      <section className="cabinet-signin-strip" aria-labelledby="cabinet-title">
+        <div className="cabinet-signin-copy">
+          <p className="about-kicker">{c.kicker}</p>
+          <h2 id="cabinet-title">{c.title}</h2>
+          <p>{c.intro}</p>
+          <small>{c.googleNote}</small>
+        </div>
+        <button className="cabinet-google-button cabinet-google-inline" type="button" onClick={() => signIn()} disabled={busy}>
+          <span>{c.google}</span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        {error && phase === 'catalog' && <p className="client-entry-error cabinet-account-error" role="alert">{error}</p>}
       </section>
 
       <details className="client-entry-card cabinet-legacy-entry">

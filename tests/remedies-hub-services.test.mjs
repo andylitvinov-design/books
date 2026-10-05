@@ -3,11 +3,12 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 test('Remedies landing combines remedy search, free consultation and book covers in both locales', async () => {
-  const [page, search, books, header] = await Promise.all([
+  const [page, search, books, header, cta] = await Promise.all([
     readFile('app/[locale]/homeopathy/page.tsx', 'utf8'),
     readFile('components/remedy-search-box.tsx', 'utf8'),
     readFile('components/book-showcase.tsx', 'utf8'),
     readFile('components/public-site-header.tsx', 'utf8'),
+    readFile('components/public-consultation-cta.tsx', 'utf8'),
   ])
   assert.match(page, /heading: "Препараты"/)
   assert.match(page, /heading: "Remedies"/)
@@ -15,8 +16,9 @@ test('Remedies landing combines remedy search, free consultation and book covers
   assert.match(page, /BookShowcase/)
   assert.match(page, /Бесплатная консультация/)
   assert.match(page, /Free consultation/)
-  assert.match(page, /t\.me\/AndyTherapist/)
-  assert.match(page, /wa\.me\/14376066502/)
+  assert.match(page, /PublicConsultationCta/)
+  assert.match(cta, /t\.me\/AndyTherapist/)
+  assert.match(cta, /wa\.me\/14376066502/)
   assert.match(search, /Find a homeopathic remedy/)
   assert.match(books, /catalog-cover/)
   assert.match(header, /SiteNavigation/)
@@ -39,6 +41,12 @@ test('Services page is bilingual and grounds Alchemy of the Soul in the publishe
   assert.match(page, /Alchemy of the Soul/)
   assert.match(page, /id: "alchemy"/)
   assert.match(page, /PageVideo slot=\{"service-" \+ id\}/)
+  assert.match(page, /services-marketplace-featured/)
+  assert.match(page, /free-wu-xing-diagnostic/)
+  assert.match(page, /Пройти бесплатно/)
+  assert.match(page, /Start free/)
+  assert.match(page, /app\/consultations\?service=/)
+  assert.match(page, /\/masters\//)
   assert.match(page, /Начните с короткого разговора/)
   assert.match(page, /Start with a short conversation/)
   assert.match(page, /не заменяют медицинскую диагностику/)
@@ -78,4 +86,18 @@ test('English Remedies page localizes book card titles while preserving source-l
   assert.match(showcase, /Book content is preserved in its source language/)
   assert.match(localization, /Book 01\. Homeopathy: foundations and method/)
   assert.match(localization, /Maya mysteries/)
+})
+
+
+test('practitioner and service detail pages label zero-price offerings as free', async () => {
+  const [profile, detail] = await Promise.all([
+    readFile('app/[locale]/masters/[slug]/page.tsx', 'utf8'),
+    readFile('app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx', 'utf8'),
+  ])
+  assert.match(profile, /confirmedPrice===0/)
+  assert.match(profile, /Пройти бесплатно/)
+  assert.match(profile, /Start free/)
+  assert.match(detail, /confirmedPrice===0/)
+  assert.match(detail, /Бесплатно/)
+  assert.match(detail, /Free/)
 })

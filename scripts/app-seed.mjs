@@ -2,13 +2,14 @@ import pg from 'pg'
 import {pathToFileURL} from 'node:url'
 import {createHash} from 'node:crypto'
 import {CURRENT_STATE_EN_V1,CURRENT_STATE_RU_V1} from '../data/assessments/current-state-v1.js'
+import {CURRENT_STATE_EN_V2,CURRENT_STATE_RU_V2} from '../data/assessments/current-state-v2.js'
 import {MINI_IPIP_20_EN_V1} from '../data/assessments/mini-ipip-20-en-v1.js'
 import {APP_SERVICES,PRACTITIONER_ID} from '../data/app-services.js'
 import {canonicalJSON} from '../lib/assessments/contracts.js'
 export async function seedApp(db){
  await db.query('begin')
  try{
-  for(const definition of [CURRENT_STATE_EN_V1,CURRENT_STATE_RU_V1,MINI_IPIP_20_EN_V1]){
+  for(const definition of [CURRENT_STATE_EN_V1,CURRENT_STATE_RU_V1,CURRENT_STATE_EN_V2,CURRENT_STATE_RU_V2,MINI_IPIP_20_EN_V1]){
    const{contentHash,...source}=definition
    if('sha256:'+createHash('sha256').update(canonicalJSON(source)).digest('hex')!==contentHash)throw new Error('Definition content hash mismatch')
    const existing=(await db.query('select content_hash from app.assessment_versions where id=$1',[definition.id])).rows[0]

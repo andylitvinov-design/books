@@ -1,0 +1,1840 @@
+[
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/reiki",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/free-energy-healing",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/prog-taory",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/yggdrasil",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/master-shamanic-healing",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/magister-sham-trpi",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/path/magister-archetypal-therapies",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/tantra",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/tantra-reiki",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/reiki/yggdrasil/faq",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/shkola-rejki-iggdrasil",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/reiki/yggdrasil",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/tantra-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/reiki/tantra-reiki",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/myst",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/applied/archetypal-attunements",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/mysteries-of-love",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/mysteries/archetypes-of-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/mysteries/archetypes-of-gods",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/initiations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/hypno-love-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/hypno-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/gypno-egypt",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/egyptian-hypno-course",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-gretsii",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/traditions/greece",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-egipta",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/traditions/egypt",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/podskazki-bogov",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/guidance-of-gods",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/malye-misterii-arkhetipy-lyubvi",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/archetypes-of-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii/bolshie-misterii-arkhetipy-bogov",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/mysteries/archetypes-of-gods",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/runes-business",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/runes/runes-business",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/elemental-en",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/elements/elemental-magic",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/elemental-water",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/elements/water",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/adv/artifacts",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/symbolic/artifacts-talismans",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/runes-business-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/runes/runes-business",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/element",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/elements/elemental-magic",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/skoly/severnaya-magiya-run",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/runes/northern-runes",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/en/academy/videos/sun-meditations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/meditatsii-solntsa",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/sun-meditations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-grecheskie-misterii-kanal-demetry",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/greek-mysteries-demeter",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-misterii-dionisa",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/greek-mysteries-dionysus",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-zhrechestvo-egipta-osiris",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/egypt-osiris",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/kurs-sila-planet",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/planetary-power",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/meditatsii-sily-i-zashchity",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/strength-protection",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy/arkhetipy-majya",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/maya-archetypes",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/%D1%81ourse-swap",
+    "classification": "ACADEMY_VIDEO",
+    "target": "/ru/academy/videos/energy-pump-ups",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/about-us",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/history",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/about-us-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/history",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/ru/academy/history/student-experiences",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/archive/festival",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-program-2",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/archive/constellations-of-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/fest-details",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/archive/festival-details",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/stud-prog/trpy-events",
+    "classification": "ACADEMY_HISTORICAL",
+    "target": "/en/academy/archive/events",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies/books",
+    "classification": "LIBRARY_MATERIAL",
+    "target": "/en/library",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/knigi",
+    "classification": "LIBRARY_MATERIAL",
+    "target": "/ru/library",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/studies",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/cat-train-ru",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/video-kursy",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/mysteries",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/ru/misterii",
+    "classification": "REDIRECT_ONLY",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/business",
+    "classification": "SERVICES_MATERIAL",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/therapy",
+    "classification": "SERVICES_MATERIAL",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/express",
+    "classification": "SERVICES_MATERIAL",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/events",
+    "classification": "GENERAL_ARCHIVE",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=10&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "10",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/free-energy-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/reiki",
+    "target": "/en/academy/reiki/free-energy-healing",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=12&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "12",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "path/magister-archetypal-therapies",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/magister-sham-trpi",
+    "target": "/en/academy/path/magister-archetypal-therapies",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=13&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "13",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=13&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=30&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "30",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "213",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/free-energy-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/reiki",
+    "target": "/en/academy/reiki/free-energy-healing",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=31&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "31",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "214",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/yggdrasil",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/prog-taory",
+    "target": "/en/academy/reiki/yggdrasil",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=38&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "38",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "220",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=38&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=39&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "39",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "221",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=39&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=40&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "40",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "222",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/master-shamanic-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/master-taory",
+    "target": "/en/academy/reiki/master-shamanic-healing",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=41&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "41",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "223",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "path/magister-archetypal-therapies",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/magister-sham-trpi",
+    "target": "/en/academy/path/magister-archetypal-therapies",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=44&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "44",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "227",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "runes/runes-business",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/runes-business",
+    "target": "/en/academy/runes/runes-business",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=50&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "50",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "228",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/tantra-reiki",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/tantra",
+    "target": "/en/academy/reiki/tantra-reiki",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=52&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "52",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "229",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "mysteries/initiations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
+    "target": "/en/academy/mysteries/initiations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=54&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "54",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "231",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/yggdrasil/faq",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "target": "/en/academy/reiki/yggdrasil/faq",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=56&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "56",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "312",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "mysteries/archetypes-of-love",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/mysteries/mysteries-of-love",
+    "target": "/en/academy/mysteries/archetypes-of-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=68&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "68",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "mysteries/egyptian-hypno-course",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/gypno-egypt",
+    "target": "/en/academy/mysteries/egyptian-hypno-course",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=70&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "70",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "260",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/energy-pump-ups",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/%D1%81ourse-swap",
+    "target": "/en/academy/videos/energy-pump-ups",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=71&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "71",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "262",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "elements/elemental-magic",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/elemental-en",
+    "target": "/en/academy/elements/elemental-magic",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=72&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "72",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "264",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "elements/water",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/elemental-water",
+    "target": "/en/academy/elements/water",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=73&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "73",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "265",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "302",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_SERVICES",
+    "preservationClassification": "Services",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=73&option=com_quix&view=page",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=81&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "81",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "273",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_SYSTEM_IGNORE",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=81&option=com_quix&view=page",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=94&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "94",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "285",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=94&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=98&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "98",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "288",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/sun-meditations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "target": "/en/academy/videos/sun-meditations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=99&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "99",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "292",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/greek-mysteries-demeter",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-grecheskie-misterii-kanal-demetry",
+    "target": "/en/academy/videos/greek-mysteries-demeter",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=100&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "100",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "293",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/planetary-power",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-sila-planet",
+    "target": "/en/academy/videos/planetary-power",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=101&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "101",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "294",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/strength-protection",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/meditatsii-sily-i-zashchity",
+    "target": "/en/academy/videos/strength-protection",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=102&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "102",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "295",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/maya-archetypes",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/arkhetipy-majya",
+    "target": "/en/academy/videos/maya-archetypes",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=103&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "103",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "296",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/egypt-osiris",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-zhrechestvo-egipta-osiris",
+    "target": "/en/academy/videos/egypt-osiris",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=104&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "104",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "297",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/greek-mysteries-dionysus",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-misterii-dionisa",
+    "target": "/en/academy/videos/greek-mysteries-dionysus",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=108&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "108",
+        "language": "en-GB"
+      },
+      {
+        "type": "menu_exact",
+        "id": "307",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/sun-meditations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "target": "/en/academy/videos/sun-meditations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=109&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "109",
+        "language": "en-GB"
+      },
+      {
+        "type": "menu_exact",
+        "id": "308",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_LIBRARY",
+    "preservationClassification": "Library",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=109&option=com_quix&view=page",
+    "target": "/en/library",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=111&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "111",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "317",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "traditions/egypt",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-egipta",
+    "target": "/en/academy/traditions/egypt",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=112&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "112",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "314",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "traditions/greece",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-gretsii",
+    "target": "/en/academy/traditions/greece",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=115&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "115",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_SERVICES",
+    "preservationClassification": "Services",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=115&option=com_quix&view=page",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=122&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "122",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "332",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=122&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=131&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "131",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "342",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ACADEMY",
+    "preservationClassification": "Academy",
+    "logicalId": "symbolic/artifacts-talismans",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/artifacts",
+    "target": "/en/academy/symbolic/artifacts-talismans",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=139&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "139",
+        "language": "en-GB"
+      },
+      {
+        "type": "menu_exact",
+        "id": "351",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=139&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=16&option=com_content&view=article",
+    "sourceIds": [
+      {
+        "type": "content",
+        "id": "16",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=16&option=com_content&view=article",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=21&option=com_content&view=article",
+    "sourceIds": [
+      {
+        "type": "content",
+        "id": "21",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=21&option=com_content&view=article",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=35&option=com_content&view=article",
+    "sourceIds": [
+      {
+        "type": "content",
+        "id": "35",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=35&option=com_content&view=article",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=36&option=com_content&view=article",
+    "sourceIds": [
+      {
+        "type": "content",
+        "id": "36",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=36&option=com_content&view=article",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=213&id=30&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "213",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/free-energy-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/reiki",
+    "target": "/en/academy/reiki/free-energy-healing",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=214&id=31&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "214",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/yggdrasil",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/prog-taory",
+    "target": "/en/academy/reiki/yggdrasil",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=217&id=34&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "217",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "history/student-experiences",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
+    "target": "/ru/academy/history/student-experiences",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=220&id=38&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "220",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=220&id=38&lang=en&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=221&id=39&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "221",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=221&id=39&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=222&id=40&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "222",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/master-shamanic-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/master-taory",
+    "target": "/en/academy/reiki/master-shamanic-healing",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=223&id=41&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "223",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "path/magister-archetypal-therapies",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/magister-sham-trpi",
+    "target": "/en/academy/path/magister-archetypal-therapies",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=227&id=44&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "227",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "runes/runes-business",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/runes-business",
+    "target": "/en/academy/runes/runes-business",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=228&id=50&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "228",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/tantra-reiki",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/tantra",
+    "target": "/en/academy/reiki/tantra-reiki",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=229&id=52&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "229",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/initiations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
+    "target": "/en/academy/mysteries/initiations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=231&id=54&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "231",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/yggdrasil/faq",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "target": "/en/academy/reiki/yggdrasil/faq",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=253&id=62&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "253",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "runes/runes-business",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/runes-business",
+    "target": "/ru/academy/runes/runes-business",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=254&id=61&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "254",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/initiations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
+    "target": "/ru/academy/mysteries/initiations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=258&id=67&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "258",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/egyptian-hypno-course",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/gypno-egypt",
+    "target": "/ru/academy/mysteries/egyptian-hypno-course",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=260&id=70&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "260",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/energy-pump-ups",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/%D1%81ourse-swap",
+    "target": "/en/academy/videos/energy-pump-ups",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=262&id=71&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "262",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "elements/elemental-magic",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/elemental-en",
+    "target": "/en/academy/elements/elemental-magic",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=264&id=72&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "264",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "elements/water",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/elemental-water",
+    "target": "/en/academy/elements/water",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=265&id=73&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "265",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_SERVICES",
+    "preservationClassification": "Services",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=265&id=73&option=com_quix&view=page",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?id=75&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_exact",
+        "id": "268",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_SYSTEM_IGNORE",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=75&option=com_quix&view=page",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=268&id=75&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "268",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_SYSTEM_IGNORE",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=268&id=75&option=com_quix&view=page",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=273&id=81&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "273",
+        "language": "*"
+      }
+    ],
+    "classification": "BACKUP_SYSTEM_IGNORE",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=273&id=81&option=com_quix&view=page",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=275&id=84&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "275",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_SYSTEM_IGNORE",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=275&id=84&lang=ru&option=com_quix&view=page",
+    "target": null,
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=278&id=87&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "278",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "history",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/about-us-ru",
+    "target": "/ru/academy/history",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=283&id=91&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "283",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/yggdrasil",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/prog-taory",
+    "target": "/ru/academy/reiki/yggdrasil",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=284&id=93&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "284",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_LIBRARY",
+    "preservationClassification": "Library",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=284&id=93&lang=ru&option=com_quix&view=page",
+    "target": "/ru/library",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=285&id=94&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "285",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=285&id=94&lang=ru&option=com_quix&view=page",
+    "target": "/ru/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=288&id=98&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "288",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/sun-meditations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "target": "/ru/academy/videos/sun-meditations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=292&id=99&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "292",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/greek-mysteries-demeter",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-grecheskie-misterii-kanal-demetry",
+    "target": "/ru/academy/videos/greek-mysteries-demeter",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=293&id=100&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "293",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/planetary-power",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-sila-planet",
+    "target": "/ru/academy/videos/planetary-power",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=294&id=101&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "294",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/strength-protection",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/meditatsii-sily-i-zashchity",
+    "target": "/ru/academy/videos/strength-protection",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=295&id=102&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "295",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/maya-archetypes",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/arkhetipy-majya",
+    "target": "/ru/academy/videos/maya-archetypes",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=296&id=103&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "296",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/egypt-osiris",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-zhrechestvo-egipta-osiris",
+    "target": "/ru/academy/videos/egypt-osiris",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=297&id=104&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "297",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/greek-mysteries-dionysus",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-misterii-dionisa",
+    "target": "/ru/academy/videos/greek-mysteries-dionysus",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=302&id=73&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "302",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_SERVICES",
+    "preservationClassification": "Services",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=302&id=73&lang=en&option=com_quix&view=page",
+    "target": "/en/services",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=307&id=108&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "307",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/sun-meditations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "target": "/en/academy/videos/sun-meditations",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=308&id=109&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "308",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_LIBRARY",
+    "preservationClassification": "Library",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=308&id=109&lang=en&option=com_quix&view=page",
+    "target": "/en/library",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=312&id=56&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "312",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/archetypes-of-love",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/mysteries/mysteries-of-love",
+    "target": "/en/academy/mysteries/archetypes-of-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=314&id=112&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "314",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "traditions/greece",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-gretsii",
+    "target": "/ru/academy/traditions/greece",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=317&id=111&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "317",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "traditions/egypt",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-egipta",
+    "target": "/ru/academy/traditions/egypt",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=325&id=53&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "325",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/archetypes-of-love",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/mysteries/mysteries-of-love",
+    "target": "/ru/academy/mysteries/archetypes-of-love",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=326&id=57&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "326",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "target": "/ru/academy/mysteries/archetypes-of-gods",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=327&id=121&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "327",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=327&id=121&lang=ru&option=com_quix&view=page",
+    "target": "/ru/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=332&id=122&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "332",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=332&id=122&lang=en&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=342&id=131&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "342",
+        "language": "ru-RU"
+      }
+    ],
+    "classification": "BACKUP_DUPLICATE",
+    "preservationClassification": "Duplicate",
+    "logicalId": "symbolic/artifacts-talismans",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/artifacts",
+    "target": "/ru/academy/symbolic/artifacts-talismans",
+    "redirectNow": false
+  },
+  {
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=351&id=139&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "351",
+        "language": "en-GB"
+      }
+    ],
+    "classification": "BACKUP_ARCHIVE",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=351&id=139&lang=en&option=com_quix&view=page",
+    "target": "/en/academy/archive",
+    "redirectNow": false
+  }
+]

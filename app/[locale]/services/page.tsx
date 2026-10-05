@@ -10,8 +10,14 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { getAppConfig } from "@/lib/app/config";
+import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import type { PublicService } from "@/lib/practitioners/public-types";
 
 type PageProps = { params: Promise<{ locale: string }> };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+// Production release marker: Wu Xing marketplace featured service.
 
 const copy = {
   ru: {
@@ -20,6 +26,7 @@ const copy = {
     kicker: "Три направления работы",
     heading: "Услуги",
     lead: "Три формата для разных задач: бизнес и решения, внутренние состояния и развитие, архетипическая и трансперсональная работа.",
+    marketplaceCta: "Выбрать услугу",
     cards: [
       {
         id: "business",
@@ -60,6 +67,7 @@ const copy = {
     kicker: "Three directions of work",
     heading: "Services",
     lead: "Three formats for different needs: business and decision-making, inner states and development, and archetypal / transpersonal exploration.",
+    marketplaceCta: "Choose a service",
     cards: [
       {
         id: "business",
@@ -117,6 +125,14 @@ export default async function ServicesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const current = copy[locale as Locale];
+  let offerings: PublicService[] = [];
+  try {
+    offerings = await createPractitionerRepository(getAppConfig()).listPublicServices(locale);
+  } catch {
+    offerings = [];
+  }
+  const featuredService = offerings.find((service) => service.slug === "free-wu-xing-diagnostic");
+  const marketplaceOfferings = offerings.filter((service) => service.id !== featuredService?.id);
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
@@ -127,8 +143,8 @@ export default async function ServicesPage({ params }: PageProps) {
           <p className="homeopathy-kicker">{current.kicker}</p>
           <h1>{current.heading}</h1>
           <p>{current.lead}</p>
-          <Link className="services-studio-primary" href="#consultation">
-            {current.consultation}<span aria-hidden="true">→</span>
+          <Link className="services-studio-primary" href="#available-services">
+            {current.marketplaceCta}<span aria-hidden="true">→</span>
           </Link>
         </div>
         <div className="services-studio-photo" aria-hidden="true">
@@ -140,6 +156,131 @@ export default async function ServicesPage({ params }: PageProps) {
             sizes="(max-width: 767px) 100vw, 44vw"
           />
         </div>
+      </section>
+
+      <section className="services-marketplace" id="available-services" aria-labelledby="services-marketplace-title">
+        <div className="services-marketplace-heading">
+          <p className="homeopathy-kicker">{locale === "ru" ? "Доступные услуги" : "Available services"}</p>
+          <h2 id="services-marketplace-title">{locale === "ru" ? "Выберите услугу" : "Choose a service"}</h2>
+          <p>
+            {locale === "ru"
+              ? "Можно открыть подробности или сразу отправить запрос выбранному мастеру. Публичные профили и услуги проходят модерацию."
+              : "Open the details or send a request directly to the practitioner. Public profiles and services are moderated."}
+          </p>
+        </div>
+
+        {featuredService ? (
+          <article className="services-marketplace-featured">
+            <div className="services-marketplace-featured-mark" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div className="services-marketplace-featured-copy">
+              <div className="services-marketplace-featured-topline">
+                <span className="services-marketplace-free-badge">
+                  {locale === "ru" ? "Бесплатно" : "Free"}
+                </span>
+                <Link href={`/${locale}/masters/${featuredService.practitionerSlug}`}>
+                  {featuredService.practitionerName}
+                </Link>
+              </div>
+              <h3>{featuredService.copy.title}</h3>
+              <p>{featuredService.copy.shortDescription}</p>
+              <div className="services-marketplace-featured-meta">
+                <span>{locale === "ru" ? "Онлайн" : "Online"}</span>
+                {featuredService.durationMinutes ? <span>{featuredService.durationMinutes} min</span> : null}
+                <span>{locale === "ru" ? "Личный профиль У-Син" : "Personal Wu Xing profile"}</span>
+              </div>
+              <div className="services-marketplace-actions">
+                <Link
+                  className="services-marketplace-request services-marketplace-request--featured"
+                  href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
+                >
+                  {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
+                </Link>
+                <Link
+                  className="services-marketplace-details"
+                  href={`/${locale}/services/${featuredService.practitionerSlug}/${featuredService.slug}`}
+                >
+                  {locale === "ru" ? "Подробнее" : "Details"}
+                </Link>
+              </div>
+            </div>
+          </article>
+        ) : null}
+
+        {marketplaceOfferings.length ? (
+          <div className="services-marketplace-grid">
+            {marketplaceOfferings.map((service) => {
+              const format =
+                service.deliveryFormat === "in_person"
+                  ? (locale === "ru" ? "Очно" : "In person")
+                  : service.deliveryFormat === "hybrid"
+                    ? (locale === "ru" ? "Онлайн / очно" : "Online / in person")
+                    : "Online";
+              const isFree = service.pricingMode !== "contact" && service.confirmedPrice === 0;
+              const price =
+                isFree
+                  ? (locale === "ru" ? "Бесплатно" : "Free")
+                  : service.pricingMode !== "contact" && service.confirmedPrice != null
+                    ? `${service.pricingMode === "from" ? (locale === "ru" ? "от " : "from ") : ""}${service.currency || ""} ${service.confirmedPrice}`
+                    : (locale === "ru" ? "По запросу" : "On request");
+              return (
+                <article className="services-marketplace-card" key={service.id}>
+                  <div className="services-marketplace-card-top">
+                    <Link
+                      className="services-marketplace-provider"
+                      href={`/${locale}/masters/${service.practitionerSlug}`}
+                    >
+                      <span className="services-marketplace-avatar" aria-hidden="true">
+                        {(service.practitionerName || "H").slice(0, 1).toUpperCase()}
+                      </span>
+                      <span>
+                        <small>{locale === "ru" ? "Мастер" : "Practitioner"}</small>
+                        <strong>{service.practitionerName}</strong>
+                      </span>
+                    </Link>
+                    <span className={`services-marketplace-price${isFree ? " services-marketplace-price--free" : ""}`}>
+                      {price}
+                    </span>
+                  </div>
+                  <h3>{service.copy.title}</h3>
+                  {service.professionalTitle ? (
+                    <p className="services-marketplace-role">{service.professionalTitle}</p>
+                  ) : null}
+                  <p className="services-marketplace-description">{service.copy.shortDescription}</p>
+                  <div className="services-marketplace-meta">
+                    <span>{format}</span>
+                    {service.locationLabel && service.locationLabel !== "Online" ? <span>{service.locationLabel}</span> : null}
+                    {service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}
+                  </div>
+                  <div className="services-marketplace-actions">
+                    <Link
+                      className="services-marketplace-request"
+                      href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}
+                    >
+                      {locale === "ru" ? "Заказать" : "Request"}<span aria-hidden="true">→</span>
+                    </Link>
+                    <Link
+                      className="services-marketplace-details"
+                      href={`/${locale}/services/${service.practitionerSlug}/${service.slug}`}
+                    >
+                      {locale === "ru" ? "Подробнее" : "Details"}
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : !featuredService ? (
+          <p className="services-marketplace-empty">
+            {locale === "ru" ? "Каталог услуг сейчас обновляется." : "The service catalogue is being updated."}
+          </p>
+        ) : null}
+        <p className="services-marketplace-all">
+          <Link href={`/${locale}/masters`}>
+            {locale === "ru" ? "Все мастера и практики" : "View all practitioners"}<span aria-hidden="true">→</span>
+          </Link>
+        </p>
       </section>
 
       <PageVideo slot="services-intro" locale={locale} />
@@ -188,20 +329,8 @@ export default async function ServicesPage({ params }: PageProps) {
 
       <PageVideo slot="consultation" locale={locale} />
 
-      <section className="services-consultation services-consultation--studio" id="consultation">
-        <div>
-          <p className="homeopathy-kicker">{current.consultationKicker}</p>
-          <h2>{current.consultation}</h2>
-          <p>{current.consultationText}</p>
-        </div>
-        <div>
-          <a href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">{current.telegram}</a>
-          <a href="https://wa.me/14376066502" rel="noreferrer" target="_blank">{current.whatsapp}</a>
-        </div>
-      </section>
-
+      <PublicConsultationCta locale={locale as Locale} id="consultation" />
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
-      <PublicConsultationCta locale={locale as Locale} />
     </main>
   );
 }

@@ -1,0 +1,2621 @@
+[
+  {
+    "provenanceKey": "85db845a7d46d7f42672",
+    "sourceUrl": "https://psitrends.com/index.php?id=10&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "10",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:10:*"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "CERTIFIED SHAMANIC ENERGY HEALER"
+    ],
+    "sourceContentHash": "bf1c446031f449c59a7a10e86ec2a86b0fc510dff06b7c5f7a7a41537094b52b",
+    "sourceVisibleTextHash": "ca8920185c5af2ccbfccbe213aad14b881bbd15340aea7601ff60b1410b7b5f0",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/free-energy-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/reiki",
+    "canonicalAcademyUrl": "/en/academy/reiki/free-energy-healing",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "f9985bcadc3886d8db83",
+    "sourceUrl": "https://psitrends.com/index.php?id=12&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "12",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:12:*"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "AATA ACADEMYSpecialization #1MAGISTER OF SHAMANIC THERAPIES & TAO RY"
+    ],
+    "sourceContentHash": "6f189ed4a80a8ba35154c77a17406b1f78ad03090e95949ff65d3d6bf0836a12",
+    "sourceVisibleTextHash": "19cf7b73656ad205a3b7eb9035381049b41f33dc22b4177283d70a9aef0099fe",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "path/magister-archetypal-therapies",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/magister-sham-trpi",
+    "canonicalAcademyUrl": "/en/academy/path/magister-archetypal-therapies",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "4064f06fc882872119cd",
+    "sourceUrl": "https://psitrends.com/index.php?id=13&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "13",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:13:*"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "ACADEMY OF ANCIENT TEMPLE ARTS"
+    ],
+    "sourceContentHash": "eeb5a1f5b211b8934b245061775f75f9350a970f3657720b0a1ee9371e8880d0",
+    "sourceVisibleTextHash": "7bc3a61b416701a1615b82ec322c71510006bd1f4e1f5945beb0eea2a82b6d19",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=13&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "5ac87cb0d14a30774837",
+    "sourceUrl": "https://psitrends.com/index.php?id=30&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "30",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "213",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:30:*",
+      "menu_exact:213:en-GB"
+    ],
+    "sourceTitle": "Shamanic Reiki School - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "SHAMANIC REIKI SCHOOL"
+    ],
+    "sourceContentHash": "a99b43f97b6467196058a686addd2b8cb7140a32c84a1b590344bdd102d723f5",
+    "sourceVisibleTextHash": "01c28ce57188df03bb2e19872d6c2d38d75b2f658069aed90e10a20fef20128e",
+    "sourceDuplicateGroup": "01c28ce57188df03bb2e19872d6c2d38d75b2f658069aed90e10a20fef20128e",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/free-energy-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/reiki",
+    "canonicalAcademyUrl": "/en/academy/reiki/free-energy-healing",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "5bdbe4ca85d0db226adb",
+    "sourceUrl": "https://psitrends.com/index.php?id=31&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "31",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "214",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:31:*",
+      "menu_exact:214:en-GB"
+    ],
+    "sourceTitle": "Program. Tao Reiki Yggdrasil - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "PROGRAM. TAO REIKI YGGDRASIL"
+    ],
+    "sourceContentHash": "a3bdca4a0cb8cd054d6c42209062f683c7d053f0fe632c8e1a04f61aee9e817e",
+    "sourceVisibleTextHash": "9ed8127f6c59c8762e438b2b8b030d672d987acd9b8db19a52d6301339e34d81",
+    "sourceDuplicateGroup": "9ed8127f6c59c8762e438b2b8b030d672d987acd9b8db19a52d6301339e34d81",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/yggdrasil",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/prog-taory",
+    "canonicalAcademyUrl": "/en/academy/reiki/yggdrasil",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "9ce13f1302b08d8157ec",
+    "sourceUrl": "https://psitrends.com/index.php?id=38&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "38",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "220",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:38:*",
+      "menu_exact:220:en-GB"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "ACADEMY OF TEMPLE ARTS"
+    ],
+    "sourceContentHash": "1dee08a02bdc8d8312464b0e3de6e2d66027fd95e82f7d3a8a6b6e9f86f151a6",
+    "sourceVisibleTextHash": "0d2fc353f9ef8b2bee3423b5642aa5a41d66b67e56711f4bdc0797e96ea9bbe4",
+    "sourceDuplicateGroup": "0d2fc353f9ef8b2bee3423b5642aa5a41d66b67e56711f4bdc0797e96ea9bbe4",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=38&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "f73568bfae87930c32e1",
+    "sourceUrl": "https://psitrends.com/index.php?id=39&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "39",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "221",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:39:*",
+      "menu_exact:221:*"
+    ],
+    "sourceTitle": "Archetypal Therapy Academy Nearest Events",
+    "sourceH1": [
+      "ARCHETYPAL THERAPY ACADEMY NEAREST EVENTS"
+    ],
+    "sourceContentHash": "a2c23824fd7fe3a4880e1d1ea796835e0ecf0e2d29b1df7e9eaa4039293257c8",
+    "sourceVisibleTextHash": "c0bee35e6cd9f0f47563a18c855cf6d597f09ba62f296a11dd18a9325b126266",
+    "sourceDuplicateGroup": "c0bee35e6cd9f0f47563a18c855cf6d597f09ba62f296a11dd18a9325b126266",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=39&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "69b4fada31576ed25769",
+    "sourceUrl": "https://psitrends.com/index.php?id=40&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "40",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "222",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:40:*",
+      "menu_exact:222:en-GB"
+    ],
+    "sourceTitle": "Shamanic Program Master Of Reiki Yggdrasil - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "SHAMANIC PROGRAM MASTER of REIKI YGGDRASIL"
+    ],
+    "sourceContentHash": "c8d5ae32fa64234b748c5440da6a14417a74726c204246c7a24bef8b110853bf",
+    "sourceVisibleTextHash": "98d03f88ea020a4299ca7b4cc1cfd530632e8c30aa37b2213381a793b9c1b0bc",
+    "sourceDuplicateGroup": "98d03f88ea020a4299ca7b4cc1cfd530632e8c30aa37b2213381a793b9c1b0bc",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/master-shamanic-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/master-taory",
+    "canonicalAcademyUrl": "/en/academy/reiki/master-shamanic-healing",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "58acd703a6c7f0473b5d",
+    "sourceUrl": "https://psitrends.com/index.php?id=41&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "41",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "223",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:41:*",
+      "menu_exact:223:en-GB"
+    ],
+    "sourceTitle": "Magister Of Shamanic Therapies - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "MAGISTER of SHAMANIC THERAPIES"
+    ],
+    "sourceContentHash": "d2366bc83f44799417e581d01d4c65ce6305f98d964ea0baf46717a38897d5d9",
+    "sourceVisibleTextHash": "6f9899607f0058883fda221eb8b771af83e6516ac350d169a477df5cf615c63d",
+    "sourceDuplicateGroup": "6f9899607f0058883fda221eb8b771af83e6516ac350d169a477df5cf615c63d",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "path/magister-archetypal-therapies",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/magister-sham-trpi",
+    "canonicalAcademyUrl": "/en/academy/path/magister-archetypal-therapies",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "77ac674e3ce02d72c295",
+    "sourceUrl": "https://psitrends.com/index.php?id=44&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "44",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "227",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:44:*",
+      "menu_exact:227:en-GB"
+    ],
+    "sourceTitle": "Runes & Buisiness - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "RUNES & BUISINESS"
+    ],
+    "sourceContentHash": "2e4d8624915979aa18c2c3c62152fec6a124ed25a44aefbc9df21eb47484856e",
+    "sourceVisibleTextHash": "36a227def636ce68eb30bb89454511a14f9a90417c3fb796e16ca357c536c158",
+    "sourceDuplicateGroup": "36a227def636ce68eb30bb89454511a14f9a90417c3fb796e16ca357c536c158",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "runes/runes-business",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/runes-business",
+    "canonicalAcademyUrl": "/en/academy/runes/runes-business",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "f24436c09122047eb0ec",
+    "sourceUrl": "https://psitrends.com/index.php?id=50&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "50",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "228",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:50:*",
+      "menu_exact:228:en-GB"
+    ],
+    "sourceTitle": "Tantra Reiki System - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "TANTRA REIKI SYSTEM"
+    ],
+    "sourceContentHash": "dc1a404e663ff609be5303db09d01f9f5c2cee5f8138d5e133cf7f735d74864c",
+    "sourceVisibleTextHash": "7b22d0a5f9361f4fb7036d395b62a13c98601482f086ab1d9106738255608659",
+    "sourceDuplicateGroup": "7b22d0a5f9361f4fb7036d395b62a13c98601482f086ab1d9106738255608659",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/tantra-reiki",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/tantra",
+    "canonicalAcademyUrl": "/en/academy/reiki/tantra-reiki",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "ddfed6a42a3cd585ff31",
+    "sourceUrl": "https://psitrends.com/index.php?id=52&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "52",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "229",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:52:*",
+      "menu_exact:229:en-GB"
+    ],
+    "sourceTitle": "Mysteries And Initiations - Academy Of Ancient Cultures",
+    "sourceH1": [
+      "mysteries and initiations"
+    ],
+    "sourceContentHash": "b4ae2bef98205004048ded80544ff130f6a6ea7fa8b5e0460e9a4883204fd72f",
+    "sourceVisibleTextHash": "5075de18dd468db0665fd712d67e04dbe94572908f525eacab0c56663efef926",
+    "sourceDuplicateGroup": "5075de18dd468db0665fd712d67e04dbe94572908f525eacab0c56663efef926",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "mysteries/initiations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
+    "canonicalAcademyUrl": "/en/academy/mysteries/initiations",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "689019311b8a7409c3b8",
+    "sourceUrl": "https://psitrends.com/index.php?id=54&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "54",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "231",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:54:*",
+      "menu_exact:231:en-GB"
+    ],
+    "sourceTitle": "Runic Reiki FAQ",
+    "sourceH1": [
+      "RUNIC REIKI FAQ"
+    ],
+    "sourceContentHash": "9bdff40924888e6cf77bdfea2541e0cb4353a606b1e0dfbfe39c7a1b8aef5757",
+    "sourceVisibleTextHash": "e8ff7ecc4b1b5325ecd48217b61053df72604fefbda5b0cbeaa243bd670d4b8c",
+    "sourceDuplicateGroup": "e8ff7ecc4b1b5325ecd48217b61053df72604fefbda5b0cbeaa243bd670d4b8c",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "reiki/yggdrasil/faq",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "canonicalAcademyUrl": "/en/academy/reiki/yggdrasil/faq",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "7595cf6b95cf56f47013",
+    "sourceUrl": "https://psitrends.com/index.php?id=56&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "56",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "312",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:56:*",
+      "menu_exact:312:en-GB"
+    ],
+    "sourceTitle": "Course. Mysteries Of Love - Academy Of Ancient Cultures",
+    "sourceH1": [
+      "COURSE. MYSTERIES OF LOVE"
+    ],
+    "sourceContentHash": "71a5b2d432fc1ba5c6ee08c4cdd79c271daeca79806e351fee3ad17d5ec3a4e5",
+    "sourceVisibleTextHash": "942ff1a98a9cdda0d2cb573f6815042aa2b1c0eb19039d4bfdfcc317e0d501e1",
+    "sourceDuplicateGroup": "942ff1a98a9cdda0d2cb573f6815042aa2b1c0eb19039d4bfdfcc317e0d501e1",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "mysteries/archetypes-of-love",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/mysteries/mysteries-of-love",
+    "canonicalAcademyUrl": "/en/academy/mysteries/archetypes-of-love",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "22c8ee7412e28739d4be",
+    "sourceUrl": "https://psitrends.com/index.php?id=68&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "68",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:68:*"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Hypno-coaching Egyptian Course"
+    ],
+    "sourceContentHash": "bfaca31f7b6b1c9754e689b1cf1ccc8f03142d4a1ed4ebaffcc88616e671619e",
+    "sourceVisibleTextHash": "f2ff922e17aceaeee5f6f87a96b471f305c24e6ae33fdb256a7491ee46829eef",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "mysteries/egyptian-hypno-course",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/gypno-egypt",
+    "canonicalAcademyUrl": "/en/academy/mysteries/egyptian-hypno-course",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "746980c5b96674a8c003",
+    "sourceUrl": "https://psitrends.com/index.php?id=70&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "70",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "260",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:70:*",
+      "menu_exact:260:*"
+    ],
+    "sourceTitle": "Видео-курс \"Подкачки\"",
+    "sourceH1": [],
+    "sourceContentHash": "f335d10b5877eb1c4e5b0b885bd705c9000c37ec6181df337fb411b9a5753772",
+    "sourceVisibleTextHash": "68c511f846d508f1a5cc57bb5795e83d947dcc182d0aec842ef743960dbb6573",
+    "sourceDuplicateGroup": "68c511f846d508f1a5cc57bb5795e83d947dcc182d0aec842ef743960dbb6573",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/energy-pump-ups",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/%D1%81ourse-swap",
+    "canonicalAcademyUrl": "/en/academy/videos/energy-pump-ups",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "0bc0e53137237f4531b6",
+    "sourceUrl": "https://psitrends.com/index.php?id=71&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "71",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "262",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:71:*",
+      "menu_exact:262:en-GB"
+    ],
+    "sourceTitle": "Working With A Goal & Elemental Power - Academy Of Archetypal Technologies",
+    "sourceH1": [
+      "Working with a goal + Elemental Power"
+    ],
+    "sourceContentHash": "b256dd5aea0aee2215be7c5ebe602f2dab55fd956f2c628e79b0d5e9df12efb0",
+    "sourceVisibleTextHash": "73609ad59f5be9a47ff9b50f0d02e65f64ef08f22e30d162fac54bb4f70486b9",
+    "sourceDuplicateGroup": "73609ad59f5be9a47ff9b50f0d02e65f64ef08f22e30d162fac54bb4f70486b9",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "elements/elemental-magic",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/elemental-en",
+    "canonicalAcademyUrl": "/en/academy/elements/elemental-magic",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "be5e6abacfd3fda5556d",
+    "sourceUrl": "https://psitrends.com/index.php?id=72&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "72",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "264",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:72:*",
+      "menu_exact:264:en-GB"
+    ],
+    "sourceTitle": "Water Magic Course",
+    "sourceH1": [],
+    "sourceContentHash": "f2643bf788f46a115eda88c0edbd7d7c4783f2078cc0a7c86e8c6abda376946e",
+    "sourceVisibleTextHash": "d564548fc4ba8b6526701fa9328745aa2945fe025f92b69139daf96e9f72e6e6",
+    "sourceDuplicateGroup": "d564548fc4ba8b6526701fa9328745aa2945fe025f92b69139daf96e9f72e6e6",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "elements/water",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/elemental-water",
+    "canonicalAcademyUrl": "/en/academy/elements/water",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "7fc30744f810c4249a25",
+    "sourceUrl": "https://psitrends.com/index.php?id=73&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "73",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "265",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "302",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:73:*",
+      "menu_exact:265:*",
+      "menu_exact:302:en-GB"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Academyof archetypalconsulting"
+    ],
+    "sourceContentHash": "c49b50cc532821fd20a256a8cf31b063673064901c56a42419fd885ba070c19a",
+    "sourceVisibleTextHash": "7e84dea9003308173b134101469833ecc332caec8dcd4d6f1788275da7addd14",
+    "sourceDuplicateGroup": "7e84dea9003308173b134101469833ecc332caec8dcd4d6f1788275da7addd14",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Services",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=73&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/services",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "2865a02d3f5a7befff58",
+    "sourceUrl": "https://psitrends.com/index.php?id=81&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "81",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "273",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:81:*",
+      "menu_exact:273:*"
+    ],
+    "sourceTitle": "Course",
+    "sourceH1": [],
+    "sourceContentHash": "16547740b5ae67eda5ac779ac677c356bf7c63d6c0115214f045e2bf64e3d330",
+    "sourceVisibleTextHash": "aa5b6fae9d8a74c30e02087a28b35df809a9b2d86aec4ddab40dc28e00870495",
+    "sourceDuplicateGroup": "aa5b6fae9d8a74c30e02087a28b35df809a9b2d86aec4ddab40dc28e00870495",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=81&option=com_quix&view=page",
+    "canonicalAcademyUrl": null,
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "6d9eab31e5fd0b2a4a54",
+    "sourceUrl": "https://psitrends.com/index.php?id=94&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "94",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "285",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:94:*",
+      "menu_exact:285:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Видео-курсы"
+    ],
+    "sourceContentHash": "e6d9c43d179a601eeb0f4845a2afe6e85892acc7fc2419f49530d473a7ef8bc2",
+    "sourceVisibleTextHash": "75606bffbfae38ccc09410285fdb723f8e881d6ac9bcda9aa39a4491403363fb",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=94&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "10cae280086f61577254",
+    "sourceUrl": "https://psitrends.com/index.php?id=98&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "98",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "288",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:98:ru-RU",
+      "menu_exact:288:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Медитации Солнца"
+    ],
+    "sourceContentHash": "ba18020fb1c58e4d2d105ff427d9dcfeac635aea1f57836e9db4a600c66bb869",
+    "sourceVisibleTextHash": "dcbafdb37cff94986c5553c02ebbd0648d33d5392bbe11b63f37b6e358d20ae2",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/sun-meditations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "canonicalAcademyUrl": "/en/academy/videos/sun-meditations",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "d92c77818da6dcd714d4",
+    "sourceUrl": "https://psitrends.com/index.php?id=99&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "99",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "292",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:99:ru-RU",
+      "menu_exact:292:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Курс Греческие Мистерии. Канал Деметры."
+    ],
+    "sourceContentHash": "bf4100c7384cae26fe135a0afc27bd36f1fb8f04c26cf2b1f021fb5a651af62f",
+    "sourceVisibleTextHash": "57b6e9cfd027057621290c114052961ba74e4fd8f47f834b1812b729b71c775f",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/greek-mysteries-demeter",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-grecheskie-misterii-kanal-demetry",
+    "canonicalAcademyUrl": "/en/academy/videos/greek-mysteries-demeter",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "6b9ea3c373926e0a8865",
+    "sourceUrl": "https://psitrends.com/index.php?id=100&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "100",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "293",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:100:ru-RU",
+      "menu_exact:293:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Курс Сила Планет"
+    ],
+    "sourceContentHash": "42ee12f38cc122bc4cd0a7b185165f3d582cbc1fad7275f0bde5cb94fe35f121",
+    "sourceVisibleTextHash": "19b4713dfe2349c081b48e0579331fd151a5232cfa70b3c517ea5881b154ddfb",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/planetary-power",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-sila-planet",
+    "canonicalAcademyUrl": "/en/academy/videos/planetary-power",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "946284235e253865e129",
+    "sourceUrl": "https://psitrends.com/index.php?id=101&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "101",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "294",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:101:ru-RU",
+      "menu_exact:294:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Медитации Силы и Защиты"
+    ],
+    "sourceContentHash": "6c398582f2553208d14ac79ef3591bfd77545f0b047f9eb581ccaffbc6088ea7",
+    "sourceVisibleTextHash": "f122004c429d7ce826186e3a48e213d5df094ec6fa17b14d096ce8d17ef55738",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/strength-protection",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/meditatsii-sily-i-zashchity",
+    "canonicalAcademyUrl": "/en/academy/videos/strength-protection",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "b6feabb44b63d4a8f163",
+    "sourceUrl": "https://psitrends.com/index.php?id=102&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "102",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "295",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:102:ru-RU",
+      "menu_exact:295:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Архетипы Майя"
+    ],
+    "sourceContentHash": "04fe47f0979f39da63a8cb250cf3b44ee9a21baa980892339961b46a3c8c5061",
+    "sourceVisibleTextHash": "f3a8fe24e432da36e68e3fbffb3d22fffd392ca9bda7bcb15efcbfbcd076ddbe",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/maya-archetypes",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/arkhetipy-majya",
+    "canonicalAcademyUrl": "/en/academy/videos/maya-archetypes",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "cec3e0b0b06b0f552954",
+    "sourceUrl": "https://psitrends.com/index.php?id=103&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "103",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "296",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:103:ru-RU",
+      "menu_exact:296:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Курс Жречество Египта. Осирис"
+    ],
+    "sourceContentHash": "e4a9618af495807850bb9ad2aa778954b7320ad45d6daa45b18a66d8c7c694a9",
+    "sourceVisibleTextHash": "815672ca65e1f0184e2f4b0835832151313a2d3f0bb78dc574efb4cb16183ff0",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/egypt-osiris",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-zhrechestvo-egipta-osiris",
+    "canonicalAcademyUrl": "/en/academy/videos/egypt-osiris",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "153dc7622e0505d3f737",
+    "sourceUrl": "https://psitrends.com/index.php?id=104&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "104",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "297",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:104:ru-RU",
+      "menu_exact:297:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Курс Мистерии Диониса"
+    ],
+    "sourceContentHash": "9c4b1a8ec9b8337391deba60fd725c83775131e6d35fa42be49c2ebd5d6d5cd3",
+    "sourceVisibleTextHash": "820dac60be8ff25de9b53ccca0bfd0a8659a38d0a1c1f5f4e56f4bc6f15fd9f6",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/greek-mysteries-dionysus",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-misterii-dionisa",
+    "canonicalAcademyUrl": "/en/academy/videos/greek-mysteries-dionysus",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "cd6aa44d0660d53e5953",
+    "sourceUrl": "https://psitrends.com/index.php?id=108&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "108",
+        "language": "en-GB"
+      },
+      {
+        "type": "menu_exact",
+        "id": "307",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:108:en-GB",
+      "menu_exact:307:en-GB"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Meditations of the Sun"
+    ],
+    "sourceContentHash": "83e432dd02372e95f6225e40004e02b0f529d759a9a58ff9ee89c75482507d57",
+    "sourceVisibleTextHash": "a2cbb9f67e2dd18eea719a8c457410fbaeee3307e53990b8a0c1927fb15df68b",
+    "sourceDuplicateGroup": "a2cbb9f67e2dd18eea719a8c457410fbaeee3307e53990b8a0c1927fb15df68b",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "videos/sun-meditations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "canonicalAcademyUrl": "/en/academy/videos/sun-meditations",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "60f847904bfb40557b68",
+    "sourceUrl": "https://psitrends.com/index.php?id=109&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "109",
+        "language": "en-GB"
+      },
+      {
+        "type": "menu_exact",
+        "id": "308",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:109:en-GB",
+      "menu_exact:308:en-GB"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Books"
+    ],
+    "sourceContentHash": "39b9b514c78708315daeefd233bb4a58d1fa5a849596abb00a0d37c8a020ce3a",
+    "sourceVisibleTextHash": "3892c5cc9f8af496a3358070954cc2b4a2a7d3695d2159beed134b73f7efe10f",
+    "sourceDuplicateGroup": "3892c5cc9f8af496a3358070954cc2b4a2a7d3695d2159beed134b73f7efe10f",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Library",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=109&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/library",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "1e079751487caaa5e1c8",
+    "sourceUrl": "https://psitrends.com/index.php?id=111&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "111",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "317",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:111:ru-RU",
+      "menu_exact:317:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Мистерии Египта"
+    ],
+    "sourceContentHash": "3cdaa9d2fb3e7defcac4e30a129d99c02014f8d422d917361b8d0cfc87a024ec",
+    "sourceVisibleTextHash": "7ea112bc4da39ab2c7147a877ba07ff99f9809a0449b30388b1c13d09056e934",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "traditions/egypt",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-egipta",
+    "canonicalAcademyUrl": "/en/academy/traditions/egypt",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "f54fe8a5a10482e1222f",
+    "sourceUrl": "https://psitrends.com/index.php?id=112&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "112",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "314",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:112:ru-RU",
+      "menu_exact:314:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Мистерии Греции"
+    ],
+    "sourceContentHash": "db71d22fb51b01fa9be56e212515e06708ccc4b80a4f5b952844c7b9bf5f52df",
+    "sourceVisibleTextHash": "3693c5cfac3ec9f55125f37fe6785c95daa40641b373126ca838115a13fd6af3",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "traditions/greece",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-gretsii",
+    "canonicalAcademyUrl": "/en/academy/traditions/greece",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "ec06b782e219b41d57d1",
+    "sourceUrl": "https://psitrends.com/index.php?id=115&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "115",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:115:en-GB"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Free materials and services of the Academy"
+    ],
+    "sourceContentHash": "6d069043365d081dd82cc19d4c5b5ff7ccccc6f863f6e704a0fa1d148e6d5d85",
+    "sourceVisibleTextHash": "3d054b8849cf4ac9f497291332a6a274a4aeb69444b508621895c5bc4c98e40d",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Services",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=115&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/services",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "37d6fdb67585e219193e",
+    "sourceUrl": "https://psitrends.com/index.php?id=122&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "122",
+        "language": "*"
+      },
+      {
+        "type": "menu_exact",
+        "id": "332",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:122:*",
+      "menu_exact:332:en-GB"
+    ],
+    "sourceTitle": "Mysteries",
+    "sourceH1": [],
+    "sourceContentHash": "788bbe88826041a10ea67dcb38cfa1c98afb80991348269456b95892c2f55b58",
+    "sourceVisibleTextHash": "b07a980de75ad0f8c39506cb2bc43171b6335bfd7f1843331fd7add90d04a4b5",
+    "sourceDuplicateGroup": "b07a980de75ad0f8c39506cb2bc43171b6335bfd7f1843331fd7add90d04a4b5",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=122&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "af51ca7036dd61eb121f",
+    "sourceUrl": "https://psitrends.com/index.php?id=131&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "131",
+        "language": "ru-RU"
+      },
+      {
+        "type": "menu_exact",
+        "id": "342",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:131:ru-RU",
+      "menu_exact:342:ru-RU"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Мандалы и Артефакты"
+    ],
+    "sourceContentHash": "64c6211ffcadcf0f7ac3078cb0eca88216c8b413bd380ee332780abf30f5445c",
+    "sourceVisibleTextHash": "2e45f6c1dd47b6bec882705ebebc153136dde15cdd12dde0c9a99f16869ca391",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Academy",
+    "logicalId": "symbolic/artifacts-talismans",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/artifacts",
+    "canonicalAcademyUrl": "/en/academy/symbolic/artifacts-talismans",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "249fcba70f051bc53940",
+    "sourceUrl": "https://psitrends.com/index.php?id=139&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "quix",
+        "id": "139",
+        "language": "en-GB"
+      },
+      {
+        "type": "menu_exact",
+        "id": "351",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "quix:139:en-GB",
+      "menu_exact:351:en-GB"
+    ],
+    "sourceTitle": "Articles",
+    "sourceH1": [
+      "Academy of archetypal consulting Articles"
+    ],
+    "sourceContentHash": "68d3af1f3b5ef2772fbcf1c6dd4ef1d2eb4a4f11474330aa1104ccde4e8ad62e",
+    "sourceVisibleTextHash": "81cb467fff66718695b806f369b07ac4e972a36993f98cfccaca16798e6355df",
+    "sourceDuplicateGroup": "81cb467fff66718695b806f369b07ac4e972a36993f98cfccaca16798e6355df",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=139&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "5f75e1469c1d4262a0d6",
+    "sourceUrl": "https://psitrends.com/index.php?id=16&option=com_content&view=article",
+    "sourceIds": [
+      {
+        "type": "content",
+        "id": "16",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "content:16:*"
+    ],
+    "sourceTitle": "The travel in Italy Mystery Revealed",
+    "sourceH1": [
+      "The travel in Italy Mystery Revealed"
+    ],
+    "sourceContentHash": "61299309b8ff4e50982494590b922bcd5b728aed2650fc19a4db4e5a7afec6a4",
+    "sourceVisibleTextHash": "a0d825d0852cfbe67d68ac5bb746f74d8493d707d8426afef2b8db247b81c5fe",
+    "sourceDuplicateGroup": "a0d825d0852cfbe67d68ac5bb746f74d8493d707d8426afef2b8db247b81c5fe",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=16&option=com_content&view=article",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "34aeb2dec0127416f470",
+    "sourceUrl": "https://psitrends.com/index.php?id=21&option=com_content&view=article",
+    "sourceIds": [
+      {
+        "type": "content",
+        "id": "21",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "content:21:*"
+    ],
+    "sourceTitle": "The travel in Italy Mystery Revealed",
+    "sourceH1": [
+      "The travel in Italy Mystery Revealed"
+    ],
+    "sourceContentHash": "efaaedc27108c1bdf7b5cddee29074e9e79f3083adbe27020d35db561da3f82d",
+    "sourceVisibleTextHash": "a0d825d0852cfbe67d68ac5bb746f74d8493d707d8426afef2b8db247b81c5fe",
+    "sourceDuplicateGroup": "a0d825d0852cfbe67d68ac5bb746f74d8493d707d8426afef2b8db247b81c5fe",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=21&option=com_content&view=article",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "37417ce4e0b379a63bf3",
+    "sourceUrl": "https://psitrends.com/index.php?id=35&option=com_content&view=article",
+    "sourceIds": [
+      {
+        "type": "content",
+        "id": "35",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "content:35:*"
+    ],
+    "sourceTitle": "Fall In Love With Greece Places",
+    "sourceH1": [
+      "Fall In Love With Greece Places"
+    ],
+    "sourceContentHash": "d3d5c70b27edeca48db0e6bb76d4f95b07dbdc4b653bbfee625a6fd1bed2f004",
+    "sourceVisibleTextHash": "c7713d42e0af3777fdebc1c3b2ce591bc3a8d18c8bc558941b96a816b7b3492c",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=35&option=com_content&view=article",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "fe9d60194df19d8fe4f5",
+    "sourceUrl": "https://psitrends.com/index.php?id=36&option=com_content&view=article",
+    "sourceIds": [
+      {
+        "type": "content",
+        "id": "36",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "content:36:*"
+    ],
+    "sourceTitle": "The travel in Italy Mystery Places",
+    "sourceH1": [
+      "The travel in Italy Mystery Places"
+    ],
+    "sourceContentHash": "34720c079e14d570feebfd66a6b2101482922ce1f151fe57aacb13fd03fcc2b8",
+    "sourceVisibleTextHash": "23c174211578f9de626c16303924ac591eecbc16fc17b3ce181bb94658f4ceb6",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=36&option=com_content&view=article",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "2ad00dc3033aec042b43",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=213&id=30&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "213",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:213:en-GB"
+    ],
+    "sourceTitle": "Shamanic Reiki School - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "SHAMANIC REIKI SCHOOL"
+    ],
+    "sourceContentHash": "c0a6dbda859d4a425c26224c580269d51b52330ac7c4bc73954922e49640c881",
+    "sourceVisibleTextHash": "01c28ce57188df03bb2e19872d6c2d38d75b2f658069aed90e10a20fef20128e",
+    "sourceDuplicateGroup": "01c28ce57188df03bb2e19872d6c2d38d75b2f658069aed90e10a20fef20128e",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/free-energy-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/reiki",
+    "canonicalAcademyUrl": "/en/academy/reiki/free-energy-healing",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "d2f5570b733e455c2080",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=214&id=31&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "214",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:214:en-GB"
+    ],
+    "sourceTitle": "Program. Tao Reiki Yggdrasil - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "PROGRAM. TAO REIKI YGGDRASIL"
+    ],
+    "sourceContentHash": "266116a6663f87b1bc62c55ad517b39a7c28d4aab48974928b95e269ef377a40",
+    "sourceVisibleTextHash": "9ed8127f6c59c8762e438b2b8b030d672d987acd9b8db19a52d6301339e34d81",
+    "sourceDuplicateGroup": "9ed8127f6c59c8762e438b2b8b030d672d987acd9b8db19a52d6301339e34d81",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/yggdrasil",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/prog-taory",
+    "canonicalAcademyUrl": "/en/academy/reiki/yggdrasil",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "8fa8fbada67e3138c417",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=217&id=34&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "217",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:217:ru-RU"
+    ],
+    "sourceTitle": "Отзывы Мистов Курс МААТ",
+    "sourceH1": [],
+    "sourceContentHash": "958777ca464ce67c1af7097af29bcaabe7249037f859940521519179de894d46",
+    "sourceVisibleTextHash": "8be8728b4425fce86e3b5c8d87d3c56fa2e326e598cba3cc29092709fef42225",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "history/student-experiences",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/review-maat-ru",
+    "canonicalAcademyUrl": "/ru/academy/history/student-experiences",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "589e629ba86f93e6141e",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=220&id=38&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "220",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:220:en-GB"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "ACADEMY OF TEMPLE ARTS"
+    ],
+    "sourceContentHash": "de3023381f888f1a982cd9b0e4a65b3bda42f27378f5e380aa03ee2b7987dc9d",
+    "sourceVisibleTextHash": "0d2fc353f9ef8b2bee3423b5642aa5a41d66b67e56711f4bdc0797e96ea9bbe4",
+    "sourceDuplicateGroup": "0d2fc353f9ef8b2bee3423b5642aa5a41d66b67e56711f4bdc0797e96ea9bbe4",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=220&id=38&lang=en&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "d2e67c564716fa8d92bb",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=221&id=39&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "221",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:221:*"
+    ],
+    "sourceTitle": "Archetypal Therapy Academy Nearest Events",
+    "sourceH1": [
+      "ARCHETYPAL THERAPY ACADEMY NEAREST EVENTS"
+    ],
+    "sourceContentHash": "d06473e5687f3c9d864c93ecc9cf93958914511bf3923696a743b289430b89e3",
+    "sourceVisibleTextHash": "c0bee35e6cd9f0f47563a18c855cf6d597f09ba62f296a11dd18a9325b126266",
+    "sourceDuplicateGroup": "c0bee35e6cd9f0f47563a18c855cf6d597f09ba62f296a11dd18a9325b126266",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=221&id=39&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "702d518e475029d88282",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=222&id=40&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "222",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:222:en-GB"
+    ],
+    "sourceTitle": "Shamanic Program Master Of Reiki Yggdrasil - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "SHAMANIC PROGRAM MASTER of REIKI YGGDRASIL"
+    ],
+    "sourceContentHash": "4fb30c07c7b8ab8e48f89f7f0e4c544fe6e3fdb630652d96f3a4155055e86fdd",
+    "sourceVisibleTextHash": "98d03f88ea020a4299ca7b4cc1cfd530632e8c30aa37b2213381a793b9c1b0bc",
+    "sourceDuplicateGroup": "98d03f88ea020a4299ca7b4cc1cfd530632e8c30aa37b2213381a793b9c1b0bc",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/master-shamanic-healing",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/master-taory",
+    "canonicalAcademyUrl": "/en/academy/reiki/master-shamanic-healing",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "c46429318bc5d0ba2204",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=223&id=41&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "223",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:223:en-GB"
+    ],
+    "sourceTitle": "Magister Of Shamanic Therapies - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "MAGISTER of SHAMANIC THERAPIES"
+    ],
+    "sourceContentHash": "9f24999726b0e4c95a9dec6f77c78f31df867170f97461575a2f0dde267d930c",
+    "sourceVisibleTextHash": "6f9899607f0058883fda221eb8b771af83e6516ac350d169a477df5cf615c63d",
+    "sourceDuplicateGroup": "6f9899607f0058883fda221eb8b771af83e6516ac350d169a477df5cf615c63d",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "path/magister-archetypal-therapies",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/magister-sham-trpi",
+    "canonicalAcademyUrl": "/en/academy/path/magister-archetypal-therapies",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "2cc3f61a009c33c21c85",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=227&id=44&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "227",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:227:en-GB"
+    ],
+    "sourceTitle": "Runes & Buisiness - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "RUNES & BUISINESS"
+    ],
+    "sourceContentHash": "e22a2aa13442aa5e148c9bbca3f90a72218fb77bbecb74c14e6fe4b59064bce5",
+    "sourceVisibleTextHash": "36a227def636ce68eb30bb89454511a14f9a90417c3fb796e16ca357c536c158",
+    "sourceDuplicateGroup": "36a227def636ce68eb30bb89454511a14f9a90417c3fb796e16ca357c536c158",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "runes/runes-business",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/runes-business",
+    "canonicalAcademyUrl": "/en/academy/runes/runes-business",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "fb014b3b41b90b2ee864",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=228&id=50&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "228",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:228:en-GB"
+    ],
+    "sourceTitle": "Tantra Reiki System - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "TANTRA REIKI SYSTEM"
+    ],
+    "sourceContentHash": "b6f05a165ab5bef49f62803aeb8f5d919b1980b45bf25ba56d8ec8b1179917b5",
+    "sourceVisibleTextHash": "7b22d0a5f9361f4fb7036d395b62a13c98601482f086ab1d9106738255608659",
+    "sourceDuplicateGroup": "7b22d0a5f9361f4fb7036d395b62a13c98601482f086ab1d9106738255608659",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/tantra-reiki",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/tantra",
+    "canonicalAcademyUrl": "/en/academy/reiki/tantra-reiki",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "1555d60509a607035776",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=229&id=52&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "229",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:229:en-GB"
+    ],
+    "sourceTitle": "Mysteries And Initiations - Academy Of Ancient Cultures",
+    "sourceH1": [
+      "mysteries and initiations"
+    ],
+    "sourceContentHash": "86ee4009919c5210bbe2b8af4a93093037034d57262e04b8aaa93396ccb7c7b0",
+    "sourceVisibleTextHash": "5075de18dd468db0665fd712d67e04dbe94572908f525eacab0c56663efef926",
+    "sourceDuplicateGroup": "5075de18dd468db0665fd712d67e04dbe94572908f525eacab0c56663efef926",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/initiations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
+    "canonicalAcademyUrl": "/en/academy/mysteries/initiations",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "16362fe25312ec844fed",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=231&id=54&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "231",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:231:en-GB"
+    ],
+    "sourceTitle": "Runic Reiki FAQ",
+    "sourceH1": [
+      "RUNIC REIKI FAQ"
+    ],
+    "sourceContentHash": "416223eed12d4c56468d4fb7d259016269e47902b315a9aa22344097f032d292",
+    "sourceVisibleTextHash": "e8ff7ecc4b1b5325ecd48217b61053df72604fefbda5b0cbeaa243bd670d4b8c",
+    "sourceDuplicateGroup": "e8ff7ecc4b1b5325ecd48217b61053df72604fefbda5b0cbeaa243bd670d4b8c",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/yggdrasil/faq",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/master-taory/reiki-faq",
+    "canonicalAcademyUrl": "/en/academy/reiki/yggdrasil/faq",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "fb02b5c3921ce8da1eae",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=253&id=62&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "253",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:253:ru-RU"
+    ],
+    "sourceTitle": "Руны & Бизнес",
+    "sourceH1": [],
+    "sourceContentHash": "edca19bf6ab93960454c9a7147c8bd2993931adb53b3fc1dcb79e9ecd098ce60",
+    "sourceVisibleTextHash": "ff5ac8aaa3a44494858dbbfcb15950689ce9653e119dd84f4f80f971e7e786d1",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "runes/runes-business",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/runes-business",
+    "canonicalAcademyUrl": "/ru/academy/runes/runes-business",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "0feea7df3992e737b7f5",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=254&id=61&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "254",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:254:ru-RU"
+    ],
+    "sourceTitle": "Мистерии & Инициации",
+    "sourceH1": [],
+    "sourceContentHash": "ce5677268636c3a3bad5dcaf38fa91c9c4c6de596988e48c0d65fe6cdfc957d7",
+    "sourceVisibleTextHash": "618966055431c05ee3ad21313770ae6e7e08b96a0b11da6a6c2001c5fd2fd0e1",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/initiations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/myst-ru",
+    "canonicalAcademyUrl": "/ru/academy/mysteries/initiations",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "3d061823f56913952b41",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=258&id=67&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "258",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:258:ru-RU"
+    ],
+    "sourceTitle": "Гипно-Коучинг Египетский Курс",
+    "sourceH1": [],
+    "sourceContentHash": "c6f6d680dd99f91befe73364890830d7a397c65432113b6e4ce522a6b911f530",
+    "sourceVisibleTextHash": "00078b69e831b3275914778d1eaf44f1d7540101e97aaa7ffd3ddd1dcd010e18",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/egyptian-hypno-course",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/advanced-ru/gypno-egypt",
+    "canonicalAcademyUrl": "/ru/academy/mysteries/egyptian-hypno-course",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "b597ca014bb45c03cdca",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=260&id=70&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "260",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:260:*"
+    ],
+    "sourceTitle": "Видео-курс \"Подкачки\"",
+    "sourceH1": [],
+    "sourceContentHash": "4058eab0e701f54542baefaa60300b2ab2fe64122006a58e87473a2127a9d734",
+    "sourceVisibleTextHash": "68c511f846d508f1a5cc57bb5795e83d947dcc182d0aec842ef743960dbb6573",
+    "sourceDuplicateGroup": "68c511f846d508f1a5cc57bb5795e83d947dcc182d0aec842ef743960dbb6573",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/energy-pump-ups",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/%D1%81ourse-swap",
+    "canonicalAcademyUrl": "/en/academy/videos/energy-pump-ups",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "e9116a2476e3b7334681",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=262&id=71&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "262",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:262:en-GB"
+    ],
+    "sourceTitle": "Working With A Goal & Elemental Power - Academy Of Archetypal Technologies",
+    "sourceH1": [
+      "Working with a goal + Elemental Power"
+    ],
+    "sourceContentHash": "e080712325b92b83fc5e18db3249fba62497d7879aa6cf11d7b5a56822e7c598",
+    "sourceVisibleTextHash": "73609ad59f5be9a47ff9b50f0d02e65f64ef08f22e30d162fac54bb4f70486b9",
+    "sourceDuplicateGroup": "73609ad59f5be9a47ff9b50f0d02e65f64ef08f22e30d162fac54bb4f70486b9",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "elements/elemental-magic",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/elemental-en",
+    "canonicalAcademyUrl": "/en/academy/elements/elemental-magic",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "6c9903fca33aa00e08ad",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=264&id=72&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "264",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:264:en-GB"
+    ],
+    "sourceTitle": "Water Magic Course",
+    "sourceH1": [],
+    "sourceContentHash": "3495c3b6a003d33d6b2823aa21b11ab66f2170a6dcf9c0da6441fd299086fef2",
+    "sourceVisibleTextHash": "d564548fc4ba8b6526701fa9328745aa2945fe025f92b69139daf96e9f72e6e6",
+    "sourceDuplicateGroup": "d564548fc4ba8b6526701fa9328745aa2945fe025f92b69139daf96e9f72e6e6",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "elements/water",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/elemental-water",
+    "canonicalAcademyUrl": "/en/academy/elements/water",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "1c24ba5de0ba98821e96",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=265&id=73&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "265",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:265:*"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Academyof archetypalconsulting"
+    ],
+    "sourceContentHash": "cd3a08fc0c3e9bb32e47859eafb9254534cd5c0937c8499c9473abd1114d69b8",
+    "sourceVisibleTextHash": "7e84dea9003308173b134101469833ecc332caec8dcd4d6f1788275da7addd14",
+    "sourceDuplicateGroup": "7e84dea9003308173b134101469833ecc332caec8dcd4d6f1788275da7addd14",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Services",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=265&id=73&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/services",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "646919e1e37a7c6712a5",
+    "sourceUrl": "https://psitrends.com/index.php?id=75&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_exact",
+        "id": "268",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_exact:268:*"
+    ],
+    "sourceTitle": "Сategories Training",
+    "sourceH1": [],
+    "sourceContentHash": "3d20be09e501a580af432df2956f2a265c781aa72382e05e4df286d89e135952",
+    "sourceVisibleTextHash": "00443da05e3d9f66c534a3a069b4fac096394701cc9fba9173cf9ec0a3087d87",
+    "sourceDuplicateGroup": "00443da05e3d9f66c534a3a069b4fac096394701cc9fba9173cf9ec0a3087d87",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?id=75&option=com_quix&view=page",
+    "canonicalAcademyUrl": null,
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "47ba86162ebb2c1574c4",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=268&id=75&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "268",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:268:*"
+    ],
+    "sourceTitle": "Сategories Training",
+    "sourceH1": [],
+    "sourceContentHash": "c3e615afb405af799a318c36ad39c5399e5fa4d7059920053371212c36f8c0ad",
+    "sourceVisibleTextHash": "00443da05e3d9f66c534a3a069b4fac096394701cc9fba9173cf9ec0a3087d87",
+    "sourceDuplicateGroup": "00443da05e3d9f66c534a3a069b4fac096394701cc9fba9173cf9ec0a3087d87",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=268&id=75&option=com_quix&view=page",
+    "canonicalAcademyUrl": null,
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "bd3cf97b1d1088975afe",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=273&id=81&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "273",
+        "language": "*"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:273:*"
+    ],
+    "sourceTitle": "Course",
+    "sourceH1": [],
+    "sourceContentHash": "d732015ed92b73d24a410fe24f85ace6e2a8089b8c0ad4cc000b2468fc08e75f",
+    "sourceVisibleTextHash": "aa5b6fae9d8a74c30e02087a28b35df809a9b2d86aec4ddab40dc28e00870495",
+    "sourceDuplicateGroup": "aa5b6fae9d8a74c30e02087a28b35df809a9b2d86aec4ddab40dc28e00870495",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=273&id=81&option=com_quix&view=page",
+    "canonicalAcademyUrl": null,
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "892a011689cfae44d7ed",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=275&id=84&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "275",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:275:ru-RU"
+    ],
+    "sourceTitle": "Обучение",
+    "sourceH1": [],
+    "sourceContentHash": "ece02cde35d8b198b41ac284f073a9c0359f69f5d09549062e6c22f5b27e5e3f",
+    "sourceVisibleTextHash": "06826e44c98f9746f3299e6f51feb4997d5f5267e23df141d0229e91248aed8d",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "System Ignore",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=275&id=84&lang=ru&option=com_quix&view=page",
+    "canonicalAcademyUrl": null,
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "fb9a6e54aef7be741b57",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=278&id=87&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "278",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:278:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [],
+    "sourceContentHash": "825a2c796709ba6fcb4930c4305d5b900f563fd4f68f2236cbbfbb97c1b8ad7b",
+    "sourceVisibleTextHash": "3590e03b89d4f059281a295c3635a759f7bc5ddf4c67a7f3225422cf2150392b",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "history",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/about-us-ru",
+    "canonicalAcademyUrl": "/ru/academy/history",
+    "publication": "represented_by_existing_record"
+  },
+  {
+    "provenanceKey": "f33bb804fc8c73b76d0d",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=283&id=91&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "283",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:283:ru-RU"
+    ],
+    "sourceTitle": "Program. Tao Reiki Yggdrasil - Academy Of Ancient Temple Arts",
+    "sourceH1": [
+      "Школа Рейки Иггдрасиль"
+    ],
+    "sourceContentHash": "e432d3e655917540fee789fd9bc43bf4bd4e09387c93858fe11ff0bcf42f27d9",
+    "sourceVisibleTextHash": "02839874c1cce7170ccf7256a244d03e5ec087ed6debe095b846938853548e99",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "reiki/yggdrasil",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/prog-taory",
+    "canonicalAcademyUrl": "/ru/academy/reiki/yggdrasil",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "90e4203cb0ea02a99b17",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=284&id=93&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "284",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:284:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Наши книги"
+    ],
+    "sourceContentHash": "7351ebec39b764ed1557db359e66818637a41d10f86690381b53943854d073ab",
+    "sourceVisibleTextHash": "99ea7487f2b136d98186de2b3589ba6e2b96d681e1503f5beedc4f2ec215e15f",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Library",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=284&id=93&lang=ru&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/ru/library",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "af3346658355e6ea3bc5",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=285&id=94&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "285",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:285:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Видео-курсы"
+    ],
+    "sourceContentHash": "51c41afd5d76c2cce072b5a36acd7203b841650c66e9832e0a95d267a08d2dfb",
+    "sourceVisibleTextHash": "e35a55cc51e215e885b5420dc7c622c61ec0b4f7afceba7f6463a1591b337802",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=285&id=94&lang=ru&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/ru/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "b708de5731caf036ce5e",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=288&id=98&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "288",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:288:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Медитации Солнца"
+    ],
+    "sourceContentHash": "bf9906b31a26e6281a11c407469947f5c71e1facb09cc5d70cb2fd10742aafaf",
+    "sourceVisibleTextHash": "a0b99037406565c5c63132679a8438b49c864fbd3f3ab54d87fb135f521833ae",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/sun-meditations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "canonicalAcademyUrl": "/ru/academy/videos/sun-meditations",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "707ca92e7dc55cbeed82",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=292&id=99&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "292",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:292:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Курс Греческие Мистерии. Канал Деметры."
+    ],
+    "sourceContentHash": "371df7a9a0b5504df5b592e10083c23f5346fc8d8e014e7bc9fbb9f6e5d635b5",
+    "sourceVisibleTextHash": "cca9a23ff8e7800cb0127dad7556908a5c74cf154d57dd27ff2ee31ef490391b",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/greek-mysteries-demeter",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-grecheskie-misterii-kanal-demetry",
+    "canonicalAcademyUrl": "/ru/academy/videos/greek-mysteries-demeter",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "d9d9e9a10552b4260814",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=293&id=100&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "293",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:293:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Курс Сила Планет"
+    ],
+    "sourceContentHash": "308d89461198283037c4169f90d43bbc63f489933d5cbfac4c493d424bd1a0b7",
+    "sourceVisibleTextHash": "0b24c712306c172ad1570698bd7adf9a4ed9aba911500f663209a1eb431322ad",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/planetary-power",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-sila-planet",
+    "canonicalAcademyUrl": "/ru/academy/videos/planetary-power",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "4f402ff5e20029ecaed5",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=294&id=101&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "294",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:294:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Медитации Силы и Защиты"
+    ],
+    "sourceContentHash": "7e5a2a0cfc5213c941e7f8e6783dfe84911d9bed4e6619bfabeb310546b54972",
+    "sourceVisibleTextHash": "a3085c6dc2659007b6ba625be3283f57c0ccfcd74c1838a1c1c998bbdb7a9f38",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/strength-protection",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/meditatsii-sily-i-zashchity",
+    "canonicalAcademyUrl": "/ru/academy/videos/strength-protection",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "0f3618eb63c8a8ec4095",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=295&id=102&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "295",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:295:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Архетипы Майя"
+    ],
+    "sourceContentHash": "ced10056b694af4aeb2e457aff01483a94a157601a423031f748be73acf45e9f",
+    "sourceVisibleTextHash": "c058cda9e4fa1440eecb97d069ba427f59e36ed1bb592d596c3a79bcdcd444f0",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/maya-archetypes",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/arkhetipy-majya",
+    "canonicalAcademyUrl": "/ru/academy/videos/maya-archetypes",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "95113f34ac48c6c41015",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=296&id=103&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "296",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:296:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Курс Жречество Египта. Осирис"
+    ],
+    "sourceContentHash": "bd728a0b376b23cbe6f86bc21748e3fa7ab740fe692b1f065306074c157b91d3",
+    "sourceVisibleTextHash": "814c1383d288f5a9bd2a2b4cb59dc528280dfe0d6b03557ae3af3f8b3862d58f",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/egypt-osiris",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-zhrechestvo-egipta-osiris",
+    "canonicalAcademyUrl": "/ru/academy/videos/egypt-osiris",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "380e9b660e04dfd6f2b5",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=297&id=104&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "297",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:297:ru-RU"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Курс Мистерии Диониса"
+    ],
+    "sourceContentHash": "1b7b600ecd53146be974d0632dd676936912a5b5bb8f1694502b7f961fe199be",
+    "sourceVisibleTextHash": "50e84fd694590def9fbad586354285c40002b50ce4309ae654d85333cefbeb10",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/greek-mysteries-dionysus",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/video-kursy/kurs-misterii-dionisa",
+    "canonicalAcademyUrl": "/ru/academy/videos/greek-mysteries-dionysus",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "9a274c8ded61c5a0082f",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=302&id=73&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "302",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:302:en-GB"
+    ],
+    "sourceTitle": "Аcademy of archetypal consulting",
+    "sourceH1": [
+      "Academyof archetypalconsulting"
+    ],
+    "sourceContentHash": "d499aa05070aa5be558c31d116a0e7620094a32cd245e0de283741ae87eb496f",
+    "sourceVisibleTextHash": "7e84dea9003308173b134101469833ecc332caec8dcd4d6f1788275da7addd14",
+    "sourceDuplicateGroup": "7e84dea9003308173b134101469833ecc332caec8dcd4d6f1788275da7addd14",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Services",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=302&id=73&lang=en&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/services",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "2cb3ac44b3f3210c0bca",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=307&id=108&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "307",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:307:en-GB"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Meditations of the Sun"
+    ],
+    "sourceContentHash": "89aecb5e000af7663f70ac1a38ef403e20c44c88e45c7ca9aa162452b71201c2",
+    "sourceVisibleTextHash": "a2cbb9f67e2dd18eea719a8c457410fbaeee3307e53990b8a0c1927fb15df68b",
+    "sourceDuplicateGroup": "a2cbb9f67e2dd18eea719a8c457410fbaeee3307e53990b8a0c1927fb15df68b",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "videos/sun-meditations",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/meditations-of-the-sun",
+    "canonicalAcademyUrl": "/en/academy/videos/sun-meditations",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "4d3b3edda0f0d0a48977",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=308&id=109&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "308",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:308:en-GB"
+    ],
+    "sourceTitle": "About us - Academy Of Temple Arts",
+    "sourceH1": [
+      "Books"
+    ],
+    "sourceContentHash": "60774f011749a7351915127adf97fcf8dbde1a7b21f8ba3fb65c9b11518ec4d2",
+    "sourceVisibleTextHash": "3892c5cc9f8af496a3358070954cc2b4a2a7d3695d2159beed134b73f7efe10f",
+    "sourceDuplicateGroup": "3892c5cc9f8af496a3358070954cc2b4a2a7d3695d2159beed134b73f7efe10f",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Library",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=308&id=109&lang=en&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/library",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "a5321438a677ec4510c2",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=312&id=56&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "312",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:312:en-GB"
+    ],
+    "sourceTitle": "Course. Mysteries Of Love - Academy Of Ancient Cultures",
+    "sourceH1": [
+      "COURSE. MYSTERIES OF LOVE"
+    ],
+    "sourceContentHash": "0f056e29f2630b956896807a14932d42e6f7071a734f9448feeb41d5396a25d4",
+    "sourceVisibleTextHash": "942ff1a98a9cdda0d2cb573f6815042aa2b1c0eb19039d4bfdfcc317e0d501e1",
+    "sourceDuplicateGroup": "942ff1a98a9cdda0d2cb573f6815042aa2b1c0eb19039d4bfdfcc317e0d501e1",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/archetypes-of-love",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/mysteries/mysteries-of-love",
+    "canonicalAcademyUrl": "/en/academy/mysteries/archetypes-of-love",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "0a968b46a82f57e3f6f7",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=314&id=112&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "314",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:314:ru-RU"
+    ],
+    "sourceTitle": "Мистерии Греции",
+    "sourceH1": [
+      "Мистерии Греции"
+    ],
+    "sourceContentHash": "0942a2049475ef0f3f6749e61256539803db840d36af46cd3732964160577daf",
+    "sourceVisibleTextHash": "483f8dda57fa4aff101aa8aa82f4a5c37f5be589a92c2c2a85584edf3c41532a",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "traditions/greece",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-gretsii",
+    "canonicalAcademyUrl": "/ru/academy/traditions/greece",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "674a93b9eaca55afb3ca",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=317&id=111&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "317",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:317:ru-RU"
+    ],
+    "sourceTitle": "Мистерии Египта",
+    "sourceH1": [
+      "Мистерии Египта"
+    ],
+    "sourceContentHash": "08ca9e7343e74d0c9f9af23ddad02ce498e9e8965a01c52938927369923e392b",
+    "sourceVisibleTextHash": "a4bdb80f81fb1c10904d36a028db4514b15eb27a0ae21dd44abf7060fe2827e3",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "traditions/egypt",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/ru/cat-train-ru/skoly/misterii-egipta",
+    "canonicalAcademyUrl": "/ru/academy/traditions/egypt",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "2c0f1eebeccfe59f54df",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=325&id=53&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "325",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:325:ru-RU"
+    ],
+    "sourceTitle": "Малые мистерии: Архетипы любви",
+    "sourceH1": [],
+    "sourceContentHash": "22a715c4afd8ed7b85f760ee632fcd5803ad83784b5d4e092e932b7e7b961226",
+    "sourceVisibleTextHash": "cf687cced2e17199ac8eb38bbf64e80a02e5ae2e92de153ad63daf7692b9c698",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/archetypes-of-love",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/mysteries/mysteries-of-love",
+    "canonicalAcademyUrl": "/ru/academy/mysteries/archetypes-of-love",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "52821b0b3d53dc79b1c3",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=326&id=57&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "326",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:326:ru-RU"
+    ],
+    "sourceTitle": "Большие Мистерии: Архетипы Богов",
+    "sourceH1": [],
+    "sourceContentHash": "3d89b2ba27bd725a9306e413a746c83628eb51edcf2dfa0e69c4d84b2ebbcead",
+    "sourceVisibleTextHash": "4e2df0687f35a8033df6002a2c4211c1f5e52cbec5e986c8cd47ac201d855f25",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "mysteries/archetypes-of-gods",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/mysteries/great-mysteries-archetypes-of-the-gods",
+    "canonicalAcademyUrl": "/ru/academy/mysteries/archetypes-of-gods",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "8fff4327a37a027c780b",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=327&id=121&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "327",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:327:ru-RU"
+    ],
+    "sourceTitle": "Мистерии",
+    "sourceH1": [],
+    "sourceContentHash": "d8d8092782d45daac8d8c5917b50d2cd37c49e1c3c5683df57dd9757b1a9319b",
+    "sourceVisibleTextHash": "bdb697481aee4a1719818cf1f965bb70f9576df9bef5c156882e52cba51d5c3f",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=327&id=121&lang=ru&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/ru/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "12b747230d80f565f68e",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=332&id=122&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "332",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:332:en-GB"
+    ],
+    "sourceTitle": "Mysteries",
+    "sourceH1": [],
+    "sourceContentHash": "07dc70cb18884841f2f3b2145a11b6bafd1a3f7a370b6677f6adbd24734c0f58",
+    "sourceVisibleTextHash": "b07a980de75ad0f8c39506cb2bc43171b6335bfd7f1843331fd7add90d04a4b5",
+    "sourceDuplicateGroup": "b07a980de75ad0f8c39506cb2bc43171b6335bfd7f1843331fd7add90d04a4b5",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=332&id=122&lang=en&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "49ca0a713595e5240602",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=342&id=131&lang=ru&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "342",
+        "language": "ru-RU"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:342:ru-RU"
+    ],
+    "sourceTitle": "Мандалы и артефакты",
+    "sourceH1": [
+      "Мандалы и Артефакты"
+    ],
+    "sourceContentHash": "2bc83ac54efae0a166bf231a980b63cf680d893cbc46c29164e5ad284df1fbbd",
+    "sourceVisibleTextHash": "58963e7bc11ae2333ce425bca7af6dee739059b46b38828b2f45668162d65cac",
+    "sourceDuplicateGroup": null,
+    "sourceLocale": "ru",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Duplicate",
+    "logicalId": "symbolic/artifacts-talismans",
+    "canonicalPsiTrendsUrl": "https://psitrends.com/studies/adv/artifacts",
+    "canonicalAcademyUrl": "/ru/academy/symbolic/artifacts-talismans",
+    "publication": "not_published_from_backup"
+  },
+  {
+    "provenanceKey": "df4e2ddba7cbfabcbb76",
+    "sourceUrl": "https://psitrends.com/index.php?Itemid=351&id=139&lang=en&option=com_quix&view=page",
+    "sourceIds": [
+      {
+        "type": "menu_context",
+        "id": "351",
+        "language": "en-GB"
+      }
+    ],
+    "sourceIdKeys": [
+      "menu_context:351:en-GB"
+    ],
+    "sourceTitle": "Articles",
+    "sourceH1": [
+      "Academy of archetypal consulting Articles"
+    ],
+    "sourceContentHash": "a769fdbeab573baf20446da8fd5d0bb0ead46bedde8f39cd5dc2604a6ddab9bf",
+    "sourceVisibleTextHash": "81cb467fff66718695b806f369b07ac4e972a36993f98cfccaca16798e6355df",
+    "sourceDuplicateGroup": "81cb467fff66718695b806f369b07ac4e972a36993f98cfccaca16798e6355df",
+    "sourceLocale": "en",
+    "sourceStatus": 200,
+    "sourceDecision": "REVIEW_NEEDED",
+    "preservationClassification": "Archive",
+    "logicalId": null,
+    "canonicalPsiTrendsUrl": "https://psitrends.com/index.php?Itemid=351&id=139&lang=en&option=com_quix&view=page",
+    "canonicalAcademyUrl": "/en/academy/archive",
+    "publication": "not_published_from_backup"
+  }
+]

@@ -51,7 +51,7 @@ test('consultation cannot fall back to a GET containing personal fields before h
   assert.match(form, /event\.preventDefault\(\)/);
   assert.match(form, /setCustomValidity/);
   assert.match(form, /personal-consultation-form__resume/);
-  assert.match(form, /not sent/);
+  assert.match(form, /sent automatically/);
 });
 
 // Exercise the real network-validation function without React, source rewriting or any external request.

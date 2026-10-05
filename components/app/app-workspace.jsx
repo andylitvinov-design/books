@@ -1,12 +1,16 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
-import { APP_SERVICES } from '@/data/app-services'
 import { AssessmentReading } from '@/components/assessment-reading'
+import { MoodCheckIn } from '@/components/app/mood-checkin'
+import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
+import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
+import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 export async function appFetch(path, body, method) {
   const response = await fetch(`/api/app/${path}`, {
@@ -59,6 +63,7 @@ function goSignedOut(setData) {
 export default function AppWorkspace({ locale, path = [] }) {
   const c = COPY[locale],
     router = useRouter(),
+    searchParams = useSearchParams(),
     [data, setData] = useState(null),
     [state, setState] = useState('loading'),
     [error, setError] = useState(null)
@@ -127,7 +132,10 @@ export default function AppWorkspace({ locale, path = [] }) {
     setBusy(true)
     setError(null)
     try {
-      const result = await appFetch('auth/start', { locale })
+      const result = await appFetch('auth/start', {
+        locale,
+        serviceId: searchParams.get('service') || null,
+      })
       window.location.assign(result.redirectUrl)
     } catch (e) {
       setError(e)
@@ -159,6 +167,13 @@ export default function AppWorkspace({ locale, path = [] }) {
       </main>
     )
   if (state === 'loading')
+    return (
+      <main className="hh-app" aria-busy="true">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{c.loading}</h1>
+      </main>
+    )
+  if (state === 'ready' && !data)
     return (
       <main className="hh-app" aria-busy="true">
         <p className="hh-kicker">Holistic House</p>
@@ -207,6 +222,9 @@ export default function AppWorkspace({ locale, path = [] }) {
             <Link href={`${root}/settings`} prefetch={false}>
               {c.settings}
             </Link>
+            <Link href={`${root}/practice`} prefetch={false}>
+              {data.practice ? (locale === 'ru' ? 'Моя практика' : 'My Practice') : (locale === 'ru' ? 'Стать мастером' : 'Become a Master')}
+            </Link>
             <Link
               href={`/${locale === 'en' ? 'ru' : 'en'}/app${page === 'portrait' ? '' : `/${page}`}${recordId ? `/${recordId}` : ''}`}
               prefetch={false}
@@ -241,12 +259,16 @@ export default function AppWorkspace({ locale, path = [] }) {
             <SaveContinuation data={data} locale={locale} reload={load} />
           )}
           {page === 'portrait' && (
-            <Portrait
-              data={data}
-              locale={locale}
-              onOpenHistory={() => router.push(root + '/history')}
-            />
+            <>
+              <Portrait
+                data={data}
+                locale={locale}
+                onOpenHistory={() => router.push(root + '/history')}
+              />
+              <PracticeEntry data={data} locale={locale} />
+            </>
           )}
+          {page === 'practice' && <PracticeWorkspace locale={locale} />}
           {page === 'tests' && (
             <TestCatalog
               data={data}
@@ -273,10 +295,14 @@ export default function AppWorkspace({ locale, path = [] }) {
             <ResultPage key={recordId} id={recordId} locale={locale} data={data} />
           )}
           {page === 'reports' && (
-            <SavedReportPage key={recordId} id={recordId} locale={locale} reload={load} />
+            recordId ? (
+              <SavedReportPage key={recordId} id={recordId} locale={locale} reload={load} />
+            ) : (
+              <ReportsIndex data={data} locale={locale} />
+            )
           )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} />}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} />}
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
@@ -376,16 +402,18 @@ function SaveContinuation({ data, locale, reload }) {
       {intent && !intent.expired && (
         <>
           <p><strong>{sourceTitle}</strong></p>
+          {intent?.source?.title && <p>{ru ? 'Название отчёта' : 'Report title'}: <strong>{intent.source.title}</strong></p>}
+          {intent?.source?.occurredOn && <p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(intent.source.occurredOn, locale)}</p>}
           {intent.source?.measurementAt && (
             <p>{ru ? 'Пройдено' : 'Measured'}: {dateLabel(intent.source.measurementAt, locale)}</p>
           )}
           <p>
-            {ru ? 'Аккаунт' : 'Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
+            {ru ? 'Получающий Google-аккаунт' : 'Receiving Google Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
           </p>
           <p className="hh-muted">
             {ru
-              ? 'Будет сохранён только этот выбранный результат. Другие гостевые данные и старый Client Cabinet не импортируются.'
-              : 'Only this selected result will be saved. Other guest data and the legacy Client Cabinet are not imported.'}
+              ? 'Будет сохранён только этот выбранный отчёт. Другие гостевые данные и старый Client Cabinet не импортируются.'
+              : 'Only this report will be saved. Other guest data and the legacy Client Cabinet are not imported.'}
           </p>
           {intent.status === 'committed' && intent.resourceId ? (
             <Link className="hh-primary" href={`/${locale}/app/results/${intent.resourceId}`} prefetch={false}>
@@ -539,13 +567,35 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
   )
 }
 function TestCatalog({ data, locale, onStarted }) {
-  const c = COPY[locale],
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(null)
+  const c = COPY[locale]
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const [view, setView] = useState('recommended')
   const definitions = [
-    getAssessmentDefinition('hh-current-state', 'v1', locale),
+    getAssessmentDefinition('hh-current-state', 'v2', locale),
     getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
   ]
+  const monitoringIntro =
+    locale === 'ru'
+      ? 'Начните с одного полезного замера. Дальше выбирайте только то, что действительно хотите отслеживать.'
+      : 'Start with one useful measurement. Go deeper only into the areas you actually want to track.'
+  const tabs =
+    locale === 'ru'
+      ? [
+          ['recommended', 'Рекомендуем'],
+          ['all', 'Все доступные'],
+          ['areas', 'По областям'],
+          ['completed', 'Пройденные'],
+        ]
+      : [
+          ['recommended', 'Recommended'],
+          ['all', 'All available'],
+          ['areas', 'By area'],
+          ['completed', 'Completed'],
+        ]
+  const quickArea = MONITOR_AREAS.find((area) => area.key === 'quick')
+  const personalityArea = MONITOR_AREAS.find((area) => area.key === 'personality')
+
   async function start(def) {
     setBusy(true)
     setError(null)
@@ -564,50 +614,128 @@ function TestCatalog({ data, locale, onStarted }) {
       setBusy(false)
     }
   }
+
+  function cardFor(def, { recommended = false } = {}) {
+    const isState = def.key === 'hh-current-state'
+    const draft = data.runs.find((x) => x.definitionId === def.id)
+    const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
+    const title = isState
+      ? locale === 'ru'
+        ? 'Состояние сейчас'
+        : 'Current State Check'
+      : locale === 'ru'
+        ? 'Личностный профиль'
+        : 'Personality Baseline'
+    const meta = isState
+      ? locale === 'ru'
+        ? '5 вопросов · ~1 мин'
+        : '5 questions · ~1 min'
+      : locale === 'ru'
+        ? '20 вопросов · ~3 мин · EN'
+        : '20 questions · ~3 min · EN'
+    const image = isState
+      ? locale === 'ru'
+        ? '/images/holistic-house/video-posters/home-ru-v1.webp'
+        : '/images/holistic-house/video-posters/home-en-v2.webp'
+      : locale === 'ru'
+        ? '/images/holistic-house/video-posters/services-ru-v1.webp'
+        : '/images/holistic-house/video-posters/services-en-v2.webp'
+    return (
+      <article className={`hh-monitoring-card${recommended ? ' hh-monitoring-card--recommended' : ''}`} key={def.id}>
+        <div className="hh-monitoring-photo" aria-hidden="true">
+          <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={image} />
+        </div>
+        <div className="hh-monitoring-card-body">
+          {recommended && <p className="hh-monitoring-recommended">{locale === 'ru' ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
+          <p className="hh-monitoring-meta">{meta}</p>
+          <h2>{title}</h2>
+          <p>{isState ? c.stateDescription : c.traitDescription}</p>
+          {!isState && <p className="hh-notice">{c.traitNotice}</p>}
+          {completed && (
+            <p className="hh-fine">
+              {c.latest}: {dateLabel(completed.measurementAt, locale)}
+            </p>
+          )}
+          <div className="hh-actions">
+            <button
+              className="hh-primary"
+              disabled={busy}
+              onClick={() => (draft ? onStarted(draft) : start(def))}
+            >
+              {draft ? c.resume : completed ? c.repeat : c.start}
+            </button>
+            {completed && (
+              <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
+                {c.view}
+              </Link>
+            )}
+          </div>
+        </div>
+      </article>
+    )
+  }
+
+  const completedDefinitions = definitions.filter((def) =>
+    data.results.some((result) => result.definitionId === def.id),
+  )
+
   return (
-    <section>
-      <div className="hh-heading">
-        <p className="hh-kicker">Holistic House</p>
-        <h1>{c.tests}</h1>
-        <p>{c.continueLater}</p>
+    <section className="hh-monitoring">
+      <div className="hh-heading hh-monitoring-heading">
+        <p className="hh-kicker">{locale === 'ru' ? 'Монитор состояния' : 'Mind–Body Monitor'}</p>
+        <h1>{locale === 'ru' ? 'Тесты и самонаблюдение' : 'Tests & self-checks'}</h1>
+        <p>{monitoringIntro}</p>
+        <p className="hh-fine">{c.continueLater}</p>
       </div>
-      <div className="hh-grid">
-        {definitions.map((def) => {
-          const isState = def.key === 'hh-current-state',
-            draft = data.runs.find((x) => x.definitionId === def.id),
-            completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
-          return (
-            <article className="hh-panel" key={def.id}>
-              <p className="hh-kicker">
-                {isState ? '5' : '20'} {locale === 'ru' ? 'вопросов' : 'questions'} ·{' '}
-                {def.instrumentLocale.toUpperCase()}
-              </p>
-              <h2>{isState ? c.state : c.personality}</h2>
-              <p>{isState ? c.stateDescription : c.traitDescription}</p>
-              {!isState && <p className="hh-notice">{c.traitNotice}</p>}
-              {completed && (
-                <p className="hh-fine">
-                  {c.latest}: {dateLabel(completed.measurementAt, locale)}
-                </p>
-              )}
-              <div className="hh-actions">
-                <button
-                  className="hh-primary"
-                  disabled={busy}
-                  onClick={() => (draft ? onStarted(draft) : start(def))}
-                >
-                  {draft ? c.resume : completed ? c.repeat : c.start}
-                </button>
-                {completed && (
-                  <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
-                    {c.view}
-                  </Link>
-                )}
-              </div>
-            </article>
-          )
-        })}
-      </div>
+
+      <nav className="hh-monitoring-tabs" aria-label={locale === 'ru' ? 'Фильтр тестов' : 'Test filters'}>
+        {tabs.map(([id, label]) => (
+          <button type="button" key={id} aria-pressed={view === id} onClick={() => setView(id)}>
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {view === 'recommended' && (
+        <div className="hh-monitoring-grid">
+          {cardFor(definitions[0], { recommended: true })}
+          {cardFor(definitions[1])}
+        </div>
+      )}
+
+      {view === 'all' && (
+        <div className="hh-monitoring-grid">{definitions.map((def) => cardFor(def))}</div>
+      )}
+
+      {view === 'areas' && (
+        <div className="hh-monitoring-areas">
+          <section>
+            <h2>{quickArea?.[locale] || quickArea?.en}</h2>
+            <div className="hh-monitoring-grid">{cardFor(definitions[0])}</div>
+          </section>
+          <section>
+            <h2>{personalityArea?.[locale] || personalityArea?.en}</h2>
+            <div className="hh-monitoring-grid">{cardFor(definitions[1])}</div>
+          </section>
+          <p className="hh-fine">
+            {locale === 'ru'
+              ? 'Дополнительные области появляются здесь только после проверки формы, прав на использование и требований безопасности.'
+              : 'Additional areas appear here only after the questionnaire, usage rights and safety requirements are verified.'}
+          </p>
+        </div>
+      )}
+
+      {view === 'completed' && (
+        completedDefinitions.length ? (
+          <div className="hh-monitoring-grid">{completedDefinitions.map((def) => cardFor(def))}</div>
+        ) : (
+          <article className="hh-panel hh-empty">
+            <h2>{locale === 'ru' ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2>
+            <p>{locale === 'ru' ? 'Начните с короткой проверки состояния.' : 'Start with the quick state check.'}</p>
+          </article>
+        )
+      )}
+
       {error && <p role="alert">{message(error, c)}</p>}
     </section>
   )
@@ -772,10 +900,14 @@ function Runner({ id, locale, onExit, onComplete }) {
           <h1>{def.optionalContext.length ? c.optional : c.result}</h1>
           <p>{def.optionalContext.length ? c.skip : c.nonDiagnostic}</p>
           {def.optionalContext.length > 0 && (
+            <details className="hh-secondary">
+              <summary>{locale === 'ru' ? 'Добавить необязательный контекст' : 'Add optional context'}</summary>
             <div className="hh-form">
               {[
                 ['current_focus', c.focus],
+                ['trigger', c.trigger],
                 ['what_helps', c.helps],
+                ['desired_change', c.desiredChange],
                 ['note', c.note],
               ].map(([key, label]) => (
                 <label key={key}>
@@ -792,6 +924,7 @@ function Runner({ id, locale, onExit, onComplete }) {
                 </label>
               ))}
             </div>
+            </details>
           )}
         </div>
       )}
@@ -890,7 +1023,16 @@ function MetricCard({ dimension, locale, onSelect }) {
 function Portrait({ data, locale, onOpenHistory }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
-    dimensions = data.snapshot?.dimensions || []
+    dimensions = data.snapshot?.dimensions || [],
+    nextStep = getPortraitNextStep({
+      ...data,
+      dimensions: dimensions.map((dimension) => {
+        const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
+        return result
+          ? { ...dimension, measurementAt: result.measurementAt, suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays }
+          : dimension
+      }),
+    })
   return (
     <section>
       <div className="hh-heading">
@@ -902,6 +1044,13 @@ function Portrait({ data, locale, onOpenHistory }) {
         <h1>{c.portrait}</h1>
         <p>{c.private}</p>
       </div>
+      <MoodCheckIn
+        locale={locale}
+        compact
+        onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}
+      />
+      {data.practitioner && <OwnerTools locale={locale} />}
+      <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
         <article className="hh-panel hh-empty">
           <h2>{c.empty}</h2>
@@ -909,6 +1058,7 @@ function Portrait({ data, locale, onOpenHistory }) {
           <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
             {c.start}
           </Link>
+          <PortraitGuide locale={locale} dimensions={dimensions} />
         </article>
       ) : (
         <>
@@ -928,6 +1078,8 @@ function Portrait({ data, locale, onOpenHistory }) {
               </section>
             ) : null
           })}
+          <PortraitGuide locale={locale} dimensions={dimensions} />
+          <LatestChange locale={locale} results={data.results} />
           <div className="hh-actions">
             <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
               {c.repeat}
@@ -936,25 +1088,7 @@ function Portrait({ data, locale, onOpenHistory }) {
           </div>
         </>
       )}
-      {data.savedReports?.length ? (
-        <section className="hh-section hh-account-reports">
-          <h2>{locale === 'ru' ? 'Недавние отчёты' : 'Recent reports'}</h2>
-          <div className="hh-grid">
-            {[...data.savedReports].reverse().slice(0, 3).map((item) => (
-              <article className="hh-panel" key={item.id}>
-                <p className="hh-kicker">{locale === 'ru' ? 'Полученный отчёт' : 'Received report'}</p>
-                <h3>{item.occurredOn}</h3>
-                <p>
-                  {locale === 'ru' ? 'Сохранено' : 'Saved'}: {dateLabel(item.savedAt, locale)}
-                </p>
-                <Link href={`/${locale}/app/reports/${item.id}`} prefetch={false}>
-                  {locale === 'ru' ? 'Открыть отчёт' : 'Open report'}
-                </Link>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <ReportsFromAndy data={data} locale={locale} />
       {selected && (
         <section className="hh-panel hh-detail" aria-live="polite">
           <button className="hh-close" onClick={() => setSelected(null)}>
@@ -978,6 +1112,103 @@ function Portrait({ data, locale, onOpenHistory }) {
       <p className="hh-fine">{c.patterns}</p>
     </section>
   )
+}
+function OwnerTools({ locale }) {
+  const ru = locale === 'ru'
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const actions = [
+    ['clients', ru ? 'Клиенты' : 'Clients', ru ? 'База клиентов, история и документы.' : 'Client database, history and documents.'],
+    ['consultation', ru ? 'Новая консультация' : 'New consultation', ru ? 'Клиент → назначение → квитанция или счёт.' : 'Client → recommendation → receipt or invoice.'],
+    ['recommendation', ru ? 'Рекомендация / рецепт' : 'Recommendation / prescription', ru ? 'Создать отдельный документ назначения.' : 'Create a standalone recommendation document.'],
+    ['payment', ru ? 'Квитанция / счёт' : 'Receipt / Invoice', ru ? 'Создать отдельный платёжный документ.' : 'Create a standalone payment document.'],
+  ]
+
+  async function open(destination) {
+    if (busy) return
+    setBusy(destination)
+    setError('')
+    try {
+      const result = await appFetch('practitioner/open', { destination })
+      window.location.assign(result.redirectUrl)
+    } catch {
+      setBusy('')
+      setError(ru ? 'Не удалось открыть рабочий кабинет. Попробуйте ещё раз.' : 'Practitioner tools could not be opened. Please retry.')
+    }
+  }
+
+  return (
+    <section className="hh-panel hh-owner-tools" aria-labelledby="owner-tools-title">
+      <div className="hh-owner-tools-heading">
+        <div>
+          <p className="hh-kicker">{ru ? 'Практика' : 'Practice'}</p>
+          <h2 id="owner-tools-title">{ru ? 'Кабинет практика' : 'Practitioner tools'}</h2>
+          <p>{ru ? 'Клиенты, назначения, квитанции и счета из вашей существующей базы.' : 'Clients, recommendations, receipts and invoices from your existing practice database.'}</p>
+        </div>
+        <button className="hh-owner-cabinet-link" type="button" disabled={Boolean(busy)} onClick={() => open('cabinet')}>
+          {ru ? 'Весь кабинет' : 'Open cabinet'}
+        </button>
+      </div>
+      <div className="hh-owner-tools-grid">
+        {actions.map(([id, title, description]) => (
+          <button type="button" key={id} disabled={Boolean(busy)} onClick={() => open(id)}>
+            <span>
+              <strong>{title}</strong>
+              <small>{description}</small>
+            </span>
+            <b aria-hidden="true">›</b>
+          </button>
+        ))}
+      </div>
+      {error && <p className="hh-owner-tools-error" role="alert">{error}</p>}
+    </section>
+  )
+}
+function NextStep({ locale, step }) {
+  const c = COPY[locale]
+  const content = {
+    state: [c.nextStateTitle, c.nextStateText, c.start],
+    tendencies: [c.nextTendenciesTitle, c.nextTendenciesText, c.addTendencies],
+    history: [c.nextHistoryTitle, c.nextHistoryText, c.viewHistory],
+    report: [c.nextReportTitle, c.nextReportText, c.openReport],
+    consultation: [c.nextConsultationTitle, c.nextConsultationText, c.viewConsultations],
+    checkin: [c.nextCheckinTitle, c.nextCheckinText, c.repeat],
+  }[step.kind]
+  return (
+    <section className="hh-next-step" aria-labelledby="next-step-title">
+      <p className="hh-kicker">{c.nextStep}</p>
+      <h2 id="next-step-title">{content[0]}</h2>
+      <p>{content[1]}</p>
+      <Link className="hh-primary" href={`/${locale}/app${step.href}`} prefetch={false}>
+        {content[2]}
+      </Link>
+    </section>
+  )
+}
+function PortraitGuide({ locale, dimensions = [] }) {
+  const c = COPY[locale]
+  const complete = (kind) => dimensions.some((dimension) => dimension.dimensionClass === kind)
+  return (
+    <section className="hh-portrait-guide" aria-labelledby="portrait-guide-title">
+      <h2 id="portrait-guide-title">{c.guideTitle}</h2>
+      <ul>
+        <li data-state={complete('state') ? 'complete' : 'current'}><strong>{c.state}</strong> — {c.guideState}</li>
+        <li data-state={complete('trait') ? 'complete' : complete('state') ? 'current' : 'future'}><strong>{c.personality}</strong> — {c.guideTendencies}</li>
+        <li><strong>{c.history}</strong> — {c.guideHistory}</li>
+        <li><strong>{c.reports}</strong> — {c.guideReports}</li>
+      </ul>
+    </section>
+  )
+}
+function LatestChange({ locale, results }) {
+  const changes = latestCompatibleChange(results)
+  if (!changes.length) return null
+  return <section className="hh-section hh-panel"><h2>{locale === 'ru' ? 'Последнее изменение' : 'Latest change'}</h2><p className="hh-fine">{locale === 'ru' ? 'Последний совместимый замер рядом с предыдущим; это не объяснение причин или тренд.' : 'Latest compatible measurement beside the previous one; this does not state a cause or trend.'}</p><ul className="hh-change-list">{changes.map((change) => <li key={change.key}>{labelFor(change.key, locale)} <strong>{change.previous} → {change.value}</strong></li>)}</ul></section>
+}
+function ReportsFromAndy({ data, locale }) {
+  const reports = reportTimeline(data.savedReports).slice(0, 3)
+  const ru = locale === 'ru'
+  return <section className="hh-section hh-account-reports"><h2>{ru ? 'Отчёты от Andy' : 'Reports from Andy'}</h2>{!reports.length ? <p className="hh-fine">{ru ? 'Сохранённых отчётов пока нет. Когда вы решите сохранить переданный отчёт, он появится здесь.' : 'No reports have been saved yet. A report you choose to save will appear here.'}</p> : <div className="hh-grid">{reports.map((report) => <article className="hh-panel" key={report.id}><p className="hh-kicker">{ru ? 'Полученный отчёт' : 'Received report'}</p><h3>{formatReportDate(report.occurredOn, locale)}</h3><p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(report.occurredOn, locale)}</p>{report.available === false ? <p className="hh-fine">{ru ? 'Отчёт больше недоступен.' : 'Report no longer available.'}</p> : <Link href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{ru ? 'Открыть отчёт' : 'Open report'}</Link>}</article>)}</div>}</section>
 }
 function ResultPage({ id, locale, data }) {
   const c = COPY[locale],
@@ -1014,6 +1245,27 @@ function ResultPage({ id, locale, data }) {
       <h1>{result.definitionKey === 'hh-current-state' ? c.state : c.personality}</h1>
       <p>{dateLabel(result.measurementAt, locale)}</p>
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
+      {Object.entries(result.context || {}).length > 0 && (
+        <aside className="hh-context-at-checkin">
+          <h2>{c.contextAtCheckIn}</h2>
+          <dl>
+            {[
+              ['current_focus', c.focus],
+              ['trigger', c.trigger],
+              ['what_helps', c.helps],
+              ['desired_change', c.desiredChange],
+              ['note', c.note],
+            ].map(([key, label]) =>
+              result.context[key] ? (
+                <div key={key}>
+                  <dt>{label}</dt>
+                  <dd>{result.context[key]}</dd>
+                </div>
+              ) : null,
+            )}
+          </dl>
+        </aside>
+      )}
       <table className="hh-table">
         <caption>
           {c.source}: {result.definitionKey} {result.definitionVersion}
@@ -1113,6 +1365,37 @@ function SavedReportPage({ id, locale, reload }) {
   )
 }
 
+function ReportsIndex({ data, locale }) {
+  const c = COPY[locale]
+  const reports = reportTimeline(data.savedReports)
+  return (
+    <section>
+      <div className="hh-heading">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{c.reports}</h1>
+        <p>{c.reportsIntro}</p>
+      </div>
+      {!reports.length ? (
+        <article className="hh-panel hh-empty">
+          <h2>{c.reportsEmpty}</h2>
+          <p>{c.reportsEmptyText}</p>
+        </article>
+      ) : (
+        <div className="hh-report-list">
+          {reports.map((report) => (
+            <article className="hh-panel" key={report.id}>
+              <p className="hh-kicker">{c.reportFromAndy}</p>
+              <h2>{formatReportDate(report.occurredOn, locale)}</h2>
+              <p className="hh-fine">{c.saved}: {dateLabel(report.savedAt, locale)}</p>
+              {report.available === false ? <p className="hh-fine">{locale === 'ru' ? 'Отчёт был отозван или больше недоступен.' : 'This report was withdrawn or is no longer available.'}</p> : <Link className="hh-primary" href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{c.openReport}</Link>}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function HistoryView({ data, locale, reload }) {
   const c = COPY[locale],
     results = chronological(data.results),
@@ -1144,12 +1427,12 @@ function HistoryView({ data, locale, reload }) {
       title: r.definitionKey === 'hh-current-state' ? c.state : c.personality,
       href: `/${locale}/app/results/${r.id}`,
     })),
-    ...(data.savedReports || []).map((report) => ({
+    ...reportTimeline(data.savedReports).map((report) => ({
       id: report.id,
-      date: report.occurredOn + 'T12:00:00.000Z',
-      title: locale === 'ru' ? 'Полученный отчёт' : 'Received report',
+      date: `${report.occurredOn}T00:00:00.000Z`,
+      title: c.reportFromAndy,
       href: `/${locale}/app/reports/${report.id}`,
-      note: `${locale === 'ru' ? 'Сохранено' : 'Saved'}: ${dateLabel(report.savedAt, locale)}`,
+      note: `${c.saved}: ${dateLabel(report.savedAt, locale)}`,
     })),
     ...data.requests.map((r) => ({
       id: r.id,
@@ -1177,7 +1460,8 @@ function HistoryView({ data, locale, reload }) {
     <section>
       <div className="hh-heading">
         <h1>{c.history}</h1>
-        <p>{c.versionBoundary}</p>
+        <p>{c.historyIntro}</p>
+        <p className="hh-fine">{c.versionBoundary}</p>
       </div>
       {latest ? (
         <article className="hh-panel">
@@ -1243,8 +1527,8 @@ function HistoryView({ data, locale, reload }) {
           </div>
           {delta.length ? (
             <p className="hh-change">
-              {labelFor(dimension.key, locale)}: {delta.find((d) => d.key === dimension.key)?.prior}{' '}
-              → {dimension.value}{' '}
+              {c.since} {dateLabel(prior.measurementAt, locale)}: {labelFor(dimension.key, locale)}{' '}
+              {delta.find((d) => d.key === dimension.key)?.prior} → {dimension.value}{' '}
               <span>
                 ({delta.find((d) => d.key === dimension.key)?.delta > 0 ? '+' : ''}
                 {delta.find((d) => d.key === dimension.key)?.delta} {c.points})
@@ -1311,7 +1595,7 @@ function HistoryView({ data, locale, reload }) {
             {item.note && <p>{item.note}</p>}
             {item.event && (
               <details>
-                <summary>{locale === 'ru' ? 'Изменить событие' : 'Edit context'}</summary>
+                <summary>{c.editJournal}</summary>
                 <ContextForm locale={locale} reload={reload} event={item.event} />
                 <button onClick={() => deleteEvent(item.event)}>{c.delete}</button>
               </details>
@@ -1408,10 +1692,15 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload }) {
+function Consultations({ data, locale, reload, initialServiceId = '' }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
     [error, setError] = useState(null)
+  useEffect(() => {
+    if (!initialServiceId || selected) return
+    const service = (data.services || []).find((item) => item.id === initialServiceId)
+    if (service) setSelected(service)
+  }, [data.services, initialServiceId, selected])
   async function updateRequest(request, action) {
     try {
       await appFetch('requests/' + request.id, { action, expectedRevision: request.revision })
@@ -1424,15 +1713,16 @@ function Consultations({ data, locale, reload }) {
     <section>
       <div className="hh-heading">
         <h1>{c.consultations}</h1>
-        <p>{c.requestNote}</p>
+        <p>{c.consultationsIntro}</p>
       </div>
       <div className="hh-grid hh-services">
-        {APP_SERVICES.map((service) => (
+        {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
+        {(data.services || []).map((service) => (
           <article className="hh-panel" key={service.id}>
-            <p className="hh-kicker">Andy · Andrii Litvinov</p>
+            <p className="hh-kicker">{service.practitionerName}{service.professionalTitle ? ` · ${service.professionalTitle}` : ''}</p>
             <h2>{service.copy[locale].title}</h2>
             <p>{service.copy[locale].description}</p>
-            <p className="hh-fine">{c.price}</p>
+            <p className="hh-fine">{service.pricingMode !== 'contact' && service.confirmedPrice != null ? `${service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : ''}${service.currency || ''} ${service.confirmedPrice}` : c.price}{service.durationMinutes ? ` · ${service.durationMinutes} min` : ''}</p>
             <button className="hh-primary" onClick={() => setSelected(service)}>
               {c.request}
             </button>
@@ -1459,7 +1749,7 @@ function Consultations({ data, locale, reload }) {
           <article className="hh-panel" key={request.id}>
             <span className="hh-badge">{c[request.status]}</span>
             <h3>
-              {APP_SERVICES.find((s) => s.id === request.serviceId)?.copy[locale].title ||
+              {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
                 c.request}
             </h3>
             <p>
@@ -1475,7 +1765,7 @@ function Consultations({ data, locale, reload }) {
             {['requested', 'contacted'].includes(request.status) && (
               <button onClick={() => updateRequest(request, 'cancel')}>{c.withdraw}</button>
             )}
-            <small className="hh-fine">ID: {request.id}</small>
+            <p className="hh-fine">{c.requestNote}</p>
           </article>
         ))}
       </section>

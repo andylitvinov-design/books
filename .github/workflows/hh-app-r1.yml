@@ -2,6 +2,8 @@ name: Holistic House App R1 isolated verification
 on:
   push:
     branches: ['codex/holistic-house-app-r1']
+  pull_request:
+    branches: ['codex/public-book-library']
 permissions:
   contents: read
 concurrency:
@@ -18,6 +20,8 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - run: npm run test:app
+      - name: Real SDK PKCE and callback cookie regressions
+        run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: Lint complete repository including literal App Router paths
         run: npm run lint
       - name: Production-mode build, app flags absent

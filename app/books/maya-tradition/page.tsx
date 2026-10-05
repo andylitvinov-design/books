@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { localizedBookText } from "@/data/library-localization";
 import { books } from "@/data/library";
@@ -29,5 +30,6 @@ export default async function MayaTraditionHub({ searchParams }: PageProps) {
     <PublicSiteHeader locale={locale} />
     <section className={styles.hero}><p>{current.kicker}</p><h1>{current.title}</h1><span>{current.intro}</span></section>
     <section className={styles.collection} aria-labelledby="maya-volumes-title"><div><p>{current.count}</p><h2 id="maya-volumes-title">{current.heading}</h2></div><ol>{volumes.map((volume, index) => { const text = localizedBookText(volume, locale); return <li key={volume.id}><span>{String(index + 1).padStart(2, "0")}</span><article><p>{text.category}</p><h3>{text.title}</h3><div>{text.description}</div><Link href={`/books/${volume.id}?lang=${locale}`}>{current.open}<span aria-hidden="true">→</span></Link></article></li>; })}</ol></section>
+    <PublicConsultationCta locale={locale} />
   </main>;
 }

@@ -13,20 +13,65 @@ import {
   readSavedReport,
   rotateReportGrant,
 } from '../lib/app/report-flow.js'
-import { appHousekeepingStatus, runAppHousekeeping } from '../lib/app/maintenance.js'
+import * as maintenance from '../lib/app/maintenance.js'
+const { appHousekeepingStatus, runAppHousekeeping } = maintenance
 import { getAppConfig } from '../lib/app/config.js'
 import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { APP_SERVICES } from '../data/app-services.js'
+import { createPractitionerRepository } from '../lib/practitioners/repository.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
+  practiceRepo = createPractitionerRepository(config),
   a = actor(),
-  b = actor(B, SB)
+  b = actor(B, SB),
+  v2Actor = actor('10000000-0000-4000-8000-000000000003', '20000000-0000-4000-8000-000000000003')
 const en = getAssessmentDefinition('hh-current-state', 'v1', 'en'),
+  enV2 = getAssessmentDefinition('hh-current-state', 'v2', 'en'),
   ru = getAssessmentDefinition('hh-current-state', 'v1', 'ru'),
   mini = getAssessmentDefinition('mini-ipip-20', 'v1', 'en')
 const answer = (def, value = 3) => Object.fromEntries(def.questions.map((q) => [q.id, value]))
+
+test('Current State v2 is seeded as a new immutable definition and retains encrypted optional context', async () => {
+  const db = await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)', [v2Actor.id, 'v2@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [
+      v2Actor.claims.session_id,
+      v2Actor.id,
+    ])
+  } finally {
+    await db.end()
+  }
+  await repo.ensureAccount(v2Actor)
+  await repo.onboarding(v2Actor, {
+    adult: true,
+    necessary: true,
+    marketing: false,
+    displayName: 'Synthetic v2',
+    uiLocale: 'en',
+    timezone: 'America/Toronto',
+    goal: 'explore',
+  })
+  const run = await start(v2Actor, enV2)
+  const saved = await repo.saveRun(v2Actor, run.id, {
+    answers: answer(enV2, 4),
+    context: { trigger: 'Synthetic trigger', desired_change: 'Synthetic desired change' },
+    progress: enV2.questions.length,
+    expectedRevision: run.revision,
+    operationId: randomUUID(),
+  })
+  assert.equal(saved.definitionVersion, 'v2')
+  assert.deepEqual(saved.context, { trigger: 'Synthetic trigger', desired_change: 'Synthetic desired change' })
+  const result = await repo.submitRun(v2Actor, run.id, { expectedRevision: saved.revision })
+  assert.equal(result.definitionVersion, 'v2')
+  assert.deepEqual(result.dimensions.map((dimension) => dimension.value), [4, 4, 4, 4, 4])
+  assert.deepEqual((await repo.getResult(v2Actor, result.id)).context, {
+    trigger: 'Synthetic trigger',
+    desired_change: 'Synthetic desired change',
+  })
+})
 const start = (who = a, def = en) =>
   repo.startRun(who, {
     definitionKey: def.key,
@@ -288,6 +333,99 @@ test('a second instrument carries only unaffected axes with their original dates
       .every((d) => d.sourceResultId === stateResult.id && d.remeasured),
   )
 })
+test('master network approval, publication and practitioner isolation use the existing request model', async () => {
+  let practitioner = await practiceRepo.saveProfile(a, {
+    profile: {
+      displayName: 'Practitioner A',
+      professionalTitle: 'Synthetic practitioner',
+      shortBio: 'Synthetic public profile for isolated database testing.',
+      fullBio: '',
+      languages: ['en','ru'],
+      city: 'Toronto',
+      region: 'Ontario',
+      country: 'Canada',
+      formats: ['online'],
+      areas: ['personal_development'],
+      methods: ['Synthetic method'],
+      yearsExperience: 1,
+      websiteUrl: '',
+      socialUrls: [],
+      photoPath: '',
+    },
+  })
+  practitioner = await practiceRepo.submitProfile(a, { expectedRevision: practitioner.revision })
+  practitioner = await practiceRepo.moderateProfile(practitioner.id, { action: 'approve' })
+  assert.equal(practitioner.status, 'approved')
+
+  const credential = await practiceRepo.saveCredential(a, null, {
+    title: 'Synthetic credential',
+    issuer: 'Synthetic Institute',
+    jurisdiction: 'Ontario',
+    reference: 'TEST-1',
+    public: true,
+    expiresOn: null,
+  })
+  assert.equal((await practiceRepo.moderateCredential(credential.id, { action: 'verify' })).verificationStatus, 'verified')
+
+  let service = await practiceRepo.saveService(a, null, {
+    draft: {
+      copy: {
+        en: { title: 'Synthetic coaching session', shortDescription: 'Synthetic EN description.', description: 'Synthetic EN description.' },
+        ru: { title: 'Синтетическая сессия', shortDescription: 'Синтетическое описание.', description: 'Синтетическое описание.' },
+      },
+      areaKey: 'personal_development',
+      offeringType: 'session',
+      deliveryFormat: 'online',
+      locationLabel: '',
+      languages: ['en','ru'],
+      pricingMode: 'contact',
+      confirmedPrice: null,
+      currency: '',
+      durationMinutes: 60,
+      imagePath: '',
+    },
+  })
+  service = await practiceRepo.submitService(a, service.id, { expectedRevision: service.revision })
+  service = await practiceRepo.moderateService(service.id, { action: 'approve' })
+  assert.equal(service.status, 'published')
+  const publicService = (await practiceRepo.listPublicServices('en')).find(item => item.id === service.id)
+  assert.equal(publicService.practitionerName, 'Practitioner A')
+
+  const request = await repo.createRequest(b, {
+    serviceId: service.id,
+    operationId: randomUUID(),
+    contact: 'b@example.invalid',
+    message: 'Synthetic multi-practitioner request',
+    shareResultId: null,
+    shareConfirmed: false,
+  })
+  assert.equal(request.sharedExcerpt, null)
+  assert.ok((await practiceRepo.getMyPractice(a)).requests.some(item => item.id === request.id))
+
+  let second = await practiceRepo.saveProfile(b, {
+    profile: {
+      displayName: 'Practitioner B',
+      professionalTitle: 'Synthetic second practitioner',
+      shortBio: 'Second synthetic practitioner.',
+      fullBio: '',
+      languages: ['en'],
+      city: '',
+      region: '',
+      country: '',
+      formats: ['online'],
+      areas: ['business_money'],
+      methods: [],
+      yearsExperience: null,
+      websiteUrl: '',
+      socialUrls: [],
+      photoPath: '',
+    },
+  })
+  second = await practiceRepo.submitProfile(b, { expectedRevision: second.revision })
+  await practiceRepo.moderateProfile(second.id, { action: 'approve' })
+  assert.equal((await practiceRepo.getMyPractice(b)).requests.length, 0)
+})
+
 test('requests are idempotent and share only an explicit excerpt; unshare and cancel work', async () => {
   const payload = {
       serviceId: APP_SERVICES[0].id,
@@ -525,6 +663,67 @@ test('housekeeping removes expired guest payloads but preserves committed retry 
   const status = await appHousekeepingStatus(config)
   assert.equal(status.id, cleaned.id)
 })
+test('housekeeping records failed attempts and limits dependent guest-intent cleanup', async () => {
+  assert.equal(typeof maintenance.recordAppHousekeepingFailure, 'function')
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential()
+  await guestRepo.createSession(credential, {
+    adult: true,
+    necessary: true,
+    uiLocale: 'en',
+    timezone: 'UTC',
+  })
+  let run = await guestRepo.startRun(credential, {
+    definitionKey: mini.key,
+    definitionVersion: mini.version,
+    instrumentLocale: mini.instrumentLocale,
+    operationId: randomUUID(),
+  })
+  run = await guestRepo.saveRun(credential, run.id, {
+    answers: answer(mini, 3),
+    context: {},
+    progress: mini.questions.length,
+    expectedRevision: run.revision,
+    operationId: randomUUID(),
+  })
+  const result = await guestRepo.submitRun(credential, run.id, {
+    expectedRevision: run.revision,
+  })
+  for (let index = 0; index < 101; index += 1) {
+    await createGuestSaveIntent(config, credential, {
+      sourceId: result.id,
+      operationId: randomUUID(),
+    })
+  }
+  const expire = await adminClient()
+  try {
+    await expire.query(
+      "update app_private.guest_sessions set created_at=now()-interval '8 days',expires_at=now()-interval '1 second' where id=$1",
+      [credential.id],
+    )
+  } finally {
+    await expire.end()
+  }
+
+  const first = await runAppHousekeeping(config, { batchSize: 100 })
+  assert.equal(first.guestSessionsDeleted, 0)
+  assert.equal(first.intentsDeleted, 100)
+  const second = await runAppHousekeeping(config, { batchSize: 100 })
+  assert.ok(second.guestSessionsDeleted >= 1)
+
+  const failed = await maintenance.recordAppHousekeepingFailure(config)
+  assert.equal(failed.status, 'failed')
+  const verify = await adminClient()
+  try {
+    const row = (
+      await verify.query('select status,completed_at from app_private.housekeeping_runs where id=$1', [failed.id])
+    ).rows[0]
+    assert.equal(row.status, 'failed')
+    assert.ok(row.completed_at)
+  } finally {
+    await verify.end()
+  }
+})
 test('report save race binds one account, stays idempotent and rotation does not free ownership', async () => {
   const sourceAssessmentId = '30000000-0000-4000-8000-000000000011'
   const sourceClientId = '30000000-0000-4000-8000-000000000012'
@@ -662,4 +861,3 @@ test('deletion request disables access without pretending provider data was eras
     (e) => e.code === '42501',
   )
 })
-
