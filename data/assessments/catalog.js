@@ -63,13 +63,13 @@ export const MONITORING_CATALOG = deepFreeze([
     durationMinutes: 2,
     suggestedRepeatDays: 7,
     cooldownDays: 5,
-    startable: false,
+    startable: true,
     access: 'account',
-    rightsStatus: 'planned_original',
+    rightsStatus: 'cleared',
     title: { en: 'Weekly Psychic Health', ru: 'Психическое состояние за неделю' },
     description: {
-      en: 'Planned Holistic House weekly self-monitoring across state, function and resources.',
-      ru: 'Планируемый еженедельный Holistic House check-in состояния, функционирования и ресурсов.',
+      en: 'Original Holistic House weekly self-monitoring across state, symptoms, function and resources.',
+      ru: 'Оригинальный еженедельный Holistic House check-in состояния, симптомов, функционирования и ресурсов.',
     },
   },
   {
