@@ -7,8 +7,6 @@ import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { AssessmentReading } from '@/components/assessment-reading'
-import { PaymentDocument } from '@/components/payment-document'
-import { PrescriptionDocument } from '@/components/prescription-document'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
@@ -1334,6 +1332,62 @@ function ResultPage({ id, locale, data }) {
     </section>
   )
 }
+function SavedPaymentDocument({ document, locale }) {
+  const ru = locale === 'ru'
+  const received = document.paymentStatus === 'received'
+  const amount = (Number(document.amount || 0) / 100)
+    .toFixed(2)
+    .replace('.', ru ? ',' : '.')
+  return (
+    <article className="hh-panel hh-saved-client-document">
+      <p className="hh-kicker">Holistic House</p>
+      <h1>{received ? (ru ? 'Квитанция' : 'Receipt') : (ru ? 'Счёт' : 'Invoice')}</h1>
+      <dl className="hh-saved-document-details">
+        <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
+        <div><dt>{ru ? 'Дата документа' : 'Date issued'}</dt><dd>{document.dateIssued}</dd></div>
+        <div><dt>{ru ? 'Услуга' : 'Service'}</dt><dd>{document.service}</dd></div>
+        <div><dt>{received ? (ru ? 'Получено' : 'Amount received') : (ru ? 'К оплате' : 'Amount due')}</dt><dd>{document.currency} {amount}</dd></div>
+        {document.dateOfService && <div><dt>{ru ? 'Дата услуги' : 'Date of service'}</dt><dd>{document.dateOfService}</dd></div>}
+        {document.paymentMethod && <div><dt>{ru ? 'Способ оплаты' : 'Payment method'}</dt><dd>{document.paymentMethod}</dd></div>}
+        {document.documentNumber && <div><dt>{ru ? 'Номер' : 'Number'}</dt><dd>{document.documentNumber}</dd></div>}
+      </dl>
+    </article>
+  )
+}
+
+function SavedRecommendationDocument({ document, locale }) {
+  const ru = locale === 'ru'
+  return (
+    <article className="hh-panel hh-saved-client-document">
+      <p className="hh-kicker">Holistic House</p>
+      <h1>{ru ? 'Рекомендация' : 'Recommendation'}</h1>
+      <dl className="hh-saved-document-details">
+        <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
+        <div><dt>{ru ? 'Дата' : 'Date'}</dt><dd>{document.dateIssued}</dd></div>
+        {document.recommendationNumber && <div><dt>{ru ? 'Номер' : 'Number'}</dt><dd>{document.recommendationNumber}</dd></div>}
+      </dl>
+      <div className="hh-saved-recommendation-list">
+        {(document.items || []).map((item, index) => (
+          <section key={index}>
+            <h2>{index + 1}. {item.displayName}</h2>
+            <dl className="hh-saved-document-details">
+              {item.potency && <div><dt>{ru ? 'Потенция' : 'Potency'}</dt><dd>{item.potency}</dd></div>}
+              {item.dosage && <div><dt>{ru ? 'Дозировка' : 'Dosage'}</dt><dd>{item.dosage}</dd></div>}
+              {item.frequency && <div><dt>{ru ? 'Частота' : 'Frequency'}</dt><dd>{item.frequency}</dd></div>}
+              {item.duration && <div><dt>{ru ? 'Длительность' : 'Duration'}</dt><dd>{item.duration}</dd></div>}
+              {item.sequence && <div><dt>{ru ? 'Последовательность' : 'Sequence'}</dt><dd>{item.sequence}</dd></div>}
+              {item.instructions && <div><dt>{ru ? 'Инструкция' : 'Instructions'}</dt><dd>{item.instructions}</dd></div>}
+              {item.purpose && <div><dt>{ru ? 'Назначение' : 'Purpose'}</dt><dd>{item.purpose}</dd></div>}
+            </dl>
+          </section>
+        ))}
+      </div>
+      {document.generalInstructions && <section className="hh-saved-document-note"><h2>{ru ? 'Общие рекомендации' : 'General guidance'}</h2><p>{document.generalInstructions}</p></section>}
+      {document.followUp && <p className="hh-fine">{ru ? 'Контроль' : 'Follow-up'}: {document.followUp}</p>}
+    </article>
+  )
+}
+
 function SavedDocumentPage({ id, locale, reload }) {
   const router = useRouter()
   const [value, setValue] = useState(null)
@@ -1384,8 +1438,8 @@ function SavedDocumentPage({ id, locale, reload }) {
         <p className="hh-fine">{ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}</p>
       </div>
       {value.kind === 'receipt' || value.kind === 'invoice'
-        ? <PaymentDocument document={value.document} locale={locale} />
-        : <PrescriptionDocument document={value.document} locale={locale} />}
+        ? <SavedPaymentDocument document={value.document} locale={locale} />
+        : <SavedRecommendationDocument document={value.document} locale={locale} />}
       <div className="hh-panel hh-actions">
         <Link href={'/' + locale + '/app/history'} prefetch={false}>
           {ru ? 'История' : 'History'}
