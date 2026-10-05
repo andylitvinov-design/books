@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const academyPaths = ["en", "ru", "es"].flatMap((locale) =>
     [...new Set([...academyDirectoryPaths, ...academyRecordPaths])].map((suffix) => "/" + locale + "/academy" + suffix),
   );
-  const publicPaths = ['/en/library', '/ru/library', '/es/library', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...getSpanishRemedySlugs().map(slug => `/es/homeopathy/remedies/${slug}`), ...academyPaths];
+  const publicPaths = ['/en/library', '/ru/library', '/es/library', '/en/wu-xing', '/ru/wu-xing', '/es/wu-xing', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...getSpanishRemedySlugs().map(slug => `/es/homeopathy/remedies/${slug}`), ...academyPaths];
   const entries: MetadataRoute.Sitemap = publicPaths.map(path => ({ url: base + path, changeFrequency: 'monthly', priority: path === '/es' ? 0.8 : 0.6 }));
   return [...new Map([...existing, ...entries].map(entry => [entry.url, entry])).values()];
 }
