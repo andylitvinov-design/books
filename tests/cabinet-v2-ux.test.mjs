@@ -202,6 +202,11 @@ test('Cabinet catalog uses accessible image-led Psychic Health Monitoring cards'
   assert.ok(landing.includes('className="cabinet-signin-strip"'))
   assert.ok(landing.includes('className="cabinet-test-list"'))
   assert.ok(landing.includes('className="cabinet-test-row"'))
+  assert.ok(
+    landing.indexOf('className="cabinet-guest-tests"') <
+      landing.indexOf('className="cabinet-signin-strip"'),
+    'public Cabinet should show Psychic Health Monitoring before Google sign-in',
+  )
   assert.ok(landing.includes("import Image from 'next/image'"))
   assert.ok(landing.includes('className="cabinet-test-image"'))
   assert.ok(landing.includes("stateText: '5 questions · ~1 min'"))
