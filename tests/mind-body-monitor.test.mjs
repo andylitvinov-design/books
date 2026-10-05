@@ -60,7 +60,9 @@ test('public monitor discovery is wired without adding a seventh main navigation
   assert.match(header, /MindBodyMonitorStrip/)
   assert.match(home, /MindBodyMonitorHome/)
   assert.match(home, /MindBodyMonitorStrip/)
-  assert.match(wuXing, /automated personal Wu Xing scoring model is not live yet/)
+  assert.match(wuXing, /Eight phases of resource/)
+  assert.match(wuXing, /author-developed self-reflection and psychoeducational framework/)
+  assert.match(wuXing, /\/services#available-services/)
   assert.doesNotMatch(navigation, /mind-body|monitor|wu-xing/i)
 })
 
