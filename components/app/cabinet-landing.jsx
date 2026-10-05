@@ -536,6 +536,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         disabled={busy}
         getRecommendations={getMoodRecommendations}
         onMoodSelected={recordMood}
+        onDismissMood={() => setPendingMood(null)}
         onStartTest={(candidate) => begin(candidate.key)}
         onAllTests={openAllTests}
       />
