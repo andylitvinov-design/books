@@ -68,7 +68,7 @@ try {
         await summary.press('Enter');
         const form = page.locator('.personal-consultation-form');
         await expect(form).toHaveAttribute('lang', 'es');
-        await expect(form.locator('button[type="submit"]')).toContainText('Solicitar una consulta personal');
+        await expect(form.locator('button[type="submit"]')).toContainText('Continuar en WhatsApp');
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'ES horizontal overflow');
         await page.evaluate(() => document.fonts.ready);
         await page.evaluate(() => window.scrollTo(0, 0));
