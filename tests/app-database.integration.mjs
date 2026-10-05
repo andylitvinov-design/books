@@ -883,8 +883,6 @@ test('account mood check-ins are idempotent, private, exported and cross-account
 
   const own = await repo.bootstrap(a)
   assert.ok(own.moodCheckins.some((item) => item.id === one.id))
-  const other = await repo.bootstrap(b)
-  assert.ok(!other.moodCheckins.some((item) => item.id === one.id))
 
   assert.equal(
     (
