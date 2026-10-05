@@ -9,6 +9,7 @@ import { compareResults } from '@/lib/profile/history'
 import {
   axisOverview,
   compatibleSeries,
+  dailyMoodSeries,
   deterministicPatterns,
   latestCompatibleChange,
   monitoringPlan,
@@ -27,6 +28,8 @@ const UI = {
     plan: 'My Monitoring',
     recent: 'Recent change',
     axes: 'Your monitoring areas',
+    moodTrend: 'Recent mood',
+    moodTrendNote: 'Latest check-in for each local day. Mood is a state marker, not a score.',
     patterns: 'Your patterns',
     patternsNote:
       'Shown only after at least three compatible measurements. These are observations, not causes or diagnoses.',
@@ -109,6 +112,8 @@ const UI = {
     plan: 'Мой мониторинг',
     recent: 'Последнее изменение',
     axes: 'Области наблюдения',
+    moodTrend: 'Настроение в последние дни',
+    moodTrendNote: 'Последняя отметка каждого локального дня. Настроение — маркер состояния, а не балл.',
     patterns: 'Ваши паттерны',
     patternsNote:
       'Показываются только после минимум трёх совместимых замеров. Это наблюдения, а не причины и не диагнозы.',
@@ -371,6 +376,10 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
     () => deterministicPatterns({ results: data.results, locale }),
     [data.results, locale],
   )
+  const moodDays = useMemo(
+    () => dailyMoodSeries(data.moodCheckins || [], 14),
+    [data.moodCheckins],
+  )
   const latestState = monitoringCatalogItem('hh-current-state')
   const changes = latestCompatibleChange(latestState, data.results, locale)
   const activePlan = plan.filter(({ item }) => item.startable)
@@ -462,6 +471,23 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
           ))}
         </div>
       </section>
+
+      {moodDays.length > 1 && (
+        <section className="hh-panel hh-psi-section">
+          <p className="hh-kicker">{c.moodTrend}</p>
+          <p className="hh-fine">{c.moodTrendNote}</p>
+          <div className="hh-psi-mood-trend" aria-label={c.moodTrend}>
+            {moodDays.map((mood) => (
+              <div key={mood.id}>
+                <span aria-hidden="true">
+                  {mood.mood === 'sad' ? '😔' : mood.mood === 'neutral' ? '😐' : '🙂'}
+                </span>
+                <small>{dateLabel(mood.occurredAt, locale)}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {changes.length > 0 && (
         <section className="hh-panel hh-psi-section">
