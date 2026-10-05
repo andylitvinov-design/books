@@ -5425,3 +5425,111 @@
 @media (prefers-reduced-motion: reduce) {
   .hh-mood-checkin .hh-mood-button { transition: none !important; }
 }
+
+
+/* Psychic Health mood-driven recommendations */
+.hh-mood-save-state {
+  margin: 0 0 16px;
+  color: #806f61;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.hh-mood-test-options {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.hh-mood-test-option {
+  width: 100%;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid #d7c4b1;
+  border-radius: 14px;
+  background: #fffdfa;
+  padding: 12px 14px;
+  color: #4b382c;
+  text-align: left;
+  cursor: pointer;
+}
+.hh-mood-test-option:hover {
+  border-color: #a98266;
+  background: #fff7ee;
+}
+.hh-mood-test-option > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.hh-mood-test-option strong {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.hh-mood-test-option small {
+  color: #867466;
+  font-size: 10px;
+}
+.hh-mood-test-option em {
+  color: #6c5c50;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.35;
+}
+.hh-mood-test-option b {
+  flex: 0 0 auto;
+  color: #9a755e;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+
+.hh-instrument-attribution {
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border-left: 2px solid #d8c6b3;
+  color: #6f6257;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.hh-instrument-attribution small { display: block; }
+
+
+.cabinet-result-consultation {
+  margin-top: 22px;
+  border: 1px solid #d8c2ac;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fffaf3 0%, #f7efe4 100%);
+  padding: 20px;
+}
+.cabinet-result-consultation h4 {
+  margin: 4px 0 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(22px, 4vw, 29px);
+  font-weight: 400;
+  line-height: 1.12;
+}
+.cabinet-result-consultation > p:not(.about-kicker) {
+  margin: 0;
+  color: #66574a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.cabinet-result-consultation-action {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+  border-radius: 999px;
+  background: #6f402b;
+  padding: 0 20px;
+  color: #fffaf4;
+  font: 800 12px/1 Arial, Helvetica, sans-serif;
+  text-decoration: none;
+}
