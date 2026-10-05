@@ -763,6 +763,13 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
+.hh-result-metrics[data-count="1"] {
+  grid-template-columns: minmax(220px, 360px);
+}
+.hh-result-metrics[data-count="2"] {
+  max-width: 760px;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
 .hh-result-metric {
   min-width: 0;
   display: grid;
@@ -991,7 +998,10 @@
   .hh-result-meta {
     justify-content: flex-start;
   }
-  .hh-result-metrics {
+  .hh-result-metrics,
+  .hh-result-metrics[data-count="1"],
+  .hh-result-metrics[data-count="2"] {
+    max-width: none;
     grid-template-columns: 1fr;
   }
   .hh-result-metric {
