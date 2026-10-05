@@ -18,7 +18,7 @@ type PageProps = { params: Promise<{ locale: string }> };
 const copy = {
   ru: {
     title: "Препараты — Holistic House",
-    description: "Поиск по авторской библиотеке гомеопатических препаратов, книги проекта и запись на бесплатную консультацию.",
+    description: "Поиск по авторской библиотеке гомеопатических препаратов, книги проекта и возможность напрямую написать Andy.",
     kicker: "Справочная библиотека",
     heading: "Препараты",
     lead: "Найдите нужный препарат по латинскому или русскому названию, алиасу или сокращению.",
@@ -34,7 +34,7 @@ const copy = {
   },
   en: {
     title: "Remedies — Holistic House",
-    description: "Search the author remedy library, browse the project books, and request a free consultation.",
+    description: "Search the author remedy library, browse the project books, and contact Andy directly about a consultation.",
     kicker: "Reference library",
     heading: "Remedies",
     lead: "Find a remedy by Latin or Russian/common name, alias, or abbreviation.",
@@ -86,17 +86,7 @@ export default async function HomeopathyPage({ params }: PageProps) {
       <PageVideo slot="homeopathy-intro" locale={locale} />
       <PageVideo slot="homeopathy-faq" locale={locale} />
 
-      <section className="remedies-consultation-banner" aria-labelledby="free-consultation-title">
-        <div>
-          <p className="homeopathy-kicker">{locale === "ru" ? "Начать с разговора" : "Start with a conversation"}</p>
-          <h2 id="free-consultation-title">{current.consultation}</h2>
-          <p>{current.consultationText}</p>
-        </div>
-        <div className="remedies-consultation-actions">
-          <a href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">{current.telegram}</a>
-          <a href="https://wa.me/14376066502" rel="noreferrer" target="_blank">{current.whatsapp}</a>
-        </div>
-      </section>
+      <PublicConsultationCta locale={locale as Locale} />
 
       <section className="remedies-books-section" aria-labelledby="remedies-books-title">
         <div className="remedies-section-heading">
@@ -111,7 +101,6 @@ export default async function HomeopathyPage({ params }: PageProps) {
       </section>
 
       <p className="remedy-disclaimer remedies-landing-disclaimer">{current.disclaimer}</p>
-      <PublicConsultationCta locale={locale as Locale} />
     </main>
   );
 }
