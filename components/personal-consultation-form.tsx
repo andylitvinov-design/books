@@ -9,7 +9,7 @@ const copy = {
     request: "What would you like to work with?", requestHint: "A few sentences are enough.",
     submit: "Continue in WhatsApp",
     note: "Nothing is sent automatically. WhatsApp opens with your note prepared for you to review.",
-    opened: "Your note is ready. Continue in WhatsApp when you want to send it.",
+    opened: "Your request is ready but not sent. Continue in WhatsApp when you want to send it.",
     telegram: "Or write in Telegram · @AndyTherapist",
   },
   ru: {
@@ -17,7 +17,7 @@ const copy = {
     request: "С чем вы хотели бы поработать?", requestHint: "Достаточно нескольких предложений.",
     submit: "Продолжить в WhatsApp",
     note: "Ничего не отправляется автоматически. WhatsApp откроется с подготовленным сообщением — вы сможете его проверить.",
-    opened: "Сообщение готово. Перейдите в WhatsApp, когда захотите его отправить.",
+    opened: "Заявка готова, но не отправлена. Перейдите в WhatsApp, когда захотите её отправить.",
     telegram: "Или написать в Telegram · @AndyTherapist",
   },
   es: {
@@ -25,7 +25,7 @@ const copy = {
     request: "¿Qué te gustaría trabajar?", requestHint: "Bastan unas pocas frases.",
     submit: "Continuar en WhatsApp",
     note: "No se envía nada automáticamente. WhatsApp se abre con tu mensaje preparado para que lo revises.",
-    opened: "Tu mensaje está listo. Continúa en WhatsApp cuando quieras enviarlo.",
+    opened: "Tu solicitud está lista, pero no se ha enviado. Continúa en WhatsApp cuando quieras enviarla.",
     telegram: "O escribe por Telegram · @AndyTherapist",
   },
 } as const;
