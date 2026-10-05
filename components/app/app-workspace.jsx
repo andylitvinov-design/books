@@ -11,6 +11,15 @@ import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
+import {
+  catalogDescription,
+  catalogTitle,
+  definitionLocaleFor,
+  getAssessmentCatalogEntry,
+  startableCatalog,
+} from '@/data/assessments/catalog'
+import { recommendAfterResult, recommendForMood, moodTrend } from '@/lib/assessments/recommendations'
+import { SAFETY_COPY } from '@/lib/assessments/safety'
 
 export async function appFetch(path, body, method) {
   const response = await fetch(`/api/app/${path}`, {
@@ -49,6 +58,28 @@ function localZone() {
   } catch {
     return 'UTC'
   }
+}
+function definitionForCatalog(entry, locale) {
+  const instrumentLocale = definitionLocaleFor(entry, locale)
+  return instrumentLocale
+    ? getAssessmentDefinition(entry.key, entry.version, instrumentLocale)
+    : null
+}
+function assessmentArtwork(key, locale) {
+  const suffix = locale === 'ru' ? 'ru-v1' : 'en-v2'
+  return ['hh-current-state', 'hh-resource-pulse', 'hh-monthly-profile'].includes(key)
+    ? `/images/holistic-house/video-posters/home-${suffix}.webp`
+    : `/images/holistic-house/video-posters/services-${suffix}.webp`
+}
+function moodLabel(mood, locale) {
+  return {
+    sad: locale === 'ru' ? 'Грустно' : 'Sad',
+    neutral: locale === 'ru' ? 'Нейтрально' : 'Neutral',
+    happy: locale === 'ru' ? 'Хорошо' : 'Happy',
+  }[mood] || mood
+}
+function moodEmoji(mood) {
+  return { sad: '😔', neutral: '😐', happy: '🙂' }[mood] || '•'
 }
 function goSignedOut(setData) {
   setData(null)
@@ -153,6 +184,55 @@ export default function AppWorkspace({ locale, path = [] }) {
       setState('signed-out')
       setBusy(false)
       router.replace(root)
+    }
+  }
+  async function recordMood({ mood, category }) {
+    const saved = await appFetch('mood', {
+      mood,
+      category,
+      occurredAt: new Date().toISOString(),
+      timezone: localZone(),
+      sourceSurface: 'portrait',
+      operationId: crypto.randomUUID(),
+    })
+    setData((value) => ({
+      ...value,
+      moodCheckins: [...(value.moodCheckins || []).filter((item) => item.id !== saved.id), saved],
+    }))
+    return { persisted: true }
+  }
+  async function startAssessment(candidate) {
+    const key = typeof candidate === 'string' ? candidate : candidate.key
+    const entry = getAssessmentCatalogEntry(key)
+    if (!entry?.startable) return
+    const instrumentLocale =
+      (typeof candidate === 'object' && candidate.definitionLocale) ||
+      definitionLocaleFor(entry, locale)
+    if (!instrumentLocale) return
+    const def = getAssessmentDefinition(entry.key, entry.version, instrumentLocale)
+    const active = data?.runs?.find((run) => run.definitionId === def.id)
+    if (active) {
+      router.push(`${root}/runs/${active.id}`)
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const run = await appFetch('runs', {
+        definitionKey: def.key,
+        definitionVersion: def.version,
+        instrumentLocale: def.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      setData((value) => ({
+        ...value,
+        runs: [...(value.runs || []).filter((item) => item.id !== run.id), run],
+      }))
+      router.push(`${root}/runs/${run.id}`)
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(false)
     }
   }
   if (deleted || state === 'deletion')
@@ -264,6 +344,9 @@ export default function AppWorkspace({ locale, path = [] }) {
                 data={data}
                 locale={locale}
                 onOpenHistory={() => router.push(root + '/history')}
+                onMoodSelected={recordMood}
+                onStartAssessment={startAssessment}
+                onAllTests={() => router.push(root + '/tests')}
               />
               <PracticeEntry data={data} locale={locale} />
             </>
@@ -568,17 +651,38 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
 }
 function TestCatalog({ data, locale, onStarted }) {
   const c = COPY[locale]
+  const params = useSearchParams()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [view, setView] = useState('recommended')
-  const definitions = [
-    getAssessmentDefinition('hh-current-state', 'v2', locale),
-    getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
-  ]
-  const monitoringIntro =
-    locale === 'ru'
-      ? 'Начните с одного полезного замера. Дальше выбирайте только то, что действительно хотите отслеживать.'
-      : 'Start with one useful measurement. Go deeper only into the areas you actually want to track.'
+  const entries = startableCatalog({ guest: false }).filter((entry) =>
+    Boolean(definitionLocaleFor(entry, locale)),
+  )
+  const latestMood = (data.moodCheckins || []).at(-1)
+  const moodRecommendations = latestMood
+    ? recommendForMood({
+        mood: latestMood.mood,
+        category: latestMood.category,
+        results: data.results,
+        runs: data.runs,
+        locale,
+        guest: false,
+      })
+    : []
+  const queryRecommended = params.get('recommended')
+  const recommendedKeys = [
+    ...(queryRecommended ? [queryRecommended] : []),
+    ...moodRecommendations.map((item) => item.key),
+  ].filter((key, index, all) => all.indexOf(key) === index)
+  const recommended = recommendedKeys
+    .map((key) => entries.find((entry) => entry.key === key))
+    .filter(Boolean)
+    .slice(0, 3)
+  const recommendedSet = new Set(recommended.map((entry) => entry.key))
+  const completedEntries = entries.filter((entry) => {
+    const def = definitionForCatalog(entry, locale)
+    return def && data.results.some((result) => result.definitionId === def.id)
+  })
   const tabs =
     locale === 'ru'
       ? [
@@ -593,10 +697,22 @@ function TestCatalog({ data, locale, onStarted }) {
           ['areas', 'By area'],
           ['completed', 'Completed'],
         ]
-  const quickArea = MONITOR_AREAS.find((area) => area.key === 'quick')
-  const personalityArea = MONITOR_AREAS.find((area) => area.key === 'personality')
+  const groups = [
+    ['quick', locale === 'ru' ? 'Быстрые проверки' : 'Quick checks', ['quick', 'gentle', 'weekly', 'core']],
+    ['deep', locale === 'ru' ? 'Более глубокие проверки' : 'Deeper checks', ['deep']],
+    ['resources', locale === 'ru' ? 'Ресурсы и восстановление' : 'Resources & recovery', ['resource', 'monthly']],
+    ['other', locale === 'ru' ? 'Другие тесты' : 'Other tests', ['baseline']],
+  ]
+  const monitoringIntro =
+    locale === 'ru'
+      ? 'Начните с одного полезного замера. Более глубокие тесты появляются по необходимости, а не как обязательная батарея.'
+      : 'Start with one useful measurement. Deeper tests appear when useful rather than as a required battery.'
 
-  async function start(def) {
+  async function start(entry) {
+    const def = definitionForCatalog(entry, locale)
+    if (!def) return
+    const draft = data.runs.find((run) => run.definitionId === def.id)
+    if (draft) return onStarted(draft)
     setBusy(true)
     setError(null)
     try {
@@ -615,69 +731,35 @@ function TestCatalog({ data, locale, onStarted }) {
     }
   }
 
-  function cardFor(def, { recommended = false } = {}) {
-    const isState = def.key === 'hh-current-state'
-    const draft = data.runs.find((x) => x.definitionId === def.id)
-    const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
-    const title = isState
-      ? locale === 'ru'
-        ? 'Состояние сейчас'
-        : 'Current State Check'
-      : locale === 'ru'
-        ? 'Личностный профиль'
-        : 'Personality Baseline'
-    const meta = isState
-      ? locale === 'ru'
-        ? '5 вопросов · ~1 мин'
-        : '5 questions · ~1 min'
-      : locale === 'ru'
-        ? '20 вопросов · ~3 мин · EN'
-        : '20 questions · ~3 min · EN'
-    const image = isState
-      ? locale === 'ru'
-        ? '/images/holistic-house/video-posters/home-ru-v1.webp'
-        : '/images/holistic-house/video-posters/home-en-v2.webp'
-      : locale === 'ru'
-        ? '/images/holistic-house/video-posters/services-ru-v1.webp'
-        : '/images/holistic-house/video-posters/services-en-v2.webp'
+  function card(entry, { recommendedNow = false } = {}) {
+    const def = definitionForCatalog(entry, locale)
+    if (!def) return null
+    const draft = data.runs.find((run) => run.definitionId === def.id)
+    const completed = data.results.filter((result) => result.definitionId === def.id).at(-1)
     return (
-      <article className={`hh-monitoring-card${recommended ? ' hh-monitoring-card--recommended' : ''}`} key={def.id}>
+      <article className={`hh-monitoring-card${recommendedNow ? ' hh-monitoring-card--recommended' : ''}`} key={entry.key}>
         <div className="hh-monitoring-photo" aria-hidden="true">
-          <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={image} />
+          <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={assessmentArtwork(entry.key, locale)} />
         </div>
         <div className="hh-monitoring-card-body">
-          {recommended && <p className="hh-monitoring-recommended">{locale === 'ru' ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
-          <p className="hh-monitoring-meta">{meta}</p>
-          <h2>{title}</h2>
-          <p>{isState ? c.stateDescription : c.traitDescription}</p>
-          {!isState && <p className="hh-notice">{c.traitNotice}</p>}
-          {completed && (
-            <p className="hh-fine">
-              {c.latest}: {dateLabel(completed.measurementAt, locale)}
-            </p>
-          )}
+          {recommendedNow && <p className="hh-monitoring-recommended">{locale === 'ru' ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
+          <p className="hh-monitoring-meta">
+            {entry.questionCount} {locale === 'ru' ? 'вопросов' : 'questions'} · {entry.duration}
+            {def.instrumentLocale !== locale ? ` · ${def.instrumentLocale.toUpperCase()}` : ''}
+          </p>
+          <h2>{catalogTitle(entry, locale)}</h2>
+          <p>{catalogDescription(entry, locale)}</p>
+          {completed && <p className="hh-fine">{c.latest}: {dateLabel(completed.measurementAt, locale)}</p>}
           <div className="hh-actions">
-            <button
-              className="hh-primary"
-              disabled={busy}
-              onClick={() => (draft ? onStarted(draft) : start(def))}
-            >
+            <button className="hh-primary" disabled={busy} onClick={() => start(entry)}>
               {draft ? c.resume : completed ? c.repeat : c.start}
             </button>
-            {completed && (
-              <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
-                {c.view}
-              </Link>
-            )}
+            {completed && <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>{c.view}</Link>}
           </div>
         </div>
       </article>
     )
   }
-
-  const completedDefinitions = definitions.filter((def) =>
-    data.results.some((result) => result.definitionId === def.id),
-  )
 
   return (
     <section className="hh-monitoring">
@@ -697,45 +779,43 @@ function TestCatalog({ data, locale, onStarted }) {
       </nav>
 
       {view === 'recommended' && (
-        <div className="hh-monitoring-grid">
-          {cardFor(definitions[0], { recommended: true })}
-          {cardFor(definitions[1])}
-        </div>
+        recommended.length ? (
+          <div className="hh-monitoring-grid">{recommended.map((entry) => card(entry, { recommendedNow: true }))}</div>
+        ) : (
+          <article className="hh-panel hh-empty">
+            <h2>{locale === 'ru' ? 'Можно начать с короткой проверки' : 'Start with one short check'}</h2>
+            <p>{locale === 'ru' ? 'Выберите один из быстрых тестов — проходить всё не нужно.' : 'Choose one quick check; there is no need to take everything.'}</p>
+          </article>
+        )
       )}
 
-      {view === 'all' && (
-        <div className="hh-monitoring-grid">{definitions.map((def) => cardFor(def))}</div>
-      )}
+      {view === 'all' && <div className="hh-monitoring-grid">{entries.map((entry) => card(entry))}</div>}
 
       {view === 'areas' && (
         <div className="hh-monitoring-areas">
-          <section>
-            <h2>{quickArea?.[locale] || quickArea?.en}</h2>
-            <div className="hh-monitoring-grid">{cardFor(definitions[0])}</div>
-          </section>
-          <section>
-            <h2>{personalityArea?.[locale] || personalityArea?.en}</h2>
-            <div className="hh-monitoring-grid">{cardFor(definitions[1])}</div>
-          </section>
+          {groups.map(([key, title, levels]) => {
+            const group = entries.filter((entry) => levels.includes(entry.level) && !recommendedSet.has(entry.key))
+            const area = MONITOR_AREAS.find((item) => item.key === key)
+            return group.length ? (
+              <section key={key}>
+                <h2>{area?.[locale] || area?.en || title}</h2>
+                <div className="hh-monitoring-grid">{group.map((entry) => card(entry))}</div>
+              </section>
+            ) : null
+          })}
           <p className="hh-fine">
             {locale === 'ru'
-              ? 'Дополнительные области появляются здесь только после проверки формы, прав на использование и требований безопасности.'
-              : 'Additional areas appear here only after the questionnaire, usage rights and safety requirements are verified.'}
+              ? 'Профессиональные и специальные инструменты появляются только после проверки прав, языка и требований безопасности.'
+              : 'Professional and specialty measures appear only after rights, language and safety requirements are verified.'}
           </p>
         </div>
       )}
 
       {view === 'completed' && (
-        completedDefinitions.length ? (
-          <div className="hh-monitoring-grid">{completedDefinitions.map((def) => cardFor(def))}</div>
-        ) : (
-          <article className="hh-panel hh-empty">
-            <h2>{locale === 'ru' ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2>
-            <p>{locale === 'ru' ? 'Начните с короткой проверки состояния.' : 'Start with the quick state check.'}</p>
-          </article>
-        )
+        completedEntries.length
+          ? <div className="hh-monitoring-grid">{completedEntries.map((entry) => card(entry))}</div>
+          : <article className="hh-panel hh-empty"><h2>{locale === 'ru' ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2></article>
       )}
-
       {error && <p role="alert">{message(error, c)}</p>}
     </section>
   )
@@ -747,7 +827,8 @@ function Runner({ id, locale, onExit, onComplete }) {
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
-    [showDiscard, setShowDiscard] = useState(false)
+    [showDiscard, setShowDiscard] = useState(false),
+    [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
     inflight = useRef(false)
   async function load() {
@@ -787,6 +868,7 @@ function Runner({ id, locale, onExit, onComplete }) {
       const next = await appFetch(`runs/${id}/save`, payload)
       operation.current = null
       setRun(next)
+      if (next.safetySignal) setSafetyAcknowledged(false)
       setContext(next.context || {})
       setStatus(c.saved)
       return next
@@ -851,13 +933,35 @@ function Runner({ id, locale, onExit, onComplete }) {
         </Link>
       </section>
     )
+  if (run.safetySignal && !safetyAcknowledged) {
+    const safety = SAFETY_COPY[locale] || SAFETY_COPY.en
+    return (
+      <section className="hh-panel hh-safety" role="alert" aria-live="assertive">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{safety.title}</h1>
+        <p>{safety.text}</p>
+        <p><strong>{safety.urgent}</strong></p>
+        <p>{safety.support}</p>
+        <div className="hh-actions">
+          <a className="hh-primary" href="tel:988">988</a>
+          <a href="sms:988">{locale === 'ru' ? 'Написать 988' : 'Text 988'}</a>
+          <button type="button" onClick={() => setSafetyAcknowledged(true)}>{safety.continue}</button>
+        </div>
+        <p className="hh-fine">
+          {locale === 'ru'
+            ? 'Если вы не в Канаде или США, используйте местную экстренную или кризисную службу.'
+            : 'If you are outside Canada or the United States, use your local emergency or crisis service.'}
+        </p>
+      </section>
+    )
+  }
   const min = question?.min ?? def.answerScale?.min,
     max = question?.max ?? def.answerScale?.max
   return (
     <section className="hh-runner hh-panel">
       <header>
         <p className="hh-kicker">
-          {def.key === 'hh-current-state' ? c.state : c.personality} ·{' '}
+          {catalogTitle(getAssessmentCatalogEntry(def.key), locale) || def.title} ·{' '}
           {def.instrumentLocale.toUpperCase()}
         </p>
         <progress
@@ -869,7 +973,21 @@ function Runner({ id, locale, onExit, onComplete }) {
           {Math.min(index + 1, def.questions.length + 1)} / {def.questions.length + 1}
         </p>
       </header>
-      <p className="hh-muted">{def.key === 'hh-current-state' ? c.rightNow : c.general}</p>
+      {def.source?.copyright && (
+        <aside className="hh-instrument-attribution">
+          <small>{def.source.copyright}</small>
+          {def.source.citation && <small>{def.source.citation}</small>}
+        </aside>
+      )}
+      <p className="hh-muted">
+        {def.key === 'hh-current-state'
+          ? c.rightNow
+          : def.key === 'mini-ipip-20'
+            ? c.general
+            : locale === 'ru'
+              ? 'Отвечайте за период, указанный в формулировке теста.'
+              : 'Answer for the timeframe stated in the questionnaire.'}
+      </p>
       {question ? (
         <fieldset disabled={busy || Boolean(operation.current)}>
           <legend>
@@ -1000,7 +1118,7 @@ function MetricCard({ dimension, locale, onSelect }) {
     def = getDefinitionById(dimension.sourceDefinitionId)
   return (
     <button className="hh-metric" onClick={() => onSelect(dimension)}>
-      <span>{labelFor(dimension.key, locale)}</span>
+      <span>{dimension.sourceConstruct || labelFor(dimension.key, locale)}</span>
       <strong>
         {dimension.value}
         <small> / {dimension.max}</small>
@@ -1020,19 +1138,48 @@ function MetricCard({ dimension, locale, onSelect }) {
     </button>
   )
 }
-function Portrait({ data, locale, onOpenHistory }) {
-  const c = COPY[locale],
-    [selected, setSelected] = useState(null),
-    dimensions = data.snapshot?.dimensions || [],
-    nextStep = getPortraitNextStep({
-      ...data,
-      dimensions: dimensions.map((dimension) => {
-        const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
-        return result
-          ? { ...dimension, measurementAt: result.measurementAt, suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays }
-          : dimension
+function Portrait({
+  data,
+  locale,
+  onOpenHistory,
+  onMoodSelected,
+  onStartAssessment,
+  onAllTests,
+}) {
+  const c = COPY[locale]
+  const [selected, setSelected] = useState(null)
+  const dimensions = data.snapshot?.dimensions || []
+  const checkins = data.moodCheckins || []
+  const latestMood = checkins.at(-1)
+  const recentMood = moodTrend(checkins, data.account.timezone || 'UTC').slice(-14)
+  const getMoodRecommendations = useCallback(
+    ({ mood, category }) =>
+      recommendForMood({
+        mood,
+        category,
+        results: data.results,
+        runs: data.runs,
+        locale,
+        guest: false,
       }),
-    })
+    [data.results, data.runs, locale],
+  )
+  const nextStep = getPortraitNextStep({
+    ...data,
+    dimensions: dimensions.map((dimension) => {
+      const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
+      return result
+        ? { ...dimension, measurementAt: result.measurementAt, suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays }
+        : dimension
+    }),
+  })
+  const groups = [
+    ['state', c.state],
+    ['symptoms', locale === 'ru' ? 'Симптомы и нагрузка' : 'Symptoms & load'],
+    ['function', locale === 'ru' ? 'Функционирование' : 'Functioning'],
+    ['resources', locale === 'ru' ? 'Ресурсы' : 'Resources'],
+    ['trait', c.personality],
+  ]
   return (
     <section>
       <div className="hh-heading">
@@ -1047,33 +1194,45 @@ function Portrait({ data, locale, onOpenHistory }) {
       <MoodCheckIn
         locale={locale}
         compact
-        onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}
+        getRecommendations={getMoodRecommendations}
+        onMoodSelected={onMoodSelected}
+        onStartTest={onStartAssessment}
+        onAllTests={onAllTests}
       />
+      {latestMood && (
+        <section className="hh-mood-history-strip" aria-label={locale === 'ru' ? 'Последнее настроение' : 'Latest mood'}>
+          <span className="hh-mood-history-latest" aria-hidden="true">{moodEmoji(latestMood.mood)}</span>
+          <div>
+            <strong>{moodLabel(latestMood.mood, locale)}</strong>
+            <small>{dateLabel(latestMood.occurredAt, locale)}</small>
+          </div>
+          {recentMood.length > 1 && (
+            <div className="hh-mood-history-dots" aria-label={locale === 'ru' ? 'Последние отметки' : 'Recent check-ins'}>
+              {recentMood.map((item) => (
+                <span key={item.day} title={item.day + ' · ' + moodLabel(item.mood, locale)}>{moodEmoji(item.mood)}</span>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
       {data.practitioner && <OwnerTools locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
         <article className="hh-panel hh-empty">
           <h2>{c.empty}</h2>
           <p>{c.emptyText}</p>
-          <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
-            {c.start}
-          </Link>
+          <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>{c.start}</Link>
           <PortraitGuide locale={locale} dimensions={dimensions} />
         </article>
       ) : (
         <>
-          {[
-            ['state', c.state],
-            ['trait', c.personality],
-          ].map(([kind, title]) => {
+          {groups.map(([kind, title]) => {
             const found = dimensions.filter((d) => d.dimensionClass === kind)
             return found.length ? (
               <section key={kind} className="hh-section">
                 <h2>{title}</h2>
                 <div className="hh-metrics">
-                  {found.map((d) => (
-                    <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />
-                  ))}
+                  {found.map((d) => <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />)}
                 </div>
               </section>
             ) : null
@@ -1081,9 +1240,7 @@ function Portrait({ data, locale, onOpenHistory }) {
           <PortraitGuide locale={locale} dimensions={dimensions} />
           <LatestChange locale={locale} results={data.results} />
           <div className="hh-actions">
-            <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
-              {c.repeat}
-            </Link>
+            <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>{c.repeat}</Link>
             <button onClick={onOpenHistory}>{c.history}</button>
           </div>
         </>
@@ -1091,21 +1248,12 @@ function Portrait({ data, locale, onOpenHistory }) {
       <ReportsFromAndy data={data} locale={locale} />
       {selected && (
         <section className="hh-panel hh-detail" aria-live="polite">
-          <button className="hh-close" onClick={() => setSelected(null)}>
-            {c.close}
-          </button>
-          <h2>{labelFor(selected.key, locale)}</h2>
-          <p>{explanationFor(selected.key, locale)}</p>
-          <p>
-            {c.measured}: {dateLabel(selected.measurementAt, locale)}
-          </p>
-          <p>
-            {c.source}: {getDefinitionById(selected.sourceDefinitionId).key} ·{' '}
-            {getDefinitionById(selected.sourceDefinitionId).version} · {selected.instrumentLocale}
-          </p>
-          <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>
-            {c.view}
-          </Link>
+          <button className="hh-close" onClick={() => setSelected(null)}>{c.close}</button>
+          <h2>{selected.sourceConstruct || labelFor(selected.key, locale)}</h2>
+          {explanationFor(selected.key, locale) && <p>{explanationFor(selected.key, locale)}</p>}
+          <p>{c.measured}: {dateLabel(selected.measurementAt, locale)}</p>
+          <p>{c.source}: {getDefinitionById(selected.sourceDefinitionId).key} · {getDefinitionById(selected.sourceDefinitionId).version} · {selected.instrumentLocale}</p>
+          <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{c.view}</Link>
           <button onClick={onOpenHistory}>{c.history}</button>
         </section>
       )}
@@ -1210,6 +1358,36 @@ function ReportsFromAndy({ data, locale }) {
   const ru = locale === 'ru'
   return <section className="hh-section hh-account-reports"><h2>{ru ? 'Отчёты от Andy' : 'Reports from Andy'}</h2>{!reports.length ? <p className="hh-fine">{ru ? 'Сохранённых отчётов пока нет. Когда вы решите сохранить переданный отчёт, он появится здесь.' : 'No reports have been saved yet. A report you choose to save will appear here.'}</p> : <div className="hh-grid">{reports.map((report) => <article className="hh-panel" key={report.id}><p className="hh-kicker">{ru ? 'Полученный отчёт' : 'Received report'}</p><h3>{formatReportDate(report.occurredOn, locale)}</h3><p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(report.occurredOn, locale)}</p>{report.available === false ? <p className="hh-fine">{ru ? 'Отчёт больше недоступен.' : 'Report no longer available.'}</p> : <Link href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{ru ? 'Открыть отчёт' : 'Open report'}</Link>}</article>)}</div>}</section>
 }
+function ResultConsultationCta({ locale }) {
+  const copy =
+    locale === 'ru'
+      ? {
+          kicker: 'Если хочется обсудить результат',
+          title: 'Заказать консультацию специалиста',
+          text: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
+          action: 'Выбрать специалиста',
+        }
+      : {
+          kicker: 'If you would like to discuss your result',
+          title: 'Book a consultation with a specialist',
+          text: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
+          action: 'Choose a specialist',
+        }
+
+  return (
+    <aside className="hh-result-consultation" aria-label={copy.title}>
+      <div>
+        <p className="hh-kicker">{copy.kicker}</p>
+        <h2>{copy.title}</h2>
+        <p>{copy.text}</p>
+      </div>
+      <Link className="hh-primary hh-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
+        {copy.action}
+      </Link>
+    </aside>
+  )
+}
+
 function ResultPage({ id, locale, data }) {
   const c = COPY[locale],
     [result, setResult] = useState(data.results.find((r) => r.id === id) || null),
@@ -1236,13 +1414,20 @@ function ResultPage({ id, locale, data }) {
           r.id !== result.id && Date.parse(r.measurementAt) <= Date.parse(result.measurementAt),
       )
       .at(-1),
-    diff = previous ? compareResults(result, previous) : []
+    diff = previous ? compareResults(result, previous) : [],
+    recommendation = recommendAfterResult({
+      result,
+      results: data.results,
+      runs: data.runs,
+      locale,
+      guest: false,
+    })
   return (
     <section className="hh-panel">
       <p className="hh-kicker">
         {c.result} · {result.instrumentLocale.toUpperCase()}
       </p>
-      <h1>{result.definitionKey === 'hh-current-state' ? c.state : c.personality}</h1>
+      <h1>{catalogTitle(getAssessmentCatalogEntry(result.definitionKey), locale) || result.definitionKey}</h1>
       <p>{dateLabel(result.measurementAt, locale)}</p>
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
       {Object.entries(result.context || {}).length > 0 && (
@@ -1283,8 +1468,8 @@ function ResultPage({ id, locale, data }) {
             return (
               <tr key={d.key}>
                 <th scope="row">
-                  {labelFor(d.key, locale)}
-                  <small>{explanationFor(d.key, locale)}</small>
+                  {d.sourceConstruct || labelFor(d.key, locale)}
+                  {explanationFor(d.key, locale) && <small>{explanationFor(d.key, locale)}</small>}
                 </th>
                 <td>
                   {d.value} / {d.max}
@@ -1295,11 +1480,25 @@ function ResultPage({ id, locale, data }) {
           })}
         </tbody>
       </table>
+      <ResultConsultationCta locale={locale} />
       {!previous && <p>{c.noChange}</p>}
+      {recommendation ? (
+        <section className="hh-result-recommendation">
+          <p className="hh-kicker">{locale === 'ru' ? 'Один следующий шаг' : 'One next step'}</p>
+          <h2>{catalogTitle(recommendation.entry, locale)}</h2>
+          <p>{recommendation.reason}</p>
+          <div className="hh-actions">
+            <Link className="hh-primary" href={`/${locale}/app/tests?recommended=${encodeURIComponent(recommendation.key)}`} prefetch={false}>
+              {locale === 'ru' ? 'Посмотреть тест' : 'View check'}
+            </Link>
+            <Link href={`/${locale}/app/history`} prefetch={false}>{locale === 'ru' ? 'Позже' : 'Later'}</Link>
+          </div>
+        </section>
+      ) : (
+        <p className="hh-notice">{locale === 'ru' ? 'Готово. На сегодня этого достаточно.' : 'Done. That’s enough for today.'}</p>
+      )}
       <p className="hh-fine">{c.versionBoundary}</p>
-      <Link className="hh-primary" href={`/${locale}/app/history`} prefetch={false}>
-        {c.history}
-      </Link>
+      <Link href={`/${locale}/app/history`} prefetch={false}>{c.history}</Link>
     </section>
   )
 }
@@ -1424,8 +1623,14 @@ function HistoryView({ data, locale, reload }) {
     ...results.map((r) => ({
       id: r.id,
       date: r.measurementAt,
-      title: r.definitionKey === 'hh-current-state' ? c.state : c.personality,
+      title: catalogTitle(getAssessmentCatalogEntry(r.definitionKey), locale) || (r.definitionKey === 'hh-current-state' ? c.state : c.personality),
       href: `/${locale}/app/results/${r.id}`,
+    })),
+    ...(data.moodCheckins || []).map((mood) => ({
+      id: 'mood-' + mood.id,
+      date: mood.occurredAt,
+      title: `${moodEmoji(mood.mood)} ${moodLabel(mood.mood, locale)}`,
+      note: mood.category ? (locale === 'ru' ? 'Контекст: ' : 'Context: ') + mood.category : undefined,
     })),
     ...reportTimeline(data.savedReports).map((report) => ({
       id: report.id,
@@ -1527,7 +1732,7 @@ function HistoryView({ data, locale, reload }) {
           </div>
           {delta.length ? (
             <p className="hh-change">
-              {c.since} {dateLabel(prior.measurementAt, locale)}: {labelFor(dimension.key, locale)}{' '}
+              {c.since} {dateLabel(prior.measurementAt, locale)}: {dimension.sourceConstruct || labelFor(dimension.key, locale)}{' '}
               {delta.find((d) => d.key === dimension.key)?.prior} → {dimension.value}{' '}
               <span>
                 ({delta.find((d) => d.key === dimension.key)?.delta > 0 ? '+' : ''}
@@ -1542,7 +1747,7 @@ function HistoryView({ data, locale, reload }) {
               className="hh-chart"
               viewBox="0 0 640 200"
               role="img"
-              aria-label={`${labelFor(dimension.key, locale)} — ${c.history}`}
+              aria-label={`${dimension.sourceConstruct || labelFor(dimension.key, locale)} — ${c.history}`}
             >
               <line x1="30" y1="170" x2="610" y2="170" />
               <polyline points={points.map((p) => `${x(p)},${y(p)}`).join(' ')} />
@@ -1557,7 +1762,7 @@ function HistoryView({ data, locale, reload }) {
           )}
           <table className="hh-table">
             <caption>
-              {labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
+              {dimension.sourceConstruct || labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
             </caption>
             <thead>
               <tr>
