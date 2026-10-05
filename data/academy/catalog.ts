@@ -478,6 +478,10 @@ export function preferredAcademyRecords(locale: PublicLocale, filter?: (record: 
 export function recordsForDirection(direction: AcademyDirectionId, locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === direction); }
 export function videoRecords(locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === "videos"); }
 export function findAcademyRecord(routeKey: string, locale: PublicLocale) { const matches = sourceRecords.filter((record) => record.routeKey === routeKey); if (!matches.length) return undefined; return [...matches].sort((a, b) => compareAcademyRecords(a, b, locale))[0]; }
-export function mediaForRecord(record: AcademySourceRecord) { return mediaRecords.filter((item) => item.logicalId === record.logicalId && item.sourceUrl === record.sourceUrl); }
+export function mediaForRecord(record: AcademySourceRecord) {
+  const exact = mediaRecords.filter((item) => item.logicalId === record.logicalId && item.sourceUrl === record.sourceUrl);
+  if (exact.some((item) => youtubeIdFromUrl(item.mediaUrl))) return exact;
+  return mediaRecords.filter((item) => item.logicalId === record.logicalId);
+}
 export function youtubeIdFromUrl(url: string) { const match = url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/); return match?.[1]; }
 export function sourceLanguageNotice(record: AcademySourceRecord, locale: PublicLocale) { if (locale !== "es" && record.sourceLocale === locale) return null; return academyCopy[locale].sourceLanguage + " " + academyCopy[locale][record.sourceLocale] + "."; }
