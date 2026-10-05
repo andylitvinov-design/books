@@ -261,8 +261,9 @@ test("PsiMaster content is source-backed curated and strips stale high-risk prom
 test("PsiMaster legacy video manifest restores public YouTube media", async () => {
   const media = await readJson("data/academy/psimaster-media.generated.json");
   const planetary = media.filter((row) => row.logicalId === "videos/planetary-power");
-  assert.equal(media.length, 44);
+  assert.equal(media.length, 45);
   assert.equal(planetary.length, 11);
+  assert.ok(media.some((row) => row.videoId === "9w6AmFXaL2U"));
   for (const id of ["2GMLhPrEJ3s","8XN-EFpSt8M","h8r_fIVWM0U","owG8gBIQ2hU","3Lc38_-SqD0","ziXmEWe3Dh0","ocks6JP2lD8","-volI7wYbl0","R1krHd3JRXc","uN5BFjdKVvY","6wNdBVoYt50"]) {
     assert.ok(media.some((row) => row.mediaUrl.endsWith("/" + id)), id);
   }
@@ -300,7 +301,7 @@ test("all six PsiMaster legacy video-course families are restored", async () => 
     "videos/planetary-power": 11,
     "videos/greek-mysteries-demeter": 5,
     "videos/strength-protection": 7,
-    "videos/maya-archetypes": 5,
+    "videos/maya-archetypes": 6,
     "videos/egypt-osiris": 7,
     "videos/greek-mysteries-dionysus": 7,
   };
@@ -308,5 +309,5 @@ test("all six PsiMaster legacy video-course families are restored", async () => 
     assert.equal(media.filter((row) => row.logicalId === logicalId).length, count, logicalId);
   }
   assert.equal(media.filter((row) => row.logicalId === "videos/energy-pump-ups").length, 2);
-  assert.equal(new Set(media.map((row) => row.videoId)).size, 37);
+  assert.equal(new Set(media.map((row) => row.videoId)).size, 38);
 });
