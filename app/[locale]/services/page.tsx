@@ -61,7 +61,7 @@ const copy = {
     consultationText: "Опишите ваш запрос — вместе определим, какой из трёх форматов сейчас наиболее уместен.",
     telegram: "Написать в Telegram",
     whatsapp: "WhatsApp",
-    note: "Эта работа не является медицинской диагностикой или неотложной помощью. Бизнес-расстановки не заменяют финансовую, юридическую или профессиональную экспертизу и не гарантируют результат.",
+    note: "Эти форматы не заменяют медицинскую диагностику или неотложную помощь. Бизнес-расстановки не заменяют финансовую, юридическую или профессиональную экспертизу и не гарантируют результат.",
   },
   en: {
     title: "Personal work in Toronto and online — Holistic House",
@@ -102,7 +102,7 @@ const copy = {
     consultationText: "Tell me what you would like to explore, and we can choose which of the three formats fits best right now.",
     telegram: "Message on Telegram",
     whatsapp: "WhatsApp",
-    note: "This work is not medical diagnosis or urgent care. Business constellations do not replace financial, legal or professional advice and do not guarantee an outcome.",
+    note: "These formats do not replace medical diagnosis or urgent care. Business constellations do not replace financial, legal or professional advice and do not guarantee an outcome.",
   },
 } as const;
 
@@ -299,6 +299,7 @@ export default async function ServicesPage({ params }: PageProps) {
             <h2>{title}</h2>
             <p className="services-studio-card-subtitle">{subtitle}</p>
             <p>{text}</p>
+            <PageVideo slot={"service-" + id} locale={locale} />
           </article>;
         })}
       </section>

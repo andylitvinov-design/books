@@ -8,6 +8,7 @@ import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
 type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number];
 
 type AcquisitionEventLinkProps = {
+  attributes?: Record<string, string>;
   children: ReactNode;
   className?: string;
   event: AcquisitionEvent;
@@ -26,6 +27,6 @@ function emit(event: AcquisitionEvent) {
   dataLayer?.push({ event });
 }
 
-export function AcquisitionEventLink({ children, event, ...props }: AcquisitionEventLinkProps) {
-  return <Link {...props} onClick={() => emit(event)}>{children}</Link>;
+export function AcquisitionEventLink({ attributes, children, event, ...props }: AcquisitionEventLinkProps) {
+  return <Link {...props} {...attributes} onClick={() => emit(event)}>{children}</Link>;
 }
