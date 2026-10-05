@@ -1,6 +1,6 @@
 export const COPY = {
   en: {
-    portrait: 'My portrait',
+    portrait: 'My profile',
     tests: 'Tests',
     history: 'History',
     reports: 'Reports from Andy',
@@ -167,7 +167,7 @@ export const COPY = {
     continueLater: 'You can return whenever it is useful. There is no daily testing obligation.',
   },
   ru: {
-    portrait: 'Мой портрет',
+    portrait: 'Мой профиль',
     tests: 'Тесты',
     history: 'История',
     reports: 'Отчёты от Andy',
