@@ -207,6 +207,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const question = definition?.questions[index]
   const selected = question ? answers[question.id] : undefined
   const guestCatalog = useMemo(() => startableCatalog({ guest: true }), [])
+  const dismissPendingMood = useCallback(() => setPendingMood(null), [])
   const getMoodRecommendations = useCallback(
     ({ mood, category }) =>
       recommendForMood({
@@ -536,7 +537,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         disabled={busy}
         getRecommendations={getMoodRecommendations}
         onMoodSelected={recordMood}
-        onDismissMood={() => setPendingMood(null)}
+        onDismissMood={dismissPendingMood}
         onStartTest={(candidate) => begin(candidate.key)}
         onAllTests={openAllTests}
       />
