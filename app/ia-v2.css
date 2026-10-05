@@ -462,10 +462,6 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
-  .cabinet-test-list {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-  }
 }
 @media (max-width: 600px) {
   .hh-monitoring-card {
