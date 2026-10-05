@@ -29,7 +29,7 @@ async function api(path,body,ctx=context){
  throw error
 }
 async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
-async function enterTest(name='Current State Check'){
+async function enterTest(name='Current State Check',mode='Guided'){
  await page.goto(origin+'/en/app/tests');await ready()
  let card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
  if(await card.count()===0){
@@ -40,6 +40,8 @@ async function enterTest(name='Current State Check'){
  await card.getByRole('button',{name:/Start|Continue|Take again/}).click()
  await expect(page).toHaveURL(/\/runs\//)
  await expect(page.locator('.hh-runner')).toBeVisible()
+ const modeChoice=page.locator('.hh-test-mode-card').filter({hasText:mode}).first()
+ if(await modeChoice.count())await modeChoice.click()
 }
 async function savedClick(button){
  const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/save')&&r.request().method()==='POST'),button.click()])
@@ -81,7 +83,7 @@ try {
  let data=(await api('bootstrap')).data;assert.equal(data.results.length,2);assert.equal(data.results[0].id,first.id);assert.equal(new Set(data.snapshot.dimensions.map(d=>d.key)).size,5);passed('second run keeps original baseline and unique profile axes')
  await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await page.screenshot({path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
  await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
- await enterTest('Weekly Psychic Health');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();passed('Weekly Psychic Health is a real versioned signed-in runner')
+ await enterTest('Weekly Psychic Health','Quick');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await savedClick(page.locator('.hh-scale button').first());await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();passed('Quick mode saves and auto-advances in the signed-in runner');await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();passed('Weekly Psychic Health is a real versioned signed-in runner')
  await enterTest('Personality Baseline');await expect(page.getByText('Describe how you generally see yourself',{exact:false})).toBeVisible()
  await page.screenshot({path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
@@ -101,13 +103,13 @@ try {
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
  await page.goto(origin+'/en/client');await expect(page.getByRole('heading',{name:'Your personal space'})).toBeVisible();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null);passed('Cabinet is Google-first and legacy private-link entry is secondary')
  await page.getByRole('button',{name:'Start test'}).nth(1).click();await expect(page.getByRole('heading',{name:'Before you start'})).toBeVisible();await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to temporary private processing',{exact:false}).check();await page.getByRole('button',{name:'Continue',exact:true}).click()
- await expect(page.getByText('Question 1 of 20',{exact:true})).toBeVisible()
- await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:'Next',exact:true}).click();await page.reload();await expect(page.getByRole('heading',{name:'Your Mind–Body Monitor'})).toBeVisible();await page.getByRole('button',{name:/Start test: Personality Baseline/}).click();await expect(page.getByText('Question 2 of 20',{exact:true})).toBeVisible();passed('external Cabinet stays on catalog after reload and explicit test selection resumes saved progress')
+ await page.locator('.hh-test-mode-card').filter({hasText:'Guided'}).click();await expect(page.getByText('Question 1 of 20',{exact:true})).toBeVisible()
+ await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:'Next',exact:true}).click();await page.reload();await expect(page.getByRole('heading',{name:'Your Mind–Body Monitor'})).toBeVisible();await page.getByRole('button',{name:/Start test: Personality Baseline/}).click();await page.locator('.hh-test-mode-card').filter({hasText:'Guided'}).click();await expect(page.getByText('Question 2 of 20',{exact:true})).toBeVisible();passed('external Cabinet stays on catalog after reload and explicit test selection resumes saved progress')
  for(let i=1;i<20;i++){await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:i===19?'See my result':'Next',exact:true}).click()}
  await expect(page.getByRole('heading',{name:'Personality Baseline'})).toBeVisible();passed('personality guest test completes while signed out with full result')
- await page.getByRole('button',{name:'Take another test'}).click();await page.getByRole('button',{name:'Start test'}).first().click()
- for(const v of[4,6,3,5,2]){await page.getByRole('button',{name:String(v),exact:true}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:'Next',exact:true}).click()}
- await expect(page.getByRole('heading',{name:'Optional context'})).toBeVisible();await page.getByLabel('Anything else you want to note?').fill('Synthetic guest context.');await page.getByRole('button',{name:'See my result',exact:true}).click();await expect(page.getByRole('heading',{name:'Current State Check'})).toBeVisible();passed('current-state guest test completes while signed out')
+ await page.getByRole('button',{name:'Take another test'}).click();await page.getByRole('button',{name:'Start test'}).first().click();await page.locator('.hh-test-mode-card').filter({hasText:'Quick'}).click()
+ for(const [i,v] of [4,6,3,5,2].entries()){await page.getByRole('button',{name:String(v),exact:true}).click();if(i<4){await expect(page.getByRole('status')).toHaveText('Saved');await expect(page.getByText(`Question ${i+2} of 5`,{exact:true})).toBeVisible()}}
+ await expect(page.getByRole('heading',{name:'Optional context'})).toBeVisible();passed('Quick mode saves and auto-advances in the guest runner');await page.getByLabel('Anything else you want to note?').fill('Synthetic guest context.');await page.getByRole('button',{name:'See my result',exact:true}).click();await expect(page.getByRole('heading',{name:'Current State Check'})).toBeVisible();passed('current-state guest test completes while signed out')
  const privateStorage=await page.evaluate(()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage)}));assert.deepEqual(privateStorage,{local:[],session:[]});passed('guest flow uses no localStorage/sessionStorage canonical data')
  await page.getByRole('button',{name:'Save to my Cabinet'}).click();await expect(page).toHaveURL(/\/app\/continue\?intent=/,{timeout:60000});await ready();await expect(page.getByRole('heading',{name:'Save to your Cabinet'})).toBeVisible();await page.getByRole('button',{name:'Save',exact:true}).click();await expect(page).toHaveURL(/\/results\//,{timeout:60000});await ready();data=(await api('bootstrap')).data;assert.equal(data.results.length,4);passed('explicit guest save intent survives Google and imports exactly one selected result')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
