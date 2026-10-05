@@ -2,7 +2,7 @@ import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {createHmac} from 'node:crypto'
-import {assertIsolated} from '../tests/helpers/app-db-setup.mjs'
+import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
 const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
 if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error('Only isolated loopback browser verification is permitted')
