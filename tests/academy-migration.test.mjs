@@ -198,3 +198,33 @@ test("remaining lost Academy text is recovered from live PsiTrends sources", asy
   assert.match(catalog, /Исторические отзывы студентов/);
   assert.match(catalog, /\^loading\\\.\\\.\\\.\$/i);
 });
+
+
+test("full Academy preservation audit restores unique backup-only course details", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  assert.match(catalog, /Recovered five-initiation introductory path/);
+  assert.match(catalog, /Shamanic Flight/);
+  assert.match(catalog, /Recovered program lines from the live source/);
+  assert.match(catalog, /Slavic \/ Northern Shamanism Level 4 — Civilization Healing, Myth and Legends/);
+  assert.match(catalog, /Recovered Level 1 summary/);
+  assert.match(catalog, /Recovered introduction to the Reiki Yggdrasil framework/);
+  assert.match(catalog, /3\.1 — Egregors and symbolic communities/);
+  assert.match(catalog, /3\.5 — Tantra Reiki \/ Beauty of Love/);
+  assert.match(catalog, /КА — «витальной силой»/);
+  assert.match(catalog, /ХУ — образом «тела духа»/);
+  assert.match(catalog, /Talisman, amulet and artifact — distinction in the backup archive/);
+  assert.match(catalog, /Recovered historical event themes/);
+  assert.match(catalog, /academySupplementalPublicBlocks/);
+});
+
+test("backup-only Academy records remain fully reconciled after preservation recovery", async () => {
+  const [preservation, summary] = await Promise.all([
+    readJson("data/academy/preservation.generated.json"),
+    readJson("data/academy/preservation-summary.generated.json"),
+  ]);
+  const academy = preservation.filter((row) => row.preservationClassification === "Academy");
+  assert.equal(academy.length, 26);
+  assert.equal(summary.backupSourceIdCount, 117);
+  assert.equal(summary.unclassifiedSourceIdCount, 0);
+  assert.equal(summary.classificationCounts["Needs Review"], 0);
+});
