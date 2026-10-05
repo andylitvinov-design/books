@@ -797,7 +797,8 @@ function Runner({ id, locale, onExit, onComplete }) {
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
-    [showDiscard, setShowDiscard] = useState(false)
+    [showDiscard, setShowDiscard] = useState(false),
+    [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
     inflight = useRef(false)
   async function load() {
@@ -837,6 +838,7 @@ function Runner({ id, locale, onExit, onComplete }) {
       const next = await appFetch(`runs/${id}/save`, payload)
       operation.current = null
       setRun(next)
+      if (next.safetySignal) setSafetyAcknowledged(false)
       setContext(next.context || {})
       setStatus(c.saved)
       return next
@@ -901,13 +903,37 @@ function Runner({ id, locale, onExit, onComplete }) {
         </Link>
       </section>
     )
+  if (run.safetySignal && !safetyAcknowledged) {
+    const safety = SAFETY_COPY[locale] || SAFETY_COPY.en
+    return (
+      <section className="hh-panel hh-safety" role="alert" aria-live="assertive">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{safety.title}</h1>
+        <p>{safety.text}</p>
+        <p><strong>{safety.urgent}</strong></p>
+        <p>{safety.support}</p>
+        <div className="hh-actions">
+          <a className="hh-primary" href="tel:988">988</a>
+          <a href="sms:988">{locale === 'ru' ? 'Написать 988' : 'Text 988'}</a>
+          <button type="button" onClick={() => setSafetyAcknowledged(true)}>
+            {safety.continue}
+          </button>
+        </div>
+        <p className="hh-fine">
+          {locale === 'ru'
+            ? 'Если вы не в Канаде или США, используйте местную экстренную или кризисную службу.'
+            : 'If you are outside Canada or the United States, use your local emergency or crisis service.'}
+        </p>
+      </section>
+    )
+  }
   const min = question?.min ?? def.answerScale?.min,
     max = question?.max ?? def.answerScale?.max
   return (
     <section className="hh-runner hh-panel">
       <header>
         <p className="hh-kicker">
-          {def.key === 'hh-current-state' ? c.state : c.personality} ·{' '}
+          {catalogTitle(getAssessmentCatalogEntry(def.key), locale) || def.title} ·{' '}
           {def.instrumentLocale.toUpperCase()}
         </p>
         <progress
@@ -919,7 +945,15 @@ function Runner({ id, locale, onExit, onComplete }) {
           {Math.min(index + 1, def.questions.length + 1)} / {def.questions.length + 1}
         </p>
       </header>
-      <p className="hh-muted">{def.key === 'hh-current-state' ? c.rightNow : c.general}</p>
+      <p className="hh-muted">
+        {def.key === 'hh-current-state'
+          ? c.rightNow
+          : def.key === 'mini-ipip-20'
+            ? c.general
+            : locale === 'ru'
+              ? 'Отвечайте за период, указанный в формулировке теста.'
+              : 'Answer for the timeframe stated in the questionnaire.'}
+      </p>
       {question ? (
         <fieldset disabled={busy || Boolean(operation.current)}>
           <legend>
@@ -1337,13 +1371,20 @@ function ResultPage({ id, locale, data }) {
           r.id !== result.id && Date.parse(r.measurementAt) <= Date.parse(result.measurementAt),
       )
       .at(-1),
-    diff = previous ? compareResults(result, previous) : []
+    diff = previous ? compareResults(result, previous) : [],
+    recommendation = recommendAfterResult({
+      result,
+      results: data.results,
+      runs: data.runs,
+      locale,
+      guest: false,
+    })
   return (
     <section className="hh-panel">
       <p className="hh-kicker">
         {c.result} · {result.instrumentLocale.toUpperCase()}
       </p>
-      <h1>{result.definitionKey === 'hh-current-state' ? c.state : c.personality}</h1>
+      <h1>{catalogTitle(getAssessmentCatalogEntry(result.definitionKey), locale) || result.definitionKey}</h1>
       <p>{dateLabel(result.measurementAt, locale)}</p>
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
       {Object.entries(result.context || {}).length > 0 && (
@@ -1384,8 +1425,8 @@ function ResultPage({ id, locale, data }) {
             return (
               <tr key={d.key}>
                 <th scope="row">
-                  {labelFor(d.key, locale)}
-                  <small>{explanationFor(d.key, locale)}</small>
+                  {d.sourceConstruct || labelFor(d.key, locale)}
+                  {explanationFor(d.key, locale) && <small>{explanationFor(d.key, locale)}</small>}
                 </th>
                 <td>
                   {d.value} / {d.max}
@@ -1397,8 +1438,31 @@ function ResultPage({ id, locale, data }) {
         </tbody>
       </table>
       {!previous && <p>{c.noChange}</p>}
+      {recommendation ? (
+        <section className="hh-result-recommendation">
+          <p className="hh-kicker">{locale === 'ru' ? 'Один следующий шаг' : 'One next step'}</p>
+          <h2>{catalogTitle(recommendation.entry, locale)}</h2>
+          <p>{recommendation.reason}</p>
+          <div className="hh-actions">
+            <Link
+              className="hh-primary"
+              href={`/${locale}/app/tests?recommended=${encodeURIComponent(recommendation.key)}`}
+              prefetch={false}
+            >
+              {locale === 'ru' ? 'Посмотреть тест' : 'View check'}
+            </Link>
+            <Link href={`/${locale}/app/history`} prefetch={false}>
+              {locale === 'ru' ? 'Позже' : 'Later'}
+            </Link>
+          </div>
+        </section>
+      ) : (
+        <p className="hh-notice">
+          {locale === 'ru' ? 'Готово. На сегодня этого достаточно.' : 'Done. That’s enough for today.'}
+        </p>
+      )}
       <p className="hh-fine">{c.versionBoundary}</p>
-      <Link className="hh-primary" href={`/${locale}/app/history`} prefetch={false}>
+      <Link href={`/${locale}/app/history`} prefetch={false}>
         {c.history}
       </Link>
     </section>
@@ -1525,8 +1589,18 @@ function HistoryView({ data, locale, reload }) {
     ...results.map((r) => ({
       id: r.id,
       date: r.measurementAt,
-      title: r.definitionKey === 'hh-current-state' ? c.state : c.personality,
+      title:
+        catalogTitle(getAssessmentCatalogEntry(r.definitionKey), locale) ||
+        (r.definitionKey === 'hh-current-state' ? c.state : c.personality),
       href: `/${locale}/app/results/${r.id}`,
+    })),
+    ...(data.moodCheckins || []).map((mood) => ({
+      id: 'mood-' + mood.id,
+      date: mood.occurredAt,
+      title: `${moodEmoji(mood.mood)} ${moodLabel(mood.mood, locale)}`,
+      note: mood.category
+        ? (locale === 'ru' ? 'Контекст: ' : 'Context: ') + mood.category
+        : undefined,
     })),
     ...reportTimeline(data.savedReports).map((report) => ({
       id: report.id,
@@ -1628,7 +1702,7 @@ function HistoryView({ data, locale, reload }) {
           </div>
           {delta.length ? (
             <p className="hh-change">
-              {c.since} {dateLabel(prior.measurementAt, locale)}: {labelFor(dimension.key, locale)}{' '}
+              {c.since} {dateLabel(prior.measurementAt, locale)}: {dimension.sourceConstruct || labelFor(dimension.key, locale)}{' '}
               {delta.find((d) => d.key === dimension.key)?.prior} → {dimension.value}{' '}
               <span>
                 ({delta.find((d) => d.key === dimension.key)?.delta > 0 ? '+' : ''}
@@ -1643,7 +1717,7 @@ function HistoryView({ data, locale, reload }) {
               className="hh-chart"
               viewBox="0 0 640 200"
               role="img"
-              aria-label={`${labelFor(dimension.key, locale)} — ${c.history}`}
+              aria-label={`${dimension.sourceConstruct || labelFor(dimension.key, locale)} — ${c.history}`}
             >
               <line x1="30" y1="170" x2="610" y2="170" />
               <polyline points={points.map((p) => `${x(p)},${y(p)}`).join(' ')} />
@@ -1658,7 +1732,7 @@ function HistoryView({ data, locale, reload }) {
           )}
           <table className="hh-table">
             <caption>
-              {labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
+              {dimension.sourceConstruct || labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
             </caption>
             <thead>
               <tr>
