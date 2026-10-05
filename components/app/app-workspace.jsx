@@ -19,6 +19,7 @@ import {
   startableCatalog,
 } from '@/data/assessments/catalog'
 import { recommendAfterResult, recommendForMood, moodTrend } from '@/lib/assessments/recommendations'
+import { buildProfileSummary, profileCompletionRecommendations } from '@/lib/profile/summary'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 
 export async function appFetch(path, body, method) {
@@ -1113,6 +1114,260 @@ function Runner({ id, locale, onExit, onComplete }) {
     </section>
   )
 }
+function profileNumber(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '—'
+  return Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(1).replace(/\.0$/, '')
+}
+function profileDelta(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '—'
+  return `${numeric > 0 ? '+' : ''}${profileNumber(numeric)}`
+}
+function ProfileOverview({ profile, locale, onStartAssessment }) {
+  const ru = locale === 'ru'
+  const axisCopy = {
+    state: ru ? 'Состояние' : 'State',
+    symptoms: ru ? 'Симптомы и нагрузка' : 'Symptoms & load',
+    function: ru ? 'Функционирование' : 'Functioning',
+    resources: ru ? 'Ресурсы' : 'Resources',
+    trait: ru ? 'Личностные особенности' : 'Personality',
+  }
+  const axisOrder = new Map(Object.keys(axisCopy).map((key, index) => [key, index]))
+  const rows = [...profile.rows].sort(
+    (a, b) =>
+      (axisOrder.get(a.dimensionClass) ?? 99) - (axisOrder.get(b.dimensionClass) ?? 99) ||
+      String(a.sourceConstruct || a.key).localeCompare(String(b.sourceConstruct || b.key)),
+  )
+  const recommendationTitle = profile.complete
+    ? ru
+      ? 'Что полезно обновить'
+      : 'Useful check-ins to refresh'
+    : ru
+      ? 'Что пройти, чтобы достроить профиль'
+      : 'Suggested tests to complete your profile'
+
+  return (
+    <section className="hh-profile-overview" aria-labelledby="profile-overview-title">
+      <header className="hh-profile-overview-head">
+        <div>
+          <p className="hh-kicker">{ru ? 'Сводный профиль' : 'Profile overview'}</p>
+          <h2 id="profile-overview-title">{ru ? 'Ваши данные в одной схеме' : 'Your measurements in one view'}</h2>
+          <p>
+            {ru
+              ? 'Последние доступные показатели из разных тестов собраны вместе. Предыдущие значения показываются только для совместимых версий шкалы.'
+              : 'Your latest compatible measurements from different tests are brought together here. Previous values are shown only for compatible versions of the same scale.'}
+          </p>
+        </div>
+        <div className="hh-profile-coverage" aria-label={ru ? 'Заполненность профиля' : 'Profile coverage'}>
+          <strong>{profile.coveragePercent}%</strong>
+          <span>{ru ? 'слоёв профиля' : 'profile layers'}</span>
+        </div>
+      </header>
+
+      <div className="hh-profile-progress" aria-hidden="true">
+        <i style={{ width: `${profile.coveragePercent}%` }} />
+      </div>
+
+      <section className="hh-profile-map" aria-labelledby="profile-map-title">
+        <div className="hh-profile-section-heading">
+          <div>
+            <p className="hh-kicker">{ru ? 'Схема' : 'Overview'}</p>
+            <h3 id="profile-map-title">{ru ? 'Пять слоёв профиля' : 'Five profile layers'}</h3>
+          </div>
+          <p>
+            {ru
+              ? 'Шкалы приведены к позиции 0–100 только для визуального сравнения. Это не единый медицинский балл: высокий показатель не всегда означает «лучше».'
+              : 'Each scale is mapped to a 0–100 position only for visual comparison. This is not a single health score, and higher is not always “better”.'}
+          </p>
+        </div>
+        <div className="hh-profile-axis-list">
+          {profile.groups.map((group) => (
+            <div className="hh-profile-axis" key={group.axis}>
+              <div className="hh-profile-axis-label">
+                <strong>{axisCopy[group.axis] || group.axis}</strong>
+                <span>
+                  {Number.isFinite(group.currentPercent)
+                    ? `${profileNumber(group.currentPercent)} / 100`
+                    : ru
+                      ? 'нет данных'
+                      : 'no data'}
+                </span>
+              </div>
+              <div
+                className="hh-profile-axis-bar"
+                role="img"
+                aria-label={
+                  Number.isFinite(group.currentPercent)
+                    ? `${axisCopy[group.axis]}: ${profileNumber(group.currentPercent)} / 100`
+                    : `${axisCopy[group.axis]}: ${ru ? 'нет данных' : 'no data'}`
+                }
+              >
+                <i
+                  className="hh-profile-axis-current"
+                  style={{ width: `${group.currentPercent || 0}%` }}
+                />
+                {Number.isFinite(group.priorPercent) && (
+                  <b
+                    className="hh-profile-axis-prior"
+                    style={{ left: `${group.priorPercent}%` }}
+                    title={
+                      ru
+                        ? `Предыдущее: ${profileNumber(group.priorPercent)} / 100`
+                        : `Previous: ${profileNumber(group.priorPercent)} / 100`
+                    }
+                  />
+                )}
+              </div>
+              <small>
+                {group.count
+                  ? Number.isFinite(group.priorPercent)
+                    ? ru
+                      ? `Предыдущее: ${profileNumber(group.priorPercent)} / 100 · сопоставимых шкал: ${group.comparableCount}`
+                      : `Previous: ${profileNumber(group.priorPercent)} / 100 · comparable scales: ${group.comparableCount}`
+                    : ru
+                      ? 'Первый совместимый замер в этом слое'
+                      : 'First compatible measurement in this layer'
+                  : ru
+                    ? 'Нужен дополнительный тест'
+                    : 'Another test can add this layer'}
+              </small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="hh-profile-table-section" aria-labelledby="profile-table-title">
+        <div className="hh-profile-section-heading">
+          <div>
+            <p className="hh-kicker">{ru ? 'Все шкалы' : 'All scales'}</p>
+            <h3 id="profile-table-title">{ru ? 'Единая таблица показателей' : 'Unified measurement table'}</h3>
+          </div>
+          <p>
+            {ru
+              ? 'Здесь сохраняются исходные единицы каждой шкалы; поэтому сравнение с прошлым остаётся корректным и не смешивает разные тесты.'
+              : 'Original scale units are preserved here, so previous comparisons stay compatible and do not mix unlike tests.'}
+          </p>
+        </div>
+        {rows.length ? (
+          <div className="hh-profile-table-wrap">
+            <table className="hh-profile-table">
+              <thead>
+                <tr>
+                  <th>{ru ? 'Слой / показатель' : 'Layer / measure'}</th>
+                  <th>{ru ? 'Последнее' : 'Latest'}</th>
+                  <th>{ru ? 'Предыдущее' : 'Previous'}</th>
+                  <th>{ru ? 'Разница' : 'Difference'}</th>
+                  <th>{ru ? 'Замер' : 'Measured'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const definition = getDefinitionById(row.sourceDefinitionId)
+                  const entry = getAssessmentCatalogEntry(definition.key)
+                  return (
+                    <tr key={row.key}>
+                      <th scope="row">
+                        <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
+                        <strong>{row.sourceConstruct || labelFor(row.key, locale)}</strong>
+                        <span>{catalogTitle(entry, locale) || definition.key}</span>
+                      </th>
+                      <td>
+                        <strong>{profileNumber(row.value)}</strong>
+                        <small>{row.min}–{row.max}</small>
+                      </td>
+                      <td>
+                        {Number.isFinite(Number(row.priorValue)) ? (
+                          <>
+                            <strong>{profileNumber(row.priorValue)}</strong>
+                            <small>{row.priorMeasurementAt ? dateLabel(row.priorMeasurementAt, locale) : ''}</small>
+                          </>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </td>
+                      <td>
+                        {Number.isFinite(Number(row.delta)) ? <strong>{profileDelta(row.delta)}</strong> : <span>—</span>}
+                      </td>
+                      <td>
+                        <time dateTime={row.measurementAt}>{dateLabel(row.measurementAt, locale)}</time>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <article className="hh-panel hh-empty">
+            <p>{ru ? 'Пока нет сохранённых шкал. Начните с одного короткого теста.' : 'No saved scales yet. Start with one short check.'}</p>
+          </article>
+        )}
+      </section>
+
+      <section className="hh-profile-recommendations" aria-labelledby="profile-recommendations-title">
+        <div className="hh-profile-section-heading">
+          <div>
+            <p className="hh-kicker">{ru ? 'Следующие шаги' : 'Next steps'}</p>
+            <h3 id="profile-recommendations-title">{recommendationTitle}</h3>
+          </div>
+          <p>
+            {profile.complete
+              ? ru
+                ? 'Основные слои уже представлены. Повторяйте тесты только тогда, когда это полезно для динамики.'
+                : 'The core layers are present. Repeat checks only when they are useful for tracking change.'
+              : ru
+                ? 'Список строится по недостающим слоям, а не требует проходить все тесты подряд.'
+                : 'This list is ranked by missing profile layers; you do not need to take every test.'}
+          </p>
+        </div>
+        {profile.recommendations.length ? (
+          <div className="hh-profile-recommendation-grid">
+            {profile.recommendations.map((item, index) => (
+              <article key={item.key}>
+                <div>
+                  <small>{ru ? `Приоритет ${index + 1}` : `Priority ${index + 1}`}</small>
+                  <h4>{catalogTitle(item.entry, locale)}</h4>
+                  <p>{item.reason}</p>
+                  <span>
+                    {item.entry.questionCount} {ru ? 'вопросов' : 'questions'} · {item.entry.duration}
+                    {item.definitionLocale !== locale ? ` · ${item.definitionLocale.toUpperCase()}` : ''}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="hh-primary"
+                  onClick={() => onStartAssessment({ ...item.entry, definitionLocale: item.definitionLocale })}
+                >
+                  {item.mode === 'refresh'
+                    ? ru
+                      ? 'Повторить'
+                      : 'Repeat'
+                    : ru
+                      ? 'Пройти тест'
+                      : 'Take test'}
+                </button>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="hh-profile-complete">
+            <span aria-hidden="true">✓</span>
+            <div>
+              <strong>{ru ? 'Основной профиль собран' : 'Core profile is covered'}</strong>
+              <p>
+                {ru
+                  ? 'Новых обязательных тестов нет. История будет становиться полезнее по мере естественных повторных замеров.'
+                  : 'There are no required next tests. Your history becomes more useful as you add natural repeat measurements over time.'}
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
+    </section>
+  )
+}
+
 function MetricCard({ dimension, locale, onSelect }) {
   const c = COPY[locale],
     def = getDefinitionById(dimension.sourceDefinitionId)
@@ -1173,6 +1428,11 @@ function Portrait({
         : dimension
     }),
   })
+  const profile = profileCompletionRecommendations({
+    snapshot: data.snapshot,
+    results: data.results,
+    locale,
+  })
   const groups = [
     ['state', c.state],
     ['symptoms', locale === 'ru' ? 'Симптомы и нагрузка' : 'Symptoms & load'],
@@ -1215,6 +1475,11 @@ function Portrait({
           )}
         </section>
       )}
+      <ProfileOverview
+        profile={profile}
+        locale={locale}
+        onStartAssessment={onStartAssessment}
+      />
       {data.practitioner && <OwnerTools locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
