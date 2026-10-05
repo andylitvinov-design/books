@@ -182,8 +182,8 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
   assert.ok(mood.includes('className="hh-mood-title"'))
   assert.ok(!mood.includes('homeopathy-kicker hh-mood-kicker'))
   assert.ok(landing.includes('<h2 id="cabinet-title">{c.title}</h2>'))
-  assert.ok(landing.includes("testsKicker: 'Psychic Health'"))
-  assert.ok(landing.includes("tryTitle: 'Psychic Health Monitoring'"))
+  assert.ok(landing.includes("testsKicker: 'Mind–Body Monitor'"))
+  assert.ok(landing.includes("tryTitle: 'Your Mind–Body Monitor'"))
   assert.ok(landing.includes("title: 'Your personal space'"))
   assert.ok(landing.includes("title: 'Ваше личное пространство'"))
   assert.ok(ia.includes('Cabinet v2.6'))
@@ -194,7 +194,7 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
   assert.ok(!ia.includes('Cabinet v2.4'))
 })
 
-test('Cabinet catalog uses accessible image-led Psychic Health Monitoring cards', async () => {
+test('Cabinet catalog uses accessible image-led Mind–Body Monitor cards', async () => {
   const [landing, ia] = await Promise.all([
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('app/ia-v2.css', 'utf8'),
@@ -205,7 +205,7 @@ test('Cabinet catalog uses accessible image-led Psychic Health Monitoring cards'
   assert.ok(
     landing.indexOf('className="cabinet-guest-tests"') <
       landing.indexOf('className="cabinet-signin-strip"'),
-    'public Cabinet should show Psychic Health Monitoring before Google sign-in',
+    'public Cabinet should show Mind–Body Monitor before Google sign-in',
   )
   assert.ok(landing.includes("import Image from 'next/image'"))
   assert.ok(landing.includes('className="cabinet-test-image"'))
@@ -222,9 +222,9 @@ test('Cabinet catalog uses accessible image-led Psychic Health Monitoring cards'
 })
 
 
-test('signed-in tests use the same Psychic Health Monitoring image-card concept', async () => {
+test('signed-in tests use the same Mind–Body Monitor catalogue concept', async () => {
   const workspace = await readFile('components/app/app-workspace.jsx', 'utf8')
-  assert.ok(workspace.includes('<h1>Psychic Health Monitoring</h1>'))
+  assert.ok(workspace.includes("'Tests & self-checks'"))\n  assert.ok(workspace.includes("'Recommended'"))\n  assert.ok(workspace.includes("'By area'"))
   assert.ok(workspace.includes('className="hh-monitoring-grid"'))
   assert.ok(workspace.includes('className="hh-monitoring-card"'))
   assert.ok(workspace.includes('5 questions · ~1 min'))
