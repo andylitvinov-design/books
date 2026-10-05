@@ -90,3 +90,16 @@ One current taxonomy label, **term 12434 — “Курс Гипнотерапи�
 - Google Drive remains canonical master storage only when an owned source master is available; Drive is not used as public playback.
 - Existing public videos are embedded through the Academy player.
 - Production is not considered complete until CI/browser checks pass and the live deployment is read back.
+
+## EN / RU parity
+
+All **22** published PsiMaster Academy/Archive routes now have a complete English presentation layer mapped one-to-one to the curated Russian source blocks.
+
+- Russian remains the preserved source language.
+- English is an editorial translation of the same curated source-backed structure.
+- Every route keeps the same block count and block-type order in RU and EN.
+- English pages show an explicit translated-source notice.
+- All **45** recovered legacy video records have both Russian and English lesson titles.
+- Safety filtering is applied after locale selection, so EN and RU use the same public-content policy.
+
+Parity evidence: `docs/psimaster-academy-translation-manifest.csv`.
