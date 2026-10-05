@@ -2,7 +2,7 @@ import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {createHmac} from 'node:crypto'
-import {assertIsolated} from '../tests/helpers/app-db-setup.mjs'
+import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
 const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
 if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error('Only isolated loopback browser verification is permitted')
@@ -53,6 +53,9 @@ try {
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
  await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:'Your portrait starts with one small check-in.'})).toBeVisible();await expect(page.getByText('Next step',{exact:true})).toBeVisible();await expect(page.getByText('What will appear here',{exact:true})).toBeVisible();passed('supported SDK PKCE callback against isolated protocol double and guided Cabinet onboarding')
+ const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
+ await page.goto(origin+'/en/app');await ready();await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toBeVisible();await page.getByRole('button',{name:/^Clients/}).click();await expect(page).toHaveURL(origin+'/admin/clients');await expect(page.getByRole('heading',{name:'Clients',exact:true})).toBeVisible();passed('trusted practitioner opens existing client database from My Portrait without PIN')
+ await page.goto(origin+'/en/app');await ready()
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
