@@ -74,7 +74,7 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 }
 @media print { .ia222-bottom-navigation { display: none !important; } body:has(.ia222-bottom-navigation) { padding-bottom: 0 !important; } }
 
-/* Cabinet v2.5 — clean Academy-style composition. */
+/* Cabinet v2.6 — shared white mood card across public and signed-in Cabinet. */
 .cabinet-landing-shell {
   max-width: 1040px;
   margin: 0 auto;
