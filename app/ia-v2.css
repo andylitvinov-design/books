@@ -74,8 +74,7 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 }
 @media print { .ia222-bottom-navigation { display: none !important; } body:has(.ia222-bottom-navigation) { padding-bottom: 0 !important; } }
 
-
-/* Cabinet v2.3 — use the same light page rhythm as Library / Academy. */
+/* Cabinet v2.5 — clean Academy-style composition. */
 .cabinet-landing-shell {
   max-width: 1040px;
   margin: 0 auto;
@@ -91,7 +90,7 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   box-shadow: none;
 }
 .cabinet-landing-shell .hh-mood-kicker {
-  margin: 0 0 8px;
+  margin: 0 0 7px;
   color: #8b5a3c;
   font-size: 10px;
   font-weight: 700;
@@ -99,351 +98,150 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   text-transform: uppercase;
 }
 .cabinet-landing-shell .hh-mood-checkin h1 {
-  margin: 8px 0 12px;
-  font-size: clamp(38px, 6vw, 58px);
-  line-height: 1.08;
-  letter-spacing: -.03em;
+  margin: 7px 0 8px;
+  color: #2f231c;
+  font-size: clamp(38px, 5.5vw, 52px);
+  line-height: 1.04;
+  letter-spacing: -.035em;
 }
 .cabinet-landing-shell .hh-mood-question {
   margin: 0;
-  color: #65564a;
+  color: #6b5b4f;
   font-family: inherit;
-  font-size: 16px;
-  line-height: 1.55;
-}
-.cabinet-landing-shell .hh-mood-row {
-  width: min(520px, 100%);
-  margin-top: 20px;
-  gap: 10px;
-}
-.cabinet-landing-shell .hh-mood-button {
-  min-height: 88px;
-  border-color: #ded5c9;
-  border-radius: 16px;
-  background: #fffcf6;
-  box-shadow: none;
-  font-size: 11px;
-}
-.cabinet-landing-shell .hh-mood-button:hover {
-  border-color: #b58b6e;
-  background: #fffcf6;
-  box-shadow: 0 8px 20px rgba(74,51,35,.07);
-}
-.cabinet-landing-shell .hh-mood-emoji {
-  font-size: 34px;
-}
-.cabinet-landing-shell .cabinet-google-card {
-  max-width: 42rem;
-  margin: 18px 0 0;
-  border: 1px solid #ded5c9;
-  border-radius: 16px;
-  background: #fffcf6;
-  padding: 20px 22px;
-}
-.cabinet-landing-shell .cabinet-google-card h2 {
-  margin: 5px 0 8px;
-  color: #352820;
-  font-family: var(--font-serif);
-  font-size: 28px;
-  font-weight: 400;
-  line-height: 1.12;
-}
-.cabinet-landing-shell .cabinet-google-card > p:not(.about-kicker) {
-  margin-top: 8px;
-  color: #65564a;
-  font-size: 12px;
-  line-height: 1.55;
-}
-.cabinet-landing-shell .cabinet-google-button {
-  min-height: 46px;
-  margin-top: 16px;
-  border-radius: 12px;
-  padding: 0 18px;
-  background: #4f3829;
-  font-size: 12px;
-}
-.cabinet-landing-shell .cabinet-google-button:hover {
-  background: #624735;
-}
-.cabinet-landing-shell .cabinet-guest-tests {
-  max-width: none;
-  margin: 32px 0 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 0;
-}
-.cabinet-landing-shell .cabinet-guest-tests h2 {
-  margin: 8px 0 8px;
-  font-size: clamp(30px, 4.5vw, 42px);
-  line-height: 1.08;
-}
-.cabinet-landing-shell .cabinet-guest-tests > p:not(.about-kicker) {
-  max-width: 42rem;
-  margin-top: 8px;
-  color: #65564a;
-  font-size: 13px;
-  line-height: 1.55;
-}
-.cabinet-landing-shell .cabinet-test-grid {
-  gap: 10px;
-  margin-top: 16px;
-}
-.cabinet-landing-shell .cabinet-test-card {
-  min-height: 166px;
-  border-color: #ded5c9;
-  border-radius: 16px;
-  background: #fffcf6;
-  padding: 18px;
-}
-.cabinet-landing-shell .cabinet-test-card h3 {
-  margin: 0 0 7px;
-  font-size: 22px;
-  line-height: 1.15;
-}
-.cabinet-landing-shell .cabinet-test-card p {
-  margin: 0 0 10px;
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.5;
-}
-.cabinet-landing-shell .cabinet-test-card button,
-.cabinet-landing-shell .cabinet-test-actions button,
-.cabinet-landing-shell .cabinet-text-button {
-  min-height: 42px;
-  border-color: #d7c7b5;
-  border-radius: 12px;
-  background: #fffcf6;
-  color: #70442d;
-}
-.cabinet-landing-shell .cabinet-test-card button:hover,
-.cabinet-landing-shell .cabinet-test-actions button:hover,
-.cabinet-landing-shell .cabinet-text-button:hover {
-  border-color: #b58b6e;
-}
-.cabinet-landing-shell .cabinet-legacy-entry {
-  max-width: 42rem;
-  margin: 28px 0 0;
-  border: 0;
-  border-top: 1px solid #ded5c9;
-  border-radius: 0;
-  background: transparent;
-  padding: 12px 0 0;
-}
-.cabinet-landing-shell .cabinet-legacy-entry > summary {
-  color: #70442d;
-  font-size: 12px;
-}
-.hh-app .hh-mood-checkin--compact {
-  margin: 0 0 22px;
-  border: 1px solid var(--hh-line);
-  border-radius: 16px;
-  background: var(--hh-paper);
-  padding: 20px;
-  box-shadow: none;
-}
-.hh-app .hh-mood-checkin--compact .hh-mood-row {
-  width: min(440px, 100%);
-  margin-top: 16px;
-  gap: 8px;
-}
-.hh-app .hh-mood-checkin--compact .hh-mood-button {
-  min-height: 78px;
-  border-radius: 14px;
-  background: #fffcf6;
-}
-.hh-app .hh-mood-checkin--compact .hh-mood-emoji {
-  font-size: 30px;
-}
-@media (max-width: 600px) {
-  .cabinet-landing-shell {
-    padding: 10px 10px 94px;
-  }
-  .cabinet-landing-shell .hh-mood-checkin {
-    margin: 18px 4px 14px;
-    padding: 0;
-  }
-  .cabinet-landing-shell .hh-mood-checkin h1 {
-    margin-bottom: 8px;
-    font-size: 38px;
-  }
-  .cabinet-landing-shell .hh-mood-question {
-    font-size: 13px;
-  }
-  .cabinet-landing-shell .hh-mood-row {
-    margin-top: 14px;
-    gap: 7px;
-  }
-  .cabinet-landing-shell .hh-mood-button {
-    min-height: 76px;
-    border-radius: 12px;
-    padding: 9px 3px;
-    font-size: 9.5px;
-  }
-  .cabinet-landing-shell .hh-mood-emoji {
-    font-size: 29px;
-  }
-  .cabinet-landing-shell .cabinet-google-card {
-    margin: 14px 4px 0;
-    padding: 16px;
-    border-radius: 14px;
-  }
-  .cabinet-landing-shell .cabinet-google-card h2 {
-    font-size: 23px;
-  }
-  .cabinet-landing-shell .cabinet-google-button {
-    width: 100%;
-    min-height: 44px;
-    margin-top: 13px;
-  }
-  .cabinet-landing-shell .cabinet-guest-tests {
-    margin: 24px 4px 0;
-  }
-  .cabinet-landing-shell .cabinet-guest-tests h2 {
-    font-size: 30px;
-  }
-  .cabinet-landing-shell .cabinet-test-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-    margin-top: 13px;
-  }
-  .cabinet-landing-shell .cabinet-test-card {
-    min-height: 0;
-    border-radius: 12px;
-    padding: 16px;
-  }
-  .cabinet-landing-shell .cabinet-test-card h3 {
-    font-size: 20px;
-  }
-  .cabinet-landing-shell .cabinet-legacy-entry {
-    margin: 22px 4px 0;
-  }
-  .hh-app .hh-mood-checkin--compact {
-    padding: 17px;
-  }
-  .hh-app .hh-mood-checkin--compact .hh-mood-button {
-    min-height: 72px;
-  }
-}
-
-
-/* Cabinet v2.4 — structural Academy parity, not another large-card layout. */
-.cabinet-landing-shell .hh-mood-checkin {
-  max-width: none;
-  margin-bottom: 16px;
 }
 .cabinet-landing-shell .hh-mood-row {
   width: min(560px, 100%);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 3px;
-  margin-top: 18px;
-  border: 1px solid #d6c7b5;
+  gap: 2px;
+  margin-top: 15px;
+  border: 1px solid #d8c9b7;
   border-radius: 999px;
-  background: #f7f0e6;
+  background: #f6eee3;
   padding: 3px;
 }
 .cabinet-landing-shell .hh-mood-button {
-  min-height: 54px;
+  min-height: 46px;
+  display: flex;
   flex-direction: row;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  padding: 7px 12px;
-  font-size: 12px;
-  transition: background .16s ease, box-shadow .16s ease;
+  padding: 5px 9px;
+  color: #58463a;
+  font-size: 11px;
+  box-shadow: none;
 }
-.cabinet-landing-shell .hh-mood-button:hover {
+.cabinet-landing-shell .hh-mood-button:hover,
+.cabinet-landing-shell .hh-mood-button:focus-visible {
   border: 0;
   background: #fffcf6;
   box-shadow: 0 4px 12px rgba(56,39,28,.08);
 }
 .cabinet-landing-shell .hh-mood-emoji {
-  font-size: 25px;
+  font-size: 22px;
 }
-.cabinet-account-row {
+
+.cabinet-signin-strip {
+  max-width: 42rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 20px;
-  width: 100%;
+  gap: 18px;
   margin-top: 12px;
-  border: 1px solid #ded5c9;
-  border-radius: 16px;
-  background: #fffcf6;
-  padding: 18px 20px;
+  border-top: 1px solid #ded1c2;
+  border-bottom: 1px solid #ded1c2;
+  padding: 15px 0;
 }
-.cabinet-account-copy {
+.cabinet-signin-copy {
   min-width: 0;
 }
-.cabinet-account-copy .about-kicker {
-  margin: 0 0 4px;
+.cabinet-signin-copy .about-kicker {
+  margin: 0 0 3px;
 }
-.cabinet-account-copy h2 {
+.cabinet-signin-copy h2 {
   margin: 0;
   color: #352820;
   font-family: var(--font-serif);
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 400;
   line-height: 1.12;
 }
-.cabinet-account-copy > p {
-  margin: 6px 0 0;
-  color: #65564a;
-  font-size: 12px;
-  line-height: 1.45;
-}
-.cabinet-account-copy > small {
-  display: block;
-  margin-top: 4px;
-  color: #88786a;
-  font-size: 10px;
+.cabinet-signin-copy > p {
+  margin: 4px 0 0;
+  color: #756659;
+  font-size: 11px;
   line-height: 1.4;
 }
-.cabinet-landing-shell .cabinet-google-row-action {
-  min-height: 44px;
-  min-width: 190px;
+.cabinet-signin-copy > small {
+  display: block;
+  margin-top: 3px;
+  color: #97877a;
+  font-size: 9px;
+  line-height: 1.35;
+}
+.cabinet-landing-shell .cabinet-google-inline {
+  min-width: 178px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 9px;
   margin: 0;
   border: 0;
   border-radius: 999px;
   background: #4f3829;
-  padding: 0 16px 0 18px;
+  padding: 0 13px 0 16px;
   color: #fffaf2;
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 700;
 }
-.cabinet-landing-shell .cabinet-google-row-action span:last-child {
-  font-family: var(--font-serif);
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1;
+.cabinet-landing-shell .cabinet-google-inline svg {
+  width: 16px;
+  height: 16px;
 }
 .cabinet-account-error {
   grid-column: 1 / -1;
 }
+
 .cabinet-landing-shell .cabinet-guest-tests {
-  margin-top: 24px;
+  max-width: none;
+  margin: 24px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
 }
 .cabinet-tests-heading {
+  max-width: 42rem;
   margin: 0 0 12px;
 }
 .cabinet-tests-heading h2 {
-  margin-bottom: 6px;
+  margin: 7px 0 6px;
+  font-size: clamp(30px, 4.5vw, 40px);
+  line-height: 1.06;
+}
+.cabinet-tests-heading > p:last-child {
+  margin: 0;
+  color: #6b5b4f;
+  font-size: 12px;
+  line-height: 1.5;
 }
 .cabinet-test-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0,1fr));
   gap: 12px;
 }
 .cabinet-test-row {
   width: 100%;
   min-height: 88px;
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) 24px;
+  grid-template-columns: 82px minmax(0,1fr) 28px;
   align-items: stretch;
   overflow: hidden;
   border: 1px solid #ded5c9;
@@ -458,22 +256,28 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 .cabinet-test-row:hover {
   transform: translateY(-1px);
   border-color: #b58b6e;
-  box-shadow: 0 10px 24px rgba(74,51,35,.09);
+  box-shadow: 0 10px 24px rgba(74,51,35,.08);
 }
 .cabinet-test-row:disabled {
   opacity: .58;
   cursor: wait;
   transform: none;
 }
-.cabinet-test-count {
+.cabinet-test-icon {
   display: grid;
-  place-items: center;
   min-height: 86px;
-  background: #ede2d4;
-  color: #7d5a43;
-  font-family: var(--font-serif);
-  font-size: 28px;
-  line-height: 1;
+  place-items: center;
+  background: #eee3d6;
+  color: #805941;
+}
+.cabinet-test-icon--trait {
+  background: #eee8df;
+  color: #705545;
+}
+.cabinet-test-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.65;
 }
 .cabinet-test-row-copy {
   min-width: 0;
@@ -490,20 +294,71 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 }
 .cabinet-test-row-copy small {
   margin-top: 5px;
-  color: #76685b;
+  color: #806f61;
   font-size: 10px;
   line-height: 1.35;
 }
-.cabinet-test-arrow {
+.cabinet-test-chevron {
   align-self: center;
+  width: 18px;
+  height: 18px;
   color: #9a755e;
-  font-family: var(--font-serif);
-  font-size: 28px;
-  line-height: 1;
+  stroke-width: 1.8;
+}
+
+.cabinet-landing-shell .cabinet-guest-runner,
+.cabinet-landing-shell .cabinet-guest-result {
+  max-width: 46rem;
+}
+.cabinet-landing-shell .cabinet-test-actions button,
+.cabinet-landing-shell .cabinet-text-button {
+  border-radius: 12px;
 }
 .cabinet-landing-shell .cabinet-legacy-entry {
-  max-width: none;
+  max-width: 42rem;
+  margin: 24px 0 0;
+  border: 0;
+  border-top: 1px solid #ded1c2;
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 0 0;
 }
+.cabinet-landing-shell .cabinet-legacy-entry > summary {
+  color: #70442d;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Signed-in Portrait reuses the same quieter mood language. */
+.hh-app .hh-mood-checkin--compact {
+  margin: 0 0 22px;
+  border: 1px solid var(--hh-line);
+  border-radius: 16px;
+  background: var(--hh-paper);
+  padding: 18px;
+  box-shadow: none;
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-row {
+  width: min(440px, 100%);
+  margin-top: 14px;
+  gap: 3px;
+  border: 1px solid #d8c9b7;
+  border-radius: 999px;
+  background: #f6eee3;
+  padding: 3px;
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-button {
+  min-height: 44px;
+  flex-direction: row;
+  gap: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+}
+.hh-app .hh-mood-checkin--compact .hh-mood-emoji {
+  font-size: 21px;
+}
+
 @media (max-width: 760px) {
   .cabinet-test-list {
     grid-template-columns: minmax(0, 1fr);
@@ -511,62 +366,81 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   }
 }
 @media (max-width: 600px) {
+  .cabinet-landing-shell {
+    padding: 10px 10px 94px;
+  }
   .cabinet-landing-shell .hh-mood-checkin {
-    margin-bottom: 10px;
+    margin: 17px 4px 12px;
+  }
+  .cabinet-landing-shell .hh-mood-checkin h1 {
+    margin-bottom: 6px;
+    font-size: 40px;
+  }
+  .cabinet-landing-shell .hh-mood-question {
+    font-size: 13px;
   }
   .cabinet-landing-shell .hh-mood-row {
     width: 100%;
-    margin-top: 12px;
-    gap: 2px;
-    padding: 3px;
+    margin-top: 11px;
   }
   .cabinet-landing-shell .hh-mood-button {
-    min-height: 48px;
+    min-height: 42px;
     gap: 5px;
-    padding: 5px 6px;
-    font-size: 10px;
+    padding: 4px 5px;
+    font-size: 9.5px;
   }
   .cabinet-landing-shell .hh-mood-emoji {
-    font-size: 22px;
+    font-size: 20px;
   }
-  .cabinet-account-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    margin: 10px 0 0;
-    border-radius: 12px;
-    padding: 15px;
+
+  .cabinet-signin-strip {
+    max-width: none;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 10px;
+    margin: 8px 4px 0;
+    padding: 12px 0;
   }
-  .cabinet-account-copy h2 {
-    font-size: 21px;
+  .cabinet-signin-copy h2 {
+    font-size: 18px;
   }
-  .cabinet-account-copy > p {
-    font-size: 11px;
+  .cabinet-signin-copy > p {
+    max-width: 15rem;
+    font-size: 9.5px;
   }
-  .cabinet-account-copy > small {
-    font-size: 9px;
+  .cabinet-signin-copy > small {
+    display: none;
   }
-  .cabinet-landing-shell .cabinet-google-row-action {
-    width: 100%;
-    min-width: 0;
-    min-height: 42px;
+  .cabinet-landing-shell .cabinet-google-inline {
+    min-width: 156px;
+    min-height: 38px;
+    padding-inline: 13px 11px;
+    font-size: 9.5px;
   }
+
   .cabinet-landing-shell .cabinet-guest-tests {
-    margin: 20px 0 0;
+    margin: 20px 4px 0;
   }
   .cabinet-tests-heading {
-    margin: 0 4px 10px;
+    margin: 0 0 10px;
   }
   .cabinet-tests-heading h2 {
+    margin: 6px 0 5px;
     font-size: 30px;
+  }
+  .cabinet-tests-heading > p:last-child {
+    font-size: 11px;
   }
   .cabinet-test-row {
     min-height: 74px;
-    grid-template-columns: 72px minmax(0, 1fr) 24px;
+    grid-template-columns: 72px minmax(0,1fr) 24px;
     border-radius: 12px;
   }
-  .cabinet-test-count {
+  .cabinet-test-icon {
     min-height: 72px;
-    font-size: 25px;
+  }
+  .cabinet-test-icon svg {
+    width: 25px;
+    height: 25px;
   }
   .cabinet-test-row-copy {
     padding: 9px 11px;
@@ -575,11 +449,13 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
     font-size: 18px;
   }
   .cabinet-test-row-copy small {
-    max-height: 2.7em;
-    overflow: hidden;
     font-size: 9px;
   }
-  .cabinet-test-arrow {
-    font-size: 24px;
+  .cabinet-test-chevron {
+    width: 16px;
+    height: 16px;
+  }
+  .cabinet-landing-shell .cabinet-legacy-entry {
+    margin: 20px 0 0;
   }
 }
