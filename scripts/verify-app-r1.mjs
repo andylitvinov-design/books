@@ -31,7 +31,12 @@ async function api(path,body,ctx=context){
 async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
 async function enterTest(name='Current State Check'){
  await page.goto(origin+'/en/app/tests');await ready()
- const card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
+ let card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
+ if(await card.count()===0){
+  const all=page.getByRole('button',{name:'All available',exact:true})
+  if(await all.count())await all.click()
+  card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
+ }
  await card.getByRole('button',{name:/Start|Continue|Take again/}).click()
  await expect(page).toHaveURL(/\/runs\//)
  await expect(page.locator('.hh-runner')).toBeVisible()
@@ -76,6 +81,7 @@ try {
  let data=(await api('bootstrap')).data;assert.equal(data.results.length,2);assert.equal(data.results[0].id,first.id);assert.equal(new Set(data.snapshot.dimensions.map(d=>d.key)).size,5);passed('second run keeps original baseline and unique profile axes')
  await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await page.screenshot({path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
  await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
+ await enterTest('Weekly Psychic Health');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();passed('Weekly Psychic Health is a real versioned signed-in runner')
  await enterTest('Personality Baseline');await expect(page.getByText('Describe how you generally see yourself',{exact:false})).toBeVisible()
  await page.screenshot({path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
