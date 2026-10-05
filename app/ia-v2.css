@@ -212,7 +212,7 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 
 .cabinet-landing-shell .cabinet-guest-tests {
   max-width: none;
-  margin: 24px 0 0;
+  margin: 12px 0 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -550,7 +550,7 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   }
 
   .cabinet-landing-shell .cabinet-guest-tests {
-    margin: 20px 4px 0;
+    margin: 12px 4px 0;
   }
   .cabinet-tests-heading {
     margin: 0 0 10px;
