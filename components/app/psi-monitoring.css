@@ -118,6 +118,32 @@
   color: #8c4235;
   font-size: 14px;
 }
+.hh-psi-mood-trend {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 0 2px;
+}
+.hh-psi-mood-trend > div {
+  flex: 0 0 72px;
+  min-height: 74px;
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  padding: 8px 5px;
+  border: 1px solid var(--hh-line);
+  border-radius: 14px;
+  background: #fffdf9;
+}
+.hh-psi-mood-trend span {
+  font-size: 26px;
+  line-height: 1;
+}
+.hh-psi-mood-trend small {
+  color: var(--hh-muted);
+  font-size: 10px;
+  text-align: center;
+}
 .hh-psi-change-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
