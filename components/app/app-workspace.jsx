@@ -1415,6 +1415,8 @@ function ResultPage({ id, locale, data }) {
       )
       .at(-1),
     diff = previous ? compareResults(result, previous) : [],
+    entry = getAssessmentCatalogEntry(result.definitionKey),
+    title = catalogTitle(entry, locale) || result.definitionKey,
     recommendation = recommendAfterResult({
       result,
       results: data.results,
@@ -1423,15 +1425,74 @@ function ResultPage({ id, locale, data }) {
       guest: false,
     })
   return (
-    <section className="hh-panel">
-      <p className="hh-kicker">
-        {c.result} · {result.instrumentLocale.toUpperCase()}
-      </p>
-      <h1>{catalogTitle(getAssessmentCatalogEntry(result.definitionKey), locale) || result.definitionKey}</h1>
-      <p>{dateLabel(result.measurementAt, locale)}</p>
+    <article className="hh-result-page">
+      <header className="hh-result-hero">
+        <div>
+          <p className="hh-kicker">{c.result}</p>
+          <h1>{title}</h1>
+          <p className="hh-result-intro">
+            {locale === 'ru'
+              ? 'Ваш личный замер состояния — спокойно, без ярлыков и автоматических выводов.'
+              : 'Your personal measurement — calm, private and without automatic labels.'}
+          </p>
+        </div>
+        <div className="hh-result-meta">
+          <span>{dateLabel(result.measurementAt, locale)}</span>
+          <span>{result.instrumentLocale.toUpperCase()}</span>
+        </div>
+      </header>
+
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
+
+      <section className="hh-result-section" aria-labelledby="result-values-title">
+        <div className="hh-result-section-heading">
+          <div>
+            <p className="hh-kicker">{locale === 'ru' ? 'Результаты' : 'Results'}</p>
+            <h2 id="result-values-title">
+              {locale === 'ru' ? 'Ваши показатели' : 'Your measurements'}
+            </h2>
+          </div>
+          <p className="hh-result-section-note">
+            {previous
+              ? locale === 'ru'
+                ? 'Изменение показано только относительно совместимого предыдущего замера.'
+                : 'Change is shown only against a compatible previous measurement.'
+              : locale === 'ru'
+                ? 'Это первый совместимый замер — он станет вашей личной точкой отсчёта.'
+                : 'This is your first compatible measurement and becomes your personal baseline.'}
+          </p>
+        </div>
+
+        <div className="hh-result-metrics">
+          {result.dimensions.map((d) => {
+            const delta = diff.find((x) => x.key === d.key)?.delta
+            return (
+              <section className="hh-result-metric" key={d.key}>
+                <div className="hh-result-metric-copy">
+                  <h3>{d.sourceConstruct || labelFor(d.key, locale)}</h3>
+                  {explanationFor(d.key, locale) && <p>{explanationFor(d.key, locale)}</p>}
+                </div>
+                <div className="hh-result-score">
+                  <strong>{d.value}</strong>
+                  <span>/ {d.max}</span>
+                </div>
+                <div className="hh-result-metric-foot">
+                  <span>{c.scale} {d.min}–{d.max}</span>
+                  <span className="hh-result-delta">
+                    {delta === undefined
+                      ? c.baseline
+                      : `${c.change}: ${delta > 0 ? '+' : ''}${delta}`}
+                  </span>
+                </div>
+              </section>
+            )
+          })}
+        </div>
+      </section>
+
       {Object.entries(result.context || {}).length > 0 && (
-        <aside className="hh-context-at-checkin">
+        <aside className="hh-context-at-checkin hh-result-context">
+          <p className="hh-kicker">{locale === 'ru' ? 'Ваш контекст' : 'Your context'}</p>
           <h2>{c.contextAtCheckIn}</h2>
           <dl>
             {[
@@ -1451,42 +1512,16 @@ function ResultPage({ id, locale, data }) {
           </dl>
         </aside>
       )}
-      <table className="hh-table">
-        <caption>
-          {c.source}: {result.definitionKey} {result.definitionVersion}
-        </caption>
-        <thead>
-          <tr>
-            <th>{c.dimension}</th>
-            <th>{c.value}</th>
-            <th>{c.change}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {result.dimensions.map((d) => {
-            const delta = diff.find((x) => x.key === d.key)?.delta
-            return (
-              <tr key={d.key}>
-                <th scope="row">
-                  {d.sourceConstruct || labelFor(d.key, locale)}
-                  {explanationFor(d.key, locale) && <small>{explanationFor(d.key, locale)}</small>}
-                </th>
-                <td>
-                  {d.value} / {d.max}
-                </td>
-                <td>{delta === undefined ? '—' : `${delta > 0 ? '+' : ''}${delta}`}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+
       <ResultConsultationCta locale={locale} />
-      {!previous && <p>{c.noChange}</p>}
+
       {recommendation ? (
         <section className="hh-result-recommendation">
-          <p className="hh-kicker">{locale === 'ru' ? 'Один следующий шаг' : 'One next step'}</p>
-          <h2>{catalogTitle(recommendation.entry, locale)}</h2>
-          <p>{recommendation.reason}</p>
+          <div>
+            <p className="hh-kicker">{locale === 'ru' ? 'Один следующий шаг' : 'One next step'}</p>
+            <h2>{catalogTitle(recommendation.entry, locale)}</h2>
+            <p>{recommendation.reason}</p>
+          </div>
           <div className="hh-actions">
             <Link className="hh-primary" href={`/${locale}/app/tests?recommended=${encodeURIComponent(recommendation.key)}`} prefetch={false}>
               {locale === 'ru' ? 'Посмотреть тест' : 'View check'}
@@ -1495,11 +1530,26 @@ function ResultPage({ id, locale, data }) {
           </div>
         </section>
       ) : (
-        <p className="hh-notice">{locale === 'ru' ? 'Готово. На сегодня этого достаточно.' : 'Done. That’s enough for today.'}</p>
+        <section className="hh-result-complete">
+          <span aria-hidden="true">✓</span>
+          <div>
+            <strong>{locale === 'ru' ? 'На сегодня достаточно' : 'That’s enough for today'}</strong>
+            <p>{locale === 'ru' ? 'Результат сохранён в вашей истории. Возвращайтесь к мониторингу тогда, когда это будет полезно.' : 'This result is in your history. Return to monitoring when it feels useful.'}</p>
+          </div>
+        </section>
       )}
-      <p className="hh-fine">{c.versionBoundary}</p>
-      <Link href={`/${locale}/app/history`} prefetch={false}>{c.history}</Link>
-    </section>
+
+      <footer className="hh-result-footer">
+        <p className="hh-result-source">
+          {c.source}: {result.definitionKey} · {result.definitionVersion} · {result.instrumentLocale.toUpperCase()}
+        </p>
+        <p className="hh-fine">{c.versionBoundary}</p>
+        <div className="hh-result-footer-actions">
+          <Link href={`/${locale}/app/history`} prefetch={false}>{c.history}</Link>
+          <Link href={`/${locale}/app/tests`} prefetch={false}>{locale === 'ru' ? 'Все тесты' : 'All tests'}</Link>
+        </div>
+      </footer>
+    </article>
   )
 }
 function SavedReportPage({ id, locale, reload }) {
