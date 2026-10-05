@@ -62,6 +62,7 @@ function goSignedOut(setData) {
 export default function AppWorkspace({ locale, path = [] }) {
   const c = COPY[locale],
     router = useRouter(),
+    searchParams = useSearchParams(),
     [data, setData] = useState(null),
     [state, setState] = useState('loading'),
     [error, setError] = useState(null)
@@ -130,7 +131,10 @@ export default function AppWorkspace({ locale, path = [] }) {
     setBusy(true)
     setError(null)
     try {
-      const result = await appFetch('auth/start', { locale })
+      const result = await appFetch('auth/start', {
+        locale,
+        serviceId: searchParams.get('service') || null,
+      })
       window.location.assign(result.redirectUrl)
     } catch (e) {
       setError(e)
@@ -1603,8 +1607,17 @@ function ContextForm({ locale, reload, event }) {
 }
 function Consultations({ data, locale, reload }) {
   const c = COPY[locale],
+    params = useSearchParams(),
+    requestedServiceId = params.get('service'),
+    handledRequestedService = useRef(false),
     [selected, setSelected] = useState(null),
     [error, setError] = useState(null)
+  useEffect(() => {
+    if (handledRequestedService.current || !requestedServiceId) return
+    handledRequestedService.current = true
+    const requested = APP_SERVICES.find((service) => service.id === requestedServiceId)
+    if (requested) setSelected(requested)
+  }, [requestedServiceId])
   async function updateRequest(request, action) {
     try {
       await appFetch('requests/' + request.id, { action, expectedRevision: request.revision })
