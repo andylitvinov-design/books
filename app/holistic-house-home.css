@@ -276,7 +276,7 @@
   .service-home-section-heading { gap: 10px; margin: 0 7px 16px; }
   .service-home-section-heading h2 { font-size: 31px; }
   .service-home-section-heading > a { gap: 6px; font-size: 11px; }
-  .service-home-card-grid { gap: 7px; }
+  .service-home-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .service-home-card { padding: 14px 8px 8px; border-radius: 13px; min-height: 235px; }
   .service-home-card-symbol { width: 38px; height: 38px; }
   .service-home-card-symbol svg { width: 26px; height: 26px; }
@@ -354,8 +354,26 @@
   font-weight: 700;
   text-decoration: none;
 }
+.service-home-self-check {
+  max-width: 1188px;
+  margin: 0 auto 44px;
+  border-radius: 18px;
+  padding: 32px 40px;
+  background: #efe5d7;
+}
+.service-home-self-check h2 {
+  max-width: 520px;
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 3.4vw, 46px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -.03em;
+}
+.service-home-self-check > p:not(.service-home-kicker) { max-width: 620px; margin-top: 12px; color: var(--hh-muted); font-size: 15px; line-height: 1.6; }
+.service-home-self-check a { display: inline-flex; min-height: 44px; align-items: center; gap: 12px; margin-top: 18px; border: 1px solid #855139; border-radius: 999px; padding: 9px 18px; color: #fffaf4; background: #855139; font-size: 13px; font-weight: 700; text-decoration: none; }
 @media (max-width: 1319px) {
-  .service-home-about { margin-inline: 5vw; }
+  .service-home-about, .service-home-self-check { margin-inline: 5vw; }
 }
 @media (max-width: 767px) {
   .service-home-about {
@@ -366,4 +384,7 @@
   }
   .service-home-about h2 { font-size: 36px; }
   .service-home-about > div:last-child p { font-size: 13px; line-height: 1.62; }
+  .service-home-self-check { margin: 0 20px 28px; border-radius: 14px; padding: 24px 20px; }
+  .service-home-self-check h2 { font-size: 32px; }
+  .service-home-self-check > p:not(.service-home-kicker) { font-size: 13px; }
 }

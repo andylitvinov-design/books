@@ -1,3 +1,5 @@
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+
 const copy = {
   en: {
     eyebrow: "A gentle first step",
@@ -37,12 +39,12 @@ export function PublicConsultationCta({ locale, id }: { locale: "en" | "ru" | "e
         <span>{text.text}</span>
       </div>
       <div className="public-consultation-cta__actions">
-        <a href={whatsappUrl} rel="noopener noreferrer" target="_blank" data-contact-channel="whatsapp">
-          {text.whatsapp}<span aria-hidden="true">↗</span>
-        </a>
-        <a href="https://t.me/AndyTherapist" rel="noopener noreferrer" target="_blank" data-contact-channel="telegram">
-          {text.telegram}<span aria-hidden="true">↗</span>
-        </a>
+        <AcquisitionEventLink href={whatsappUrl} rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "whatsapp" }} event="service_request_start">
+          <span data-contact-channel="whatsapp">{text.whatsapp}</span><span aria-hidden="true">↗</span>
+        </AcquisitionEventLink>
+        <AcquisitionEventLink href="https://t.me/AndyTherapist" rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "telegram" }} event="contact_click">
+          <span data-contact-channel="telegram">{text.telegram}</span><span aria-hidden="true">↗</span>
+        </AcquisitionEventLink>
       </div>
     </aside>
   );
