@@ -266,7 +266,7 @@ test('verified practitioner account exposes existing client and document tools o
   assert.match(access, /payment: '\/admin\/payments\/new'/)
   assert.doesNotMatch(access, /@gmail\.com/)
 
-  assert.match(admin, /issueTrustedAdminSession/)
-  assert.match(admin, /path: '\/admin'/)
-  assert.match(admin, /maxAge: 60 \* 60 \* 12/)
+  assert.match(adminSession, /issueTrustedAdminSession/)
+  assert.match(adminSession, /path: '\/admin'/)
+  assert.match(adminSession, /maxAge: 60 \* 60 \* 12/)
 })
