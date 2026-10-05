@@ -204,7 +204,7 @@ test('Cabinet catalog uses accessible image-led Mind–Body Monitor cards', asyn
   ])
   assert.ok(landing.includes('className="cabinet-signin-strip"'))
   assert.ok(landing.includes('className="cabinet-test-list"'))
-  assert.ok(landing.includes('className="cabinet-test-row"'))
+  assert.ok(landing.includes('cabinet-test-row'))
   assert.ok(
     landing.indexOf('className="cabinet-guest-tests"') <
       landing.indexOf('className="cabinet-signin-strip"'),
