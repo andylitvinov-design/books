@@ -172,6 +172,9 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
       { type: "p", text: "Исследование внутренних частей и образов души через расстановочную форму: скрытые напряжения, желания, страхи и отношения с собственными архетипическими фигурами." },
       { type: "h3", text: "Инициация в Канал" },
       { type: "p", text: "Исторический формат включал символическую сонастройку с выбранной традицией, создание мандалы и работу с личным артефактом как с фокусом внимания и смысла." },
+      { type: "li", text: "Анализ качеств выбранного архетипического Канала в расстановочном поле." },
+      { type: "li", text: "Исследование внутренних ограничений и конфликтов относительно этих качеств." },
+      { type: "li", text: "Закрепление переживания через образную / гипнотическую практику и исторический ритуал инициации." },
       { type: "h3", text: "Руны и бизнес" },
       { type: "p", text: "Отдельное направление использовало скандинавские рунические архетипы как символическую модель для анализа целей, вариантов решения и личной стратегии." },
       { type: "h3", text: "Архетипическая диагностика и поддержка" },
@@ -207,21 +210,21 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
       { type: "h2", text: "Египетский курс — восемь шагов" },
       { type: "p", text: "В архиве PsiTrends Египетский курс соединяет символику египетских архетипов с восьмишаговой моделью работы с личной или проектной целью." },
       { type: "h3", text: "1. Первичный анализ — Хатхор" },
-      { type: "p", text: "Прояснение ситуации, желаний и исходного запроса." },
+      { type: "p", text: "Прояснение ситуации, желаний и исходного запроса. В исходном курсе этот этап символически связывался с КА — «витальной силой»." },
       { type: "h3", text: "2. Ясность — Тот" },
-      { type: "p", text: "Выбор фокуса, отделение существенного от лишнего и формулировка цели." },
+      { type: "p", text: "Выбор фокуса, отделение существенного от лишнего и формулировка цели. В терминологии архива здесь использовался образ БА — «тела сознания»." },
       { type: "h3", text: "3. Решение — Исида" },
-      { type: "p", text: "Поиск вариантов и превращение идеи в более ясный план." },
+      { type: "p", text: "Поиск вариантов и превращение идеи в более ясный план. Исторический текст связывал этот шаг с ИБ — символическим «телом интуиции»." },
       { type: "h3", text: "4. Действия — Гор" },
-      { type: "p", text: "Переход от плана к действиям, контактам и необходимым ресурсам." },
+      { type: "p", text: "Переход от плана к действиям, контактам и необходимым ресурсам. В архиве этому соответствовал образ Хайбид — «тела действий»." },
       { type: "h3", text: "5. Освобождение от ограничений — Осирис" },
-      { type: "p", text: "Исследование внутренних страхов, установок и привычных ограничений, которые мешают движению." },
+      { type: "p", text: "Исследование внутренних страхов, установок и привычных ограничений, которые мешают движению. Источник использовал здесь образ САХ — «тела света / масштаба»." },
       { type: "h3", text: "6. Ресурсы — Мин" },
-      { type: "p", text: "Поиск новых идей, людей, возможностей и источников энергии для проекта." },
+      { type: "p", text: "Поиск новых идей, людей, возможностей и дополнительных ресурсов для проекта. В историческом словаре курса этот шаг связывался с СЕКХЕМ — «телом силы»." },
       { type: "h3", text: "7. Масштаб — Ра" },
-      { type: "p", text: "Расширение горизонта задачи и исследование следующего уровня проявленности." },
+      { type: "p", text: "Расширение горизонта задачи и исследование следующего уровня проявленности. В исходном материале использовался образ РЕН — «тела сути / имени»." },
       { type: "h3", text: "8. Новое видение — Маат" },
-      { type: "p", text: "Переоценка направления, образа себя, миссии и возможных новых путей развития." },
+      { type: "p", text: "Переоценка направления, образа себя, миссии и возможных новых путей развития. Исторический текст связывал финальный шаг с ХУ — образом «тела духа»." },
       { type: "p", text: "Это историческая структура курса. Утверждения о здоровье, гарантированном достижении целей и старые условия регистрации не переносятся как действующие обещания." }
     ]
   },
@@ -352,6 +355,9 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
       { type: "p", text: "Use of Kabbalistic symbols and ritual structure in the design of talismans." },
       { type: "h3", text: "Shrines, living icons and astral helpers" },
       { type: "p", text: "Creating shrine-like compositions and symbolic figures used as anchors for contemplative or ritual practice." },
+      { type: "h2", text: "Talisman, amulet and artifact — distinction in the backup archive" },
+      { type: "p", text: "A separate preserved PsiTrends/Quix page distinguishes three historical categories. A talisman is described as a symbolic written formula or mandala representing an intention; an amulet as a personal carried object associated with a chosen intention; and an artifact as a larger symbolic 'object of power' used within the course's ritual framework." },
+      { type: "p", text: "The source also grouped some archetypal mandalas under the artifact category. Holistic House preserves this terminology as historical/esoteric classification rather than a verified claim that an object can produce effects at a distance." },
       { type: "p", text: "Promotional promises, business case-study outcomes and claims of immediate magical efficacy from the legacy page are deliberately excluded." }
     ]
   },
@@ -464,6 +470,16 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
       { type: "p", text: "Historical sub-levels include advanced healing, life-force and planetary imagery, masculine/feminine and relationship themes, money-stream symbolism, energy management / Fireball, and sexual-energy practice." },
       { type: "h2", text: "Module 3 — Temple Studies" },
       { type: "p", text: "The source lists egregor/religious-symbol study, Ancient Egyptian temple therapy, zodiac and planetary symbolism, Kundalini material and Tantra Reiki." },
+      { type: "h3", text: "3.1 — Egregors and symbolic communities" },
+      { type: "p", text: "Historical material explored religious, professional, business, shamanic and healing communities as symbolic collective systems." },
+      { type: "h3", text: "3.2 — Ancient Egypt Temple Therapy" },
+      { type: "p", text: "Egyptian tradition, ritual symbolism and the mythic language of Egyptian deities were studied as part of the temple-therapy curriculum." },
+      { type: "h3", text: "3.3 — Zodiac and planetary symbolism" },
+      { type: "p", text: "The archived course connected Greek/Roman heritage, Hermetic ideas, zodiac imagery and planetary symbolism." },
+      { type: "h3", text: "3.4 — Indian heritage / Kundalini" },
+      { type: "p", text: "A historical module used Kundalini and Vedic imagery to explore vitality, transformation and masculine/feminine archetypal themes." },
+      { type: "h3", text: "3.5 — Tantra Reiki / Beauty of Love" },
+      { type: "p", text: "The backup version explicitly linked Tantra Reiki with Greek love archetypes, Dionysian imagery, sensuality and emotional expression." },
       { type: "h2", text: "Module 4 — Scandinavian Runes" },
       { type: "p", text: "Runic healing, runic prediction and the worlds of the Yggdrasil tree form the core of the Northern-tradition module." },
       { type: "h2", text: "Module 5 — Western European Tradition: Tarot" },
@@ -565,10 +581,67 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
   }
 };
 
+const academySupplementalPublicBlocks: Partial<Record<string, Partial<Record<AcademySourceRecord["sourceLocale"], AcademyBlock[]>>>> = {
+  "reiki/free-energy-healing": {
+    en: [
+      { type: "h2", text: "Recovered five-initiation introductory path" },
+      { type: "p", text: "A backup-only Quix version preserves the course structure more clearly than the main extracted page. It lists five introductory practices:" },
+      { type: "h3", text: "1 — Shamanic Flight" },
+      { type: "p", text: "Grounding and visualization were used as introductory practices before the later energy-work modules." },
+      { type: "h3", text: "2 — Tantra Reiki" },
+      { type: "p", text: "An introductory Osho Tantra Reiki attunement paired with meditation, awareness of sensation and partner practice." },
+      { type: "h3", text: "3 — Kundalini Reiki" },
+      { type: "p", text: "A historical module combining Reiki and Kundalini/chakra imagery with meditation and partner practice." },
+      { type: "h3", text: "4 — Runic Reiki Yggdrasil" },
+      { type: "p", text: "An introduction to the Runic Reiki Yggdrasil treatment/massage sequence and the course's symbolic intuition exercises." },
+      { type: "h3", text: "5 — Egyptian Ritual" },
+      { type: "p", text: "An introductory Egyptian-tradition module combining goal reflection, reading, ritual/initiatory symbolism and practice." },
+      { type: "p", text: "The backup page also contained old credential, medical/outcome and promotional language. Those claims are not carried forward here." }
+    ]
+  },
+  "reiki/yggdrasil": {
+    en: [
+      { type: "h2", text: "Recovered program lines from the live source" },
+      { type: "p", text: "A line-by-line audit found several level labels that were present on PsiTrends but dropped during extraction:" },
+      { type: "li", text: "Basic Reiki Yggdrasil Level 1 — Health, Intuition, Protection, Work on Situation." },
+      { type: "li", text: "Advanced Shamanic Therapy Level 1 — Advanced Healing." },
+      { type: "li", text: "Scandinavian Runes Level 1 — Runes and Runic Tradition." },
+      { type: "li", text: "Scandinavian Runes Level 5 — Runic Healing." },
+      { type: "li", text: "Slavic / Northern Shamanism Level 1 — Teleport, Astral Flight, Clairvoyance." },
+      { type: "li", text: "Slavic / Northern Shamanism Level 4 — Civilization Healing, Myth and Legends." },
+      { type: "p", text: "These are preserved as historical curriculum labels; they are not presented as verified health or supernatural effects." }
+    ]
+  },
+  "reiki/master-shamanic-healing": {
+    en: [
+      { type: "h2", text: "Recovered Level 1 summary" },
+      { type: "p", text: "The live PsiTrends page labels the first basic level 'Health, Intuition, Protection' and describes it as the entry point before the cleaning, activation, power, regression/vision and master-level material that follows." }
+    ]
+  },
+  "reiki/yggdrasil/faq": {
+    en: [
+      { type: "h2", text: "Recovered introduction to the Reiki Yggdrasil framework" },
+      { type: "p", text: "The live FAQ introduction, which was partly lost in migration, describes Reiki Yggdrasil as Nikolay Zhuravlev's composite system joining Reiki terminology with the Scandinavian Yggdrasil / World Tree and rune symbolism." },
+      { type: "p", text: "In the source, runes are presented as a symbolic glyph language and Yggdrasil as the organizing 'world tree' that holds the runic framework. The name Reiki Yggdrasil reflects the combination of Reiki-style energy practice with that mythological/runic model." },
+      { type: "p", text: "The legacy FAQ makes many strong claims about health, money, relationships and safety. Holistic House preserves the historical model and terminology without presenting those claims as medically or scientifically established effects." }
+    ]
+  },
+  "archive/events": {
+    en: [
+      { type: "h2", text: "Recovered historical event themes" },
+      { type: "p", text: "Additional event notes that survived on the live PsiTrends archive but were dropped from the migration include Family & Love Healing / constellations, money and business-project exploration, Runic Reiki bodywork, Tarot-archetype sessions and Tantra-themed exploration of love and sexuality." },
+      { type: "p", text: "These are preserved only as a record of past programming. Old dates, fees, free-attunement offers, health claims and registration contacts are not current event information." }
+    ]
+  }
+};
+
 function academySourceBlocks(record: AcademySourceRecord) {
-  return academyCuratedPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? record.content;
+  const base = academyCuratedPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? record.content;
+  const supplement = academySupplementalPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? [];
+  return [...base, ...supplement];
 }
 
+// Curated + supplemental blocks above are source-backed recovery from live PsiTrends and preserved Joomla/Quix evidence.
 const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|^loading\.\.\.$|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
 
 export function academyPublicBlocks(record: AcademySourceRecord) {
