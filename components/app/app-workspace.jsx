@@ -929,6 +929,7 @@ function Portrait({ data, locale, onOpenHistory }) {
         compact
         onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}
       />
+      {data.practitioner && <OwnerTools locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
         <article className="hh-panel hh-empty">
@@ -989,6 +990,28 @@ function Portrait({ data, locale, onOpenHistory }) {
         </section>
       )}
       <p className="hh-fine">{c.patterns}</p>
+    </section>
+  )
+}
+function OwnerTools({ locale }) {
+  const ru = locale === 'ru'
+  const [busy, setBusy] = useState(false)
+  async function open() {
+    setBusy(true)
+    try {
+      const result = await appFetch('practitioner/access', { destination: '/admin' })
+      window.location.assign(result.redirectUrl)
+    } catch {
+      setBusy(false)
+    }
+  }
+  return (
+    <section className="hh-panel hh-owner-tools">
+      <p className="hh-kicker">{ru ? 'Для владельца' : 'Owner'}</p>
+      <h2>{ru ? 'Рабочие инструменты' : 'Working tools'}</h2>
+      <button className="hh-primary" type="button" disabled={busy} onClick={open}>
+        {busy ? (ru ? 'Открываем…' : 'Opening…') : (ru ? 'Открыть' : 'Open')}
+      </button>
     </section>
   )
 }
