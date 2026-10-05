@@ -87,6 +87,10 @@ export default async function HomeopathyPage({ params }: PageProps) {
       <PageVideo slot="homeopathy-faq" locale={locale} />
 
       <PublicConsultationCta locale={locale as Locale} />
+      <div className="public-consultation-direct-actions" aria-label={current.consultation}>
+        <a href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">{current.telegram}</a>
+        <a href="https://wa.me/14376066502" rel="noreferrer" target="_blank">{current.whatsapp}</a>
+      </div>
 
       <section className="remedies-books-section" aria-labelledby="remedies-books-title">
         <div className="remedies-section-heading">
