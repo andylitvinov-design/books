@@ -1463,7 +1463,7 @@ function ResultPage({ id, locale, data }) {
           </p>
         </div>
 
-        <div className="hh-result-metrics">
+        <div className="hh-result-metrics" data-count={Math.min(result.dimensions.length, 3)}>
           {result.dimensions.map((d) => {
             const delta = diff.find((x) => x.key === d.key)?.delta
             return (
