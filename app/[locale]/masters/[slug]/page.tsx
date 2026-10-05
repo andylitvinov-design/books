@@ -6,10 +6,11 @@ import { isSupportedLocale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 
 type PageProps={params:Promise<{locale:string;slug:string}>};
 export const dynamic="force-dynamic";export const revalidate=0;
-async function load(locale:string,slug:string){try{return await createPractitionerRepository(getAppConfig()).getPublicPractitioner(slug,locale)}catch{return null}}
+async function load(locale:string,slug:string):Promise<PublicPractitioner|null>{try{return await createPractitionerRepository(getAppConfig()).getPublicPractitioner(slug,locale) as PublicPractitioner}catch{return null}}
 export async function generateMetadata({params}:PageProps):Promise<Metadata>{const{locale,slug}=await params;if(!isSupportedLocale(locale))return{title:"Not found"};const p=await load(locale,slug);if(!p)return{title:"Not found",robots:{index:false,follow:false}};const name=p.profile.displayName||p.profile.name||"Practitioner";return{metadataBase:metadataBaseFor(),title:`${name} | Holistic House`,description:p.profile.shortBio||"",alternates:{canonical:`/${locale}/masters/${slug}`}}}
 export default async function MasterProfile({params}:PageProps){const{locale,slug}=await params;if(!isSupportedLocale(locale))notFound();const p=await load(locale,slug);if(!p)notFound();const ru=locale==="ru",profile=p.profile||{},name=profile.displayName||profile.name||"Practitioner";return <main className="services-shell services-shell--studio" lang={locale}><PublicSiteHeader locale={locale}/>
  <section className="services-studio-hero"><div className="services-studio-hero-copy"><p className="homeopathy-kicker">{ru?"Практик Holistic House":"Holistic House practitioner"}</p><h1>{name}</h1><p>{profile.professionalTitle}</p><p>{profile.shortBio}</p><p>{[profile.city,profile.region,profile.country].filter(Boolean).join(", ")}</p><div className="hh-actions">{p.isPartner&&<span className="hh-badge">Holistic House Partner</span>}{p.credentials.some((x)=>x.verificationStatus==="verified")&&<span className="hh-badge">{ru?"Credentials проверены":"Credentials verified"}</span>}</div></div></section>
