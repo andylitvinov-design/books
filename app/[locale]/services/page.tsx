@@ -25,6 +25,7 @@ const copy = {
     kicker: "Три направления работы",
     heading: "Услуги",
     lead: "Три формата для разных задач: бизнес и решения, внутренние состояния и развитие, архетипическая и трансперсональная работа.",
+    marketplaceCta: "Выбрать услугу",
     cards: [
       {
         id: "business",
@@ -65,6 +66,7 @@ const copy = {
     kicker: "Three directions of work",
     heading: "Services",
     lead: "Three formats for different needs: business and decision-making, inner states and development, and archetypal / transpersonal exploration.",
+    marketplaceCta: "Choose a service",
     cards: [
       {
         id: "business",
@@ -138,8 +140,8 @@ export default async function ServicesPage({ params }: PageProps) {
           <p className="homeopathy-kicker">{current.kicker}</p>
           <h1>{current.heading}</h1>
           <p>{current.lead}</p>
-          <Link className="services-studio-primary" href="#consultation">
-            {current.consultation}<span aria-hidden="true">→</span>
+          <Link className="services-studio-primary" href="#available-services">
+            {current.marketplaceCta}<span aria-hidden="true">→</span>
           </Link>
         </div>
         <div className="services-studio-photo" aria-hidden="true">
@@ -151,6 +153,76 @@ export default async function ServicesPage({ params }: PageProps) {
             sizes="(max-width: 767px) 100vw, 44vw"
           />
         </div>
+      </section>
+
+      <section className="services-marketplace" id="available-services" aria-labelledby="services-marketplace-title">
+        <div className="services-marketplace-heading">
+          <p className="homeopathy-kicker">{locale === "ru" ? "Доступные услуги" : "Available services"}</p>
+          <h2 id="services-marketplace-title">{locale === "ru" ? "Выберите услугу" : "Choose a service"}</h2>
+          <p>
+            {locale === "ru"
+              ? "Можно открыть подробности или сразу отправить запрос выбранному мастеру. Публичные профили и услуги проходят модерацию."
+              : "Open the details or send a request directly to the practitioner. Public profiles and services are moderated."}
+          </p>
+        </div>
+
+        {offerings.length ? (
+          <div className="services-marketplace-grid">
+            {offerings.map((service) => {
+              const format =
+                service.deliveryFormat === "in_person"
+                  ? (locale === "ru" ? "Очно" : "In person")
+                  : service.deliveryFormat === "hybrid"
+                    ? (locale === "ru" ? "Онлайн / очно" : "Online / in person")
+                    : "Online";
+              const price =
+                service.pricingMode !== "contact" && service.confirmedPrice != null
+                  ? `${service.pricingMode === "from" ? (locale === "ru" ? "от " : "from ") : ""}${service.currency || ""} ${service.confirmedPrice}`
+                  : (locale === "ru" ? "Стоимость по запросу" : "Price on request");
+              return (
+                <article className="services-marketplace-card" key={service.id}>
+                  <div className="services-marketplace-provider">
+                    <span>{locale === "ru" ? "Мастер" : "Practitioner"}</span>
+                    <strong>{service.practitionerName}</strong>
+                  </div>
+                  <h3>{service.copy.title}</h3>
+                  {service.professionalTitle ? (
+                    <p className="services-marketplace-role">{service.professionalTitle}</p>
+                  ) : null}
+                  <p className="services-marketplace-description">{service.copy.shortDescription}</p>
+                  <p className="services-marketplace-meta">
+                    {[format, service.locationLabel, service.durationMinutes ? service.durationMinutes + " min" : "", price]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  <div className="services-marketplace-actions">
+                    <Link
+                      className="services-marketplace-request"
+                      href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}
+                    >
+                      {locale === "ru" ? "Заказать" : "Request"}<span aria-hidden="true">→</span>
+                    </Link>
+                    <Link
+                      className="services-marketplace-details"
+                      href={`/${locale}/services/${service.practitionerSlug}/${service.slug}`}
+                    >
+                      {locale === "ru" ? "Подробнее" : "Details"}
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="services-marketplace-empty">
+            {locale === "ru" ? "Каталог услуг сейчас обновляется." : "The service catalogue is being updated."}
+          </p>
+        )}
+        <p className="services-marketplace-all">
+          <Link href={`/${locale}/masters`}>
+            {locale === "ru" ? "Все мастера и практики" : "View all practitioners"}<span aria-hidden="true">→</span>
+          </Link>
+        </p>
       </section>
 
       <PageVideo slot="services-intro" locale={locale} />
@@ -185,35 +257,6 @@ export default async function ServicesPage({ params }: PageProps) {
           </div>
         </section>
       ) : null}
-
-      <section className="services-method-videos" id="practitioners" aria-labelledby="services-practitioners-title">
-        <div className="services-method-videos-heading">
-          <p className="homeopathy-kicker">{locale === "ru" ? "Сеть Holistic House" : "Holistic House network"}</p>
-          <h2 id="services-practitioners-title">{locale === "ru" ? "Услуги и практики" : "Services & practitioners"}</h2>
-          <p>{locale === "ru" ? "Выберите сначала формат поддержки, затем специалиста. Публичные профили и услуги проходят модерацию." : "Choose the kind of support first, then the practitioner. Public profiles and services are moderated."}</p>
-        </div>
-        {offerings.length ? (
-          <div className="services-studio-grid services-studio-grid--three">
-            {offerings.map((service) => (
-              <article className="services-studio-card services-studio-card--detailed" key={service.id}>
-                <p className="homeopathy-kicker">{service.practitionerName}</p>
-                <h3>{service.copy.title}</h3>
-                <p className="services-studio-card-subtitle">{service.professionalTitle}</p>
-                <p>{service.copy.shortDescription}</p>
-                <p className="remedy-disclaimer">
-                  {[service.deliveryFormat === "in_person" ? (locale === "ru" ? "Очно" : "In person") : service.deliveryFormat === "hybrid" ? (locale === "ru" ? "Онлайн / очно" : "Online / in person") : "Online", service.locationLabel, service.durationMinutes ? service.durationMinutes + " min" : "", service.pricingMode !== "contact" && service.confirmedPrice != null ? ((service.pricingMode === "from" ? (locale === "ru" ? "от " : "from ") : "") + (service.currency || "") + " " + service.confirmedPrice) : ""].filter(Boolean).join(" · ")}
-                </p>
-                <Link href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>
-                  {locale === "ru" ? "Открыть услугу" : "View service"}<span aria-hidden="true">→</span>
-                </Link>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p>{locale === "ru" ? "Каталог практиков сейчас обновляется." : "The practitioner catalogue is being updated."}</p>
-        )}
-        <p><Link href={"/" + locale + "/masters"}>{locale === "ru" ? "Все практики" : "View all practitioners"}<span aria-hidden="true">→</span></Link></p>
-      </section>
 
       <section className="services-studio-approach">
         <div>
