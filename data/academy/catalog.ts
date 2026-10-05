@@ -3,6 +3,7 @@ import media from "./media.generated.json";
 import psimasterSources from "./psimaster-sources.generated.json";
 import psimasterMedia from "./psimaster-media.generated.json";
 import psimasterTranslations from "./psimaster-translations.generated.json";
+import legacyTranslations from "./legacy-translations.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 export type AcademyDirectionId = "reiki" | "mysteries" | "symbolic" | "applied" | "school" | "archive";
@@ -668,11 +669,21 @@ const academySupplementalPublicBlocks: Partial<Record<string, Partial<Record<Aca
 };
 
 const psimasterTranslationRecords = psimasterTranslations as Partial<Record<string, { en?: AcademyBlock[] }>>;
+const legacyTranslationRecords = legacyTranslations as Partial<Record<string, Partial<Record<"en" | "ru", AcademyBlock[]>>>>;
+
+function academyLocalizedTranslation(record: AcademySourceRecord, locale?: PublicLocale) {
+  if (locale !== "en" && locale !== "ru") return undefined;
+  if (record.sourceProvider === "psimaster" && locale === "en") {
+    return psimasterTranslationRecords[record.logicalId]?.en;
+  }
+  if (record.sourceProvider !== "psimaster" && record.sourceLocale !== locale) {
+    return legacyTranslationRecords[record.logicalId]?.[locale];
+  }
+  return undefined;
+}
 
 function academySourceBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
-  const translated = record.sourceProvider === "psimaster" && locale === "en"
-    ? psimasterTranslationRecords[record.logicalId]?.en
-    : undefined;
+  const translated = academyLocalizedTranslation(record, locale);
   if (translated?.length) return translated;
   const base = academyCuratedPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? record.content;
   const supplement = academySupplementalPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? [];
@@ -714,8 +725,13 @@ export function mediaForRecord(record: AcademySourceRecord) {
 }
 export function youtubeIdFromUrl(url: string) { const match = url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/); return match?.[1]; }
 export function sourceLanguageNotice(record: AcademySourceRecord, locale: PublicLocale) {
-  if (record.sourceProvider === "psimaster" && locale === "en" && psimasterTranslationRecords[record.logicalId]?.en?.length) {
-    return "Translated from the original Russian PsiMaster source.";
+  if ((locale === "en" || locale === "ru") && academyLocalizedTranslation(record, locale)?.length) {
+    if (locale === "ru") return record.sourceProvider === "psimaster"
+      ? "Переведено с оригинального русскоязычного источника PsiMaster."
+      : "Переведено с оригинального англоязычного источника PsiTrends.";
+    return record.sourceProvider === "psimaster"
+      ? "Translated from the original Russian PsiMaster source."
+      : "Translated from the original Russian PsiTrends source.";
   }
   if (locale !== "es" && record.sourceLocale === locale) return null;
   return academyCopy[locale].sourceLanguage + " " + academyCopy[locale][record.sourceLocale] + ".";
