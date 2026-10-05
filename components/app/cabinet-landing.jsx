@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Image from 'next/image'
+import Image from 'next/image'\nimport Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
-import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
+import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'\nimport { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 
 const UI = {
   en: {
@@ -16,9 +16,9 @@ const UI = {
     google: 'Continue with Google',
     googleNote: 'Optional — the quick checks below work without signing in.',
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
-    testsKicker: 'Psychic Health',
-    tryTitle: 'Psychic Health Monitoring',
-    tryText: 'Short repeatable self-checks build a dated personal timeline, so you can see what changes over time.',
+    testsKicker: 'Mind–Body Monitor',
+    tryTitle: 'Your Mind–Body Monitor',
+    tryText: 'Start with one useful check-in. Save results only if you want to build a personal timeline over time.',\n    recommended: 'Recommended now',\n    otherChecks: 'Other self-checks',\n    areasTitle: 'What you can monitor',\n    areasText: 'More areas appear only when a real questionnaire is ready and safe to use.',\n    wuXing: 'Personal Wu Xing profile',
     stateTitle: 'Current State Check',
     stateText: '5 questions · ~1 min',
     traitTitle: 'Personality Baseline',
@@ -65,9 +65,9 @@ const UI = {
     google: 'Продолжить с Google',
     googleNote: 'Необязательно — быстрые тесты ниже работают без регистрации.',
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
-    testsKicker: 'Psychic Health',
-    tryTitle: 'Psychic Health Monitoring',
-    tryText: 'Короткие повторяемые самооценки с датой: со временем из них складывается личная динамика состояния.',
+    testsKicker: 'Монитор состояния',
+    tryTitle: 'Ваш монитор состояния',
+    tryText: 'Начните с одной полезной проверки. Сохраняйте результаты только если хотите наблюдать личную динамику со временем.',\n    recommended: 'Рекомендуем сейчас',\n    otherChecks: 'Другие самопроверки',\n    areasTitle: 'Что можно отслеживать',\n    areasText: 'Новые области появляются только когда реальный опросник готов и безопасен для использования.',\n    wuXing: 'Личный профиль У-Син',
     stateTitle: 'Состояние сейчас',
     stateText: '5 вопросов · ~1 мин',
     traitTitle: 'Личностный профиль',
@@ -426,28 +426,50 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         </header>
 
         {phase === 'catalog' && (
-          <div className="cabinet-test-list" aria-label={c.tryTitle}>
-            <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
-              <span className="cabinet-test-image" aria-hidden="true">
-                <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'state')} />
-              </span>
-              <span className="cabinet-test-row-copy">
-                <strong>{c.stateTitle}</strong>
-                <small>{c.stateText}</small>
-              </span>
-              <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
-            </button>
-            <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.traitTitle}`} disabled={busy} onClick={() => begin('trait')}>
-              <span className="cabinet-test-image" aria-hidden="true">
-                <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'trait')} />
-              </span>
-              <span className="cabinet-test-row-copy">
-                <strong>{c.traitTitle}</strong>
-                <small>{c.traitText}</small>
-              </span>
-              <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
-            </button>
-          </div>
+          <>
+            <div className="cabinet-monitor-recommended">
+              <p className="cabinet-monitor-label">{c.recommended}</p>
+              <button className="cabinet-test-row cabinet-test-row--recommended" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
+                <span className="cabinet-test-image" aria-hidden="true">
+                  <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'state')} />
+                </span>
+                <span className="cabinet-test-row-copy">
+                  <strong>{c.stateTitle}</strong>
+                  <small>{c.stateText}</small>
+                </span>
+                <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="cabinet-test-list" aria-label={c.otherChecks}>
+              <p className="cabinet-monitor-label">{c.otherChecks}</p>
+              <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.traitTitle}`} disabled={busy} onClick={() => begin('trait')}>
+                <span className="cabinet-test-image" aria-hidden="true">
+                  <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'trait')} />
+                </span>
+                <span className="cabinet-test-row-copy">
+                  <strong>{c.traitTitle}</strong>
+                  <small>{c.traitText}</small>
+                </span>
+                <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="cabinet-monitor-areas" aria-labelledby="cabinet-monitor-areas-title">
+              <div>
+                <p className="cabinet-monitor-label" id="cabinet-monitor-areas-title">{c.areasTitle}</p>
+                <p className="cabinet-test-note">{c.areasText}</p>
+              </div>
+              <div className="cabinet-monitor-area-list" aria-label={c.areasTitle}>
+                {MONITOR_AREAS.slice(0, 8).map((area) => (
+                  <span key={area.key}>{area[locale] || area.en}</span>
+                ))}
+              </div>
+              <Link className="cabinet-monitor-wuxing" href={`/${locale}/wu-xing`}>
+                {c.wuXing}<ChevronRight aria-hidden="true" />
+              </Link>
+            </div>
+          </>
         )}
 
         {phase === 'consent' && (
