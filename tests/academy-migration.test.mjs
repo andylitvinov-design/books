@@ -184,3 +184,17 @@ test("Academy media falls back across locale variants when the local source has 
   assert.match(catalog, /exact\.some\(\(item\) => youtubeIdFromUrl\(item\.mediaUrl\)\)/);
   assert.match(catalog, /mediaRecords\.filter\(\(item\) => item\.logicalId === record\.logicalId\)/);
 });
+
+
+test("remaining lost Academy text is recovered from live PsiTrends sources", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  assert.match(catalog, /Magister of Shamanic Therapies — program map/);
+  assert.match(catalog, /Eight study areas/);
+  assert.match(catalog, /Видео-курс «Подкачки» — сохранившаяся структура/);
+  assert.match(catalog, /Солнечные медитации/);
+  assert.match(catalog, /London Festival of Holistic Temple Arts — historical archive/);
+  assert.match(catalog, /Constellations of Love — historical program/);
+  assert.match(catalog, /Festival details — historical program notes/);
+  assert.match(catalog, /Исторические отзывы студентов/);
+  assert.match(catalog, /\^loading\\\.\\\.\\\.\$/i);
+});
