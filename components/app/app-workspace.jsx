@@ -945,6 +945,7 @@ function Runner({ id, locale, onExit, onComplete }) {
       const next = await appFetch(`runs/${id}/save`, payload)
       operation.current = null
       setRun(next)
+      if (next.safetySignal) setSafetyAcknowledged(false)
       setContext(next.context || {})
       setStatus(c.saved)
       return next
