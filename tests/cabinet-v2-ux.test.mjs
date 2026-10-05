@@ -231,3 +231,30 @@ test('public and signed-in Cabinet share a white mood card with three separate m
   assert.ok(ia.includes('min-height: 92px'))
   assert.ok(!ia.includes('border-radius: 999px;\n  background: #f6eee3;\n  padding: 3px;'))
 })
+
+
+test('verified practitioner gets an owner-only Practice layer that bridges to existing client and document tools', async () => {
+  const [workspace, copy, route, practitioner] = await Promise.all([
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+    readFile('components/app/copy.js', 'utf8'),
+    readFile('app/api/app/[...path]/route.js', 'utf8'),
+    readFile('components/practitioner-cabinet.jsx', 'utf8'),
+  ])
+
+  assert.match(copy, /practice: 'Practice'/)
+  assert.match(copy, /practice: 'Практика'/)
+  assert.match(workspace, /data\.practitioner\?\.enabled/)
+  assert.match(workspace, /\['practice', c\.practice, '\/practice'\]/)
+  assert.match(workspace, /function PractitionerTools/)
+  assert.match(workspace, /appFetch\('practitioner\/session'/)
+  assert.match(workspace, /\/admin\/clients/)
+  assert.match(workspace, /\/admin\/consultations\/new/)
+  assert.match(workspace, /\/admin\/prescriptions\/new/)
+  assert.match(workspace, /\/admin\/payments\/new/)
+  assert.match(workspace, /\/admin\/app-requests/)
+  assert.match(route, /practitioner: \{ enabled: Boolean\(getPrescriptionStore\(\)\) \}/)
+  assert.match(practitioner, /Prescription \/ recommendation/)
+  assert.match(practitioner, /Receipt \/ invoice/)
+  assert.match(practitioner, /\/admin\/prescriptions\/new/)
+  assert.match(practitioner, /\/admin\/payments\/new/)
+})
