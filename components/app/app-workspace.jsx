@@ -929,6 +929,7 @@ function Portrait({ data, locale, onOpenHistory }) {
         compact
         onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}
       />
+      {data.practitioner && <PractitionerTools locale={locale} />}
       {data.practitioner && <OwnerTools locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
@@ -1041,6 +1042,51 @@ function OwnerTools({ locale }) {
         ))}
       </div>
       {error && <p className="hh-owner-tools-error" role="alert">{error}</p>}
+    </section>
+  )
+}
+function PractitionerTools({ locale }) {
+  const ru = locale === 'ru'
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const actions = [
+    ['clients', ru ? 'Клиенты' : 'Clients', ru ? 'База клиентов и история документов' : 'Client database and document history'],
+    ['consultation', ru ? 'Новая консультация' : 'New consultation', ru ? 'Рекомендация + квитанция или счёт' : 'Recommendation + receipt or invoice'],
+    ['recommendation', ru ? 'Новая рекомендация' : 'New recommendation', ru ? 'Создать отдельную рекомендацию' : 'Create a standalone recommendation'],
+    ['payment', ru ? 'Квитанция / счёт' : 'Receipt / invoice', ru ? 'Создать платёжный документ' : 'Create a payment document'],
+  ]
+  async function open(target) {
+    setBusy(target)
+    setError('')
+    try {
+      const value = await appFetch('practitioner/open', { target })
+      if (!value.redirectUrl?.startsWith('/admin')) throw new Error('INVALID_REDIRECT')
+      window.location.assign(value.redirectUrl)
+    } catch {
+      setError(ru ? 'Рабочий кабинет сейчас недоступен. Попробуйте ещё раз.' : 'Practitioner tools are unavailable right now. Please retry.')
+      setBusy('')
+    }
+  }
+  return (
+    <section className="hh-practitioner-panel" aria-labelledby="hh-practitioner-title">
+      <div className="hh-practitioner-heading">
+        <div>
+          <p className="hh-kicker">{ru ? 'Кабинет практика' : 'Practice'}</p>
+          <h2 id="hh-practitioner-title">{ru ? 'Клиенты и документы' : 'Clients & documents'}</h2>
+        </div>
+        <button type="button" onClick={() => open('cabinet')} disabled={Boolean(busy)}>
+          {busy === 'cabinet' ? (ru ? 'Открываем…' : 'Opening…') : (ru ? 'Открыть кабинет' : 'Open practice')}
+        </button>
+      </div>
+      <div className="hh-practitioner-actions">
+        {actions.map(([target, title, description]) => (
+          <button type="button" key={target} onClick={() => open(target)} disabled={Boolean(busy)}>
+            <strong>{title}</strong>
+            <span>{description}</span>
+          </button>
+        ))}
+      </div>
+      {error && <p role="alert">{error}</p>}
     </section>
   )
 }
