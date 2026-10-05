@@ -426,6 +426,59 @@ test('master network approval, publication and practitioner isolation use the ex
   assert.equal((await practiceRepo.getMyPractice(b)).requests.length, 0)
 })
 
+test('master onboarding submits a bio and first free service in one transaction', async () => {
+  const result = await practiceRepo.onboarding(v2Actor, {
+    action: 'submit',
+    profile: {
+      displayName: 'Onboarding Master',
+      professionalTitle: 'Synthetic practitioner',
+      shortBio: 'Synthetic onboarding profile.',
+      fullBio: 'Longer synthetic biography for the onboarding path.',
+      languages: ['en','ru'],
+      city: '',
+      region: '',
+      country: '',
+      formats: ['online'],
+      areas: ['personal_development'],
+      methods: ['Synthetic method'],
+      yearsExperience: 2,
+      websiteUrl: '',
+      socialUrls: [],
+      photoPath: '',
+    },
+    service: {
+      copy: {
+        en: { title: 'Free introduction', shortDescription: 'A free introduction.', description: 'A free introduction to the practice.' },
+        ru: { title: 'Бесплатное знакомство', shortDescription: 'Бесплатное знакомство.', description: 'Бесплатное знакомство с практикой.' },
+      },
+      areaKey: 'personal_development',
+      offeringType: 'session',
+      deliveryFormat: 'online',
+      locationLabel: '',
+      languages: ['en','ru'],
+      durationMinutes: 30,
+      imagePath: '',
+    },
+    serviceId: null,
+  })
+  assert.equal(result.practitioner.status, 'submitted')
+  assert.equal(result.service.status, 'submitted')
+  assert.equal(result.service.pricingMode, 'free')
+  assert.equal(result.service.confirmedPrice, null)
+  assert.equal(result.service.currency, '')
+
+  const approved = await practiceRepo.moderateProfile(result.practitioner.id, { action: 'approve' })
+  const published = await practiceRepo.moderateService(result.service.id, { action: 'approve' })
+  assert.equal(approved.status, 'approved')
+  assert.equal(published.status, 'published')
+  assert.equal(published.pricingMode, 'free')
+  assert.equal(published.confirmedPrice, null)
+  assert.equal(published.currency, '')
+  const publicService = await practiceRepo.getPublicService(approved.slug, published.slug, 'en')
+  assert.equal(publicService.service.copy.title, 'Free introduction')
+  assert.equal(publicService.service.pricingMode, 'free')
+})
+
 test('requests are idempotent and share only an explicit excerpt; unshare and cancel work', async () => {
   const payload = {
       serviceId: APP_SERVICES[0].id,
