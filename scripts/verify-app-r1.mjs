@@ -31,7 +31,12 @@ async function api(path,body,ctx=context){
 async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
 async function enterTest(name='Current State Check'){
  await page.goto(origin+'/en/app/tests');await ready()
- const card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
+ let card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
+ if(await card.count()===0){
+  await page.getByRole('button',{name:'All available',exact:true}).click()
+  card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
+ }
+ await expect(card).toHaveCount(1)
  await card.getByRole('button',{name:/Start|Continue|Take again/}).click()
  await expect(page).toHaveURL(/\/runs\//)
  await expect(page.locator('.hh-runner')).toBeVisible()
