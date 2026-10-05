@@ -1358,6 +1358,36 @@ function ReportsFromAndy({ data, locale }) {
   const ru = locale === 'ru'
   return <section className="hh-section hh-account-reports"><h2>{ru ? 'Отчёты от Andy' : 'Reports from Andy'}</h2>{!reports.length ? <p className="hh-fine">{ru ? 'Сохранённых отчётов пока нет. Когда вы решите сохранить переданный отчёт, он появится здесь.' : 'No reports have been saved yet. A report you choose to save will appear here.'}</p> : <div className="hh-grid">{reports.map((report) => <article className="hh-panel" key={report.id}><p className="hh-kicker">{ru ? 'Полученный отчёт' : 'Received report'}</p><h3>{formatReportDate(report.occurredOn, locale)}</h3><p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(report.occurredOn, locale)}</p>{report.available === false ? <p className="hh-fine">{ru ? 'Отчёт больше недоступен.' : 'Report no longer available.'}</p> : <Link href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{ru ? 'Открыть отчёт' : 'Open report'}</Link>}</article>)}</div>}</section>
 }
+function ResultConsultationCta({ locale }) {
+  const copy =
+    locale === 'ru'
+      ? {
+          kicker: 'Если хочется обсудить результат',
+          title: 'Заказать консультацию специалиста',
+          text: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
+          action: 'Выбрать специалиста',
+        }
+      : {
+          kicker: 'If you would like to discuss your result',
+          title: 'Book a consultation with a specialist',
+          text: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
+          action: 'Choose a specialist',
+        }
+
+  return (
+    <aside className="hh-result-consultation" aria-label={copy.title}>
+      <div>
+        <p className="hh-kicker">{copy.kicker}</p>
+        <h2>{copy.title}</h2>
+        <p>{copy.text}</p>
+      </div>
+      <Link className="hh-primary hh-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
+        {copy.action}
+      </Link>
+    </aside>
+  )
+}
+
 function ResultPage({ id, locale, data }) {
   const c = COPY[locale],
     [result, setResult] = useState(data.results.find((r) => r.id === id) || null),
@@ -1450,6 +1480,7 @@ function ResultPage({ id, locale, data }) {
           })}
         </tbody>
       </table>
+      <ResultConsultationCta locale={locale} />
       {!previous && <p>{c.noChange}</p>}
       {recommendation ? (
         <section className="hh-result-recommendation">
