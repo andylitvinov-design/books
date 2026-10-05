@@ -30,7 +30,8 @@ const result = (def, value, day) => ({
 test('monitoring catalog keeps future instruments metadata-only and current checks startable', () => {
   assert.equal(monitoringCatalogItem('hh-current-state').startable, true)
   assert.equal(monitoringCatalogItem('mini-ipip-20').startable, true)
-  for (const key of ['hh-weekly-pulse', 'phq-4', 'k6', 'mspss', 'scs-sf', 'functioning-review'])
+  assert.equal(monitoringCatalogItem('hh-weekly-pulse').startable, true)
+  for (const key of ['phq-4', 'k6', 'mspss', 'scs-sf', 'functioning-review'])
     assert.equal(monitoringCatalogItem(key).startable, false)
 })
 
