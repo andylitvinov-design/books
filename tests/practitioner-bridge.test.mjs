@@ -3,10 +3,10 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 test('verified app practitioner bridge never exposes admin credentials or public navigation', async () => {
-  const [access, route, admin, workspace, navigation] = await Promise.all([
+  const [access, route, adminSession, workspace, navigation] = await Promise.all([
     readFile('lib/app/practitioner-access.js', 'utf8'),
     readFile('app/api/app/[...path]/route.js', 'utf8'),
-    readFile('lib/prescriptions/admin.js', 'utf8'),
+    readFile('lib/prescriptions/admin-session.js', 'utf8'),
     readFile('components/app/app-workspace.jsx', 'utf8'),
     readFile('lib/site-navigation-model.js', 'utf8'),
   ])
@@ -24,9 +24,9 @@ test('verified app practitioner bridge never exposes admin credentials or public
   assert.match(route, /issueTrustedAdminSession/)
   assert.match(route, /throw new AppError\('NOT_FOUND', 404\)/)
 
-  assert.match(admin, /issueTrustedAdminSession/)
-  assert.match(admin, /PRESCRIPTIONS_ADMIN_TOKEN \|\| environment\.PRESCRIPTIONS_ADMIN_PIN/)
-  assert.match(admin, /path: '\/admin'/)
+  assert.match(adminSession, /issueTrustedAdminSession/)
+  assert.match(adminSession, /PRESCRIPTIONS_ADMIN_TOKEN \\|\\| environment\\.PRESCRIPTIONS_ADMIN_PIN/)
+  assert.match(adminSession, /path: '\\/admin'/)
   assert.doesNotMatch(workspace, /PRESCRIPTIONS_ADMIN_(?:PIN|TOKEN)/)
 
   assert.match(workspace, /data\.practitioner && <OwnerTools/)
