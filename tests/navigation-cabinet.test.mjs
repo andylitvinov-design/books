@@ -153,24 +153,36 @@ test('About exposes a consultation request form and a Google-first Cabinet with 
   assert.match(entryForm, /selectorPattern/)
   assert.match(entryForm, /secretPattern/)
   assert.match(consultationForm, /wa\.me\/14376066502/)
-  assert.match(consultationForm, /Request a personal consultation/)
+  assert.match(consultationForm, /Continue in WhatsApp/)
+  assert.match(consultationForm, /t\.me\/AndyTherapist/)
 })
 
-test('public pages share one localized consultation CTA that leads to the existing request form', async () => {
-  const [cta, styles, homeopathy, services, spanishServices] = await Promise.all([
+test('public pages share one localized soft CTA with direct WhatsApp and Telegram handoff', async () => {
+  const [cta, styles, home, homeopathy, services, spanishServices, library, academy, academyRecord, remedies, remedyPage, bookReader] = await Promise.all([
     readFile('components/public-consultation-cta.tsx', 'utf8'),
     readFile('app/globals.css', 'utf8'),
+    readFile('components/holistic-house-home.tsx', 'utf8'),
     readFile('app/[locale]/homeopathy/page.tsx', 'utf8'),
     readFile('app/[locale]/services/page.tsx', 'utf8'),
     readFile('app/es/services/page.tsx', 'utf8'),
+    readFile('components/library-hub.tsx', 'utf8'),
+    readFile('components/academy-hub.tsx', 'utf8'),
+    readFile('components/academy-record-page.tsx', 'utf8'),
+    readFile('app/[locale]/homeopathy/remedies/page.tsx', 'utf8'),
+    readFile('components/remedy-page.tsx', 'utf8'),
+    readFile('app/books/[bookId]/page.tsx', 'utf8'),
   ])
 
   assert.match(cta, /data-consultation-cta/)
-  assert.match(cta, /\/about#personal-consultation-title/)
-  assert.match(styles, /\.public-consultation-cta/)
-  assert.match(homeopathy, /PublicConsultationCta/)
-  assert.match(services, /PublicConsultationCta/)
-  assert.match(spanishServices, /PublicConsultationCta/)
+  assert.match(cta, /wa\.me\/14376066502/)
+  assert.match(cta, /t\.me\/AndyTherapist/)
+  assert.match(cta, /data-contact-channel="whatsapp"/)
+  assert.match(cta, /data-contact-channel="telegram"/)
+  assert.match(cta, /No long form and no pressure/)
+  assert.match(styles, /\.public-consultation-cta__actions/)
+  for (const source of [home, homeopathy, services, spanishServices, library, academy, academyRecord, remedies, remedyPage, bookReader]) {
+    assert.match(source, /PublicConsultationCta/)
+  }
 })
 
 // Preserve PR #76's compact menu and cabinet next-step checks under shared IA data.
