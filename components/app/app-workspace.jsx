@@ -11,6 +11,15 @@ import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
+import {
+  catalogDescription,
+  catalogTitle,
+  definitionLocaleFor,
+  getAssessmentCatalogEntry,
+  startableCatalog,
+} from '@/data/assessments/catalog'
+import { recommendAfterResult, recommendForMood, moodTrend } from '@/lib/assessments/recommendations'
+import { SAFETY_COPY } from '@/lib/assessments/safety'
 
 export async function appFetch(path, body, method) {
   const response = await fetch(`/api/app/${path}`, {
@@ -49,6 +58,28 @@ function localZone() {
   } catch {
     return 'UTC'
   }
+}
+function definitionForCatalog(entry, locale) {
+  const instrumentLocale = definitionLocaleFor(entry, locale)
+  return instrumentLocale
+    ? getAssessmentDefinition(entry.key, entry.version, instrumentLocale)
+    : null
+}
+function assessmentArtwork(key, locale) {
+  const suffix = locale === 'ru' ? 'ru-v1' : 'en-v2'
+  return ['hh-current-state', 'hh-resource-pulse', 'hh-monthly-profile'].includes(key)
+    ? `/images/holistic-house/video-posters/home-${suffix}.webp`
+    : `/images/holistic-house/video-posters/services-${suffix}.webp`
+}
+function moodLabel(mood, locale) {
+  return {
+    sad: locale === 'ru' ? 'Грустно' : 'Sad',
+    neutral: locale === 'ru' ? 'Нейтрально' : 'Neutral',
+    happy: locale === 'ru' ? 'Хорошо' : 'Happy',
+  }[mood] || mood
+}
+function moodEmoji(mood) {
+  return { sad: '😔', neutral: '😐', happy: '🙂' }[mood] || '•'
 }
 function goSignedOut(setData) {
   setData(null)
@@ -153,6 +184,55 @@ export default function AppWorkspace({ locale, path = [] }) {
       setState('signed-out')
       setBusy(false)
       router.replace(root)
+    }
+  }
+  async function recordMood({ mood, category }) {
+    const saved = await appFetch('mood', {
+      mood,
+      category,
+      occurredAt: new Date().toISOString(),
+      timezone: localZone(),
+      sourceSurface: 'portrait',
+      operationId: crypto.randomUUID(),
+    })
+    setData((value) => ({
+      ...value,
+      moodCheckins: [...(value.moodCheckins || []).filter((item) => item.id !== saved.id), saved],
+    }))
+    return { persisted: true }
+  }
+  async function startAssessment(candidate) {
+    const key = typeof candidate === 'string' ? candidate : candidate.key
+    const entry = getAssessmentCatalogEntry(key)
+    if (!entry?.startable) return
+    const instrumentLocale =
+      (typeof candidate === 'object' && candidate.definitionLocale) ||
+      definitionLocaleFor(entry, locale)
+    if (!instrumentLocale) return
+    const def = getAssessmentDefinition(entry.key, entry.version, instrumentLocale)
+    const active = data?.runs?.find((run) => run.definitionId === def.id)
+    if (active) {
+      router.push(`${root}/runs/${active.id}`)
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const run = await appFetch('runs', {
+        definitionKey: def.key,
+        definitionVersion: def.version,
+        instrumentLocale: def.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      setData((value) => ({
+        ...value,
+        runs: [...(value.runs || []).filter((item) => item.id !== run.id), run],
+      }))
+      router.push(`${root}/runs/${run.id}`)
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(false)
     }
   }
   if (deleted || state === 'deletion')
@@ -264,6 +344,9 @@ export default function AppWorkspace({ locale, path = [] }) {
                 data={data}
                 locale={locale}
                 onOpenHistory={() => router.push(root + '/history')}
+                onMoodSelected={recordMood}
+                onStartAssessment={startAssessment}
+                onAllTests={() => router.push(root + '/tests')}
               />
               <PracticeEntry data={data} locale={locale} />
             </>
@@ -568,17 +651,38 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
 }
 function TestCatalog({ data, locale, onStarted }) {
   const c = COPY[locale]
+  const params = useSearchParams()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [view, setView] = useState('recommended')
-  const definitions = [
-    getAssessmentDefinition('hh-current-state', 'v2', locale),
-    getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
-  ]
-  const monitoringIntro =
-    locale === 'ru'
-      ? 'Начните с одного полезного замера. Дальше выбирайте только то, что действительно хотите отслеживать.'
-      : 'Start with one useful measurement. Go deeper only into the areas you actually want to track.'
+  const entries = startableCatalog({ guest: false }).filter((entry) =>
+    Boolean(definitionLocaleFor(entry, locale)),
+  )
+  const latestMood = (data.moodCheckins || []).at(-1)
+  const moodRecommendations = latestMood
+    ? recommendForMood({
+        mood: latestMood.mood,
+        category: latestMood.category,
+        results: data.results,
+        runs: data.runs,
+        locale,
+        guest: false,
+      })
+    : []
+  const queryRecommended = params.get('recommended')
+  const recommendedKeys = [
+    ...(queryRecommended ? [queryRecommended] : []),
+    ...moodRecommendations.map((item) => item.key),
+  ].filter((key, index, all) => all.indexOf(key) === index)
+  const recommended = recommendedKeys
+    .map((key) => entries.find((entry) => entry.key === key))
+    .filter(Boolean)
+    .slice(0, 3)
+  const recommendedSet = new Set(recommended.map((entry) => entry.key))
+  const completedEntries = entries.filter((entry) => {
+    const def = definitionForCatalog(entry, locale)
+    return def && data.results.some((result) => result.definitionId === def.id)
+  })
   const tabs =
     locale === 'ru'
       ? [
@@ -593,10 +697,22 @@ function TestCatalog({ data, locale, onStarted }) {
           ['areas', 'By area'],
           ['completed', 'Completed'],
         ]
-  const quickArea = MONITOR_AREAS.find((area) => area.key === 'quick')
-  const personalityArea = MONITOR_AREAS.find((area) => area.key === 'personality')
+  const groups = [
+    ['quick', locale === 'ru' ? 'Быстрые проверки' : 'Quick checks', ['quick', 'gentle', 'weekly', 'core']],
+    ['deep', locale === 'ru' ? 'Более глубокие проверки' : 'Deeper checks', ['deep']],
+    ['resources', locale === 'ru' ? 'Ресурсы и восстановление' : 'Resources & recovery', ['resource', 'monthly']],
+    ['other', locale === 'ru' ? 'Другие тесты' : 'Other tests', ['baseline']],
+  ]
+  const monitoringIntro =
+    locale === 'ru'
+      ? 'Начните с одного полезного замера. Более глубокие тесты появляются по необходимости, а не как обязательная батарея.'
+      : 'Start with one useful measurement. Deeper tests appear when useful rather than as a required battery.'
 
-  async function start(def) {
+  async function start(entry) {
+    const def = definitionForCatalog(entry, locale)
+    if (!def) return
+    const draft = data.runs.find((run) => run.definitionId === def.id)
+    if (draft) return onStarted(draft)
     setBusy(true)
     setError(null)
     try {
@@ -615,69 +731,35 @@ function TestCatalog({ data, locale, onStarted }) {
     }
   }
 
-  function cardFor(def, { recommended = false } = {}) {
-    const isState = def.key === 'hh-current-state'
-    const draft = data.runs.find((x) => x.definitionId === def.id)
-    const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
-    const title = isState
-      ? locale === 'ru'
-        ? 'Состояние сейчас'
-        : 'Current State Check'
-      : locale === 'ru'
-        ? 'Личностный профиль'
-        : 'Personality Baseline'
-    const meta = isState
-      ? locale === 'ru'
-        ? '5 вопросов · ~1 мин'
-        : '5 questions · ~1 min'
-      : locale === 'ru'
-        ? '20 вопросов · ~3 мин · EN'
-        : '20 questions · ~3 min · EN'
-    const image = isState
-      ? locale === 'ru'
-        ? '/images/holistic-house/video-posters/home-ru-v1.webp'
-        : '/images/holistic-house/video-posters/home-en-v2.webp'
-      : locale === 'ru'
-        ? '/images/holistic-house/video-posters/services-ru-v1.webp'
-        : '/images/holistic-house/video-posters/services-en-v2.webp'
+  function card(entry, { recommendedNow = false } = {}) {
+    const def = definitionForCatalog(entry, locale)
+    if (!def) return null
+    const draft = data.runs.find((run) => run.definitionId === def.id)
+    const completed = data.results.filter((result) => result.definitionId === def.id).at(-1)
     return (
-      <article className={`hh-monitoring-card${recommended ? ' hh-monitoring-card--recommended' : ''}`} key={def.id}>
+      <article className={`hh-monitoring-card${recommendedNow ? ' hh-monitoring-card--recommended' : ''}`} key={entry.key}>
         <div className="hh-monitoring-photo" aria-hidden="true">
-          <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={image} />
+          <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={assessmentArtwork(entry.key, locale)} />
         </div>
         <div className="hh-monitoring-card-body">
-          {recommended && <p className="hh-monitoring-recommended">{locale === 'ru' ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
-          <p className="hh-monitoring-meta">{meta}</p>
-          <h2>{title}</h2>
-          <p>{isState ? c.stateDescription : c.traitDescription}</p>
-          {!isState && <p className="hh-notice">{c.traitNotice}</p>}
-          {completed && (
-            <p className="hh-fine">
-              {c.latest}: {dateLabel(completed.measurementAt, locale)}
-            </p>
-          )}
+          {recommendedNow && <p className="hh-monitoring-recommended">{locale === 'ru' ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
+          <p className="hh-monitoring-meta">
+            {entry.questionCount} {locale === 'ru' ? 'вопросов' : 'questions'} · {entry.duration}
+            {def.instrumentLocale !== locale ? ` · ${def.instrumentLocale.toUpperCase()}` : ''}
+          </p>
+          <h2>{catalogTitle(entry, locale)}</h2>
+          <p>{catalogDescription(entry, locale)}</p>
+          {completed && <p className="hh-fine">{c.latest}: {dateLabel(completed.measurementAt, locale)}</p>}
           <div className="hh-actions">
-            <button
-              className="hh-primary"
-              disabled={busy}
-              onClick={() => (draft ? onStarted(draft) : start(def))}
-            >
+            <button className="hh-primary" disabled={busy} onClick={() => start(entry)}>
               {draft ? c.resume : completed ? c.repeat : c.start}
             </button>
-            {completed && (
-              <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
-                {c.view}
-              </Link>
-            )}
+            {completed && <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>{c.view}</Link>}
           </div>
         </div>
       </article>
     )
   }
-
-  const completedDefinitions = definitions.filter((def) =>
-    data.results.some((result) => result.definitionId === def.id),
-  )
 
   return (
     <section className="hh-monitoring">
@@ -697,45 +779,43 @@ function TestCatalog({ data, locale, onStarted }) {
       </nav>
 
       {view === 'recommended' && (
-        <div className="hh-monitoring-grid">
-          {cardFor(definitions[0], { recommended: true })}
-          {cardFor(definitions[1])}
-        </div>
+        recommended.length ? (
+          <div className="hh-monitoring-grid">{recommended.map((entry) => card(entry, { recommendedNow: true }))}</div>
+        ) : (
+          <article className="hh-panel hh-empty">
+            <h2>{locale === 'ru' ? 'Можно начать с короткой проверки' : 'Start with one short check'}</h2>
+            <p>{locale === 'ru' ? 'Выберите один из быстрых тестов — проходить всё не нужно.' : 'Choose one quick check; there is no need to take everything.'}</p>
+          </article>
+        )
       )}
 
-      {view === 'all' && (
-        <div className="hh-monitoring-grid">{definitions.map((def) => cardFor(def))}</div>
-      )}
+      {view === 'all' && <div className="hh-monitoring-grid">{entries.map((entry) => card(entry))}</div>}
 
       {view === 'areas' && (
         <div className="hh-monitoring-areas">
-          <section>
-            <h2>{quickArea?.[locale] || quickArea?.en}</h2>
-            <div className="hh-monitoring-grid">{cardFor(definitions[0])}</div>
-          </section>
-          <section>
-            <h2>{personalityArea?.[locale] || personalityArea?.en}</h2>
-            <div className="hh-monitoring-grid">{cardFor(definitions[1])}</div>
-          </section>
+          {groups.map(([key, title, levels]) => {
+            const group = entries.filter((entry) => levels.includes(entry.level) && !recommendedSet.has(entry.key))
+            const area = MONITOR_AREAS.find((item) => item.key === key)
+            return group.length ? (
+              <section key={key}>
+                <h2>{area?.[locale] || area?.en || title}</h2>
+                <div className="hh-monitoring-grid">{group.map((entry) => card(entry))}</div>
+              </section>
+            ) : null
+          })}
           <p className="hh-fine">
             {locale === 'ru'
-              ? 'Дополнительные области появляются здесь только после проверки формы, прав на использование и требований безопасности.'
-              : 'Additional areas appear here only after the questionnaire, usage rights and safety requirements are verified.'}
+              ? 'Профессиональные и специальные инструменты появляются только после проверки прав, языка и требований безопасности.'
+              : 'Professional and specialty measures appear only after rights, language and safety requirements are verified.'}
           </p>
         </div>
       )}
 
       {view === 'completed' && (
-        completedDefinitions.length ? (
-          <div className="hh-monitoring-grid">{completedDefinitions.map((def) => cardFor(def))}</div>
-        ) : (
-          <article className="hh-panel hh-empty">
-            <h2>{locale === 'ru' ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2>
-            <p>{locale === 'ru' ? 'Начните с короткой проверки состояния.' : 'Start with the quick state check.'}</p>
-          </article>
-        )
+        completedEntries.length
+          ? <div className="hh-monitoring-grid">{completedEntries.map((entry) => card(entry))}</div>
+          : <article className="hh-panel hh-empty"><h2>{locale === 'ru' ? 'Пока нет пройденных тестов' : 'No completed tests yet'}</h2></article>
       )}
-
       {error && <p role="alert">{message(error, c)}</p>}
     </section>
   )
