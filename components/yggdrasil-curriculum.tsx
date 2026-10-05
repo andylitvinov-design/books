@@ -129,8 +129,8 @@ export function YggdrasilCurriculum({ locale }: { locale: PublicLocale }) {
         <h2 id="yggdrasil-curriculum-title">{text.title}</h2>
         <p>{text.lead}</p>
         <div className="yggdrasil-source-stats" aria-label="Source coverage">
-          <span>{curriculum.source.totalSettings} {text.settings.toLowerCase()}</span>
-          <span>{curriculum.source.totalVideos} {text.videos.toLowerCase()}</span>
+          <span>{curriculum.source.totalSettings} {locale === "ru" ? "настроек" : locale === "es" ? "sintonizaciones" : "attunements"}</span>
+          <span>{curriculum.source.totalVideos} {locale === "ru" ? "видеолекций" : locale === "es" ? "videoclases" : "video lectures"}</span>
         </div>
         {text.sourceLanguage ? <p className="yggdrasil-source-language">{text.sourceLanguage}</p> : null}
         <small>{text.source}</small>
