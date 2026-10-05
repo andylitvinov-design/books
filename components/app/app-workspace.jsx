@@ -765,9 +765,45 @@ function Runner({ id, locale, onExit, onComplete }) {
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
-    [showDiscard, setShowDiscard] = useState(false)
+    [showDiscard, setShowDiscard] = useState(false),
+    [mode, setMode] = useState(null)
   const operation = useRef(null),
     inflight = useRef(false)
+  const modeCopy =
+    locale === 'ru'
+      ? {
+          title: 'Как пройти этот тест?',
+          intro: 'Выберите темп. Вопросы и расчёт результата в обоих режимах одинаковые.',
+          quick: 'Quick',
+          quickTitle: 'Быстро',
+          quickText: 'Один ответ — и сразу следующий вопрос. Минимум лишних шагов.',
+          guided: 'Guided',
+          guidedTitle: 'С сопровождением',
+          guidedText: 'Спокойный пошаговый формат с подсказками и ручным переходом дальше.',
+          same: 'В обоих режимах используются те же вопросы и тот же расчёт результата.',
+          tap: 'Нажмите на ответ — он сохранится, и тест продолжится автоматически.',
+          guidedPrompt: 'Не спешите. Выберите вариант, который ближе всего к вашему ощущению.',
+          part: 'Часть',
+          question: 'Вопрос',
+          switch: 'Режим прохождения',
+        }
+      : {
+          title: 'How would you like to take this test?',
+          intro: 'Choose your pace. Both modes use the same questions and the same scoring.',
+          quick: 'Quick',
+          quickTitle: 'Fast & simple',
+          quickText: 'One tap saves your answer and moves straight to the next question.',
+          guided: 'Guided',
+          guidedTitle: 'Calm & guided',
+          guidedText: 'A slower step-by-step flow with gentle prompts and a clear Next action.',
+          same: 'Both use the same questions and produce the same result.',
+          tap: 'Tap an answer to save it and continue automatically.',
+          guidedPrompt: 'Take your time. Choose the answer that feels closest to your experience.',
+          part: 'Part',
+          question: 'Question',
+          switch: 'Test mode',
+        }
+
   async function load() {
     setError(null)
     try {
@@ -816,6 +852,12 @@ function Runner({ id, locale, onExit, onComplete }) {
       inflight.current = false
       setBusy(false)
     }
+  }
+  async function chooseAnswer(value) {
+    if (!question) return
+    const progress =
+      mode === 'quick' ? Math.min(index + 1, def.questions.length) : index
+    await save({ [question.id]: value }, progress)
   }
   async function next() {
     if (!question || run.answers[question.id] === undefined) return
@@ -869,27 +911,102 @@ function Runner({ id, locale, onExit, onComplete }) {
         </Link>
       </section>
     )
+
   const min = question?.min ?? def.answerScale?.min,
-    max = question?.max ?? def.answerScale?.max
+    max = question?.max ?? def.answerScale?.max,
+    partCount = Math.min(4, Math.max(1, def.questions.length)),
+    partSize = Math.ceil(def.questions.length / partCount),
+    currentPart = Math.min(partCount, Math.floor(Math.min(index, def.questions.length - 1) / partSize) + 1)
+
+  if (!mode && !isContext)
+    return (
+      <section className="hh-runner hh-panel hh-runner-mode-picker">
+        <div className="hh-test-mode-intro">
+          <p className="hh-kicker">
+            {def.key === 'hh-current-state' ? c.state : def.key === 'hh-weekly-pulse' ? c.weekly : c.personality}
+          </p>
+          <h1>{modeCopy.title}</h1>
+          <p>{modeCopy.intro}</p>
+        </div>
+        <div className="hh-test-mode-grid">
+          <button className="hh-test-mode-card" type="button" onClick={() => setMode('quick')}>
+            <span className="hh-test-mode-icon" aria-hidden="true">⚡</span>
+            <span>
+              <small>{modeCopy.quick}</small>
+              <strong>{modeCopy.quickTitle}</strong>
+              <em>{modeCopy.quickText}</em>
+            </span>
+          </button>
+          <button className="hh-test-mode-card" type="button" onClick={() => setMode('guided')}>
+            <span className="hh-test-mode-icon" aria-hidden="true">✦</span>
+            <span>
+              <small>{modeCopy.guided}</small>
+              <strong>{modeCopy.guidedTitle}</strong>
+              <em>{modeCopy.guidedText}</em>
+            </span>
+          </button>
+        </div>
+        <p className="hh-fine hh-test-mode-same">{modeCopy.same}</p>
+        <div className="hh-actions hh-test-mode-exit">
+          <button disabled={busy || Boolean(operation.current)} onClick={exit}>
+            {c.saveExit}
+          </button>
+        </div>
+      </section>
+    )
+
   return (
-    <section className="hh-runner hh-panel">
-      <header>
-        <p className="hh-kicker">
-          {def.key === 'hh-current-state' ? c.state : def.key === 'hh-weekly-pulse' ? c.weekly : c.personality} ·{' '}
-          {def.instrumentLocale.toUpperCase()}
-        </p>
-        <progress
-          max={def.questions.length + 1}
-          value={Math.min(index, def.questions.length) + 1}
+    <section className={`hh-runner hh-panel hh-runner--${mode || 'guided'}`}>
+      <header className="hh-runner-head">
+        <div className="hh-runner-topline">
+          <p className="hh-kicker">
+            {def.key === 'hh-current-state' ? c.state : def.key === 'hh-weekly-pulse' ? c.weekly : c.personality} ·{' '}
+            {def.instrumentLocale.toUpperCase()}
+          </p>
+          {!isContext && (
+            <div className="hh-test-mode-toggle" role="group" aria-label={modeCopy.switch}>
+              <button type="button" aria-pressed={mode === 'quick'} onClick={() => setMode('quick')}>
+                ⚡ {modeCopy.quick}
+              </button>
+              <button type="button" aria-pressed={mode === 'guided'} onClick={() => setMode('guided')}>
+                ✦ {modeCopy.guided}
+              </button>
+            </div>
+          )}
+        </div>
+        <div
+          className="hh-runner-segments"
+          role="progressbar"
           aria-label={c.tests}
-        />
-        <p className="hh-fine">
-          {Math.min(index + 1, def.questions.length + 1)} / {def.questions.length + 1}
-        </p>
+          aria-valuemin="1"
+          aria-valuemax={def.questions.length}
+          aria-valuenow={Math.min(index + 1, def.questions.length)}
+        >
+          {def.questions.map((item, step) => (
+            <span
+              key={item.id}
+              className={step < index ? 'is-done' : step === index ? 'is-current' : ''}
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+        <div className="hh-runner-progress-copy">
+          <span>
+            {modeCopy.question} {Math.min(index + 1, def.questions.length)} / {def.questions.length}
+          </span>
+          {mode === 'guided' && !isContext && (
+            <span>{modeCopy.part} {currentPart} / {partCount}</span>
+          )}
+        </div>
       </header>
-      <p className="hh-muted">{def.key === 'hh-current-state' ? c.rightNow : def.key === 'hh-weekly-pulse' ? c.pastWeek : c.general}</p>
+
+      <p className="hh-muted">
+        {def.key === 'hh-current-state' ? c.rightNow : def.key === 'hh-weekly-pulse' ? c.pastWeek : c.general}
+      </p>
+
       {question ? (
-        <fieldset disabled={busy || Boolean(operation.current)}>
+        <fieldset className="hh-runner-question" disabled={busy || Boolean(operation.current)}>
+          {mode === 'guided' && <p className="hh-guided-step">{modeCopy.guidedPrompt}</p>}
           <legend>
             <h1>{question.text}</h1>
           </legend>
@@ -899,7 +1016,7 @@ function Runner({ id, locale, onExit, onComplete }) {
                 key={value}
                 type="button"
                 aria-pressed={run.answers[question.id] === value}
-                onClick={() => save({ [question.id]: value }, index)}
+                onClick={() => chooseAnswer(value)}
               >
                 <strong>{value}</strong>
                 {def.responseAnchors && <span>{def.responseAnchors[value - min]}</span>}
@@ -912,41 +1029,43 @@ function Runner({ id, locale, onExit, onComplete }) {
               <span>{question.anchors[1]}</span>
             </div>
           )}
+          {mode === 'quick' && <p className="hh-quick-hint">{modeCopy.tap}</p>}
         </fieldset>
       ) : (
-        <div>
+        <div className="hh-runner-complete">
           <h1>{def.optionalContext.length ? c.optional : c.result}</h1>
           <p>{def.optionalContext.length ? c.skip : c.nonDiagnostic}</p>
           {def.optionalContext.length > 0 && (
             <details className="hh-secondary">
               <summary>{locale === 'ru' ? 'Добавить необязательный контекст' : 'Add optional context'}</summary>
-            <div className="hh-form">
-              {[
-                ['current_focus', c.focus],
-                ['trigger', c.trigger],
-                ['what_helps', c.helps],
-                ['desired_change', c.desiredChange],
-                ['note', c.note],
-              ].map(([key, label]) => (
-                <label key={key}>
-                  {label}
-                  <textarea
-                    maxLength={1000}
-                    value={context[key] || ''}
-                    disabled={busy}
-                    onChange={(e) => {
-                      setContext((v) => ({ ...v, [key]: e.target.value }))
-                      setStatus(c.unsaved)
-                    }}
-                  />
-                </label>
-              ))}
-            </div>
+              <div className="hh-form">
+                {[
+                  ['current_focus', c.focus],
+                  ['trigger', c.trigger],
+                  ['what_helps', c.helps],
+                  ['desired_change', c.desiredChange],
+                  ['note', c.note],
+                ].map(([key, label]) => (
+                  <label key={key}>
+                    {label}
+                    <textarea
+                      maxLength={1000}
+                      value={context[key] || ''}
+                      disabled={busy}
+                      onChange={(e) => {
+                        setContext((v) => ({ ...v, [key]: e.target.value }))
+                        setStatus(c.unsaved)
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
             </details>
           )}
         </div>
       )}
-      <p role="status" aria-live="polite" className="hh-fine">
+
+      <p role="status" aria-live="polite" className="hh-fine hh-runner-save-state">
         {status}
       </p>
       {error && (
@@ -968,14 +1087,14 @@ function Runner({ id, locale, onExit, onComplete }) {
           )}
         </div>
       )}
-      <div className="hh-actions">
+      <div className="hh-actions hh-runner-actions">
         <button
           disabled={busy || index === 0 || Boolean(operation.current)}
           onClick={() => save({}, index - 1)}
         >
           {c.back}
         </button>
-        {!isContext ? (
+        {!isContext && mode === 'guided' && (
           <button
             className="hh-primary"
             disabled={busy || run.answers[question.id] === undefined || Boolean(operation.current)}
@@ -983,7 +1102,8 @@ function Runner({ id, locale, onExit, onComplete }) {
           >
             {c.next}
           </button>
-        ) : (
+        )}
+        {isContext && (
           <button
             className="hh-primary"
             disabled={busy || Boolean(operation.current)}
