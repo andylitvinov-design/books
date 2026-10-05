@@ -196,6 +196,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     ['tests', c.tests, '/tests'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
+    ...(data.practitioner?.enabled ? [['practice', c.practice, '/practice']] : []),
   ]
   return (
     <main className="hh-app">
@@ -222,7 +223,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         </details>
       </header>
       {page !== 'runs' && (
-        <nav className="hh-nav" aria-label={c.account}>
+        <nav className={'hh-nav' + (data.practitioner?.enabled ? ' hh-nav--owner' : '')} aria-label={c.account}>
           {nav.map(([id, label, url]) => (
             <Link
               key={id}
@@ -248,6 +249,9 @@ export default function AppWorkspace({ locale, path = [] }) {
               locale={locale}
               onOpenHistory={() => router.push(root + '/history')}
             />
+          )}
+          {page === 'practice' && data.practitioner?.enabled && (
+            <PractitionerTools locale={locale} />
           )}
           {page === 'tests' && (
             <TestCatalog
@@ -929,6 +933,7 @@ function Portrait({ data, locale, onOpenHistory }) {
         compact
         onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}
       />
+      {data.practitioner?.enabled && <PractitionerShortcut locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
         <article className="hh-panel hh-empty">
@@ -992,6 +997,97 @@ function Portrait({ data, locale, onOpenHistory }) {
     </section>
   )
 }
+function PractitionerShortcut({ locale }) {
+  const ru = locale === 'ru'
+  return (
+    <section className="hh-practitioner-shortcut" aria-label={ru ? 'Инструменты практика' : 'Practitioner tools'}>
+      <div>
+        <p className="hh-kicker">{ru ? 'Практика' : 'Practice'}</p>
+        <h2>{ru ? 'Клиенты и документы' : 'Clients & documents'}</h2>
+        <p>{ru ? 'Рекомендации, квитанции и история клиентов.' : 'Recommendations, receipts, and client history.'}</p>
+      </div>
+      <Link className="hh-primary" href={`/${locale}/app/practice`} prefetch={false}>
+        {ru ? 'Открыть' : 'Open'}
+      </Link>
+    </section>
+  )
+}
+
+function PractitionerTools({ locale }) {
+  const ru = locale === 'ru'
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const actions = [
+    {
+      id: 'clients',
+      target: '/admin/clients',
+      title: ru ? 'Клиенты' : 'Clients',
+      text: ru ? 'База клиентов, контакты, история консультаций и документов.' : 'Client database, contacts, consultation and document history.',
+    },
+    {
+      id: 'consultation',
+      target: '/admin/consultations/new',
+      title: ru ? 'Новая консультация' : 'New consultation',
+      text: ru ? 'Выбрать клиента и сразу создать рекомендацию вместе со счётом или квитанцией.' : 'Choose a client and create a recommendation together with an invoice or receipt.',
+    },
+    {
+      id: 'prescription',
+      target: '/admin/prescriptions/new',
+      title: ru ? 'Рецепт / рекомендация' : 'Prescription / recommendation',
+      text: ru ? 'Создать отдельную гомеопатическую рекомендацию и PDF для клиента.' : 'Create a standalone homeopathic recommendation and client PDF.',
+    },
+    {
+      id: 'payment',
+      target: '/admin/payments/new',
+      title: ru ? 'Квитанция / счёт' : 'Receipt / invoice',
+      text: ru ? 'Выставить квитанцию об оплате или счёт.' : 'Create a receipt for a payment or an unpaid invoice.',
+    },
+    {
+      id: 'requests',
+      target: '/admin/app-requests',
+      title: ru ? 'Заявки клиентов' : 'Client requests',
+      text: ru ? 'Заявки на консультации из личных кабинетов.' : 'Consultation requests received from client accounts.',
+    },
+  ]
+
+  async function open(target, id) {
+    if (busy) return
+    setBusy(id)
+    setError('')
+    try {
+      const result = await appFetch('practitioner/session', { target })
+      if (!result?.redirectUrl || !result.redirectUrl.startsWith('/admin')) throw new Error('Invalid practitioner redirect')
+      window.location.assign(result.redirectUrl)
+    } catch {
+      setError(ru ? 'Не удалось открыть инструменты практика. Повторите вход и попробуйте снова.' : 'Practitioner tools could not be opened. Sign in again and retry.')
+      setBusy('')
+    }
+  }
+
+  return (
+    <section className="hh-practitioner-tools">
+      <div className="hh-heading">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{ru ? 'Практика' : 'Practice'}</h1>
+        <p>{ru ? 'Рабочий кабинет: клиенты, рекомендации, квитанции и документы.' : 'Your practitioner workspace for clients, recommendations, receipts, and documents.'}</p>
+      </div>
+      <div className="hh-practice-grid">
+        {actions.map((action) => (
+          <article className="hh-panel hh-practice-card" key={action.id}>
+            <h2>{action.title}</h2>
+            <p>{action.text}</p>
+            <button className="hh-primary" type="button" disabled={Boolean(busy)} onClick={() => open(action.target, action.id)}>
+              {busy === action.id ? (ru ? 'Открываем…' : 'Opening…') : (ru ? 'Открыть' : 'Open')}
+            </button>
+          </article>
+        ))}
+      </div>
+      {error && <p role="alert">{error}</p>}
+      <p className="hh-fine">{ru ? 'Этот раздел виден только вашему подтверждённому Google-аккаунту практика.' : 'This section is visible only to your verified practitioner Google account.'}</p>
+    </section>
+  )
+}
+
 function NextStep({ locale, step }) {
   const c = COPY[locale]
   const content = {
