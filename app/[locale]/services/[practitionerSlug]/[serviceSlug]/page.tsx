@@ -31,7 +31,7 @@ export default async function ServiceDetail({params}:PageProps){
   const value=await load(locale,practitionerSlug,serviceSlug);
   if(!value)notFound();
   const {service,practitioner}=value,ru=locale==="ru";
-  const verified=practitioner.credentials.some((item:any)=>item.verificationStatus==="verified");
+  const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");
   const price=service.pricingMode!=="contact"&&service.confirmedPrice!=null?`${service.pricingMode==="from"?(ru?"от ":"from "):""}${service.currency||""} ${service.confirmedPrice}`:ru?"Стоимость согласуется до записи":"Price agreed before booking";
   return <main className="services-shell services-shell--studio" lang={locale}>
     <PublicSiteHeader locale={locale}/>
