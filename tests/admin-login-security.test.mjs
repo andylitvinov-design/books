@@ -47,3 +47,26 @@ test('admin sign-in uses Holistic House practitioner copy and a documented twelv
   assert.match(admin, /consumeAccessAttempt/)
   assert.doesNotMatch(page, /Prescription admin/)
 })
+
+
+test('practitioner Google bridge is exact-email server authorization and reuses the hardened admin cookie', async () => {
+  const [admin, route, config] = await Promise.all([
+    readFile('lib/prescriptions/admin.js', 'utf8'),
+    readFile('app/api/app/[...path]/route.js', 'utf8'),
+    readFile('lib/app/config.js', 'utf8'),
+  ])
+
+  assert.match(config, /HH_PRACTITIONER_OWNER_EMAIL/)
+  assert.match(admin, /isVerifiedPractitionerActor/)
+  assert.match(admin, /normalizedEmail\(actor\?\.email\)/)
+  assert.match(admin, /PRESCRIPTIONS_ADMIN_TOKEN \|\| environment\.PRESCRIPTIONS_ADMIN_PIN/)
+  assert.match(admin, /sameSite: 'strict'/)
+  assert.match(admin, /path: '\/admin'/)
+  assert.match(route, /joined === 'practitioner\/session'/)
+  assert.match(route, /await repo\.bootstrap\(actor\)/)
+  assert.match(route, /establishAdminSessionForVerifiedPractitioner\(actor\)/)
+  assert.match(route, /practitionerTargets/)
+  assert.match(route, /if \(!isVerifiedPractitionerActor\(actor\)\) throw new AppError\('NOT_FOUND', 404\)/)
+  assert.match(route, /if \(practitioner\) await clearAdminSession\(\)/)
+  assert.doesNotMatch(route, /user_metadata.*practitioner|practitioner.*user_metadata/i)
+})
