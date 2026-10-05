@@ -10,8 +10,17 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { APP_SERVICES } from "@/data/app-services";
 
 type PageProps = { params: Promise<{ locale: string }> };
+
+type MarketplaceService = {
+  id: string;
+  category: string;
+  copy: Record<Locale, { title: string; description: string }>;
+};
+
+const marketplaceServices = APP_SERVICES as readonly MarketplaceService[];
 
 const copy = {
   ru: {
@@ -20,6 +29,15 @@ const copy = {
     kicker: "Три направления работы",
     heading: "Услуги",
     lead: "Три формата для разных задач: бизнес и решения, внутренние состояния и развитие, архетипическая и трансперсональная работа.",
+    marketplaceCta: "Выбрать услугу",
+    marketplaceKicker: "Доступные услуги",
+    marketplaceTitle: "Выберите услугу",
+    marketplaceIntro: "Выберите подходящий формат и отправьте запрос. Подробности можно посмотреть ниже — заявка оформляется через ваш личный кабинет.",
+    marketplacePractitioner: "Мастер",
+    marketplaceBy: "Andy · Andrii Litvinov",
+    marketplaceMeta: "Онлайн · стоимость согласуется после запроса",
+    marketplaceRequest: "Заказать",
+    marketplaceDetails: "Подробнее",
     cards: [
       {
         id: "business",
@@ -60,6 +78,15 @@ const copy = {
     kicker: "Three directions of work",
     heading: "Services",
     lead: "Three formats for different needs: business and decision-making, inner states and development, and archetypal / transpersonal exploration.",
+    marketplaceCta: "Choose a service",
+    marketplaceKicker: "Available services",
+    marketplaceTitle: "Choose a service",
+    marketplaceIntro: "Choose the format that fits and send a request. You can read more below; the request is completed through your private Cabinet.",
+    marketplacePractitioner: "Practitioner",
+    marketplaceBy: "Andy · Andrii Litvinov",
+    marketplaceMeta: "Online · price agreed after request",
+    marketplaceRequest: "Request",
+    marketplaceDetails: "Details",
     cards: [
       {
         id: "business",
@@ -96,6 +123,12 @@ const copy = {
   },
 } as const;
 
+function detailsAnchorFor(category: string) {
+  if (category === "business_situation_constellation") return "business";
+  if (category === "homeopathy_consultation") return "alchemy";
+  return "archetypal";
+}
+
 export function generateStaticParams() { return getHomeopathyLocaleParams(); }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -116,7 +149,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ServicesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
-  const current = copy[locale as Locale];
+  const language = locale as Locale;
+  const current = copy[language];
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
@@ -127,8 +161,8 @@ export default async function ServicesPage({ params }: PageProps) {
           <p className="homeopathy-kicker">{current.kicker}</p>
           <h1>{current.heading}</h1>
           <p>{current.lead}</p>
-          <Link className="services-studio-primary" href="#consultation">
-            {current.consultation}<span aria-hidden="true">→</span>
+          <Link className="services-studio-primary" href="#available-services">
+            {current.marketplaceCta}<span aria-hidden="true">→</span>
           </Link>
         </div>
         <div className="services-studio-photo" aria-hidden="true">
@@ -139,6 +173,42 @@ export default async function ServicesPage({ params }: PageProps) {
             priority
             sizes="(max-width: 767px) 100vw, 44vw"
           />
+        </div>
+      </section>
+
+      <section className="services-marketplace" id="available-services" aria-labelledby="services-marketplace-title">
+        <div className="services-marketplace-heading">
+          <p className="homeopathy-kicker">{current.marketplaceKicker}</p>
+          <h2 id="services-marketplace-title">{current.marketplaceTitle}</h2>
+          <p>{current.marketplaceIntro}</p>
+        </div>
+
+        <div className="services-marketplace-grid">
+          {marketplaceServices.map((service) => (
+            <article className="services-marketplace-card" key={service.id}>
+              <div className="services-marketplace-provider">
+                <span>{current.marketplacePractitioner}</span>
+                <strong>{current.marketplaceBy}</strong>
+              </div>
+              <h3>{service.copy[language].title}</h3>
+              <p className="services-marketplace-description">{service.copy[language].description}</p>
+              <p className="services-marketplace-meta">{current.marketplaceMeta}</p>
+              <div className="services-marketplace-actions">
+                <Link
+                  className="services-marketplace-request"
+                  href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}
+                >
+                  {current.marketplaceRequest}<span aria-hidden="true">→</span>
+                </Link>
+                <Link
+                  className="services-marketplace-details"
+                  href={`#${detailsAnchorFor(service.category)}`}
+                >
+                  {current.marketplaceDetails}
+                </Link>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
