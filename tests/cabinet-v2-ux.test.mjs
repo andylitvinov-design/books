@@ -234,12 +234,12 @@ test('public and signed-in Cabinet share a white mood card with three separate m
 
 
 test('verified practitioner account exposes existing client and document tools only inside My Portrait', async () => {
-  const [workspace, route, repository, access, admin] = await Promise.all([
+  const [workspace, route, repository, access, adminSession] = await Promise.all([
     readFile('components/app/app-workspace.jsx', 'utf8'),
     readFile('app/api/app/[...path]/route.js', 'utf8'),
     readFile('lib/app/repository.js', 'utf8'),
     readFile('lib/app/practitioner-access.js', 'utf8'),
-    readFile('lib/prescriptions/admin.js', 'utf8'),
+    readFile('lib/prescriptions/admin-session.js', 'utf8'),
   ])
 
   assert.match(workspace, /data\.practitioner && <OwnerTools/)
