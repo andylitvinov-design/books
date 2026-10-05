@@ -8,13 +8,14 @@ import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import type { PublicServiceDetail } from "@/lib/practitioners/public-types";
 
 type PageProps={params:Promise<{locale:string;practitionerSlug:string;serviceSlug:string}>};
 export const dynamic="force-dynamic";
 export const revalidate=0;
 
-async function load(locale:string,practitionerSlug:string,serviceSlug:string){
-  try{return await createPractitionerRepository(getAppConfig()).getPublicService(practitionerSlug,serviceSlug,locale)}
+async function load(locale:string,practitionerSlug:string,serviceSlug:string):Promise<PublicServiceDetail|null>{
+  try{return await createPractitionerRepository(getAppConfig()).getPublicService(practitionerSlug,serviceSlug,locale) as PublicServiceDetail}
   catch{return null}
 }
 export async function generateMetadata({params}:PageProps):Promise<Metadata>{
