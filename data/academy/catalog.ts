@@ -71,6 +71,7 @@ export const academyProgramTitles: Record<string, Record<PublicLocale, string>> 
   "applied/energy-massage": { en: "Energy Massage — Historical Course", ru: "Энергетические массажи — исторический курс", es: "Masaje energético — curso histórico" },
   "applied/hypnotherapy-regressions": { en: "Hypnotherapy & Regression Imagery", ru: "Гипнотерапия и регрессионные образы", es: "Hipnoterapia e imágenes regresivas" },
   "applied/imagery-therapy-symboldrama": { en: "Imagery Therapy — Symboldrama", ru: "Образная терапия — Символдрама", es: "Terapia de imágenes — Symboldrama" },
+  "applied/imagery-therapy/mirrorland": { en: "Imagery Therapy — Mirrorland", ru: "Образная терапия — Зазеркалье", es: "Terapia de imágenes — Más allá del espejo" },
   "applied/sexual-energy-greek-gods": { en: "Sexual Energy & Greek Love Archetypes", ru: "Сексуальная энергетика и Греческие Боги Любви", es: "Energía sexual y arquetipos griegos del amor" },
   "applied/tantric-healing": { en: "Tantric Healing — Historical Program", ru: "Тантрическое целительство — историческая программа", es: "Sanación tántrica — programa histórico" },
   "archive/circle-of-eros": { en: "Circle of Eros — Historical Marathon", ru: "Круг Эроса — исторический марафон", es: "Círculo de Eros — maratón histórico" },
