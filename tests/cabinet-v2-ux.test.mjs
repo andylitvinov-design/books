@@ -178,13 +178,15 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('app/ia-v2.css', 'utf8'),
   ])
-  assert.ok(mood.includes('homeopathy-kicker hh-mood-kicker'))
+  assert.ok(mood.includes('<p className="hh-mood-kicker">{c.welcome}</p>'))
+  assert.ok(mood.includes('className="hh-mood-title"'))
+  assert.ok(!mood.includes('homeopathy-kicker hh-mood-kicker'))
   assert.ok(landing.includes('<h2 id="cabinet-title">{c.title}</h2>'))
   assert.ok(landing.includes("testsKicker: 'Tests'"))
   assert.ok(landing.includes("testsKicker: 'Тесты'"))
   assert.ok(landing.includes("title: 'Your personal space'"))
   assert.ok(landing.includes("title: 'Ваше личное пространство'"))
-  assert.ok(ia.includes('Cabinet v2.5'))
+  assert.ok(ia.includes('Cabinet v2.6'))
   assert.ok(ia.includes('.cabinet-signin-strip'))
   assert.ok(ia.includes('.cabinet-test-list'))
   assert.ok(ia.includes('max-width: 1040px'))
@@ -208,4 +210,24 @@ test('Cabinet catalog keeps accessible Academy-style icon rows', async () => {
   assert.ok(!landing.includes('className="cabinet-account-row"'))
   assert.ok(ia.includes('.cabinet-test-icon'))
   assert.ok(ia.includes('grid-template-columns: 82px minmax(0,1fr) 28px'))
+})
+
+
+test('public and signed-in Cabinet share a white mood card with three separate mood buttons', async () => {
+  const [mood, ia] = await Promise.all([
+    readFile('components/app/mood-checkin.jsx', 'utf8'),
+    readFile('app/ia-v2.css', 'utf8'),
+  ])
+  assert.ok(mood.includes("const moods = [c.sad, c.neutral, c.happy]"))
+  assert.ok(mood.includes('<p className="hh-mood-kicker">{c.welcome}</p>'))
+  assert.ok(mood.includes('<h1 className="hh-mood-title"'))
+  assert.ok(mood.includes('<h2 className="hh-mood-title"'))
+  assert.ok(ia.includes('.cabinet-landing-shell .hh-mood-checkin'))
+  assert.ok(ia.includes('.hh-app .hh-mood-checkin--compact'))
+  assert.ok(ia.includes('background: #fffdfa'))
+  assert.ok(ia.includes('grid-template-columns: repeat(3, minmax(0, 1fr))'))
+  assert.ok(ia.includes('gap: 10px'))
+  assert.ok(ia.includes('border: 1px solid #ddcdbb'))
+  assert.ok(ia.includes('min-height: 92px'))
+  assert.ok(!ia.includes('border-radius: 999px;\n  background: #f6eee3;\n  padding: 3px;'))
 })
