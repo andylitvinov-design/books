@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { RemedyDirectory } from "@/components/remedy-directory";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PageVideo } from "@/components/page-video";
@@ -35,6 +36,7 @@ export default async function RemediesPage({ params }: PageProps) {
       <header className="remedy-index-header"><div><p className="homeopathy-kicker">{current.kicker}</p><h1>{current.heading}</h1><p>{current.lead}</p></div></header>
       <PageVideo slot="remedies-index" locale={locale} />
       <Suspense fallback={<p className="remedy-result-count">{current.lead}</p>}><RemedyDirectory entries={getRemedyDirectory(locale)} locale={locale} /></Suspense>
+      <PublicConsultationCta locale={locale as Locale} />
     </main>
   );
 }
