@@ -133,3 +133,32 @@ test("Academy program titles are localized without rewriting source records", as
   assert.match(routePage, /academyDisplayTitle\(record, locale\)/);
   assert.match(recordPage, /makeFacultiesRecord\(record: AcademySourceRecord, locale: PublicLocale\)/);
 });
+
+
+test("Tantra Reiki has curated bilingual source-backed course content instead of an empty shell", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  assert.match(catalog, /"reiki\/tantra-reiki"/);
+  assert.match(catalog, /Nine levels of study/);
+  assert.match(catalog, /Девять ступеней/);
+  assert.match(catalog, /Level 9 — Fullness of Unity/);
+  assert.match(catalog, /9 ступень — Полнота Единства/);
+  assert.match(catalog, /academySourceBlocks\(record\)/);
+});
+
+
+test("sparse Academy records use curated recovery and never outrank a substantive sibling", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  for (const id of [
+    "mysteries/initiations",
+    "mysteries/hypno-love",
+    "mysteries/egyptian-hypno-course",
+    "mysteries/guidance-of-gods",
+    "mysteries/archetypes-of-love",
+    "runes/runes-business",
+    "elements/water",
+    "symbolic/artifacts-talismans",
+  ]) assert.match(catalog, new RegExp('"'+id.replaceAll("/", "\\/")+'"'));
+  assert.match(catalog, /academyRecordHasBody/);
+  assert.match(catalog, /compareAcademyRecords/);
+  assert.match(catalog, /Number\(!academyRecordHasBody\(a\)\)/);
+});
