@@ -2,6 +2,8 @@ import sources from "./sources.generated.json";
 import media from "./media.generated.json";
 import psimasterSources from "./psimaster-sources.generated.json";
 import psimasterMedia from "./psimaster-media.generated.json";
+import psimasterSources from "./psimaster-sources.generated.json";
+import psimasterMedia from "./psimaster-media.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 export type AcademyDirectionId = "reiki" | "mysteries" | "symbolic" | "applied" | "school" | "archive";
