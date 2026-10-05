@@ -88,6 +88,7 @@ export const academyProgramTitles: Record<string, Record<PublicLocale, string>> 
   "mysteries/greece-rome/beauty-and-power": { en: "Beauty & Power of Antiquity — Greece & Rome", ru: "Красота и Сила Античности — Греция и Рим", es: "Belleza y poder de la Antigüedad — Grecia y Roma" },
   "mysteries/maya-aztec/feathered-serpent": { en: "Maya & Aztec Mysteries — Feathered Serpent", ru: "Мистерии Майя и Ацтеков — Пернатый Змей", es: "Misterios mayas y aztecas — Serpiente Emplumada" },
   "mysteries/slavic/fairy-tales-mysteries": { en: "Slavic Fairy Tales & Mysteries", ru: "Славянские сказки и мистерии", es: "Cuentos y misterios eslavos" },
+  "mysteries/slavic/shamanism": { en: "Slavic Shamanism — Historical Course", ru: "Славянский шаманизм — исторический курс", es: "Chamanismo eslavo — curso histórico" },
   "mysteries/zoroastrism/eastern-magic": { en: "Zoroastrianism & Eastern Magic", ru: "Зороастризм и Магия Востока", es: "Zoroastrismo y magia oriental" },
   "mysteries/archetypes-of-love": { en: "Lesser Mysteries: Archetypes of Love", ru: "Малые мистерии: Архетипы любви", es: "Misterios menores: Arquetipos del amor" },
   "mysteries/egyptian-hypno-course": { en: "Egyptian Hypno-Coaching Course", ru: "Гипно-коучинг: Египетский курс", es: "Hipnocoaching: curso egipcio" },
