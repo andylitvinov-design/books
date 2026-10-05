@@ -32,7 +32,6 @@ import {
   setReportViewerCookie,
 } from '@/lib/app/report-flow'
 import { practitionerDestination } from '@/lib/app/practitioner-access'
-import { issueTrustedAdminSession } from '@/lib/prescriptions/admin'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -258,25 +257,6 @@ async function handle(request, { params }) {
       joined === 'export' ? 3 : 180,
       joined === 'export' ? 3600 : 60,
     )
-    if (joined === 'practitioner/access' && method === 'POST') {
-      if (!await repo.isPractitioner(actor)) throw new AppError('ACCESS_DENIED', 403)
-      const body = await readBody(request)
-      onlyKeys(body, ['destination'])
-      const allowed = new Set([
-        '/admin',
-        '/admin/clients',
-        '/admin/consultations/new',
-        '/admin/prescriptions/new',
-        '/admin/payments/new',
-      ])
-      const destination = typeof body.destination === 'string' && allowed.has(body.destination)
-        ? body.destination
-        : '/admin'
-      const response = json({ redirectUrl: destination })
-      if (!issueTrustedAdminSession(response, { secure: !config.test }))
-        throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
-      return response
-    }
     if (
       path[0] === 'save-intents' &&
       path.length === 3 &&
