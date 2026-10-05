@@ -228,6 +228,14 @@ test('signed-in tests use the same Psychic Health Monitoring image-card concept'
   assert.ok(workspace.includes('/images/holistic-house/video-posters/services-en-v2.webp'))
 })
 
+test('external Cabinet does not auto-open an unfinished guest test on page load', async () => {
+  const landing = await readFile('components/app/cabinet-landing.jsx', 'utf8')
+  assert.ok(landing.includes("setPhase('catalog')"))
+  assert.ok(landing.includes("bootstrap.runs.find((item) => item.definitionId === def.id)"))
+  assert.ok(!landing.includes("const existing = bootstrap.runs.at(-1)"))
+  assert.ok(landing.includes('A saved draft resumes only after the visitor explicitly chooses that test card.'))
+})
+
 test('public and signed-in Cabinet share a white mood card with three separate mood buttons', async () => {
   const [mood, ia] = await Promise.all([
     readFile('components/app/mood-checkin.jsx', 'utf8'),
