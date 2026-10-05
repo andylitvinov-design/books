@@ -1,6 +1,7 @@
 export const COPY = {
   en: {
     portrait: 'My portrait',
+    monitoring: 'Psi-Monitoring',
     tests: 'Tests',
     history: 'History',
     reports: 'Reports from Andy',
@@ -29,6 +30,7 @@ export const COPY = {
     start: 'Start',
     resume: 'Continue',
     view: 'View result',
+    viewTrend: 'View trend',
     repeat: 'Take again',
     cancel: 'Cancel',
     close: 'Close',
@@ -168,6 +170,7 @@ export const COPY = {
   },
   ru: {
     portrait: 'Мой портрет',
+    monitoring: 'Пси-мониторинг',
     tests: 'Тесты',
     history: 'История',
     reports: 'Отчёты от Andy',
@@ -198,6 +201,7 @@ export const COPY = {
     start: 'Начать',
     resume: 'Продолжить',
     view: 'Открыть результат',
+    viewTrend: 'Динамика',
     repeat: 'Пройти снова',
     cancel: 'Отмена',
     close: 'Закрыть',
