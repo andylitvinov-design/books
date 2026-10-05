@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import type { Locale } from "@/data/remedies";
@@ -204,6 +205,8 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <Link href={text.bookUrl}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
         </div>
       </section>
+
+      <PublicConsultationCta locale={locale} />
 
       <footer className="service-home-footer">
         <Link className="house-wordmark" href="/">Holistic House</Link>
