@@ -162,3 +162,18 @@ test("sparse Academy records use curated recovery and never outrank a substantiv
   assert.match(catalog, /compareAcademyRecords/);
   assert.match(catalog, /Number\(!academyRecordHasBody\(a\)\)/);
 });
+
+test("fallback-only Academy pages have curated EN/RU public bodies", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  assert.match(catalog, /"mysteries\/archetypes-of-gods"/);
+  assert.match(catalog, /Great Mysteries — Archetypes of the Gods/);
+  assert.match(catalog, /Большие мистерии — Архетипы Богов/);
+  assert.match(catalog, /"elements\/elemental-magic"/);
+  assert.match(catalog, /Elemental Magic — course overview/);
+  assert.match(catalog, /Магия Стихий — обзор курса/);
+  assert.match(catalog, /"history": \{/);
+  assert.match(catalog, /Academy history — archive overview/);
+  assert.match(catalog, /История Академии — архивный обзор/);
+  assert.match(catalog, /Old prices, diagnostic promises/);
+  assert.match(catalog, /Старые акции, цены/);
+});
