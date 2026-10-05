@@ -354,6 +354,96 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
       { type: "p", text: "Creating shrine-like compositions and symbolic figures used as anchors for contemplative or ritual practice." },
       { type: "p", text: "Promotional promises, business case-study outcomes and claims of immediate magical efficacy from the legacy page are deliberately excluded." }
     ]
+  },
+  "mysteries/archetypes-of-gods": {
+    en: [
+      { type: "h2", text: "Great Mysteries — Archetypes of the Gods" },
+      { type: "p", text: "The PsiTrends archive presents this material as an archetypal method for looking at a life, relationship or business question through figures from ancient mythological traditions." },
+      { type: "h2", text: "How the method was structured" },
+      { type: "h3", text: "1. Formulate the question" },
+      { type: "p", text: "The first step is to clarify the situation and define a concrete question or intention." },
+      { type: "h3", text: "2. Choose an archetypal lens" },
+      { type: "p", text: "A mythological figure or tradition is used as a symbolic perspective for associations, reflection and new ways of seeing the problem." },
+      { type: "h3", text: "3. Translate symbols into action" },
+      { type: "p", text: "The useful part of the reading is brought back to practical observations, decisions or experiments that can be tested in ordinary life." },
+      { type: "h2", text: "Traditions represented in the archive" },
+      { type: "p", text: "The source material references Egyptian, Greek, Scandinavian, Taoist, Maya/Aztec and Kabbalistic archetypal systems." },
+      { type: "h2", text: "Egyptian archetypes" },
+      { type: "p", text: "Isis is associated with communication and non-obvious solutions; Hathor with support and beginning; Maat with balance and checking a situation; Thoth with learning and perspective; Horus with action; Ra with scale and vision; Osiris with endings and letting go." },
+      { type: "p", text: "Holistic House preserves these as symbolic and educational descriptions. Legacy prices, claims of supernatural influence, guaranteed predictions and promotional promises are intentionally not presented as verified effects or current offers." }
+    ],
+    ru: [
+      { type: "h2", text: "Большие мистерии — Архетипы Богов" },
+      { type: "p", text: "В архиве PsiTrends этот материал построен как архетипический способ посмотреть на жизненный, отношенческий или бизнес-вопрос через образы древних мифологических традиций." },
+      { type: "h2", text: "Как была устроена работа" },
+      { type: "h3", text: "1. Сформулировать вопрос" },
+      { type: "p", text: "Сначала уточняется ситуация и формулируется конкретный вопрос или намерение." },
+      { type: "h3", text: "2. Выбрать архетипическую оптику" },
+      { type: "p", text: "Мифологическая фигура или традиция используется как символическая перспектива для ассоциаций, размышления и нового взгляда на проблему." },
+      { type: "h3", text: "3. Перевести символы в действия" },
+      { type: "p", text: "Полезные наблюдения переводятся в решения, шаги или эксперименты, которые можно проверить в обычной жизни." },
+      { type: "h2", text: "Традиции в архиве" },
+      { type: "p", text: "В исходных материалах упоминаются египетская, греческая, скандинавская, даосская, майянская/ацтекская и каббалистическая архетипические системы." },
+      { type: "h2", text: "Египетские архетипы" },
+      { type: "p", text: "Исида связана с коммуникацией и нестандартными решениями; Хатхор — с поддержкой и началом; Маат — с балансом и проверкой ситуации; Тот — с обучением и перспективой; Гор — с действием; Ра — с масштабом и видением; Осирис — с завершением и отпусканием." },
+      { type: "p", text: "Holistic House сохраняет эти описания как символический и образовательный материал. Старые цены, заявления о сверхъестественном воздействии, гарантированных предсказаниях и рекламные обещания намеренно не публикуются как проверенные эффекты или актуальные предложения." }
+    ]
+  },
+  "elements/elemental-magic": {
+    en: [
+      { type: "h2", text: "Elemental Magic — course structure" },
+      { type: "p", text: "The PsiTrends archive presents Elemental Magic as a symbolic study of the Minor Arcana of Tarot within the Sephirotic tradition, using the four elements as a framework for attention, reflection and goal modelling." },
+      { type: "h2", text: "Four-element framework" },
+      { type: "p", text: "Air is associated with options, ideas and movement; Fire with vitality and action; Earth with material structure and resources; Water with memory, perception and emotional meaning." },
+      { type: "h2", text: "Progression through the Minor Arcana" },
+      { type: "p", text: "The archived curriculum moves through numbered Minor Arcana and later Pages and Aces. Each card is introduced through its central idea, key symbols or glyphs, and a short focusing text." },
+      { type: "h3", text: "Introductory study" },
+      { type: "p", text: "Learning the symbolic language of the elements and noticing how different states affect perception, choices and a chosen goal." },
+      { type: "h3", text: "Applied practice" },
+      { type: "p", text: "Exercises with mandalas and symbolic models are used to compare perspectives and organise a project or personal intention." },
+      { type: "h3", text: "Advanced historical modules" },
+      { type: "p", text: "The legacy course also references elemental spirits, ritual initiations and deeper Sephirotic material. Holistic House presents these as historical/esoteric study topics rather than claims of objective supernatural effects." },
+      { type: "p", text: "Old promotions, prices, registration offers, effectiveness claims and certification language are omitted from the current public presentation." }
+    ],
+    ru: [
+      { type: "h2", text: "Магия Стихий — структура курса" },
+      { type: "p", text: "В архиве PsiTrends Магия Стихий описывается как символическое изучение Младших Арканов Таро в рамках Сефиротической традиции, где четыре стихии используются как модель внимания, рефлексии и работы с целью." },
+      { type: "h2", text: "Модель четырёх стихий" },
+      { type: "p", text: "Воздух связан с вариантами, идеями и движением; Огонь — с жизненностью и действием; Земля — с материальной структурой и ресурсами; Вода — с памятью, восприятием и эмоциональным смыслом." },
+      { type: "h2", text: "Последовательность Младших Арканов" },
+      { type: "p", text: "Историческая программа проходит через числовые Младшие Арканы, а затем Пажей и Тузов. Для каждой карты раскрывается основная идея, ключевые символы/глифы и короткий текст для концентрации." },
+      { type: "h3", text: "Вводный уровень" },
+      { type: "p", text: "Знакомство с символическим языком стихий и наблюдение за тем, как разные состояния меняют восприятие, выбор и отношение к поставленной цели." },
+      { type: "h3", text: "Прикладная практика" },
+      { type: "p", text: "Мандалы и символические модели используются для сравнения разных перспектив и структурирования проекта или личного намерения." },
+      { type: "h3", text: "Продвинутые исторические модули" },
+      { type: "p", text: "В старом курсе также упоминаются духи стихий, ритуальные инициации и более глубокие материалы Сефиротической традиции. На Holistic House это представлено как исторический/эзотерический учебный материал, а не как утверждение об объективном сверхъестественном эффекте." },
+      { type: "p", text: "Старые акции, цены, регистрационные предложения, обещания эффективности и сертификационные формулировки в текущую публичную версию не переносятся." }
+    ]
+  },
+  "history": {
+    en: [
+      { type: "h2", text: "Academy of Temple Arts — historical structure" },
+      { type: "p", text: "The PsiTrends archive describes a long-form school that combined Reiki systems, temple and mythological studies, symbolic arts and applied archetypal practice. This page preserves that historical structure rather than presenting every legacy claim or credential as current." },
+      { type: "h2", text: "How learning was organised" },
+      { type: "p", text: "The school used an initiation-based progression combined with individual study, practice with partners, seminars and assessment. Reiki Yggdrasil functioned as one of the organising frameworks for the wider curriculum." },
+      { type: "h2", text: "Historical faculties" },
+      { type: "p", text: "The archive groups study into Ancient Egypt, Greek and Roman Mysteries, spiritual studies, Tantra and Vedic heritage, Slavic imagery traditions, Scandinavian runes, Taoism and Sufism, and Pan-American/Maya/Toltec material." },
+      { type: "h2", text: "Specializations" },
+      { type: "p", text: "Historical specializations included relationships and Tantra, archetypal practice and personal development, astrology and symbolic perception, handmade artifacts, and research-oriented study." },
+      { type: "p", text: "Holistic House keeps the archive for educational continuity. Historical speed claims, institutional endorsements, qualification language and therapeutic outcome claims are not carried forward as current guarantees." }
+    ],
+    ru: [
+      { type: "h2", text: "Академия Храмовых Искусств — историческая структура" },
+      { type: "p", text: "Архив PsiTrends описывает школу длительного обучения, где соединялись системы Рейки, храмовые и мифологические традиции, символические искусства и прикладная архетипическая практика. Здесь сохраняется структура школы, а не все старые рекламные или статусные утверждения." },
+      { type: "h2", text: "Как было организовано обучение" },
+      { type: "p", text: "Использовалась последовательность инициаций в сочетании с самостоятельным изучением, практикой с партнёрами, семинарами и проверкой освоения материала. Рейки Иггдрасиль выступала одним из организующих каркасов большой программы." },
+      { type: "h2", text: "Исторические факультеты" },
+      { type: "p", text: "В архиве выделены Египетская традиция, Греческие и Римские мистерии, духовные исследования, Тантра и Ведическое наследие, славянские образные традиции, скандинавские руны, Даосизм и Суфизм, а также материалы Майя, Толтеков и других традиций Америки." },
+      { type: "h2", text: "Специализации" },
+      { type: "p", text: "Исторически отдельно выделялись отношения и Тантра, архетипическая практика и личностное развитие, астрология и символическое восприятие, создание артефактов и исследовательская работа." },
+      { type: "p", text: "Holistic House сохраняет этот архив для образовательной преемственности. Старые заявления о скорости обучения, институциональных подтверждениях, квалификациях и терапевтических результатах не переносятся как текущие гарантии." }
+    ]
   }
 };
 
