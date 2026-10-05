@@ -15,6 +15,7 @@ import { monitoringCatalogItem } from '../data/assessments/catalog.js'
 
 const accountId = '10000000-0000-4000-8000-000000000001'
 const state = getAssessmentDefinition('hh-current-state', 'v2', 'en')
+const legacyState = getAssessmentDefinition('hh-current-state', 'v1', 'en')
 const mini = getAssessmentDefinition('mini-ipip-20', 'v1', 'en')
 const answers = (def, value) =>
   Object.fromEntries(def.questions.map((question) => [question.id, value]))
@@ -97,13 +98,14 @@ test('monitoring never exposes a combined psychic health score', () => {
   assert.ok(plan.every((entry) => entry.score === undefined))
 })
 
-test('compatible history stays within exact instrument provenance', () => {
+test('compatible history stays within exact instrument provenance and catalog version', () => {
   const item = monitoringCatalogItem('hh-current-state')
   const a = result(state, 7, 1)
   const b = result(state, 5, 2)
   const c = result(state, 4, 3)
+  const legacy = result(legacyState, 9, 4)
   assert.deepEqual(
-    compatibleSeries(item, [c, a, b], 'en').map((entry) => entry.id),
+    compatibleSeries(item, [legacy, c, a, b], 'en').map((entry) => entry.id),
     [a.id, b.id, c.id],
   )
 })
