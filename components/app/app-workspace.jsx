@@ -6,9 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
-import { APP_SERVICES } from '@/data/app-services'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
+import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 export async function appFetch(path, body, method) {
@@ -62,6 +62,7 @@ function goSignedOut(setData) {
 export default function AppWorkspace({ locale, path = [] }) {
   const c = COPY[locale],
     router = useRouter(),
+    searchParams = useSearchParams(),
     [data, setData] = useState(null),
     [state, setState] = useState('loading'),
     [error, setError] = useState(null)
@@ -130,7 +131,10 @@ export default function AppWorkspace({ locale, path = [] }) {
     setBusy(true)
     setError(null)
     try {
-      const result = await appFetch('auth/start', { locale })
+      const result = await appFetch('auth/start', {
+        locale,
+        serviceId: searchParams.get('service') || null,
+      })
       window.location.assign(result.redirectUrl)
     } catch (e) {
       setError(e)
@@ -210,6 +214,9 @@ export default function AppWorkspace({ locale, path = [] }) {
             <Link href={`${root}/settings`} prefetch={false}>
               {c.settings}
             </Link>
+            <Link href={`${root}/practice`} prefetch={false}>
+              {data.practice ? (locale === 'ru' ? 'Моя практика' : 'My Practice') : (locale === 'ru' ? 'Стать мастером' : 'Become a Master')}
+            </Link>
             <Link
               href={`/${locale === 'en' ? 'ru' : 'en'}/app${page === 'portrait' ? '' : `/${page}`}${recordId ? `/${recordId}` : ''}`}
               prefetch={false}
@@ -244,12 +251,16 @@ export default function AppWorkspace({ locale, path = [] }) {
             <SaveContinuation data={data} locale={locale} reload={load} />
           )}
           {page === 'portrait' && (
-            <Portrait
-              data={data}
-              locale={locale}
-              onOpenHistory={() => router.push(root + '/history')}
-            />
+            <>
+              <Portrait
+                data={data}
+                locale={locale}
+                onOpenHistory={() => router.push(root + '/history')}
+              />
+              <PracticeEntry data={data} locale={locale} />
+            </>
           )}
+          {page === 'practice' && <PracticeWorkspace locale={locale} />}
           {page === 'tests' && (
             <TestCatalog
               data={data}
@@ -283,7 +294,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             )
           )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} />}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} />}
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
@@ -1601,10 +1612,15 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload }) {
+function Consultations({ data, locale, reload, initialServiceId = '' }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
     [error, setError] = useState(null)
+  useEffect(() => {
+    if (!initialServiceId || selected) return
+    const service = (data.services || []).find((item) => item.id === initialServiceId)
+    if (service) setSelected(service)
+  }, [data.services, initialServiceId, selected])
   async function updateRequest(request, action) {
     try {
       await appFetch('requests/' + request.id, { action, expectedRevision: request.revision })
@@ -1620,12 +1636,13 @@ function Consultations({ data, locale, reload }) {
         <p>{c.consultationsIntro}</p>
       </div>
       <div className="hh-grid hh-services">
-        {APP_SERVICES.map((service) => (
+        {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
+        {(data.services || []).map((service) => (
           <article className="hh-panel" key={service.id}>
-            <p className="hh-kicker">Andy · Andrii Litvinov</p>
+            <p className="hh-kicker">{service.practitionerName}{service.professionalTitle ? ` · ${service.professionalTitle}` : ''}</p>
             <h2>{service.copy[locale].title}</h2>
             <p>{service.copy[locale].description}</p>
-            <p className="hh-fine">{c.price}</p>
+            <p className="hh-fine">{service.pricingMode !== 'contact' && service.confirmedPrice != null ? `${service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : ''}${service.currency || ''} ${service.confirmedPrice}` : c.price}{service.durationMinutes ? ` · ${service.durationMinutes} min` : ''}</p>
             <button className="hh-primary" onClick={() => setSelected(service)}>
               {c.request}
             </button>
@@ -1652,7 +1669,7 @@ function Consultations({ data, locale, reload }) {
           <article className="hh-panel" key={request.id}>
             <span className="hh-badge">{c[request.status]}</span>
             <h3>
-              {APP_SERVICES.find((s) => s.id === request.serviceId)?.copy[locale].title ||
+              {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
                 c.request}
             </h3>
             <p>

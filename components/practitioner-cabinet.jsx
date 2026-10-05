@@ -1,6 +1,6 @@
 'use client'
 
-import {Archive, Film, Inbox, PlusCircle, Users} from 'lucide-react'
+import {Archive, BadgeCheck, Film, Inbox, PlusCircle, Users} from 'lucide-react'
 import Link from 'next/link'
 import {useEffect, useState} from 'react'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
@@ -14,6 +14,7 @@ const copy = {
     legacy:'Старые документы',legacyText:'Разобрать и привязать ранее созданные документы к клиентам.',
     videos:'Видео сайта',videosText:'Добавить видео на страницу, проверить и опубликовать ссылку YouTube.',
     appRequests:'Заявки из приложения',appRequestsText:'Запросы консультаций и только те резюме, которыми пользователь решил поделиться.',
+    network:'Сеть практиков',networkText:'Проверять профили, credentials и услуги мастеров.',
   },
   en: {
     title:'Practitioner Cabinet',description:'Clients, consultations, and documents in one calm workspace.',actions:'Main actions',
@@ -22,6 +23,7 @@ const copy = {
     legacy:'Legacy documents',legacyText:'Review and assign previously created documents to clients.',
     videos:'Website videos',videosText:'Add a video to a page, preview it, and publish its YouTube link.',
     appRequests:'App consultation requests',appRequestsText:'Requests and only the summaries users explicitly chose to share.',
+    network:'Practitioner network',networkText:'Review practitioner profiles, credentials, and services.',
   },
 }
 export function PractitionerCabinet({appRequestsEnabled=false}) {
@@ -36,7 +38,7 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
   const actions=[
     {href:'/admin/consultations/new',icon:PlusCircle,title:text.newConsultation,body:text.newConsultationText},
     {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},
-    ...(appRequestsEnabled?[{href:'/admin/app-requests',icon:Inbox,title:text.appRequests,body:text.appRequestsText}]:[]),
+    ...(appRequestsEnabled?[{href:'/admin/app-requests',icon:Inbox,title:text.appRequests,body:text.appRequestsText},{href:'/admin/practitioners',icon:BadgeCheck,title:text.network,body:text.networkText}]:[]),
     {href:'/admin/clients/legacy',icon:Archive,title:text.legacy,body:text.legacyText},
     {href:'/admin/videos',icon:Film,title:text.videos,body:text.videosText},
   ]

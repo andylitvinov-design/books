@@ -20,8 +20,10 @@ import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { APP_SERVICES } from '../data/app-services.js'
+import { createPractitionerRepository } from '../lib/practitioners/repository.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
+  practiceRepo = createPractitionerRepository(config),
   a = actor(),
   b = actor(B, SB),
   v2Actor = actor('10000000-0000-4000-8000-000000000003', '20000000-0000-4000-8000-000000000003')
@@ -331,6 +333,99 @@ test('a second instrument carries only unaffected axes with their original dates
       .every((d) => d.sourceResultId === stateResult.id && d.remeasured),
   )
 })
+test('master network approval, publication and practitioner isolation use the existing request model', async () => {
+  let practitioner = await practiceRepo.saveProfile(a, {
+    profile: {
+      displayName: 'Practitioner A',
+      professionalTitle: 'Synthetic practitioner',
+      shortBio: 'Synthetic public profile for isolated database testing.',
+      fullBio: '',
+      languages: ['en','ru'],
+      city: 'Toronto',
+      region: 'Ontario',
+      country: 'Canada',
+      formats: ['online'],
+      areas: ['personal_development'],
+      methods: ['Synthetic method'],
+      yearsExperience: 1,
+      websiteUrl: '',
+      socialUrls: [],
+      photoPath: '',
+    },
+  })
+  practitioner = await practiceRepo.submitProfile(a, { expectedRevision: practitioner.revision })
+  practitioner = await practiceRepo.moderateProfile(practitioner.id, { action: 'approve' })
+  assert.equal(practitioner.status, 'approved')
+
+  const credential = await practiceRepo.saveCredential(a, null, {
+    title: 'Synthetic credential',
+    issuer: 'Synthetic Institute',
+    jurisdiction: 'Ontario',
+    reference: 'TEST-1',
+    public: true,
+    expiresOn: null,
+  })
+  assert.equal((await practiceRepo.moderateCredential(credential.id, { action: 'verify' })).verificationStatus, 'verified')
+
+  let service = await practiceRepo.saveService(a, null, {
+    draft: {
+      copy: {
+        en: { title: 'Synthetic coaching session', shortDescription: 'Synthetic EN description.', description: 'Synthetic EN description.' },
+        ru: { title: 'Синтетическая сессия', shortDescription: 'Синтетическое описание.', description: 'Синтетическое описание.' },
+      },
+      areaKey: 'personal_development',
+      offeringType: 'session',
+      deliveryFormat: 'online',
+      locationLabel: '',
+      languages: ['en','ru'],
+      pricingMode: 'contact',
+      confirmedPrice: null,
+      currency: '',
+      durationMinutes: 60,
+      imagePath: '',
+    },
+  })
+  service = await practiceRepo.submitService(a, service.id, { expectedRevision: service.revision })
+  service = await practiceRepo.moderateService(service.id, { action: 'approve' })
+  assert.equal(service.status, 'published')
+  const publicService = (await practiceRepo.listPublicServices('en')).find(item => item.id === service.id)
+  assert.equal(publicService.practitionerName, 'Practitioner A')
+
+  const request = await repo.createRequest(b, {
+    serviceId: service.id,
+    operationId: randomUUID(),
+    contact: 'b@example.invalid',
+    message: 'Synthetic multi-practitioner request',
+    shareResultId: null,
+    shareConfirmed: false,
+  })
+  assert.equal(request.sharedExcerpt, null)
+  assert.ok((await practiceRepo.getMyPractice(a)).requests.some(item => item.id === request.id))
+
+  let second = await practiceRepo.saveProfile(b, {
+    profile: {
+      displayName: 'Practitioner B',
+      professionalTitle: 'Synthetic second practitioner',
+      shortBio: 'Second synthetic practitioner.',
+      fullBio: '',
+      languages: ['en'],
+      city: '',
+      region: '',
+      country: '',
+      formats: ['online'],
+      areas: ['business_money'],
+      methods: [],
+      yearsExperience: null,
+      websiteUrl: '',
+      socialUrls: [],
+      photoPath: '',
+    },
+  })
+  second = await practiceRepo.submitProfile(b, { expectedRevision: second.revision })
+  await practiceRepo.moderateProfile(second.id, { action: 'approve' })
+  assert.equal((await practiceRepo.getMyPractice(b)).requests.length, 0)
+})
+
 test('requests are idempotent and share only an explicit excerpt; unshare and cancel work', async () => {
   const payload = {
       serviceId: APP_SERVICES[0].id,
