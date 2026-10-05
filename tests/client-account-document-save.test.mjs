@@ -56,6 +56,7 @@ test('Google save bridge is item-scoped and persists a private Client to Account
   assert.match(migration, /create table if not exists app\.saved_documents/)
   assert.match(migration, /source_kind in\('guest_result','delivered_report','legacy_document'\)/)
   assert.match(migration, /legacy_client_id uuid primary key/)
+  assert.match(migration, /account_id uuid references app\.accounts\(id\) on delete set null/)
   assert.doesNotMatch(migration, /unique\s*\(account_id\).*client_account_bindings/i)
 
   assert.match(binding, /CLIENT_ACCOUNT_ALREADY_LINKED/)
