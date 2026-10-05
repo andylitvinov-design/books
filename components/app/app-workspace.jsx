@@ -632,18 +632,71 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
   )
 }
 function TestCatalog({ data, locale, onStarted }) {
-  const c = COPY[locale],
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(null)
-  const definitions = [
-    getAssessmentDefinition('hh-current-state', 'v2', locale),
-    getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
+  const c = COPY[locale]
+  const params = useSearchParams()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const entries = startableCatalog({ guest: false }).filter((entry) =>
+    Boolean(definitionLocaleFor(entry, locale)),
+  )
+  const latestMood = (data.moodCheckins || []).at(-1)
+  const moodRecommendations = latestMood
+    ? recommendForMood({
+        mood: latestMood.mood,
+        category: latestMood.category,
+        results: data.results,
+        runs: data.runs,
+        locale,
+        guest: false,
+      })
+    : []
+  const queryRecommended = params.get('recommended')
+  const recommendedKeys = [
+    ...(queryRecommended ? [queryRecommended] : []),
+    ...moodRecommendations.map((item) => item.key),
+  ].filter((key, index, all) => all.indexOf(key) === index)
+  const recommended = recommendedKeys
+    .map((key) => entries.find((entry) => entry.key === key))
+    .filter(Boolean)
+    .slice(0, 3)
+  const recommendedSet = new Set(recommended.map((entry) => entry.key))
+  const groups = [
+    [
+      locale === 'ru' ? 'Быстрые проверки' : 'Quick checks',
+      entries.filter(
+        (entry) =>
+          ['quick', 'gentle', 'weekly', 'core'].includes(entry.level) &&
+          !recommendedSet.has(entry.key),
+      ),
+    ],
+    [
+      locale === 'ru' ? 'Более глубокие проверки' : 'Deeper checks',
+      entries.filter((entry) => entry.level === 'deep' && !recommendedSet.has(entry.key)),
+    ],
+    [
+      locale === 'ru' ? 'Ресурсы и восстановление' : 'Resources & recovery',
+      entries.filter(
+        (entry) => ['resource', 'monthly'].includes(entry.level) && !recommendedSet.has(entry.key),
+      ),
+    ],
+    [
+      locale === 'ru' ? 'Другие тесты' : 'Other tests',
+      entries.filter((entry) => entry.level === 'baseline' && !recommendedSet.has(entry.key)),
+    ],
   ]
   const monitoringIntro =
     locale === 'ru'
-      ? 'Короткие повторяемые самооценки формируют личную историю наблюдений и помогают видеть изменения со временем.'
-      : 'Short repeatable self-checks build your personal history, so you can see what changes over time.'
-  async function start(def) {
+      ? 'Начните с короткой проверки. Более глубокие тесты появляются по необходимости, а не как обязательная батарея.'
+      : 'Start with a short check. Deeper tests appear when useful rather than as a required battery.'
+
+  async function start(entry) {
+    const def = definitionForCatalog(entry, locale)
+    if (!def) return
+    const draft = data.runs.find((run) => run.definitionId === def.id)
+    if (draft) {
+      onStarted(draft)
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -661,6 +714,49 @@ function TestCatalog({ data, locale, onStarted }) {
       setBusy(false)
     }
   }
+
+  function card(entry) {
+    const def = definitionForCatalog(entry, locale)
+    if (!def) return null
+    const draft = data.runs.find((run) => run.definitionId === def.id)
+    const completed = data.results.filter((result) => result.definitionId === def.id).at(-1)
+    return (
+      <article className="hh-monitoring-card" key={entry.key}>
+        <div className="hh-monitoring-photo" aria-hidden="true">
+          <Image
+            alt=""
+            fill
+            sizes="(max-width: 600px) 76px, 128px"
+            src={assessmentArtwork(entry.key, locale)}
+          />
+        </div>
+        <div className="hh-monitoring-card-body">
+          <p className="hh-monitoring-meta">
+            {entry.questionCount} {locale === 'ru' ? 'вопросов' : 'questions'} · {entry.duration}
+            {def.instrumentLocale !== locale ? ` · ${def.instrumentLocale.toUpperCase()}` : ''}
+          </p>
+          <h3>{catalogTitle(entry, locale)}</h3>
+          <p>{catalogDescription(entry, locale)}</p>
+          {completed && (
+            <p className="hh-fine">
+              {c.latest}: {dateLabel(completed.measurementAt, locale)}
+            </p>
+          )}
+          <div className="hh-actions">
+            <button className="hh-primary" disabled={busy} onClick={() => start(entry)}>
+              {draft ? c.resume : completed ? c.repeat : c.start}
+            </button>
+            {completed && (
+              <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
+                {c.view}
+              </Link>
+            )}
+          </div>
+        </div>
+      </article>
+    )
+  }
+
   return (
     <section className="hh-monitoring">
       <div className="hh-heading hh-monitoring-heading">
@@ -669,66 +765,27 @@ function TestCatalog({ data, locale, onStarted }) {
         <p>{monitoringIntro}</p>
         <p className="hh-fine">{c.continueLater}</p>
       </div>
-      <div className="hh-monitoring-grid">
-        {definitions.map((def) => {
-          const isState = def.key === 'hh-current-state',
-            draft = data.runs.find((x) => x.definitionId === def.id),
-            completed = data.results.filter((x) => x.definitionId === def.id).at(-1),
-            title = isState
-              ? locale === 'ru'
-                ? 'Состояние сейчас'
-                : 'Current State Check'
-              : locale === 'ru'
-                ? 'Личностный профиль'
-                : 'Personality Baseline',
-            meta = isState
-              ? locale === 'ru'
-                ? '5 вопросов · ~1 мин'
-                : '5 questions · ~1 min'
-              : locale === 'ru'
-                ? '20 вопросов · ~3 мин · EN'
-                : '20 questions · ~3 min · EN',
-            image = isState
-              ? locale === 'ru'
-                ? '/images/holistic-house/video-posters/home-ru-v1.webp'
-                : '/images/holistic-house/video-posters/home-en-v2.webp'
-              : locale === 'ru'
-                ? '/images/holistic-house/video-posters/services-ru-v1.webp'
-                : '/images/holistic-house/video-posters/services-en-v2.webp'
-          return (
-            <article className="hh-monitoring-card" key={def.id}>
-              <div className="hh-monitoring-photo" aria-hidden="true">
-                <Image alt="" fill sizes="(max-width: 600px) 76px, 128px" src={image} />
-              </div>
-              <div className="hh-monitoring-card-body">
-                <p className="hh-monitoring-meta">{meta}</p>
-                <h2>{title}</h2>
-                <p>{isState ? c.stateDescription : c.traitDescription}</p>
-                {!isState && <p className="hh-notice">{c.traitNotice}</p>}
-                {completed && (
-                  <p className="hh-fine">
-                    {c.latest}: {dateLabel(completed.measurementAt, locale)}
-                  </p>
-                )}
-                <div className="hh-actions">
-                  <button
-                    className="hh-primary"
-                    disabled={busy}
-                    onClick={() => (draft ? onStarted(draft) : start(def))}
-                  >
-                    {draft ? c.resume : completed ? c.repeat : c.start}
-                  </button>
-                  {completed && (
-                    <Link href={`/${locale}/app/results/${completed.id}`} prefetch={false}>
-                      {c.view}
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </article>
-          )
-        })}
-      </div>
+
+      {recommended.length > 0 && (
+        <section className="hh-monitoring-section">
+          <h2>{locale === 'ru' ? 'Рекомендуется сейчас' : 'Recommended for you'}</h2>
+          <p className="hh-fine">
+            {locale === 'ru'
+              ? 'Не больше трёх вариантов. После результата система предложит максимум один следующий шаг.'
+              : 'At most three options. After a result, the system offers at most one next step.'}
+          </p>
+          <div className="hh-monitoring-grid">{recommended.map(card)}</div>
+        </section>
+      )}
+
+      {groups.map(([title, group]) =>
+        group.length ? (
+          <section className="hh-monitoring-section" key={title}>
+            <h2>{title}</h2>
+            <div className="hh-monitoring-grid">{group.map(card)}</div>
+          </section>
+        ) : null,
+      )}
       {error && <p role="alert">{message(error, c)}</p>}
     </section>
   )
