@@ -22,6 +22,7 @@ import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-set
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
+import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
   practiceRepo = createPractitionerRepository(config),
@@ -150,6 +151,54 @@ test('actual grants: own reads allowed; account status and identity updates deni
     0,
   )
 })
+test('explicit save can bind one legacy Client to one Google Account without silent reassignment', async () => {
+  const legacyClientId = randomUUID()
+  const sourceId = randomUUID()
+  const first = await transaction(config, a, (db) =>
+    bindLegacyClientToAccount(db, a, {
+      legacyClientId,
+      sourceKind: 'legacy_document',
+      sourceId,
+    }),
+  )
+  assert.equal(first.legacyClientId, legacyClientId)
+  assert.equal(first.linked, true)
+
+  const repeated = await transaction(config, a, (db) =>
+    bindLegacyClientToAccount(db, a, {
+      legacyClientId,
+      sourceKind: 'legacy_document',
+      sourceId,
+    }),
+  )
+  assert.equal(repeated.linked, true)
+
+  await assert.rejects(
+    () =>
+      transaction(config, b, (db) =>
+        bindLegacyClientToAccount(db, b, {
+          legacyClientId,
+          sourceKind: 'legacy_document',
+          sourceId,
+        }),
+      ),
+    (error) => error?.code === 'CLIENT_ACCOUNT_ALREADY_LINKED',
+  )
+
+  const db = await adminClient()
+  try {
+    const row = (
+      await db.query(
+        'select account_id from app_private.client_account_bindings where legacy_client_id=$1',
+        [legacyClientId],
+      )
+    ).rows[0]
+    assert.equal(row.account_id, A)
+  } finally {
+    await db.end()
+  }
+})
+
 test('blocked account cannot self-unblock or create/read private results', async () => {
   const db = await adminClient()
   try {
