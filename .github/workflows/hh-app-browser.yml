@@ -44,6 +44,7 @@ jobs:
       HH_APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       HH_APP_ALLOWED_ORIGINS: http://127.0.0.1:3100
       HH_TEST_APP_ORIGIN: http://127.0.0.1:3100
+      HH_PRACTITIONER_OWNER_EMAIL: a@example.invalid
       PRESCRIPTIONS_ADMIN_TOKEN: synthetic-ci-admin-access-only
     steps:
       - uses: actions/checkout@v4
