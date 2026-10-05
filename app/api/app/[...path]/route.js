@@ -31,6 +31,8 @@ import {
   removeSavedReport,
   setReportViewerCookie,
 } from '@/lib/app/report-flow'
+import { practitionerDestination } from '@/lib/app/practitioner-access'
+import { issueTrustedAdminSession } from '@/lib/prescriptions/admin'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -305,6 +307,17 @@ async function handle(request, { params }) {
       )
     }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if (joined === 'practitioner/open' && method === 'POST') {
+      const body = await readBody(request)
+      onlyKeys(body, ['destination'])
+      const destination = practitionerDestination[body.destination]
+      if (!destination) throw new AppError('NOT_FOUND', 404)
+      if (!await repo.isPractitioner(actor)) throw new AppError('ACCESS_DENIED', 403)
+      const response = json({ redirectUrl: destination })
+      if (!issueTrustedAdminSession(response, { secure: !config.test }))
+        throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
+      return response
+    }
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
       const store = getPrescriptionStore()
