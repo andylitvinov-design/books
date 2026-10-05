@@ -31,7 +31,7 @@ export default async function ServiceDetail({params}:PageProps){
   if(!isSupportedLocale(locale))notFound();
   const value=await load(locale,practitionerSlug,serviceSlug);
   if(!value)notFound();
-  const {service,practitioner}=value,ru=locale==="ru";
+  const {service,practitioner}=value,ru=locale==="ru";\n  const isWuXingGuide=service.slug==="free-wu-xing-diagnostic";
   const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");
   const isFree=service.pricingMode!=="contact"&&service.confirmedPrice===0;
   const price=isFree?(ru?"Бесплатно":"Free"):service.pricingMode!=="contact"&&service.confirmedPrice!=null?`${service.pricingMode==="from"?(ru?"от ":"from "):""}${service.currency||""} ${service.confirmedPrice}`:ru?"Стоимость согласуется до записи":"Price agreed before booking";
@@ -44,7 +44,7 @@ export default async function ServiceDetail({params}:PageProps){
         <p>{service.copy.shortDescription}</p>
         <div className="hh-actions">
           <Link className="services-studio-primary" href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Пройти бесплатно":"Start free"):(ru?"Запросить услугу":"Request this service")}<span aria-hidden="true">→</span></Link>
-          <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":"About practitioner"}</Link>
+          {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методика: как читать профиль":"Guide: how to read your profile"}</Link>}\n          <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":"About practitioner"}</Link>
         </div>
       </div>
     </section>
