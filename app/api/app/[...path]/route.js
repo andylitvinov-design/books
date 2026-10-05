@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
+import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import {
   createGuestCredential,
@@ -248,7 +249,8 @@ async function handle(request, { params }) {
     }
 
     const actor = await auth.verified(),
-      repo = createAppRepository(config)
+      repo = createAppRepository(config),
+      practiceRepo = createPractitionerRepository(config)
     await consumeRate(
       config,
       { op: joined === 'export' ? 'export' : 'app', actor: actor.id },
@@ -285,6 +287,7 @@ async function handle(request, { params }) {
       )
     }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if (joined === 'practice' && method === 'GET') return json(await practiceRepo.getMyPractice(actor))
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
       const store = getPrescriptionStore()
@@ -326,6 +329,30 @@ async function handle(request, { params }) {
     if (joined === 'requests') return json(await repo.createRequest(actor, body), 201)
     if (path[0] === 'requests' && path.length === 2)
       return json(await repo.updateRequest(actor, path[1], body))
+    if (joined === 'practice/profile') {
+      if (body.action === 'submit')
+        return json(await practiceRepo.submitProfile(actor, { expectedRevision: body.expectedRevision }))
+      return json(await practiceRepo.saveProfile(actor, { profile: body.profile || {}, expectedRevision: body.expectedRevision }))
+    }
+    if (path[0] === 'practice' && path[1] === 'credentials') {
+      if (path.length === 2) return json(await practiceRepo.saveCredential(actor, null, body), 201)
+      if (path.length === 3) {
+        if (body.action === 'delete') return json(await practiceRepo.deleteCredential(actor, path[2]))
+        return json(await practiceRepo.saveCredential(actor, path[2], body))
+      }
+    }
+    if (path[0] === 'practice' && path[1] === 'services') {
+      if (path.length === 2) return json(await practiceRepo.saveService(actor, null, body), 201)
+      if (path.length === 3) {
+        if (body.action === 'submit')
+          return json(await practiceRepo.submitService(actor, path[2], { expectedRevision: body.expectedRevision }))
+        if (body.action === 'pause')
+          return json(await practiceRepo.pauseService(actor, path[2], { expectedRevision: body.expectedRevision }))
+        return json(await practiceRepo.saveService(actor, path[2], body))
+      }
+    }
+    if (path[0] === 'practice' && path[1] === 'requests' && path.length === 3)
+      return json(await practiceRepo.updateMyRequest(actor, path[2], body))
     if (joined === 'context') return json(await repo.contextEvent(actor, null, body), 201)
     if (path[0] === 'context' && path.length === 2)
       return json(await repo.contextEvent(actor, path[1], body))
