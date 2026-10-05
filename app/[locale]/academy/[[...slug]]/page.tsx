@@ -48,7 +48,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const path = canonicalPath(locale, slug);
   const title = pageTitle(locale, slug);
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
-  return { metadataBase: metadataBaseFor(), title: title + " — Holistic House", description: academyCopy[locale].lead, alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix } } };
+  const description = routeKey(slug) === "reiki/yggdrasil"
+    ? locale === "ru"
+      ? "Полная актуальная структура Reiki Yggdrasil: 7 уровней, 37 ступеней, 177 настроек и архив видеолекций."
+      : locale === "es"
+        ? "Estructura actual completa de Reiki Yggdrasil: 7 niveles, 37 etapas, 177 sintonizaciones y archivo de videoclases."
+        : "Complete current Reiki Yggdrasil curriculum: 7 levels, 37 steps, 177 attunements and the video lecture archive."
+    : academyCopy[locale].lead;
+  return { metadataBase: metadataBaseFor(), title: title + " — Holistic House", description, alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix } } };
 }
 
 export default async function AcademyPage({ params, searchParams }: Props) {
