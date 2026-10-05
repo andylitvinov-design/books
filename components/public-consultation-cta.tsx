@@ -37,13 +37,14 @@ export function PublicConsultationCta({ locale, id }: { locale: "en" | "ru" | "e
         <span>{text.text}</span>
       </div>
       <div className="public-consultation-cta__actions">
-        <a href={whatsappUrl} rel="noopener noreferrer" target="_blank" data-contact-channel="whatsapp">
+        <AcquisitionEventLink href={whatsappUrl} rel="noopener noreferrer" target="_blank" event="service_request_start">
           {text.whatsapp}<span aria-hidden="true">↗</span>
-        </a>
-        <a href="https://t.me/AndyTherapist" rel="noopener noreferrer" target="_blank" data-contact-channel="telegram">
+        </AcquisitionEventLink>
+        <AcquisitionEventLink href="https://t.me/AndyTherapist" rel="noopener noreferrer" target="_blank" event="contact_click">
           {text.telegram}<span aria-hidden="true">↗</span>
-        </a>
+        </AcquisitionEventLink>
       </div>
     </aside>
   );
 }
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";

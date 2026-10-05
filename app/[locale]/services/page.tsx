@@ -4,9 +4,11 @@ import Link from "next/link";
 import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { PublicSiteHeader } from "@/components/public-site-header";
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PageVideo } from "@/components/page-video";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { PublicSiteHeader } from "@/components/public-site-header";
+import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -21,11 +23,11 @@ export const revalidate = 0;
 
 const copy = {
   ru: {
-    title: "Услуги — Holistic House",
-    description: "Бизнес-расстановки, Алхимия души / психогомеопатия и архетипические расстановки.",
-    kicker: "Три направления работы",
-    heading: "Услуги",
-    lead: "Три формата для разных задач: бизнес и решения, внутренние состояния и развитие, архетипическая и трансперсональная работа.",
+    title: "Индивидуальная работа в Торонто и онлайн — Holistic House",
+    description: "Гипнотерапия, системные и семейные расстановки, работа с решениями и Рейки в Holistic House.",
+    kicker: "Торонто и онлайн",
+    heading: "Индивидуальная работа",
+    lead: "Исследуйте повторяющиеся паттерны, отношения, важные решения и внутренние блоки в бережной индивидуальной работе.",
     marketplaceCta: "Выбрать услугу",
     cards: [
       {
@@ -50,23 +52,23 @@ const copy = {
         icon: Sparkles,
       },
     ],
-    approachKicker: "О подходе",
-    approachTitle: "Одна практика — три направления",
-    approachText: "Во всех форматах я работаю через системное поле, образы и внимательное исследование динамики. Разница — в фокусе: бизнес, внутреннее состояние или архетипический уровень.",
-    about: "Обо мне",
+    approachKicker: "Как устроена работа",
+    approachTitle: "Начинаем с вашего реального вопроса",
+    approachText: "Мы обсуждаем ваш запрос, границы и подходящий формат. Системная работа, образы и другие методы используются только по взаимному согласию и в подходящем контексте.",
+    about: "Об Андрее",
     consultationKicker: "Первый шаг",
     consultation: "Начните с короткого разговора",
     consultationText: "Опишите ваш запрос — вместе определим, какой из трёх форматов сейчас наиболее уместен.",
     telegram: "Написать в Telegram",
     whatsapp: "WhatsApp",
-    note: "Бизнес-расстановки являются методом системного исследования и не заменяют финансовую экспертизу или прогноз. Материалы по психогомеопатии носят образовательный характер и не заменяют медицинскую диагностику или лечение.",
+    note: "Эта работа не является медицинской диагностикой или неотложной помощью. Бизнес-расстановки не заменяют финансовую, юридическую или профессиональную экспертизу и не гарантируют результат.",
   },
   en: {
-    title: "Services — Holistic House",
-    description: "Business Constellations, Alchemy of the Soul / Psychohomeopathy, and Archetypal Constellations.",
-    kicker: "Three directions of work",
-    heading: "Services",
-    lead: "Three formats for different needs: business and decision-making, inner states and development, and archetypal / transpersonal exploration.",
+    title: "Personal work in Toronto and online — Holistic House",
+    description: "Hypnotherapy, systemic and family constellations, decision work, and Reiki at Holistic House.",
+    kicker: "Toronto & online",
+    heading: "Personal work",
+    lead: "Explore repeating patterns, relationships, important decisions and inner blocks through thoughtful one-to-one work.",
     marketplaceCta: "Choose a service",
     cards: [
       {
@@ -91,16 +93,16 @@ const copy = {
         icon: Sparkles,
       },
     ],
-    approachKicker: "About the approach",
-    approachTitle: "One practice, three directions",
-    approachText: "Across all three formats I work with systemic fields, imagery, and close attention to dynamics. What changes is the focus: business, inner states, or the archetypal level.",
-    about: "About me",
+    approachKicker: "How the work begins",
+    approachTitle: "Start with your real question",
+    approachText: "We discuss your question, boundaries and the format that may fit. Systemic work, imagery and other methods are used only by mutual agreement and in an appropriate context.",
+    about: "About Andrey",
     consultationKicker: "First step",
     consultation: "Start with a short conversation",
     consultationText: "Tell me what you would like to explore, and we can choose which of the three formats fits best right now.",
     telegram: "Message on Telegram",
     whatsapp: "WhatsApp",
-    note: "Business constellations are a systemic exploration method and do not replace financial due diligence or forecasting. Psychohomeopathy materials are educational and do not replace medical diagnosis or treatment.",
+    note: "This work is not medical diagnosis or urgent care. Business constellations do not replace financial, legal or professional advice and do not guarantee an outcome.",
   },
 } as const;
 
@@ -125,6 +127,7 @@ export default async function ServicesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const current = copy[locale as Locale];
+  const entry = LOCAL_ACQUISITION[locale as Locale];
   let offerings: PublicService[] = [];
   try {
     offerings = await createPractitionerRepository(getAppConfig()).listPublicServices(locale);
@@ -146,6 +149,9 @@ export default async function ServicesPage({ params }: PageProps) {
           <Link className="services-studio-primary" href="#available-services">
             {current.marketplaceCta}<span aria-hidden="true">→</span>
           </Link>
+          <AcquisitionEventLink className="services-studio-primary" href={entry.selfCheck.href} event="self_check_start">
+            {entry.selfCheck.label}<span aria-hidden="true">→</span>
+          </AcquisitionEventLink>
         </div>
         <div className="services-studio-photo" aria-hidden="true">
           <Image
@@ -286,15 +292,15 @@ export default async function ServicesPage({ params }: PageProps) {
       <PageVideo slot="services-intro" locale={locale} />
 
       <section className="services-studio-grid services-studio-grid--three" aria-label={current.heading}>
-        {current.cards.map(({ id, icon: Icon, title, subtitle, text }) => (
-          <article className="services-studio-card services-studio-card--detailed" id={id} key={title}>
+        {entry.services.map(({ id, title, subtitle, text }) => {
+          const Icon = id === "business-decision-constellations" ? BriefcaseBusiness : id === "reiki-energy-work" ? Flower2 : Sparkles;
+          return <article className="services-studio-card services-studio-card--detailed" id={id} key={id}>
             <span className="services-studio-icon" aria-hidden="true"><Icon /></span>
             <h2>{title}</h2>
             <p className="services-studio-card-subtitle">{subtitle}</p>
             <p>{text}</p>
-            <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />
-          </article>
-        ))}
+          </article>;
+        })}
       </section>
 
       {locale === "en" ? (
