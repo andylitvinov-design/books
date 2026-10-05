@@ -10,6 +10,15 @@ import { APP_SERVICES } from '@/data/app-services'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
+import {
+  catalogDescription,
+  catalogTitle,
+  definitionLocaleFor,
+  getAssessmentCatalogEntry,
+  startableCatalog,
+} from '@/data/assessments/catalog'
+import { recommendAfterResult, recommendForMood, moodTrend } from '@/lib/assessments/recommendations'
+import { SAFETY_COPY } from '@/lib/assessments/safety'
 
 export async function appFetch(path, body, method) {
   const response = await fetch(`/api/app/${path}`, {
@@ -48,6 +57,29 @@ function localZone() {
   } catch {
     return 'UTC'
   }
+}
+function definitionForCatalog(entry, locale) {
+  const instrumentLocale = definitionLocaleFor(entry, locale)
+  return instrumentLocale
+    ? getAssessmentDefinition(entry.key, entry.version, instrumentLocale)
+    : null
+}
+function assessmentArtwork(key, locale) {
+  const suffix = locale === 'ru' ? 'ru-v1' : 'en-v2'
+  return ['hh-current-state', 'hh-resource-pulse', 'hh-monthly-profile'].includes(key)
+    ? `/images/holistic-house/video-posters/home-${suffix}.webp`
+    : `/images/holistic-house/video-posters/services-${suffix}.webp`
+}
+function moodLabel(mood, locale) {
+  const labels = {
+    sad: locale === 'ru' ? 'Грустно' : 'Sad',
+    neutral: locale === 'ru' ? 'Нейтрально' : 'Neutral',
+    happy: locale === 'ru' ? 'Хорошо' : 'Happy',
+  }
+  return labels[mood] || mood
+}
+function moodEmoji(mood) {
+  return { sad: '😔', neutral: '😐', happy: '🙂' }[mood] || '•'
 }
 function goSignedOut(setData) {
   setData(null)
@@ -150,6 +182,55 @@ export default function AppWorkspace({ locale, path = [] }) {
       router.replace(root)
     }
   }
+  async function recordMood({ mood, category }) {
+    const saved = await appFetch('mood', {
+      mood,
+      category,
+      occurredAt: new Date().toISOString(),
+      timezone: localZone(),
+      sourceSurface: 'portrait',
+      operationId: crypto.randomUUID(),
+    })
+    setData((value) => ({
+      ...value,
+      moodCheckins: [...(value.moodCheckins || []).filter((item) => item.id !== saved.id), saved],
+    }))
+    return { persisted: true }
+  }
+  async function startAssessment(candidate) {
+    const key = typeof candidate === 'string' ? candidate : candidate.key
+    const entry = getAssessmentCatalogEntry(key)
+    if (!entry?.startable) return
+    const instrumentLocale =
+      (typeof candidate === 'object' && candidate.definitionLocale) ||
+      definitionLocaleFor(entry, locale)
+    if (!instrumentLocale) return
+    const def = getAssessmentDefinition(entry.key, entry.version, instrumentLocale)
+    const active = data?.runs?.find((run) => run.definitionId === def.id)
+    if (active) {
+      router.push(`${root}/runs/${active.id}`)
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const run = await appFetch('runs', {
+        definitionKey: def.key,
+        definitionVersion: def.version,
+        instrumentLocale: def.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      setData((value) => ({
+        ...value,
+        runs: [...(value.runs || []).filter((item) => item.id !== run.id), run],
+      }))
+      router.push(`${root}/runs/${run.id}`)
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
   if (deleted || state === 'deletion')
     return (
       <main className="hh-app">
@@ -248,6 +329,9 @@ export default function AppWorkspace({ locale, path = [] }) {
               data={data}
               locale={locale}
               onOpenHistory={() => router.push(root + '/history')}
+              onMoodSelected={recordMood}
+              onStartAssessment={startAssessment}
+              onAllTests={() => router.push(root + '/tests')}
             />
           )}
           {page === 'tests' && (
