@@ -171,7 +171,7 @@ test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused i
   assert.ok(mood.includes('onDismiss'))
   assert.doesNotMatch(mood, /localStorage|sessionStorage/)
   assert.ok(landing.includes('<MoodCheckIn'))
-  assert.ok(landing.includes('onMoodChange={(payload) => setPendingMood(payload)}'))
+  assert.ok(landing.includes('onMoodChange={handleGuestMoodChange}'))
   assert.ok(landing.includes("begin('state', payload)"))
   assert.ok(workspace.includes('<MoodCheckIn'))
   assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/monitoring')"))
