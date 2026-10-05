@@ -64,6 +64,9 @@ export const K6_EN_V1 = deepFreeze({
     url: 'https://rckessler.scholars.harvard.edu/k10-and-k6-scales',
     permission: 'free-with-citation-and-copyright',
     retrievedAt: '2026-10-05',
+    copyright: 'Copyright © Ronald C. Kessler, PhD. All rights reserved.',
+    citation:
+      'Kessler RC et al. Screening for serious mental illness in the general population. Arch Gen Psychiatry. 2003;60(2):184–189.',
   },
   answerScale: { min: 0, max: 4 },
   responseAnchors: K6_RESPONSE,
@@ -82,7 +85,7 @@ export const K6_EN_V1 = deepFreeze({
   ],
   optionalContext: [],
   suggestedRepeatDays: 30,
-  contentHash: 'sha256:6800408e36b71bf632eb9ab19f7e5668232f41c0f5755d5382ec13e5df439516',
+  contentHash: 'sha256:1cdfc9c4f7b67fa0218062a1393b51aa89154f1ef50e3bd02b44336379445f46',
 })
 
 export const PHQ9_EN_V1 = deepFreeze({
