@@ -183,6 +183,80 @@
 .hh-heading {
   margin: 28px 0;
 }
+.hh-owner-tools {
+  margin: 22px 0 28px;
+  padding: clamp(18px, 3vw, 26px);
+  border-color: #d3b89e;
+  background: #fffaf3;
+}
+.hh-owner-tools-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+.hh-owner-tools-heading h2 {
+  margin: 3px 0 5px;
+}
+.hh-owner-tools-heading p:last-child {
+  margin: 0;
+  color: var(--hh-muted);
+  font-size: 14px;
+}
+.hh-owner-cabinet-link {
+  flex: none;
+  min-height: 42px;
+  border-color: #a67e5b;
+  color: #754d34;
+  background: #fffdf9;
+}
+.hh-owner-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 10px;
+}
+.hh-owner-tools-grid > button {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #d8c8b7;
+  border-radius: 14px;
+  background: white;
+  color: var(--hh-ink);
+  text-align: left;
+}
+.hh-owner-tools-grid > button:hover {
+  border-color: #a67e5b;
+  box-shadow: 0 6px 16px #513a270d;
+}
+.hh-owner-tools-grid span {
+  display: grid;
+  gap: 4px;
+}
+.hh-owner-tools-grid strong {
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+}
+.hh-owner-tools-grid small {
+  color: var(--hh-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.hh-owner-tools-grid b {
+  color: #9a755e;
+  font-family: Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+}
+.hh-owner-tools-error {
+  margin: 14px 0 0;
+  color: #8c4235;
+}
 .hh-next-step {
   margin: 24px 0 30px;
   padding: clamp(20px, 3vw, 30px);
@@ -579,6 +653,20 @@
   .hh-services,
   .hh-report-list {
     grid-template-columns: 1fr;
+  }
+  .hh-owner-tools-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hh-owner-cabinet-link {
+    width: 100%;
+  }
+  .hh-owner-tools-grid {
+    grid-template-columns: 1fr;
+  }
+  .hh-owner-tools-grid > button {
+    min-height: 72px;
   }
   .hh-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
