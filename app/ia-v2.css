@@ -587,3 +587,378 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
     margin: 20px 0 0;
   }
 }
+
+
+/* Mind–Body Monitor v1 — public discovery + structured Cabinet catalogue. */
+.mind-body-monitor-strip {
+  border-top: 1px solid #eadfd2;
+  border-bottom: 1px solid #dfd2c3;
+  background: #f9f3ea;
+}
+.mind-body-monitor-strip__inner {
+  width: min(1180px, calc(100% - 28px));
+  margin: 0 auto;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 8px 0;
+}
+.mind-body-monitor-strip__copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.mind-body-monitor-strip__copy strong {
+  color: #4f3829;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+}
+.mind-body-monitor-strip__copy small {
+  color: #77685b;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.mind-body-monitor-strip__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.mind-body-monitor-strip__actions a {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 13px;
+  border: 1px solid #d6c7b5;
+  border-radius: 999px;
+  color: #674631;
+  background: #fffaf4;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+.mind-body-monitor-strip__actions a:last-child {
+  background: #4f3829;
+  border-color: #4f3829;
+  color: #fffaf2;
+}
+.mind-body-monitor-strip__actions a:focus-visible,
+.monitor-home-start__card:focus-visible,
+.cabinet-monitor-wuxing:focus-visible {
+  outline: 2px solid #70442d;
+  outline-offset: 3px;
+}
+
+.monitor-home-start {
+  width: min(1180px, calc(100% - 32px));
+  margin: 34px auto 42px;
+  padding: clamp(22px, 4vw, 40px);
+  border: 1px solid #ded3c7;
+  border-radius: 24px;
+  background: #fffaf4;
+}
+.monitor-home-start__heading {
+  max-width: 650px;
+  margin-bottom: 20px;
+}
+.monitor-home-start__heading h2 {
+  margin: 6px 0 10px;
+  color: #352820;
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.08;
+  font-weight: 500;
+}
+.monitor-home-start__heading > p:last-child {
+  color: #6e5f53;
+  line-height: 1.55;
+}
+.monitor-home-start__grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 12px;
+}
+.monitor-home-start__card {
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid #dfd3c7;
+  border-radius: 18px;
+  background: #fffdfa;
+  color: #3f3027;
+  text-decoration: none;
+}
+.monitor-home-start__card--primary {
+  border-color: #bca088;
+  background: #f6ede2;
+}
+.monitor-home-start__card strong {
+  font-family: var(--font-serif);
+  font-size: 23px;
+  line-height: 1.15;
+}
+.monitor-home-start__card small {
+  color: #746558;
+  line-height: 1.5;
+}
+.monitor-home-start__card > span:last-child {
+  margin-top: auto;
+  color: #70442d;
+  font-size: 13px;
+  font-weight: 700;
+}
+.monitor-home-start__icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #efe4d7;
+}
+.monitor-home-start__icon svg {
+  width: 20px;
+  height: 20px;
+}
+.monitor-home-start__eyebrow,
+.cabinet-monitor-label,
+.hh-monitoring-recommended {
+  margin: 0;
+  color: #8a674f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.wu-xing-intro {
+  min-height: 100vh;
+  background: #fbf7f1;
+  color: #352820;
+}
+.wu-xing-intro__hero,
+.wu-xing-intro__grid,
+.wu-xing-intro__note {
+  width: min(980px, calc(100% - 32px));
+  margin-inline: auto;
+}
+.wu-xing-intro__hero {
+  padding: 52px 0 28px;
+  max-width: 760px;
+  margin-left: max(16px, calc((100vw - 980px) / 2));
+}
+.wu-xing-intro__hero h1 {
+  margin: 8px 0 14px;
+  font-family: var(--font-serif);
+  font-size: clamp(38px, 6vw, 62px);
+  font-weight: 500;
+  line-height: 1.05;
+}
+.wu-xing-intro__hero > p:last-child {
+  color: #67594e;
+  line-height: 1.7;
+}
+.wu-xing-intro__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 14px;
+}
+.wu-xing-intro__grid article {
+  border: 1px solid #ded3c7;
+  border-radius: 18px;
+  background: #fffdfa;
+  padding: 24px;
+}
+.wu-xing-intro__grid h2 {
+  font-family: var(--font-serif);
+  font-size: 25px;
+  margin: 0 0 12px;
+}
+.wu-xing-intro__grid p,
+.wu-xing-intro__note {
+  color: #6d5e52;
+  line-height: 1.65;
+}
+.wu-xing-intro__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.wu-xing-intro__actions a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  border: 1px solid #d0bda9;
+  border-radius: 12px;
+  color: #70442d;
+  text-decoration: none;
+}
+.wu-xing-intro__actions .hh-primary {
+  background: #70442d;
+  color: #fffaf2;
+  border-color: #70442d;
+}
+.wu-xing-intro__note {
+  padding: 18px 0 48px;
+  font-size: 12px;
+}
+
+.cabinet-monitor-recommended,
+.cabinet-monitor-areas {
+  margin-top: 14px;
+}
+.cabinet-test-row--recommended {
+  border-color: #bfa48e !important;
+  background: #fbf2e8 !important;
+}
+.cabinet-monitor-label {
+  margin: 0 0 8px 2px;
+}
+.cabinet-monitor-areas {
+  padding: 18px;
+  border: 1px solid #ded3c7;
+  border-radius: 16px;
+  background: #fffaf5;
+}
+.cabinet-monitor-area-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+.cabinet-monitor-area-list span {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid #dfd2c5;
+  border-radius: 999px;
+  background: #fffdfa;
+  color: #6b584a;
+  font-size: 11px;
+}
+.cabinet-monitor-wuxing {
+  margin-top: 14px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #e5d9cc;
+  padding-top: 12px;
+  color: #70442d;
+  text-decoration: none;
+  font-weight: 700;
+}
+.cabinet-monitor-wuxing svg {
+  width: 17px;
+  height: 17px;
+}
+
+.hh-monitoring-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+.hh-monitoring-tabs button {
+  min-height: 40px;
+  padding: 8px 13px;
+  border: 1px solid #d8c9b9;
+  border-radius: 999px;
+  background: #fffaf4;
+  color: #674b39;
+  font-weight: 700;
+}
+.hh-monitoring-tabs button[aria-pressed="true"] {
+  background: #4f3829;
+  border-color: #4f3829;
+  color: #fffaf2;
+}
+.hh-monitoring-card--recommended {
+  border-color: #bfa48e;
+  background: #fbf2e8;
+}
+.hh-monitoring-recommended {
+  margin-bottom: 5px;
+}
+.hh-monitoring-areas {
+  display: grid;
+  gap: 22px;
+}
+.hh-monitoring-areas > section > h2 {
+  margin: 0 0 10px;
+  font-family: var(--font-serif);
+  font-size: 24px;
+}
+
+@media (max-width: 760px) {
+  .mind-body-monitor-strip__inner {
+    width: min(100% - 20px, 680px);
+    align-items: stretch;
+    flex-direction: column;
+    gap: 7px;
+    padding: 9px 0 10px;
+  }
+  .mind-body-monitor-strip__copy small {
+    display: none;
+  }
+  .mind-body-monitor-strip__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    width: 100%;
+  }
+  .mind-body-monitor-strip__actions a {
+    min-width: 0;
+    padding-inline: 8px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .monitor-home-start {
+    width: calc(100% - 20px);
+    margin: 18px auto 28px;
+    padding: 18px;
+    border-radius: 18px;
+  }
+  .monitor-home-start__grid {
+    grid-template-columns: minmax(0,1fr);
+    gap: 9px;
+  }
+  .monitor-home-start__card {
+    min-height: 0;
+    padding: 16px;
+  }
+  .monitor-home-start__card strong {
+    font-size: 20px;
+  }
+  .wu-xing-intro__hero,
+  .wu-xing-intro__grid,
+  .wu-xing-intro__note {
+    width: calc(100% - 20px);
+    margin-inline: auto;
+  }
+  .wu-xing-intro__hero {
+    padding-top: 28px;
+  }
+  .wu-xing-intro__grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .cabinet-monitor-areas {
+    padding: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monitor-home-start__card,
+  .mind-body-monitor-strip__actions a {
+    transition: none;
+  }
+}
