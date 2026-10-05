@@ -2,6 +2,7 @@ import sources from "./sources.generated.json";
 import media from "./media.generated.json";
 import psimasterSources from "./psimaster-sources.generated.json";
 import psimasterMedia from "./psimaster-media.generated.json";
+import psimasterTranslations from "./psimaster-translations.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 export type AcademyDirectionId = "reiki" | "mysteries" | "symbolic" | "applied" | "school" | "archive";
@@ -665,7 +666,13 @@ const academySupplementalPublicBlocks: Partial<Record<string, Partial<Record<Aca
   }
 };
 
-function academySourceBlocks(record: AcademySourceRecord) {
+const psimasterTranslationRecords = psimasterTranslations as Partial<Record<string, { en?: AcademyBlock[] }>>;
+
+function academySourceBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
+  const translated = record.sourceProvider === "psimaster" && locale === "en"
+    ? psimasterTranslationRecords[record.logicalId]?.en
+    : undefined;
+  if (translated?.length) return translated;
   const base = academyCuratedPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? record.content;
   const supplement = academySupplementalPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? [];
   return [...base, ...supplement];
@@ -674,13 +681,13 @@ function academySourceBlocks(record: AcademySourceRecord) {
 // Curated + supplemental blocks above are source-backed recovery from live PsiTrends and preserved Joomla/Quix evidence.
 const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|^loading\.\.\.$|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
 
-export function academyPublicBlocks(record: AcademySourceRecord) {
-  return academySourceBlocks(record).filter((block) => !academyPublicOmitPattern.test(block.text));
+export function academyPublicBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
+  return academySourceBlocks(record, locale).filter((block) => !academyPublicOmitPattern.test(block.text));
 }
 
-export function academyPublicOmittedCount(record: AcademySourceRecord) {
-  const blocks = academySourceBlocks(record);
-  return blocks.length - academyPublicBlocks(record).length;
+export function academyPublicOmittedCount(record: AcademySourceRecord, locale?: PublicLocale) {
+  const blocks = academySourceBlocks(record, locale);
+  return blocks.length - academyPublicBlocks(record, locale).length;
 }
 
 export function isPublicLocale(value: string): value is PublicLocale { return value === "en" || value === "ru" || value === "es"; }
@@ -705,4 +712,10 @@ export function mediaForRecord(record: AcademySourceRecord) {
   return mediaRecords.filter((item) => item.logicalId === record.logicalId);
 }
 export function youtubeIdFromUrl(url: string) { const match = url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/); return match?.[1]; }
-export function sourceLanguageNotice(record: AcademySourceRecord, locale: PublicLocale) { if (locale !== "es" && record.sourceLocale === locale) return null; return academyCopy[locale].sourceLanguage + " " + academyCopy[locale][record.sourceLocale] + "."; }
+export function sourceLanguageNotice(record: AcademySourceRecord, locale: PublicLocale) {
+  if (record.sourceProvider === "psimaster" && locale === "en" && psimasterTranslationRecords[record.logicalId]?.en?.length) {
+    return "Translated from the original Russian PsiMaster source.";
+  }
+  if (locale !== "es" && record.sourceLocale === locale) return null;
+  return academyCopy[locale].sourceLanguage + " " + academyCopy[locale][record.sourceLocale] + ".";
+}
