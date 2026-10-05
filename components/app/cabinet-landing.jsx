@@ -1,13 +1,20 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
-import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
-import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
+import { getAssessmentDefinition } from '@/lib/assessments/definitions'
+import {
+  catalogDescription,
+  catalogTitle,
+  definitionLocaleFor,
+  getAssessmentCatalogEntry,
+  startableCatalog,
+} from '@/data/assessments/catalog'
+import { recommendAfterResult, recommendForMood } from '@/lib/assessments/recommendations'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 
 const UI = {
@@ -121,30 +128,36 @@ const UI = {
   },
 }
 
-function testArtwork(locale, id) {
+function testArtwork(locale, key) {
   const suffix = locale === 'ru' ? 'ru-v1' : 'en-v2'
-  return id === 'state'
+  return ['hh-current-state', 'hh-resource-pulse', 'hh-monthly-profile'].includes(key)
     ? `/images/holistic-house/video-posters/home-${suffix}.webp`
     : `/images/holistic-house/video-posters/services-${suffix}.webp`
 }
 
 function definitionFor(id, locale) {
-  if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V2 : CURRENT_STATE_EN_V2
-  return MINI_IPIP_20_EN_V1
+  const key = id === 'state' ? 'hh-current-state' : id === 'trait' ? 'mini-ipip-20' : id
+  const entry = getAssessmentCatalogEntry(key)
+  if (!entry?.startable) return null
+  const instrumentLocale = definitionLocaleFor(entry, locale)
+  return instrumentLocale ? getAssessmentDefinition(key, entry.version, instrumentLocale) : null
 }
 
 function answerLabels(definition, question) {
-  if (definition.key === 'mini-ipip-20')
-    return definition.responseAnchors.map((label, index) => ({ value: index + 1, label }))
-  return Array.from({ length: question.max - question.min + 1 }, (_, index) => ({
-    value: question.min + index,
-    label: String(question.min + index),
+  const min = question.min ?? definition.answerScale?.min
+  const max = question.max ?? definition.answerScale?.max
+  if (definition.responseAnchors?.length === max - min + 1)
+    return definition.responseAnchors.map((label, index) => ({ value: min + index, label }))
+  return Array.from({ length: max - min + 1 }, (_, index) => ({
+    value: min + index,
+    label: String(min + index),
   }))
 }
 
 function resultLabel(definition, dimension) {
-  if (dimension.dimensionClass === 'trait') return dimension.sourceConstruct
-  return definition.questions.find((item) => item.id === dimension.key)?.label || dimension.key
+  return dimension.sourceConstruct ||
+    definition.questions.find((item) => item.id === dimension.key)?.label ||
+    dimension.key
 }
 
 function localZone() {
@@ -182,6 +195,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [phase, setPhase] = useState('catalog')
   const [context, setContext] = useState({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
   const [guestResult, setGuestResult] = useState(null)
+  const [guestData, setGuestData] = useState({ runs: [], results: [], moodCheckins: [] })
+  const [pendingMood, setPendingMood] = useState(null)
   const [sessionExpires, setSessionExpires] = useState(null)
   const [adult, setAdult] = useState(false)
   const [necessary, setNecessary] = useState(false)
@@ -191,6 +206,32 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const definition = useMemo(() => (active ? definitionFor(active, locale) : null), [active, locale])
   const question = definition?.questions[index]
   const selected = question ? answers[question.id] : undefined
+  const guestCatalog = useMemo(() => startableCatalog({ guest: true }), [])
+  const getMoodRecommendations = useCallback(
+    ({ mood, category }) =>
+      recommendForMood({
+        mood,
+        category,
+        results: guestData.results,
+        runs: guestData.runs,
+        locale,
+        guest: true,
+      }),
+    [guestData.results, guestData.runs, locale],
+  )
+  const resultRecommendation = useMemo(
+    () =>
+      guestResult
+        ? recommendAfterResult({
+            result: guestResult,
+            results: guestData.results,
+            runs: guestData.runs,
+            locale,
+            guest: true,
+          })
+        : null,
+    [guestData.results, guestData.runs, guestResult, locale],
+  )
 
   useEffect(() => {
     let live = true
@@ -198,6 +239,11 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       .then((bootstrap) => {
         if (!live) return
         setSessionExpires(bootstrap.expiresAt)
+        setGuestData({
+          runs: bootstrap.runs || [],
+          results: bootstrap.results || [],
+          moodCheckins: bootstrap.moodCheckins || [],
+        })
         // Keep the external Cabinet on the test catalog even when a guest run exists.
         // A saved draft resumes only after the visitor explicitly chooses that test card.
       })
@@ -234,6 +280,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       operationId: crypto.randomUUID(),
     })
     setRun(created)
+    setGuestData((value) => ({
+      ...value,
+      runs: [...value.runs.filter((item) => item.id !== created.id), created],
+    }))
     setAnswers(created.answers || {})
     setContext(created.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     const nextIndex = Math.min(
@@ -254,6 +304,11 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     try {
       const bootstrap = await guestFetch('guest/bootstrap')
       setSessionExpires(bootstrap.expiresAt)
+      setGuestData({
+        runs: bootstrap.runs || [],
+        results: bootstrap.results || [],
+        moodCheckins: bootstrap.moodCheckins || [],
+      })
       const existing = bootstrap.runs.find((item) => item.definitionId === def.id)
       if (existing) {
         setRun(existing)
@@ -292,6 +347,14 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         timezone: localZone(),
       })
       setSessionExpires(session.expiresAt)
+      if (pendingMood) {
+        const savedMood = await guestFetch('guest/mood', pendingMood)
+        setGuestData((value) => ({
+          ...value,
+          moodCheckins: [...value.moodCheckins.filter((item) => item.id !== savedMood.id), savedMood],
+        }))
+        setPendingMood(null)
+      }
       await startRun(definition)
     } catch {
       setError(c.error)
@@ -316,6 +379,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         operationId: crypto.randomUUID(),
       })
       setRun(saved)
+      setGuestData((value) => ({
+        ...value,
+        runs: [...value.runs.filter((item) => item.id !== saved.id), saved],
+      }))
       setAnswers(saved.answers || nextAnswers)
       setSaveState(c.saved)
     } catch {
@@ -335,6 +402,11 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         expectedRevision: currentRun.revision,
       })
       setGuestResult(result)
+      setGuestData((value) => ({
+        ...value,
+        runs: value.runs.filter((item) => item.id !== currentRun.id),
+        results: [...value.results.filter((item) => item.id !== result.id), result],
+      }))
       setPhase('result')
     } catch {
       setError(c.error)
@@ -350,7 +422,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       setSaveState('')
       return
     }
-    if (definition.key === 'hh-current-state') {
+    if (definition.optionalContext?.length) {
       setPhase('context')
       setSaveState('')
       return
@@ -426,9 +498,47 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setError('')
   }
 
+  async function recordMood({ mood, category }) {
+    const payload = {
+      mood,
+      category,
+      occurredAt: new Date().toISOString(),
+      timezone: localZone(),
+      sourceSurface: 'cabinet_landing',
+      operationId: crypto.randomUUID(),
+    }
+    setPendingMood(payload)
+    try {
+      const saved = await guestFetch('guest/mood', payload)
+      setGuestData((value) => ({
+        ...value,
+        moodCheckins: [...value.moodCheckins.filter((item) => item.id !== saved.id), saved],
+      }))
+      setPendingMood(null)
+      return { persisted: true }
+    } catch (e) {
+      if (e.status === 401 || e.code === 'GUEST_SESSION_REQUIRED') return { persisted: false }
+      throw e
+    }
+  }
+
+  function openAllTests() {
+    resetToCatalog()
+    requestAnimationFrame(() =>
+      document.getElementById('cabinet-tests')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    )
+  }
+
   return (
     <>
-      <MoodCheckIn locale={locale} onQuickCheckin={() => begin('state')} disabled={busy} />
+      <MoodCheckIn
+        locale={locale}
+        disabled={busy}
+        getRecommendations={getMoodRecommendations}
+        onMoodSelected={recordMood}
+        onStartTest={(candidate) => begin(candidate.key)}
+        onAllTests={openAllTests}
+      />
 
       <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
         <header className="library-heading cabinet-tests-heading">
@@ -439,32 +549,36 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
         {phase === 'catalog' && (
           <>
-            <div className="cabinet-monitor-recommended">
-              <p className="cabinet-monitor-label">{c.recommended}</p>
-              <button className="cabinet-test-row cabinet-test-row--recommended" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
-                <span className="cabinet-test-image" aria-hidden="true">
-                  <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'state')} />
-                </span>
-                <span className="cabinet-test-row-copy">
-                  <strong>{c.stateTitle}</strong>
-                  <small>{c.stateText}</small>
-                </span>
-                <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="cabinet-test-list" aria-label={c.otherChecks}>
-              <p className="cabinet-monitor-label">{c.otherChecks}</p>
-              <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.traitTitle}`} disabled={busy} onClick={() => begin('trait')}>
-                <span className="cabinet-test-image" aria-hidden="true">
-                  <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'trait')} />
-                </span>
-                <span className="cabinet-test-row-copy">
-                  <strong>{c.traitTitle}</strong>
-                  <small>{c.traitText}</small>
-                </span>
-                <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
-              </button>
+            <div className="cabinet-test-list" aria-label={c.tryTitle}>
+              {guestCatalog.map((entry, position) => {
+                const def = definitionFor(entry.key, locale)
+                if (!def) return null
+                const completed = guestData.results.filter((item) => item.definitionId === def.id).at(-1)
+                const draft = guestData.runs.find((item) => item.definitionId === def.id)
+                return (
+                  <button
+                    className={`cabinet-test-row${position === 0 ? ' cabinet-test-row--recommended' : ''}`}
+                    type="button"
+                    key={entry.key}
+                    aria-label={`${c.start}: ${catalogTitle(entry, locale)}`}
+                    disabled={busy}
+                    onClick={() => begin(entry.key)}
+                  >
+                    <span className="cabinet-test-image" aria-hidden="true">
+                      <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, entry.key)} />
+                    </span>
+                    <span className="cabinet-test-row-copy">
+                      {position === 0 && <em className="cabinet-monitor-label">{c.recommended}</em>}
+                      <strong>{catalogTitle(entry, locale)}</strong>
+                      <small>{entry.questionCount} {locale === 'ru' ? 'вопросов' : 'questions'} · {entry.duration}</small>
+                      <span>{catalogDescription(entry, locale)}</span>
+                      {draft && <small>{locale === 'ru' ? 'Есть сохранённый черновик' : 'Saved draft available'}</small>}
+                      {completed && <small>{c.measured}: {new Date(completed.measurementAt).toLocaleDateString(locale)}</small>}
+                    </span>
+                    <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
+                  </button>
+                )
+              })}
             </div>
 
             <div className="cabinet-monitor-areas" aria-labelledby="cabinet-monitor-areas-title">
@@ -529,9 +643,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 </button>
               ))}
             </div>
-            {definition.key !== 'mini-ipip-20' && (
+            {question.anchors?.length >= 2 && (
               <div className="cabinet-answer-anchors">
-                <span>{question.anchors[0]}</span><span>{question.anchors[1]}</span>
+                <span>{question.anchors[0]}</span><span>{question.anchors.at(-1)}</span>
               </div>
             )}
             <p className="cabinet-test-note" role="status">{saveState}</p>
@@ -552,7 +666,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           </div>
         )}
 
-        {phase === 'context' && definition?.key === 'hh-current-state' && (
+        {phase === 'context' && definition?.optionalContext?.length > 0 && (
           <div className="cabinet-guest-runner">
             <h3>{c.contextTitle}</h3>
             <p>{c.contextText}</p>
@@ -571,7 +685,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         {phase === 'result' && guestResult && definition && (
           <div className="cabinet-guest-result">
             <p className="about-kicker">{c.result}</p>
-            <h3>{definition.key === 'hh-current-state' ? c.stateTitle : c.traitTitle}</h3>
+            <h3>{catalogTitle(getAssessmentCatalogEntry(definition.key), locale)}</h3>
             <p>{c.measured}: {new Date(guestResult.measurementAt).toLocaleString(locale)}</p>
             <p className="cabinet-test-note">
               {c.source}: {guestResult.definitionKey} · {guestResult.instrumentLocale?.toUpperCase()} · {guestResult.definitionVersion}
@@ -593,6 +707,14 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               <p className="cabinet-test-note">
                 {c.temporary} {new Date(guestResult.expiresAt || sessionExpires).toLocaleString(locale)}.
               </p>
+            )}
+            {resultRecommendation && (
+              <div className="cabinet-result-next">
+                <p className="cabinet-test-note">{resultRecommendation.reason}</p>
+                <button type="button" className="cabinet-save-result" disabled={busy} onClick={() => begin(resultRecommendation.key)}>
+                  {locale === 'ru' ? 'Следующая мягкая проверка' : 'One useful next check'}: {catalogTitle(resultRecommendation.entry, locale)}
+                </button>
+              </div>
             )}
             <div className="cabinet-test-actions">
               <button className="cabinet-text-button" type="button" disabled={busy} onClick={resetToCatalog}>
