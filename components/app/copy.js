@@ -1,6 +1,7 @@
 export const COPY = {
   en: {
     portrait: 'My portrait',
+    monitoring: 'Psi-Monitoring',
     tests: 'Tests',
     history: 'History',
     reports: 'Reports from Andy',
@@ -29,11 +30,16 @@ export const COPY = {
     start: 'Start',
     resume: 'Continue',
     view: 'View result',
+    viewTrend: 'View trend',
     repeat: 'Take again',
     cancel: 'Cancel',
     close: 'Close',
     finish: 'Save my result',
     state: 'How I feel now',
+    weekly: 'Weekly Psychic Health',
+    symptoms: 'Symptoms',
+    functioning: 'Function',
+    resources: 'Resources',
     personality: 'Personality tendencies',
     nextStep: 'Next step',
     nextStateTitle: 'Check how you feel now',
@@ -62,11 +68,14 @@ export const COPY = {
       'Five questions about right now. Your first result becomes a reference point, not a diagnosis.',
     stateDescription:
       'Resource, inner tension, fatigue and the impact of your current difficulty. Five scales and optional context.',
+    weeklyDescription:
+      'Eight original Holistic House self-monitoring scales for the past 7 days: state, load, recovery, clarity, connection and functioning.',
     traitDescription:
       'An optional 20-item self-report about how you generally see yourself. English original, Mini-IPIP.',
     traitNotice:
       'This questionnaire is in English. Use it only if you are comfortable with the original wording. It is not an IQ test, a diagnosis or a complete description of you.',
     general: 'Describe how you generally see yourself, not only how you feel today.',
+    pastWeek: 'Answer about the past 7 days. This is self-monitoring, not a diagnostic scale.',
     rightNow: 'Answer for right now. There is no right or wrong answer.',
     baseline: 'First measurement',
     latest: 'Latest measurement',
@@ -168,6 +177,7 @@ export const COPY = {
   },
   ru: {
     portrait: 'Мой портрет',
+    monitoring: 'Пси-мониторинг',
     tests: 'Тесты',
     history: 'История',
     reports: 'Отчёты от Andy',
@@ -198,11 +208,16 @@ export const COPY = {
     start: 'Начать',
     resume: 'Продолжить',
     view: 'Открыть результат',
+    viewTrend: 'Динамика',
     repeat: 'Пройти снова',
     cancel: 'Отмена',
     close: 'Закрыть',
     finish: 'Сохранить результат',
     state: 'Моё состояние сейчас',
+    weekly: 'Психическое состояние за неделю',
+    symptoms: 'Симптомы',
+    functioning: 'Функционирование',
+    resources: 'Ресурсы',
     personality: 'Личностные особенности',
     nextStep: 'Следующий шаг',
     nextStateTitle: 'Отметить ваше состояние сейчас',
@@ -231,11 +246,14 @@ export const COPY = {
       'Пять вопросов о состоянии сейчас. Первый результат станет точкой сравнения, а не диагнозом.',
     stateDescription:
       'Ресурс, напряжение, усталость и влияние текущей трудности. Пять шкал и необязательный комментарий.',
+    weeklyDescription:
+      'Восемь оригинальных шкал Holistic House за последние 7 дней: состояние, нагрузка, восстановление, ясность, связь и функционирование.',
     traitDescription:
       'Необязательный опрос из 20 утверждений о том, как вы обычно себя описываете. Английский оригинал Mini-IPIP.',
     traitNotice:
       'Этот опрос — на английском. Проходите его, только если вам понятны исходные формулировки. Это не тест IQ, не диагноз и не полное описание личности.',
     general: 'Описывайте себя в целом, а не только сегодняшнее состояние.',
+    pastWeek: 'Отвечайте о последних 7 днях. Это самонаблюдение, а не диагностическая шкала.',
     rightNow: 'Отвечайте о состоянии сейчас. Здесь нет правильных или неправильных ответов.',
     baseline: 'Первый замер',
     latest: 'Последний замер',
@@ -344,6 +362,14 @@ const LABELS = {
   'state.tension': ['Inner tension', 'Напряжение'],
   'state.fatigue': ['Fatigue', 'Усталость'],
   'state.life_impact': ['Impact on daily life', 'Влияние на жизнь'],
+  'weekly.mood': ['Emotional state', 'Эмоциональное состояние'],
+  'weekly.tension': ['Anxiety / tension', 'Тревога / напряжение'],
+  'weekly.load': ['Stress / load', 'Стресс / нагрузка'],
+  'weekly.recovery': ['Sleep / recovery', 'Сон / восстановление'],
+  'weekly.energy': ['Energy', 'Энергия'],
+  'weekly.clarity': ['Mental clarity', 'Ясность мышления'],
+  'weekly.connection': ['Connection / support', 'Связь / поддержка'],
+  'weekly.functioning': ['Daily functioning', 'Повседневное функционирование'],
   'trait.extraversion': ['Extraversion', 'Экстраверсия'],
   'trait.agreeableness': ['Agreeableness', 'Доброжелательность'],
   'trait.conscientiousness': ['Conscientiousness', 'Добросовестность'],
@@ -375,6 +401,14 @@ export function explanationFor(key, locale) {
       'state.life_impact': ru
         ? 'Насколько текущая трудность мешала тому, что вы хотели делать.'
         : 'How much the current difficulty interfered with what you wanted to do.',
+      'weekly.mood': ru ? 'Общая субъективная оценка эмоционального состояния за последние 7 дней.' : 'Your overall subjective emotional state across the past 7 days.',
+      'weekly.tension': ru ? 'Самооценка тревоги и внутреннего напряжения за последние 7 дней.' : 'Self-reported anxiety and inner tension across the past 7 days.',
+      'weekly.load': ru ? 'Насколько тяжёлой ощущалась общая психологическая нагрузка.' : 'How heavy your overall stress or mental load felt.',
+      'weekly.recovery': ru ? 'Насколько восстановившимся вы чувствовали себя после сна или отдыха.' : 'How restored you felt after sleep or rest.',
+      'weekly.energy': ru ? 'Сколько доступной энергии вы ощущали для повседневной жизни.' : 'How much usable energy you felt you had for daily life.',
+      'weekly.clarity': ru ? 'Насколько ясным и собранным ощущалось мышление.' : 'How clear and focused your thinking felt.',
+      'weekly.connection': ru ? 'Насколько вы ощущали связь и поддержку со стороны других людей.' : 'How supported and connected to other people you felt.',
+      'weekly.functioning': ru ? 'Насколько хорошо вам удавалось делать нужные или желаемые дела.' : 'How well you were able to do the things you needed or wanted to do.',
       'trait.extraversion': ru
         ? 'Самоописание общительности и участия в контакте. Высокий или низкий балл сам по себе не лучше и не хуже.'
         : 'How you describe sociability and engagement. A higher or lower score is not inherently better.',

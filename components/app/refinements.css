@@ -8,3 +8,5 @@
   .hh-runner .hh-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
   .hh-runner .hh-actions > button:last-child { grid-column:1 / -1; }
 }
+
+.hh-app .hh-mood-latest { margin:12px 0 0; color:#846f5f; font-size:11px; line-height:1.4; }

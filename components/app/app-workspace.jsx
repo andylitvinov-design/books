@@ -8,6 +8,7 @@ import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/de
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
+import PsiMonitoring from '@/components/app/psi-monitoring'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
@@ -206,7 +207,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   const nav = [
     ['portrait', c.portrait, ''],
-    ['tests', c.tests, '/tests'],
+    ['monitoring', c.monitoring, '/monitoring'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
   ]
@@ -269,6 +270,14 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'practice' && <PracticeWorkspace locale={locale} />}
+          {page === 'monitoring' && (
+            <PsiMonitoring
+              data={data}
+              locale={locale}
+              instrumentKey={recordId}
+              onStarted={(run) => router.push(root + '/runs/' + run.id)}
+            />
+          )}
           {page === 'tests' && (
             <TestCatalog
               data={data}
@@ -573,6 +582,7 @@ function TestCatalog({ data, locale, onStarted }) {
   const [view, setView] = useState('recommended')
   const definitions = [
     getAssessmentDefinition('hh-current-state', 'v2', locale),
+    getAssessmentDefinition('hh-weekly-pulse', 'v1', locale),
     getAssessmentDefinition('mini-ipip-20', 'v1', 'en'),
   ]
   const monitoringIntro =
@@ -617,23 +627,30 @@ function TestCatalog({ data, locale, onStarted }) {
 
   function cardFor(def, { recommended = false } = {}) {
     const isState = def.key === 'hh-current-state'
+    const isWeekly = def.key === 'hh-weekly-pulse'
     const draft = data.runs.find((x) => x.definitionId === def.id)
     const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
     const title = isState
       ? locale === 'ru'
         ? 'Состояние сейчас'
         : 'Current State Check'
-      : locale === 'ru'
-        ? 'Личностный профиль'
-        : 'Personality Baseline'
+      : isWeekly
+        ? c.weekly
+        : locale === 'ru'
+          ? 'Личностный профиль'
+          : 'Personality Baseline'
     const meta = isState
       ? locale === 'ru'
         ? '5 вопросов · ~1 мин'
         : '5 questions · ~1 min'
-      : locale === 'ru'
-        ? '20 вопросов · ~3 мин · EN'
-        : '20 questions · ~3 min · EN'
-    const image = isState
+      : isWeekly
+        ? locale === 'ru'
+          ? '8 вопросов · ~2 мин'
+          : '8 questions · ~2 min'
+        : locale === 'ru'
+          ? '20 вопросов · ~3 мин · EN'
+          : '20 questions · ~3 min · EN'
+    const image = isState || isWeekly
       ? locale === 'ru'
         ? '/images/holistic-house/video-posters/home-ru-v1.webp'
         : '/images/holistic-house/video-posters/home-en-v2.webp'
@@ -649,8 +666,8 @@ function TestCatalog({ data, locale, onStarted }) {
           {recommended && <p className="hh-monitoring-recommended">{locale === 'ru' ? 'Рекомендуем сейчас' : 'Recommended now'}</p>}
           <p className="hh-monitoring-meta">{meta}</p>
           <h2>{title}</h2>
-          <p>{isState ? c.stateDescription : c.traitDescription}</p>
-          {!isState && <p className="hh-notice">{c.traitNotice}</p>}
+          <p>{isState ? c.stateDescription : isWeekly ? c.weeklyDescription : c.traitDescription}</p>
+          {!isState && !isWeekly && <p className="hh-notice">{c.traitNotice}</p>}
           {completed && (
             <p className="hh-fine">
               {c.latest}: {dateLabel(completed.measurementAt, locale)}
@@ -711,11 +728,11 @@ function TestCatalog({ data, locale, onStarted }) {
         <div className="hh-monitoring-areas">
           <section>
             <h2>{quickArea?.[locale] || quickArea?.en}</h2>
-            <div className="hh-monitoring-grid">{cardFor(definitions[0])}</div>
+            <div className="hh-monitoring-grid">{cardFor(definitions[0])}{cardFor(definitions[1])}</div>
           </section>
           <section>
             <h2>{personalityArea?.[locale] || personalityArea?.en}</h2>
-            <div className="hh-monitoring-grid">{cardFor(definitions[1])}</div>
+            <div className="hh-monitoring-grid">{cardFor(definitions[2])}</div>
           </section>
           <p className="hh-fine">
             {locale === 'ru'
@@ -857,7 +874,7 @@ function Runner({ id, locale, onExit, onComplete }) {
     <section className="hh-runner hh-panel">
       <header>
         <p className="hh-kicker">
-          {def.key === 'hh-current-state' ? c.state : c.personality} ·{' '}
+          {def.key === 'hh-current-state' ? c.state : def.key === 'hh-weekly-pulse' ? c.weekly : c.personality} ·{' '}
           {def.instrumentLocale.toUpperCase()}
         </p>
         <progress
@@ -869,7 +886,7 @@ function Runner({ id, locale, onExit, onComplete }) {
           {Math.min(index + 1, def.questions.length + 1)} / {def.questions.length + 1}
         </p>
       </header>
-      <p className="hh-muted">{def.key === 'hh-current-state' ? c.rightNow : c.general}</p>
+      <p className="hh-muted">{def.key === 'hh-current-state' ? c.rightNow : def.key === 'hh-weekly-pulse' ? c.pastWeek : c.general}</p>
       {question ? (
         <fieldset disabled={busy || Boolean(operation.current)}>
           <legend>
@@ -1047,7 +1064,15 @@ function Portrait({ data, locale, onOpenHistory }) {
       <MoodCheckIn
         locale={locale}
         compact
-        onQuickCheckin={() => window.location.assign('/' + locale + '/app/tests')}
+        latestMood={data.moodCheckins?.[0] || null}
+        onMoodChange={(payload) =>
+          appFetch('mood', {
+            ...payload,
+            timezone: localZone(),
+            sourceSurface: 'portrait',
+          })
+        }
+        onQuickCheckin={() => window.location.assign('/' + locale + '/app/monitoring')}
       />
       {data.practitioner && <OwnerTools locale={locale} />}
       <NextStep locale={locale} step={nextStep} />
@@ -1064,6 +1089,9 @@ function Portrait({ data, locale, onOpenHistory }) {
         <>
           {[
             ['state', c.state],
+            ['symptoms', c.symptoms],
+            ['function', c.functioning],
+            ['resources', c.resources],
             ['trait', c.personality],
           ].map(([kind, title]) => {
             const found = dimensions.filter((d) => d.dimensionClass === kind)
@@ -1242,7 +1270,7 @@ function ResultPage({ id, locale, data }) {
       <p className="hh-kicker">
         {c.result} · {result.instrumentLocale.toUpperCase()}
       </p>
-      <h1>{result.definitionKey === 'hh-current-state' ? c.state : c.personality}</h1>
+      <h1>{result.definitionKey === 'hh-current-state' ? c.state : result.definitionKey === 'hh-weekly-pulse' ? c.weekly : c.personality}</h1>
       <p>{dateLabel(result.measurementAt, locale)}</p>
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
       {Object.entries(result.context || {}).length > 0 && (
@@ -1297,9 +1325,14 @@ function ResultPage({ id, locale, data }) {
       </table>
       {!previous && <p>{c.noChange}</p>}
       <p className="hh-fine">{c.versionBoundary}</p>
-      <Link className="hh-primary" href={`/${locale}/app/history`} prefetch={false}>
-        {c.history}
-      </Link>
+      <div className="hh-actions">
+        <Link className="hh-primary" href={'/' + locale + '/app/monitoring/' + result.definitionKey} prefetch={false}>
+          {c.viewTrend}
+        </Link>
+        <Link href={'/' + locale + '/app/history'} prefetch={false}>
+          {c.history}
+        </Link>
+      </div>
     </section>
   )
 }
@@ -1424,8 +1457,18 @@ function HistoryView({ data, locale, reload }) {
     ...results.map((r) => ({
       id: r.id,
       date: r.measurementAt,
-      title: r.definitionKey === 'hh-current-state' ? c.state : c.personality,
+      title: r.definitionKey === 'hh-current-state' ? c.state : r.definitionKey === 'hh-weekly-pulse' ? c.weekly : c.personality,
       href: `/${locale}/app/results/${r.id}`,
+    })),
+    ...(data.moodCheckins || []).map((mood) => ({
+      id: 'mood:' + mood.id,
+      date: mood.occurredAt,
+      title:
+        (mood.mood === 'sad' ? '😔 ' : mood.mood === 'neutral' ? '😐 ' : '🙂 ') +
+        (locale === 'ru' ? 'Настроение' : 'Mood'),
+      note: mood.category
+        ? (locale === 'ru' ? 'Контекст: ' : 'Context: ') + mood.category
+        : undefined,
     })),
     ...reportTimeline(data.savedReports).map((report) => ({
       id: report.id,

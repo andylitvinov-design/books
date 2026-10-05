@@ -183,6 +183,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [context, setContext] = useState({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
   const [guestResult, setGuestResult] = useState(null)
   const [sessionExpires, setSessionExpires] = useState(null)
+  const [pendingMood, setPendingMood] = useState(null)
+  const [latestGuestMood, setLatestGuestMood] = useState(null)
   const [adult, setAdult] = useState(false)
   const [necessary, setNecessary] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -198,6 +200,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       .then((bootstrap) => {
         if (!live) return
         setSessionExpires(bootstrap.expiresAt)
+        setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
         // Keep the external Cabinet on the test catalog even when a guest run exists.
         // A saved draft resumes only after the visitor explicitly chooses that test card.
       })
@@ -226,6 +229,40 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
+  async function handleGuestMoodChange(payload) {
+    setPendingMood(payload)
+    try {
+      const saved = await guestFetch('guest/mood', {
+        ...payload,
+        timezone: localZone(),
+        sourceSurface: 'cabinet_landing',
+      })
+      setLatestGuestMood(saved)
+      setPendingMood(null)
+      return saved
+    } catch (e) {
+      if (e.status === 401 || e.code === 'GUEST_SESSION_REQUIRED') return null
+      setError(c.error)
+      return null
+    }
+  }
+
+  async function persistGuestMood(payload = pendingMood) {
+    if (!payload) return null
+    try {
+      const saved = await guestFetch('guest/mood', {
+        ...payload,
+        timezone: localZone(),
+        sourceSurface: 'cabinet_landing',
+      })
+      setLatestGuestMood(saved)
+      setPendingMood(null)
+      return saved
+    } catch {
+      return null
+    }
+  }
+
   async function startRun(def) {
     const created = await guestFetch('guest/runs', {
       definitionKey: def.key,
@@ -244,7 +281,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setPhase('questions')
   }
 
-  async function begin(id) {
+  async function begin(id, moodPayload = pendingMood) {
     const def = definitionFor(id, locale)
     setActive(id)
     setGuestResult(null)
@@ -254,6 +291,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     try {
       const bootstrap = await guestFetch('guest/bootstrap')
       setSessionExpires(bootstrap.expiresAt)
+      setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
+      if (moodPayload) await persistGuestMood(moodPayload)
       const existing = bootstrap.runs.find((item) => item.definitionId === def.id)
       if (existing) {
         setRun(existing)
@@ -292,6 +331,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         timezone: localZone(),
       })
       setSessionExpires(session.expiresAt)
+      if (pendingMood) await persistGuestMood(pendingMood)
       await startRun(definition)
     } catch {
       setError(c.error)
@@ -428,7 +468,19 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   return (
     <>
-      <MoodCheckIn locale={locale} onQuickCheckin={() => begin('state')} disabled={busy} />
+      <MoodCheckIn
+        locale={locale}
+        latestMood={latestGuestMood}
+        onMoodChange={handleGuestMoodChange}
+        onDismiss={(payload) => {
+          if (pendingMood?.operationId === payload.operationId) setPendingMood(null)
+        }}
+        onQuickCheckin={(payload) => {
+          setPendingMood(payload)
+          begin('state', payload)
+        }}
+        disabled={busy}
+      />
 
       <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
         <header className="library-heading cabinet-tests-heading">

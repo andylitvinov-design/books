@@ -147,6 +147,13 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   font-size: 34px;
   line-height: 1;
 }
+.cabinet-landing-shell .hh-mood-latest,
+.hh-app .hh-mood-latest {
+  margin: 12px 0 0;
+  color: #846f5f;
+  font-size: 11px;
+  line-height: 1.4;
+}
 
 .cabinet-signin-strip {
   max-width: 42rem;

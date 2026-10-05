@@ -19,6 +19,7 @@ const MOOD_COPY = {
       ['other', 'Something else'],
     ],
     quick: 'Do a quick check-in',
+    latest: 'Latest',
     notNow: 'Not now',
     close: 'Close',
   },
@@ -38,18 +39,20 @@ const MOOD_COPY = {
       ['other', 'Другое'],
     ],
     quick: 'Сделать быстрый check-in',
+    latest: 'Последнее',
     notNow: 'Не сейчас',
     close: 'Закрыть',
   },
 }
 
-export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, onQuickCheckin }) {
+export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, latestMood = null, onMoodChange, onDismiss, onQuickCheckin }) {
   const c = MOOD_COPY[locale] || MOOD_COPY.en
   const moods = [c.sad, c.neutral, c.happy]
   const [selected, setSelected] = useState(null)
   const [category, setCategory] = useState('')
   const dialogRef = useRef(null)
   const triggerRef = useRef(null)
+  const moodOperationRef = useRef(null)
   const titleId = useId()
   const promptId = useId()
   const activeMood = moods.find((item) => item.id === selected)
@@ -70,8 +73,7 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
     function onKeyDown(event) {
       if (event.key === 'Escape') {
         event.preventDefault()
-        setSelected(null)
-        setCategory('')
+        dismissDialog()
         return
       }
       if (event.key !== 'Tab') return
@@ -95,19 +97,40 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
     }
   }, [activeMood])
 
+  function emitMoodChange(payload) {
+    if (!onMoodChange) return
+    Promise.resolve(onMoodChange(payload)).catch(() => {})
+  }
+
   function openMood(mood, event) {
     triggerRef.current = event.currentTarget
+    const operationId = crypto.randomUUID()
+    moodOperationRef.current = operationId
     setCategory('')
     setSelected(mood.id)
+    emitMoodChange({ mood: mood.id, category: null, operationId })
   }
 
   function closeDialog() {
     setCategory('')
     setSelected(null)
+    moodOperationRef.current = null
+  }
+
+  function dismissDialog() {
+    if (selected && moodOperationRef.current)
+      onDismiss?.({ mood: selected, category: category || null, operationId: moodOperationRef.current })
+    closeDialog()
+  }
+
+  function chooseCategory(id) {
+    setCategory(id)
+    if (selected && moodOperationRef.current)
+      emitMoodChange({ mood: selected, category: id, operationId: moodOperationRef.current })
   }
 
   function startQuickCheckin() {
-    const payload = { mood: selected, category: category || null }
+    const payload = { mood: selected, category: category || null, operationId: moodOperationRef.current }
     closeDialog()
     onQuickCheckin?.(payload)
   }
@@ -140,6 +163,15 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
             </button>
           ))}
         </div>
+        {latestMood && (
+          <p className="hh-mood-latest">
+            {c.latest}: {moods.find((mood) => mood.id === latestMood.mood)?.emoji || ''}{' '}
+            {moods.find((mood) => mood.id === latestMood.mood)?.label || latestMood.mood}
+            {latestMood.occurredAt
+              ? ' · ' + new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(latestMood.occurredAt))
+              : ''}
+          </p>
+        )}
       </section>
 
       {activeMood && (
@@ -147,7 +179,7 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
           className="hh-mood-backdrop"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeDialog()
+            if (event.target === event.currentTarget) dismissDialog()
           }}
         >
           <section
@@ -162,7 +194,7 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
               className="hh-mood-close"
               data-mood-close
               aria-label={c.close}
-              onClick={closeDialog}
+              onClick={dismissDialog}
             >
               ×
             </button>
@@ -177,7 +209,7 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
                   type="button"
                   key={id}
                   aria-pressed={category === id}
-                  onClick={() => setCategory(id)}
+                  onClick={() => chooseCategory(id)}
                 >
                   {label}
                 </button>
@@ -187,7 +219,7 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
               <button type="button" className="hh-mood-primary" onClick={startQuickCheckin}>
                 {c.quick}
               </button>
-              <button type="button" onClick={closeDialog}>{c.notNow}</button>
+              <button type="button" onClick={dismissDialog}>{c.notNow}</button>
             </div>
           </section>
         </div>

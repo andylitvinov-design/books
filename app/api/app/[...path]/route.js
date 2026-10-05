@@ -236,6 +236,8 @@ async function handle(request, { params }) {
       )
       if (joined === 'guest/bootstrap' && method === 'GET')
         return json(await guestRepo.bootstrap(credential))
+      if (joined === 'guest/mood' && method === 'POST')
+        return json(await guestRepo.moodCheckin(credential, await readBody(request)), 201)
       if (joined === 'guest/runs' && method === 'POST')
         return json(await guestRepo.startRun(credential, await readBody(request)), 201)
       if (path[1] === 'runs' && path.length === 3 && method === 'GET')
@@ -341,6 +343,7 @@ async function handle(request, { params }) {
       return json(await removeSavedReport(config, actor, path[1]))
     if (joined === 'onboarding') return json(await repo.onboarding(actor, body))
     if (joined === 'preferences') return json(await repo.preferences(actor, body))
+    if (joined === 'mood') return json(await repo.moodCheckin(actor, body), 201)
     if (joined === 'runs') return json(await repo.startRun(actor, body), 201)
     if (path[0] === 'runs' && path.length === 3) {
       if (path[2] === 'save') return json(await repo.saveRun(actor, path[1], body))
