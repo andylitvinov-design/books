@@ -17,6 +17,7 @@ import type { PublicService } from "@/lib/practitioners/public-types";
 type PageProps = { params: Promise<{ locale: string }> };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+// Production release marker: Wu Xing marketplace featured service.
 
 const copy = {
   ru: {
@@ -130,6 +131,8 @@ export default async function ServicesPage({ params }: PageProps) {
   } catch {
     offerings = [];
   }
+  const featuredService = offerings.find((service) => service.slug === "free-wu-xing-diagnostic");
+  const marketplaceOfferings = offerings.filter((service) => service.id !== featuredService?.id);
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
@@ -166,35 +169,90 @@ export default async function ServicesPage({ params }: PageProps) {
           </p>
         </div>
 
-        {offerings.length ? (
+        {featuredService ? (
+          <article className="services-marketplace-featured">
+            <div className="services-marketplace-featured-mark" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div className="services-marketplace-featured-copy">
+              <div className="services-marketplace-featured-topline">
+                <span className="services-marketplace-free-badge">
+                  {locale === "ru" ? "Бесплатно" : "Free"}
+                </span>
+                <Link href={`/${locale}/masters/${featuredService.practitionerSlug}`}>
+                  {featuredService.practitionerName}
+                </Link>
+              </div>
+              <h3>{featuredService.copy.title}</h3>
+              <p>{featuredService.copy.shortDescription}</p>
+              <div className="services-marketplace-featured-meta">
+                <span>{locale === "ru" ? "Онлайн" : "Online"}</span>
+                {featuredService.durationMinutes ? <span>{featuredService.durationMinutes} min</span> : null}
+                <span>{locale === "ru" ? "Личный профиль У-Син" : "Personal Wu Xing profile"}</span>
+              </div>
+              <div className="services-marketplace-actions">
+                <Link
+                  className="services-marketplace-request services-marketplace-request--featured"
+                  href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
+                >
+                  {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
+                </Link>
+                <Link
+                  className="services-marketplace-details"
+                  href={`/${locale}/services/${featuredService.practitionerSlug}/${featuredService.slug}`}
+                >
+                  {locale === "ru" ? "Подробнее" : "Details"}
+                </Link>
+              </div>
+            </div>
+          </article>
+        ) : null}
+
+        {marketplaceOfferings.length ? (
           <div className="services-marketplace-grid">
-            {offerings.map((service) => {
+            {marketplaceOfferings.map((service) => {
               const format =
                 service.deliveryFormat === "in_person"
                   ? (locale === "ru" ? "Очно" : "In person")
                   : service.deliveryFormat === "hybrid"
                     ? (locale === "ru" ? "Онлайн / очно" : "Online / in person")
                     : "Online";
+              const isFree = service.pricingMode !== "contact" && service.confirmedPrice === 0;
               const price =
-                service.pricingMode !== "contact" && service.confirmedPrice != null
-                  ? `${service.pricingMode === "from" ? (locale === "ru" ? "от " : "from ") : ""}${service.currency || ""} ${service.confirmedPrice}`
-                  : (locale === "ru" ? "Стоимость по запросу" : "Price on request");
+                isFree
+                  ? (locale === "ru" ? "Бесплатно" : "Free")
+                  : service.pricingMode !== "contact" && service.confirmedPrice != null
+                    ? `${service.pricingMode === "from" ? (locale === "ru" ? "от " : "from ") : ""}${service.currency || ""} ${service.confirmedPrice}`
+                    : (locale === "ru" ? "По запросу" : "On request");
               return (
                 <article className="services-marketplace-card" key={service.id}>
-                  <div className="services-marketplace-provider">
-                    <span>{locale === "ru" ? "Мастер" : "Practitioner"}</span>
-                    <strong>{service.practitionerName}</strong>
+                  <div className="services-marketplace-card-top">
+                    <Link
+                      className="services-marketplace-provider"
+                      href={`/${locale}/masters/${service.practitionerSlug}`}
+                    >
+                      <span className="services-marketplace-avatar" aria-hidden="true">
+                        {(service.practitionerName || "H").slice(0, 1).toUpperCase()}
+                      </span>
+                      <span>
+                        <small>{locale === "ru" ? "Мастер" : "Practitioner"}</small>
+                        <strong>{service.practitionerName}</strong>
+                      </span>
+                    </Link>
+                    <span className={`services-marketplace-price${isFree ? " services-marketplace-price--free" : ""}`}>
+                      {price}
+                    </span>
                   </div>
                   <h3>{service.copy.title}</h3>
                   {service.professionalTitle ? (
                     <p className="services-marketplace-role">{service.professionalTitle}</p>
                   ) : null}
                   <p className="services-marketplace-description">{service.copy.shortDescription}</p>
-                  <p className="services-marketplace-meta">
-                    {[format, service.locationLabel, service.durationMinutes ? service.durationMinutes + " min" : "", price]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
+                  <div className="services-marketplace-meta">
+                    <span>{format}</span>
+                    {service.locationLabel && service.locationLabel !== "Online" ? <span>{service.locationLabel}</span> : null}
+                    {service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}
+                  </div>
                   <div className="services-marketplace-actions">
                     <Link
                       className="services-marketplace-request"
@@ -213,11 +271,11 @@ export default async function ServicesPage({ params }: PageProps) {
               );
             })}
           </div>
-        ) : (
+        ) : !featuredService ? (
           <p className="services-marketplace-empty">
             {locale === "ru" ? "Каталог услуг сейчас обновляется." : "The service catalogue is being updated."}
           </p>
-        )}
+        ) : null}
         <p className="services-marketplace-all">
           <Link href={`/${locale}/masters`}>
             {locale === "ru" ? "Все мастера и практики" : "View all practitioners"}<span aria-hidden="true">→</span>

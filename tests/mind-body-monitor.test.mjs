@@ -79,3 +79,16 @@ test('public and signed-in monitor surfaces expose only real runnable tests', as
   assert.doesNotMatch(workspace, /getAssessmentDefinition\('phq-9'/)
   assert.doesNotMatch(workspace, /getAssessmentDefinition\('c-ssrs/)
 })
+
+
+test('homepage monitor offers soft focus choices and recommendation framing', async () => {
+  const homeMonitor = await readFile('components/mind-body-monitor-home.tsx', 'utf8')
+  for (const focus of ['anxiety', 'stress', 'clarity', 'body', 'mood', 'sleep']) {
+    assert.match(homeMonitor, new RegExp(`key: ["']${focus}["']`))
+  }
+  assert.match(homeMonitor, /Start free monitoring/)
+  assert.match(homeMonitor, /Начать бесплатный мониторинг/)
+  assert.match(homeMonitor, /next-step recommendations/)
+  assert.match(homeMonitor, /not a diagnosis/)
+  assert.match(homeMonitor, /data-monitor-focus/)
+})
