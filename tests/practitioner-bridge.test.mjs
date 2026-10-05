@@ -29,11 +29,11 @@ test('verified app practitioner bridge never exposes admin credentials or public
   assert.match(admin, /path: '\/admin'/)
   assert.doesNotMatch(workspace, /PRESCRIPTIONS_ADMIN_(?:PIN|TOKEN)/)
 
-  assert.match(workspace, /data\.practitioner && <PractitionerTools/)
-  assert.match(workspace, /Clients & documents/)
+  assert.match(workspace, /data\\.practitioner && <OwnerTools/)
+  assert.match(workspace, /Clients/)
   assert.match(workspace, /New consultation/)
-  assert.match(workspace, /New recommendation/)
-  assert.match(workspace, /Receipt \/ invoice/)
+  assert.match(workspace, /Recommendation \\/ prescription/)
+  assert.match(workspace, /Receipt \\/ Invoice/)
   assert.doesNotMatch(navigation, /\/admin/)
 })
 
