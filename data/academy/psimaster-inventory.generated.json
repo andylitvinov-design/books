@@ -1,0 +1,1193 @@
+{
+  "generatedDate": "2026-10-05",
+  "discoveredPublicTermCount": 147,
+  "classificationCounts": {
+    "Library": 42,
+    "Academy": 22,
+    "DuplicateCanonical": 19,
+    "Services": 24,
+    "SystemNavigation": 5,
+    "Archive": 10,
+    "AcademyVideo": 7,
+    "AcademySupplement": 17,
+    "AcademyMissingBody": 1
+  },
+  "records": [
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12052",
+      "sourceTaxonomyId": "12052",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12060",
+      "sourceTaxonomyId": "12060",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/tantric-healing"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12123",
+      "sourceTaxonomyId": "12123",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12180",
+      "sourceTaxonomyId": "12180",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12182",
+      "sourceTaxonomyId": "12182",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12188",
+      "sourceTaxonomyId": "12188",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12192",
+      "sourceTaxonomyId": "12192",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12195",
+      "sourceTaxonomyId": "12195",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12197",
+      "sourceTaxonomyId": "12197",
+      "sourceProvider": "psimaster",
+      "classification": "SystemNavigation",
+      "action": "ignore_duplicate_chrome",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12198",
+      "sourceTaxonomyId": "12198",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12199",
+      "sourceTaxonomyId": "12199",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12200",
+      "sourceTaxonomyId": "12200",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12202",
+      "sourceTaxonomyId": "12202",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12206",
+      "sourceTaxonomyId": "12206",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12207",
+      "sourceTaxonomyId": "12207",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12210",
+      "sourceTaxonomyId": "12210",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12211",
+      "sourceTaxonomyId": "12211",
+      "sourceProvider": "psimaster",
+      "classification": "SystemNavigation",
+      "action": "ignore_duplicate_chrome",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12212",
+      "sourceTaxonomyId": "12212",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12213",
+      "sourceTaxonomyId": "12213",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12280",
+      "sourceTaxonomyId": "12280",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12290",
+      "sourceTaxonomyId": "12290",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12291",
+      "sourceTaxonomyId": "12291",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12306",
+      "sourceTaxonomyId": "12306",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12307",
+      "sourceTaxonomyId": "12307",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12308",
+      "sourceTaxonomyId": "12308",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/imagery-therapy/mirrorland"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12311",
+      "sourceTaxonomyId": "12311",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12312",
+      "sourceTaxonomyId": "12312",
+      "sourceProvider": "psimaster",
+      "classification": "AcademyVideo",
+      "action": "media_backfill",
+      "mappedLogicalId": "videos/energy-pump-ups"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12313",
+      "sourceTaxonomyId": "12313",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12323",
+      "sourceTaxonomyId": "12323",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12325",
+      "sourceTaxonomyId": "12325",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12326",
+      "sourceTaxonomyId": "12326",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12327",
+      "sourceTaxonomyId": "12327",
+      "sourceProvider": "psimaster",
+      "classification": "AcademyVideo",
+      "action": "media_backfill",
+      "mappedLogicalId": "videos/maya-archetypes"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12329",
+      "sourceTaxonomyId": "12329",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "symbolic/scandinavian-mysteries"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12330",
+      "sourceTaxonomyId": "12330",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12331",
+      "sourceTaxonomyId": "12331",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12334",
+      "sourceTaxonomyId": "12334",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12335",
+      "sourceTaxonomyId": "12335",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12336",
+      "sourceTaxonomyId": "12336",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12337",
+      "sourceTaxonomyId": "12337",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12338",
+      "sourceTaxonomyId": "12338",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12340",
+      "sourceTaxonomyId": "12340",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12342",
+      "sourceTaxonomyId": "12342",
+      "sourceProvider": "psimaster",
+      "classification": "SystemNavigation",
+      "action": "ignore_duplicate_chrome",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12343",
+      "sourceTaxonomyId": "12343",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "symbolic/tarot/major-arcana-mysteries"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12344",
+      "sourceTaxonomyId": "12344",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12345",
+      "sourceTaxonomyId": "12345",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "reiki/kundalini-reiki"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12346",
+      "sourceTaxonomyId": "12346",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12349",
+      "sourceTaxonomyId": "12349",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12350",
+      "sourceTaxonomyId": "12350",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12351",
+      "sourceTaxonomyId": "12351",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12352",
+      "sourceTaxonomyId": "12352",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12353",
+      "sourceTaxonomyId": "12353",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12355",
+      "sourceTaxonomyId": "12355",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12356",
+      "sourceTaxonomyId": "12356",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12362",
+      "sourceTaxonomyId": "12362",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/energy-massage"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12371",
+      "sourceTaxonomyId": "12371",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12378",
+      "sourceTaxonomyId": "12378",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12380",
+      "sourceTaxonomyId": "12380",
+      "sourceProvider": "psimaster",
+      "classification": "SystemNavigation",
+      "action": "ignore_duplicate_chrome",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12382",
+      "sourceTaxonomyId": "12382",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12383",
+      "sourceTaxonomyId": "12383",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12384",
+      "sourceTaxonomyId": "12384",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12385",
+      "sourceTaxonomyId": "12385",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12386",
+      "sourceTaxonomyId": "12386",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12387",
+      "sourceTaxonomyId": "12387",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12388",
+      "sourceTaxonomyId": "12388",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12389",
+      "sourceTaxonomyId": "12389",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "mysteries/slavic/shamanism"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12390",
+      "sourceTaxonomyId": "12390",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12391",
+      "sourceTaxonomyId": "12391",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12392",
+      "sourceTaxonomyId": "12392",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "mysteries/maya-aztec/feathered-serpent"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12393",
+      "sourceTaxonomyId": "12393",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12394",
+      "sourceTaxonomyId": "12394",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "archive/dionysian-tantra-club"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12395",
+      "sourceTaxonomyId": "12395",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12397",
+      "sourceTaxonomyId": "12397",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12398",
+      "sourceTaxonomyId": "12398",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12399",
+      "sourceTaxonomyId": "12399",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "mysteries/greece-rome/beauty-and-power"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12400",
+      "sourceTaxonomyId": "12400",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "mysteries/slavic/fairy-tales-mysteries"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12401",
+      "sourceTaxonomyId": "12401",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12402",
+      "sourceTaxonomyId": "12402",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12403",
+      "sourceTaxonomyId": "12403",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/body-psychotherapy-bodynamics"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12404",
+      "sourceTaxonomyId": "12404",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12405",
+      "sourceTaxonomyId": "12405",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/imagery-therapy-symboldrama"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12406",
+      "sourceTaxonomyId": "12406",
+      "sourceProvider": "psimaster",
+      "classification": "SystemNavigation",
+      "action": "ignore_duplicate_chrome",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12407",
+      "sourceTaxonomyId": "12407",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/business/demiurges-of-creation"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12408",
+      "sourceTaxonomyId": "12408",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/hypnotherapy-regressions"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12409",
+      "sourceTaxonomyId": "12409",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12410",
+      "sourceTaxonomyId": "12410",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "mysteries/zoroastrism/eastern-magic"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12411",
+      "sourceTaxonomyId": "12411",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12412",
+      "sourceTaxonomyId": "12412",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "archive/circle-of-eros"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12413",
+      "sourceTaxonomyId": "12413",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12414",
+      "sourceTaxonomyId": "12414",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12415",
+      "sourceTaxonomyId": "12415",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12416",
+      "sourceTaxonomyId": "12416",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12417",
+      "sourceTaxonomyId": "12417",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12418",
+      "sourceTaxonomyId": "12418",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12419",
+      "sourceTaxonomyId": "12419",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12420",
+      "sourceTaxonomyId": "12420",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12423",
+      "sourceTaxonomyId": "12423",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12424",
+      "sourceTaxonomyId": "12424",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12425",
+      "sourceTaxonomyId": "12425",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/archetypal-therapy/big-figures"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12426",
+      "sourceTaxonomyId": "12426",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12427",
+      "sourceTaxonomyId": "12427",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12428",
+      "sourceTaxonomyId": "12428",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12429",
+      "sourceTaxonomyId": "12429",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12430",
+      "sourceTaxonomyId": "12430",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12431",
+      "sourceTaxonomyId": "12431",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12432",
+      "sourceTaxonomyId": "12432",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12433",
+      "sourceTaxonomyId": "12433",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12434",
+      "sourceTaxonomyId": "12434",
+      "sourceProvider": "psimaster",
+      "classification": "AcademyMissingBody",
+      "action": "preserve_source_reference_no_public_body",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12435",
+      "sourceTaxonomyId": "12435",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12436",
+      "sourceTaxonomyId": "12436",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12437",
+      "sourceTaxonomyId": "12437",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12438",
+      "sourceTaxonomyId": "12438",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12439",
+      "sourceTaxonomyId": "12439",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12440",
+      "sourceTaxonomyId": "12440",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12441",
+      "sourceTaxonomyId": "12441",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12442",
+      "sourceTaxonomyId": "12442",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12443",
+      "sourceTaxonomyId": "12443",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12444",
+      "sourceTaxonomyId": "12444",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12445",
+      "sourceTaxonomyId": "12445",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12446",
+      "sourceTaxonomyId": "12446",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12447",
+      "sourceTaxonomyId": "12447",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12448",
+      "sourceTaxonomyId": "12448",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12449",
+      "sourceTaxonomyId": "12449",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/sexual-energy-greek-gods"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12452",
+      "sourceTaxonomyId": "12452",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12453",
+      "sourceTaxonomyId": "12453",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12454",
+      "sourceTaxonomyId": "12454",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "archive/dionysus-dreams-marathon"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12455",
+      "sourceTaxonomyId": "12455",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "mysteries/egypt/high-wisdom"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12456",
+      "sourceTaxonomyId": "12456",
+      "sourceProvider": "psimaster",
+      "classification": "AcademySupplement",
+      "action": "represented_by_parent_or_existing_route",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12457",
+      "sourceTaxonomyId": "12457",
+      "sourceProvider": "psimaster",
+      "classification": "DuplicateCanonical",
+      "action": "canonical_source_wins",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12458",
+      "sourceTaxonomyId": "12458",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12459",
+      "sourceTaxonomyId": "12459",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12460",
+      "sourceTaxonomyId": "12460",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12461",
+      "sourceTaxonomyId": "12461",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12462",
+      "sourceTaxonomyId": "12462",
+      "sourceProvider": "psimaster",
+      "classification": "Academy",
+      "action": "published_as_route",
+      "mappedLogicalId": "applied/archetypal-therapy/program"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12463",
+      "sourceTaxonomyId": "12463",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12464",
+      "sourceTaxonomyId": "12464",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12465",
+      "sourceTaxonomyId": "12465",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12467",
+      "sourceTaxonomyId": "12467",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12468",
+      "sourceTaxonomyId": "12468",
+      "sourceProvider": "psimaster",
+      "classification": "AcademyVideo",
+      "action": "media_backfill",
+      "mappedLogicalId": "videos/strength-protection"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12469",
+      "sourceTaxonomyId": "12469",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12470",
+      "sourceTaxonomyId": "12470",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12471",
+      "sourceTaxonomyId": "12471",
+      "sourceProvider": "psimaster",
+      "classification": "AcademyVideo",
+      "action": "media_backfill",
+      "mappedLogicalId": "videos/greek-mysteries-dionysus"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12472",
+      "sourceTaxonomyId": "12472",
+      "sourceProvider": "psimaster",
+      "classification": "AcademyVideo",
+      "action": "media_backfill",
+      "mappedLogicalId": "videos/egypt-osiris"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12473",
+      "sourceTaxonomyId": "12473",
+      "sourceProvider": "psimaster",
+      "classification": "Archive",
+      "action": "historical_only",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12474",
+      "sourceTaxonomyId": "12474",
+      "sourceProvider": "psimaster",
+      "classification": "Library",
+      "action": "preserve_in_library",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12475",
+      "sourceTaxonomyId": "12475",
+      "sourceProvider": "psimaster",
+      "classification": "Services",
+      "action": "preserve_as_service",
+      "mappedLogicalId": null
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
+      "sourceTaxonomyId": "12477",
+      "sourceProvider": "psimaster",
+      "classification": "AcademyVideo",
+      "action": "media_backfill",
+      "mappedLogicalId": "videos/planetary-power"
+    },
+    {
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12478",
+      "sourceTaxonomyId": "12478",
+      "sourceProvider": "psimaster",
+      "classification": "AcademyVideo",
+      "action": "media_backfill",
+      "mappedLogicalId": "videos/greek-mysteries-demeter"
+    }
+  ]
+}
