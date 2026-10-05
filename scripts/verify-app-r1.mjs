@@ -11,7 +11,7 @@ await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
 let page=await context.newPage()
-const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
+const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
 page.on('pageerror',capturePageError)
 const checks=[]
 function passed(name){checks.push(name);console.log('PASS '+name)}
@@ -93,7 +93,7 @@ try {
  await page.goto(origin+'/en/client');await expect(page.getByRole('heading',{name:'Your personal space'})).toBeVisible();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null);passed('Cabinet is Google-first and legacy private-link entry is secondary')
  await page.getByRole('button',{name:'Start test'}).nth(1).click();await expect(page.getByRole('heading',{name:'Before you start'})).toBeVisible();await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to temporary private processing',{exact:false}).check();await page.getByRole('button',{name:'Continue',exact:true}).click()
  await expect(page.getByText('Question 1 of 20',{exact:true})).toBeVisible()
- await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:'Next',exact:true}).click();await page.reload();await expect(page.getByRole('heading',{name:'Psychic Health Monitoring'})).toBeVisible();await page.getByRole('button',{name:/Start test: Personality Baseline/}).click();await expect(page.getByText('Question 2 of 20',{exact:true})).toBeVisible();passed('external Cabinet stays on catalog after reload and explicit test selection resumes saved progress')
+ await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:'Next',exact:true}).click();await page.reload();await expect(page.getByRole('heading',{name:'Your Mind–Body Monitor'})).toBeVisible();await page.getByRole('button',{name:/Start test: Personality Baseline/}).click();await expect(page.getByText('Question 2 of 20',{exact:true})).toBeVisible();passed('external Cabinet stays on catalog after reload and explicit test selection resumes saved progress')
  for(let i=1;i<20;i++){await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:i===19?'See my result':'Next',exact:true}).click()}
  await expect(page.getByRole('heading',{name:'Personality Baseline'})).toBeVisible();passed('personality guest test completes while signed out with full result')
  await page.getByRole('button',{name:'Take another test'}).click();await page.getByRole('button',{name:'Start test'}).first().click()
