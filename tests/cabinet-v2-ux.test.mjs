@@ -144,6 +144,9 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /<PortraitGuide locale=\{locale\} dimensions=\{dimensions\}/)
   assert.match(workspace, /<ReportsFromAndy data=\{data\} locale=\{locale\}/)
   assert.match(workspace, /function ResultConsultationCta/)
+  assert.match(workspace, /className="hh-result-page"/)
+  assert.match(workspace, /className="hh-result-metrics"/)
+  assert.match(workspace, /className="hh-result-footer"/)
   assert.match(workspace, /Заказать консультацию специалиста/)
   assert.match(workspace, /Your result stays private and is not shared automatically/)
   assert.match(workspace, /href=\{`\/\$\{locale\}\/services`\}/)
@@ -154,6 +157,9 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(catalog, /Заказать консультацию специалиста/)
   assert.match(catalog, /Your result stays private and is not shared automatically/)
   assert.match(catalog, /cabinet-result-consultation/)
+  assert.match(catalog, /cabinet-result-page/)
+  assert.match(catalog, /cabinet-result-actions-grid/)
+  assert.match(catalog, /cabinet-result-footer/)
 })
 
 
