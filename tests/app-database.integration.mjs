@@ -25,6 +25,7 @@ import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
 import { commitLegacyDocumentSaveIntent, readSavedDocument } from '../lib/app/legacy-document-flow.js'
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 import { createPaymentDocument } from '../lib/documents/payment.js'
+import { legacyDocumentSourceHash } from '../lib/app/legacy-document.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
   practiceRepo = createPractitionerRepository(config),
@@ -241,7 +242,7 @@ test('private receipt save links legacy Client to one Account and reopens from G
     assert.equal(binding.account_id, A)
     const ref = (
       await verifyDb.query(
-        'select account_id,source_document_id,legacy_client_id from app.saved_documents where id=$1',
+        'select account_id,source_document_id,legacy_client_id,source_hash from app.saved_documents where id=$1',
         [saved.id],
       )
     ).rows[0]
@@ -249,6 +250,7 @@ test('private receipt save links legacy Client to one Account and reopens from G
       account_id: A,
       source_document_id: record.id,
       legacy_client_id: legacyClientId,
+      source_hash: legacyDocumentSourceHash(record),
     })
   } finally {
     await verifyDb.end()
