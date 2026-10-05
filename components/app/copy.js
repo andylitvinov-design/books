@@ -163,6 +163,7 @@ export const COPY = {
     error: 'Something could not be saved or loaded. Please retry.',
     dateWarning: 'Choose two different compatible measurements.',
     emptyRequests: 'No consultation requests yet.',
+    emptyServices: 'No published services are available right now.',
     continueLater: 'You can return whenever it is useful. There is no daily testing obligation.',
   },
   ru: {
@@ -284,13 +285,13 @@ export const COPY = {
     requests: 'Мои заявки',
     price: 'Стоимость согласуется до записи',
     requestNote:
-      'Заявка не означает подтверждённую запись. Andy свяжется с вами отдельно и обсудит детали.',
-    consultationsIntro: 'Выберите консультацию, когда это будет полезно. Заявки существуют отдельно от записи и от результата, которым вы не решили делиться.',
-    contact: 'Как Andy может с вами связаться?',
+      'Заявка не означает подтверждённую запись. Практик свяжется с вами отдельно и обсудит детали.',
+    consultationsIntro: 'Выберите услугу, когда это будет полезно. Заявка существует отдельно от записи и от результатов, которыми вы не решили делиться.',
+    contact: 'Как практик может с вами связаться?',
     message: 'Ваше сообщение — по желанию',
     share: 'Передать краткий результат — по желанию',
     shareNone: 'Не передавать результат',
-    shareConfirm: 'Я согласен передать Andy именно то резюме, которое показано ниже.',
+    shareConfirm: 'Я согласен передать этому практику именно то резюме, которое показано ниже.',
     submitRequest: 'Отправить заявку',
     requestReceived: 'Заявка получена',
     requested: 'Получена',
@@ -333,6 +334,7 @@ export const COPY = {
     error: 'Не удалось сохранить или загрузить данные. Повторите попытку.',
     dateWarning: 'Выберите два разных совместимых замера.',
     emptyRequests: 'Заявок на консультацию пока нет.',
+    emptyServices: 'Сейчас нет опубликованных услуг.',
     continueLater: 'Возвращайтесь, когда это полезно. Ежедневное прохождение не требуется.',
   },
 }
