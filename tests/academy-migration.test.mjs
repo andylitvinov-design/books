@@ -144,3 +144,21 @@ test("Tantra Reiki has curated bilingual source-backed course content instead of
   assert.match(catalog, /9 ступень — Полнота Единства/);
   assert.match(catalog, /academySourceBlocks\(record\)/);
 });
+
+
+test("sparse Academy records use curated recovery and never outrank a substantive sibling", async () => {
+  const catalog = await readFile("data/academy/catalog.ts", "utf8");
+  for (const id of [
+    "mysteries/initiations",
+    "mysteries/hypno-love",
+    "mysteries/egyptian-hypno-course",
+    "mysteries/guidance-of-gods",
+    "mysteries/archetypes-of-love",
+    "runes/runes-business",
+    "elements/water",
+    "symbolic/artifacts-talismans",
+  ]) assert.match(catalog, new RegExp('"'+id.replaceAll("/", "\\/")+'"'));
+  assert.match(catalog, /academyRecordHasBody/);
+  assert.match(catalog, /compareAcademyRecords/);
+  assert.match(catalog, /Number\(!academyRecordHasBody\(a\)\)/);
+});
