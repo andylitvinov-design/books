@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { SiteNavigation } from "@/components/site-navigation";
+import { MindBodyMonitorHome } from "@/components/mind-body-monitor-home";\nimport { MindBodyMonitorStrip } from "@/components/mind-body-monitor-strip";\nimport { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import type { Locale } from "@/data/remedies";
 import type { PublishedSiteVideo } from "@/lib/site-videos/model";
@@ -126,6 +126,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </Link>
         <SiteNavigation locale={locale} onLocaleChange={selectLocale} />
       </header>
+      <MindBodyMonitorStrip locale={locale} />
 
       <section className="service-home-hero" aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
@@ -154,6 +155,8 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           </div>
         </div>
       </section>
+
+      <MindBodyMonitorHome locale={locale} />
 
       {introVideo ? (
         <section className="site-video-block" data-video-slot="home-intro" data-video-locale={locale} aria-label={introVideo.title}>
