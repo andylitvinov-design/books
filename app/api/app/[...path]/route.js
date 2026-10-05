@@ -22,6 +22,10 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import {
+  establishAdminSessionForVerifiedPractitioner,
+  isVerifiedPractitionerActor,
+} from '@/lib/prescriptions/admin'
+import {
   authorizeReportViewer,
   commitReportSaveIntent,
   exchangeReportViewer,
@@ -33,6 +37,20 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+const practitionerTargets = new Set([
+  '/admin',
+  '/admin/clients',
+  '/admin/consultations/new',
+  '/admin/prescriptions/new',
+  '/admin/payments/new',
+  '/admin/app-requests',
+])
+
+function practitionerTarget(value) {
+  return typeof value === 'string' && practitionerTargets.has(value) ? value : '/admin'
+}
+
 async function handle(request, { params }) {
   let auth
   try {
@@ -284,7 +302,24 @@ async function handle(request, { params }) {
         path[1],
       )
     }
-    if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if (joined === 'bootstrap' && method === 'GET') {
+      const data = await repo.bootstrap(actor)
+      return json(
+        isVerifiedPractitionerActor(actor)
+          ? { ...data, practitioner: { enabled: Boolean(getPrescriptionStore()) } }
+          : data,
+      )
+    }
+    if (joined === 'practitioner/session' && method === 'POST') {
+      if (!isVerifiedPractitionerActor(actor)) throw new AppError('NOT_FOUND', 404)
+      if (!getPrescriptionStore()) throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
+      const body = await readBody(request)
+      onlyKeys(body, ['target'])
+      const redirectUrl = practitionerTarget(body.target)
+      if (!await establishAdminSessionForVerifiedPractitioner(actor))
+        throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
+      return json({ redirectUrl })
+    }
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
       const store = getPrescriptionStore()
