@@ -22,6 +22,7 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import {
+  clearAdminSession,
   establishAdminSessionForVerifiedPractitioner,
   isVerifiedPractitionerActor,
 } from '@/lib/prescriptions/admin'
@@ -129,9 +130,16 @@ async function handle(request, { params }) {
       onlyKeys(body, ['allDevices'])
       if (body.allDevices !== undefined && typeof body.allDevices !== 'boolean')
         throw new AppError('INVALID_BODY', 400)
+      let practitioner = false
+      try {
+        practitioner = isVerifiedPractitionerActor(await auth.verified())
+      } catch {
+        practitioner = false
+      }
       const { error } = await auth.client.auth.signOut({
         scope: body.allDevices ? 'global' : 'local',
       })
+      if (practitioner) await clearAdminSession()
       return auth.clear(json({ signedOut: true, serverSessionEnded: !error }, error ? 503 : 200))
     }
 
@@ -312,6 +320,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'practitioner/session' && method === 'POST') {
       if (!isVerifiedPractitionerActor(actor)) throw new AppError('NOT_FOUND', 404)
+      await repo.bootstrap(actor)
       if (!getPrescriptionStore()) throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
       const body = await readBody(request)
       onlyKeys(body, ['target'])
