@@ -39,6 +39,17 @@ const UI = {
     continue: 'Continue',
     back: 'Back',
     next: 'Next',
+    modeTitle: 'Choose your test experience',
+    modeText: 'Same questions and scoring — only the pace changes.',
+    quick: 'Quick',
+    quickTitle: 'Fast & simple',
+    quickText: 'One tap saves your answer and moves straight to the next question.',
+    guided: 'Guided',
+    guidedTitle: 'Calm & guided',
+    guidedText: 'A slower step-by-step flow with a clear Next action.',
+    sameModeResult: 'Both use the same questions and produce the same result.',
+    tapContinue: 'Tap an answer to save it and continue automatically.',
+    guidedPrompt: 'Take your time. Choose the answer that feels closest to your experience.',
     finish: 'See my result',
     question: 'Question',
     of: 'of',
@@ -93,6 +104,17 @@ const UI = {
     continue: 'Продолжить',
     back: 'Назад',
     next: 'Далее',
+    modeTitle: 'Как вы хотите пройти тест?',
+    modeText: 'Вопросы и расчёт одинаковые — меняется только темп.',
+    quick: 'Quick',
+    quickTitle: 'Быстро',
+    quickText: 'Один ответ — и сразу следующий вопрос. Минимум лишних шагов.',
+    guided: 'Guided',
+    guidedTitle: 'С сопровождением',
+    guidedText: 'Спокойный пошаговый формат с понятной кнопкой «Далее».',
+    sameModeResult: 'В обоих режимах используются те же вопросы и тот же расчёт результата.',
+    tapContinue: 'Нажмите на ответ — он сохранится, и тест продолжится автоматически.',
+    guidedPrompt: 'Не спешите. Выберите вариант, который ближе всего к вашему ощущению.',
     finish: 'Показать результат',
     question: 'Вопрос',
     of: 'из',
@@ -180,6 +202,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [answers, setAnswers] = useState({})
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState('catalog')
+  const [mode, setMode] = useState(null)
   const [context, setContext] = useState({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
   const [guestResult, setGuestResult] = useState(null)
   const [sessionExpires, setSessionExpires] = useState(null)
@@ -278,7 +301,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       Math.max(0, def.questions.length - 1),
     )
     setIndex(nextIndex)
-    setPhase('questions')
+    setMode(null)
+    setPhase('mode')
   }
 
   async function begin(id, moodPayload = pendingMood) {
@@ -304,7 +328,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             Math.max(0, def.questions.length - 1),
           ),
         )
-        setPhase('questions')
+        setMode(null)
+        setPhase('mode')
       } else {
         await startRun(def)
       }
@@ -340,9 +365,20 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
+  async function submitSavedRun(currentRun) {
+    const result = await guestFetch('guest/runs/' + currentRun.id + '/submit', {
+      expectedRevision: currentRun.revision,
+    })
+    setGuestResult(result)
+    setPhase('result')
+    return result
+  }
+
   async function choose(value) {
     if (!run || !question || busy) return
     const nextAnswers = { ...answers, [question.id]: value }
+    const quick = mode === 'quick'
+    const lastQuestion = index === definition.questions.length - 1
     setAnswers(nextAnswers)
     setBusy(true)
     setSaveState(c.saving)
@@ -351,13 +387,22 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       const saved = await guestFetch('guest/runs/' + run.id + '/save', {
         answers: { [question.id]: value },
         context: run.context || {},
-        progress: Math.min(index + 1, definition.questions.length),
+        progress: quick ? Math.min(index + 1, definition.questions.length) : index,
         expectedRevision: run.revision,
         operationId: crypto.randomUUID(),
       })
       setRun(saved)
       setAnswers(saved.answers || nextAnswers)
       setSaveState(c.saved)
+      if (quick) {
+        if (!lastQuestion) {
+          setIndex((value) => value + 1)
+        } else if (definition.key === 'hh-current-state') {
+          setPhase('context')
+        } else {
+          await submitSavedRun(saved)
+        }
+      }
     } catch {
       setError(c.error)
       setSaveState('')
@@ -371,11 +416,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setBusy(true)
     setError('')
     try {
-      const result = await guestFetch('guest/runs/' + currentRun.id + '/submit', {
-        expectedRevision: currentRun.revision,
-      })
-      setGuestResult(result)
-      setPhase('result')
+      await submitSavedRun(currentRun)
     } catch {
       setError(c.error)
     } finally {
@@ -384,18 +425,33 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   }
 
   async function next() {
-    if (selected === undefined || busy) return
-    if (index < definition.questions.length - 1) {
-      setIndex((value) => value + 1)
+    if (selected === undefined || busy || !run) return
+    setBusy(true)
+    setSaveState(c.saving)
+    setError('')
+    try {
+      const saved = await guestFetch('guest/runs/' + run.id + '/save', {
+        answers: {},
+        context: run.context || {},
+        progress: Math.min(index + 1, definition.questions.length),
+        expectedRevision: run.revision,
+        operationId: crypto.randomUUID(),
+      })
+      setRun(saved)
+      setSaveState(c.saved)
+      if (index < definition.questions.length - 1) {
+        setIndex((value) => value + 1)
+      } else if (definition.key === 'hh-current-state') {
+        setPhase('context')
+      } else {
+        await submitSavedRun(saved)
+      }
+    } catch {
+      setError(c.error)
       setSaveState('')
-      return
+    } finally {
+      setBusy(false)
     }
-    if (definition.key === 'hh-current-state') {
-      setPhase('context')
-      setSaveState('')
-      return
-    }
-    await submitResult()
   }
 
   async function saveContextAndFinish() {
@@ -459,6 +515,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setRun(null)
     setAnswers({})
     setIndex(0)
+    setMode(null)
     setPhase('catalog')
     setContext({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     setGuestResult(null)
@@ -558,12 +615,57 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           </div>
         )}
 
+        {phase === 'mode' && definition && run && (
+          <div className="cabinet-guest-runner hh-test-mode-picker">
+            <div className="hh-test-mode-intro">
+              <p className="cabinet-test-progress">{definition.key === 'hh-current-state' ? c.stateTitle : c.traitTitle}</p>
+              <h3>{c.modeTitle}</h3>
+              <p>{c.modeText}</p>
+            </div>
+            <div className="hh-test-mode-grid">
+              <button className="hh-test-mode-card" type="button" onClick={() => { setMode('quick'); setPhase('questions') }}>
+                <span className="hh-test-mode-icon" aria-hidden="true">⚡</span>
+                <span><small>{c.quick}</small><strong>{c.quickTitle}</strong><em>{c.quickText}</em></span>
+              </button>
+              <button className="hh-test-mode-card" type="button" onClick={() => { setMode('guided'); setPhase('questions') }}>
+                <span className="hh-test-mode-icon" aria-hidden="true">✦</span>
+                <span><small>{c.guided}</small><strong>{c.guidedTitle}</strong><em>{c.guidedText}</em></span>
+              </button>
+            </div>
+            <p className="cabinet-test-note hh-test-mode-same">{c.sameModeResult}</p>
+            <div className="cabinet-test-actions">
+              <button type="button" onClick={resetToCatalog}>{c.back}</button>
+            </div>
+          </div>
+        )}
+
         {phase === 'questions' && definition && question && run && (
-          <div className="cabinet-guest-runner">
-            <p className="cabinet-test-progress">
-              {c.question} {index + 1} {c.of} {definition.questions.length}
-            </p>
-            <progress max={definition.questions.length} value={index + 1} />
+          <div className={`cabinet-guest-runner cabinet-guest-runner--${mode || 'guided'}`}>
+            <div className="hh-runner-topline">
+              <p className="cabinet-test-progress">
+                {c.question} {index + 1} {c.of} {definition.questions.length}
+              </p>
+              <div className="hh-test-mode-toggle" role="group" aria-label={c.modeTitle}>
+                <button type="button" aria-pressed={mode === 'quick'} onClick={() => setMode('quick')}>⚡ {c.quick}</button>
+                <button type="button" aria-pressed={mode === 'guided'} onClick={() => setMode('guided')}>✦ {c.guided}</button>
+              </div>
+            </div>
+            <div
+              className="hh-runner-segments"
+              role="progressbar"
+              aria-valuemin="1"
+              aria-valuemax={definition.questions.length}
+              aria-valuenow={index + 1}
+            >
+              {definition.questions.map((item, step) => (
+                <span
+                  key={item.id}
+                  className={step < index ? 'is-done' : step === index ? 'is-current' : ''}
+                  aria-hidden="true"
+                />
+              ))}
+            </div>
+            {mode === 'guided' && <p className="hh-guided-step">{c.guidedPrompt}</p>}
             <h3>{question.text}</h3>
             {definition.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
             <div className={definition.key === 'mini-ipip-20' ? 'cabinet-answer-list' : 'cabinet-answer-scale'}>
@@ -586,6 +688,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 <span>{question.anchors[0]}</span><span>{question.anchors[1]}</span>
               </div>
             )}
+            {mode === 'quick' && <p className="cabinet-test-note hh-quick-hint">{c.tapContinue}</p>}
             <p className="cabinet-test-note" role="status">{saveState}</p>
             <div className="cabinet-test-actions">
               <button
@@ -595,11 +698,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               >
                 {c.back}
               </button>
-              <button type="button" disabled={busy || selected === undefined} onClick={next}>
-                {index === definition.questions.length - 1 && definition.key !== 'hh-current-state'
-                  ? c.finish
-                  : c.next}
-              </button>
+              {mode === 'guided' && (
+                <button type="button" disabled={busy || selected === undefined} onClick={next}>
+                  {index === definition.questions.length - 1 && definition.key !== 'hh-current-state'
+                    ? c.finish
+                    : c.next}
+                </button>
+              )}
             </div>
           </div>
         )}
