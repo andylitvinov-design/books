@@ -5,7 +5,7 @@ begin;
 
 create table if not exists app_private.client_account_bindings(
   legacy_client_id uuid primary key,
-  account_id uuid not null references app.accounts(id) on delete cascade,
+  account_id uuid references app.accounts(id) on delete set null,
   first_source_kind text not null check(first_source_kind in('delivered_report','legacy_document')),
   first_source_id uuid not null,
   created_at timestamptz not null default now(),
