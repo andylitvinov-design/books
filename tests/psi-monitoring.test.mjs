@@ -5,6 +5,7 @@ import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import {
   dueState,
+  dailyMoodSeries,
   monitoringPlan,
   recommendMonitoring,
   compatibleSeries,
@@ -163,6 +164,15 @@ test('patterns require at least three compatible points and remain descriptive',
   const patterns = deterministicPatterns({ results: [one, two, three], locale: 'en' })
   assert.ok(patterns.length > 0)
   assert.ok(patterns.every((pattern) => !('cause' in pattern) && !('diagnosis' in pattern)))
+})
+
+test('mood trend keeps only the latest check-in for each local day', () => {
+  const points = dailyMoodSeries([
+    { id: 'a', mood: 'sad', occurredAt: '2026-10-01T12:00:00.000Z', timezone: 'America/Toronto' },
+    { id: 'b', mood: 'neutral', occurredAt: '2026-10-01T20:00:00.000Z', timezone: 'America/Toronto' },
+    { id: 'c', mood: 'happy', occurredAt: '2026-10-02T12:00:00.000Z', timezone: 'America/Toronto' },
+  ])
+  assert.deepEqual(points.map((point) => point.id), ['b', 'c'])
 })
 
 test('axis overview keeps State, Symptoms, Function, Resources and Baseline separate', () => {
