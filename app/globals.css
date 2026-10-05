@@ -3113,6 +3113,141 @@
   font-weight: 700;
   text-decoration: none;
 }
+
+.services-marketplace {
+  margin: 38px 0 30px;
+}
+.services-marketplace-heading {
+  max-width: 760px;
+}
+.services-marketplace-heading h2 {
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(40px, 5vw, 58px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.035em;
+}
+.services-marketplace-heading > p:last-child {
+  margin-top: 12px;
+  color: #74665a;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.services-marketplace-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+.services-marketplace-card {
+  display: flex;
+  min-height: 340px;
+  flex-direction: column;
+  border: 1px solid #dfd1c0;
+  border-radius: 22px;
+  background: #fffaf3;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(68,47,32,.045);
+}
+.services-marketplace-provider {
+  display: grid;
+  gap: 3px;
+}
+.services-marketplace-provider span {
+  color: #9a5d3b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.services-marketplace-provider strong {
+  color: #5d4c40;
+  font-size: 12px;
+  font-weight: 600;
+}
+.services-marketplace-card h3 {
+  margin-top: 21px;
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.08;
+}
+.services-marketplace-role {
+  margin-top: 8px;
+  color: #9a5d3b;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.services-marketplace-description {
+  margin-top: 13px;
+  flex: 1;
+  color: #74665a;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.services-marketplace-meta {
+  margin-top: 20px;
+  border-top: 1px solid #e3d7c8;
+  padding-top: 15px;
+  color: #6a584b;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.services-marketplace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 15px;
+}
+.services-marketplace-request,
+.services-marketplace-details {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.services-marketplace-request {
+  gap: 15px;
+  background: #9a5d3b;
+  color: #fff9f2;
+}
+.services-marketplace-details {
+  border: 1px solid #d3c1af;
+  color: #70442d;
+}
+.services-marketplace-request:hover {
+  background: #835035;
+}
+.services-marketplace-details:hover {
+  border-color: #b99373;
+  background: #fffdf8;
+}
+.services-marketplace-empty {
+  margin-top: 18px;
+  color: #74665a;
+  font-size: 13px;
+}
+.services-marketplace-all {
+  margin-top: 16px;
+}
+.services-marketplace-all a {
+  display: inline-flex;
+  gap: 16px;
+  color: #8b5437;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
 .services-studio-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0,1fr));
@@ -3457,6 +3592,8 @@
 }
 
 @media (max-width: 900px) {
+  .services-marketplace-grid { grid-template-columns: 1fr; }
+  .services-marketplace-card { min-height: 0; }
   .services-studio-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .practitioner-cabinet-grid { grid-template-columns: 1fr; }
 }
@@ -3487,6 +3624,32 @@
     min-height: 46px;
     margin-top: 20px;
     font-size: 11px;
+  }
+  .services-marketplace {
+    margin: 30px 0 24px;
+  }
+  .services-marketplace-heading h2 {
+    font-size: 38px;
+  }
+  .services-marketplace-heading > p:last-child {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .services-marketplace-grid {
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .services-marketplace-card {
+    border-radius: 18px;
+    padding: 20px;
+  }
+  .services-marketplace-card h3 {
+    margin-top: 17px;
+    font-size: 25px;
+  }
+  .services-marketplace-description {
+    font-size: 11px;
+    line-height: 1.65;
   }
   .services-method-videos { margin-top: 48px; padding-top: 28px; }
   .services-method-videos-grid { grid-template-columns: 1fr; gap: 12px; margin-top: 18px; }
