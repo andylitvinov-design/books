@@ -63,6 +63,10 @@ const UI = {
     source: 'Source',
     save: 'Save to my Cabinet',
     saveHint: 'Saving is optional. Only this selected result will be attached to the Google account you confirm.',
+    consultKicker: 'If you would like to discuss your result',
+    consultTitle: 'Book a consultation with a specialist',
+    consultText: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
+    consultAction: 'Choose a specialist',
     temporary: 'Available temporarily in this browser until',
     restart: 'Take another test',
     delete: 'Delete temporary result',
@@ -117,6 +121,10 @@ const UI = {
     source: 'Источник',
     save: 'Сохранить в личном кабинете',
     saveHint: 'Сохранение необязательно. Только этот выбранный результат будет добавлен в подтверждённый Google-аккаунт.',
+    consultKicker: 'Если хочется обсудить результат',
+    consultTitle: 'Заказать консультацию специалиста',
+    consultText: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
+    consultAction: 'Выбрать специалиста',
     temporary: 'Временно доступно в этом браузере до',
     restart: 'Пройти другой тест',
     delete: 'Удалить временный результат',
@@ -716,6 +724,14 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               {c.save}
             </button>
             <p className="cabinet-test-note">{c.saveHint}</p>
+            <aside className="cabinet-result-consultation" aria-label={c.consultTitle}>
+              <p className="about-kicker">{c.consultKicker}</p>
+              <h4>{c.consultTitle}</h4>
+              <p>{c.consultText}</p>
+              <Link className="cabinet-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
+                {c.consultAction}
+              </Link>
+            </aside>
             {(guestResult.expiresAt || sessionExpires) && (
               <p className="cabinet-test-note">
                 {c.temporary} {new Date(guestResult.expiresAt || sessionExpires).toLocaleString(locale)}.
