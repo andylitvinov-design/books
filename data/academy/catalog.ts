@@ -354,6 +354,214 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
       { type: "p", text: "Creating shrine-like compositions and symbolic figures used as anchors for contemplative or ritual practice." },
       { type: "p", text: "Promotional promises, business case-study outcomes and claims of immediate magical efficacy from the legacy page are deliberately excluded." }
     ]
+  },
+  "mysteries/archetypes-of-gods": {
+    en: [
+      { type: "h2", text: "Great Mysteries — Archetypes of the Gods" },
+      { type: "p", text: "The PsiTrends archive presents this material as an archetypal method for looking at a life, relationship or business question through figures from ancient mythological traditions." },
+      { type: "h2", text: "How the method was structured" },
+      { type: "h3", text: "1. Formulate the question" },
+      { type: "p", text: "The first step is to clarify the situation and define a concrete question or intention." },
+      { type: "h3", text: "2. Choose an archetypal lens" },
+      { type: "p", text: "A mythological figure or tradition is used as a symbolic perspective for associations, reflection and new ways of seeing the problem." },
+      { type: "h3", text: "3. Translate symbols into action" },
+      { type: "p", text: "The useful part of the reading is brought back to practical observations, decisions or experiments that can be tested in ordinary life." },
+      { type: "h2", text: "Traditions represented in the archive" },
+      { type: "p", text: "The source material references Egyptian, Greek, Scandinavian, Taoist, Maya/Aztec and Kabbalistic archetypal systems." },
+      { type: "h2", text: "Egyptian archetypes" },
+      { type: "p", text: "Isis is associated with communication and non-obvious solutions; Hathor with support and beginning; Maat with balance and checking a situation; Thoth with learning and perspective; Horus with action; Ra with scale and vision; Osiris with endings and letting go." },
+      { type: "p", text: "Holistic House preserves these as symbolic and educational descriptions. Legacy prices, claims of supernatural influence, guaranteed predictions and promotional promises are intentionally not presented as verified effects or current offers." }
+    ],
+    ru: [
+      { type: "h2", text: "Большие мистерии — Архетипы Богов" },
+      { type: "p", text: "В архиве PsiTrends этот материал построен как архетипический способ посмотреть на жизненный, отношенческий или бизнес-вопрос через образы древних мифологических традиций." },
+      { type: "h2", text: "Как была устроена работа" },
+      { type: "h3", text: "1. Сформулировать вопрос" },
+      { type: "p", text: "Сначала уточняется ситуация и формулируется конкретный вопрос или намерение." },
+      { type: "h3", text: "2. Выбрать архетипическую оптику" },
+      { type: "p", text: "Мифологическая фигура или традиция используется как символическая перспектива для ассоциаций, размышления и нового взгляда на проблему." },
+      { type: "h3", text: "3. Перевести символы в действия" },
+      { type: "p", text: "Полезные наблюдения переводятся в решения, шаги или эксперименты, которые можно проверить в обычной жизни." },
+      { type: "h2", text: "Традиции в архиве" },
+      { type: "p", text: "В исходных материалах упоминаются египетская, греческая, скандинавская, даосская, майянская/ацтекская и каббалистическая архетипические системы." },
+      { type: "h2", text: "Египетские архетипы" },
+      { type: "p", text: "Исида связана с коммуникацией и нестандартными решениями; Хатхор — с поддержкой и началом; Маат — с балансом и проверкой ситуации; Тот — с обучением и перспективой; Гор — с действием; Ра — с масштабом и видением; Осирис — с завершением и отпусканием." },
+      { type: "p", text: "Holistic House сохраняет эти описания как символический и образовательный материал. Старые цены, заявления о сверхъестественном воздействии, гарантированных предсказаниях и рекламные обещания намеренно не публикуются как проверенные эффекты или актуальные предложения." }
+    ]
+  },
+  "elements/elemental-magic": {
+    en: [
+      { type: "h2", text: "Elemental Magic — course structure" },
+      { type: "p", text: "The PsiTrends archive presents Elemental Magic as a symbolic study of the Minor Arcana of Tarot within the Sephirotic tradition, using the four elements as a framework for attention, reflection and goal modelling." },
+      { type: "h2", text: "Four-element framework" },
+      { type: "p", text: "Air is associated with options, ideas and movement; Fire with vitality and action; Earth with material structure and resources; Water with memory, perception and emotional meaning." },
+      { type: "h2", text: "Progression through the Minor Arcana" },
+      { type: "p", text: "The archived curriculum moves through numbered Minor Arcana and later Pages and Aces. Each card is introduced through its central idea, key symbols or glyphs, and a short focusing text." },
+      { type: "h3", text: "Introductory study" },
+      { type: "p", text: "Learning the symbolic language of the elements and noticing how different states affect perception, choices and a chosen goal." },
+      { type: "h3", text: "Applied practice" },
+      { type: "p", text: "Exercises with mandalas and symbolic models are used to compare perspectives and organise a project or personal intention." },
+      { type: "h3", text: "Advanced historical modules" },
+      { type: "p", text: "The legacy course also references elemental spirits, ritual initiations and deeper Sephirotic material. Holistic House presents these as historical/esoteric study topics rather than claims of objective supernatural effects." },
+      { type: "p", text: "Old promotions, prices, registration offers, effectiveness claims and certification language are omitted from the current public presentation." }
+    ],
+    ru: [
+      { type: "h2", text: "Магия Стихий — структура курса" },
+      { type: "p", text: "В архиве PsiTrends Магия Стихий описывается как символическое изучение Младших Арканов Таро в рамках Сефиротической традиции, где четыре стихии используются как модель внимания, рефлексии и работы с целью." },
+      { type: "h2", text: "Модель четырёх стихий" },
+      { type: "p", text: "Воздух связан с вариантами, идеями и движением; Огонь — с жизненностью и действием; Земля — с материальной структурой и ресурсами; Вода — с памятью, восприятием и эмоциональным смыслом." },
+      { type: "h2", text: "Последовательность Младших Арканов" },
+      { type: "p", text: "Историческая программа проходит через числовые Младшие Арканы, а затем Пажей и Тузов. Для каждой карты раскрывается основная идея, ключевые символы/глифы и короткий текст для концентрации." },
+      { type: "h3", text: "Вводный уровень" },
+      { type: "p", text: "Знакомство с символическим языком стихий и наблюдение за тем, как разные состояния меняют восприятие, выбор и отношение к поставленной цели." },
+      { type: "h3", text: "Прикладная практика" },
+      { type: "p", text: "Мандалы и символические модели используются для сравнения разных перспектив и структурирования проекта или личного намерения." },
+      { type: "h3", text: "Продвинутые исторические модули" },
+      { type: "p", text: "В старом курсе также упоминаются духи стихий, ритуальные инициации и более глубокие материалы Сефиротической традиции. На Holistic House это представлено как исторический/эзотерический учебный материал, а не как утверждение об объективном сверхъестественном эффекте." },
+      { type: "p", text: "Старые акции, цены, регистрационные предложения, обещания эффективности и сертификационные формулировки в текущую публичную версию не переносятся." }
+    ]
+  },
+  "history": {
+    en: [
+      { type: "h2", text: "Academy of Temple Arts — historical structure" },
+      { type: "p", text: "The PsiTrends archive describes a long-form school that combined Reiki systems, temple and mythological studies, symbolic arts and applied archetypal practice. This page preserves that historical structure rather than presenting every legacy claim or credential as current." },
+      { type: "h2", text: "How learning was organised" },
+      { type: "p", text: "The school used an initiation-based progression combined with individual study, practice with partners, seminars and assessment. Reiki Yggdrasil functioned as one of the organising frameworks for the wider curriculum." },
+      { type: "h2", text: "Historical faculties" },
+      { type: "p", text: "The archive groups study into Ancient Egypt, Greek and Roman Mysteries, spiritual studies, Tantra and Vedic heritage, Slavic imagery traditions, Scandinavian runes, Taoism and Sufism, and Pan-American/Maya/Toltec material." },
+      { type: "h2", text: "Specializations" },
+      { type: "p", text: "Historical specializations included relationships and Tantra, archetypal practice and personal development, astrology and symbolic perception, handmade artifacts, and research-oriented study." },
+      { type: "p", text: "Holistic House keeps the archive for educational continuity. Historical speed claims, institutional endorsements, qualification language and therapeutic outcome claims are not carried forward as current guarantees." }
+    ],
+    ru: [
+      { type: "h2", text: "Академия Храмовых Искусств — историческая структура" },
+      { type: "p", text: "Архив PsiTrends описывает школу длительного обучения, где соединялись системы Рейки, храмовые и мифологические традиции, символические искусства и прикладная архетипическая практика. Здесь сохраняется структура школы, а не все старые рекламные или статусные утверждения." },
+      { type: "h2", text: "Как было организовано обучение" },
+      { type: "p", text: "Использовалась последовательность инициаций в сочетании с самостоятельным изучением, практикой с партнёрами, семинарами и проверкой освоения материала. Рейки Иггдрасиль выступала одним из организующих каркасов большой программы." },
+      { type: "h2", text: "Исторические факультеты" },
+      { type: "p", text: "В архиве выделены Египетская традиция, Греческие и Римские мистерии, духовные исследования, Тантра и Ведическое наследие, славянские образные традиции, скандинавские руны, Даосизм и Суфизм, а также материалы Майя, Толтеков и других традиций Америки." },
+      { type: "h2", text: "Специализации" },
+      { type: "p", text: "Исторически отдельно выделялись отношения и Тантра, архетипическая практика и личностное развитие, астрология и символическое восприятие, создание артефактов и исследовательская работа." },
+      { type: "p", text: "Holistic House сохраняет этот архив для образовательной преемственности. Старые заявления о скорости обучения, институциональных подтверждениях, квалификациях и терапевтических результатах не переносятся как текущие гарантии." }
+    ]
+  },
+  "path/magister-archetypal-therapies": {
+    en: [
+      { type: "h2", text: "Magister of Shamanic Therapies — program map" },
+      { type: "p", text: "The PsiTrends archive presents this as the broad advanced Academy curriculum built around Reiki Yggdrasil, temple studies, symbolic systems and comparative spiritual traditions. The original page contains extensive legacy certification and efficacy language; the structure below preserves the educational map without carrying those claims forward." },
+      { type: "h2", text: "Eight study areas" },
+      { type: "li", text: "Greek heritage and temple mysteries" },
+      { type: "li", text: "Ancient Egyptian heritage" },
+      { type: "li", text: "Indian and Vedic heritage" },
+      { type: "li", text: "Scandinavian runes and the Yggdrasil tradition" },
+      { type: "li", text: "Western European tradition, Kabbalah and Tarot" },
+      { type: "li", text: "Taoism and Chinese medicine" },
+      { type: "li", text: "Slavic magic and shamanic imagery" },
+      { type: "li", text: "American shamanism and Toltec material" },
+      { type: "h2", text: "Module 1 — Master of Runic Reiki Yggdrasil" },
+      { type: "p", text: "The archived levels move from health, intuition and protection into clearing, symbolic money themes, personal power, sexuality and intellect, then to extrasensory vision/regression imagery and a final master-level connection-with-gods theme." },
+      { type: "h2", text: "Module 2 — Advanced Energy Healing" },
+      { type: "p", text: "Historical sub-levels include advanced healing, life-force and planetary imagery, masculine/feminine and relationship themes, money-stream symbolism, energy management / Fireball, and sexual-energy practice." },
+      { type: "h2", text: "Module 3 — Temple Studies" },
+      { type: "p", text: "The source lists egregor/religious-symbol study, Ancient Egyptian temple therapy, zodiac and planetary symbolism, Kundalini material and Tantra Reiki." },
+      { type: "h2", text: "Module 4 — Scandinavian Runes" },
+      { type: "p", text: "Runic healing, runic prediction and the worlds of the Yggdrasil tree form the core of the Northern-tradition module." },
+      { type: "h2", text: "Module 5 — Western European Tradition: Tarot" },
+      { type: "p", text: "Great Arcana, elemental symbolism, the Sephiroth tree, higher Tarot material and prediction practice are grouped here as one symbolic-study sequence." },
+      { type: "h2", text: "Module 6 — Taoism and Chinese Heritage" },
+      { type: "p", text: "This part of the archive connects holistic Chinese-medicine principles, body–mind harmony, Chinese forecasting and I Ching study." },
+      { type: "h2", text: "Module 7 — Slavic Magic & Shamanism" },
+      { type: "p", text: "Myths, legends, fairy-tale imagery, dream material and transformational mystery work form the Slavic-study module." },
+      { type: "h2", text: "Module 8 — American Shamanism / Toltec Material" },
+      { type: "p", text: "The advanced archive lists a symbolic 'Machinery Room' or place-of-power practice, ritual helpers, Toltec material, historical money-magic modules and Sufi material." },
+      { type: "p", text: "Old prices, duration promises, qualification/certification claims and statements of guaranteed therapeutic or supernatural effectiveness are intentionally excluded from the current Holistic House presentation." }
+    ]
+  },
+  "videos/energy-pump-ups": {
+    ru: [
+      { type: "h2", text: "Видео-курс «Подкачки» — сохранившаяся структура" },
+      { type: "p", text: "На исходной странице PsiTrends сами встроенные материалы сейчас технически не загружаются, но сохранилось оглавление курса. Holistic House сохраняет его как исторический индекс и не придумывает отсутствующие описания уроков." },
+      { type: "h3", text: "Солнечные медитации" },
+      { type: "h3", text: "Жизненная сила" },
+      { type: "h3", text: "Защита и деньги" },
+      { type: "h3", text: "Сила огня" },
+      { type: "h3", text: "Круг огня" },
+      { type: "h3", text: "Планетарные подкачки" },
+      { type: "h3", text: "Связь с учителем" },
+      { type: "p", text: "Это архивное оглавление. Доступность оригинальных видео требует отдельного восстановления источников; сломанные технические блоки PsiTrends не переносятся." }
+    ]
+  },
+  "history/student-experiences": {
+    ru: [
+      { type: "h2", text: "Исторические отзывы студентов" },
+      { type: "p", text: "Текстовая часть старой страницы PsiTrends сейчас практически не сохранилась, однако в архиве миграции подтверждены три публичных видео-отзыва. Поэтому страница оформляется как исторический видео-архив, а не как пустая учебная программа." },
+      { type: "p", text: "Отзывы отражают личный опыт участников прежних программ Академии и не являются гарантией результата для других людей." }
+    ]
+  },
+  "archive/festival": {
+    en: [
+      { type: "h2", text: "London Festival of Holistic Temple Arts — historical archive" },
+      { type: "p", text: "This archived PsiTrends page documented a week-long London gathering held 9–15 July, bringing together Reiki, constellations, imagery work, symbolic traditions and body-oriented practices." },
+      { type: "h2", text: "Historical program" },
+      { type: "h3", text: "Sunday" },
+      { type: "p", text: "Reiki Therapy Club followed by Shamanic Constellations: Temple of Love & Money." },
+      { type: "h3", text: "Monday" },
+      { type: "p", text: "Dreams Temple / Imagerial Hypnotherapy." },
+      { type: "h3", text: "Wednesday" },
+      { type: "p", text: "Shamanic Constellations: Animal of Your Power." },
+      { type: "h3", text: "Thursday" },
+      { type: "p", text: "Money Magic Club with Runic Reiki as part of the historical program." },
+      { type: "h3", text: "Friday" },
+      { type: "p", text: "Tarot Mysteries School, including a class around the Star / 17th Arcana." },
+      { type: "h3", text: "Saturday" },
+      { type: "p", text: "Family Constellations, Love Magic Club / Tantra Reiki, a Temple Mysteries session around Eros or Aphrodite, and Shamanic Bodywork." },
+      { type: "h2", text: "What the festival was intended to connect" },
+      { type: "p", text: "The source describes a meeting point for enthusiasts of ancient temple traditions, family and business constellations, imagery psychotherapy/hypnotherapy, Reiki systems, bodywork and experiential group formats." },
+      { type: "p", text: "This is a historical archive only. Old dates, London location, donation language, registration contacts and promotional offers are not current event information." }
+    ]
+  },
+  "archive/constellations-of-love": {
+    en: [
+      { type: "h2", text: "Constellations of Love — historical program" },
+      { type: "p", text: "The surviving PsiTrends page describes an experiential constellation program using relationship themes and archetypal imagery to explore desire, closeness, autonomy and personal history." },
+      { type: "h2", text: "Program themes" },
+      { type: "h3", text: "Session 1 — Eros and hidden desire" },
+      { type: "p", text: "Exploration of attraction, neglected wishes and the parts of oneself that may be difficult to acknowledge." },
+      { type: "h3", text: "Session 2 — Love and sex" },
+      { type: "p", text: "Fears, limitations, pleasure, vitality and permission to experience intimacy." },
+      { type: "h3", text: "Session 3 — Yin & Yang / feminine and masculine" },
+      { type: "p", text: "Receiving and acting, openness to love, creativity, sensitivity and inner masculine/feminine qualities." },
+      { type: "h3", text: "Session 4 — Love and rejection" },
+      { type: "p", text: "Expectations of acceptance or rejection and how those expectations can shape relationships." },
+      { type: "h3", text: "Session 5 — Freedom and connection" },
+      { type: "p", text: "The tension between wanting closeness and protecting autonomy." },
+      { type: "h3", text: "Session 6 — Life and death" },
+      { type: "p", text: "Change, endings, transition and making room for a new phase of life." },
+      { type: "h2", text: "Inner-child framing in the original archive" },
+      { type: "p", text: "The page also links eye contact and constellation work with reflection on early experiences of acceptance, trust, autonomy and desire. Holistic House preserves this as the historical conceptual framing of the program, not as a diagnostic or guaranteed therapeutic claim." },
+      { type: "p", text: "Old event registration, donation requests and claims of healing are excluded. Six verified legacy public videos remain attached to this archive record." }
+    ]
+  },
+  "archive/festival-details": {
+    en: [
+      { type: "h2", text: "Festival details — historical program notes" },
+      { type: "p", text: "This page expanded the London festival schedule with background notes on several sessions. The original copy mixed educational descriptions with old prices, promotional claims and registration details; only the program content is preserved here." },
+      { type: "h3", text: "Kundalini Reiki introduction" },
+      { type: "p", text: "The Sunday program introduced Kundalini Reiki as a combination of Reiki practice and Kundalini-oriented energy imagery, intended as an entry point before more advanced Academy material." },
+      { type: "h3", text: "Love & Money constellations" },
+      { type: "p", text: "Systemic constellations were presented in a theatre-like group format for exploring questions around money, relationships and the underlying structure of a situation." },
+      { type: "h3", text: "Dreams Temple" },
+      { type: "p", text: "Imagery / hypnotherapy themes focused on inner images, dreams and symbolic sources of personal strength." },
+      { type: "h3", text: "Animal of Power" },
+      { type: "p", text: "A shamanic-constellation session used the 'animal of power' image as a symbolic resource and reflection tool." },
+      { type: "h3", text: "Money Magic / Runic Reiki" },
+      { type: "p", text: "A historical session combined money-related reflection with the symbolic language of Runic Reiki." },
+      { type: "h3", text: "Tarot Mysteries — The Star" },
+      { type: "p", text: "A Tarot-focused class explored the Star / 17th Arcana and symbolic forces of nature." },
+      { type: "h3", text: "Love Magic / Tantra Reiki and Eros or Aphrodite" },
+      { type: "p", text: "The Saturday material combined Tantra Reiki themes with a Temple Mysteries session centred on Eros or Aphrodite." },
+      { type: "p", text: "This is historical context only. Old prices, claims that one system is stronger than another, health/outcome promises and registration instructions are intentionally omitted." }
+    ]
   }
 };
 
@@ -361,7 +569,7 @@ function academySourceBlocks(record: AcademySourceRecord) {
   return academyCuratedPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? record.content;
 }
 
-const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
+const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|^loading\.\.\.$|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
 
 export function academyPublicBlocks(record: AcademySourceRecord) {
   return academySourceBlocks(record).filter((block) => !academyPublicOmitPattern.test(block.text));
@@ -388,6 +596,10 @@ export function preferredAcademyRecords(locale: PublicLocale, filter?: (record: 
 export function recordsForDirection(direction: AcademyDirectionId, locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === direction); }
 export function videoRecords(locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === "videos"); }
 export function findAcademyRecord(routeKey: string, locale: PublicLocale) { const matches = sourceRecords.filter((record) => record.routeKey === routeKey); if (!matches.length) return undefined; return [...matches].sort((a, b) => compareAcademyRecords(a, b, locale))[0]; }
-export function mediaForRecord(record: AcademySourceRecord) { return mediaRecords.filter((item) => item.logicalId === record.logicalId && item.sourceUrl === record.sourceUrl); }
+export function mediaForRecord(record: AcademySourceRecord) {
+  const exact = mediaRecords.filter((item) => item.logicalId === record.logicalId && item.sourceUrl === record.sourceUrl);
+  if (exact.some((item) => youtubeIdFromUrl(item.mediaUrl))) return exact;
+  return mediaRecords.filter((item) => item.logicalId === record.logicalId);
+}
 export function youtubeIdFromUrl(url: string) { const match = url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/); return match?.[1]; }
 export function sourceLanguageNotice(record: AcademySourceRecord, locale: PublicLocale) { if (locale !== "es" && record.sourceLocale === locale) return null; return academyCopy[locale].sourceLanguage + " " + academyCopy[locale][record.sourceLocale] + "."; }
