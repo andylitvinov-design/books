@@ -2,9 +2,13 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
+import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import {
+  TEST_LENGTH_FILTERS,
   TEST_RECOMMENDATION_FOCUS,
+  TEST_STYLE_FILTERS,
+  filterAssessmentDefinitions,
   rankAssessmentDefinitions,
 } from '../lib/assessments/test-recommendations.js'
 
@@ -111,4 +115,64 @@ test('public Cabinet exposes the weighted recommender before registration and ke
   assert.match(landing, /не сохраняется без вашего явного согласия/)
   assert.match(styles, /Public Cabinet weighted test recommender/)
   assert.match(styles, /\.cabinet-test-focus-grid button\[aria-pressed="true"\]/)
+})
+
+
+test('active assessment inventory is classified for style and length filters', () => {
+  const active = MONITORING_CATALOG.filter((item) => item.startable)
+  assert.equal(active.length, 9)
+  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 4)
+  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 5)
+  assert.equal(active.filter((item) => item.testLength === 'short').length, 4)
+  assert.equal(active.filter((item) => item.testLength === 'medium').length, 3)
+  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 2)
+  assert.ok(active.every((item) => TEST_STYLE_FILTERS.some((filter) => filter.key === item.testStyle)))
+  assert.ok(active.every((item) => TEST_LENGTH_FILTERS.some((filter) => filter.key === item.testLength)))
+})
+
+test('style and length filters combine before recommendation ranking', () => {
+  const definitions = MONITORING_CATALOG
+    .filter((item) => item.startable)
+    .map((item) =>
+      getAssessmentDefinition(
+        item.key,
+        item.version,
+        item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale,
+      ),
+    )
+
+  const professionalMedium = filterAssessmentDefinitions(definitions, {
+    styles: ['professional'],
+    lengths: ['medium'],
+  })
+  assert.deepEqual(
+    professionalMedium.map((definition) => definition.key).sort(),
+    ['gad-7', 'phq-9'].sort(),
+  )
+
+  const engagingComprehensive = rankAssessmentDefinitions(definitions, {
+    focus: ['relationships'],
+    styles: ['engaging'],
+    lengths: ['comprehensive'],
+  })
+  assert.deepEqual(engagingComprehensive.map((item) => item.definition.key), ['hh-monthly-profile'])
+  assert.deepEqual(engagingComprehensive[0].matchedFocus, ['relationships'])
+})
+
+test('public and signed-in recommenders expose style and length switch groups', async () => {
+  const [landing, workspace] = await Promise.all([
+    readFile('components/app/cabinet-landing.jsx', 'utf8'),
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+  ])
+  for (const source of [landing, workspace]) {
+    assert.match(source, /TEST_STYLE_FILTERS/)
+    assert.match(source, /TEST_LENGTH_FILTERS/)
+    assert.match(source, /testStyles/)
+    assert.match(source, /testLengths/)
+  }
+  assert.match(landing, /Лёгкие \/ игровые/)
+  assert.match(landing, /Профессиональные/)
+  assert.match(landing, /Комплексные/)
+  assert.match(workspace, /Fun \/ engaging/)
+  assert.match(workspace, /Comprehensive/)
 })
