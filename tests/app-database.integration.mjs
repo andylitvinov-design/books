@@ -1119,7 +1119,7 @@ test('durable guest and account assessment plans enforce ordered private sequent
   })))
 
   const guestPlanInput = {
-    items: [en, weekly].map((definition) => ({ definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: definition.instrumentLocale })),
+    items: [enV2, weekly].map((definition) => ({ definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: definition.instrumentLocale })),
     operationId: randomUUID(),
   }
   const guestPlan = await guestRepo.createTestPlan(credential, guestPlanInput)
@@ -1133,13 +1133,13 @@ test('durable guest and account assessment plans enforce ordered private sequent
   }), /GUEST_TEST_UNAVAILABLE/)
 
   let guestRun = await guestRepo.startRun(credential, {
-    definitionKey: en.key,
-    definitionVersion: en.version,
-    instrumentLocale: en.instrumentLocale,
+    definitionKey: enV2.key,
+    definitionVersion: enV2.version,
+    instrumentLocale: enV2.instrumentLocale,
     operationId: randomUUID(),
   })
   guestRun = await guestRepo.saveRun(credential, guestRun.id, {
-    answers: answer(en), context: {}, progress: en.questions.length, expectedRevision: guestRun.revision, operationId: randomUUID(),
+    answers: answer(enV2), context: {}, progress: enV2.questions.length, expectedRevision: guestRun.revision, operationId: randomUUID(),
   })
   const guestResult = await guestRepo.submitRun(credential, guestRun.id, { expectedRevision: guestRun.revision })
   const progressedGuestPlan = await guestRepo.advanceTestPlan(credential, guestPlan.id, {
