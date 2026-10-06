@@ -206,7 +206,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         </div>
         <div className="yggdrasil-basic-levels" id="basic-course-description">
           {basicSteps.map((step) => (
-            <article className="yggdrasil-basic-level-card" id={step.number === 1 ? "yggdrasil-basic-course-learning" : undefined} key={step.id}>
+            <article className="yggdrasil-basic-level-card" key={step.id}>
               <div className="yggdrasil-basic-level-number">{String(step.number).padStart(2, "0")}</div>
               <div>
                 <small>{text.basicLevel} {step.number} · {step.settings.length} {text.basicSettings}</small>
