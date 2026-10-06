@@ -24,8 +24,8 @@ primary_source_message: message285 (09.01.2025 17:33:42 UTC-05:00)
 primary_source_sections:
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials: message1061 (20.09.2026 21:03 Telegram public view)
-source_messages: message285 (09.01.2025 17:33:42 UTC-05:00); message1061 (20.09.2026 21:03 Telegram public view)
+supplementary_materials: message1061 (20.09.2026 21:03 Telegram public view); message1071 (02.10.2026 21:52 Telegram public view)
+source_messages: message285 (09.01.2025 17:33:42 UTC-05:00); message1061 (20.09.2026 21:03 Telegram public view); message1071 (02.10.2026 21:52 Telegram public view)
 source_images: /media/remedies/secale-cornutum/message285-1.jpg; /media/remedies/secale-cornutum/message1061-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Secale Cornutum.; primary canonical content rebuilt from message285 (09.01.2025 17:33:42 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
@@ -45,6 +45,7 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Secale Cornutum, message285.
 ---
+
 
 
 SECALE CORNUTUM
@@ -160,3 +161,15 @@ With crystals, the author reports a much stronger, more concentrated experience 
 
 The author had described this remedy earlier:
 https://t.me/psychic_alchemy/777
+
+### message1071 (02.10.2026 21:52 Telegram public view)
+
+The author describes confidence as a broad, layered theme.
+
+1. At a primary social level, Lycopodium and Argentum Nitricum are described as supporting social stability and courage, without necessarily changing deeper identity structures.
+
+2. At a second level, Platina and Aurum are described as working more with inner value.
+
+3. For deeper experiences of unworthiness or not being ideal enough, the author names Psorinum, Carcinosinum, Lyssinum and, at an even deeper symbolic level, Secale Cornutum.
+
+In this authorial model, Secale Cornutum is associated with the idea of basic dignity in the face of a felt sense of defect or impurity.
