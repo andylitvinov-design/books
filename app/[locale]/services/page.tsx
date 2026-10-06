@@ -5,6 +5,7 @@ import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PageVideo } from "@/components/page-video";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -106,6 +107,16 @@ const copy = {
   },
 } as const;
 
+const serviceShowcaseImages: Record<string, string> = {
+  hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+  "systemic-constellations": "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  "business-decision-constellations": "/images/holistic-house/books-library.webp",
+  "reiki-energy-work": "/images/holistic-house/hero-olive-incense.webp",
+  business: "/images/holistic-house/books-library.webp",
+  alchemy: "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
+  archetypal: "/library/maya-mysteries/media/post-244-1.jpg",
+};
+
 export function generateStaticParams() { return getHomeopathyLocaleParams(); }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -136,6 +147,29 @@ export default async function ServicesPage({ params }: PageProps) {
   }
   const featuredService = offerings.find((service) => service.slug === "free-wu-xing-diagnostic");
   const marketplaceOfferings = offerings.filter((service) => service.id !== featuredService?.id);
+  const chooseFormatLabel = locale === "ru" ? "Выбрать этот формат" : "Choose this format";
+  const coreShowcaseItems: CatalogShowcaseItem[] = entry.services.map(({ id, title, subtitle, text }) => ({
+    id: "service-" + id,
+    title,
+    subtitle,
+    description: text,
+    href: "#available-services",
+    actionLabel: chooseFormatLabel,
+    image: serviceShowcaseImages[id] ?? "/images/holistic-house/hero-olive-incense.webp",
+    eyebrow: locale === "ru" ? "Формат индивидуальной работы" : "Personal work format",
+  }));
+  const additionalShowcaseItems: CatalogShowcaseItem[] = current.cards.map(({ id, title, subtitle, text }) => ({
+    id: "service-" + id,
+    title,
+    subtitle,
+    description: text,
+    href: "#available-services",
+    actionLabel: chooseFormatLabel,
+    image: serviceShowcaseImages[id] ?? "/images/holistic-house/books-library.webp",
+    media: <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />,
+    eyebrow: locale === "ru" ? "Дополнительное направление" : "Additional direction",
+  }));
+  const serviceShowcaseItems = [...coreShowcaseItems, ...additionalShowcaseItems];
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
@@ -163,6 +197,11 @@ export default async function ServicesPage({ params }: PageProps) {
           />
         </div>
       </section>
+
+      <CatalogShowcase
+        items={serviceShowcaseItems}
+        label={locale === "ru" ? "Форматы индивидуальной работы" : "Personal work formats"}
+      />
 
       <section className="services-marketplace" id="available-services" aria-labelledby="services-marketplace-title">
         <div className="services-marketplace-heading">
@@ -290,30 +329,6 @@ export default async function ServicesPage({ params }: PageProps) {
       </section>
 
       <PageVideo slot="services-intro" locale={locale} />
-
-      <section className="services-studio-grid services-studio-grid--three" aria-label={current.heading}>
-        {entry.services.map(({ id, title, subtitle, text }) => {
-          const Icon = id === "business-decision-constellations" ? BriefcaseBusiness : id === "reiki-energy-work" ? Flower2 : Sparkles;
-          return <article className="services-studio-card services-studio-card--detailed" id={id} key={id}>
-            <span className="services-studio-icon" aria-hidden="true"><Icon /></span>
-            <h2>{title}</h2>
-            <p className="services-studio-card-subtitle">{subtitle}</p>
-            <p>{text}</p>
-          </article>;
-        })}
-      </section>
-
-      <section className="services-studio-grid services-studio-grid--three" aria-label={locale === "ru" ? "Дополнительные направления" : "Additional directions"}>
-        {current.cards.map(({ id, icon: Icon, title, subtitle, text }) => (
-          <article className="services-studio-card services-studio-card--detailed" id={id} key={title}>
-            <span className="services-studio-icon" aria-hidden="true"><Icon /></span>
-            <h2>{title}</h2>
-            <p className="services-studio-card-subtitle">{subtitle}</p>
-            <p>{text}</p>
-            <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />
-          </article>
-        ))}
-      </section>
 
       {locale === "en" ? (
         <section className="services-method-videos" id="methods" aria-labelledby="services-method-videos-title">

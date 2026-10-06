@@ -19,7 +19,7 @@ test('direct book links keep the flat catalog while Library can open a selected 
 
   assert.doesNotMatch(hub, /featuredBookUrls|library-edition/);
   assert.match(hub, /section=\$\{section\}/);
-  assert.match(hub, /library-index-card/);
+  assert.match(hub, /CatalogShowcase/);
   assert.match(hub, /view=videos/);
 
   assert.match(home, /bookUrl: "\/en\/books"/);
