@@ -24,8 +24,8 @@ primary_source_message: message470 (27.04.2025 12:33:31 UTC-05:00)
 primary_source_sections: ОСНОВА
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message470 (27.04.2025 12:33:31 UTC-05:00)
+supplementary_materials: message1071 (02.10.2026 21:52 Telegram public view)
+source_messages: message470 (27.04.2025 12:33:31 UTC-05:00); message1071 (02.10.2026 21:52 Telegram public view)
 source_images: /media/remedies/psorinum/message470-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Psorinum.; primary canonical content rebuilt from message470 (27.04.2025 12:33:31 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
@@ -43,6 +43,7 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Psorinum, message470.
 ---
+
 
 PSORINUM
 
@@ -183,3 +184,30 @@ Psorinum дает поддержку, когда человек потерял �
 - Четче колибровать свои-чужие клетки, т.е. не агрессировать сразу на всех.
 
 - Уменьшается деление клеток/ меньше страха, адреналина.
+
+## Дополнительные материалы и наблюдения
+
+### message1071 (02.10.2026 21:52 Telegram public view)
+
+Еще расскажу про тему уверенности.
+
+Это широкий и большой пласт.
+
+1. На первичном, социальном уровне можно начинать с препаратов Lycopodium, Argentum Nitricum и тп - они повышают уровень социальной стабильности и смелости.
+
+Но не меняют качество структур Я, идентичности.
+
+2. На втором уровне можно работать с такими препаратами как Platina, Aurum (золото). Они повышают именно уровень внутренней ценности.
+
+3. Но если мы хотим зайти глубже, в травму недостойности, не идеальности, то нужен совсем другой спектр препаратов.
+
+Хорошо работают:
+- Psorinum: при чувстве стыда себя, грязности, недостойности
+- Carsinosinum: недостаточно хорош для других, смущения
+- Lyssinum выводит из презрения в достоинство.
+
+Но вот за всеми ними я бы поставил препарат Secale Cornatum: здесь вообще идея первичной порочности и непорочности.
+
+Это вибрация зерна, поврежденного спорынью.
+
+И это мощный препарат, который возвращает базовое достоинство, чтобы не происходило.
