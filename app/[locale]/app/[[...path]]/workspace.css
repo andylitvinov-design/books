@@ -839,6 +839,144 @@
 }
 
 
+/* My profile — clear action hub */
+.hh-profile-heading {
+  max-width: 840px;
+  margin-bottom: 18px;
+}
+.hh-profile-heading > p:not(.hh-kicker):not(.hh-fine) {
+  max-width: 760px;
+  color: var(--hh-muted);
+  line-height: 1.65;
+}
+.hh-profile-heading .hh-fine {
+  margin-top: 5px;
+}
+.hh-profile-actions {
+  display: grid;
+  gap: 16px;
+  margin: 18px 0 24px;
+  border: 1px solid var(--hh-line);
+  border-radius: 24px;
+  background: rgba(255, 253, 250, .94);
+  padding: clamp(18px, 3vw, 26px);
+}
+.hh-profile-actions-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 390px);
+  align-items: end;
+  gap: 24px;
+}
+.hh-profile-actions-head h2 {
+  margin: 3px 0 0;
+}
+.hh-profile-actions-head > p {
+  margin: 0;
+  color: var(--hh-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.hh-profile-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.hh-profile-action-card {
+  min-width: 0;
+  min-height: 108px;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) 28px;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid #ddcfbf;
+  border-radius: 17px;
+  background: #fffdf9;
+  color: var(--hh-ink);
+  text-decoration: none;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.hh-profile-action-card:hover {
+  transform: translateY(-1px);
+  border-color: #b99a7f;
+  box-shadow: 0 8px 20px rgba(78, 55, 38, .08);
+}
+.hh-profile-action-photo {
+  position: relative;
+  min-height: 108px;
+  overflow: hidden;
+  background: #eee5da;
+}
+.hh-profile-action-photo img {
+  object-fit: cover;
+}
+.hh-profile-action-copy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  padding: 13px 8px 13px 14px;
+}
+.hh-profile-action-copy strong {
+  font-family: Georgia, serif;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.hh-profile-action-copy > span {
+  color: var(--hh-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.hh-profile-action-copy small {
+  margin-top: 3px;
+  color: #8f6d57;
+  font-size: 10px;
+  font-weight: 700;
+}
+.hh-profile-action-card > b {
+  align-self: center;
+  color: #9a755e;
+  font-family: Georgia, serif;
+  font-size: 29px;
+  font-weight: 400;
+}
+@media (max-width: 760px) {
+  .hh-profile-actions {
+    gap: 13px;
+    border-radius: 20px;
+    padding: 15px;
+  }
+  .hh-profile-actions-head {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .hh-profile-actions-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .hh-profile-action-card {
+    min-height: 82px;
+    grid-template-columns: 76px minmax(0, 1fr) 24px;
+    border-radius: 14px;
+  }
+  .hh-profile-action-photo {
+    min-height: 82px;
+  }
+  .hh-profile-action-copy {
+    padding: 10px 6px 10px 12px;
+  }
+  .hh-profile-action-copy strong {
+    font-size: 17px;
+  }
+  .hh-profile-action-copy > span {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .hh-profile-action-copy small {
+    font-size: 9px;
+  }
+}
+
 /* My profile — unified test summary */
 .hh-profile-overview {
   display: grid;
