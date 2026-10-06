@@ -69,5 +69,8 @@ test("mini cards navigate to direct destinations instead of in-page anchors", ()
   assert.match(services, /homeopathy-consultation/);
 
   assert.match(academy, /href: "\/" \+ locale \+ "\/academy\/" \+ direction\.path/);
-  assert.match(library, /href: `\/\$\{locale\}\/books\?section=\$\{section\}`/);
+  assert.match(library, /href: `\/\$\{locale\}\/books`/);
+  assert.match(library, /href: `\/\$\{locale\}\/homeopathy\/remedies`/);
+  assert.match(library, /href: `\/\$\{locale\}\/wu-xing`/);
+  assert.doesNotMatch(library, /books\?section=/);
 });
