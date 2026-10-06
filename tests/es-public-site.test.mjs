@@ -24,7 +24,11 @@ test('Every public remedy has a source-matched complete Spanish translation', ()
     for (const key of ['primary_source_url', 'primary_image', 'source_author', 'related_slugs']) assert.equal(es[key], original[key]);
     assert.notEqual(es.description, original.description, slug);
   }
-  assert.equal(getSpanishRemedyDirectory().length, slugs.length); assert.equal(getSpanishRemedy('../../admin'), undefined);
+  const directory = getSpanishRemedyDirectory();
+  assert.equal(directory.length, slugs.length);
+  assert.equal(directory.find(entry => entry.slug === 'silicea').descriptionType, 'full-card');
+  assert.equal(directory.find(entry => entry.slug === 'zincum-metallicum').descriptionType, 'source-excerpt');
+  assert.equal(getSpanishRemedy('../../admin'), undefined);
 });
 test('All book catalog entries have real Spanish metadata without inventing Spanish editions', async () => {
   const { spanishBooks } = await loadTs('data/spanish-books.ts');
@@ -50,4 +54,15 @@ test('Language counterparts load on selection rather than speculative client-ent
   const navigation = source('components/site-navigation.tsx');
   assert.match(navigation, /<Link prefetch=\{false\}[^>]*href=\{counterpart\(next\)\}/);
   assert.match(navigation, /onClick=\{\(\) => selectLocale\(next\)\}/);
+});
+
+
+test('Spanish remedy search matches the canonical public finder interaction and labels', () => {
+  const component = source('components/spanish-remedy-directory.tsx');
+  assert.match(component, /remedies-search-block/);
+  assert.match(component, /remedies-search-input/);
+  assert.match(component, /remedies-search-results/);
+  assert.match(component, /Descripción completa/);
+  assert.match(component, /Descripción breve/);
+  assert.match(component, /setLetter\(''\)/);
 });
