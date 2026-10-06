@@ -350,3 +350,31 @@ test('signed-in and guest test runners expose equivalent Quick and Guided modes'
   assert.ok(workspaceCss.includes('@media (prefers-reduced-motion:reduce)'))
   assert.ok(ia.includes('@media (prefers-reduced-motion:reduce)'))
 })
+
+
+test('My Profile opens with a library-style action hub and routes detailed results to Portfolio', async () => {
+  const [workspace, workspaceCss] = await Promise.all([
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+    readFile('app/[locale]/app/[[...path]]/workspace.css', 'utf8'),
+  ])
+
+  assert.ok(workspace.includes('function ProfileActionHub'))
+  assert.ok(workspace.includes("id: 'state'"))
+  assert.ok(workspace.includes("id: 'portfolio'"))
+  assert.ok(workspace.includes("id: 'recommendations'"))
+  assert.ok(workspace.includes("id: 'complete'"))
+  assert.ok(workspace.includes("id: 'history'"))
+  assert.ok(workspace.includes("id: 'reports'"))
+  assert.ok(workspace.includes('${root}/monitoring'))
+  assert.ok(workspace.includes('${root}/portfolio'))
+  assert.ok(workspace.includes('${root}/tests?mode=recommendations'))
+  assert.ok(workspace.includes('${root}/tests?mode=all'))
+  assert.ok(workspace.includes('${root}/history'))
+  assert.ok(workspace.includes('${root}/reports'))
+  assert.ok(workspace.includes("page === 'portfolio' && <PortfolioPage"))
+  assert.ok(workspace.includes('Results portfolio'))
+  assert.ok(workspace.indexOf('<ProfileActionHub') < workspace.indexOf('<MoodCheckIn'))
+  assert.ok(workspaceCss.includes('.hh-profile-actions-grid'))
+  assert.ok(workspaceCss.includes('grid-template-columns: 104px minmax(0, 1fr) 28px'))
+  assert.ok(workspaceCss.includes('grid-template-columns: 76px minmax(0, 1fr) 24px'))
+})
