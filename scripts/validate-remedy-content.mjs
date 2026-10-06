@@ -56,7 +56,9 @@ for (const remedy of confirmed) {
   if (ru.metadata.locale !== 'ru' || en.metadata.locale !== 'en') fail(`${remedy.slug} pair has incorrect locales`)
   if (ru.metadata.source_file !== remedy.source_file || ru.metadata.source_heading !== remedy.source_section_heading) fail(`${remedy.slug} Russian source metadata is broken`)
   if (!/^message\d+ \(/.test(ru.metadata.primary_source_message || '')) fail(`${remedy.slug} primary Telegram source record is missing`)
-  if (ru.metadata.primary_source_url !== 'https://t.me/arche_therapy') fail(`${remedy.slug} primary Telegram source URL is broken`)
+  const primarySourceUrl = ru.metadata.primary_source_url || ''
+  const isLivePsychicAlchemySource = primarySourceUrl.startsWith('https://t.me/psychic_alchemy/') && /^\d+$/.test(primarySourceUrl.split('/').at(-1) || '')
+  if (primarySourceUrl !== 'https://t.me/arche_therapy' && !isLivePsychicAlchemySource) fail(`${remedy.slug} primary Telegram source URL is broken`)
   const lost = missingRequiredSections((ru.metadata.primary_source_sections || '').split(';').join('\n'), ru.body)
   if (lost.length) fail(`${remedy.slug} lost primary source sections: ${lost.join(', ')}`)
   if (en.metadata.translation_provenance !== 'translated-from-ru') fail(`${remedy.slug} English provenance is missing`)
