@@ -184,7 +184,7 @@
 
 @media (max-width: 720px) {
   .catalog-showcase {
-    width: min(100% - 20px, 680px);
+    width: 100%;
     margin-top: 20px;
   }
   .catalog-showcase-index {
