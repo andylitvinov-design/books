@@ -828,6 +828,71 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   font-size: 12px;
 }
 
+
+.cabinet-monitor-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 16px;
+}
+.cabinet-monitor-action {
+  min-width: 0;
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #d8c9b9;
+  border-radius: 16px;
+  background: #fffdfa;
+  padding: 14px 15px;
+  color: #4c392d;
+  cursor: pointer;
+  text-align: left;
+}
+.cabinet-monitor-action--primary {
+  border-color: #70442d;
+  background: #70442d;
+  color: #fffaf2;
+}
+.cabinet-monitor-action span {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.cabinet-monitor-action strong {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.18;
+}
+.cabinet-monitor-action small {
+  color: #857365;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.cabinet-monitor-action--primary small {
+  color: rgba(255,250,242,.76);
+}
+.cabinet-monitor-action svg {
+  width: 18px;
+  height: 18px;
+  justify-self: end;
+}
+.cabinet-monitor-action:hover {
+  border-color: #b58b6e;
+  box-shadow: 0 8px 20px rgba(74,51,35,.06);
+}
+.cabinet-monitor-action--primary:hover {
+  border-color: #70442d;
+}
+.cabinet-monitor-action:focus-visible {
+  outline: 2px solid #70442d;
+  outline-offset: 3px;
+}
+.cabinet-monitor-action--primary:focus-visible {
+  outline-color: #9b7459;
+}
 .cabinet-monitor-recommended,
 .cabinet-monitor-areas {
   margin-top: 14px;
@@ -1130,6 +1195,18 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   }
   .cabinet-monitor-areas {
     padding: 14px;
+  }
+  .cabinet-monitor-actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin: 12px 0 14px;
+  }
+  .cabinet-monitor-action {
+    min-height: 72px;
+    padding: 12px 13px;
+  }
+  .cabinet-monitor-action strong {
+    font-size: 17px;
   }
   .cabinet-test-recommender {
     padding: 14px;
