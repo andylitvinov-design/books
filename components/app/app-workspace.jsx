@@ -11,7 +11,12 @@ import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
-import { TEST_RECOMMENDATION_FOCUS, rankAssessmentDefinitions } from '@/lib/assessments/test-recommendations'
+import {
+  TEST_LENGTH_FILTERS,
+  TEST_RECOMMENDATION_FOCUS,
+  TEST_STYLE_FILTERS,
+  rankAssessmentDefinitions,
+} from '@/lib/assessments/test-recommendations'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
@@ -616,7 +621,8 @@ function TestCatalog({ data, locale, onStarted }) {
   const [view, setView] = useState(mode === 'all' ? 'all' : 'recommended')
   const [showRecommender, setShowRecommender] = useState(mode === 'recommendations')
   const [selectedFocus, setSelectedFocus] = useState([])
-  const [depth, setDepth] = useState('balanced')
+  const [testStyles, setTestStyles] = useState(() => TEST_STYLE_FILTERS.map((item) => item.key))
+  const [testLengths, setTestLengths] = useState(() => TEST_LENGTH_FILTERS.map((item) => item.key))
   const [personalized, setPersonalized] = useState(null)
   const ru = locale === 'ru'
   const entries = MONITORING_CATALOG.filter((item) => item.startable).map((item) => ({
@@ -635,11 +641,14 @@ function TestCatalog({ data, locale, onStarted }) {
     ? {
         action: 'Подобрать тесты',
         title: 'Какие темы сейчас важнее?',
-        text: 'Выберите одну или несколько зон и желаемую глубину. Доступные тесты будут расставлены по приоритету.',
-        depth: 'Глубина',
-        quick: 'Коротко',
-        balanced: 'Средне',
-        deep: 'Глубже',
+        text: 'Выберите одну или несколько зон, тип теста и длину. Доступные тесты будут расставлены по приоритету.',
+        style: 'Тип теста',
+        engaging: 'Лёгкие / игровые',
+        professional: 'Профессиональные',
+        length: 'Длина',
+        short: 'Короткие',
+        medium: 'Средние',
+        comprehensive: 'Комплексные',
         build: 'Показать рекомендации',
         ranked: 'Ваш рекомендуемый порядок',
         rankedText: 'Порядок основан только на выбранных темах и глубине. Это навигация по тестам, а не диагноз.',
@@ -651,11 +660,14 @@ function TestCatalog({ data, locale, onStarted }) {
     : {
         action: 'Get test recommendations',
         title: 'What matters most right now?',
-        text: 'Choose one or more areas and your preferred depth. Available tests will be ranked for you.',
-        depth: 'Depth',
-        quick: 'Short',
-        balanced: 'Medium',
-        deep: 'Deeper',
+        text: 'Choose one or more areas, the test style and length. Available tests will be ranked for you.',
+        style: 'Test style',
+        engaging: 'Fun / engaging',
+        professional: 'Professional',
+        length: 'Length',
+        short: 'Short',
+        medium: 'Medium',
+        comprehensive: 'Comprehensive',
         build: 'Show my recommendations',
         ranked: 'Your recommended order',
         rankedText: 'The order is based only on the themes and depth you selected. It helps navigate tests; it is not a diagnosis.',
@@ -708,9 +720,21 @@ function TestCatalog({ data, locale, onStarted }) {
     setPersonalized(null)
   }
 
+  function toggleFacet(setter, key) {
+    setter((current) => {
+      if (!current.includes(key)) return [...current, key]
+      return current.length > 1 ? current.filter((item) => item !== key) : current
+    })
+    setPersonalized(null)
+  }
+
   function buildRecommendations() {
     if (!selectedFocus.length) return
-    setPersonalized(rankAssessmentDefinitions(definitions, { focus: selectedFocus, depth }))
+    setPersonalized(rankAssessmentDefinitions(definitions, {
+      focus: selectedFocus,
+      styles: testStyles,
+      lengths: testLengths,
+    }))
     setView('personalized')
   }
 
@@ -778,18 +802,38 @@ function TestCatalog({ data, locale, onStarted }) {
               </button>
             ))}
           </div>
-          <fieldset className="hh-test-depth">
-            <legend>{recommendationCopy.depth}</legend>
-            {[
-              ['quick', recommendationCopy.quick],
-              ['balanced', recommendationCopy.balanced],
-              ['deep', recommendationCopy.deep],
-            ].map(([key, label]) => (
-              <button type="button" key={key} aria-pressed={depth === key} onClick={() => { setDepth(key); setPersonalized(null) }}>
-                {label}
-              </button>
-            ))}
-          </fieldset>
+          <div className="hh-test-facets">
+            <fieldset className="hh-test-filter">
+              <legend>{recommendationCopy.style}</legend>
+              {TEST_STYLE_FILTERS.map((item) => (
+                <button
+                  type="button"
+                  key={item.key}
+                  aria-pressed={testStyles.includes(item.key)}
+                  onClick={() => toggleFacet(setTestStyles, item.key)}
+                >
+                  {item.key === 'engaging' ? recommendationCopy.engaging : recommendationCopy.professional}
+                </button>
+              ))}
+            </fieldset>
+            <fieldset className="hh-test-filter">
+              <legend>{recommendationCopy.length}</legend>
+              {TEST_LENGTH_FILTERS.map((item) => (
+                <button
+                  type="button"
+                  key={item.key}
+                  aria-pressed={testLengths.includes(item.key)}
+                  onClick={() => toggleFacet(setTestLengths, item.key)}
+                >
+                  {item.key === 'short'
+                    ? recommendationCopy.short
+                    : item.key === 'medium'
+                      ? recommendationCopy.medium
+                      : recommendationCopy.comprehensive}
+                </button>
+              ))}
+            </fieldset>
+          </div>
           <div className="hh-test-recommender-footer">
             <button className="hh-primary" type="button" disabled={!selectedFocus.length} onClick={buildRecommendations}>
               {recommendationCopy.build}
