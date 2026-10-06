@@ -665,8 +665,94 @@
   }
 
   .remedy-directory { @apply mt-8; }
-  .remedy-search { @apply flex w-full items-center gap-3 border-b border-[#8c6a52] py-3 text-[#6d4c38]; }
-  .remedy-search input { @apply w-full bg-transparent text-[15px] text-[#2c2119] outline-none placeholder:text-[#8b7c6f]; }
+  .remedy-search-shell { position: relative; z-index: 10; max-width: 46rem; }
+  .remedy-search-label { display: grid; gap: 7px; color: #5e4e40; font-size: 12px; font-weight: 700; }
+  .remedy-search-box {
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    gap: 11px;
+    border: 1px solid #bfa98f;
+    border-radius: 14px;
+    background: #fffaf2;
+    padding: 0 15px;
+    box-shadow: 0 5px 18px rgba(56, 39, 26, .035);
+    transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+  }
+  .remedy-search-box:focus-within {
+    border-color: #8b6249;
+    background: #fffdf8;
+    box-shadow: 0 0 0 3px rgba(139, 98, 73, .10), 0 10px 24px rgba(56, 39, 26, .06);
+  }
+  .remedy-search-box svg { flex: 0 0 auto; color: #7a563f; }
+  .remedy-search-box input {
+    width: 100%;
+    min-width: 0;
+    background: transparent;
+    color: #2c2119;
+    font-size: 16px;
+    outline: none;
+  }
+  .remedy-search-box input::placeholder { color: #968777; }
+  .remedy-search-hint { margin-top: 7px; color: #8a796b; font-size: 11px; line-height: 1.45; }
+  .remedy-search-suggestions {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% - 2px);
+    z-index: 30;
+    display: grid;
+    max-height: 360px;
+    overflow-y: auto;
+    border: 1px solid #cbb79e;
+    border-radius: 12px;
+    background: #fffdf8;
+    box-shadow: 0 18px 36px rgba(56, 39, 26, .14);
+  }
+  .remedy-search-suggestions > a {
+    display: grid;
+    gap: 3px;
+    border-bottom: 1px solid #eadfce;
+    padding: 12px 14px;
+    color: #3f2c20;
+    text-decoration: none;
+  }
+  .remedy-search-suggestions > a:last-of-type { border-bottom: 0; }
+  .remedy-search-suggestions > a:hover,
+  .remedy-search-suggestions > a:focus-visible { background: #f4eadc; outline: none; }
+  .remedy-search-suggestions > p { padding: 13px 14px; color: #78695c; font-size: 12px; }
+  .remedy-search-suggestion-topline,
+  .remedy-list-heading,
+  .remedies-search-result-topline {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .remedy-search-suggestion-topline strong { min-width: 0; font-family: var(--font-serif); font-size: 17px; font-weight: 600; }
+  .remedy-search-suggestion-common { color: #67584b; font-size: 12px; }
+  .remedy-search-suggestions small { color: #97705a; font-size: 10px; line-height: 1.35; }
+  .remedy-description-type {
+    display: inline-flex;
+    min-height: 24px;
+    flex: 0 0 auto;
+    align-items: center;
+    border: 1px solid #d7c3af;
+    border-radius: 999px;
+    background: #f8efe3;
+    padding: 3px 8px;
+    color: #78523c;
+    font-family: var(--font-sans);
+    font-size: 9px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: .02em;
+    white-space: nowrap;
+  }
+  .remedy-description-type--source-excerpt { border-style: dashed; background: #fbf6ef; color: #816c5c; }
+  .remedy-description-type--source-description { background: #f6f0e7; color: #716357; }
   .remedy-alphabet { @apply mt-5 flex flex-wrap gap-1; }
   .remedy-alphabet button { @apply min-w-9 rounded-full px-3 py-2 text-sm text-[#6e5746] transition hover:bg-[#e6d8c5] hover:text-[#3d2c21]; }
   .remedy-alphabet button[aria-pressed="true"] { @apply bg-[#4f3829] text-[#fffaf2]; }
@@ -675,6 +761,8 @@
   .remedy-list li { @apply border-b border-[#d8c9b5]; }
   .remedy-list a { @apply grid grid-cols-[2.5rem_1fr] gap-3 py-5 transition hover:bg-[#f8f1e7]; }
   .remedy-list-letter { @apply font-serif text-2xl text-[#8b5a3c]; }
+  .remedy-list-copy { min-width: 0; }
+  .remedy-list-heading { align-items: baseline; justify-content: flex-start; }
   .remedy-list strong { @apply block font-serif text-2xl text-[#2c2119]; }
   .remedy-list small,
   .remedy-list em { @apply mt-1 block text-sm not-italic leading-6 text-[#6d5d51]; }
@@ -682,6 +770,17 @@
   .remedy-empty { @apply mt-8 border border-dashed border-[#cdbda5] bg-[#fbf6ed] px-6 py-12 text-center; }
   .remedy-empty h2 { @apply font-serif text-3xl text-[#2c2119]; }
   .remedy-empty p { @apply mt-3 text-[#67584b]; }
+
+  @media (max-width: 520px) {
+    .remedy-search-shell { max-width: none; }
+    .remedy-search-label { font-size: 11px; }
+    .remedy-search-box { min-height: 54px; }
+    .remedy-search-suggestion-topline,
+    .remedy-list-heading,
+    .remedies-search-result-topline { align-items: flex-start; }
+    .remedy-list-heading { flex-direction: column; gap: 5px; }
+    .remedy-description-type { font-size: 8.5px; }
+  }
 
   .remedy-page { width: 100%; max-width: 56rem; margin-inline: auto; }
   .remedy-page-actions { @apply mb-8 flex items-center justify-between gap-4 text-sm font-semibold text-[#70442d]; }
@@ -2726,6 +2825,11 @@
 .remedies-search-results strong { font-size: 14px; }
 .remedies-search-results span,
 .remedies-search-results p { color: #78695c; font-size: 11px; }
+.remedies-search-results .remedies-search-result-topline { color: inherit; font-size: inherit; }
+.remedies-search-results .remedy-description-type {
+  color: #78523c;
+  font-size: 9px;
+}
 .remedies-search-results p { padding: 12px 14px; }
 .remedies-all-link {
   display: inline-block;
