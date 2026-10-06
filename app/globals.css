@@ -2825,6 +2825,11 @@
 .remedies-search-results strong { font-size: 14px; }
 .remedies-search-results span,
 .remedies-search-results p { color: #78695c; font-size: 11px; }
+.remedies-search-results small {
+  color: #97705a;
+  font-size: 10px;
+  line-height: 1.35;
+}
 .remedies-search-results .remedies-search-result-topline { color: inherit; font-size: inherit; }
 .remedies-search-results .remedy-description-type {
   color: #78523c;
