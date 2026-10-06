@@ -22,10 +22,13 @@ test('Remedies landing combines remedy search, free consultation and book covers
   assert.match(cta, /wa\.me\/14376066502/)
   assert.match(search, /Find a homeopathic remedy/)
   assert.match(search, /Full description/)
-  assert.match(directory, /Поиск препарата/)
-  assert.match(directory, /remedy-search-suggestions/)
+  assert.match(directory, /Найти гомеопатический препарат/)
+  assert.match(directory, /remedies-search-input/)
+  assert.match(directory, /remedies-search-results/)
+  assert.match(directory, /remedies-all-link/)
   assert.match(directory, /Полное описание/)
   assert.match(directory, /Краткое описание/)
+  assert.doesNotMatch(directory, /remedy-search-box/)
   assert.match(books, /catalog-cover/)
   assert.match(header, /SiteNavigation/)
 })
@@ -106,4 +109,25 @@ test('practitioner and service detail pages label zero-price offerings as free',
   assert.match(detail, /confirmedPrice===0/)
   assert.match(detail, /Бесплатно/)
   assert.match(detail, /Free/)
+})
+
+
+test('all public remedy catalogs use the same boxed autocomplete surface and description type badges', async () => {
+  const [directory, spanishDirectory, spanishData, prescription, consultation] = await Promise.all([
+    readFile('components/remedy-directory.tsx', 'utf8'),
+    readFile('components/spanish-remedy-directory.tsx', 'utf8'),
+    readFile('data/remedies-es.js', 'utf8'),
+    readFile('components/prescription-form.jsx', 'utf8'),
+    readFile('components/consultation-form.jsx', 'utf8'),
+  ])
+  for (const source of [directory, spanishDirectory]) {
+    assert.match(source, /remedies-search-input/)
+    assert.match(source, /remedies-search-results/)
+    assert.match(source, /remedies-all-link/)
+    assert.match(source, /remedy-description-type/)
+  }
+  assert.match(spanishData, /descriptionType: entry\.descriptionType/)
+  assert.match(prescription, /Полная карточка/)
+  assert.match(consultation, /Full profile/)
+  assert.match(consultation, /consultationRemedySuggestions/)
 })
