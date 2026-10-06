@@ -54,6 +54,7 @@ test('Basis and Ritual paragraphs use the same readable inset rhythm as other re
 
   assert.match(renderer, /ритуал\|ritual/)
   assert.match(renderer, /return "ritual"/)
-  assert.match(renderer, /remedy-content-section--\$\{section\.key\}/)
+  assert.match(renderer, /"remedy-content-section remedy-content-section--basis"/)
+  assert.match(renderer, /"remedy-content-section remedy-content-section--ritual"/)
   assert.match(styles, /\.remedy-content-section--basis > p,[\s\S]*?\.remedy-content-section--ritual > p\s*\{[^}]*padding-left:\s*1\.15em/)
 })
