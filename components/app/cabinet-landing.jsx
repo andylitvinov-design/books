@@ -8,7 +8,9 @@ import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
-import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
+import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
+import { getAssessmentDefinition } from '@/lib/assessments/definitions'
+import { TEST_RECOMMENDATION_FOCUS, rankAssessmentDefinitions } from '@/lib/assessments/test-recommendations'
 
 const UI = {
   en: {
@@ -25,6 +27,18 @@ const UI = {
     otherChecks: 'Other self-checks',
     areasTitle: 'What you can monitor',
     areasText: 'More areas appear only when a real questionnaire is ready and safe to use.',
+    recommenderKicker: 'Personal test selection',
+    recommenderTitle: 'Build a test set for what matters to you',
+    recommenderText: 'Mark what is bothering you or feels important right now. We will rank the available tests by relevance and the depth you prefer.',
+    recommenderDepth: 'Depth',
+    recommenderQuick: 'Short',
+    recommenderBalanced: 'Medium',
+    recommenderDeep: 'Deeper',
+    recommenderBuild: 'Build my test set',
+    recommenderChoose: 'Choose at least one area.',
+    recommenderResults: 'Recommended for your request',
+    recommenderPrivacy: 'Your choices are used only to rank this set and are not saved unless you explicitly consent to a test.',
+    recommenderRank: 'Priority',
     wuXing: 'Personal Wu Xing profile',
     stateTitle: 'Current State Check',
     stateText: '5 questions · ~1 min',
@@ -94,6 +108,18 @@ const UI = {
     otherChecks: 'Другие самопроверки',
     areasTitle: 'Что можно отслеживать',
     areasText: 'Новые области появляются только когда реальный опросник готов и безопасен для использования.',
+    recommenderKicker: 'Индивидуальный подбор',
+    recommenderTitle: 'Подобрать комплект тестов под ваш запрос',
+    recommenderText: 'Отметьте, что сейчас беспокоит или важно. Мы расставим доступные тесты по приоритету с учётом выбранных тем и желаемой глубины.',
+    recommenderDepth: 'Глубина',
+    recommenderQuick: 'Коротко',
+    recommenderBalanced: 'Средне',
+    recommenderDeep: 'Глубже',
+    recommenderBuild: 'Собрать мой набор',
+    recommenderChoose: 'Выберите хотя бы одну тему.',
+    recommenderResults: 'Рекомендуем по вашему запросу',
+    recommenderPrivacy: 'Выбор используется только для расчёта этого набора и не сохраняется без вашего явного согласия на прохождение теста.',
+    recommenderRank: 'Приоритет',
     wuXing: 'Личный профиль У-Син',
     stateTitle: 'Состояние сейчас',
     stateText: '5 вопросов · ~1 мин',
@@ -151,30 +177,66 @@ const UI = {
   },
 }
 
+const PUBLIC_GUEST_BLOCKED_KEYS = new Set(['phq-9'])
+
 function testArtwork(locale, id) {
   const suffix = locale === 'ru' ? 'ru-v1' : 'en-v2'
-  return id === 'state'
-    ? `/images/holistic-house/video-posters/home-${suffix}.webp`
-    : `/images/holistic-house/video-posters/services-${suffix}.webp`
+  const item = monitoringCatalogItem(id === 'state' ? 'hh-current-state' : id === 'trait' ? 'mini-ipip-20' : id)
+  return item?.axis === 'baseline'
+    ? `/images/holistic-house/video-posters/services-${suffix}.webp`
+    : `/images/holistic-house/video-posters/home-${suffix}.webp`
 }
 
 function definitionFor(id, locale) {
   if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V2 : CURRENT_STATE_EN_V2
-  return MINI_IPIP_20_EN_V1
+  if (id === 'trait') return MINI_IPIP_20_EN_V1
+  const item = monitoringCatalogItem(id)
+  if (!item?.startable || PUBLIC_GUEST_BLOCKED_KEYS.has(item.key)) return null
+  return getAssessmentDefinition(
+    item.key,
+    item.version,
+    item.instrumentLocale === 'dynamic' ? locale : item.instrumentLocale,
+  )
+}
+
+function publicRecommendationDefinitions(locale) {
+  return MONITORING_CATALOG
+    .filter((item) => item.startable && !PUBLIC_GUEST_BLOCKED_KEYS.has(item.key))
+    .map((item) =>
+      getAssessmentDefinition(
+        item.key,
+        item.version,
+        item.instrumentLocale === 'dynamic' ? locale : item.instrumentLocale,
+      ),
+    )
+}
+
+function definitionTitle(definition, locale) {
+  const item = monitoringCatalogItem(definition.key)
+  return item?.title?.[locale] || item?.title?.en || definition.title
+}
+
+function definitionMeta(definition, locale) {
+  const item = monitoringCatalogItem(definition.key)
+  const count = item?.questionCount || definition.questions.length
+  const duration = item?.durationMinutes || 2
+  const language = definition.instrumentLocale !== locale ? ` · ${definition.instrumentLocale.toUpperCase()}` : ''
+  return `${count} ${locale === 'ru' ? 'вопросов' : 'questions'} · ~${duration} ${locale === 'ru' ? 'мин' : 'min'}${language}`
 }
 
 function answerLabels(definition, question) {
-  if (definition.key === 'mini-ipip-20')
-    return definition.responseAnchors.map((label, index) => ({ value: index + 1, label }))
-  return Array.from({ length: question.max - question.min + 1 }, (_, index) => ({
-    value: question.min + index,
-    label: String(question.min + index),
+  const min = question.min ?? definition.answerScale?.min
+  const max = question.max ?? definition.answerScale?.max
+  if (Array.isArray(definition.responseAnchors) && Number.isInteger(min))
+    return definition.responseAnchors.map((label, index) => ({ value: min + index, label }))
+  return Array.from({ length: max - min + 1 }, (_, index) => ({
+    value: min + index,
+    label: String(min + index),
   }))
 }
 
 function resultLabel(definition, dimension) {
-  if (dimension.dimensionClass === 'trait') return dimension.sourceConstruct
-  return definition.questions.find((item) => item.id === dimension.key)?.label || dimension.key
+  return dimension.sourceConstruct || definition.questions.find((item) => item.id === dimension.key)?.label || dimension.key
 }
 
 function localZone() {
@@ -218,6 +280,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [latestGuestMood, setLatestGuestMood] = useState(null)
   const [adult, setAdult] = useState(false)
   const [necessary, setNecessary] = useState(false)
+  const [selectedFocus, setSelectedFocus] = useState([])
+  const [depth, setDepth] = useState('balanced')
+  const [personalized, setPersonalized] = useState(null)
   const [busy, setBusy] = useState(false)
   const [saveState, setSaveState] = useState('')
   const [error, setError] = useState('')
@@ -294,6 +359,24 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
+  function toggleFocus(key) {
+    setSelectedFocus((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+    )
+    setPersonalized(null)
+  }
+
+  function buildRecommendations() {
+    if (!selectedFocus.length) return
+    const ranked = rankAssessmentDefinitions(publicRecommendationDefinitions(locale), {
+      focus: selectedFocus,
+      depth,
+    })
+      .filter((item) => item.matchedFocus.length)
+      .slice(0, 3)
+    setPersonalized(ranked)
+  }
+
   async function startRun(def) {
     const created = await guestFetch('guest/runs', {
       definitionKey: def.key,
@@ -315,6 +398,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   async function begin(id, moodPayload = pendingMood) {
     const def = definitionFor(id, locale)
+    if (!def) {
+      setError(c.error)
+      return
+    }
     setActive(id)
     setGuestResult(null)
     setError('')
@@ -405,7 +492,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       if (quick) {
         if (!lastQuestion) {
           setIndex((value) => value + 1)
-        } else if (definition.key === 'hh-current-state') {
+        } else if (definition.optionalContext?.length > 0) {
           setPhase('context')
         } else {
           await submitSavedRun(saved)
@@ -449,7 +536,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       setSaveState(c.saved)
       if (index < definition.questions.length - 1) {
         setIndex((value) => value + 1)
-      } else if (definition.key === 'hh-current-state') {
+      } else if (definition.optionalContext?.length > 0) {
         setPhase('context')
       } else {
         await submitSavedRun(saved)
@@ -584,20 +671,90 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </button>
             </div>
 
-            <div className="cabinet-monitor-areas" aria-labelledby="cabinet-monitor-areas-title">
-              <div>
-                <p className="cabinet-monitor-label" id="cabinet-monitor-areas-title">{c.areasTitle}</p>
-                <p className="cabinet-test-note">{c.areasText}</p>
+            <section className="cabinet-test-recommender" aria-labelledby="cabinet-test-recommender-title">
+              <div className="cabinet-test-recommender-heading">
+                <p className="cabinet-monitor-label">{c.recommenderKicker}</p>
+                <h3 id="cabinet-test-recommender-title">{c.recommenderTitle}</h3>
+                <p>{c.recommenderText}</p>
               </div>
-              <div className="cabinet-monitor-area-list" aria-label={c.areasTitle}>
-                {MONITOR_AREAS.slice(0, 8).map((area) => (
-                  <span key={area.key}>{area[locale] || area.en}</span>
+
+              <div className="cabinet-test-focus-grid" aria-label={c.recommenderTitle}>
+                {TEST_RECOMMENDATION_FOCUS.map((item) => (
+                  <button
+                    type="button"
+                    key={item.key}
+                    aria-pressed={selectedFocus.includes(item.key)}
+                    onClick={() => toggleFocus(item.key)}
+                  >
+                    {item.label[locale] || item.label.en}
+                  </button>
                 ))}
               </div>
+
+              <fieldset className="cabinet-test-depth">
+                <legend>{c.recommenderDepth}</legend>
+                {[
+                  ['quick', c.recommenderQuick],
+                  ['balanced', c.recommenderBalanced],
+                  ['deep', c.recommenderDeep],
+                ].map(([key, label]) => (
+                  <button
+                    type="button"
+                    key={key}
+                    aria-pressed={depth === key}
+                    onClick={() => {
+                      setDepth(key)
+                      setPersonalized(null)
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </fieldset>
+
+              <div className="cabinet-test-recommender-actions">
+                <button
+                  className="cabinet-test-recommender-build"
+                  type="button"
+                  disabled={!selectedFocus.length}
+                  onClick={buildRecommendations}
+                >
+                  {c.recommenderBuild}
+                  <ChevronRight aria-hidden="true" />
+                </button>
+                {!selectedFocus.length && <small>{c.recommenderChoose}</small>}
+              </div>
+
+              {personalized && (
+                <div className="cabinet-ranked-tests" aria-live="polite">
+                  <p className="cabinet-monitor-label">{c.recommenderResults}</p>
+                  {personalized.map((item, index) => (
+                    <button
+                      className={`cabinet-test-row${index === 0 ? ' cabinet-test-row--recommended' : ''}`}
+                      type="button"
+                      key={item.definition.id}
+                      disabled={busy}
+                      onClick={() => begin(item.definition.key)}
+                    >
+                      <span className="cabinet-test-image" aria-hidden="true">
+                        <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, item.definition.key)} />
+                      </span>
+                      <span className="cabinet-test-row-copy">
+                        <small>{c.recommenderRank} #{index + 1}</small>
+                        <strong>{definitionTitle(item.definition, locale)}</strong>
+                        <small>{definitionMeta(item.definition, locale)}</small>
+                      </span>
+                      <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <p className="cabinet-test-recommender-privacy">{c.recommenderPrivacy}</p>
               <Link className="cabinet-monitor-wuxing" href={`/${locale}/wu-xing`}>
                 {c.wuXing}<ChevronRight aria-hidden="true" />
               </Link>
-            </div>
+            </section>
           </>
         )}
 
@@ -626,7 +783,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         {phase === 'mode' && definition && run && (
           <div className="cabinet-guest-runner hh-test-mode-picker">
             <div className="hh-test-mode-intro">
-              <p className="cabinet-test-progress">{definition.key === 'hh-current-state' ? c.stateTitle : c.traitTitle}</p>
+              <p className="cabinet-test-progress">{definitionTitle(definition, locale)}</p>
               <h3>{c.modeTitle}</h3>
               <p>{c.modeText}</p>
             </div>
@@ -676,7 +833,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             {mode === 'guided' && <p className="hh-guided-step">{c.guidedPrompt}</p>}
             <h3>{question.text}</h3>
             {definition.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
-            <div className={definition.key === 'mini-ipip-20' ? 'cabinet-answer-list' : 'cabinet-answer-scale'}>
+            <div className={Array.isArray(definition.responseAnchors) ? 'cabinet-answer-list' : 'cabinet-answer-scale'}>
               {answerLabels(definition, question).map((option) => (
                 <button
                   type="button"
@@ -685,13 +842,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                   disabled={busy}
                   onClick={() => choose(option.value)}
                 >
-                  {definition.key === 'mini-ipip-20'
+                  {Array.isArray(definition.responseAnchors)
                     ? <><strong>{option.value}</strong><span>{option.label}</span></>
                     : option.label}
                 </button>
               ))}
             </div>
-            {definition.key !== 'mini-ipip-20' && (
+            {!Array.isArray(definition.responseAnchors) && question.anchors && (
               <div className="cabinet-answer-anchors">
                 <span>{question.anchors[0]}</span><span>{question.anchors[1]}</span>
               </div>
@@ -708,7 +865,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </button>
               {mode === 'guided' && (
                 <button type="button" disabled={busy || selected === undefined} onClick={next}>
-                  {index === definition.questions.length - 1 && definition.key !== 'hh-current-state'
+                  {index === definition.questions.length - 1 && !definition.optionalContext?.length
                     ? c.finish
                     : c.next}
                 </button>
@@ -717,7 +874,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           </div>
         )}
 
-        {phase === 'context' && definition?.key === 'hh-current-state' && (
+        {phase === 'context' && definition?.optionalContext?.length > 0 && (
           <div className="cabinet-guest-runner">
             <h3>{c.contextTitle}</h3>
             <p>{c.contextText}</p>
@@ -738,11 +895,11 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <header className="cabinet-result-hero">
               <div>
                 <p className="about-kicker">{c.result}</p>
-                <h3>{definition.key === 'hh-current-state' ? c.stateTitle : c.traitTitle}</h3>
+                <h3>{definitionTitle(definition, locale)}</h3>
                 <p className="cabinet-result-intro">
                   {locale === 'ru'
-                    ? 'Ваш личный замер состояния — спокойно, без ярлыков и автоматических выводов.'
-                    : 'Your personal measurement — calm, private and without automatic labels.'}
+                    ? 'Ваш личный результат самонаблюдения — спокойно, без ярлыков и автоматических выводов.'
+                    : 'Your personal self-observation result — calm, private and without automatic labels.'}
                 </p>
               </div>
               <div className="cabinet-result-meta">
