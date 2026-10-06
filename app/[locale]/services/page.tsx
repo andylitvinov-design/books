@@ -148,12 +148,29 @@ export default async function ServicesPage({ params }: PageProps) {
   const featuredService = offerings.find((service) => service.slug === "free-wu-xing-diagnostic");
   const marketplaceOfferings = offerings.filter((service) => service.id !== featuredService?.id);
   const chooseFormatLabel = locale === "ru" ? "Выбрать этот формат" : "Choose this format";
+  const servicePage = (slug: string) => {
+    const service = offerings.find((item) => item.slug === slug);
+    return service ? `/${locale}/services/${service.practitionerSlug}/${service.slug}` : null;
+  };
+  const personalConstellationHref = servicePage("personal-constellation-session");
+  const businessConstellationHref = servicePage("business-situation-constellation");
+  const homeopathyHref = servicePage("homeopathy-consultation");
+  const serviceIndexHrefs: Record<string, string> = {
+    hypnotherapy: `/${locale}/academy/applied/hypnotherapy-regressions`,
+    "systemic-constellations": personalConstellationHref ?? `/${locale}/masters/andy-litvinov`,
+    "business-decision-constellations": businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
+    "reiki-energy-work": `/${locale}/academy/reiki`,
+    business: businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
+    alchemy: homeopathyHref ?? `/${locale}/masters/andy-litvinov`,
+    archetypal: personalConstellationHref ?? `/${locale}/masters/andy-litvinov`,
+  };
   const coreShowcaseItems: CatalogShowcaseItem[] = entry.services.map(({ id, title, subtitle, text }) => ({
     id: "service-" + id,
     title,
     subtitle,
     description: text,
     href: "#available-services",
+    indexHref: serviceIndexHrefs[id],
     actionLabel: chooseFormatLabel,
     image: serviceShowcaseImages[id] ?? "/images/holistic-house/hero-olive-incense.webp",
     eyebrow: locale === "ru" ? "Формат индивидуальной работы" : "Personal work format",
@@ -164,6 +181,7 @@ export default async function ServicesPage({ params }: PageProps) {
     subtitle,
     description: text,
     href: "#available-services",
+    indexHref: serviceIndexHrefs[id],
     actionLabel: chooseFormatLabel,
     image: serviceShowcaseImages[id] ?? "/images/holistic-house/books-library.webp",
     media: <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />,
