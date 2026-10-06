@@ -2,7 +2,7 @@
   "book_id": "book-02-homeopathy-remedies",
   "title_ru": "Гомеопатические препараты и карточки",
   "title_en": "Homeopathic Remedies and Cards",
-  "remedy_count": 95,
+  "remedy_count": 103,
   "entries": [
     {
       "slug": "aconitum",
@@ -233,6 +233,18 @@
       "supporting_image_count": 0
     },
     {
+      "slug": "bach-willow",
+      "canonical_latin_name": "Bach Willow",
+      "russian_common_name": "",
+      "aliases": "Bach Willow; BACH WILLOW; Willow",
+      "primary_source_message": "message999 (17.03.2026 18:34:12 UTC-05:00)",
+      "supplementary_materials": "",
+      "source_messages": "message999 (17.03.2026 18:34:12 UTC-05:00)",
+      "image_status": "no_image",
+      "primary_image": "",
+      "supporting_image_count": 0
+    },
+    {
       "slug": "baptisia-tinctoria",
       "canonical_latin_name": "Baptisia Tinctoria",
       "russian_common_name": "",
@@ -329,6 +341,18 @@
       "supporting_image_count": 0
     },
     {
+      "slug": "calcarea-phosphorica",
+      "canonical_latin_name": "Calcarea Phosphorica",
+      "russian_common_name": "",
+      "aliases": "Calcarea Phosphorica",
+      "primary_source_message": "message227 (14.12.2024 17:05:22 UTC-05:00)",
+      "supplementary_materials": "",
+      "source_messages": "message227 (14.12.2024 17:05:22 UTC-05:00)",
+      "image_status": "no_image",
+      "primary_image": "",
+      "supporting_image_count": 0
+    },
+    {
       "slug": "camphora",
       "canonical_latin_name": "Camphora",
       "russian_common_name": "камфора",
@@ -338,6 +362,18 @@
       "source_messages": "message622 (09.06.2025 22:47:20 UTC-05:00)",
       "image_status": "primary_image",
       "primary_image": "/media/remedies/camphora/message622-1.jpg",
+      "supporting_image_count": 0
+    },
+    {
+      "slug": "candida-albicans",
+      "canonical_latin_name": "Candida Albicans",
+      "russian_common_name": "Кандида",
+      "aliases": "Candida Albicans; CANDIDA ALBICANS; Кандида",
+      "primary_source_message": "message665 (22.06.2025 12:36:24 UTC-05:00)",
+      "supplementary_materials": "",
+      "source_messages": "message665 (22.06.2025 12:36:24 UTC-05:00)",
+      "image_status": "no_image",
+      "primary_image": "",
       "supporting_image_count": 0
     },
     {
@@ -410,6 +446,18 @@
       "source_messages": "message754 (19.07.2025 01:05:11 UTC-05:00)",
       "image_status": "primary_image",
       "primary_image": "/media/remedies/cenchris-contortrix/message754-1.jpg",
+      "supporting_image_count": 0
+    },
+    {
+      "slug": "cimicifuga-racemosa",
+      "canonical_latin_name": "Cimicifuga Racemosa",
+      "russian_common_name": "Цимицифуга",
+      "aliases": "Cimicifuga Racemosa; Cimicifuga; Цимицифуга",
+      "primary_source_message": "message1020 (26.04.2026 11:25:30 UTC-05:00)",
+      "supplementary_materials": "",
+      "source_messages": "message1020 (26.04.2026 11:25:30 UTC-05:00)",
+      "image_status": "no_image",
+      "primary_image": "",
       "supporting_image_count": 0
     },
     {
@@ -530,6 +578,18 @@
       "source_messages": "message158 (15.11.2024 09:15:57 UTC-05:00)",
       "image_status": "primary_image",
       "primary_image": "/media/remedies/gelsemium/message158-1.jpg",
+      "supporting_image_count": 0
+    },
+    {
+      "slug": "graphites",
+      "canonical_latin_name": "Graphites",
+      "russian_common_name": "графит",
+      "aliases": "Graphites; GRAPHITES; графит",
+      "primary_source_message": "message135 (29.10.2024 12:57:29 UTC-05:00)",
+      "supplementary_materials": "",
+      "source_messages": "message135 (29.10.2024 12:57:29 UTC-05:00)",
+      "image_status": "no_image",
+      "primary_image": "",
       "supporting_image_count": 0
     },
     {
@@ -1061,6 +1121,18 @@
       "supporting_image_count": 0
     },
     {
+      "slug": "stramonium",
+      "canonical_latin_name": "Stramonium",
+      "russian_common_name": "Белена, дурман обыкновенный",
+      "aliases": "Stramonium; Белена; дурман обыкновенный",
+      "primary_source_message": "message108 (24.09.2024 09:31:20 UTC-05:00)",
+      "supplementary_materials": "",
+      "source_messages": "message108 (24.09.2024 09:31:20 UTC-05:00)",
+      "image_status": "no_image",
+      "primary_image": "",
+      "supporting_image_count": 0
+    },
+    {
       "slug": "sulphur",
       "canonical_latin_name": "Sulphur",
       "russian_common_name": "сера",
@@ -1082,6 +1154,18 @@
       "source_messages": "message826 (14.09.2025 19:17:12 UTC-05:00)",
       "image_status": "primary_image",
       "primary_image": "/media/remedies/syzygium-jambolanum/message826-1.jpg",
+      "supporting_image_count": 0
+    },
+    {
+      "slug": "taraxacum-officinale",
+      "canonical_latin_name": "Taraxacum Officinale",
+      "russian_common_name": "Одуванчик",
+      "aliases": "Taraxacum Officinale; Taraxacum; Одуванчик",
+      "primary_source_message": "message716 (04.07.2025 18:31:02 UTC-05:00)",
+      "supplementary_materials": "",
+      "source_messages": "message716 (04.07.2025 18:31:02 UTC-05:00)",
+      "image_status": "no_image",
+      "primary_image": "",
       "supporting_image_count": 0
     },
     {
@@ -1142,6 +1226,18 @@
       "source_messages": "message680 (27.06.2025 20:52:50 UTC-05:00)",
       "image_status": "primary_image",
       "primary_image": "/media/remedies/veratrum-album/message680-1.jpg",
+      "supporting_image_count": 0
+    },
+    {
+      "slug": "zincum-metallicum",
+      "canonical_latin_name": "Zincum Metallicum",
+      "russian_common_name": "Цинк металлический",
+      "aliases": "Zincum Metallicum; Zincum; Zinc; Цинк; Цинк металлический",
+      "primary_source_message": "message714 (04.07.2025 00:49:49 UTC-05:00)",
+      "supplementary_materials": "",
+      "source_messages": "message714 (04.07.2025 00:49:49 UTC-05:00)",
+      "image_status": "no_image",
+      "primary_image": "",
       "supporting_image_count": 0
     }
   ]

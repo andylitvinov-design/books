@@ -95,12 +95,12 @@ test('contains exactly one source-backed Russian and translated English file for
   }
 })
 
-test('remedy content validator reports paired 95/95 source-backed pages', () => {
+test('remedy content validator reports paired 103/103 source-backed pages', () => {
   const result = spawnSync(process.execPath, ['scripts/validate-remedy-content.mjs'], {
     cwd: projectRoot,
     encoding: 'utf8',
   })
 
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /ru=95 en=95 pairs=95 source_refs=95/)
+  assert.match(result.stdout, /ru=103 en=103 pairs=103 source_refs=103/)
 })

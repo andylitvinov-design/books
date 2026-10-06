@@ -10,16 +10,16 @@ import {
   searchRemedies,
 } from '../data/remedies.js'
 
-test('builds all 95 remedy routes for each supported locale and no unknown locale', () => {
+test('builds all 103 remedy routes for each supported locale and no unknown locale', () => {
   assert.equal(isSupportedLocale('ru'), true)
   assert.equal(isSupportedLocale('en'), true)
   assert.equal(isSupportedLocale('de'), false)
 
   const params = getRemedyRouteParams()
-  assert.equal(params.length, 190)
-  assert.equal(params.filter(({ locale }) => locale === 'ru').length, 95)
-  assert.equal(params.filter(({ locale }) => locale === 'en').length, 95)
-  assert.equal(new Set(params.map(({ locale, slug }) => `${locale}/${slug}`)).size, 190)
+  assert.equal(params.length, 206)
+  assert.equal(params.filter(({ locale }) => locale === 'ru').length, 103)
+  assert.equal(params.filter(({ locale }) => locale === 'en').length, 103)
+  assert.equal(new Set(params.map(({ locale, slug }) => `${locale}/${slug}`)).size, 206)
   assert.equal(getRemedy('ru', 'not-a-remedy'), undefined)
 })
 
@@ -31,11 +31,13 @@ test('searches partial Latin names, source Russian names, abbreviations, and Cyr
   assert.deepEqual(searchRemedies('ru', 'арсеникум').map(({ slug }) => slug), ['arsenicum-album'])
   assert.deepEqual(searchRemedies('ru', 'железо').map(({ slug }) => slug), ['ferrum-phosphoricum'])
   assert.equal(searchRemedies('en', 'chest').some(({ slug }) => slug === 'bach-sweet-chestnut'), true)
+  assert.deepEqual(searchRemedies('en', 'Zincum').map(({ slug }) => slug), ['zincum-metallicum'])
+  assert.equal(searchRemedies('ru', 'цинк').some(({ slug }) => slug === 'zincum-metallicum'), true)
 })
 
 test('groups every remedy alphabetically and preserves the current slug on language switch', () => {
   const grouped = getAlphabeticalRemedies('ru')
-  assert.equal(grouped.flatMap(({ remedies }) => remedies).length, 95)
+  assert.equal(grouped.flatMap(({ remedies }) => remedies).length, 103)
   assert.equal(grouped.some(({ letter }) => letter === 'A'), true)
   assert.equal(grouped.some(({ letter }) => letter === 'S'), true)
   assert.equal(getRemedySwitchPath('en', 'natrum-muriaticum'), '/en/homeopathy/remedies/natrum-muriaticum')

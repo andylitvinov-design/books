@@ -49,11 +49,11 @@ test('Phase K Telegram index preserves every export message and asset reference'
 test('Phase L keeps Book 02 cards, source variants, and approved canonical names traceable', () => {
   const rows = readIndex()
   const books = Object.groupBy(rows, ({ book_assignment }) => book_assignment)
-  assert.equal(books.book_01.length, 252)
-  assert.equal(books.book_02.length, 112)
-  assert.equal(books.book_03.length, 133)
+  assert.equal(books.book_01.length, 250)
+  assert.equal(books.book_02.length, 120)
+  assert.equal(books.book_03.length, 127)
   assert.equal(books.book_04.length, 277)
-  assert.equal(rows.filter(({ remedy_focus }) => remedy_focus === 'full_card').length, 96)
+  assert.equal(rows.filter(({ remedy_focus }) => remedy_focus === 'full_card').length, 104)
   assert.equal(rows.filter(({ remedy_focus }) => remedy_focus === 'supporting_post').length, 16)
   assert.equal(rows.filter(({ duplicate_of_message_id }) => duplicate_of_message_id).length, 2)
 
@@ -74,6 +74,22 @@ test('Phase L keeps Book 02 cards, source variants, and approved canonical names
   const aurumComparison = rows.find(({ message_id }) => message_id === 'message1059')
   assert.equal(aurumComparison.remedy_focus, 'supporting_post')
   assert.equal(aurumComparison.canonical_card_message_id, 'message37')
+
+  for (const [messageId, slug] of [
+    ['message108', 'stramonium'],
+    ['message135', 'graphites'],
+    ['message227', 'calcarea-phosphorica'],
+    ['message665', 'candida-albicans'],
+    ['message714', 'zincum-metallicum'],
+    ['message716', 'taraxacum-officinale'],
+    ['message999', 'bach-willow'],
+    ['message1020', 'cimicifuga-racemosa'],
+  ]) {
+    const recovered = rows.find(({ message_id }) => message_id === messageId)
+    assert.equal(recovered.book_assignment, 'book_02', messageId)
+    assert.equal(recovered.remedy_focus, 'full_card', messageId)
+    assert.equal(recovered.remedy_slug, slug, messageId)
+  }
 })
 
 test('Phase M image map preserves Book 02 photo provenance and approved public review decisions', () => {
