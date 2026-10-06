@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
-import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
+import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { getAssessmentDefinition } from '@/lib/assessments/definitions'
 import {
   TEST_RECOMMENDATION_FOCUS,
