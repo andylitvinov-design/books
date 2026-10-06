@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 
-import type { Locale, RemedyDirectoryEntry } from "@/data/remedies";
+import type { Locale, RemedyDirectoryEntry, RemedyDescriptionType } from "@/data/remedies";
 
 type RemedySearchBoxProps = {
   locale: Locale;
@@ -17,12 +17,22 @@ const copy = {
     placeholder: "Название, алиас или сокращение…",
     empty: "Ничего не найдено",
     all: "Все препараты",
+    descriptionTypes: {
+      "full-card": "Полное описание",
+      "source-excerpt": "Краткое описание",
+      "source-description": "Описание из источника",
+    },
   },
   en: {
     label: "Find a homeopathic remedy",
     placeholder: "Name, alias, or abbreviation…",
     empty: "No remedies found",
     all: "All remedies",
+    descriptionTypes: {
+      "full-card": "Full description",
+      "source-excerpt": "Short description",
+      "source-description": "Source description",
+    },
   },
 } as const;
 
@@ -45,6 +55,7 @@ export function RemedySearchBox({ locale, entries }: RemedySearchBoxProps) {
     if (!needle) return [];
     return entries.filter((entry) => entry.searchText.includes(needle)).slice(0, 8);
   }, [deferredQuery, entries]);
+  const typeLabel = (descriptionType: RemedyDescriptionType) => text.descriptionTypes[descriptionType];
 
   return (
     <section className="remedies-search-block" aria-label={text.label}>
@@ -66,7 +77,12 @@ export function RemedySearchBox({ locale, entries }: RemedySearchBoxProps) {
         <div className="remedies-search-results" role="list">
           {matches.length ? matches.map((entry) => (
             <Link href={`/${locale}/homeopathy/remedies/${entry.slug}`} key={entry.slug} role="listitem">
-              <strong>{entry.title}</strong>
+              <span className="remedies-search-result-topline">
+                <strong>{entry.title}</strong>
+                <span className={`remedy-description-type remedy-description-type--${entry.descriptionType}`}>
+                  {typeLabel(entry.descriptionType)}
+                </span>
+              </span>
               {entry.commonName ? <span>{entry.commonName}</span> : null}
             </Link>
           )) : <p>{text.empty}</p>}
