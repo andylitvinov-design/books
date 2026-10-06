@@ -24,8 +24,8 @@ primary_source_message: message180 (25.11.2024 23:39:46 UTC-05:00)
 primary_source_sections: ОСНОВА; ЭФФЕКТ; ОБРАЗ; АРХЕТИП; ТЕНЬ; РЕСУРС
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message180 (25.11.2024 23:39:46 UTC-05:00)
+supplementary_materials: message1069 (02.10.2026 20:15 Telegram public view)
+source_messages: message180 (25.11.2024 23:39:46 UTC-05:00); message1069 (02.10.2026 20:15 Telegram public view)
 source_images: /media/remedies/rhus-toxicodendron/message180-1.jpg
 provenance: Canonical capitalization is normalized from the source spelling only.; primary canonical content rebuilt from message180 (25.11.2024 23:39:46 UTC-05:00)
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
@@ -45,6 +45,7 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Rhus Toxicodendron, message180.
 ---
+
 
 RHUS TOXICODENDRON
 
@@ -149,3 +150,23 @@ Rhus tox is an activating remedy. It stimulates movement. Where a person feels s
 It helps a person 'get out of stagnation,' overcome the fear of freezing, apathy, and stupor.
 
 It provides dynamic relaxation through movement — it removes rigidity, fears, and stiffness.
+
+## Additional materials and observations
+
+### message1069 (02.10.2026 20:15 Telegram public view)
+
+Some remedies the author compares for stress:
+
+1. Rhus Rox (source spelling)
+Described for physical tightness, rigidity and bodily symptoms.
+
+2. Coffea Cruda
+Described for psychophysical over-excitation, when there is a need to stabilise and calm down.
+
+3. Nux Vomica
+Described for mental and nervous excitation, helping reduce over-control and increase reliance on oneself.
+
+4. Colchicum
+Described by the author as a deeper remedy for an excessive stress response formed early in life.
+
+The author arranges these remedies by perceived depth of work and notes that not every situation calls for working at the level of early psychological trauma; sometimes the issue may simply be physical overstrain.

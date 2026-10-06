@@ -24,8 +24,8 @@ primary_source_message: message240 (16.12.2024 17:54:26 UTC-05:00)
 primary_source_sections: ОСНОВА; ОБРАЗ; АРХЕТИП
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message240 (16.12.2024 17:54:26 UTC-05:00)
+supplementary_materials: message1071 (02.10.2026 21:52 Telegram public view)
+source_messages: message240 (16.12.2024 17:54:26 UTC-05:00); message1071 (02.10.2026 21:52 Telegram public view)
 source_images: /media/remedies/lycopodium/message240-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Lycopodium.; primary canonical content rebuilt from message240 (16.12.2024 17:54:26 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
@@ -43,6 +43,8 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Lycopodium, message240.
 ---
+
+
 
 LYCOPODIUM
 
@@ -113,3 +115,30 @@ LYCOPODIUM
 PS. С этим препаратом мы работаем, когда уже прошли первую стадию, очистили базовые стрессы, ступоры.
 
 LYCOPODIUM помогает перейти от слабости и сомнений к осознанию своей силы и способности уверенно заявить о себе.
+
+## Дополнительные материалы и наблюдения
+
+### message1071 (02.10.2026 21:52 Telegram public view)
+
+Еще расскажу про тему уверенности.
+
+Это широкий и большой пласт.
+
+1. На первичном, социальном уровне можно начинать с препаратов Lycopodium, Argentum Nitricum и тп - они повышают уровень социальной стабильности и смелости.
+
+Но не меняют качество структур Я, идентичности.
+
+2. На втором уровне можно работать с такими препаратами как Platina, Aurum (золото). Они повышают именно уровень внутренней ценности.
+
+3. Но если мы хотим зайти глубже, в травму недостойности, не идеальности, то нужен совсем другой спектр препаратов.
+
+Хорошо работают:
+- Psorinum: при чувстве стыда себя, грязности, недостойности
+- Carsinosinum: недостаточно хорош для других, смущения
+- Lyssinum выводит из презрения в достоинство.
+
+Но вот за всеми ними я бы поставил препарат Secale Cornatum: здесь вообще идея первичной порочности и непорочности.
+
+Это вибрация зерна, поврежденного спорынью.
+
+И это мощный препарат, который возвращает базовое достоинство, чтобы не происходило.

@@ -8,6 +8,48 @@ import type { PublicLocale } from "@/lib/public-locales";
 
 type Props = { params: Promise<{ locale: string }> };
 
+const miasmUpdate = {
+  ru: {
+    title: "Новая авторская заметка · миазмы × У-Син",
+    lead: "В публикации 1072 автор переосмысливает миазмы как символическую карту глубинных защитных стратегий и сопоставляет их пяти стихиям.",
+    items: [
+      "Металл — сифилитическая динамика: разрушение структуры / поиск внутреннего стержня.",
+      "Вода — псорическая динамика: истощение.",
+      "Дерево — карциносная динамика: стыд, достоинство, желание нравиться.",
+      "Огонь — туберкулиновая динамика: свобода, ограничения, воля и вина.",
+      "Земля — сикотическая динамика: скрыть или проявиться, держать в себе или быть услышанным.",
+    ],
+    note: "Это авторская психообразовательная гипотеза, а не общепринятая медицинская классификация и не способ диагностики или лечения заболеваний.",
+    source: "Открыть исходную публикацию 1072",
+  },
+  en: {
+    title: "New author note · miasms × Wu Xing",
+    lead: "In post 1072 the author reframes miasms as a symbolic map of deep protective strategies and relates them to the five elements.",
+    items: [
+      "Metal — syphilitic dynamic: breakdown of structure / search for an inner core.",
+      "Water — psoric dynamic: depletion.",
+      "Wood — carcinosin dynamic: shame, dignity and the wish to please.",
+      "Fire — tubercular dynamic: freedom, restriction, will and guilt.",
+      "Earth — sycotic dynamic: conceal or express, hold in or be heard.",
+    ],
+    note: "This is an author-developed psychoeducational hypothesis, not a standard medical classification and not a method for diagnosing or treating disease.",
+    source: "Open source post 1072",
+  },
+  es: {
+    title: "Nueva nota del autor · miasmas × Wu Xing",
+    lead: "En la publicación 1072 el autor reinterpreta los miasmas como un mapa simbólico de estrategias protectoras profundas y los relaciona con los cinco elementos.",
+    items: [
+      "Metal — dinámica sifilítica: ruptura de estructura / búsqueda de eje interno.",
+      "Agua — dinámica psórica: agotamiento.",
+      "Madera — dinámica carcinosínica: vergüenza, dignidad y deseo de agradar.",
+      "Fuego — dinámica tuberculínica: libertad, límites, voluntad y culpa.",
+      "Tierra — dinámica sicótica: ocultar o expresar, contener o ser escuchado.",
+    ],
+    note: "Es una hipótesis psicoeducativa del autor, no una clasificación médica estándar ni un método de diagnóstico o tratamiento.",
+    source: "Abrir publicación fuente 1072",
+  },
+} as const;
+
 const copy = {
   en: {
     title: "Wu Xing Levels: how to read your personal profile",
@@ -291,6 +333,18 @@ export default async function WuXingPage({ params }: Props) {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="wu-xing-guide__section wu-xing-guide__miasm-update">
+        <div className="wu-xing-guide__section-heading">
+          <h2>{miasmUpdate[locale].title}</h2>
+          <p>{miasmUpdate[locale].lead}</p>
+        </div>
+        <div className="wu-xing-guide__method-list">
+          {miasmUpdate[locale].items.map((item) => <article key={item}><p>{item}</p></article>)}
+        </div>
+        <p className="wu-xing-guide__note">{miasmUpdate[locale].note}</p>
+        <p><a href="https://t.me/psychic_alchemy/1072" rel="noreferrer" target="_blank">{miasmUpdate[locale].source} ↗</a></p>
       </section>
 
       <section className="wu-xing-guide__section wu-xing-guide__report">

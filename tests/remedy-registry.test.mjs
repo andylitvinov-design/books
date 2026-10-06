@@ -5,11 +5,11 @@ import { consultationRemedySuggestions } from '../lib/consultations/remedy-searc
 import { createPrescription, getClientPrescription } from '../lib/prescriptions/service.js'
 import { buildPrescriptionPdf } from '../lib/prescriptions/pdf.js'
 
-test('actual registry exposes 103 canonical and 23 source entities without source audit details', () => {
+test('actual registry exposes 104 canonical and 23 source entities without source audit details', () => {
  const options=getConsultationRemedyOptions()
- assert.equal(options.filter(r=>r.sourceStatus==='canonical').length,103)
+ assert.equal(options.filter(r=>r.sourceStatus==='canonical').length,104)
  assert.equal(options.filter(r=>r.sourceStatus==='source_only').length,23)
- assert.equal(new Set(options.map(r=>r.id)).size,126)
+ assert.equal(new Set(options.map(r=>r.id)).size,127)
  for(const r of options){assert.equal(r.sourceMessageIds,undefined);assert.equal(r.reviewStatus,undefined)}
 })
 test('Aconitum aliases resolve one canonical entity and never offer duplicate custom names', () => {

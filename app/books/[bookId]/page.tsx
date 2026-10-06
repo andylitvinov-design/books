@@ -9,6 +9,7 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { TranslatedReaderContent } from "@/components/translated-reader-content";
 import { books, getBookById } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
+import { latestAlchemyBook01Html } from "@/data/alchemy-latest-publications";
 import { loadReaderDocument } from "@/data/reader-content";
 import { getBook02Remedies, getRemedyDirectory } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
@@ -152,6 +153,7 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
 
   const display = localizedBookText(book, locale);
   const document = await loadReaderDocument(book);
+  const readerHtml = document.content + (book.id === "alchemy-homeopathy-foundations" ? latestAlchemyBook01Html() : "");
   const coverUrl = "/media/" + book.mediaSeries + "/" + book.cover;
 
   return (
@@ -192,7 +194,7 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
         </aside>
 
         <article className="reader-article">
-          <TranslatedReaderContent html={document.content} locale={locale} />
+          <TranslatedReaderContent html={readerHtml} locale={locale} />
         </article>
       </div>
       <PublicConsultationCta locale={locale} />

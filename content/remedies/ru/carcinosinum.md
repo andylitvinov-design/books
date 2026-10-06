@@ -24,8 +24,8 @@ primary_source_message: message429 (13.04.2025 16:29:13 UTC-05:00)
 primary_source_sections: ЭФФЕКТ; АРХЕТИП; ТЕНЬ
 primary_source_url: https://t.me/arche_therapy
 full_card_additions: message1053 (23.08.2026 09:22:00 UTC-05:00)
-supplementary_materials: message430 (13.04.2025 16:57:35 UTC-05:00)
-source_messages: message429 (13.04.2025 16:29:13 UTC-05:00); message1053 (23.08.2026 09:22:00 UTC-05:00); message430 (13.04.2025 16:57:35 UTC-05:00)
+supplementary_materials: message430 (13.04.2025 16:57:35 UTC-05:00); message1071 (02.10.2026 21:52 Telegram public view)
+source_messages: message429 (13.04.2025 16:29:13 UTC-05:00); message1053 (23.08.2026 09:22:00 UTC-05:00); message430 (13.04.2025 16:57:35 UTC-05:00); message1071 (02.10.2026 21:52 Telegram public view)
 source_images: /media/remedies/carcinosinum/message429-1.jpg; /media/remedies/carcinosinum/message430-1.jpg; /media/remedies/carcinosinum/message1053-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Carsinosinum; Carcinosinum.; primary canonical content rebuilt from message429 (13.04.2025 16:29:13 UTC-05:00); full-card additions: message1053 (23.08.2026 09:22:00 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
@@ -43,6 +43,7 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Carcinosinum, message429.
 ---
+
 
 CARSINOSINUM
 
@@ -387,3 +388,28 @@ CARSINOSINUM — Танец без маски .
 Тепло, огонь души, прощенье.
 
 Открыть свой свет, что ты искал.
+
+### message1071 (02.10.2026 21:52 Telegram public view)
+
+Еще расскажу про тему уверенности.
+
+Это широкий и большой пласт.
+
+1. На первичном, социальном уровне можно начинать с препаратов Lycopodium, Argentum Nitricum и тп - они повышают уровень социальной стабильности и смелости.
+
+Но не меняют качество структур Я, идентичности.
+
+2. На втором уровне можно работать с такими препаратами как Platina, Aurum (золото). Они повышают именно уровень внутренней ценности.
+
+3. Но если мы хотим зайти глубже, в травму недостойности, не идеальности, то нужен совсем другой спектр препаратов.
+
+Хорошо работают:
+- Psorinum: при чувстве стыда себя, грязности, недостойности
+- Carsinosinum: недостаточно хорош для других, смущения
+- Lyssinum выводит из презрения в достоинство.
+
+Но вот за всеми ними я бы поставил препарат Secale Cornatum: здесь вообще идея первичной порочности и непорочности.
+
+Это вибрация зерна, поврежденного спорынью.
+
+И это мощный препарат, который возвращает базовое достоинство, чтобы не происходило.

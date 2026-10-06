@@ -2,7 +2,7 @@
   "book_id": "book-02-homeopathy-remedies",
   "title_ru": "Гомеопатические препараты и карточки",
   "title_en": "Homeopathic Remedies and Cards",
-  "remedy_count": 103,
+  "remedy_count": 104,
   "entries": [
     {
       "slug": "aconitum",
@@ -881,6 +881,18 @@
       "supporting_image_count": 0
     },
     {
+      "slug": "nux-vomica",
+      "canonical_latin_name": "Nux Vomica",
+      "russian_common_name": "",
+      "aliases": "Nux Vomica; Nux; Нукс Вомика",
+      "primary_source_message": "message1070 (02.10.2026 20:53 Telegram public view)",
+      "supplementary_materials": "message1069 (02.10.2026 20:15 Telegram public view)",
+      "source_messages": "message1070 (02.10.2026 20:53 Telegram public view); message1069 (02.10.2026 20:15 Telegram public view)",
+      "image_status": "primary_image",
+      "primary_image": "/media/remedies/nux-vomica/message1070-1.jpg",
+      "supporting_image_count": 0
+    },
+    {
       "slug": "oophorinum",
       "canonical_latin_name": "Oophorinum",
       "russian_common_name": "",
@@ -1056,9 +1068,9 @@
       "primary_source_message": "message285 (09.01.2025 17:33:42 UTC-05:00)",
       "supplementary_materials": "",
       "source_messages": "message285 (09.01.2025 17:33:42 UTC-05:00)",
-      "image_status": "primary_image",
+      "image_status": "primary_with_supporting_gallery",
       "primary_image": "/media/remedies/secale-cornutum/message285-1.jpg",
-      "supporting_image_count": 0
+      "supporting_image_count": 1
     },
     {
       "slug": "sepia",

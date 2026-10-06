@@ -18,6 +18,7 @@ const expectedColumns = [
 ]
 const allowedStatuses = new Set(['confirmed', 'duplicate', 'grouped', 'mention_only'])
 const telegramIndexFile = 'data/telegram-psychic-alchemy-index.csv'
+const liveTelegramImportFile = 'data/telegram-psychic-alchemy-live-import.json'
 
 function fail(message) {
   throw new Error(`remedy-source-inventory: ${message}`)
@@ -70,6 +71,13 @@ function telegramMessageIds() {
   return new Set(lines.map((line) => parseCsvLine(line)[messageIdColumn]))
 }
 
+function liveTelegramMessageIds() {
+  const sourcePath = path.join(projectRoot, liveTelegramImportFile)
+  if (!existsSync(sourcePath)) fail(`Telegram live import is missing: ${liveTelegramImportFile}`)
+  const payload = JSON.parse(readFileSync(sourcePath, 'utf8'))
+  return new Set((payload.posts || []).map(({ id }) => `message${id}`))
+}
+
 function readInventory() {
   if (!existsSync(inventoryPath)) fail('CSV file is missing')
   const lines = readFileSync(inventoryPath, 'utf8').trim().split('\n')
@@ -90,16 +98,18 @@ const confirmedSlugs = new Set()
 const unpublishedSlugs = new Set()
 const counts = { confirmed: 0, duplicate: 0, grouped: 0, mention_only: 0 }
 const telegramIds = telegramMessageIds()
+const liveTelegramIds = liveTelegramMessageIds()
 
 for (const [index, row] of rows.entries()) {
   const line = index + 2
   if (!allowedStatuses.has(row.candidate_status)) fail(`line ${line} has invalid status ${row.candidate_status}`)
   if (!row.source_file || !row.source_section_heading) fail(`line ${line} is missing source traceability`)
 
-  if (row.source_file === telegramIndexFile) {
+  if (row.source_file === telegramIndexFile || row.source_file === liveTelegramImportFile) {
     const anchors = row.source_section_heading.split(';').map((anchor) => anchor.trim()).filter(Boolean)
-    if (anchors.length === 0 || !anchors.every((anchor) => telegramIds.has(anchor))) {
-      fail(`line ${line} references a Telegram message not found in ${telegramIndexFile}`)
+    const sourceIds = row.source_file === telegramIndexFile ? telegramIds : liveTelegramIds
+    if (anchors.length === 0 || !anchors.every((anchor) => sourceIds.has(anchor))) {
+      fail(`line ${line} references a Telegram message not found in ${row.source_file}`)
     }
   } else {
     if (!headingsByFile.has(row.source_file)) headingsByFile.set(row.source_file, sourceHeadings(row.source_file))
@@ -133,7 +143,7 @@ for (const row of rows.filter(({ candidate_status }) => candidate_status === 'du
 }
 
 const enMissing = rows.filter(({ candidate_status, needs_translation }) => candidate_status === 'confirmed' && needs_translation === 'yes').length
-if (counts.confirmed !== 103 || counts.duplicate !== 8 || counts.grouped !== 1 || counts.mention_only !== 21) {
+if (counts.confirmed !== 104 || counts.duplicate !== 8 || counts.grouped !== 1 || counts.mention_only !== 21) {
   fail(`unexpected Phase L inventory counts: confirmed=${counts.confirmed} duplicates=${counts.duplicate} grouped=${counts.grouped} mention_only=${counts.mention_only}`)
 }
 

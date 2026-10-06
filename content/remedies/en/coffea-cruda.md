@@ -24,8 +24,8 @@ primary_source_message: message219 (12.12.2024 09:55:24 UTC-05:00)
 primary_source_sections:
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message219 (12.12.2024 09:55:24 UTC-05:00)
+supplementary_materials: message1069 (02.10.2026 20:15 Telegram public view)
+source_messages: message219 (12.12.2024 09:55:24 UTC-05:00); message1069 (02.10.2026 20:15 Telegram public view)
 source_images: /media/remedies/coffea-cruda/message219-1.jpg
 provenance: Canonical spelling follows the source heading.; primary canonical content rebuilt from message219 (12.12.2024 09:55:24 UTC-05:00)
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
@@ -45,6 +45,7 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Coffea Cruda, message219.
 ---
+
 
 HOMEOPATHY OF SOUL PARTS.
 
@@ -101,3 +102,23 @@ But it is quite promising.
 You can consider what is happening in general with male and female energies inside and in the world.
 
 And choose a solution.
+
+## Additional materials and observations
+
+### message1069 (02.10.2026 20:15 Telegram public view)
+
+Some remedies the author compares for stress:
+
+1. Rhus Rox (source spelling)
+Described for physical tightness, rigidity and bodily symptoms.
+
+2. Coffea Cruda
+Described for psychophysical over-excitation, when there is a need to stabilise and calm down.
+
+3. Nux Vomica
+Described for mental and nervous excitation, helping reduce over-control and increase reliance on oneself.
+
+4. Colchicum
+Described by the author as a deeper remedy for an excessive stress response formed early in life.
+
+The author arranges these remedies by perceived depth of work and notes that not every situation calls for working at the level of early psychological trauma; sometimes the issue may simply be physical overstrain.

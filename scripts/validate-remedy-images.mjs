@@ -10,7 +10,7 @@ function metadata(filePath) { const match = readFileSync(filePath, 'utf8').match
 const lines = readFileSync(mapPath, 'utf8').trim().split('\n'); const header = csv(lines.shift()); const rows = lines.map((line) => Object.fromEntries(header.map((column, index) => [column, csv(line)[index] ?? ''])))
 const published = rows.filter(({ image_review_status }) => image_review_status === 'approved_for_publication')
 const primary = published.filter(({ image_classification }) => image_classification === 'primary_remedy_image')
-if (primary.length !== 93 || new Set(primary.map(({ remedy_slug }) => remedy_slug)).size !== 93) throw new Error('remedy-images: duplicate or invalid primary mapping')
+if (primary.length !== 94 || new Set(primary.map(({ remedy_slug }) => remedy_slug)).size !== 94) throw new Error('remedy-images: duplicate or invalid primary mapping')
 if (rows.filter(({ image_classification, image_review_status }) => image_classification === 'promotional_admin' && image_review_status === 'excluded_promotional_admin').length !== 2) throw new Error('remedy-images: promotional exclusions are incomplete')
 for (const row of published) {
   if (!new RegExp(`^/media/remedies/${row.remedy_slug}/[^/]+$`).test(row.public_url)) throw new Error(`remedy-images: invalid public URL ${row.public_url}`)

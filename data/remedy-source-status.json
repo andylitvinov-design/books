@@ -2245,6 +2245,25 @@
       "reviewStatus": "grouped_source_not_profile_reviewed",
       "proposedStatus": "source-only",
       "notes": "Name split from the explicit grouped inventory heading; this creates no canonical card."
+    },
+    {
+      "slug": "nux-vomica",
+      "preferredName": "Nux Vomica",
+      "aliases": [
+        "Nux Vomica",
+        "Nux",
+        "Нукс Вомика"
+      ],
+      "status": "canonical",
+      "sourceMessageIds": [
+        "message1070",
+        "message1069"
+      ],
+      "sourceFiles": [
+        "data/telegram-psychic-alchemy-live-import.json"
+      ],
+      "reviewStatus": "canonical_profile",
+      "proposedStatus": "canonical"
     }
   ],
   "telegramExportSha256": "f8098de2df2eb4e8ff8b10c733f68fbf4f494167e544df55d2b3ce290faed50d"

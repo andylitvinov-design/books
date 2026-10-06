@@ -24,8 +24,8 @@ primary_source_message: message667 (23.06.2025 20:53:44 UTC-05:00)
 primary_source_sections:
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message667 (23.06.2025 20:53:44 UTC-05:00)
+supplementary_materials: message1071 (02.10.2026 21:52 Telegram public view)
+source_messages: message667 (23.06.2025 20:53:44 UTC-05:00); message1071 (02.10.2026 21:52 Telegram public view)
 source_images: /media/remedies/platina-metallicum/message667-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Platina Metallicum.; primary canonical content rebuilt from message667 (23.06.2025 20:53:44 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
@@ -45,6 +45,8 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Platina Metallicum, message667.
 ---
+
+
 
 PLATINA METALLICUM
 
@@ -191,3 +193,17 @@ At the bottom, hugs are waiting for you.
 You are alive. You are worthy.
 
 You are a human.
+
+## Additional materials and observations
+
+### message1071 (02.10.2026 21:52 Telegram public view)
+
+The author describes confidence as a broad, layered theme.
+
+1. At a primary social level, Lycopodium and Argentum Nitricum are described as supporting social stability and courage, without necessarily changing deeper identity structures.
+
+2. At a second level, Platina and Aurum are described as working more with inner value.
+
+3. For deeper experiences of unworthiness or not being ideal enough, the author names Psorinum, Carcinosinum, Lyssinum and, at an even deeper symbolic level, Secale Cornutum.
+
+In this authorial model, Secale Cornutum is associated with the idea of basic dignity in the face of a felt sense of defect or impurity.

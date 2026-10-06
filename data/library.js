@@ -38,6 +38,7 @@ export const books = [
       chapter('integration', 'Интеграция с другими подходами'),
       chapter('practice', 'Формат работы и практика метода'),
       chapter('materials', 'Дополнительные материалы'),
+      chapter('latest-2026', 'Новые публикации — сентябрь–октябрь 2026'),
     ],
   },
   {

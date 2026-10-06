@@ -24,9 +24,9 @@ primary_source_message: message285 (09.01.2025 17:33:42 UTC-05:00)
 primary_source_sections:
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message285 (09.01.2025 17:33:42 UTC-05:00)
-source_images: /media/remedies/secale-cornutum/message285-1.jpg
+supplementary_materials: message1061 (20.09.2026 21:03 Telegram public view); message1071 (02.10.2026 21:52 Telegram public view)
+source_messages: message285 (09.01.2025 17:33:42 UTC-05:00); message1061 (20.09.2026 21:03 Telegram public view); message1071 (02.10.2026 21:52 Telegram public view)
+source_images: /media/remedies/secale-cornutum/message285-1.jpg; /media/remedies/secale-cornutum/message1061-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Secale Cornutum.; primary canonical content rebuilt from message285 (09.01.2025 17:33:42 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message285
@@ -36,13 +36,15 @@ related_slugs:
 translation_provenance: original-ru-source
 en_source_exists: no
 primary_image: /media/remedies/secale-cornutum/message285-1.jpg
-supporting_images:
+supporting_images: /media/remedies/secale-cornutum/message1061-1.jpg
 source_message_id: message285
 source_date: 09.01.2025 17:33:42 UTC-05:00
 image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Secale Cornutum, message285.
 ---
+
+
 
 SECALE CORNUTUM
 
@@ -137,3 +139,50 @@ Secale позволяет отпустить  блоки, оживить пот
 Secale Cornutum помогает  вернуться к состоянию лёгкости и движения.
 
 Он учит нас отпускать ненужное, доверять себе и миру, позволяя энергии свободно течь и питать душу.
+
+## Дополнительные материалы и наблюдения
+
+### message1061 (20.09.2026 21:03 Telegram public view)
+
+Наблюдение.
+Secale Carnatum любопытный препарат.
+
+Он работает как пылесос.
+Вытягивает негативные установки, чужие программы, мнения.
+
+Подходит для очистки.
+Грудь от него начинает очищаться, раскрываться, уходят зажимы внутри.
+
+Впрочем, работает мягко, на уровне эмоций (Анахата- низ Вишудхи).
+
+Но если добавить кристаллы. Воздействие препарата меняется, становится значительно жестче, выше по частотам (от подбородка до носа).
+Усиливает концентрацию.
+Но долго так не стоит делать, может перегрузить.
+
+Я препарат этот уже описывал ранее:
+https://t.me/psychic_alchemy/777
+
+### message1071 (02.10.2026 21:52 Telegram public view)
+
+Еще расскажу про тему уверенности.
+
+Это широкий и большой пласт.
+
+1. На первичном, социальном уровне можно начинать с препаратов Lycopodium, Argentum Nitricum и тп - они повышают уровень социальной стабильности и смелости.
+
+Но не меняют качество структур Я, идентичности.
+
+2. На втором уровне можно работать с такими препаратами как Platina, Aurum (золото). Они повышают именно уровень внутренней ценности.
+
+3. Но если мы хотим зайти глубже, в травму недостойности, не идеальности, то нужен совсем другой спектр препаратов.
+
+Хорошо работают:
+- Psorinum: при чувстве стыда себя, грязности, недостойности
+- Carsinosinum: недостаточно хорош для других, смущения
+- Lyssinum выводит из презрения в достоинство.
+
+Но вот за всеми ними я бы поставил препарат Secale Cornatum: здесь вообще идея первичной порочности и непорочности.
+
+Это вибрация зерна, поврежденного спорынью.
+
+И это мощный препарат, который возвращает базовое достоинство, чтобы не происходило.

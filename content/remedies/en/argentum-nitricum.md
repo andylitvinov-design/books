@@ -24,8 +24,8 @@ primary_source_message: message419 (10.04.2025 18:30:56 UTC-05:00)
 primary_source_sections:
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message419 (10.04.2025 18:30:56 UTC-05:00)
+supplementary_materials: message1071 (02.10.2026 21:52 Telegram public view)
+source_messages: message419 (10.04.2025 18:30:56 UTC-05:00); message1071 (02.10.2026 21:52 Telegram public view)
 source_images: /media/remedies/argentum-nitricum/message419-1.jpg
 provenance: Russian label is copied from the source heading.; primary canonical content rebuilt from message419 (10.04.2025 18:30:56 UTC-05:00)
 source_file: source-books/book-1-alchemy-soul/alchemy_soul_guide_homeopathy_remedies.html
@@ -45,6 +45,8 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Argentum Nitricum, message419.
 ---
+
+
 
 ARGENTUM NITRICUM
 
@@ -177,3 +179,17 @@ Argentum Nitricum is a remedy for the mind exhausted by anxiety and for the soul
 Key idea of the archetype:
 
 "Your speed is not in running away, but in clarity. Your strength is not in anticipating catastrophes, but in trusting the step."
+
+## Additional materials and observations
+
+### message1071 (02.10.2026 21:52 Telegram public view)
+
+The author describes confidence as a broad, layered theme.
+
+1. At a primary social level, Lycopodium and Argentum Nitricum are described as supporting social stability and courage, without necessarily changing deeper identity structures.
+
+2. At a second level, Platina and Aurum are described as working more with inner value.
+
+3. For deeper experiences of unworthiness or not being ideal enough, the author names Psorinum, Carcinosinum, Lyssinum and, at an even deeper symbolic level, Secale Cornutum.
+
+In this authorial model, Secale Cornutum is associated with the idea of basic dignity in the face of a felt sense of defect or impurity.

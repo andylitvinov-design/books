@@ -24,8 +24,8 @@ primary_source_message: message37 (02.09.2024 17:39:42 UTC-05:00)
 primary_source_sections:
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials: message1059 (29.08.2026 23:19:02 UTC-05:00)
-source_messages: message37 (02.09.2024 17:39:42 UTC-05:00); message1059 (29.08.2026 23:19:02 UTC-05:00)
+supplementary_materials: message1059 (29.08.2026 23:19:02 UTC-05:00); message1071 (02.10.2026 21:52 Telegram public view)
+source_messages: message37 (02.09.2024 17:39:42 UTC-05:00); message1059 (29.08.2026 23:19:02 UTC-05:00); message1071 (02.10.2026 21:52 Telegram public view)
 source_images: /media/remedies/aurum-metallicum/message37-1.jpg; /media/remedies/aurum-metallicum/message1059-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Аурум; Aurum; Aurum Metallicum; Aurum metallicum.; primary canonical content rebuilt from message37 (02.09.2024 17:39:42 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
@@ -45,6 +45,8 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Aurum metallicum, message37.
 ---
+
+
 
 Studied working with gold (the Aurum remedy in homeopathy).
 
@@ -89,3 +91,17 @@ Adds the vibration of pride: I am valuable and more valuable than others.
 A small difference, but it exists!
 
 This is how, by working through remedies, one can prescribe the desired personality traits.
+
+## Additional materials and observations
+
+### message1071 (02.10.2026 21:52 Telegram public view)
+
+The author describes confidence as a broad, layered theme.
+
+1. At a primary social level, Lycopodium and Argentum Nitricum are described as supporting social stability and courage, without necessarily changing deeper identity structures.
+
+2. At a second level, Platina and Aurum are described as working more with inner value.
+
+3. For deeper experiences of unworthiness or not being ideal enough, the author names Psorinum, Carcinosinum, Lyssinum and, at an even deeper symbolic level, Secale Cornutum.
+
+In this authorial model, Secale Cornutum is associated with the idea of basic dignity in the face of a felt sense of defect or impurity.
