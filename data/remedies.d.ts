@@ -49,7 +49,8 @@ export type Remedy = {
   description: string;
 };
 
-export type RemedyDirectoryEntry = { slug: string; title: string; commonName: string; aliases: string[]; letter: string; searchText: string };
+export type RemedyDescriptionType = "full-card" | "source-excerpt" | "source-description";
+export type RemedyDirectoryEntry = { slug: string; title: string; commonName: string; aliases: string[]; letter: string; searchText: string; descriptionType: RemedyDescriptionType };
 export const supportedLocales: Locale[];
 export function isSupportedLocale(locale: string): locale is Locale;
 export function getRemedy(locale: string, slug: string): Remedy | undefined;
