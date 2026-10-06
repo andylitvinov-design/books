@@ -121,12 +121,12 @@ test('public Cabinet exposes the weighted recommender before registration and ke
 
 test('active assessment inventory is classified for style and length filters', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 18)
-  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 10)
-  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 8)
-  assert.equal(active.filter((item) => item.testLength === 'short').length, 10)
-  assert.equal(active.filter((item) => item.testLength === 'medium').length, 5)
-  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 3)
+  assert.equal(active.length, 42)
+  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 30)
+  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 12)
+  assert.equal(active.filter((item) => item.testLength === 'short').length, 25)
+  assert.equal(active.filter((item) => item.testLength === 'medium').length, 12)
+  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 5)
   assert.ok(active.every((item) => TEST_STYLE_FILTERS.some((filter) => filter.key === item.testStyle)))
   assert.ok(active.every((item) => TEST_LENGTH_FILTERS.some((filter) => filter.key === item.testLength)))
 })
@@ -148,7 +148,7 @@ test('style and length filters combine before recommendation ranking', () => {
   })
   assert.deepEqual(
     professionalMedium.map((definition) => definition.key).sort(),
-    ['gad-7', 'phq-9'].sort(),
+    ['erq', 'gad-7', 'phq-9'].sort(),
   )
 
   const engagingComprehensive = rankAssessmentDefinitions(definitions, {
