@@ -192,7 +192,8 @@ test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused i
   assert.ok(landing.includes('Пройти бесплатный тест-анализ состояния и получить рекомендации'))
   assert.ok(landing.includes('Подобрать персональную батарею тестов'))
   assert.ok(workspace.includes('<MoodCheckIn'))
-  assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/monitoring')"))
+  assert.ok(workspace.includes("getAssessmentDefinition('hh-current-state', 'v2', locale)"))
+  assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/runs/' + run.id)"))
 })
 
 
