@@ -33,7 +33,7 @@ const copy = {
 
 const order = [
   "state", "basis", "effect", "image", "archetype", "idea", "shadow", "resource",
-  "conflict", "stage", "subpersonality", "lesson", "transformation", "alchemy", "practice", "cases", "comparisons",
+  "conflict", "stage", "subpersonality", "lesson", "transformation", "alchemy", "ritual", "practice", "cases", "comparisons",
 ];
 
 const pairs = new Set(["archetype|idea", "shadow|resource", "stage|subpersonality", "basis|effect"]);
@@ -58,6 +58,7 @@ function sectionKey(heading: string) {
   if (/^(урок|смыслы|meanings|lesson|lessons)$/.test(value)) return "lesson";
   if (/^(трансформация|transformation)$/.test(value)) return "transformation";
   if (/^(алхимическая интерпретация|alchemical interpretation)$/.test(value)) return "alchemy";
+  if (/^(ритуал|ritual)$/.test(value)) return "ritual";
   if (/^(практические наблюдения|practical observations)$/.test(value)) return "practice";
   if (/^(случаи|кейсы|cases)$/.test(value)) return "cases";
   if (/^(сравнения|comparisons)$/.test(value)) return "comparisons";
@@ -149,7 +150,12 @@ function ContentBlocks({ blocks, locale, sourceUrl }: { blocks: string[]; locale
 
 function ContentSection({ section, locale, variant, sourceUrl }: { section: Section; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string }) {
   const Heading = variant === "book" ? "h3" : "h2";
-  return <section className="remedy-content-section">
+  const sectionClass = section.key === "basis"
+    ? "remedy-content-section remedy-content-section--basis"
+    : section.key === "ritual"
+      ? "remedy-content-section remedy-content-section--ritual"
+      : "remedy-content-section";
+  return <section className={sectionClass}>
     <Heading>{section.heading}</Heading>
     <ContentBlocks blocks={section.blocks} locale={locale} sourceUrl={sourceUrl} />
   </section>;

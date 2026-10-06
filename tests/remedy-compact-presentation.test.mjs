@@ -46,3 +46,15 @@ test('makes source and supplementary material secondary without dropping canonic
   assert.match(styles, /\.remedy-supplementary\s*\{[^}]*margin-top:\s*1\.25rem/)
   assert.match(styles, /\.remedy-source-reference\s*\{[^}]*font-size:\s*13px/)
 })
+
+
+test('Basis and Ritual paragraphs use the same readable inset rhythm as other remedy sections', () => {
+  const renderer = readFileSync(rendererPath, 'utf8')
+  const styles = readFileSync(stylesPath, 'utf8')
+
+  assert.match(renderer, /ритуал\|ritual/)
+  assert.match(renderer, /return "ritual"/)
+  assert.match(renderer, /"remedy-content-section remedy-content-section--basis"/)
+  assert.match(renderer, /"remedy-content-section remedy-content-section--ritual"/)
+  assert.match(styles, /\.remedy-content-section--basis > p,[\s\S]*?\.remedy-content-section--ritual > p\s*\{[^}]*padding-left:\s*1\.15em/)
+})
