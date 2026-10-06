@@ -37,3 +37,19 @@
 .reader-translation-error button, .reader-translation-error a, .reader-translation-progress a { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 12px 0 0; padding: 8px 12px; border: 1px solid currentColor; border-radius: 8px; font: inherit; }
 .reader-translation-error button:focus-visible, .reader-translation-error a:focus-visible, .reader-translation-progress a:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
 .personal-consultation-form__resume { display: inline-flex; align-items: center; min-height: 44px; grid-column: 1 / -1; text-decoration: underline; }
+
+.latest-alchemy-publications { margin-top: 3rem; }
+.latest-alchemy-safety { margin: 1rem 0 1.5rem; border: 1px solid #decdbd; border-radius: 18px; background: #fffaf4; padding: 14px 16px; color: #75665b; font-size: 13px; line-height: 1.55; }
+.latest-alchemy-post { margin-top: 1.5rem; border-top: 1px solid #dfd2c4; padding-top: 1.15rem; }
+.latest-alchemy-post header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: .75rem; color: #8d6c56; font-size: 11px; font-weight: 700; }
+.latest-alchemy-post header p { margin: 0; }
+.latest-alchemy-post header a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.latest-alchemy-post figure { float: right; width: min(38%, 280px); margin: 0 0 1rem 1.25rem; overflow: hidden; border-radius: 16px; }
+.latest-alchemy-post figure img { display: block; width: 100%; height: auto; }
+.latest-alchemy-post::after { content: ""; display: block; clear: both; }
+@media (max-width: 720px) {
+  .latest-alchemy-publications { margin-top: 2rem; }
+  .latest-alchemy-post header { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .latest-alchemy-post figure { float: none; width: 100%; margin: .5rem 0 1rem; }
+  .latest-alchemy-post figure img { max-height: 24rem; object-fit: cover; }
+}
