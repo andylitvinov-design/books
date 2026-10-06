@@ -45,7 +45,7 @@ function normaliseHeading(value: string) {
 function sectionKey(heading: string) {
   const value = normaliseHeading(heading);
   if (/^(показания|основное состояние|состояние|indications|main state|state)$/.test(value)) return "state";
-  if (/^(основа|basis|base)$/.test(value)) return "basis";
+  if (/^(основа|обоснование|basis|base|rationale)$/.test(value)) return "basis";
   if (/^(эффект|effect)$/.test(value)) return "effect";
   if (/^(образ|образы|image|images)$/.test(value)) return "image";
   if (/^(архетип|архетипы|archetype|archetypes)$/.test(value)) return "archetype";
