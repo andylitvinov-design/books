@@ -90,3 +90,25 @@ test('personal Cabinet exposes both assessment actions and privacy-preserving ra
   assert.match(workspace, /hh-weekly-pulse/)
   assert.doesNotMatch(workspace, /MIND_BODY_MONITOR_REGISTRY\.map/)
 })
+
+
+test('public Cabinet exposes the weighted recommender before registration and keeps safety-gated PHQ-9 out of guest starts', async () => {
+  const [landing, styles] = await Promise.all([
+    readFile('components/app/cabinet-landing.jsx', 'utf8'),
+    readFile('app/ia-v2.css', 'utf8'),
+  ])
+
+  assert.match(landing, /Подобрать комплект тестов под ваш запрос/)
+  assert.match(landing, /TEST_RECOMMENDATION_FOCUS\.map/)
+  assert.match(landing, /rankAssessmentDefinitions\(publicRecommendationDefinitions\(locale\)/)
+  assert.match(landing, /className="cabinet-test-recommender"/)
+  assert.match(landing, /className="cabinet-test-recommender-build"/)
+  assert.match(landing, /className="cabinet-ranked-tests"/)
+  assert.match(landing, /onClick=\{\(\) => begin\(item\.definition\.key\)\}/)
+  assert.match(landing, /PUBLIC_GUEST_BLOCKED_KEYS = new Set\(\['phq-9'\]\)/)
+  assert.doesNotMatch(landing, /MONITOR_AREAS/)
+  assert.match(landing, /not saved unless you explicitly consent to a test/)
+  assert.match(landing, /не сохраняется без вашего явного согласия/)
+  assert.match(styles, /Public Cabinet weighted test recommender/)
+  assert.match(styles, /\.cabinet-test-focus-grid button\[aria-pressed="true"\]/)
+})
