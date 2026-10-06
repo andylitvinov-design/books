@@ -94,3 +94,17 @@ test('homepage monitor offers soft focus choices and recommendation framing', as
   assert.match(homeMonitor, /not a diagnosis/)
   assert.match(homeMonitor, /data-monitor-focus/)
 })
+
+
+test('public state-check strip stays compact and softly carded on mobile', async () => {
+  const [strip, styles] = await Promise.all([
+    readFile('components/mind-body-monitor-strip.tsx', 'utf8'),
+    readFile('app/ia-v2.css', 'utf8'),
+  ])
+
+  assert.match(strip, /Проверьте своё состояние — бесплатно/)
+  assert.match(styles, /\.mind-body-monitor-strip__inner\s*\{[^}]*border-radius:\s*18px/)
+  assert.match(styles, /\.mind-body-monitor-strip__actions a\s*\{[^}]*min-height:\s*35px/)
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.mind-body-monitor-strip__actions a\s*\{[^}]*min-height:\s*34px/)
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?font-size:\s*10\.5px/)
+})
