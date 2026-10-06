@@ -24,8 +24,8 @@ primary_source_message: message704 (02.07.2025 21:30:16 UTC-05:00)
 primary_source_sections: ОСНОВА; ЭФФЕКТ
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message704 (02.07.2025 21:30:16 UTC-05:00)
+supplementary_materials: message1069 (02.10.2026 20:15 Telegram public view)
+source_messages: message704 (02.07.2025 21:30:16 UTC-05:00); message1069 (02.10.2026 20:15 Telegram public view)
 source_images: /media/remedies/colchicum-autumnale/message704-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Colchicum Autumnale.; primary canonical content rebuilt from message704 (02.07.2025 21:30:16 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
@@ -43,6 +43,7 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Исходное изображение, прикреплённое к Colchicum Autumnale, message704.
 ---
+
 
 COLCHICUM AUTUMNALE
 
@@ -177,3 +178,30 @@ COLCHICUM AUTUMNALE
 Я имею право на чувствительность и чистоту.
 
 Я вдыхаю жизнь. Я чувствую, но не растворяюсь."
+
+## Дополнительные материалы и наблюдения
+
+### message1069 (02.10.2026 20:15 Telegram public view)
+
+Некоторые препараты от стресса:
+
+1. Rhus Rox
+Помогает при физической сжатости, ригидности, телесных симптомах.
+
+2. Coffea Cruda
+Хорошо работает при психофизической перевозбужденности, когда надо стабилизироваться, успокоиться.
+
+3. Nux Vomica
+Помогает при психической, нервной возбужденности - помогает уменьшить сверхконтроль, он увеличить опору на себя.
+
+4. Colchicum
+Глубокий препарат, который уменьшает избыточную стрессовую реакцию на мир, сформированную в раннем возрасте.
+
+---
+Здесь интересно:
+Препараты выстроены по глубине работы.
+
+Если сразу дать глубокий препарат (colchicum), то ситуация стабилизируется и потребность в других препаратах (Rhus, Coffea) автоматом отпадет.
+
+Но не для всех актуально работать на глубоком уровне психической травмы. Иногда это просто физическое перенапряжение.
+Так что тут надо разбираться, и тестировать.
