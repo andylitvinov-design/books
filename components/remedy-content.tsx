@@ -150,7 +150,12 @@ function ContentBlocks({ blocks, locale, sourceUrl }: { blocks: string[]; locale
 
 function ContentSection({ section, locale, variant, sourceUrl }: { section: Section; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string }) {
   const Heading = variant === "book" ? "h3" : "h2";
-  return <section className={`remedy-content-section remedy-content-section--${section.key}`}>
+  const sectionClass = section.key === "basis"
+    ? "remedy-content-section remedy-content-section--basis"
+    : section.key === "ritual"
+      ? "remedy-content-section remedy-content-section--ritual"
+      : "remedy-content-section";
+  return <section className={sectionClass}>
     <Heading>{section.heading}</Heading>
     <ContentBlocks blocks={section.blocks} locale={locale} sourceUrl={sourceUrl} />
   </section>;
