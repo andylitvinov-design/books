@@ -46,3 +46,21 @@ test('makes source and supplementary material secondary without dropping canonic
   assert.match(styles, /\.remedy-supplementary\s*\{[^}]*margin-top:\s*1\.25rem/)
   assert.match(styles, /\.remedy-source-reference\s*\{[^}]*font-size:\s*13px/)
 })
+
+
+test('indents Basis and Ritual body text to match the visual rhythm of other remedy sections', () => {
+  const renderer = readFileSync(rendererPath, 'utf8')
+  const styles = readFileSync(stylesPath, 'utf8')
+
+  assert.match(renderer, /\^\(ритуал\|ritual\)\$/)
+  assert.match(renderer, /remedy-content-section--\$\{section\.key\}/)
+  assert.match(styles, /\.remedy-content-section--basis > p:not\(\.remedy-content-message\),[\s\S]*?\.remedy-content-section--ritual > p:not\(\.remedy-content-message\)[^{]*\{[^}]*padding-left:\s*1\.15em/)
+})
+
+test('keeps the public consultation CTA compact on mobile', () => {
+  const styles = readFileSync(stylesPath, 'utf8')
+
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.public-consultation-cta\s*\{[^}]*width:\s*100%[^}]*gap:\s*14px[^}]*margin-block:\s*28px[^}]*padding:\s*18px 16px/)
+  assert.match(styles, /\.public-consultation-cta__actions a\s*\{[^}]*min-height:\s*40px/)
+  assert.match(styles, /\.public-consultation-cta__copy > span\s*\{[^}]*font-size:\s*12px/)
+})
