@@ -20,7 +20,7 @@ The raw Telegram export stays untouched. “Removed” below means excluded from
 | Destination | Indexed useful messages | Editorial role |
 | --- | ---: | --- |
 | Book 01 — theory and method of Systemic Homeopathy | 253 | method, diagnostics, stages, cases, and framework explanations |
-| Book 02 — remedy cards | 110 | 95 primary cards plus 15 linked supporting variants |
+| Book 02 — remedy cards | 120 | 104 full-card source messages representing 103 canonical remedies, plus 16 linked supporting variants |
 | Book 03 — psychohomeopathy of subpersonalities | 133 | parts of the psyche, archetypes, developmental/trauma formulations |
 | Book 04 — deep/alchemical psychohomeopathy | 278 | alchemy, miasms, Usin, meridians, runic and other deep-framework posts |
 | Review / non-book material | 150 | 136 out-of-scope, 3 promotional boilerplate, 2 exact duplicates, 9 empty/media-only entries |
@@ -123,13 +123,13 @@ These source labels are useful for cross-references but do not have a standalone
 1. One future remedy page is assembled from its primary-card post plus its explicit supporting posts; source text is not silently paraphrased.
 2. Promotional calls to action and repeated boilerplate are removed from the book layer, but their source messages remain in the index.
 3. Every card retains its source message ID, date, and non-thumbnail photo paths in its editorial provenance record.
-4. The 38 existing public cards are retained and five are enriched with explicitly mapped Telegram supplements. The 54 approved full-card rows and two author-resolved cards yield 94 canonical cards.
+4. The 38 existing public cards are retained and five are enriched with explicitly mapped Telegram supplements. The reviewed Telegram additions now include 63 explicit full-card proposals plus two author-resolved canonical cards, yielding 103 canonical remedies. Carcinosinum intentionally has two full-card source messages.
 5. The disputed source distinctions `Aqua Marina` / `Aquamarinus` and `Lac Humanum` / `Lac maternum` remain separate; mention-only labels do not become pages.
 
 ## Image mapping summary
 
-[`data/remedy-image-map.csv`](../data/remedy-image-map.csv) links 109 Telegram image associations to Book 02 provenance: 95 primary-card attachments and 14 supporting-post attachments. All map rows point to an existing source asset. No image is approved for public publishing by filename alone: every row is `editorial_visual_review_required`, which prevents generic promotional artwork from being copied automatically.
+[`data/remedy-image-map.csv`](../data/remedy-image-map.csv) currently links the previously reviewed Telegram image layer. The eight newly recovered standalone cards are now canonical in the content/index layer; their source attachments will be picked up by the next image-layer regeneration from the full Telegram export. All map rows point to an existing source asset. No image is approved for public publishing by filename alone: every row is `editorial_visual_review_required`, which prevents generic promotional artwork from being copied automatically.
 
 ## Review decision needed
 
-Phase L implementation creates the 94-card review set (38 retained + 54 full-card additions + Aurum metallicum + Carcinosinum). The 22 mention-only labels remain outside the route set; no production deployment is part of this plan.
+The current review set contains 103 canonical remedies (38 retained + 63 explicit Telegram full-card additions + Aurum metallicum + Carcinosinum). The 21 mention-only labels remain outside the route set.
