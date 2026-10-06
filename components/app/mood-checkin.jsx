@@ -10,6 +10,7 @@ const MOOD_COPY = {
     neutral: { id: 'neutral', emoji: '😐', label: 'Neutral', prompt: 'Thanks for checking in. What feels most noticeable right now?' },
     happy: { id: 'happy', emoji: '🙂', label: 'Happy', prompt: 'Glad to hear it. What feels good today?' },
     category: 'What feels most connected to this?',
+    multipleHint: 'Choose one or more — you can select several.',
     categories: [
       ['body', 'Body'],
       ['energy', 'Energy'],
@@ -18,7 +19,8 @@ const MOOD_COPY = {
       ['work-money', 'Work & money'],
       ['other', 'Something else'],
     ],
-    quick: 'Do a quick check-in',
+    quick: 'Take a free state analysis and get recommendations',
+    quickMeta: 'Free · ~1 min',
     latest: 'Latest',
     notNow: 'Not now',
     close: 'Close',
@@ -30,6 +32,7 @@ const MOOD_COPY = {
     neutral: { id: 'neutral', emoji: '😐', label: 'Нейтрально', prompt: 'Спасибо, что отметили своё состояние. Что сейчас ощущается заметнее всего?' },
     happy: { id: 'happy', emoji: '🙂', label: 'Весело', prompt: 'Рад это слышать. Что сегодня ощущается особенно хорошо?' },
     category: 'С чем это сейчас больше всего связано?',
+    multipleHint: 'Можно выбрать сразу несколько вариантов.',
     categories: [
       ['body', 'Тело'],
       ['energy', 'Энергия'],
@@ -38,7 +41,8 @@ const MOOD_COPY = {
       ['work-money', 'Работа и деньги'],
       ['other', 'Другое'],
     ],
-    quick: 'Сделать быстрый check-in',
+    quick: 'Пройти бесплатный тест-анализ состояния и получить рекомендации',
+    quickMeta: 'Бесплатно · ~1 мин',
     latest: 'Последнее',
     notNow: 'Не сейчас',
     close: 'Закрыть',
@@ -49,7 +53,7 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
   const c = MOOD_COPY[locale] || MOOD_COPY.en
   const moods = [c.sad, c.neutral, c.happy]
   const [selected, setSelected] = useState(null)
-  const [category, setCategory] = useState('')
+  const [categories, setCategories] = useState([])
   const dialogRef = useRef(null)
   const triggerRef = useRef(null)
   const moodOperationRef = useRef(null)
@@ -106,31 +110,36 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
     triggerRef.current = event.currentTarget
     const operationId = crypto.randomUUID()
     moodOperationRef.current = operationId
-    setCategory('')
+    setCategories([])
     setSelected(mood.id)
     emitMoodChange({ mood: mood.id, category: null, operationId })
   }
 
   function closeDialog() {
-    setCategory('')
+    setCategories([])
     setSelected(null)
     moodOperationRef.current = null
   }
 
   function dismissDialog() {
     if (selected && moodOperationRef.current)
-      onDismiss?.({ mood: selected, category: category || null, operationId: moodOperationRef.current })
+      onDismiss?.({ mood: selected, category: categories[0] || null, operationId: moodOperationRef.current })
     closeDialog()
   }
 
   function chooseCategory(id) {
-    setCategory(id)
-    if (selected && moodOperationRef.current)
-      emitMoodChange({ mood: selected, category: id, operationId: moodOperationRef.current })
+    setCategories((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    )
   }
 
   function startQuickCheckin() {
-    const payload = { mood: selected, category: category || null, operationId: moodOperationRef.current }
+    const payload = {
+      mood: selected,
+      category: categories[0] || null,
+      operationId: moodOperationRef.current,
+    }
+    if (selected && moodOperationRef.current) emitMoodChange(payload)
     closeDialog()
     onQuickCheckin?.(payload)
   }
@@ -203,12 +212,13 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
             </p>
             <h3 id={promptId}>{activeMood.prompt}</h3>
             <p className="hh-mood-category-title">{c.category}</p>
+            <p className="hh-mood-category-hint">{c.multipleHint}</p>
             <div className="hh-mood-categories">
               {c.categories.map(([id, label]) => (
                 <button
                   type="button"
                   key={id}
-                  aria-pressed={category === id}
+                  aria-pressed={categories.includes(id)}
                   onClick={() => chooseCategory(id)}
                 >
                   {label}
@@ -217,7 +227,8 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
             </div>
             <div className="hh-mood-actions">
               <button type="button" className="hh-mood-primary" onClick={startQuickCheckin}>
-                {c.quick}
+                <span>{c.quick}</span>
+                <small>{c.quickMeta}</small>
               </button>
               <button type="button" onClick={dismissDialog}>{c.notNow}</button>
             </div>
