@@ -48,6 +48,10 @@ const UI = {
     recommenderResults: 'Recommended for your request',
     recommenderPrivacy: 'Your choices are used only to rank this set and are not saved unless you explicitly consent to a test.',
     recommenderRank: 'Priority',
+    stateAnalysisCta: 'Take a free state analysis and get recommendations',
+    stateAnalysisMeta: 'Free · ~1 min · no sign-in required',
+    batteryCta: 'Build a personal test battery',
+    batteryMeta: 'Choose several areas and depth — we rank the most relevant tests for you.',
     wuXing: 'Personal Wu Xing profile',
     stateTitle: 'Current State Check',
     stateText: '5 questions · ~1 min',
@@ -133,6 +137,10 @@ const UI = {
     recommenderResults: 'Рекомендуем по вашему запросу',
     recommenderPrivacy: 'Выбор используется только для расчёта этого набора и не сохраняется без вашего явного согласия на прохождение теста.',
     recommenderRank: 'Приоритет',
+    stateAnalysisCta: 'Пройти бесплатный тест-анализ состояния и получить рекомендации',
+    stateAnalysisMeta: 'Бесплатно · ~1 мин · без регистрации',
+    batteryCta: 'Подобрать персональную батарею тестов',
+    batteryMeta: 'Выберите несколько зон и глубину — мы расставим подходящие тесты по приоритету.',
     wuXing: 'Личный профиль У-Син',
     stateTitle: 'Состояние сейчас',
     stateText: '5 вопросов · ~1 мин',
@@ -666,6 +674,36 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
         {phase === 'catalog' && (
           <>
+            <div className="cabinet-monitor-actions" aria-label={locale === 'ru' ? 'Быстрые действия' : 'Quick actions'}>
+              <button
+                className="cabinet-monitor-action cabinet-monitor-action--primary"
+                type="button"
+                disabled={busy}
+                onClick={() => begin('state')}
+              >
+                <span>
+                  <strong>{c.stateAnalysisCta}</strong>
+                  <small>{c.stateAnalysisMeta}</small>
+                </span>
+                <ChevronRight aria-hidden="true" />
+              </button>
+              <button
+                className="cabinet-monitor-action"
+                type="button"
+                onClick={() =>
+                  document
+                    .getElementById('cabinet-test-recommender-title')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              >
+                <span>
+                  <strong>{c.batteryCta}</strong>
+                  <small>{c.batteryMeta}</small>
+                </span>
+                <ChevronRight aria-hidden="true" />
+              </button>
+            </div>
+
             <div className="cabinet-monitor-recommended">
               <p className="cabinet-monitor-label">{c.recommended}</p>
               <button className="cabinet-test-row cabinet-test-row--recommended" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
