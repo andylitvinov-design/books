@@ -138,7 +138,7 @@ export function YggdrasilCurriculum({ locale }: { locale: PublicLocale }) {
 
       <div className="yggdrasil-levels">
         {levels.map((level) => (
-          <details className="yggdrasil-level" key={level.id} open={level.id === 1}>
+          <details className="yggdrasil-level" id={level.id === 1 ? "yggdrasil-basic-course-learning" : undefined} key={level.id} open={level.id === 1}>
             <summary className="yggdrasil-level-summary">
               <span className="yggdrasil-level-number">{String(level.id).padStart(2, "0")}</span>
               <span className="yggdrasil-level-copy">
