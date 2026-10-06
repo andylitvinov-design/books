@@ -37,7 +37,8 @@ async function enterTest(name='Current State Check',mode='Guided'){
   if(await all.count())await all.click()
   card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
  }
- await card.getByRole('button',{name:/Start|Continue|Take again/}).click()
+ await card.getByRole('checkbox',{name,exact:true}).check()
+ await page.getByRole('button',{name:'Start free testing',exact:true}).click()
  await expect(page).toHaveURL(/\/runs\//)
  await expect(page.locator('.hh-runner')).toBeVisible()
  const modeChoice=page.locator('.hh-test-mode-card').filter({hasText:mode}).first()
