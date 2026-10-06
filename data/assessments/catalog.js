@@ -1,4 +1,5 @@
 import { deepFreeze } from '../../lib/assessments/contracts.js'
+import { EXPANDED_CATALOG_V2 } from './catalog-v2.js'
 
 export const MONITORING_AXES = deepFreeze([
   'state',
@@ -590,25 +591,29 @@ export const MONITORING_CATALOG = deepFreeze([
       "ru": "Лёгкая проверка маленьких источников удовольствия, любопытства и тепла."
     }
   },
+  ...EXPANDED_CATALOG_V2,
   {
     key: 'mspss',
-    version: 'source-controlled',
-    instrumentLocale: 'source-controlled',
+    version: 'v1',
+    instrumentLocale: 'en',
     axis: 'resources',
+    resultAxes: ['resources'],
     topics: ['support', 'relationships'],
-    moodAffinities: ['happy', 'neutral'],
+    moodAffinities: ['happy', 'neutral', 'sad'],
     categoryAffinities: ['relationships'],
     questionCount: 12,
     durationMinutes: 3,
+    testStyle: 'professional',
+    testLength: 'comprehensive',
     suggestedRepeatDays: 30,
     cooldownDays: 14,
-    startable: false,
+    startable: true,
     access: 'account',
-    rightsStatus: 'review_required',
-    title: { en: 'Social Support', ru: 'Поддержка и близость' },
+    rightsStatus: 'cleared',
+    title: { en: 'Social Support Profile', ru: 'Социальная поддержка · EN' },
     description: {
-      en: 'Resource measure metadata; start remains disabled until source and rights review.',
-      ru: 'Метаданные ресурсной шкалы; запуск отключён до проверки источника и прав.',
+      en: 'Professional MSPSS profile of perceived support from family, friends and a significant person.',
+      ru: 'Профессиональный MSPSS-профиль воспринимаемой поддержки; вопросы на английском.',
     },
   },
   {
