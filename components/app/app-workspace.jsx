@@ -1262,8 +1262,8 @@ function profileDelta(value) {
 function ProfileActionHub({ data, locale, profile }) {
   const ru = locale === 'ru'
   const root = `/${locale}/app`
-  const activeReports = (data.savedReports || []).filter((report) => report.available !== false).length
   const resultCount = (data.results || []).length
+  const requestCount = (data.requests || []).length
   const localizedPoster = (name) =>
     `/images/holistic-house/video-posters/${name}-${ru ? 'ru-v1' : name === 'home' || name === 'services' || name === 'homeopathy' ? 'en-v2' : 'en-v1'}.webp`
   const actions = ru
@@ -1309,12 +1309,12 @@ function ProfileActionHub({ data, locale, profile }) {
           image: '/images/holistic-house/hero-olive-incense.webp',
         },
         {
-          id: 'reports',
-          title: 'Мои отчёты',
-          description: 'Откройте сохранённые отчёты и материалы, которые были переданы вам специалистом.',
-          meta: `${activeReports} сохранённых отчётов`,
-          href: `${root}/reports`,
-          image: localizedPoster('homeopathy'),
+          id: 'consultations',
+          title: 'Консультации',
+          description: 'Запросите консультацию или вернитесь к уже созданным обращениям.',
+          meta: requestCount ? `${requestCount} обращений` : 'Обсудить результаты со специалистом',
+          href: `${root}/consultations`,
+          image: localizedPoster('services'),
         },
       ]
     : [
@@ -1359,12 +1359,12 @@ function ProfileActionHub({ data, locale, profile }) {
           image: '/images/holistic-house/hero-olive-incense.webp',
         },
         {
-          id: 'reports',
-          title: 'My reports',
-          description: 'Open reports and materials you chose to save from your practitioner.',
-          meta: `${activeReports} saved reports`,
-          href: `${root}/reports`,
-          image: localizedPoster('homeopathy'),
+          id: 'consultations',
+          title: 'Consultations',
+          description: 'Request a consultation or return to requests you have already created.',
+          meta: requestCount ? `${requestCount} requests` : 'Discuss results with a practitioner',
+          href: `${root}/consultations`,
+          image: localizedPoster('services'),
         },
       ]
 
@@ -1401,12 +1401,76 @@ function ProfileActionHub({ data, locale, profile }) {
 }
 
 function PortfolioPage({ data, locale }) {
+  const c = COPY[locale]
+  const [selected, setSelected] = useState(null)
+  const dimensions = data.snapshot?.dimensions || []
   const profile = profileCompletionRecommendations({
     snapshot: data.snapshot,
     results: data.results,
     locale,
   })
-  return <ProfileOverview profile={profile} locale={locale} />
+
+  return (
+    <section>
+      <div className="hh-heading hh-portfolio-heading">
+        <p className="hh-kicker">{locale === 'ru' ? 'Мой профиль' : 'My profile'}</p>
+        <h1>{locale === 'ru' ? 'Портфель результатов' : 'Results portfolio'}</h1>
+        <p>
+          {locale === 'ru'
+            ? 'Здесь собраны подробные результаты, сравнение замеров и рекомендации по тому, какие данные стоит добавить дальше.'
+            : 'This is where your detailed results, measurement comparisons and profile-completion recommendations live.'}
+        </p>
+      </div>
+      <ProfileOverview profile={profile} locale={locale} />
+      {dimensions.length > 0 && (
+        <>
+          {[
+            ['state', c.state],
+            ['symptoms', c.symptoms],
+            ['function', c.functioning],
+            ['resources', c.resources],
+            ['trait', c.personality],
+          ].map(([kind, title]) => {
+            const found = dimensions.filter((d) => d.dimensionClass === kind)
+            return found.length ? (
+              <section key={kind} className="hh-section">
+                <h2>{title}</h2>
+                <div className="hh-metrics">
+                  {found.map((d) => (
+                    <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />
+                  ))}
+                </div>
+              </section>
+            ) : null
+          })}
+          <PortraitGuide locale={locale} dimensions={dimensions} />
+          <LatestChange locale={locale} results={data.results} />
+        </>
+      )}
+      {selected && (
+        <section className="hh-panel hh-detail" aria-live="polite">
+          <button className="hh-close" onClick={() => setSelected(null)}>
+            {c.close}
+          </button>
+          <h2>{labelFor(selected.key, locale)}</h2>
+          <p>{explanationFor(selected.key, locale)}</p>
+          <p>
+            {c.measured}: {dateLabel(selected.measurementAt, locale)}
+          </p>
+          <p>
+            {c.source}: {getDefinitionById(selected.sourceDefinitionId).key} ·{' '}
+            {getDefinitionById(selected.sourceDefinitionId).version} · {selected.instrumentLocale}
+          </p>
+          <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>
+            {c.view}
+          </Link>
+          <Link href={`/${locale}/app/history`} prefetch={false}>
+            {c.history}
+          </Link>
+        </section>
+      )}
+    </section>
+  )
 }
 
 function ProfileOverview({ profile, locale }) {
@@ -1677,20 +1741,20 @@ function AssessmentEntryActions({ locale }) {
   )
 }
 
-function Portrait({ data, locale, onOpenHistory }) {
-  const c = COPY[locale],
-    [selected, setSelected] = useState(null),
-    dimensions = data.snapshot?.dimensions || [],
-    nextStep = getPortraitNextStep({
-      ...data,
-      dimensions: dimensions.map((dimension) => {
-        const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
-        return result
-          ? { ...dimension, measurementAt: result.measurementAt, suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays }
-          : dimension
-      }),
-    })
+function Portrait({ data, locale }) {
+  const c = COPY[locale]
+  const dimensions = data.snapshot?.dimensions || []
+  const nextStep = getPortraitNextStep({
+    ...data,
+    dimensions: dimensions.map((dimension) => {
+      const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
+      return result
+        ? { ...dimension, measurementAt: result.measurementAt, suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays }
+        : dimension
+    }),
+  })
   const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
+
   return (
     <section>
       <div className="hh-heading hh-profile-heading">
@@ -1723,68 +1787,7 @@ function Portrait({ data, locale, onOpenHistory }) {
         onQuickCheckin={() => window.location.assign('/' + locale + '/app/monitoring')}
       />
       {data.practitioner && <OwnerTools locale={locale} />}
-      {!dimensions.length ? (
-        <article className="hh-panel hh-empty">
-          <h2>{c.empty}</h2>
-          <p>{c.emptyText}</p>
-          <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
-            {c.start}
-          </Link>
-          <PortraitGuide locale={locale} dimensions={dimensions} />
-        </article>
-      ) : (
-        <>
-          {[
-            ['state', c.state],
-            ['symptoms', c.symptoms],
-            ['function', c.functioning],
-            ['resources', c.resources],
-            ['trait', c.personality],
-          ].map(([kind, title]) => {
-            const found = dimensions.filter((d) => d.dimensionClass === kind)
-            return found.length ? (
-              <section key={kind} className="hh-section">
-                <h2>{title}</h2>
-                <div className="hh-metrics">
-                  {found.map((d) => (
-                    <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />
-                  ))}
-                </div>
-              </section>
-            ) : null
-          })}
-          <PortraitGuide locale={locale} dimensions={dimensions} />
-          <LatestChange locale={locale} results={data.results} />
-          <div className="hh-actions">
-            <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
-              {c.repeat}
-            </Link>
-            <button onClick={onOpenHistory}>{c.history}</button>
-          </div>
-        </>
-      )}
       <ReportsFromAndy data={data} locale={locale} />
-      {selected && (
-        <section className="hh-panel hh-detail" aria-live="polite">
-          <button className="hh-close" onClick={() => setSelected(null)}>
-            {c.close}
-          </button>
-          <h2>{labelFor(selected.key, locale)}</h2>
-          <p>{explanationFor(selected.key, locale)}</p>
-          <p>
-            {c.measured}: {dateLabel(selected.measurementAt, locale)}
-          </p>
-          <p>
-            {c.source}: {getDefinitionById(selected.sourceDefinitionId).key} ·{' '}
-            {getDefinitionById(selected.sourceDefinitionId).version} · {selected.instrumentLocale}
-          </p>
-          <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>
-            {c.view}
-          </Link>
-          <button onClick={onOpenHistory}>{c.history}</button>
-        </section>
-      )}
-      <p className="hh-fine">{c.patterns}</p>
     </section>
   )
 }
@@ -1881,9 +1884,10 @@ function LatestChange({ locale, results }) {
   return <section className="hh-section hh-panel"><h2>{locale === 'ru' ? 'Последнее изменение' : 'Latest change'}</h2><p className="hh-fine">{locale === 'ru' ? 'Последний совместимый замер рядом с предыдущим; это не объяснение причин или тренд.' : 'Latest compatible measurement beside the previous one; this does not state a cause or trend.'}</p><ul className="hh-change-list">{changes.map((change) => <li key={change.key}>{labelFor(change.key, locale)} <strong>{change.previous} → {change.value}</strong></li>)}</ul></section>
 }
 function ReportsFromAndy({ data, locale }) {
-  const reports = reportTimeline(data.savedReports).slice(0, 3)
+  const reports = reportTimeline(data.savedReports).filter((report) => report.available !== false).slice(0, 3)
   const ru = locale === 'ru'
-  return <section className="hh-section hh-account-reports"><h2>{ru ? 'Отчёты от Andy' : 'Reports from Andy'}</h2>{!reports.length ? <p className="hh-fine">{ru ? 'Сохранённых отчётов пока нет. Когда вы решите сохранить переданный отчёт, он появится здесь.' : 'No reports have been saved yet. A report you choose to save will appear here.'}</p> : <div className="hh-grid">{reports.map((report) => <article className="hh-panel" key={report.id}><p className="hh-kicker">{ru ? 'Полученный отчёт' : 'Received report'}</p><h3>{formatReportDate(report.occurredOn, locale)}</h3><p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(report.occurredOn, locale)}</p>{report.available === false ? <p className="hh-fine">{ru ? 'Отчёт больше недоступен.' : 'Report no longer available.'}</p> : <Link href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{ru ? 'Открыть отчёт' : 'Open report'}</Link>}</article>)}</div>}</section>
+  if (!reports.length) return null
+  return <section className="hh-section hh-account-reports"><h2>{ru ? 'Отчёты от Andy' : 'Reports from Andy'}</h2><div className="hh-grid">{reports.map((report) => <article className="hh-panel" key={report.id}><p className="hh-kicker">{ru ? 'Полученный отчёт' : 'Received report'}</p><h3>{formatReportDate(report.occurredOn, locale)}</h3><p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(report.occurredOn, locale)}</p><Link href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{ru ? 'Открыть отчёт' : 'Open report'}</Link></article>)}</div></section>
 }
 function ResultConsultationCta({ locale }) {
   const copy =
