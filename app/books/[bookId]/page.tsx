@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Book02Reference } from "@/components/book-02-reference";
+import { BookRelatedMaterials } from "@/components/book-related-materials";
 import { PageVideo } from "@/components/page-video";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { TranslatedReaderContent } from "@/components/translated-reader-content";
@@ -148,7 +149,13 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
   if (!book) notFound();
 
   if (book.id === "alchemy-homeopathy-remedies") {
-    return <><Book02Reference locale={locale} remedies={getBook02Remedies(locale)} entries={getRemedyDirectory(locale)} video={<PageVideo slot="book-detail" locale={locale} entityId={book.id} />} /><PublicConsultationCta locale={locale} /></>;
+    return (
+      <>
+        <Book02Reference locale={locale} remedies={getBook02Remedies(locale)} entries={getRemedyDirectory(locale)} video={<PageVideo slot="book-detail" locale={locale} entityId={book.id} />} />
+        <BookRelatedMaterials bookId={book.id} locale={locale} />
+        <PublicConsultationCta locale={locale} />
+      </>
+    );
   }
 
   const display = localizedBookText(book, locale);
@@ -197,6 +204,7 @@ export default async function BookReaderPage({ params, searchParams }: PageProps
           <TranslatedReaderContent html={readerHtml} locale={locale} />
         </article>
       </div>
+      <BookRelatedMaterials bookId={book.id} locale={locale} />
       <PublicConsultationCta locale={locale} />
     </main>
   );
