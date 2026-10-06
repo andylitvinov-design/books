@@ -47,6 +47,7 @@ primary_image_alt: Source image attached to Lycopodium, message240.
 ---
 
 
+
 LYCOPODIUM
 
 An important remedy for men.
