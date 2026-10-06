@@ -49,9 +49,16 @@ export function CatalogShowcase({
         {items.map((item, index) => (
           <article className="catalog-showcase-panel" id={item.id} key={item.id}>
             <div className="catalog-showcase-media">
-              {item.media ?? (
-                item.image ? <Image alt="" fill sizes="(max-width: 720px) 100vw, 52vw" src={item.image} /> : null
-              )}
+              {item.image ? (
+                <Image
+                  alt=""
+                  className="catalog-showcase-media-image"
+                  fill
+                  sizes="(max-width: 720px) 100vw, 52vw"
+                  src={item.image}
+                />
+              ) : null}
+              {item.media ? <div className="catalog-showcase-media-live">{item.media}</div> : null}
             </div>
             <div className="catalog-showcase-copy">
               <div>
