@@ -9,6 +9,7 @@ export type CatalogShowcaseItem = {
   subtitle?: string;
   description: string;
   href: string;
+  indexHref?: string;
   actionLabel: string;
   image?: string;
   media?: ReactNode;
@@ -29,7 +30,7 @@ export function CatalogShowcase({
     <section className="catalog-showcase" aria-label={label}>
       <nav className="catalog-showcase-index" aria-label={label + " — contents"}>
         {items.map((item) => (
-          <a className="catalog-showcase-index-card" href={"#" + item.id} key={item.id}>
+          <Link className="catalog-showcase-index-card" href={item.indexHref ?? item.href} key={item.id}>
             {item.image ? (
               <span className="catalog-showcase-index-photo" aria-hidden="true">
                 <Image alt="" fill sizes="(max-width: 720px) 76px, 128px" src={item.image} />
@@ -39,7 +40,7 @@ export function CatalogShowcase({
               <strong>{item.title}</strong>
             </span>
             <ChevronRight aria-hidden="true" />
-          </a>
+          </Link>
         ))}
       </nav>
 
