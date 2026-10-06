@@ -47,6 +47,7 @@ primary_image_alt: Source image attached to Aurum metallicum, message37.
 ---
 
 
+
 Studied working with gold (the Aurum remedy in homeopathy).
 
 In psychotherapy, key archetypes are distinguished: father and mother.
