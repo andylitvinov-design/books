@@ -1547,7 +1547,7 @@ function MetricCard({ dimension, locale, onSelect }) {
 }
 function AssessmentEntryActions({ locale }) {
   const ru = locale === 'ru'
-  const root = `/${locale}/app/tests`
+  const root = `/${locale}/app`
   return (
     <section className="hh-assessment-entry" aria-labelledby="assessment-entry-title">
       <div className="hh-assessment-entry-heading">
@@ -1555,14 +1555,14 @@ function AssessmentEntryActions({ locale }) {
         <h2 id="assessment-entry-title">{ru ? 'Что вы хотите сделать?' : 'What would you like to do?'}</h2>
       </div>
       <div className="hh-assessment-entry-grid">
-        <Link className="hh-assessment-entry-card" href={`${root}?mode=all`} prefetch={false}>
-          <strong>{ru ? 'Пройти оценку / личный анализ' : 'Get assessment / personal analysis'}</strong>
-          <span>{ru ? 'Открыть упорядоченный список всех доступных тестов.' : 'Open the ordered list of all tests available in your Cabinet.'}</span>
+        <Link className="hh-assessment-entry-card" href={`${root}/monitoring/hh-current-state`} prefetch={false}>
+          <strong>{ru ? 'Пройти бесплатный тест-анализ состояния и получить рекомендации' : 'Take a free state analysis and get recommendations'}</strong>
+          <span>{ru ? 'Короткий замер состояния с понятным следующим шагом.' : 'A short state check with a clear next step.'}</span>
           <b aria-hidden="true">→</b>
         </Link>
-        <Link className="hh-assessment-entry-card hh-assessment-entry-card--accent" href={`${root}?mode=recommendations`} prefetch={false}>
-          <strong>{ru ? 'Подобрать тесты' : 'Get test recommendations'}</strong>
-          <span>{ru ? 'Выберите важные зоны и глубину — доступные тесты будут расставлены по приоритету.' : 'Choose your key areas and preferred depth, then see available tests ranked for you.'}</span>
+        <Link className="hh-assessment-entry-card hh-assessment-entry-card--accent" href={`${root}/tests?mode=recommendations`} prefetch={false}>
+          <strong>{ru ? 'Подобрать персональную батарею тестов' : 'Build a personal test battery'}</strong>
+          <span>{ru ? 'Выберите несколько важных зон и формат — тесты будут расставлены по приоритету.' : 'Choose several areas and format preferences, then see the most relevant tests first.'}</span>
           <b aria-hidden="true">→</b>
         </Link>
       </div>
@@ -1606,7 +1606,20 @@ function Portrait({ data, locale, onOpenHistory }) {
             sourceSurface: 'portrait',
           })
         }
-        onQuickCheckin={() => window.location.assign('/' + locale + '/app/monitoring')}
+        onQuickCheckin={async () => {
+          try {
+            const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
+            const run = await appFetch('runs', {
+              definitionKey: def.key,
+              definitionVersion: def.version,
+              instrumentLocale: def.instrumentLocale,
+              operationId: crypto.randomUUID(),
+            })
+            window.location.assign('/' + locale + '/app/runs/' + run.id)
+          } catch {
+            window.location.assign('/' + locale + '/app/monitoring/hh-current-state')
+          }
+        }}
       />
       <ProfileOverview profile={profile} locale={locale} />
       <AssessmentEntryActions locale={locale} />
