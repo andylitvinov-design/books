@@ -15,7 +15,9 @@ test("Services, Academy and Library share the same showcase component", () => {
   assert.match(academy, /CatalogShowcase/);
   assert.match(library, /CatalogShowcase/);
   assert.match(services, /serviceShowcaseItems/);
-  assert.match(academy, /academyDirections\.map/);
+  assert.match(academy, /academy-featured-yggdrasil/);
+  assert.match(academy, /academy-featured-tantra-reiki/);
+  assert.match(academy, /academyDirections\.filter/);
   assert.match(library, /bookItems\(locale\)/);
 });
 

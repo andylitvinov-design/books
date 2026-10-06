@@ -409,3 +409,32 @@ test("every Academy logical route has localized English and Russian titles", asy
     assert.match(catalog, new RegExp('"' + id.replaceAll("/", "\\/") + '": \\{ en:'));
   }
 });
+
+
+test("Academy promotes DAO Reiki Yggdrasil and Tantra Reiki as separate programs", async () => {
+  const [hub, recordPage, routePage, programMap, landing] = await Promise.all([
+    readFile("components/academy-hub.tsx", "utf8"),
+    readFile("components/academy-record-page.tsx", "utf8"),
+    readFile("app/[locale]/academy/[[...slug]]/page.tsx", "utf8"),
+    readFile("data/academy/yggdrasil-program-map.ts", "utf8"),
+    readFile("components/yggdrasil-program-landing.tsx", "utf8"),
+  ]);
+  assert.match(hub, /academy-featured-yggdrasil/);
+  assert.match(hub, /academy-featured-tantra-reiki/);
+  assert.match(hub, /\/academy\/reiki\/yggdrasil/);
+  assert.match(hub, /\/academy\/reiki\/tantra-reiki/);
+  assert.match(recordPage, /YggdrasilProgramLanding/);
+  assert.match(routePage, /reiki\/master-shamanic-healing.*redirect/s);
+  assert.match(landing, /basic-course-description/);
+  assert.match(landing, /#yggdrasil-basic-course-learning/);
+  const curriculumComponent = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
+  assert.match(curriculumComponent, /id=\{level\.id === 1 \? "yggdrasil-basic-course-learning"/);
+  assert.match(landing, /yggdrasilProgramModules/);
+  assert.match(programMap, /number: 10/);
+  assert.match(programMap, /localUrl: "\/academy\/reiki-yggdrasil\/source\/school-introduction\.jpg"/);
+  assert.match(programMap, /localUrl: "\/academy\/reiki-yggdrasil\/source\/program-overview\.jpg"/);
+  assert.match(programMap, /imageUrl: "\/academy\/reiki-yggdrasil\/source\/basic-program\.jpg"/);
+  assert.match(programMap, /imageUrl: "\/academy\/reiki-yggdrasil\/source\/slavic-tradition\.png"/);
+  assert.match(programMap, /imageUrl: "\/academy\/reiki-yggdrasil\/source\/toltec-tradition\.jpg"/);
+  assert.match(programMap, /sourceUrl: "https:\/\/psitrends\.com\/images\/photo_2023-01-20_23-25-00\.jpg"/);
+});

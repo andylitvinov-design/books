@@ -126,3 +126,68 @@
   .yggdrasil-setting-card, .yggdrasil-info-card { padding: 10px; }
   .yggdrasil-support-section > h3 { font-size: 26px; }
 }
+
+
+/* DAO Reiki Yggdrasil program landing */
+.yggdrasil-program-landing { display: grid; gap: 42px; padding: 26px 0 10px; }
+.yggdrasil-program-hero { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(0,.95fr); overflow: hidden; border: 1px solid #d8c9b5; background: #fffaf3; }
+.yggdrasil-program-hero-image { min-height: 340px; }
+.yggdrasil-source-visual { min-height: 190px; background-position: center; background-size: cover; }
+.yggdrasil-program-hero-copy { display: flex; flex-direction: column; justify-content: center; padding: clamp(24px,4vw,44px); }
+.yggdrasil-program-hero-copy h2, .yggdrasil-program-section > h2, .yggdrasil-basic-course-heading h2, .yggdrasil-source-gallery > h2 { margin: 7px 0 10px; color: #2c2119; font-family: var(--font-serif); font-size: clamp(30px,5vw,46px); font-weight: 400; line-height: 1.06; letter-spacing: -.02em; }
+.yggdrasil-program-hero-copy > p:not(.homeopathy-kicker), .yggdrasil-program-section-lead, .yggdrasil-basic-course-heading > p:not(.homeopathy-kicker), .yggdrasil-source-gallery > p { margin: 0; color: #65564b; font-family: var(--font-serif); font-size: 16px; line-height: 1.58; }
+.yggdrasil-program-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+.yggdrasil-program-actions a { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; border: 1px solid #8d6248; padding: 10px 15px; font-size: 12px; font-weight: 700; line-height: 1.25; text-decoration: none; }
+.yggdrasil-primary-action { background: #70442d; color: #fffaf3; }
+.yggdrasil-secondary-action { background: transparent; color: #70442d; }
+.yggdrasil-program-section, .yggdrasil-basic-course, .yggdrasil-source-gallery { scroll-margin-top: 28px; }
+.yggdrasil-module-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 20px; }
+.yggdrasil-module-card { display: grid; grid-template-columns: 150px minmax(0,1fr); min-height: 180px; overflow: hidden; border: 1px solid #d8c9b5; background: #fffaf3; }
+.yggdrasil-module-card .yggdrasil-source-visual { min-height: 100%; }
+.yggdrasil-module-placeholder { display: grid; min-height: 180px; place-items: center; background: #eee0d1; color: #8b624b; font-family: var(--font-serif); font-size: 42px; }
+.yggdrasil-module-card-copy { padding: 16px; }
+.yggdrasil-module-card-copy small { color: #98745c; font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.yggdrasil-module-card-copy h3 { margin: 5px 0 7px; color: #3d2c22; font-family: var(--font-serif); font-size: 19px; font-weight: 500; line-height: 1.16; }
+.yggdrasil-module-card-copy p { margin: 0; color: #6f5f53; font-size: 11px; line-height: 1.48; }
+.yggdrasil-module-card-copy a { display: inline-flex; margin-top: 10px; color: #764a33; font-size: 10px; font-weight: 800; text-decoration: none; }
+.yggdrasil-basic-course { border: 1px solid #d4c2ad; background: #f8eee2; padding: clamp(20px,4vw,34px); }
+.yggdrasil-basic-course-heading { max-width: 690px; }
+.yggdrasil-basic-levels { display: grid; gap: 8px; margin-top: 20px; scroll-margin-top: 28px; }
+.yggdrasil-basic-level-card { display: grid; grid-template-columns: 54px minmax(0,1fr); gap: 14px; border-top: 1px solid #ddcdbb; padding: 17px 0 8px; }
+.yggdrasil-basic-level-number { display: grid; width: 48px; height: 48px; place-items: center; border: 1px solid #c5ab94; border-radius: 50%; color: #754b34; font-family: var(--font-serif); font-size: 16px; }
+.yggdrasil-basic-level-card small { color: #95745d; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.yggdrasil-basic-level-card h3 { margin: 4px 0 6px; color: #3a291f; font-family: var(--font-serif); font-size: 20px; font-weight: 500; }
+.yggdrasil-basic-level-card p { margin: 0; color: #625449; font-size: 12px; line-height: 1.52; }
+.yggdrasil-basic-level-card details { margin-top: 10px; border-left: 1px solid #ccb6a1; padding-left: 12px; }
+.yggdrasil-basic-level-card summary { color: #744a33; font-size: 10px; font-weight: 800; cursor: pointer; }
+.yggdrasil-basic-level-card details p { margin-top: 8px; }
+.yggdrasil-full-curriculum { border-top: 1px solid #ded1c2; padding-top: 28px; }
+.yggdrasil-full-curriculum .yggdrasil-curriculum { padding-top: 14px; }
+.yggdrasil-full-curriculum .yggdrasil-curriculum-intro { border: 1px solid #e0d2c4; background: #fffaf3; padding: 18px; }
+.yggdrasil-source-gallery { border-top: 1px solid #ded1c2; padding-top: 28px; }
+.yggdrasil-source-gallery-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; margin-top: 18px; }
+.yggdrasil-source-gallery figure { margin: 0; overflow: hidden; border: 1px solid #ddcfc1; background: #fffaf3; }
+.yggdrasil-source-gallery .yggdrasil-source-visual { min-height: 105px; }
+.yggdrasil-source-gallery figcaption { min-height: 34px; padding: 7px 8px; color: #77665a; font-size: 9px; line-height: 1.3; }
+.yggdrasil-program-source-note { margin-top: 12px !important; color: #8a7869 !important; font-family: inherit !important; font-size: 10px !important; }
+.yggdrasil-source-link { display: inline-flex; gap: 6px; margin-top: 9px; color: #70442d; font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 760px) {
+  .yggdrasil-program-landing { gap: 30px; padding-top: 16px; }
+  .yggdrasil-program-hero { grid-template-columns: 1fr; }
+  .yggdrasil-program-hero-image { min-height: 220px; }
+  .yggdrasil-program-hero-copy { padding: 20px 16px 22px; }
+  .yggdrasil-program-actions { display: grid; grid-template-columns: 1fr; }
+  .yggdrasil-program-actions a { width: 100%; }
+  .yggdrasil-module-grid { grid-template-columns: 1fr; gap: 8px; }
+  .yggdrasil-module-card { grid-template-columns: 104px minmax(0,1fr); min-height: 138px; }
+  .yggdrasil-module-placeholder { min-height: 138px; font-size: 32px; }
+  .yggdrasil-module-card-copy { padding: 12px; }
+  .yggdrasil-module-card-copy h3 { font-size: 17px; }
+  .yggdrasil-basic-course { padding: 18px 14px; }
+  .yggdrasil-basic-level-card { grid-template-columns: 42px minmax(0,1fr); gap: 10px; }
+  .yggdrasil-basic-level-number { width: 38px; height: 38px; font-size: 13px; }
+  .yggdrasil-basic-level-card h3 { font-size: 18px; }
+  .yggdrasil-source-gallery-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .yggdrasil-source-gallery .yggdrasil-source-visual { min-height: 120px; }
+}
