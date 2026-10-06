@@ -4,12 +4,12 @@ import test from 'node:test'
 
 import { getBook02Remedies, getRemedyDirectory } from '../data/remedies.js'
 
-test('Book 02 reads the same 95 sorted canonical remedy cards as the standalone directory', () => {
+test('Book 02 reads the same 103 sorted canonical remedy cards as the standalone directory', () => {
   for (const locale of ['ru', 'en']) {
     const remedies = getBook02Remedies(locale)
     const directory = getRemedyDirectory(locale)
 
-    assert.equal(remedies.length, 95)
+    assert.equal(remedies.length, 103)
     assert.deepEqual(remedies.map(({ slug }) => slug), directory.map(({ slug }) => slug))
     assert.equal(remedies.find(({ slug }) => slug === 'aurum-metallicum').primary_image, '/media/remedies/aurum-metallicum/message37-1.jpg')
     const carcinosinum = remedies.find(({ slug }) => slug === 'carcinosinum')
