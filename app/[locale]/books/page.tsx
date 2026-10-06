@@ -5,14 +5,12 @@ import { BookCatalog } from "@/components/book-catalog";
 import { PageVideo } from "@/components/page-video";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { books } from "@/data/library";
-import { parseBookSection } from "@/data/library-sections";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 
 type PageProps = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ section?: string | string[] }>;
 };
 
 const meta = {
@@ -45,19 +43,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function LocalizedBooksPage({ params, searchParams }: PageProps) {
-  const [{ locale }, query] = await Promise.all([params, searchParams]);
+export default async function LocalizedBooksPage({ params }: PageProps) {
+  const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
-
-  const section = parseBookSection(query.section);
 
   return (
     <>
       <BookCatalog
         books={books}
         locale={locale as Locale}
-        section={section}
-        video={section ? undefined : <PageVideo slot="books-intro" locale={locale} />}
+        video={<PageVideo slot="books-intro" locale={locale} />}
       />
       <PublicConsultationCta locale={locale as Locale} />
     </>
