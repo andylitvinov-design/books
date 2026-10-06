@@ -71,6 +71,13 @@ function searchTerms(remedy) {
     .map(normaliseSearch)
 }
 
+function remedyDescriptionType(remedy) {
+  const status = String(remedy.source_status || '').toLowerCase()
+  if (status.includes('source-excerpt') || status.includes('excerpt')) return 'source-excerpt'
+  if (status.includes('full-card') || status.includes('full_card')) return 'full-card'
+  return 'source-description'
+}
+
 function directoryEntry(remedy) {
   return {
     slug: remedy.slug,
@@ -79,6 +86,7 @@ function directoryEntry(remedy) {
     aliases: remedy.aliases.split(';').map((alias) => alias.trim()).filter(Boolean),
     letter: remedy.canonical_latin_name.charAt(0).toUpperCase(),
     searchText: searchTerms(remedy).join(' '),
+    descriptionType: remedyDescriptionType(remedy),
   }
 }
 

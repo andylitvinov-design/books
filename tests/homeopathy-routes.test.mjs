@@ -33,6 +33,8 @@ test('searches partial Latin names, source Russian names, abbreviations, and Cyr
   assert.equal(searchRemedies('en', 'chest').some(({ slug }) => slug === 'bach-sweet-chestnut'), true)
   assert.deepEqual(searchRemedies('en', 'Zincum').map(({ slug }) => slug), ['zincum-metallicum'])
   assert.equal(searchRemedies('ru', 'цинк').some(({ slug }) => slug === 'zincum-metallicum'), true)
+  assert.equal(searchRemedies('ru', 'Silicea')[0].descriptionType, 'full-card')
+  assert.equal(searchRemedies('ru', 'Zincum')[0].descriptionType, 'source-excerpt')
 })
 
 test('groups every remedy alphabetically and preserves the current slug on language switch', () => {
