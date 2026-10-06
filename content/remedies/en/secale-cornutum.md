@@ -24,9 +24,9 @@ primary_source_message: message285 (09.01.2025 17:33:42 UTC-05:00)
 primary_source_sections:
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message285 (09.01.2025 17:33:42 UTC-05:00)
-source_images: /media/remedies/secale-cornutum/message285-1.jpg
+supplementary_materials: message1061 (20.09.2026 21:03 Telegram public view)
+source_messages: message285 (09.01.2025 17:33:42 UTC-05:00); message1061 (20.09.2026 21:03 Telegram public view)
+source_images: /media/remedies/secale-cornutum/message285-1.jpg; /media/remedies/secale-cornutum/message1061-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Secale Cornutum.; primary canonical content rebuilt from message285 (09.01.2025 17:33:42 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
 source_heading: message285
@@ -38,13 +38,14 @@ translation_source: content/remedies/ru/secale-cornutum.md
 translation_method: source-faithful machine-assisted translation
 en_source_exists: no
 primary_image: /media/remedies/secale-cornutum/message285-1.jpg
-supporting_images:
+supporting_images: /media/remedies/secale-cornutum/message1061-1.jpg
 source_message_id: message285
 source_date: 09.01.2025 17:33:42 UTC-05:00
 image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Secale Cornutum, message285.
 ---
+
 
 SECALE CORNUTUM
 
@@ -143,3 +144,19 @@ It seems incredible, but this remedy can instantly release tightness in the ches
 Secale Cornutum helps to return to a state of lightness and movement.
 
 It teaches us to let go of the unnecessary, trust ourselves and the world, allowing energy to flow freely and nourish the soul.
+
+## Additional materials and observations
+
+### message1061 (20.09.2026 21:03 Telegram public view)
+
+Observation.
+The author describes Secale Cornutum as acting like a “vacuum cleaner”, pulling out negative attitudes, other people's programs and opinions.
+
+It is described as a cleansing experience in which the chest feels clearer and more open and inner tightness eases.
+
+The author describes the effect as soft on the emotional level (Anahata / lower Vishuddha).
+
+With crystals, the author reports a much stronger, more concentrated experience and notes that prolonged use in this form may feel overloading.
+
+The author had described this remedy earlier:
+https://t.me/psychic_alchemy/777
