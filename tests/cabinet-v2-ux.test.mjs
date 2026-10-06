@@ -350,3 +350,37 @@ test('signed-in and guest test runners expose equivalent Quick and Guided modes'
   assert.ok(workspaceCss.includes('@media (prefers-reduced-motion:reduce)'))
   assert.ok(ia.includes('@media (prefers-reduced-motion:reduce)'))
 })
+
+
+test('My Profile v2 is action-first, prioritizes one next step, and keeps dense results in Portfolio', async () => {
+  const [workspace, workspaceCss] = await Promise.all([
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+    readFile('app/[locale]/app/[[...path]]/workspace.css', 'utf8'),
+  ])
+
+  assert.ok(workspace.includes('function ProfileActionHub'))
+  assert.ok(workspace.includes('function profileDashboardNextStep'))
+  assert.ok(workspace.includes('function PortfolioPage'))
+  assert.ok(workspace.includes("page === 'portfolio' && <PortfolioPage"))
+  assert.ok(workspace.includes("id: 'state'"))
+  assert.ok(workspace.includes("id: 'recommendations'"))
+  assert.ok(workspace.includes("id: 'portfolio'"))
+  assert.ok(workspace.includes("id: 'history'"))
+  assert.ok(workspace.includes("id: 'complete'"))
+  assert.ok(workspace.includes("id: 'consultations'"))
+  assert.ok(workspace.includes("id: 'reports'"))
+  assert.ok(workspace.includes("['monitor', 'Now']"))
+  assert.ok(workspace.includes("['data', 'My data']"))
+  assert.ok(workspace.includes("['grow', 'Build my profile']"))
+  assert.ok(workspace.includes("['support', 'Support']"))
+  assert.ok(workspace.includes("['draft', 'in_progress'].includes(run.status)"))
+  assert.ok(workspace.includes('hh-profile-summary'))
+  assert.ok(workspace.includes('hh-profile-next'))
+  assert.ok(workspace.includes('<ProfileOverview profile={profile} locale={locale} />'))
+  assert.ok(workspace.includes('<MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />'))
+  assert.ok(workspace.includes('if (!reports.length) return null'))
+  assert.ok(workspaceCss.includes('.hh-profile-action-groups'))
+  assert.ok(workspaceCss.includes('grid-template-columns: 96px minmax(0, 1fr) 24px'))
+  assert.ok(workspaceCss.includes('.hh-profile-mood .hh-mood-checkin--compact'))
+  assert.ok(workspaceCss.includes('min-height: 66px'))
+})
