@@ -90,10 +90,10 @@ export function RemedyDirectory({ locale, entries }: RemedyDirectoryProps) {
 
   return (
     <section aria-label={locale === "ru" ? "Каталог препаратов" : "Remedy directory"} className="remedy-directory">
-      <div className="remedy-search-shell">
-        <label className="remedy-search-label" htmlFor="remedy-directory-search">
+      <div className="remedies-search-block remedy-directory-search">
+        <label className="remedies-search-label" htmlFor="remedy-directory-search">
           <span>{copy.searchLabel}</span>
-          <div className="remedy-search-box">
+          <div className="remedies-search-input">
             <Search aria-hidden="true" className="size-4" />
             <input
               aria-controls="remedy-directory-suggestions"
@@ -110,19 +110,18 @@ export function RemedyDirectory({ locale, entries }: RemedyDirectoryProps) {
             />
           </div>
         </label>
-        <p className="remedy-search-hint">{copy.searchHint}</p>
 
         {query.trim() ? (
-          <div className="remedy-search-suggestions" id="remedy-directory-suggestions" role="list">
+          <div className="remedies-search-results" id="remedy-directory-suggestions" role="list">
             {suggestions.length ? suggestions.map((entry) => (
               <Link href={`/${locale}/homeopathy/remedies/${entry.slug}`} key={entry.slug} role="listitem">
-                <span className="remedy-search-suggestion-topline">
+                <span className="remedies-search-result-topline">
                   <strong>{entry.title}</strong>
                   <span className={`remedy-description-type remedy-description-type--${entry.descriptionType}`}>
                     {typeLabel(entry.descriptionType)}
                   </span>
                 </span>
-                {entry.commonName ? <span className="remedy-search-suggestion-common">{entry.commonName}</span> : null}
+                {entry.commonName ? <span>{entry.commonName}</span> : null}
                 {entry.aliases.length ? <small>{entry.aliases.join(" · ")}</small> : null}
               </Link>
             )) : <p>{copy.empty}</p>}
