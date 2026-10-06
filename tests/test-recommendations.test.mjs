@@ -90,3 +90,25 @@ test('personal Cabinet exposes both assessment actions and privacy-preserving ra
   assert.match(workspace, /hh-weekly-pulse/)
   assert.doesNotMatch(workspace, /MIND_BODY_MONITOR_REGISTRY\.map/)
 })
+
+
+test('public Cabinet exposes the same weighted recommender before sign-in and keeps PHQ-9 out of the guest set', async () => {
+  const landing = await readFile('components/app/cabinet-landing.jsx', 'utf8')
+  assert.match(landing, /TEST_RECOMMENDATION_FOCUS/)
+  assert.match(landing, /rankAssessmentDefinitions/)
+  assert.match(landing, /PUBLIC_RECOMMENDATION_KEYS/)
+  assert.match(landing, /Find the right set of tests for you/)
+  assert.match(landing, /Подберите комплект тестов под ваш запрос/)
+  assert.match(landing, /not saved to your profile/)
+  assert.match(landing, /не сохраняются в профиле/)
+  assert.match(landing, /slice\(0, 3\)/)
+  const guestKeys = landing.match(/const PUBLIC_RECOMMENDATION_KEYS = Object\.freeze\(\[([\s\S]*?)\]\)/)?.[1] || ''
+  assert.match(guestKeys, /hh-weekly-pulse/)
+  assert.match(guestKeys, /phq-4/)
+  assert.match(guestKeys, /gad-7/)
+  assert.doesNotMatch(guestKeys, /phq-9/)
+  assert.ok(
+    landing.indexOf('cabinet-public-recommender') < landing.indexOf('cabinet-signin-strip'),
+    'weighted test selection should be usable before Google sign-in',
+  )
+})
