@@ -407,6 +407,27 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
     }
   }
 
+  async function startStateAnalysis(payload) {
+    setMoodSignal((current) => ({ ...(current || {}), ...payload }))
+    setMoodError('')
+    try {
+      const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
+      const run = await monitoringFetch('runs', {
+        definitionKey: def.key,
+        definitionVersion: def.version,
+        instrumentLocale: def.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      onStarted(run)
+    } catch {
+      setMoodError(
+        locale === 'ru'
+          ? 'Не удалось начать анализ состояния. Повторите попытку.'
+          : 'The state analysis could not be started. Please retry.',
+      )
+    }
+  }
+
   return (
     <section className="hh-psi">
       <div className="hh-heading hh-psi-heading">
@@ -421,7 +442,7 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
         compact
         latestMood={moodSignal}
         onMoodChange={persistMood}
-        onQuickCheckin={(payload) => setMoodSignal((current) => ({ ...(current || {}), ...payload }))}
+        onQuickCheckin={startStateAnalysis}
       />
       {moodError && <p className="hh-psi-error" role="alert">{moodError}</p>}
 
