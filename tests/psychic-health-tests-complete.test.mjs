@@ -9,21 +9,30 @@ const startable = () => MONITORING_CATALOG.filter((item) => item.startable)
 const answers = (definition, value) =>
   Object.fromEntries(definition.questions.map((q) => [q.id, value ?? q.min ?? definition.answerScale?.min ?? 0]))
 
-test('all nine published monitoring tests resolve to executable definitions', () => {
+test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 9)
+  assert.equal(items.length, 18)
   assert.deepEqual(
     items.map((item) => item.key).sort(),
     [
-      'gad-7',
-      'hh-current-state',
-      'hh-monthly-profile',
-      'hh-resource-pulse',
-      'hh-weekly-pulse',
-      'k6',
-      'mini-ipip-20',
-      'phq-4',
-      'phq-9',
+      "gad-2",
+      "gad-7",
+      "hh-boundary-radar",
+      "hh-current-state",
+      "hh-focus-mode",
+      "hh-monthly-profile",
+      "hh-recharge-decoder",
+      "hh-resource-pulse",
+      "hh-social-battery",
+      "hh-stress-weather",
+      "hh-tiny-joys",
+      "hh-weekly-pulse",
+      "k10",
+      "k6",
+      "mini-ipip-20",
+      "phq-2",
+      "phq-4",
+      "phq-9"
     ],
   )
   for (const item of items) {
