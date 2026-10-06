@@ -93,6 +93,10 @@ test('homepage monitor offers soft focus choices and recommendation framing', as
   }
   assert.match(homeMonitor, /Start free monitoring/)
   assert.match(homeMonitor, /Начать бесплатный мониторинг/)
+  assert.match(homeMonitor, /activeMonitoringTestCounts\(\)/)
+  assert.match(homeMonitor, /inventoryEngaging/)
+  assert.match(homeMonitor, /inventoryProfessional/)
+  assert.match(homeMonitor, /Фильтр по теме, стилю и длине/)
   assert.match(homeMonitor, /next-step recommendations/)
   assert.match(homeMonitor, /not a diagnosis/)
   assert.match(homeMonitor, /data-monitor-focus/)
