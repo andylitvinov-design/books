@@ -821,12 +821,22 @@
 
   .catalog-kicker,
   .catalog-card-series { @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8b5a3c]; }
+  .catalog-card-series { @apply flex flex-wrap items-center gap-x-2 gap-y-1; }
+  .catalog-material-role { @apply rounded-full border border-[#d8c9b5] bg-[#f6ede1] px-2 py-0.5 text-[9px] tracking-[0.08em] text-[#765d4a]; }
 
   .catalog-header h1 { @apply mt-2 font-serif text-5xl leading-none text-[#2c2119] sm:text-6xl; }
   .catalog-header-copy > p:last-child { @apply mt-4 max-w-xl text-[15px] leading-7 text-[#67584b]; }
 
   .catalog-search { @apply flex w-full items-center gap-3 border-b border-[#8c6a52] py-3 text-[#6d4c38] lg:max-w-sm; }
   .catalog-search input { @apply w-full bg-transparent text-[15px] text-[#2c2119] outline-none placeholder:text-[#8b7c6f]; }
+
+  .catalog-reading-path { @apply mt-6 grid gap-4 border border-[#d5c5b0] bg-[#f8f1e7] p-4 sm:p-5 lg:grid-cols-[minmax(220px,0.75fr)_minmax(0,2fr)]; }
+  .catalog-reading-path-heading h2 { @apply mt-1 font-serif text-2xl leading-tight text-[#2c2119]; }
+  .catalog-reading-path-heading > span { @apply mt-2 block text-[12px] leading-5 text-[#67584b]; }
+  .catalog-reading-steps { @apply grid gap-2 sm:grid-cols-2; }
+  .catalog-reading-steps a { @apply grid min-h-[74px] content-center border border-[#d8c9b5] bg-[#fffaf3] px-4 py-3 text-inherit transition hover:border-[#a77b5d] hover:bg-white; }
+  .catalog-reading-steps small { @apply text-[9px] font-bold uppercase tracking-[0.13em] text-[#8b5a3c]; }
+  .catalog-reading-steps strong { @apply mt-1 font-serif text-[16px] font-medium leading-[1.18] text-[#2c2119]; }
 
   .catalog-filters { @apply flex flex-wrap gap-x-1 gap-y-2 border-b border-[#d8c9b5] py-5; }
   .catalog-filter { @apply rounded-full px-4 py-2 text-sm text-[#6e5746] transition hover:bg-[#e6d8c5] hover:text-[#3d2c21]; }
