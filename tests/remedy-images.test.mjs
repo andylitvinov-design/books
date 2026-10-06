@@ -38,9 +38,9 @@ test('restores approved Telegram images as stable public remedy assets without l
   const published = rows.filter(({ image_review_status }) => image_review_status === 'approved_for_publication')
   const primary = published.filter(({ image_classification }) => image_classification === 'primary_remedy_image')
   const supporting = published.filter(({ image_classification }) => image_classification === 'supporting_image')
-  assert.equal(primary.length, 93)
-  assert.equal(supporting.length, 15)
-  assert.equal(new Set(primary.map(({ remedy_slug }) => remedy_slug)).size, 93, 'one primary image per canonical remedy')
+  assert.equal(primary.length, 94)
+  assert.equal(supporting.length, 16)
+  assert.equal(new Set(primary.map(({ remedy_slug }) => remedy_slug)).size, 94, 'one primary image per canonical remedy')
   assert.equal(rows.filter(({ image_classification, image_review_status }) => image_classification === 'promotional_admin' && image_review_status === 'excluded_promotional_admin').length, 2)
 
   for (const row of published) {
