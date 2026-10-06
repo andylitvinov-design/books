@@ -156,7 +156,8 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /c\.contextAtCheckIn/)
   assert.match(workspace, /\['trigger', c\.trigger\]/)
   assert.match(workspace, /\['desired_change', c\.desiredChange\]/)
-  assert.match(catalog, /CURRENT_STATE_EN_V2/)
+  assert.match(catalog, /getAssessmentDefinition/)
+  assert.match(catalog, /PUBLIC_RECOMMENDATION_KEYS/)
 })
 
 
