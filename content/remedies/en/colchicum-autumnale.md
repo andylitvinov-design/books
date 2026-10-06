@@ -24,8 +24,8 @@ primary_source_message: message704 (02.07.2025 21:30:16 UTC-05:00)
 primary_source_sections: ОСНОВА; ЭФФЕКТ
 primary_source_url: https://t.me/arche_therapy
 full_card_additions:
-supplementary_materials:
-source_messages: message704 (02.07.2025 21:30:16 UTC-05:00)
+supplementary_materials: message1069 (02.10.2026 20:15 Telegram public view)
+source_messages: message704 (02.07.2025 21:30:16 UTC-05:00); message1069 (02.10.2026 20:15 Telegram public view)
 source_images: /media/remedies/colchicum-autumnale/message704-1.jpg
 provenance: Telegram full-card source approved for Phase L publication. Source spelling/provenance: Colchicum Autumnale.; primary canonical content rebuilt from message704 (02.07.2025 21:30:16 UTC-05:00)
 source_file: data/telegram-psychic-alchemy-index.csv
@@ -45,6 +45,7 @@ image_classification: primary_remedy_image
 image_review_status: approved_for_publication
 primary_image_alt: Source image attached to Colchicum Autumnale, message704.
 ---
+
 
 COLCHICUM AUTUMNALE
 
@@ -185,3 +186,23 @@ Say: "I have the right to separate myself from what harms me.
 I have the right to sensitivity and purity.
 
 I breathe life. I feel, but I do not dissolve."
+
+## Additional materials and observations
+
+### message1069 (02.10.2026 20:15 Telegram public view)
+
+Some remedies the author compares for stress:
+
+1. Rhus Rox (source spelling)
+Described for physical tightness, rigidity and bodily symptoms.
+
+2. Coffea Cruda
+Described for psychophysical over-excitation, when there is a need to stabilise and calm down.
+
+3. Nux Vomica
+Described for mental and nervous excitation, helping reduce over-control and increase reliance on oneself.
+
+4. Colchicum
+Described by the author as a deeper remedy for an excessive stress response formed early in life.
+
+The author arranges these remedies by perceived depth of work and notes that not every situation calls for working at the level of early psychological trauma; sometimes the issue may simply be physical overstrain.
