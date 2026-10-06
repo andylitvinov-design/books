@@ -6,6 +6,7 @@ import test from 'node:test'
 const projectRoot = process.cwd()
 const indexPath = path.join(projectRoot, 'data', 'telegram-psychic-alchemy-index.csv')
 const imageMapPath = path.join(projectRoot, 'data', 'remedy-image-map.csv')
+const liveImportPath = path.join(projectRoot, 'data', 'telegram-psychic-alchemy-live-import.json')
 
 function parseCsvLine(line) {
   const cells = []
@@ -100,13 +101,17 @@ test('Phase M image map preserves Book 02 photo provenance and approved public r
   const imageLines = readFileSync(imageMapPath, 'utf8').trim().split('\n')
   const imageHeader = parseCsvLine(imageLines.shift())
   const imageRows = imageLines.map((line) => Object.fromEntries(imageHeader.map((column, index) => [column, parseCsvLine(line)[index] ?? ''])))
-  const indexedMessageIds = new Set(indexRows.map(({ message_id }) => message_id))
+  const liveImport = JSON.parse(readFileSync(liveImportPath, 'utf8'))
+  const indexedMessageIds = new Set([
+    ...indexRows.map(({ message_id }) => message_id),
+    ...liveImport.posts.map(({ message_id }) => message_id),
+  ])
 
-  assert.equal(imageRows.length, 110)
+  assert.equal(imageRows.length, 112)
   assert.equal(imageRows.every(({ message_id }) => indexedMessageIds.has(message_id)), true)
   assert.equal(imageRows.every(({ source_image_exists }) => source_image_exists === 'yes'), true)
-  assert.equal(imageRows.filter(({ image_classification }) => image_classification === 'primary_remedy_image').length, 93)
-  assert.equal(imageRows.filter(({ image_classification }) => image_classification === 'supporting_image').length, 15)
+  assert.equal(imageRows.filter(({ image_classification }) => image_classification === 'primary_remedy_image').length, 94)
+  assert.equal(imageRows.filter(({ image_classification }) => image_classification === 'supporting_image').length, 16)
   assert.equal(imageRows.filter(({ image_classification }) => image_classification === 'promotional_admin').length, 2)
   assert.equal(imageRows.filter(({ image_review_status }) => image_review_status === 'approved_for_publication').every(({ public_url }) => public_url.startsWith('/media/remedies/')), true)
   assert.equal(imageRows.filter(({ image_review_status }) => image_review_status === 'excluded_promotional_admin').every(({ public_url }) => public_url === ''), true)
