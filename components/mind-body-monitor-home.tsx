@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { activeMonitoringTestCounts } from "@/data/assessments/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 
 const copy = {
@@ -19,6 +20,9 @@ const copy = {
     intro:
       "Short self-checks can help you see what is affecting your wellbeing and everyday effectiveness right now — stress, mood, mental clarity, energy, sleep, or body symptoms — and get simple recommendations for what to pay attention to next.",
     choose: "What matters most right now?",
+    inventoryAll: "active tests in the full monitor",
+    inventoryEngaging: "light & engaging",
+    inventoryProfessional: "professional",
     topics: [
       { key: "anxiety", label: "Anxiety & worry", icon: HeartPulse },
       { key: "stress", label: "Stress & overload", icon: Zap },
@@ -31,9 +35,9 @@ const copy = {
     stateTitle: "Start with a quick check-in",
     stateText: "5 questions · about 1 minute · no sign-in required",
     stateAction: "Start free monitoring",
-    testsTitle: "Explore monitoring tests",
-    testsText: "Mood · stress · energy · clarity · relationships · recovery",
-    testsAction: "View free tests",
+    testsTitle: "Find the right tests for you",
+    testsText: "Filter by topic, style and length — from quick engaging checks to professional scales.",
+    testsAction: "Choose my tests",
     wuTitle: "Personal Wu Xing Profile",
     wuText: "An optional reflective five-elements framework, kept separate from clinical screening.",
     wuAction: "Explore Wu Xing",
@@ -46,6 +50,9 @@ const copy = {
     intro:
       "Короткие самопроверки помогают увидеть, что сейчас сильнее влияет на самочувствие и повседневную эффективность — стресс, настроение, ясность мышления, энергия, сон или телесные симптомы — и получить простые рекомендации, на что обратить внимание дальше.",
     choose: "Что сейчас важнее всего?",
+    inventoryAll: "активных тестов в полном мониторе",
+    inventoryEngaging: "лёгких / интерактивных",
+    inventoryProfessional: "профессиональных",
     topics: [
       { key: "anxiety", label: "Волнение и тревога", icon: HeartPulse },
       { key: "stress", label: "Стресс и перегрузка", icon: Zap },
@@ -58,9 +65,9 @@ const copy = {
     stateTitle: "Начните с короткой проверки",
     stateText: "5 вопросов · около 1 минуты · без регистрации",
     stateAction: "Начать бесплатный мониторинг",
-    testsTitle: "Другие тесты мониторинга",
-    testsText: "Настроение · стресс · энергия · ясность · отношения · восстановление",
-    testsAction: "Открыть бесплатные тесты",
+    testsTitle: "Подберите тесты под себя",
+    testsText: "Фильтр по теме, стилю и длине — от лёгких быстрых проверок до профессиональных шкал.",
+    testsAction: "Подобрать мои тесты",
     wuTitle: "Личный профиль У-Син",
     wuText: "Дополнительная рефлексивная модель пяти элементов, отдельно от клинических скринингов.",
     wuAction: "Открыть У-Син",
@@ -73,6 +80,9 @@ const copy = {
     intro:
       "Las autoevaluaciones breves pueden ayudarte a ver qué está afectando más tu bienestar y funcionamiento cotidiano — estrés, ánimo, claridad mental, energía, sueño o síntomas físicos — y recibir recomendaciones sencillas sobre qué observar después.",
     choose: "¿Qué te importa más ahora?",
+    inventoryAll: "tests activos en el monitor completo",
+    inventoryEngaging: "ligeros e interactivos",
+    inventoryProfessional: "profesionales",
     topics: [
       { key: "anxiety", label: "Ansiedad y preocupación", icon: HeartPulse },
       { key: "stress", label: "Estrés y sobrecarga", icon: Zap },
@@ -85,9 +95,9 @@ const copy = {
     stateTitle: "Empieza con una revisión breve",
     stateText: "5 preguntas · aproximadamente 1 minuto · sin registro",
     stateAction: "Iniciar monitoreo gratuito",
-    testsTitle: "Explorar tests de seguimiento",
-    testsText: "Ánimo · estrés · energía · claridad · relaciones · recuperación",
-    testsAction: "Ver tests gratuitos",
+    testsTitle: "Encuentra los tests adecuados",
+    testsText: "Filtra por tema, estilo y duración — desde controles ligeros hasta escalas profesionales.",
+    testsAction: "Elegir mis tests",
     wuTitle: "Perfil personal Wu Xing",
     wuText: "Un marco reflexivo opcional de cinco elementos, separado del cribado clínico.",
     wuAction: "Explorar Wu Xing",
@@ -98,6 +108,7 @@ const copy = {
 
 export function MindBodyMonitorHome({ locale }: { locale: PublicLocale }) {
   const text = copy[locale];
+  const testCounts = activeMonitoringTestCounts();
 
   return (
     <section className="monitor-home-start" aria-labelledby="monitor-home-title" data-monitor-home>
@@ -106,6 +117,12 @@ export function MindBodyMonitorHome({ locale }: { locale: PublicLocale }) {
         <h2 id="monitor-home-title">{text.title}</h2>
         <p>{text.intro}</p>
       </header>
+
+      <div className="monitor-home-start__inventory" aria-label={`${testCounts.total} ${text.inventoryAll}`}>
+        <strong>{testCounts.total} {text.inventoryAll}</strong>
+        <span>{testCounts.engaging} {text.inventoryEngaging}</span>
+        <span>{testCounts.professional} {text.inventoryProfessional}</span>
+      </div>
 
       <div className="monitor-home-start__choice" aria-labelledby="monitor-home-focus-title">
         <h3 id="monitor-home-focus-title">{text.choose}</h3>

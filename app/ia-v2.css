@@ -1780,3 +1780,122 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 @media (prefers-reduced-motion:reduce) {
   .cabinet-landing-shell .hh-test-mode-card,.cabinet-landing-shell .hh-runner-segments > span { transition:none; }
 }
+
+/* Test inventory + recommender facets — style and length switches. */
+.monitor-home-start__inventory {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 17px 0 20px;
+}
+.monitor-home-start__inventory strong,
+.monitor-home-start__inventory span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid #dfd2c5;
+  border-radius: 999px;
+  background: rgba(255,253,250,.82);
+  color: #675346;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.monitor-home-start__inventory strong {
+  border-color: #b99b84;
+  background: #f4e9dd;
+  color: #50392b;
+  font-weight: 800;
+}
+
+.cabinet-test-facets,
+.hh-test-facets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.cabinet-test-filter,
+.hh-test-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #e3d8cd;
+  border-radius: 14px;
+  background: rgba(255,253,250,.7);
+}
+.cabinet-test-filter legend,
+.hh-test-filter legend {
+  width: auto;
+  margin: 0 0 2px;
+  padding: 0 4px;
+  color: #80634f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.cabinet-test-filter button,
+.hh-test-filter button {
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid #d9cbbb;
+  border-radius: 999px;
+  background: #fffdfa;
+  color: #625044;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cabinet-test-filter button[aria-pressed="true"],
+.hh-test-filter button[aria-pressed="true"] {
+  border-color: #70442d;
+  background: #70442d;
+  color: #fffaf2;
+}
+.cabinet-test-filter button:focus-visible,
+.hh-test-filter button:focus-visible {
+  outline: 2px solid #70442d;
+  outline-offset: 2px;
+}
+.cabinet-test-empty {
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8f0e8;
+  color: #725b4a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 700px) {
+  .monitor-home-start__inventory {
+    gap: 6px;
+    margin: 14px 0 17px;
+  }
+  .monitor-home-start__inventory strong {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+  .monitor-home-start__inventory span {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+    text-align: center;
+  }
+  .cabinet-test-facets,
+  .hh-test-facets {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 13px;
+  }
+  .cabinet-test-filter,
+  .hh-test-filter {
+    padding: 10px;
+  }
+}
