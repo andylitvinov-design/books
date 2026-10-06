@@ -10,7 +10,12 @@ import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/cur
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { getAssessmentDefinition } from '@/lib/assessments/definitions'
-import { TEST_RECOMMENDATION_FOCUS, rankAssessmentDefinitions } from '@/lib/assessments/test-recommendations'
+import {
+  TEST_LENGTH_FILTERS,
+  TEST_RECOMMENDATION_FOCUS,
+  TEST_STYLE_FILTERS,
+  rankAssessmentDefinitions,
+} from '@/lib/assessments/test-recommendations'
 
 const UI = {
   en: {
@@ -30,10 +35,14 @@ const UI = {
     recommenderKicker: 'Personal test selection',
     recommenderTitle: 'Build a test set for what matters to you',
     recommenderText: 'Mark what is bothering you or feels important right now. We will rank the available tests by relevance and the depth you prefer.',
-    recommenderDepth: 'Depth',
-    recommenderQuick: 'Short',
-    recommenderBalanced: 'Medium',
-    recommenderDeep: 'Deeper',
+    recommenderStyle: 'Test style',
+    recommenderEngaging: 'Fun / engaging',
+    recommenderProfessional: 'Professional',
+    recommenderLength: 'Length',
+    recommenderShort: 'Short',
+    recommenderMedium: 'Medium',
+    recommenderComprehensive: 'Comprehensive',
+    recommenderNoMatches: 'No exact match. Try enabling another style or length.',
     recommenderBuild: 'Build my test set',
     recommenderChoose: 'Choose at least one area.',
     recommenderResults: 'Recommended for your request',
@@ -111,10 +120,14 @@ const UI = {
     recommenderKicker: 'Индивидуальный подбор',
     recommenderTitle: 'Подобрать комплект тестов под ваш запрос',
     recommenderText: 'Отметьте, что сейчас беспокоит или важно. Мы расставим доступные тесты по приоритету с учётом выбранных тем и желаемой глубины.',
-    recommenderDepth: 'Глубина',
-    recommenderQuick: 'Коротко',
-    recommenderBalanced: 'Средне',
-    recommenderDeep: 'Глубже',
+    recommenderStyle: 'Тип теста',
+    recommenderEngaging: 'Лёгкие / игровые',
+    recommenderProfessional: 'Профессиональные',
+    recommenderLength: 'Длина',
+    recommenderShort: 'Короткие',
+    recommenderMedium: 'Средние',
+    recommenderComprehensive: 'Комплексные',
+    recommenderNoMatches: 'Точного совпадения нет. Включите ещё один тип или длину.',
     recommenderBuild: 'Собрать мой набор',
     recommenderChoose: 'Выберите хотя бы одну тему.',
     recommenderResults: 'Рекомендуем по вашему запросу',
@@ -281,7 +294,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [adult, setAdult] = useState(false)
   const [necessary, setNecessary] = useState(false)
   const [selectedFocus, setSelectedFocus] = useState([])
-  const [depth, setDepth] = useState('balanced')
+  const [testStyles, setTestStyles] = useState(() => TEST_STYLE_FILTERS.map((item) => item.key))
+  const [testLengths, setTestLengths] = useState(() => TEST_LENGTH_FILTERS.map((item) => item.key))
   const [personalized, setPersonalized] = useState(null)
   const [busy, setBusy] = useState(false)
   const [saveState, setSaveState] = useState('')
@@ -366,11 +380,20 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setPersonalized(null)
   }
 
+  function toggleFacet(setter, key) {
+    setter((current) => {
+      if (!current.includes(key)) return [...current, key]
+      return current.length > 1 ? current.filter((item) => item !== key) : current
+    })
+    setPersonalized(null)
+  }
+
   function buildRecommendations() {
     if (!selectedFocus.length) return
     const ranked = rankAssessmentDefinitions(publicRecommendationDefinitions(locale), {
       focus: selectedFocus,
-      depth,
+      styles: testStyles,
+      lengths: testLengths,
     })
       .filter((item) => item.matchedFocus.length)
       .slice(0, 3)
@@ -691,26 +714,38 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 ))}
               </div>
 
-              <fieldset className="cabinet-test-depth">
-                <legend>{c.recommenderDepth}</legend>
-                {[
-                  ['quick', c.recommenderQuick],
-                  ['balanced', c.recommenderBalanced],
-                  ['deep', c.recommenderDeep],
-                ].map(([key, label]) => (
-                  <button
-                    type="button"
-                    key={key}
-                    aria-pressed={depth === key}
-                    onClick={() => {
-                      setDepth(key)
-                      setPersonalized(null)
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </fieldset>
+              <div className="cabinet-test-facets">
+                <fieldset className="cabinet-test-filter">
+                  <legend>{c.recommenderStyle}</legend>
+                  {TEST_STYLE_FILTERS.map((item) => (
+                    <button
+                      type="button"
+                      key={item.key}
+                      aria-pressed={testStyles.includes(item.key)}
+                      onClick={() => toggleFacet(setTestStyles, item.key)}
+                    >
+                      {item.key === 'engaging' ? c.recommenderEngaging : c.recommenderProfessional}
+                    </button>
+                  ))}
+                </fieldset>
+                <fieldset className="cabinet-test-filter">
+                  <legend>{c.recommenderLength}</legend>
+                  {TEST_LENGTH_FILTERS.map((item) => (
+                    <button
+                      type="button"
+                      key={item.key}
+                      aria-pressed={testLengths.includes(item.key)}
+                      onClick={() => toggleFacet(setTestLengths, item.key)}
+                    >
+                      {item.key === 'short'
+                        ? c.recommenderShort
+                        : item.key === 'medium'
+                          ? c.recommenderMedium
+                          : c.recommenderComprehensive}
+                    </button>
+                  ))}
+                </fieldset>
+              </div>
 
               <div className="cabinet-test-recommender-actions">
                 <button
@@ -728,6 +763,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               {personalized && (
                 <div className="cabinet-ranked-tests" aria-live="polite">
                   <p className="cabinet-monitor-label">{c.recommenderResults}</p>
+                  {!personalized.length && <p className="cabinet-test-empty">{c.recommenderNoMatches}</p>}
                   {personalized.map((item, index) => (
                     <button
                       className={`cabinet-test-row${index === 0 ? ' cabinet-test-row--recommended' : ''}`}
