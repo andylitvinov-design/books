@@ -1,0 +1,75 @@
+import Image from "next/image";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { ArrowRight, ChevronDown } from "lucide-react";
+
+export type CatalogShowcaseItem = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  href: string;
+  actionLabel: string;
+  image?: string;
+  media?: ReactNode;
+  eyebrow?: string;
+  meta?: string;
+};
+
+export function CatalogShowcase({
+  items,
+  label,
+}: {
+  items: CatalogShowcaseItem[];
+  label: string;
+}) {
+  if (!items.length) return null;
+
+  return (
+    <section className="catalog-showcase" aria-label={label}>
+      <nav className="catalog-showcase-index" aria-label={label + " — contents"}>
+        {items.map((item, index) => (
+          <a className="catalog-showcase-index-card" href={"#" + item.id} key={item.id}>
+            <span className="catalog-showcase-index-number">{String(index + 1).padStart(2, "0")}</span>
+            {item.image ? (
+              <span className="catalog-showcase-index-photo" aria-hidden="true">
+                <Image alt="" fill sizes="64px" src={item.image} />
+              </span>
+            ) : null}
+            <span className="catalog-showcase-index-copy">
+              <strong>{item.title}</strong>
+              {item.subtitle ? <small>{item.subtitle}</small> : null}
+            </span>
+            <ChevronDown aria-hidden="true" />
+          </a>
+        ))}
+      </nav>
+
+      <div className="catalog-showcase-stack">
+        {items.map((item, index) => (
+          <article className="catalog-showcase-panel" id={item.id} key={item.id}>
+            <div className="catalog-showcase-media">
+              {item.media ?? (
+                item.image ? <Image alt="" fill sizes="(max-width: 720px) 100vw, 52vw" src={item.image} /> : null
+              )}
+            </div>
+            <div className="catalog-showcase-copy">
+              <div>
+                <p className="catalog-showcase-kicker">
+                  {item.eyebrow ?? (String(index + 1).padStart(2, "0") + " / " + String(items.length).padStart(2, "0"))}
+                </p>
+                <h2>{item.title}</h2>
+                {item.subtitle ? <p className="catalog-showcase-subtitle">{item.subtitle}</p> : null}
+                <p className="catalog-showcase-description">{item.description}</p>
+                {item.meta ? <p className="catalog-showcase-meta">{item.meta}</p> : null}
+              </div>
+              <Link className="catalog-showcase-action" href={item.href}>
+                <span>{item.actionLabel}</span><ArrowRight aria-hidden="true" />
+              </Link>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
