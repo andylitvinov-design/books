@@ -253,7 +253,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               key={id}
               href={root + url}
               prefetch={false}
-              aria-current={page === id ? 'page' : undefined}
+              aria-current={page === id || (id === 'portrait' && page === 'portfolio') ? 'page' : undefined}
             >
               {label}
             </Link>
@@ -269,14 +269,11 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portrait' && (
             <>
-              <Portrait
-                data={data}
-                locale={locale}
-                onOpenHistory={() => router.push(root + '/history')}
-              />
+              <Portrait data={data} locale={locale} />
               <PracticeEntry data={data} locale={locale} />
             </>
           )}
+          {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} />}
           {page === 'monitoring' && (
             <PsiMonitoring
@@ -1302,6 +1299,373 @@ function profileDelta(value) {
   if (!Number.isFinite(numeric)) return '—'
   return `${numeric > 0 ? '+' : ''}${profileNumber(numeric)}`
 }
+function profileDashboardNextStep({ data, locale, nextStep }) {
+  const ru = locale === 'ru'
+  const root = `/${locale}/app`
+  const draft = (data.runs || []).find((run) => ['draft', 'in_progress'].includes(run.status))
+  if (draft) {
+    const definition = getDefinitionById(draft.definitionId)
+    const item = monitoringCatalogItem(definition.key)
+    const title = item?.title?.[locale] || item?.title?.en || definition.title
+    return {
+      eyebrow: ru ? 'Продолжить' : 'Continue',
+      title: ru ? `Закончить: ${title}` : `Finish: ${title}`,
+      text: ru
+        ? 'У вас есть незавершённый тест. Лучше закончить его, прежде чем начинать новый.'
+        : 'You have an unfinished assessment. Finish it before starting another one.',
+      action: ru ? 'Продолжить тест' : 'Continue test',
+      href: `${root}/runs/${draft.id}`,
+    }
+  }
+
+  const table = {
+    state: {
+      eyebrow: ru ? 'Рекомендуем сейчас' : 'Recommended now',
+      title: ru ? 'Проверить текущее состояние' : 'Check your current state',
+      text: ru
+        ? 'Начните с короткого замера состояния — он создаст первую точку для дальнейшего сравнения.'
+        : 'Start with a short current-state check. It creates a useful baseline for later comparison.',
+      action: ru ? 'Начать мониторинг' : 'Start monitoring',
+      href: `${root}/monitoring`,
+    },
+    tendencies: {
+      eyebrow: ru ? 'Рекомендуем дальше' : 'Recommended next',
+      title: ru ? 'Добавить базовый профиль' : 'Add your baseline profile',
+      text: ru
+        ? 'Добавьте более устойчивые личностные показатели, чтобы профиль был не только про состояние сегодня.'
+        : 'Add more stable personal measures so your profile is not based only on how you feel today.',
+      action: ru ? 'Дополнить профиль' : 'Complete profile',
+      href: `${root}/tests?mode=all`,
+    },
+    history: {
+      eyebrow: ru ? 'Следующий полезный шаг' : 'Useful next step',
+      title: ru ? 'Посмотреть динамику' : 'Review your changes',
+      text: ru
+        ? 'У вас уже есть базовые данные. Посмотрите историю и сравните повторные измерения.'
+        : 'You already have useful baseline data. Review your history and compare repeat measurements.',
+      action: ru ? 'Открыть динамику' : 'Open history',
+      href: `${root}/history`,
+    },
+    report: {
+      eyebrow: ru ? 'Новое для вас' : 'New for you',
+      title: ru ? 'Открыть новый отчёт' : 'Open your new report',
+      text: ru
+        ? 'В кабинете есть непрочитанный материал от специалиста.'
+        : 'There is an unread practitioner report waiting in your Cabinet.',
+      action: ru ? 'Открыть отчёт' : 'Open report',
+      href: `${root}${nextStep.href}`,
+    },
+    consultation: {
+      eyebrow: ru ? 'Есть активное обращение' : 'Active request',
+      title: ru ? 'Вернуться к консультации' : 'Return to your consultation',
+      text: ru
+        ? 'У вас уже есть открытый запрос. Можно посмотреть его статус и продолжить отсюда.'
+        : 'You already have an open consultation request. Review its status and continue from here.',
+      action: ru ? 'Открыть консультации' : 'Open consultations',
+      href: `${root}/consultations`,
+    },
+    checkin: {
+      eyebrow: ru ? 'Пора обновить данные' : 'Time for an update',
+      title: ru ? 'Повторить текущий замер' : 'Repeat your current check',
+      text: ru
+        ? 'С момента прошлого измерения прошло достаточно времени — новый замер поможет увидеть динамику.'
+        : 'Enough time has passed since your previous measurement. A new check can show meaningful change.',
+      action: ru ? 'Повторить мониторинг' : 'Repeat monitoring',
+      href: `${root}/monitoring`,
+    },
+  }
+  return table[nextStep.kind] || table.state
+}
+
+function ProfileActionHub({ data, locale, profile, nextStep }) {
+  const ru = locale === 'ru'
+  const root = `/${locale}/app`
+  const resultCount = (data.results || []).length
+  const requestCount = (data.requests || []).filter((request) => ['requested', 'contacted'].includes(request.status)).length
+  const activeReports = (data.savedReports || []).filter((report) => report.available !== false).length
+  const next = profileDashboardNextStep({ data, locale, nextStep })
+  const latestResult = [...(data.results || [])].sort(
+    (a, b) => Date.parse(b.measurementAt || 0) - Date.parse(a.measurementAt || 0),
+  )[0]
+  const latestLabel = latestResult ? dateLabel(latestResult.measurementAt, locale) : (ru ? 'пока нет' : 'none yet')
+
+  const commonActions = ru
+    ? [
+        {
+          id: 'state',
+          group: 'monitor',
+          title: 'Текущее состояние',
+          description: 'Быстрый замер состояния прямо сейчас.',
+          meta: 'Мониторинг',
+          href: `${root}/monitoring`,
+          image: '/images/holistic-house/video-posters/home-ru-v1.webp',
+        },
+        {
+          id: 'recommendations',
+          group: 'monitor',
+          title: 'Подобрать тесты',
+          description: 'Выберите темы и глубину — тесты будут расставлены по приоритету.',
+          meta: 'Персональная подборка',
+          href: `${root}/tests?mode=recommendations`,
+          image: '/images/holistic-house/video-posters/services-ru-v1.webp',
+        },
+        {
+          id: 'portfolio',
+          group: 'data',
+          title: 'Портфель результатов',
+          description: 'Графики, шкалы, сравнения и все измерения в одном месте.',
+          meta: `Заполнено ${profile.coveragePercent}%`,
+          href: `${root}/portfolio`,
+          image: '/images/holistic-house/video-posters/homeopathy-ru-v1.webp',
+        },
+        {
+          id: 'history',
+          group: 'data',
+          title: 'Динамика',
+          description: 'Сравнить повторные замеры и изменения со временем.',
+          meta: resultCount ? `${resultCount} результатов` : 'История появится после тестов',
+          href: `${root}/history`,
+          image: '/images/holistic-house/hero-olive-incense.webp',
+        },
+        {
+          id: 'complete',
+          group: 'grow',
+          title: 'Дополнить профиль',
+          description: 'Добавить недостающие слои через короткие или глубокие тесты.',
+          meta: `${profile.coveredAxes.length} из 5 слоёв`,
+          href: `${root}/tests?mode=all`,
+          image: '/images/holistic-house/books-library.webp',
+        },
+        {
+          id: 'consultations',
+          group: 'support',
+          title: 'Консультации',
+          description: 'Обсудить результаты или вернуться к уже созданному обращению.',
+          meta: requestCount ? `${requestCount} активных` : 'Связаться со специалистом',
+          href: `${root}/consultations`,
+          image: '/images/holistic-house/video-posters/services-ru-v1.webp',
+        },
+      ]
+    : [
+        {
+          id: 'state',
+          group: 'monitor',
+          title: 'Current state',
+          description: 'A quick check of how you are doing right now.',
+          meta: 'Monitoring',
+          href: `${root}/monitoring`,
+          image: '/images/holistic-house/video-posters/home-en-v2.webp',
+        },
+        {
+          id: 'recommendations',
+          group: 'monitor',
+          title: 'Find the right tests',
+          description: 'Choose your priorities and depth, then see tests ranked for you.',
+          meta: 'Personal selection',
+          href: `${root}/tests?mode=recommendations`,
+          image: '/images/holistic-house/video-posters/services-en-v2.webp',
+        },
+        {
+          id: 'portfolio',
+          group: 'data',
+          title: 'Results portfolio',
+          description: 'Charts, scales, comparisons and all measurements in one place.',
+          meta: `${profile.coveragePercent}% complete`,
+          href: `${root}/portfolio`,
+          image: '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
+        },
+        {
+          id: 'history',
+          group: 'data',
+          title: 'Changes over time',
+          description: 'Compare repeat measurements and review your history.',
+          meta: resultCount ? `${resultCount} results` : 'History appears after tests',
+          href: `${root}/history`,
+          image: '/images/holistic-house/hero-olive-incense.webp',
+        },
+        {
+          id: 'complete',
+          group: 'grow',
+          title: 'Complete my profile',
+          description: 'Add missing layers with short or in-depth assessments.',
+          meta: `${profile.coveredAxes.length} of 5 layers`,
+          href: `${root}/tests?mode=all`,
+          image: '/images/holistic-house/books-library.webp',
+        },
+        {
+          id: 'consultations',
+          group: 'support',
+          title: 'Consultations',
+          description: 'Discuss results or return to an existing request.',
+          meta: requestCount ? `${requestCount} active` : 'Talk to a practitioner',
+          href: `${root}/consultations`,
+          image: '/images/holistic-house/video-posters/services-en-v2.webp',
+        },
+      ]
+
+  const actions = activeReports
+    ? [
+        ...commonActions,
+        {
+          id: 'reports',
+          group: 'support',
+          title: ru ? 'Мои отчёты' : 'My reports',
+          description: ru
+            ? 'Материалы и отчёты, которые вы сохранили от специалиста.'
+            : 'Reports and materials you saved from your practitioner.',
+          meta: ru ? `${activeReports} сохранено` : `${activeReports} saved`,
+          href: `${root}/reports`,
+          image: ru
+            ? '/images/holistic-house/video-posters/homeopathy-ru-v1.webp'
+            : '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
+        },
+      ]
+    : commonActions
+
+  const groups = ru
+    ? [
+        ['monitor', 'Сейчас'],
+        ['data', 'Мои данные'],
+        ['grow', 'Развивать профиль'],
+        ['support', 'Поддержка'],
+      ]
+    : [
+        ['monitor', 'Now'],
+        ['data', 'My data'],
+        ['grow', 'Build my profile'],
+        ['support', 'Support'],
+      ]
+
+  return (
+    <section className="hh-profile-dashboard" aria-labelledby="profile-dashboard-title">
+      <div className="hh-profile-summary">
+        <div>
+          <span>{ru ? 'Профиль' : 'Profile'}</span>
+          <strong>{profile.coveragePercent}%</strong>
+          <small>{profile.coveredAxes.length} / 5 {ru ? 'слоёв' : 'layers'}</small>
+        </div>
+        <div>
+          <span>{ru ? 'Результаты' : 'Results'}</span>
+          <strong>{resultCount}</strong>
+          <small>{ru ? 'сохранено' : 'saved'}</small>
+        </div>
+        <div>
+          <span>{ru ? 'Последний замер' : 'Last check'}</span>
+          <strong className="hh-profile-summary-date">{latestLabel}</strong>
+          <small>{ru ? 'обновляется после теста' : 'updates after a test'}</small>
+        </div>
+      </div>
+
+      <article className="hh-profile-next" aria-labelledby="profile-dashboard-title">
+        <div className="hh-profile-next-copy">
+          <p className="hh-kicker">{next.eyebrow}</p>
+          <h2 id="profile-dashboard-title">{next.title}</h2>
+          <p>{next.text}</p>
+        </div>
+        <Link className="hh-primary hh-profile-next-action" href={next.href} prefetch={false}>
+          {next.action}
+        </Link>
+      </article>
+
+      <div className="hh-profile-action-groups">
+        {groups.map(([group, title]) => {
+          const groupActions = actions.filter((action) => action.group === group)
+          if (!groupActions.length) return null
+          return (
+            <section className="hh-profile-action-group" key={group}>
+              <h3>{title}</h3>
+              <div className="hh-profile-actions-grid">
+                {groupActions.map((action) => (
+                  <Link className="hh-profile-action-card" href={action.href} prefetch={false} key={action.id}>
+                    <span className="hh-profile-action-photo" aria-hidden="true">
+                      <Image alt="" fill sizes="(max-width: 760px) 76px, 96px" src={action.image} />
+                    </span>
+                    <span className="hh-profile-action-copy">
+                      <strong>{action.title}</strong>
+                      <span>{action.description}</span>
+                      <small>{action.meta}</small>
+                    </span>
+                    <b aria-hidden="true">›</b>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function PortfolioPage({ data, locale }) {
+  const c = COPY[locale]
+  const [selected, setSelected] = useState(null)
+  const dimensions = data.snapshot?.dimensions || []
+  const profile = profileCompletionRecommendations({
+    snapshot: data.snapshot,
+    results: data.results,
+    locale,
+  })
+
+  return (
+    <section>
+      <div className="hh-heading hh-portfolio-heading">
+        <p className="hh-kicker">{locale === 'ru' ? 'Мой профиль' : 'My profile'}</p>
+        <h1>{locale === 'ru' ? 'Портфель результатов' : 'Results portfolio'}</h1>
+        <p>
+          {locale === 'ru'
+            ? 'Подробные результаты, графики, сравнение замеров и рекомендации по тому, какие данные стоит добавить дальше.'
+            : 'Detailed results, charts, measurement comparisons and recommendations for what to add next.'}
+        </p>
+      </div>
+      <ProfileOverview profile={profile} locale={locale} />
+      {dimensions.length > 0 && (
+        <>
+          {[
+            ['state', c.state],
+            ['symptoms', c.symptoms],
+            ['function', c.functioning],
+            ['resources', c.resources],
+            ['trait', c.personality],
+          ].map(([kind, title]) => {
+            const found = dimensions.filter((d) => d.dimensionClass === kind)
+            return found.length ? (
+              <section key={kind} className="hh-section">
+                <h2>{title}</h2>
+                <div className="hh-metrics">
+                  {found.map((d) => (
+                    <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />
+                  ))}
+                </div>
+              </section>
+            ) : null
+          })}
+          <PortraitGuide locale={locale} dimensions={dimensions} />
+          <LatestChange locale={locale} results={data.results} />
+        </>
+      )}
+      {selected && (
+        <section className="hh-panel hh-detail" aria-live="polite">
+          <button className="hh-close" onClick={() => setSelected(null)}>
+            {c.close}
+          </button>
+          <h2>{labelFor(selected.key, locale)}</h2>
+          <p>{explanationFor(selected.key, locale)}</p>
+          <p>{c.measured}: {dateLabel(selected.measurementAt, locale)}</p>
+          <p>
+            {c.source}: {getDefinitionById(selected.sourceDefinitionId).key} ·{' '}
+            {getDefinitionById(selected.sourceDefinitionId).version} · {selected.instrumentLocale}
+          </p>
+          <div className="hh-actions">
+            <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{c.view}</Link>
+            <Link href={`/${locale}/app/history`} prefetch={false}>{c.history}</Link>
+          </div>
+        </section>
+      )}
+    </section>
+  )
+}
+
 function ProfileOverview({ profile, locale }) {
   const ru = locale === 'ru'
   const axisCopy = {
@@ -1322,7 +1686,7 @@ function ProfileOverview({ profile, locale }) {
     <section className="hh-profile-overview" aria-labelledby="profile-overview-title">
       <header className="hh-profile-overview-head">
         <div>
-          <p className="hh-kicker">{ru ? 'Мой профиль' : 'My profile'}</p>
+          <p className="hh-kicker">{ru ? 'Портфель результатов' : 'Results portfolio'}</p>
           <h2 id="profile-overview-title">
             {ru ? 'Все результаты в одной схеме' : 'All your results in one view'}
           </h2>
@@ -1570,110 +1934,57 @@ function AssessmentEntryActions({ locale }) {
   )
 }
 
-function Portrait({ data, locale, onOpenHistory }) {
-  const c = COPY[locale],
-    [selected, setSelected] = useState(null),
-    dimensions = data.snapshot?.dimensions || [],
-    nextStep = getPortraitNextStep({
-      ...data,
-      dimensions: dimensions.map((dimension) => {
-        const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
-        return result
-          ? { ...dimension, measurementAt: result.measurementAt, suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays }
-          : dimension
-      }),
-    })
+function Portrait({ data, locale }) {
+  const c = COPY[locale]
+  const dimensions = data.snapshot?.dimensions || []
+  const nextStep = getPortraitNextStep({
+    ...data,
+    dimensions: dimensions.map((dimension) => {
+      const result = data.results.find((candidate) => candidate.id === dimension.sourceResultId)
+      return result
+        ? { ...dimension, measurementAt: result.measurementAt, suggestedRepeatDays: getDefinitionById(result.definitionId)?.suggestedRepeatDays }
+        : dimension
+    }),
+  })
   const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
+
   return (
     <section>
-      <div className="hh-heading">
+      <div className="hh-heading hh-profile-heading">
         <p className="hh-kicker">
           {data.account.displayName
             ? `${locale === 'ru' ? 'Здравствуйте' : 'Hello'}, ${data.account.displayName}`
             : 'Holistic House'}
         </p>
         <h1>{c.portrait}</h1>
-        <p>{c.private}</p>
+        <p>
+          {locale === 'ru'
+            ? 'Здесь не нужно разбираться в таблицах. Выберите следующий шаг: проверить состояние, посмотреть результаты, получить рекомендации или дополнить профиль.'
+            : 'You do not need to interpret a dashboard full of tables. Choose your next step: check in, review results, get recommendations or build your profile.'}
+        </p>
+        <p className="hh-fine">{c.private}</p>
       </div>
-      <MoodCheckIn
-        locale={locale}
-        compact
-        latestMood={data.moodCheckins?.[0] || null}
-        onMoodChange={(payload) =>
-          appFetch('mood', {
-            ...payload,
-            timezone: localZone(),
-            sourceSurface: 'portrait',
-          })
-        }
-        onQuickCheckin={() => window.location.assign('/' + locale + '/app/monitoring')}
-      />
-      <ProfileOverview profile={profile} locale={locale} />
-      <AssessmentEntryActions locale={locale} />
+
+      <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
+
+      <div className="hh-profile-mood">
+        <MoodCheckIn
+          locale={locale}
+          compact
+          latestMood={data.moodCheckins?.[0] || null}
+          onMoodChange={(payload) =>
+            appFetch('mood', {
+              ...payload,
+              timezone: localZone(),
+              sourceSurface: 'portrait',
+            })
+          }
+          onQuickCheckin={() => window.location.assign('/' + locale + '/app/monitoring')}
+        />
+      </div>
+
       {data.practitioner && <OwnerTools locale={locale} />}
-      <NextStep locale={locale} step={nextStep} />
-      {!dimensions.length ? (
-        <article className="hh-panel hh-empty">
-          <h2>{c.empty}</h2>
-          <p>{c.emptyText}</p>
-          <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
-            {c.start}
-          </Link>
-          <PortraitGuide locale={locale} dimensions={dimensions} />
-        </article>
-      ) : (
-        <>
-          {[
-            ['state', c.state],
-            ['symptoms', c.symptoms],
-            ['function', c.functioning],
-            ['resources', c.resources],
-            ['trait', c.personality],
-          ].map(([kind, title]) => {
-            const found = dimensions.filter((d) => d.dimensionClass === kind)
-            return found.length ? (
-              <section key={kind} className="hh-section">
-                <h2>{title}</h2>
-                <div className="hh-metrics">
-                  {found.map((d) => (
-                    <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />
-                  ))}
-                </div>
-              </section>
-            ) : null
-          })}
-          <PortraitGuide locale={locale} dimensions={dimensions} />
-          <LatestChange locale={locale} results={data.results} />
-          <div className="hh-actions">
-            <Link className="hh-primary" href={`/${locale}/app/tests`} prefetch={false}>
-              {c.repeat}
-            </Link>
-            <button onClick={onOpenHistory}>{c.history}</button>
-          </div>
-        </>
-      )}
       <ReportsFromAndy data={data} locale={locale} />
-      {selected && (
-        <section className="hh-panel hh-detail" aria-live="polite">
-          <button className="hh-close" onClick={() => setSelected(null)}>
-            {c.close}
-          </button>
-          <h2>{labelFor(selected.key, locale)}</h2>
-          <p>{explanationFor(selected.key, locale)}</p>
-          <p>
-            {c.measured}: {dateLabel(selected.measurementAt, locale)}
-          </p>
-          <p>
-            {c.source}: {getDefinitionById(selected.sourceDefinitionId).key} ·{' '}
-            {getDefinitionById(selected.sourceDefinitionId).version} · {selected.instrumentLocale}
-          </p>
-          <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>
-            {c.view}
-          </Link>
-          <button onClick={onOpenHistory}>{c.history}</button>
-        </section>
-      )}
-      <p className="hh-fine">{c.patterns}</p>
     </section>
   )
 }
@@ -1770,9 +2081,10 @@ function LatestChange({ locale, results }) {
   return <section className="hh-section hh-panel"><h2>{locale === 'ru' ? 'Последнее изменение' : 'Latest change'}</h2><p className="hh-fine">{locale === 'ru' ? 'Последний совместимый замер рядом с предыдущим; это не объяснение причин или тренд.' : 'Latest compatible measurement beside the previous one; this does not state a cause or trend.'}</p><ul className="hh-change-list">{changes.map((change) => <li key={change.key}>{labelFor(change.key, locale)} <strong>{change.previous} → {change.value}</strong></li>)}</ul></section>
 }
 function ReportsFromAndy({ data, locale }) {
-  const reports = reportTimeline(data.savedReports).slice(0, 3)
+  const reports = reportTimeline(data.savedReports).filter((report) => report.available !== false).slice(0, 3)
   const ru = locale === 'ru'
-  return <section className="hh-section hh-account-reports"><h2>{ru ? 'Отчёты от Andy' : 'Reports from Andy'}</h2>{!reports.length ? <p className="hh-fine">{ru ? 'Сохранённых отчётов пока нет. Когда вы решите сохранить переданный отчёт, он появится здесь.' : 'No reports have been saved yet. A report you choose to save will appear here.'}</p> : <div className="hh-grid">{reports.map((report) => <article className="hh-panel" key={report.id}><p className="hh-kicker">{ru ? 'Полученный отчёт' : 'Received report'}</p><h3>{formatReportDate(report.occurredOn, locale)}</h3><p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(report.occurredOn, locale)}</p>{report.available === false ? <p className="hh-fine">{ru ? 'Отчёт больше недоступен.' : 'Report no longer available.'}</p> : <Link href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{ru ? 'Открыть отчёт' : 'Open report'}</Link>}</article>)}</div>}</section>
+  if (!reports.length) return null
+  return <section className="hh-section hh-account-reports"><h2>{ru ? 'Отчёты от Andy' : 'Reports from Andy'}</h2><div className="hh-grid">{reports.map((report) => <article className="hh-panel" key={report.id}><p className="hh-kicker">{ru ? 'Полученный отчёт' : 'Received report'}</p><h3>{formatReportDate(report.occurredOn, locale)}</h3><p>{ru ? 'Дата отчёта' : 'Report date'}: {formatReportDate(report.occurredOn, locale)}</p><Link href={`/${locale}/app/reports/${report.id}`} prefetch={false}>{ru ? 'Открыть отчёт' : 'Open report'}</Link></article>)}</div></section>
 }
 function ResultConsultationCta({ locale }) {
   const copy =
