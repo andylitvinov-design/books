@@ -14,8 +14,8 @@ test("Library opens as compact section blocks with Books and Videos switch", () 
   assert.match(hub, /view=videos/);
   assert.match(hub, /section=\$\{section\}/);
   assert.match(hub, /"alchemy", "dao", "maya"/);
-  assert.match(hub, /library-index-card/);
-  assert.match(hub, /library-index-photo/);
+  assert.match(hub, /CatalogShowcase/);
+  assert.match(hub, /bookSectionLeads/);
   assert.match(page, /rawView === "videos"/);
 });
 
@@ -30,14 +30,14 @@ test("Library section links filter books without removing the flat direct catalo
   assert.match(catalog, /section \? bookSectionTitles\[locale\]\[section\] : text\.heading/);
 });
 
-test("mobile Library and book rows stay full-width and approximately 72-74px tall", () => {
-  const ia = read("app", "ia-v2.css");
+test("mobile Library uses compact contents plus one-screen showcase chapters", () => {
+  const showcase = read("app", "catalog-showcase.css");
   const styles = read("app", "globals.css");
 
-  assert.match(ia, /@media \(max-width: 600px\)[\s\S]*?\.library-index-grid \{ grid-template-columns: minmax\(0,1fr\);/);
-  assert.match(ia, /\.library-index-card \{ min-height: 74px; grid-template-columns: 76px minmax\(0,1fr\) 24px;/);
-  assert.match(ia, /\.library-index-photo \{ min-height: 72px;/);
+  assert.match(showcase, /\.catalog-showcase-index-card \{[\s\S]*?min-height: 74px;/);
+  assert.match(showcase, /\.catalog-showcase-panel,[\s\S]*?min-height: calc\(100svh - 76px\)/);
+  assert.match(showcase, /grid-template-rows: minmax\(250px, 42svh\) auto/);
+  assert.match(showcase, /\.catalog-showcase-action \{[\s\S]*?width: 100%/);
   assert.match(styles, /@media \(max-width: 767px\)[\s\S]*?\.catalog-card,[\s\S]*?min-height: 74px;[\s\S]*?height: 74px;/);
-  assert.match(styles, /\.catalog-cover \{[\s\S]*?width: 78px;[\s\S]*?height: 72px;/);
   assert.match(styles, /\.remedies-book-grid \{[\s\S]*?grid-template-columns: 1fr;/);
 });
