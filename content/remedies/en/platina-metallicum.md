@@ -47,6 +47,7 @@ primary_image_alt: Source image attached to Platina Metallicum, message667.
 ---
 
 
+
 PLATINA METALLICUM
 
 This is the archetype of the rejected queen, whose majesty has become armor. She shines, but inside — loneliness, fear, and a thirst for recognition.
