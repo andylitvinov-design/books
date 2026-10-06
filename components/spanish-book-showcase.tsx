@@ -3,12 +3,14 @@ import { BookOpen } from "lucide-react";
 
 import { featuredBookUrls } from "@/data/featured-books";
 import type { Book } from "@/data/library";
-import type { BookSectionKey } from "@/data/library-sections";
+import { getBookMaterialRole } from "@/data/library-structure";
 import { spanishBookText } from "@/data/spanish-books";
 
-export function SpanishBookShowcase({ books, section }: { books: Book[]; section?: BookSectionKey }) {
-  const visibleBooks = section ? books.filter((book) => book.mediaSeries === section) : books;
-  const showFeatured = !section || section === "alchemy";
+const roleLabels = { foundation: "Fundamentos", theory: "Teoría", practice: "Práctica", reference: "Referencia", project: "Guía del proyecto" } as const;
+
+export function SpanishBookShowcase({ books }: { books: Book[] }) {
+  const visibleBooks = books;
+  const showFeatured = true;
 
   return (
     <section className="catalog-grid remedies-book-grid" aria-label="Catálogo de libros">
@@ -51,7 +53,7 @@ export function SpanishBookShowcase({ books, section }: { books: Book[]; section
               <Image alt={`Portada: ${copy.title}`} height={600} width={800} priority={index < 1 && !showFeatured} src={`/media/${book.mediaSeries}/${book.cover}`} />
             </figure>
             <div className="catalog-card-body">
-              <p className="catalog-card-series">{copy.category}</p>
+              <p className="catalog-card-series"><span>{copy.category}</span><span className="catalog-material-role">{roleLabels[getBookMaterialRole(book.id)]}</span></p>
               <h3>{copy.title}</h3>
               <p className="catalog-card-description">{copy.description}</p>
               <p className="remedies-book-language-note">Edición original: el texto del libro conserva su idioma de origen.</p>

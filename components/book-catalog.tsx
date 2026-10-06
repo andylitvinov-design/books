@@ -12,24 +12,27 @@ import { featuredBookUrls } from "@/data/featured-books";
 import { filterLibraryBooks } from "@/data/library";
 import type { Book } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
-import { bookSectionLeads, bookSectionTitles, type BookSectionKey } from "@/data/library-sections";
+import {
+  getBookMaterialRole,
+  materialRoleLabel,
+  readingStepLabel,
+  recommendedReadingPath,
+} from "@/data/library-structure";
 import type { Locale } from "@/data/remedies";
 
 type BookCatalogProps = {
   books: Book[];
   locale: Locale;
-  section?: BookSectionKey;
   video?: ReactNode;
 };
 
 const copy = {
   ru: {
     kicker: "Собрание текстов",
-    heading: "Книги",
-    lead: "Все доступные книги и материалы для чтения собраны в одном каталоге.",
+    heading: "Книги и методички",
+    lead: "Все книги собраны в одном каталоге. Серия показывает происхождение материала, а метка — его роль: основы, теория, практика или справочник.",
     search: "Поиск по каталогу",
-    placeholder: "Найти книгу или главу",
-    books: "Книги",
+    placeholder: "Найти книгу, тему или главу",
     chapters: "Разделов",
     read: "Читать",
     authorEdition: "Авторское издание",
@@ -37,16 +40,17 @@ const copy = {
     featuredDescription: "Полное авторское издание о внутреннем развитии, психогомеопатии и работе с состояниями.",
     onlineEdition: "Онлайн-издание",
     openEdition: "Открыть издание ↗",
+    pathTitle: "Если не знаете, с чего начать",
+    pathLead: "Короткий маршрут через базовый метод, справочник, модель состояния и практический материал.",
     emptyTitle: "Ничего не найдено",
     emptyText: "Попробуйте другое название, тег или название главы.",
   },
   en: {
     kicker: "Published collection",
-    heading: "Books",
-    lead: "All available books and reading materials are collected in one catalog.",
+    heading: "Books & guides",
+    lead: "Everything is kept in one catalog. The series shows where a text comes from; the label shows whether it is a foundation, theory, practice, or reference.",
     search: "Search the catalog",
-    placeholder: "Find a book or chapter",
-    books: "Books",
+    placeholder: "Find a book, topic, or chapter",
     chapters: "Sections",
     read: "Read",
     authorEdition: "Author edition",
@@ -54,23 +58,26 @@ const copy = {
     featuredDescription: "The complete author edition on inner development, psychohomeopathy, and an integrative approach to human states.",
     onlineEdition: "Online edition",
     openEdition: "Open edition ↗",
+    pathTitle: "Not sure where to start?",
+    pathLead: "A short route through the core method, reference material, state model, and practical work.",
     emptyTitle: "Nothing found",
     emptyText: "Try another title, tag, or chapter name.",
   },
 } as const;
 
-export function BookCatalog({ books, locale, section, video }: BookCatalogProps) {
+export function BookCatalog({ books, locale, video }: BookCatalogProps) {
   const text = copy[locale];
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
 
-  const sectionBooks = useMemo(
-    () => section ? books.filter((book) => book.mediaSeries === section) : books,
-    [books, section],
-  );
   const visibleBooks = useMemo(
-    () => filterLibraryBooks(sectionBooks, { query: deferredQuery }),
-    [sectionBooks, deferredQuery],
+    () => filterLibraryBooks(books, { query: deferredQuery }),
+    [books, deferredQuery],
+  );
+
+  const pathBooks = useMemo(
+    () => recommendedReadingPath.map((id) => books.find((book) => book.id === id)).filter(Boolean),
+    [books],
   );
 
   const normalizedQuery = deferredQuery.trim().toLocaleLowerCase();
@@ -80,10 +87,8 @@ export function BookCatalog({ books, locale, section, video }: BookCatalogProps)
     text.authorEdition,
     text.onlineEdition,
   ].join(" ").toLocaleLowerCase().includes(normalizedQuery);
-  const showFeatured = (!section || section === "alchemy") && (!normalizedQuery || featuredMatches);
+  const showFeatured = !normalizedQuery || featuredMatches;
   const hasResults = showFeatured || visibleBooks.length > 0;
-  const heading = section ? bookSectionTitles[locale][section] : text.heading;
-  const lead = section ? bookSectionLeads[locale][section] : text.lead;
 
   return (
     <main className="catalog-shell" lang={locale}>
@@ -93,8 +98,8 @@ export function BookCatalog({ books, locale, section, video }: BookCatalogProps)
       <header className="catalog-header">
         <div className="catalog-header-copy">
           <p className="catalog-kicker">{text.kicker}</p>
-          <h1>{heading}</h1>
-          <p>{lead}</p>
+          <h1>{text.heading}</h1>
+          <p>{text.lead}</p>
         </div>
 
         <label className="catalog-search">
@@ -111,8 +116,30 @@ export function BookCatalog({ books, locale, section, video }: BookCatalogProps)
 
       {video}
 
+      {!normalizedQuery ? (
+        <section className="catalog-reading-path" aria-labelledby="catalog-reading-path-title">
+          <div className="catalog-reading-path-heading">
+            <p className="catalog-kicker">{locale === "ru" ? "Маршрут чтения" : "Reading path"}</p>
+            <h2 id="catalog-reading-path-title">{text.pathTitle}</h2>
+            <span>{text.pathLead}</span>
+          </div>
+          <div className="catalog-reading-steps">
+            {pathBooks.map((book, index) => {
+              if (!book) return null;
+              const display = localizedBookText(book, locale);
+              return (
+                <Link href={"/books/" + book.id + (locale === "en" ? "?lang=en" : "")} key={book.id}>
+                  <small>{readingStepLabel(locale, index)}</small>
+                  <strong>{display.title}</strong>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
       {hasResults ? (
-        <section aria-label={heading} className="catalog-grid">
+        <section aria-label={text.heading} className="catalog-grid">
           {showFeatured ? (
             <a
               className="catalog-card"
@@ -135,10 +162,7 @@ export function BookCatalog({ books, locale, section, video }: BookCatalogProps)
                 <h2>{text.featuredTitle}</h2>
                 <p className="catalog-card-description">{text.featuredDescription}</p>
                 <div className="catalog-card-footer">
-                  <span>
-                    <BookOpen aria-hidden="true" className="size-4" />
-                    {text.onlineEdition}
-                  </span>
+                  <span><BookOpen aria-hidden="true" className="size-4" />{text.onlineEdition}</span>
                   <span className="catalog-card-read">{text.openEdition}</span>
                 </div>
               </div>
@@ -147,6 +171,7 @@ export function BookCatalog({ books, locale, section, video }: BookCatalogProps)
 
           {visibleBooks.map((book, index) => {
             const display = localizedBookText(book, locale);
+            const role = materialRoleLabel(locale, getBookMaterialRole(book.id));
             return (
               <Link className="catalog-card" href={"/books/" + book.id + (locale === "en" ? "?lang=en" : "")} key={book.id}>
                 <figure className="catalog-cover">
@@ -159,14 +184,14 @@ export function BookCatalog({ books, locale, section, video }: BookCatalogProps)
                   />
                 </figure>
                 <div className="catalog-card-body">
-                  <p className="catalog-card-series">{display.category}</p>
+                  <p className="catalog-card-series">
+                    <span>{display.category}</span>
+                    <span className="catalog-material-role">{role}</span>
+                  </p>
                   <h2>{display.title}</h2>
                   <p className="catalog-card-description">{display.description}</p>
                   <div className="catalog-card-footer">
-                    <span>
-                      <BookOpen aria-hidden="true" className="size-4" />
-                      {text.chapters}: {book.chapters.length}
-                    </span>
+                    <span><BookOpen aria-hidden="true" className="size-4" />{text.chapters}: {book.chapters.length}</span>
                     <span className="catalog-card-read">{text.read}</span>
                   </div>
                 </div>

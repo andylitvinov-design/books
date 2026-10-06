@@ -6,28 +6,32 @@ import test from "node:test";
 const root = process.cwd();
 const read = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("Library opens as compact section blocks with Books and Videos switch", () => {
+test("Library opens as compact material blocks with Books and Videos switch", () => {
   const hub = read("components", "library-hub.tsx");
   const page = read("app", "[locale]", "library", "page.tsx");
 
   assert.match(hub, /library-media-switch/);
   assert.match(hub, /view=videos/);
-  assert.match(hub, /section=\$\{section\}/);
-  assert.match(hub, /"alchemy", "dao", "maya"/);
+  assert.match(hub, /All books & guides|Все книги и методички/);
+  assert.match(hub, /homeopathy\/remedies/);
+  assert.match(hub, /wu-xing/);
   assert.match(hub, /CatalogShowcase/);
-  assert.match(hub, /bookSectionLeads/);
+  assert.doesNotMatch(hub, /section=\$\{section\}/);
   assert.match(page, /rawView === "videos"/);
 });
 
-test("Library section links filter books without removing the flat direct catalog", () => {
+test("Books route is a single catalog and series remain labels rather than folders", () => {
   const catalog = read("components", "book-catalog.tsx");
   const page = read("app", "[locale]", "books", "page.tsx");
-  const sections = read("data", "library-sections.ts");
+  const structure = read("data", "library-structure.ts");
 
-  assert.match(sections, /bookSectionKeys = \["alchemy", "dao", "maya"\]/);
-  assert.match(page, /parseBookSection\(query\.section\)/);
-  assert.match(catalog, /section \? books\.filter\(\(book\) => book\.mediaSeries === section\) : books/);
-  assert.match(catalog, /section \? bookSectionTitles\[locale\]\[section\] : text\.heading/);
+  assert.doesNotMatch(page, /parseBookSection|section=/);
+  assert.doesNotMatch(catalog, /section \? books\.filter/);
+  assert.match(catalog, /recommendedReadingPath/);
+  assert.match(catalog, /catalog-material-role/);
+  assert.match(structure, /foundation/);
+  assert.match(structure, /reference/);
+  assert.match(structure, /practice/);
 });
 
 test("mobile Library uses compact contents plus one-screen showcase chapters", () => {
@@ -38,6 +42,6 @@ test("mobile Library uses compact contents plus one-screen showcase chapters", (
   assert.match(showcase, /\.catalog-showcase-panel,[\s\S]*?min-height: calc\(100svh - 76px\)/);
   assert.match(showcase, /grid-template-rows: minmax\(250px, 42svh\) auto/);
   assert.match(showcase, /\.catalog-showcase-action \{[\s\S]*?width: 100%/);
-  assert.match(styles, /@media \(max-width: 767px\)[\s\S]*?\.catalog-card,[\s\S]*?min-height: 74px;[\s\S]*?height: 74px;/);
+  assert.match(styles, /\.catalog-reading-steps/);
   assert.match(styles, /\.remedies-book-grid \{[\s\S]*?grid-template-columns: 1fr;/);
 });
