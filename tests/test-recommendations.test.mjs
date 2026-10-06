@@ -83,8 +83,8 @@ test('recommendation focus options cover practical monitoring themes in both lan
 
 test('personal Cabinet exposes action-first assessment choices and privacy-preserving ranked recommendations', async () => {
   const workspace = await readFile('components/app/app-workspace.jsx', 'utf8')
-  assert.match(workspace, /Current state/)
-  assert.match(workspace, /Find the right tests/)
+  assert.match(workspace, /Take a free state analysis and get recommendations/)
+  assert.match(workspace, /Build a personal test battery/)
   assert.match(workspace, /Complete my profile/)
   assert.match(workspace, /monitoring\/hh-current-state/)
   assert.match(workspace, /mode=recommendations/)
