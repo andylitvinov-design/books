@@ -248,7 +248,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               key={id}
               href={root + url}
               prefetch={false}
-              aria-current={page === id ? 'page' : undefined}
+              aria-current={page === id || (id === 'portrait' && page === 'portfolio') ? 'page' : undefined}
             >
               {label}
             </Link>
@@ -272,6 +272,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               <PracticeEntry data={data} locale={locale} />
             </>
           )}
+          {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} />}
           {page === 'monitoring' && (
             <PsiMonitoring
@@ -1258,6 +1259,156 @@ function profileDelta(value) {
   if (!Number.isFinite(numeric)) return '—'
   return `${numeric > 0 ? '+' : ''}${profileNumber(numeric)}`
 }
+function ProfileActionHub({ data, locale, profile }) {
+  const ru = locale === 'ru'
+  const root = `/${locale}/app`
+  const activeReports = (data.savedReports || []).filter((report) => report.available !== false).length
+  const resultCount = (data.results || []).length
+  const localizedPoster = (name) =>
+    `/images/holistic-house/video-posters/${name}-${ru ? 'ru-v1' : name === 'home' || name === 'services' || name === 'homeopathy' ? 'en-v2' : 'en-v1'}.webp`
+  const actions = ru
+    ? [
+        {
+          id: 'state',
+          title: 'Проверить текущее состояние',
+          description: 'Коротко отметить, как вы себя чувствуете сейчас и что требует внимания.',
+          meta: 'Текущий мониторинг',
+          href: `${root}/monitoring`,
+          image: localizedPoster('home'),
+        },
+        {
+          id: 'portfolio',
+          title: 'Посмотреть портфель результатов',
+          description: 'Все пройденные измерения, слои профиля и основные показатели в одной схеме.',
+          meta: `Профиль заполнен на ${profile.coveragePercent}%`,
+          href: `${root}/portfolio`,
+          image: localizedPoster('homeopathy'),
+        },
+        {
+          id: 'recommendations',
+          title: 'Посмотреть рекомендации',
+          description: 'Выберите важные сейчас темы и получите персональный порядок подходящих тестов.',
+          meta: 'Персональная подборка',
+          href: `${root}/tests?mode=recommendations`,
+          image: localizedPoster('services'),
+        },
+        {
+          id: 'complete',
+          title: 'Дополнить профиль',
+          description: 'Пройдите дополнительные короткие или глубокие тесты, чтобы закрыть недостающие слои.',
+          meta: `${profile.coveredAxes.length} из 5 слоёв заполнено`,
+          href: `${root}/tests?mode=all`,
+          image: '/images/holistic-house/books-library.webp',
+        },
+        {
+          id: 'history',
+          title: 'Посмотреть динамику',
+          description: 'Сравните повторные замеры и посмотрите, как показатели менялись со временем.',
+          meta: `${resultCount} сохранённых результатов`,
+          href: `${root}/history`,
+          image: '/images/holistic-house/hero-olive-incense.webp',
+        },
+        {
+          id: 'reports',
+          title: 'Мои отчёты',
+          description: 'Откройте сохранённые отчёты и материалы, которые были переданы вам специалистом.',
+          meta: `${activeReports} сохранённых отчётов`,
+          href: `${root}/reports`,
+          image: localizedPoster('homeopathy'),
+        },
+      ]
+    : [
+        {
+          id: 'state',
+          title: 'Check my current state',
+          description: 'Quickly note how you feel right now and what may need attention.',
+          meta: 'Current monitoring',
+          href: `${root}/monitoring`,
+          image: localizedPoster('home'),
+        },
+        {
+          id: 'portfolio',
+          title: 'Open my results portfolio',
+          description: 'See completed measurements, profile layers and key scores in one clear view.',
+          meta: `${profile.coveragePercent}% profile coverage`,
+          href: `${root}/portfolio`,
+          image: localizedPoster('homeopathy'),
+        },
+        {
+          id: 'recommendations',
+          title: 'See my recommendations',
+          description: 'Choose what matters now and get available tests ranked for your priorities.',
+          meta: 'Personal test order',
+          href: `${root}/tests?mode=recommendations`,
+          image: localizedPoster('services'),
+        },
+        {
+          id: 'complete',
+          title: 'Complete my profile',
+          description: 'Add missing layers with additional short or in-depth assessments.',
+          meta: `${profile.coveredAxes.length} of 5 layers covered`,
+          href: `${root}/tests?mode=all`,
+          image: '/images/holistic-house/books-library.webp',
+        },
+        {
+          id: 'history',
+          title: 'Track changes over time',
+          description: 'Compare repeat measurements and review how your results changed over time.',
+          meta: `${resultCount} saved results`,
+          href: `${root}/history`,
+          image: '/images/holistic-house/hero-olive-incense.webp',
+        },
+        {
+          id: 'reports',
+          title: 'My reports',
+          description: 'Open reports and materials you chose to save from your practitioner.',
+          meta: `${activeReports} saved reports`,
+          href: `${root}/reports`,
+          image: localizedPoster('homeopathy'),
+        },
+      ]
+
+  return (
+    <section className="hh-profile-actions" aria-labelledby="profile-actions-title">
+      <header className="hh-profile-actions-head">
+        <div>
+          <p className="hh-kicker">{ru ? 'С чего начать' : 'Start here'}</p>
+          <h2 id="profile-actions-title">{ru ? 'Что хотите сделать?' : 'What would you like to do?'}</h2>
+        </div>
+        <p>
+          {ru
+            ? 'Выберите один следующий шаг. Подробные результаты вынесены в отдельный портфель, чтобы главная страница профиля оставалась понятной.'
+            : 'Choose one next step. Detailed measurements live in a separate portfolio so this page stays simple and useful.'}
+        </p>
+      </header>
+      <div className="hh-profile-actions-grid">
+        {actions.map((action) => (
+          <Link className="hh-profile-action-card" href={action.href} prefetch={false} key={action.id}>
+            <span className="hh-profile-action-photo" aria-hidden="true">
+              <Image alt="" fill sizes="(max-width: 760px) 76px, 104px" src={action.image} />
+            </span>
+            <span className="hh-profile-action-copy">
+              <strong>{action.title}</strong>
+              <span>{action.description}</span>
+              <small>{action.meta}</small>
+            </span>
+            <b aria-hidden="true">›</b>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function PortfolioPage({ data, locale }) {
+  const profile = profileCompletionRecommendations({
+    snapshot: data.snapshot,
+    results: data.results,
+    locale,
+  })
+  return <ProfileOverview profile={profile} locale={locale} />
+}
+
 function ProfileOverview({ profile, locale }) {
   const ru = locale === 'ru'
   const axisCopy = {
@@ -1278,7 +1429,7 @@ function ProfileOverview({ profile, locale }) {
     <section className="hh-profile-overview" aria-labelledby="profile-overview-title">
       <header className="hh-profile-overview-head">
         <div>
-          <p className="hh-kicker">{ru ? 'Мой профиль' : 'My profile'}</p>
+          <p className="hh-kicker">{ru ? 'Портфель результатов' : 'Results portfolio'}</p>
           <h2 id="profile-overview-title">
             {ru ? 'Все результаты в одной схеме' : 'All your results in one view'}
           </h2>
@@ -1542,15 +1693,22 @@ function Portrait({ data, locale, onOpenHistory }) {
   const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
   return (
     <section>
-      <div className="hh-heading">
+      <div className="hh-heading hh-profile-heading">
         <p className="hh-kicker">
           {data.account.displayName
             ? `${locale === 'ru' ? 'Здравствуйте' : 'Hello'}, ${data.account.displayName}`
             : 'Holistic House'}
         </p>
         <h1>{c.portrait}</h1>
-        <p>{c.private}</p>
+        <p>
+          {locale === 'ru'
+            ? 'Ваш личный центр: проверьте текущее состояние, откройте портфель результатов, посмотрите рекомендации или добавьте новые измерения.'
+            : 'Your personal dashboard: check your current state, open your results portfolio, see recommendations or add new measurements.'}
+        </p>
+        <p className="hh-fine">{c.private}</p>
       </div>
+      <ProfileActionHub data={data} locale={locale} profile={profile} />
+      <NextStep locale={locale} step={nextStep} />
       <MoodCheckIn
         locale={locale}
         compact
@@ -1564,10 +1722,7 @@ function Portrait({ data, locale, onOpenHistory }) {
         }
         onQuickCheckin={() => window.location.assign('/' + locale + '/app/monitoring')}
       />
-      <ProfileOverview profile={profile} locale={locale} />
-      <AssessmentEntryActions locale={locale} />
       {data.practitioner && <OwnerTools locale={locale} />}
-      <NextStep locale={locale} step={nextStep} />
       {!dimensions.length ? (
         <article className="hh-panel hh-empty">
           <h2>{c.empty}</h2>
