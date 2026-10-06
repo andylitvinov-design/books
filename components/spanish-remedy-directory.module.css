@@ -1,7 +1,5 @@
 .directory { margin-block: 26px 40px; min-width: 0; }
-.search { display: grid; gap: 10px; color: #625a52; font-size: 14px; text-align: left; }
-.search input { width: 100%; min-width: 0; padding: 16px 18px; border: 1px solid #d7c9b9; border-radius: 12px; background: #fffaf3; color: #352b24; font: inherit; font-size: 16px; }
-.search input:focus-visible, .alphabet button:focus-visible, .card:focus-visible, .empty button:focus-visible { outline: 2px solid #855139; outline-offset: 4px; }
+.alphabet button:focus-visible, .card:focus-visible, .empty button:focus-visible { outline: 2px solid #855139; outline-offset: 4px; }
 .alphabet { display: flex; flex-wrap: wrap; gap: 6px; margin: 20px 0 8px; }
 .alphabet button { min-width: 40px; min-height: 42px; border: 1px solid #e3d8ca; border-radius: 8px; background: #fffaf3; color: #625a52; padding: 6px 12px; cursor: pointer; font: inherit; }
 .alphabet button[aria-pressed='true'] { background: #855139; border-color: #855139; color: #fffaf3; }
@@ -9,11 +7,12 @@
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .card { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 24px; border: 1px solid #e3d8ca; border-radius: 14px; background: #fffaf3; text-decoration: none; transition: border-color .2s ease; }
 .card:hover { border-color: #a87554; }
-.card h2 { margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 25px; line-height: 1.2; color: #352b24; overflow-wrap: anywhere; }
+.cardHeading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.cardHeading h2 { margin: 0; min-width: 0; font-family: var(--font-serif); font-weight: 400; font-size: 25px; line-height: 1.2; color: #352b24; overflow-wrap: anywhere; }
 .card p { margin: 0; font-size: 14px; line-height: 1.65; color: #625a52; overflow-wrap: anywhere; }
 .card > span { margin-top: auto; padding-top: 6px; color: #855139; font-size: 13px; }
 .empty { padding: 24px 0; color: #625a52; }
 .empty button { min-height: 44px; border: 0; background: transparent; color: #855139; text-decoration: underline; cursor: pointer; }
 @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-@media (max-width: 600px) { .grid { grid-template-columns: 1fr; gap: 12px; } .card { padding: 21px; } }
+@media (max-width: 600px) { .grid { grid-template-columns: 1fr; gap: 12px; } .card { padding: 21px; } .cardHeading { flex-direction: column; gap: 6px; } }
 @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
