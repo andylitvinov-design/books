@@ -67,6 +67,16 @@ const NEW_FULL_CARDS = [
   ['Syzygium jambolanum', 'syzygium-jambolanum', 'message826'],
   ['Rock Water', 'rock-water', 'message848'],
   ['Saccharum Lactis', 'saccharum-lactis', 'message1025'],
+  // Recovered standalone remedy cards that were previously routed by topic keywords
+  // before the remedy-card layer saw them.
+  ['Stramonium', 'stramonium', 'message108'],
+  ['Graphites', 'graphites', 'message135'],
+  ['Calcarea Phosphorica', 'calcarea-phosphorica', 'message227'],
+  ['Candida Albicans', 'candida-albicans', 'message665'],
+  ['Zincum Metallicum', 'zincum-metallicum', 'message714'],
+  ['Taraxacum Officinale', 'taraxacum-officinale', 'message716'],
+  ['Bach Willow', 'bach-willow', 'message999'],
+  ['Cimicifuga Racemosa', 'cimicifuga-racemosa', 'message1020'],
 ]
 
 // The pre-Phase-K inventory already established these 38 source-backed cards.
@@ -262,6 +272,19 @@ function matchesName(normalizedText, name) {
   return normalizedText.includes(normalizedName)
 }
 
+function looksLikeStandaloneRemedyCard(text) {
+  const value = text.trim()
+  const patterns = [
+    /^Работаю с новым препаратом\s+[A-Z][A-Za-z]+/u,
+    /^⭐️?Новинка:\s*[A-Z][A-Z ]+/u,
+    /^[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){1,2}\.\s+Меня удивил яркий эффект препарата/u,
+    /^Интересный препарат с которым начал работать\.\s+[A-Z][A-Z ]+/u,
+    /^[^\p{L}\p{N}]*[A-Z][A-Za-z]+(?:\s+[A-ZA-Za-z]+){0,2}\s+\([^)]+\).{0,180}(?:препарат|средство)/iu,
+    /^Препарат\s+BACH\s+[A-Z]+/u,
+  ]
+  return patterns.some((pattern) => pattern.test(value))
+}
+
 function classify(record, allNames, fullByMessage, supportingByMessage, mentionByMessage, exactDuplicates) {
   const normalizedText = normalize(record.text)
   const full = fullByMessage.get(record.message_id)
@@ -396,6 +419,14 @@ const rows = records.map((record) => {
     source_anchor: `#${record.message_id}`,
   }
 })
+const silentStandaloneCardMisses = records
+  .filter((record) => looksLikeStandaloneRemedyCard(record.text))
+  .filter((record) => rows.find((row) => row.message_id === record.message_id)?.remedy_focus === 'none')
+  .map((record) => record.message_id)
+if (silentStandaloneCardMisses.length) {
+  fail(`standalone remedy-card candidates need explicit review: ${silentStandaloneCardMisses.join(', ')}`)
+}
+
 writeFileSync(outputFile, `${header.join(',')}\n${rows.map((row) => header.map((column) => csv(row[column])).join(',')).join('\n')}\n`)
 
 const totals = Object.groupBy(rows, ({ book_assignment }) => book_assignment)
