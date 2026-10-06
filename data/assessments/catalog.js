@@ -20,6 +20,8 @@ export const MONITORING_CATALOG = deepFreeze([
     categoryAffinities: ['body', 'energy', 'emotions', 'relationships', 'work-money', 'other'],
     questionCount: 5,
     durationMinutes: 1,
+    testStyle: 'engaging',
+    testLength: 'short',
     suggestedRepeatDays: 7,
     cooldownDays: 3,
     startable: true,
@@ -42,6 +44,8 @@ export const MONITORING_CATALOG = deepFreeze([
     categoryAffinities: [],
     questionCount: 20,
     durationMinutes: 3,
+    testStyle: 'professional',
+    testLength: 'comprehensive',
     suggestedRepeatDays: null,
     cooldownDays: null,
     startable: true,
@@ -64,6 +68,8 @@ export const MONITORING_CATALOG = deepFreeze([
     categoryAffinities: ['body', 'energy', 'emotions', 'relationships', 'work-money', 'other'],
     questionCount: 8,
     durationMinutes: 2,
+    testStyle: 'engaging',
+    testLength: 'medium',
     suggestedRepeatDays: 7,
     cooldownDays: 5,
     startable: true,
@@ -86,6 +92,8 @@ export const MONITORING_CATALOG = deepFreeze([
     categoryAffinities: ['emotions', 'relationships', 'other'],
     questionCount: 4,
     durationMinutes: 1,
+    testStyle: 'professional',
+    testLength: 'short',
     suggestedRepeatDays: 14,
     cooldownDays: 7,
     startable: true,
@@ -108,6 +116,8 @@ export const MONITORING_CATALOG = deepFreeze([
     categoryAffinities: ['energy', 'work-money', 'emotions', 'other'],
     questionCount: 6,
     durationMinutes: 2,
+    testStyle: 'professional',
+    testLength: 'short',
     suggestedRepeatDays: 30,
     cooldownDays: 14,
     startable: true,
@@ -130,6 +140,8 @@ export const MONITORING_CATALOG = deepFreeze([
     categoryAffinities: ['emotions'],
     questionCount: 9,
     durationMinutes: 2,
+    testStyle: 'professional',
+    testLength: 'medium',
     suggestedRepeatDays: 14,
     cooldownDays: 7,
     startable: true,
@@ -152,6 +164,8 @@ export const MONITORING_CATALOG = deepFreeze([
     categoryAffinities: ['emotions'],
     questionCount: 7,
     durationMinutes: 2,
+    testStyle: 'professional',
+    testLength: 'medium',
     suggestedRepeatDays: 14,
     cooldownDays: 7,
     startable: true,
@@ -174,6 +188,8 @@ export const MONITORING_CATALOG = deepFreeze([
     categoryAffinities: ['energy', 'relationships', 'emotions', 'other'],
     questionCount: 6,
     durationMinutes: 1,
+    testStyle: 'engaging',
+    testLength: 'short',
     suggestedRepeatDays: 14,
     cooldownDays: 7,
     startable: true,
@@ -196,6 +212,8 @@ export const MONITORING_CATALOG = deepFreeze([
     categoryAffinities: ['body', 'energy', 'relationships', 'work-money', 'other'],
     questionCount: 18,
     durationMinutes: 5,
+    testStyle: 'engaging',
+    testLength: 'comprehensive',
     suggestedRepeatDays: 30,
     cooldownDays: 21,
     startable: true,
@@ -271,6 +289,18 @@ export const MONITORING_CATALOG = deepFreeze([
     },
   },
 ])
+
+export function activeMonitoringTestCounts() {
+  const active = MONITORING_CATALOG.filter((item) => item.startable)
+  return {
+    total: active.length,
+    engaging: active.filter((item) => item.testStyle === 'engaging').length,
+    professional: active.filter((item) => item.testStyle === 'professional').length,
+    short: active.filter((item) => item.testLength === 'short').length,
+    medium: active.filter((item) => item.testLength === 'medium').length,
+    comprehensive: active.filter((item) => item.testLength === 'comprehensive').length,
+  }
+}
 
 export function monitoringCatalogItem(key) {
   return MONITORING_CATALOG.find((item) => item.key === key) || null
