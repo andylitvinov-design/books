@@ -81,12 +81,13 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   padding: 24px clamp(14px, 4vw, 42px) 96px;
 }
 .cabinet-landing-shell .hh-mood-checkin {
-  max-width: 42rem;
-  margin: 24px 0 18px;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 24px 0 20px;
   border: 1px solid #ded1c2;
   border-radius: 18px;
   background: #fffdfa;
-  padding: 22px;
+  padding: clamp(22px, 3vw, 28px);
   box-shadow: 0 8px 24px rgba(68, 47, 33, .035);
 }
 .cabinet-landing-shell .hh-mood-kicker {
@@ -156,15 +157,16 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 }
 
 .cabinet-signin-strip {
-  max-width: 42rem;
+  max-width: none;
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(178px, 220px);
   align-items: center;
-  gap: 18px;
-  margin-top: 12px;
+  gap: 22px;
+  margin-top: 18px;
   border-top: 1px solid #ded1c2;
   border-bottom: 1px solid #ded1c2;
-  padding: 15px 0;
+  padding: 17px 0;
 }
 .cabinet-signin-copy {
   min-width: 0;
@@ -226,8 +228,8 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   padding: 0;
 }
 .cabinet-tests-heading {
-  max-width: 42rem;
-  margin: 0 0 12px;
+  max-width: 50rem;
+  margin: 0 0 14px;
 }
 .cabinet-tests-heading h2 {
   margin: 7px 0 6px;
@@ -242,8 +244,9 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 }
 .cabinet-test-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 14px;
 }
 .cabinet-test-row {
   width: 100%;
@@ -317,7 +320,8 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   border-radius: 12px;
 }
 .cabinet-landing-shell .cabinet-legacy-entry {
-  max-width: 42rem;
+  max-width: none;
+  box-sizing: border-box;
   margin: 24px 0 0;
   border: 0;
   border-top: 1px solid #ded1c2;
