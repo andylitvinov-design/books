@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 
 import { readPublicReadingState } from "@/lib/public-reading-state";
 
-import type { Locale, RemedyDirectoryEntry } from "@/data/remedies";
+import type { Locale, RemedyDirectoryEntry, RemedyDescriptionType } from "@/data/remedies";
 
 type RemedyDirectoryProps = {
   locale: Locale;
@@ -15,8 +15,34 @@ type RemedyDirectoryProps = {
 };
 
 const labels = {
-  ru: { search: "Найти препарат или алиас", result: "препаратов", empty: "Ничего не найдено", emptyHint: "Проверьте латинское, русское или сокращённое название.", all: "Все" },
-  en: { search: "Find a remedy or alias", result: "remedies", empty: "No remedies found", emptyHint: "Try a Latin, Russian/common, or abbreviated name.", all: "All" },
+  ru: {
+    searchLabel: "Поиск препарата",
+    searchPlaceholder: "Введите название, алиас или сокращение…",
+    searchHint: "Начните вводить — ниже появятся подходящие препараты.",
+    result: "препаратов",
+    empty: "Ничего не найдено",
+    emptyHint: "Проверьте латинское, русское или сокращённое название.",
+    all: "Все",
+    descriptionTypes: {
+      "full-card": "Полное описание",
+      "source-excerpt": "Краткое описание",
+      "source-description": "Описание из источника",
+    },
+  },
+  en: {
+    searchLabel: "Remedy search",
+    searchPlaceholder: "Type a name, alias, or abbreviation…",
+    searchHint: "Start typing to see matching remedies below.",
+    result: "remedies",
+    empty: "No remedies found",
+    emptyHint: "Try a Latin, Russian/common, or abbreviated name.",
+    all: "All",
+    descriptionTypes: {
+      "full-card": "Full description",
+      "source-excerpt": "Short description",
+      "source-description": "Source description",
+    },
+  },
 } as const;
 
 function normalise(value: string) {
@@ -37,30 +63,82 @@ export function RemedyDirectory({ locale, entries }: RemedyDirectoryProps) {
   const [activeLetter, setActiveLetter] = useState("all");
   const deferredQuery = useDeferredValue(query);
   const searchParams = useSearchParams();
-  const savedOnly = searchParams.get('saved') === '1';
-  const savedSlugs = useMemo(() => typeof window === 'undefined' ? [] : readPublicReadingState(new Set(entries.map((entry) => entry.slug))).savedSlugs, [entries]);
+  const savedOnly = searchParams.get("saved") === "1";
+  const savedSlugs = useMemo(
+    () => typeof window === "undefined" ? [] : readPublicReadingState(new Set(entries.map((entry) => entry.slug))).savedSlugs,
+    [entries],
+  );
   const copy = labels[locale];
   const letters = [...new Set(entries.map(({ letter }) => letter))];
+
+  const normalisedQuery = normalise(deferredQuery);
+  const matchingEntries = useMemo(
+    () => !normalisedQuery ? [] : entries.filter((entry) => entry.searchText.includes(normalisedQuery)),
+    [entries, normalisedQuery],
+  );
+  const suggestions = matchingEntries.slice(0, 8);
+
   const visibleEntries = useMemo(() => {
-    const normalisedQuery = normalise(deferredQuery);
     return entries.filter((entry) => {
       const matchesLetter = activeLetter === "all" || entry.letter === activeLetter;
       const matchesQuery = !normalisedQuery || entry.searchText.includes(normalisedQuery);
       return matchesLetter && matchesQuery && (!savedOnly || savedSlugs.includes(entry.slug));
     });
-  }, [activeLetter, deferredQuery, entries, savedOnly, savedSlugs]);
+  }, [activeLetter, entries, normalisedQuery, savedOnly, savedSlugs]);
+
+  const typeLabel = (descriptionType: RemedyDescriptionType) => copy.descriptionTypes[descriptionType];
 
   return (
     <section aria-label={locale === "ru" ? "Каталог препаратов" : "Remedy directory"} className="remedy-directory">
-      <label className="remedy-search">
-        <Search aria-hidden="true" className="size-4" />
-        <span className="sr-only">{copy.search}</span>
-        <input onChange={(event) => setQuery(event.target.value)} placeholder={copy.search} type="search" value={query} />
-      </label>
+      <div className="remedy-search-shell">
+        <label className="remedy-search-label" htmlFor="remedy-directory-search">
+          <span>{copy.searchLabel}</span>
+          <div className="remedy-search-box">
+            <Search aria-hidden="true" className="size-4" />
+            <input
+              aria-controls="remedy-directory-suggestions"
+              aria-expanded={Boolean(query.trim())}
+              autoComplete="off"
+              id="remedy-directory-search"
+              onChange={(event) => {
+                setQuery(event.target.value);
+                if (event.target.value.trim()) setActiveLetter("all");
+              }}
+              placeholder={copy.searchPlaceholder}
+              type="search"
+              value={query}
+            />
+          </div>
+        </label>
+        <p className="remedy-search-hint">{copy.searchHint}</p>
+
+        {query.trim() ? (
+          <div className="remedy-search-suggestions" id="remedy-directory-suggestions" role="list">
+            {suggestions.length ? suggestions.map((entry) => (
+              <Link href={`/${locale}/homeopathy/remedies/${entry.slug}`} key={entry.slug} role="listitem">
+                <span className="remedy-search-suggestion-topline">
+                  <strong>{entry.title}</strong>
+                  <span className={`remedy-description-type remedy-description-type--${entry.descriptionType}`}>
+                    {typeLabel(entry.descriptionType)}
+                  </span>
+                </span>
+                {entry.commonName ? <span className="remedy-search-suggestion-common">{entry.commonName}</span> : null}
+                {entry.aliases.length ? <small>{entry.aliases.join(" · ")}</small> : null}
+              </Link>
+            )) : <p>{copy.empty}</p>}
+          </div>
+        ) : null}
+      </div>
+
       <div aria-label={locale === "ru" ? "Алфавитный указатель" : "Alphabetical index"} className="remedy-alphabet">
         <button aria-pressed={activeLetter === "all"} onClick={() => setActiveLetter("all")} type="button">{copy.all}</button>
-        {letters.map((letter) => <button aria-pressed={activeLetter === letter} key={letter} onClick={() => setActiveLetter(letter)} type="button">{letter}</button>)}
+        {letters.map((letter) => (
+          <button aria-pressed={activeLetter === letter} key={letter} onClick={() => setActiveLetter(letter)} type="button">
+            {letter}
+          </button>
+        ))}
       </div>
+
       <p className="remedy-result-count" role="status">{visibleEntries.length} {copy.result}</p>
       {visibleEntries.length ? (
         <ul className="remedy-list">
@@ -68,7 +146,16 @@ export function RemedyDirectory({ locale, entries }: RemedyDirectoryProps) {
             <li key={entry.slug}>
               <Link href={`/${locale}/homeopathy/remedies/${entry.slug}`}>
                 <span className="remedy-list-letter">{entry.letter}</span>
-                <span><strong>{entry.title}</strong>{entry.commonName ? <small>{entry.commonName}</small> : null}{entry.aliases.length ? <em>{entry.aliases.join(" · ")}</em> : null}</span>
+                <span className="remedy-list-copy">
+                  <span className="remedy-list-heading">
+                    <strong>{entry.title}</strong>
+                    <span className={`remedy-description-type remedy-description-type--${entry.descriptionType}`}>
+                      {typeLabel(entry.descriptionType)}
+                    </span>
+                  </span>
+                  {entry.commonName ? <small>{entry.commonName}</small> : null}
+                  {entry.aliases.length ? <em>{entry.aliases.join(" · ")}</em> : null}
+                </span>
               </Link>
             </li>
           ))}
