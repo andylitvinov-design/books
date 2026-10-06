@@ -24,6 +24,8 @@ test("shared showcase has compact contents, visual panels and a clear choice act
   const styles = read("app", "catalog-showcase.css");
 
   assert.match(component, /catalog-showcase-index-card/);
+  assert.match(component, /href=\{item\.indexHref \?\? item\.href\}/);
+  assert.doesNotMatch(component, /href=\{"#" \+ item\.id\}/);
   assert.doesNotMatch(component, /catalog-showcase-index-number/);
   assert.doesNotMatch(component, /catalog-showcase-index-copy">[\s\S]*?<small>/);
   assert.match(component, /ChevronRight/);
@@ -48,4 +50,24 @@ test("Services keeps marketplace and published video surfaces after the redesign
   assert.match(services, /slot=\{"service-" \+ id\}/);
   assert.match(services, /method-hypnotherapy/);
   assert.match(services, /method-constellations/);
+});
+
+
+test("mini cards navigate to direct destinations instead of in-page anchors", () => {
+  const component = read("components", "catalog-showcase.tsx");
+  const services = read("app", "[locale]", "services", "page.tsx");
+  const academy = read("components", "academy-hub.tsx");
+  const library = read("components", "library-hub.tsx");
+
+  assert.match(component, /indexHref\?: string/);
+  assert.match(component, /item\.indexHref \?\? item\.href/);
+  assert.match(services, /indexHref: serviceIndexHrefs\[id\]/);
+  assert.match(services, /academy\/applied\/hypnotherapy-regressions/);
+  assert.match(services, /academy\/reiki/);
+  assert.match(services, /personal-constellation-session/);
+  assert.match(services, /business-situation-constellation/);
+  assert.match(services, /homeopathy-consultation/);
+
+  assert.match(academy, /href: "\/" \+ locale \+ "\/academy\/" \+ direction\.path/);
+  assert.match(library, /href: `\/\$\{locale\}\/books\?section=\$\{section\}`/);
 });
