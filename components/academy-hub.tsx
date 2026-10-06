@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import {
@@ -23,7 +24,28 @@ function recordImage(record: AcademySourceRecord) {
   return academyDirections.find((item) => item.id === record.direction)?.image ?? "/images/holistic-house/books-library.webp";
 }
 
-function AcademyIndex({ items, label }: { items: AcademyItem[]; label: string }) {
+const academyActionCopy: Record<PublicLocale, { direction: string; video: string; program: string; videoDescription: string }> = {
+  en: {
+    direction: "Explore this direction",
+    video: "Open this video course",
+    program: "Open program",
+    videoDescription: "Open the preserved Academy video material, context and source notes.",
+  },
+  ru: {
+    direction: "Открыть это направление",
+    video: "Открыть видео-курс",
+    program: "Открыть программу",
+    videoDescription: "Откройте сохранённый видео-материал Академии, его контекст и информацию об источнике.",
+  },
+  es: {
+    direction: "Explorar esta área",
+    video: "Abrir este videocurso",
+    program: "Abrir programa",
+    videoDescription: "Abre el material de video preservado de la Academia, su contexto y las notas de la fuente.",
+  },
+};
+
+function AcademyRecordIndex({ items, label }: { items: AcademyItem[]; label: string }) {
   return (
     <section className="library-index-grid" aria-label={label}>
       {items.map((item) => (
@@ -50,19 +72,26 @@ export function AcademyBackLink({ locale }: { locale: PublicLocale }) {
 
 export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale; view?: AcademyView }) {
   const text = academyCopy[locale];
-  const items: AcademyItem[] = view === "videos"
+  const action = academyActionCopy[locale];
+  const items: CatalogShowcaseItem[] = view === "videos"
     ? videoRecords(locale).map((record) => ({
-        key: record.logicalId,
+        id: "academy-video-" + record.routeKey.replace(/[^a-z0-9]+/gi, "-"),
         title: academyDisplayTitle(record, locale),
+        subtitle: statusLabel(record, locale),
+        description: action.videoDescription,
         href: "/" + locale + "/academy/" + record.routeKey,
         image: recordImage(record),
+        actionLabel: action.video,
         meta: statusLabel(record, locale),
       }))
     : academyDirections.map((direction) => ({
-        key: direction.id,
+        id: "academy-" + direction.id,
         title: direction.title[locale],
+        subtitle: text.allPrograms,
+        description: direction.description[locale],
         href: "/" + locale + "/academy/" + direction.path,
         image: direction.image,
+        actionLabel: action.direction,
       }));
 
   return (
@@ -72,8 +101,12 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         <Link aria-current={view === "programs" ? "page" : undefined} href={"/" + locale + "/academy"}>{text.programs}</Link>
         <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/academy?view=videos"}>{text.videos}</Link>
       </nav>
-      <header className="library-heading"><p className="homeopathy-kicker">Holistic House</p><h1>{text.title}</h1><p>{text.lead}</p></header>
-      <AcademyIndex items={items} label={view === "videos" ? text.videoCollections : text.allPrograms} />
+      <header className="library-heading">
+        <p className="homeopathy-kicker">Holistic House</p>
+        <h1>{text.title}</h1>
+        <p>{text.lead}</p>
+      </header>
+      <CatalogShowcase items={items} label={view === "videos" ? text.videoCollections : text.allPrograms} />
       <PublicConsultationCta locale={locale} />
     </main>
   );
@@ -92,8 +125,12 @@ export function AcademyDirection({ locale, direction }: { locale: PublicLocale; 
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} /><AcademyBackLink locale={locale} />
-      <header className="library-heading academy-direction-heading"><p className="homeopathy-kicker">{academyCopy[locale].title}</p><h1>{info.title[locale]}</h1><p>{info.description[locale]}</p></header>
-      <AcademyIndex items={items} label={info.title[locale]} />
+      <header className="library-heading academy-direction-heading">
+        <p className="homeopathy-kicker">{academyCopy[locale].title}</p>
+        <h1>{info.title[locale]}</h1>
+        <p>{info.description[locale]}</p>
+      </header>
+      <AcademyRecordIndex items={items} label={info.title[locale]} />
       <PublicConsultationCta locale={locale} />
     </main>
   );
@@ -117,8 +154,12 @@ export function AcademyPrefixDirectory({ locale, prefix, title, description }: {
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} /><AcademyBackLink locale={locale} />
-      <header className="library-heading academy-direction-heading"><p className="homeopathy-kicker">{academyCopy[locale].title}</p><h1>{title}</h1><p>{description}</p></header>
-      <AcademyIndex items={items} label={title} />
+      <header className="library-heading academy-direction-heading">
+        <p className="homeopathy-kicker">{academyCopy[locale].title}</p>
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </header>
+      <AcademyRecordIndex items={items} label={title} />
       <PublicConsultationCta locale={locale} />
     </main>
   );
