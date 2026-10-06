@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub, AcademyPrefixDirectory } from "@/components/academy-hub";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
@@ -69,6 +69,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
     const view: AcademyView = rawView === "videos" ? "videos" : "programs";
     return <AcademyHub locale={locale} view={view} />;
   }
+  if (key === "reiki/master-shamanic-healing") redirect("/" + locale + "/academy/reiki/yggdrasil#basic-course-description");
   if (slug.length === 1 && slug[0] === "videos") return <AcademyHub locale={locale} view="videos" />;
   if (slug.length === 1 && directionPath[slug[0]]) return <AcademyDirection locale={locale} direction={directionPath[slug[0]]} />;
   if (slug.length === 1 && prefixCopy[slug[0]]) { const copy = prefixCopy[slug[0]][locale]; return <AcademyPrefixDirectory locale={locale} prefix={slug[0]} title={copy.title} description={copy.description} />; }

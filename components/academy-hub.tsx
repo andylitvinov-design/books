@@ -24,24 +24,27 @@ function recordImage(record: AcademySourceRecord) {
   return academyDirections.find((item) => item.id === record.direction)?.image ?? "/images/holistic-house/books-library.webp";
 }
 
-const academyActionCopy: Record<PublicLocale, { direction: string; video: string; program: string; videoDescription: string }> = {
+const academyActionCopy: Record<PublicLocale, { direction: string; video: string; program: string; videoDescription: string; featured: string }> = {
   en: {
     direction: "Explore this direction",
     video: "Open this video course",
     program: "Open program",
     videoDescription: "Open the preserved Academy video material, context and source notes.",
+    featured: "Featured study program",
   },
   ru: {
     direction: "Открыть это направление",
     video: "Открыть видео-курс",
     program: "Открыть программу",
     videoDescription: "Откройте сохранённый видео-материал Академии, его контекст и информацию об источнике.",
+    featured: "Основная программа обучения",
   },
   es: {
     direction: "Explorar esta área",
     video: "Abrir este videocurso",
     program: "Abrir programa",
     videoDescription: "Abre el material de video preservado de la Academia, su contexto y las notas de la fuente.",
+    featured: "Programa formativo destacado",
   },
 };
 
@@ -84,15 +87,43 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         actionLabel: action.video,
         meta: statusLabel(record, locale),
       }))
-    : academyDirections.map((direction) => ({
-        id: "academy-" + direction.id,
-        title: direction.title[locale],
-        subtitle: text.allPrograms,
-        description: direction.description[locale],
-        href: "/" + locale + "/academy/" + direction.path,
-        image: direction.image,
-        actionLabel: action.direction,
-      }));
+    : [
+        {
+          id: "academy-featured-yggdrasil",
+          title: locale === "ru" ? "Дао Рейки Иггдрасиль" : "DAO Reiki Yggdrasil",
+          subtitle: action.featured,
+          description: locale === "ru"
+            ? "Полная система обучения: карта всех модулей, отдельный Базовый курс из 5 ступеней и подробная актуальная программа."
+            : locale === "es"
+              ? "Sistema completo: mapa de módulos, Curso Básico de 5 niveles y currículo actual detallado."
+              : "The complete learning system: all modules, a dedicated 5-level Basic Course and the detailed current curriculum.",
+          href: "/" + locale + "/academy/reiki/yggdrasil",
+          image: "/images/holistic-house/hero-olive-incense.webp",
+          actionLabel: action.program,
+        },
+        {
+          id: "academy-featured-tantra-reiki",
+          title: locale === "ru" ? "Тантра Рейки" : "Tantra Reiki",
+          subtitle: action.featured,
+          description: locale === "ru"
+            ? "Отдельная девятиступенчатая программа Тантра Рейки из архива школы, собранная в одном последовательном учебном маршруте."
+            : locale === "es"
+              ? "Programa independiente de Tantra Reiki en nueve niveles, organizado como una ruta formativa coherente."
+              : "A separate nine-level Tantra Reiki program, organized as one coherent study path.",
+          href: "/" + locale + "/academy/reiki/tantra-reiki",
+          image: "/library/maya-mysteries/media/post-244-1.jpg",
+          actionLabel: action.program,
+        },
+        ...academyDirections.filter((direction) => direction.id !== "reiki").map((direction) => ({
+          id: "academy-" + direction.id,
+          title: direction.title[locale],
+          subtitle: text.allPrograms,
+          description: direction.description[locale],
+          href: "/" + locale + "/academy/" + direction.path,
+          image: direction.image,
+          actionLabel: action.direction,
+        })),
+      ];
 
   return (
     <main className="library-shell academy-shell" lang={locale}>
@@ -115,7 +146,14 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
 export function AcademyDirection({ locale, direction }: { locale: PublicLocale; direction: AcademyDirectionId }) {
   const info = academyDirections.find((item) => item.id === direction);
   if (!info) return null;
-  const items = recordsForDirection(direction, locale).map((record) => ({
+  const records = recordsForDirection(direction, locale)
+    .filter((record) => direction !== "reiki" || record.logicalId !== "reiki/master-shamanic-healing")
+    .sort((a, b) => {
+      if (direction !== "reiki") return 0;
+      const rank = (id: string) => id === "reiki/yggdrasil" ? 0 : id === "reiki/tantra-reiki" ? 1 : 2;
+      return rank(a.logicalId) - rank(b.logicalId);
+    });
+  const items = records.map((record) => ({
     key: record.logicalId,
     title: academyDisplayTitle(record, locale),
     href: "/" + locale + "/academy/" + record.routeKey,
