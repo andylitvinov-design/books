@@ -30,18 +30,27 @@ const result = (def, value, day) => ({
   ...scoreAssessment(def, answers(def, value)),
 })
 
-test('monitoring catalog exposes the nine cleared checks and keeps uncleared measures metadata-only', () => {
+test('monitoring catalog exposes the cleared active checks and keeps uncleared measures metadata-only', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable).map((item) => item.key).sort()
   assert.deepEqual(active, [
-    'gad-7',
-    'hh-current-state',
-    'hh-monthly-profile',
-    'hh-resource-pulse',
-    'hh-weekly-pulse',
-    'k6',
-    'mini-ipip-20',
-    'phq-4',
-    'phq-9',
+    "gad-2",
+    "gad-7",
+    "hh-boundary-radar",
+    "hh-current-state",
+    "hh-focus-mode",
+    "hh-monthly-profile",
+    "hh-recharge-decoder",
+    "hh-resource-pulse",
+    "hh-social-battery",
+    "hh-stress-weather",
+    "hh-tiny-joys",
+    "hh-weekly-pulse",
+    "k10",
+    "k6",
+    "mini-ipip-20",
+    "phq-2",
+    "phq-4",
+    "phq-9"
   ])
   for (const key of ['mspss', 'scs-sf', 'functioning-review'])
     assert.equal(monitoringCatalogItem(key).startable, false)

@@ -4,9 +4,9 @@ import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 
-test('published Psychic Health battery resolves all nine executable definitions and score shapes', () => {
+test('published Psychic Health battery resolves all active executable definitions and score shapes', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 9)
+  assert.equal(active.length, 18)
 
   for (const item of active) {
     const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale

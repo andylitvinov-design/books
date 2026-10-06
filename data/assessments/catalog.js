@@ -226,6 +226,371 @@ export const MONITORING_CATALOG = deepFreeze([
     },
   },
   {
+    "key": "phq-2",
+    "version": "v1",
+    "instrumentLocale": "en",
+    "axis": "symptoms",
+    "resultAxes": [
+      "symptoms"
+    ],
+    "topics": [
+      "mood"
+    ],
+    "moodAffinities": [
+      "sad",
+      "neutral"
+    ],
+    "categoryAffinities": [
+      "emotions"
+    ],
+    "questionCount": 2,
+    "durationMinutes": 1,
+    "testStyle": "professional",
+    "testLength": "short",
+    "suggestedRepeatDays": 14,
+    "cooldownDays": 7,
+    "startable": true,
+    "access": "account",
+    "rightsStatus": "cleared",
+    "title": {
+      "en": "Mood Quick Check",
+      "ru": "Быстрая проверка настроения · EN"
+    },
+    "description": {
+      "en": "Two-item PHQ-2 depression screening signal. Not a diagnosis.",
+      "ru": "Короткий профессиональный PHQ-2 скрининг настроения; вопросы на английском. Не диагноз."
+    }
+  },
+  {
+    "key": "gad-2",
+    "version": "v1",
+    "instrumentLocale": "en",
+    "axis": "symptoms",
+    "resultAxes": [
+      "symptoms"
+    ],
+    "topics": [
+      "anxiety"
+    ],
+    "moodAffinities": [
+      "sad",
+      "neutral"
+    ],
+    "categoryAffinities": [
+      "emotions"
+    ],
+    "questionCount": 2,
+    "durationMinutes": 1,
+    "testStyle": "professional",
+    "testLength": "short",
+    "suggestedRepeatDays": 14,
+    "cooldownDays": 7,
+    "startable": true,
+    "access": "account",
+    "rightsStatus": "cleared",
+    "title": {
+      "en": "Anxiety Quick Check",
+      "ru": "Быстрая проверка тревоги · EN"
+    },
+    "description": {
+      "en": "Two-item GAD-2 anxiety screening signal. Not a diagnosis.",
+      "ru": "Короткий профессиональный GAD-2 скрининг тревоги; вопросы на английском. Не диагноз."
+    }
+  },
+  {
+    "key": "k10",
+    "version": "v1",
+    "instrumentLocale": "en",
+    "axis": "symptoms",
+    "resultAxes": [
+      "symptoms"
+    ],
+    "topics": [
+      "stress",
+      "mood",
+      "function"
+    ],
+    "moodAffinities": [
+      "sad",
+      "neutral"
+    ],
+    "categoryAffinities": [
+      "energy",
+      "work-money",
+      "emotions",
+      "other"
+    ],
+    "questionCount": 10,
+    "durationMinutes": 3,
+    "testStyle": "professional",
+    "testLength": "comprehensive",
+    "suggestedRepeatDays": 30,
+    "cooldownDays": 14,
+    "startable": true,
+    "access": "account",
+    "rightsStatus": "cleared",
+    "title": {
+      "en": "Mental Load — Full K10",
+      "ru": "Психологическая нагрузка K10 · EN"
+    },
+    "description": {
+      "en": "Full K10 measure of non-specific psychological distress over the past 30 days.",
+      "ru": "Полная шкала K10 общей психологической нагрузки за последние 30 дней; вопросы на английском."
+    }
+  },
+  {
+    "key": "hh-social-battery",
+    "version": "v1",
+    "instrumentLocale": "dynamic",
+    "axis": "resources",
+    "resultAxes": [
+      "resources"
+    ],
+    "topics": [
+      "relationships",
+      "support",
+      "energy"
+    ],
+    "moodAffinities": [
+      "happy",
+      "neutral",
+      "sad"
+    ],
+    "categoryAffinities": [
+      "relationships",
+      "energy",
+      "emotions"
+    ],
+    "questionCount": 6,
+    "durationMinutes": 1,
+    "testStyle": "engaging",
+    "testLength": "short",
+    "suggestedRepeatDays": 14,
+    "cooldownDays": 5,
+    "startable": true,
+    "access": "account",
+    "rightsStatus": "cleared",
+    "title": {
+      "en": "Your Social Battery",
+      "ru": "Твоя социальная батарейка"
+    },
+    "description": {
+      "en": "A playful check of social energy, space and connection.",
+      "ru": "Лёгкая проверка социальной энергии, потребности в пространстве и контакте."
+    }
+  },
+  {
+    "key": "hh-focus-mode",
+    "version": "v1",
+    "instrumentLocale": "dynamic",
+    "axis": "function",
+    "resultAxes": [
+      "function"
+    ],
+    "topics": [
+      "function",
+      "work",
+      "attention",
+      "energy"
+    ],
+    "moodAffinities": [
+      "neutral",
+      "happy",
+      "sad"
+    ],
+    "categoryAffinities": [
+      "work-money",
+      "energy",
+      "other"
+    ],
+    "questionCount": 6,
+    "durationMinutes": 1,
+    "testStyle": "engaging",
+    "testLength": "short",
+    "suggestedRepeatDays": 7,
+    "cooldownDays": 3,
+    "startable": true,
+    "access": "account",
+    "rightsStatus": "cleared",
+    "title": {
+      "en": "Focus Mode",
+      "ru": "Режим фокуса"
+    },
+    "description": {
+      "en": "A quick playful read on focus readiness and task momentum.",
+      "ru": "Быстрая игровая проверка готовности к фокусу и движению по задачам."
+    }
+  },
+  {
+    "key": "hh-stress-weather",
+    "version": "v1",
+    "instrumentLocale": "dynamic",
+    "axis": "state",
+    "resultAxes": [
+      "state"
+    ],
+    "topics": [
+      "stress",
+      "body",
+      "relationships"
+    ],
+    "moodAffinities": [
+      "sad",
+      "neutral"
+    ],
+    "categoryAffinities": [
+      "body",
+      "energy",
+      "emotions",
+      "relationships",
+      "work-money"
+    ],
+    "questionCount": 6,
+    "durationMinutes": 1,
+    "testStyle": "engaging",
+    "testLength": "short",
+    "suggestedRepeatDays": 7,
+    "cooldownDays": 3,
+    "startable": true,
+    "access": "account",
+    "rightsStatus": "cleared",
+    "title": {
+      "en": "Stress Weather",
+      "ru": "Погода стресса"
+    },
+    "description": {
+      "en": "A playful snapshot of how stress is showing up in body, mind and contact.",
+      "ru": "Лёгкий снимок того, как стресс проявляется в теле, мыслях и контакте."
+    }
+  },
+  {
+    "key": "hh-recharge-decoder",
+    "version": "v1",
+    "instrumentLocale": "dynamic",
+    "axis": "resources",
+    "resultAxes": [
+      "resources"
+    ],
+    "topics": [
+      "sleep",
+      "recovery",
+      "energy",
+      "support"
+    ],
+    "moodAffinities": [
+      "happy",
+      "neutral",
+      "sad"
+    ],
+    "categoryAffinities": [
+      "body",
+      "energy",
+      "relationships",
+      "other"
+    ],
+    "questionCount": 8,
+    "durationMinutes": 2,
+    "testStyle": "engaging",
+    "testLength": "medium",
+    "suggestedRepeatDays": 14,
+    "cooldownDays": 7,
+    "startable": true,
+    "access": "account",
+    "rightsStatus": "cleared",
+    "title": {
+      "en": "Recharge Decoder",
+      "ru": "Декодер восстановления"
+    },
+    "description": {
+      "en": "See which forms of rest are actually restoring you this week.",
+      "ru": "Посмотрите, какие формы отдыха действительно восстанавливают вас на этой неделе."
+    }
+  },
+  {
+    "key": "hh-boundary-radar",
+    "version": "v1",
+    "instrumentLocale": "dynamic",
+    "axis": "resources",
+    "resultAxes": [
+      "resources"
+    ],
+    "topics": [
+      "relationships",
+      "support",
+      "self-support"
+    ],
+    "moodAffinities": [
+      "happy",
+      "neutral",
+      "sad"
+    ],
+    "categoryAffinities": [
+      "relationships",
+      "emotions",
+      "other"
+    ],
+    "questionCount": 8,
+    "durationMinutes": 2,
+    "testStyle": "engaging",
+    "testLength": "medium",
+    "suggestedRepeatDays": 14,
+    "cooldownDays": 7,
+    "startable": true,
+    "access": "account",
+    "rightsStatus": "cleared",
+    "title": {
+      "en": "Boundary Radar",
+      "ru": "Радар границ"
+    },
+    "description": {
+      "en": "A playful reflection on noticing, expressing and respecting boundaries.",
+      "ru": "Лёгкая рефлексия о том, как вы замечаете, обозначаете и уважаете границы."
+    }
+  },
+  {
+    "key": "hh-tiny-joys",
+    "version": "v1",
+    "instrumentLocale": "dynamic",
+    "axis": "resources",
+    "resultAxes": [
+      "resources"
+    ],
+    "topics": [
+      "mood",
+      "recovery",
+      "energy",
+      "support"
+    ],
+    "moodAffinities": [
+      "happy",
+      "neutral",
+      "sad"
+    ],
+    "categoryAffinities": [
+      "energy",
+      "relationships",
+      "emotions",
+      "other"
+    ],
+    "questionCount": 6,
+    "durationMinutes": 1,
+    "testStyle": "engaging",
+    "testLength": "short",
+    "suggestedRepeatDays": 14,
+    "cooldownDays": 5,
+    "startable": true,
+    "access": "account",
+    "rightsStatus": "cleared",
+    "title": {
+      "en": "Tiny Joys Scanner",
+      "ru": "Сканер маленьких радостей"
+    },
+    "description": {
+      "en": "A light check for small sources of pleasure, curiosity and warmth.",
+      "ru": "Лёгкая проверка маленьких источников удовольствия, любопытства и тепла."
+    }
+  },
+  {
     key: 'mspss',
     version: 'source-controlled',
     instrumentLocale: 'source-controlled',

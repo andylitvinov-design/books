@@ -120,12 +120,12 @@ test('public Cabinet exposes the weighted recommender before registration and ke
 
 test('active assessment inventory is classified for style and length filters', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 9)
-  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 4)
-  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 5)
-  assert.equal(active.filter((item) => item.testLength === 'short').length, 4)
-  assert.equal(active.filter((item) => item.testLength === 'medium').length, 3)
-  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 2)
+  assert.equal(active.length, 18)
+  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 10)
+  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 8)
+  assert.equal(active.filter((item) => item.testLength === 'short').length, 10)
+  assert.equal(active.filter((item) => item.testLength === 'medium').length, 5)
+  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 3)
   assert.ok(active.every((item) => TEST_STYLE_FILTERS.some((filter) => filter.key === item.testStyle)))
   assert.ok(active.every((item) => TEST_LENGTH_FILTERS.some((filter) => filter.key === item.testLength)))
 })
@@ -175,4 +175,15 @@ test('public and signed-in recommenders expose style and length switch groups', 
   assert.match(landing, /Комплексные/)
   assert.match(workspace, /Fun \/ engaging/)
   assert.match(workspace, /Comprehensive/)
+})
+
+
+test('expanded battery includes cleared professional quick screens and original playful checks', () => {
+  const activeKeys = new Set(MONITORING_CATALOG.filter((item) => item.startable).map((item) => item.key))
+  for (const key of ['phq-2','gad-2','k10','hh-social-battery','hh-focus-mode','hh-stress-weather','hh-recharge-decoder','hh-boundary-radar','hh-tiny-joys']) assert.ok(activeKeys.has(key), key)
+  for (const key of ['hh-social-battery','hh-focus-mode','hh-stress-weather','hh-recharge-decoder','hh-boundary-radar','hh-tiny-joys']) {
+    assert.ok(getAssessmentDefinition(key, 'v1', 'en'))
+    assert.ok(getAssessmentDefinition(key, 'v1', 'ru'))
+  }
+  for (const key of ['phq-2','gad-2','k10']) assert.equal(getAssessmentDefinition(key, 'v1', 'en').instrumentLocale, 'en')
 })
