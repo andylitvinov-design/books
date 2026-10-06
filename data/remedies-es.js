@@ -27,6 +27,6 @@ export function getSpanishRemedyDirectory() {
   return originals.map(entry => {
     const remedy = translated.get(entry.slug)
     const firstParagraph = remedy.description.split(/\n{2,}/).find(block => block.trim() && !block.trim().startsWith('#') && block.trim().toUpperCase() !== remedy.canonical_latin_name.toUpperCase()) || ''
-    return { slug: entry.slug, title: entry.title, letter: entry.letter, aliases: entry.aliases, searchText: entry.searchText, summary: (remedy.main_state || firstParagraph).replace(/[#*`]/g, '').slice(0, 180) }
+    return { slug: entry.slug, title: entry.title, letter: entry.letter, aliases: entry.aliases, searchText: entry.searchText, summary: (remedy.main_state || firstParagraph).replace(/[#*`]/g, '').slice(0, 180), descriptionType: entry.descriptionType }
   })
 }
