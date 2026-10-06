@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 
 export type CatalogShowcaseItem = {
   id: string;
@@ -28,19 +28,17 @@ export function CatalogShowcase({
   return (
     <section className="catalog-showcase" aria-label={label}>
       <nav className="catalog-showcase-index" aria-label={label + " — contents"}>
-        {items.map((item, index) => (
+        {items.map((item) => (
           <a className="catalog-showcase-index-card" href={"#" + item.id} key={item.id}>
-            <span className="catalog-showcase-index-number">{String(index + 1).padStart(2, "0")}</span>
             {item.image ? (
               <span className="catalog-showcase-index-photo" aria-hidden="true">
-                <Image alt="" fill sizes="64px" src={item.image} />
+                <Image alt="" fill sizes="(max-width: 720px) 76px, 128px" src={item.image} />
               </span>
             ) : null}
             <span className="catalog-showcase-index-copy">
               <strong>{item.title}</strong>
-              {item.subtitle ? <small>{item.subtitle}</small> : null}
             </span>
-            <ChevronDown aria-hidden="true" />
+            <ChevronRight aria-hidden="true" />
           </a>
         ))}
       </nav>
