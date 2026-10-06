@@ -16,7 +16,8 @@ test('Every public remedy has a source-matched complete Spanish translation', ()
     assert.equal(es.locale, 'es'); assert.equal(es.canonical_latin_name, original.canonical_latin_name);
     assert.equal(row.sourceSha256, createHash('sha256').update(source(`content/remedies/en/${slug}.md`)).digest('hex'));
     for (const [field, translated] of Object.entries(row.fields)) {
-      assert.ok(translated.trim(), `${slug}/${field}`);
+      if (String(original[field] ?? '').trim()) assert.ok(translated.trim(), `${slug}/${field}`);
+      else assert.equal(translated.trim(), '', `${slug}/${field}: empty source field stays empty`);
       assert.deepEqual(translated.match(/\d+(?:[.,:/-]\d+)*/g), original[field].match(/\d+(?:[.,:/-]\d+)*/g), `${slug}/${field}: numeric integrity`);
       assert.equal(translated.split('\n').length, original[field].split('\n').length, `${slug}/${field}: no missing lines`);
     }
