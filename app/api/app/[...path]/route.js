@@ -250,6 +250,15 @@ async function handle(request, { params }) {
       )
       if (joined === 'guest/bootstrap' && method === 'GET')
         return json(await guestRepo.bootstrap(credential))
+      if (joined === 'guest/test-plans' && method === 'POST')
+        return json(await guestRepo.createTestPlan(credential, await readBody(request)), 201)
+      if (path[1] === 'test-plans' && path.length === 3 && method === 'GET')
+        return json(await guestRepo.getTestPlan(credential, path[2]))
+      if (path[1] === 'test-plans' && path.length === 4 && method === 'POST') {
+        const body = await readBody(request)
+        if (path[3] === 'advance') return json(await guestRepo.advanceTestPlan(credential, path[2], body))
+        if (path[3] === 'cancel') return json(await guestRepo.cancelTestPlan(credential, path[2], body))
+      }
       if (joined === 'guest/mood' && method === 'POST')
         return json(await guestRepo.moodCheckin(credential, await readBody(request)), 201)
       if (joined === 'guest/runs' && method === 'POST')
@@ -317,6 +326,15 @@ async function handle(request, { params }) {
       )
     }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if (joined === 'test-plans' && method === 'POST')
+      return json(await repo.createTestPlan(actor, await readBody(request)), 201)
+    if (path[0] === 'test-plans' && path.length === 2 && method === 'GET')
+      return json(await repo.getTestPlan(actor, path[1]))
+    if (path[0] === 'test-plans' && path.length === 3 && method === 'POST') {
+      const body = await readBody(request)
+      if (path[2] === 'advance') return json(await repo.advanceTestPlan(actor, path[1], body))
+      if (path[2] === 'cancel') return json(await repo.cancelTestPlan(actor, path[1], body))
+    }
     if (joined === 'practitioner/open' && method === 'POST') {
       const body = await readBody(request)
       onlyKeys(body, ['destination'])

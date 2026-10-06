@@ -261,12 +261,14 @@ test('signed-in tests use the registry-driven Mind–Body Monitor catalogue', as
   assert.ok(workspace.includes('/images/holistic-house/video-posters/services-en-v2.webp'))
 })
 
-test('external Cabinet does not auto-open an unfinished guest test on page load', async () => {
+test('external Cabinet resumes only a server-owned consented test plan from its explicit plan URL', async () => {
   const landing = await readFile('components/app/cabinet-landing.jsx', 'utf8')
   assert.ok(landing.includes("setPhase('catalog')"))
   assert.ok(landing.includes("bootstrap.runs.find((item) => item.definitionId === def.id)"))
   assert.ok(!landing.includes("const existing = bootstrap.runs.at(-1)"))
-  assert.ok(landing.includes('A saved draft resumes only after the visitor explicitly chooses that test card.'))
+  assert.ok(landing.includes("const planId = searchParams.get('plan')"))
+  assert.ok(landing.includes("guest/test-plans/"))
+  assert.ok(landing.includes("getDefinitionById(plan.definitionIds[plan.currentIndex])"))
 })
 
 test('public and signed-in Cabinet share a white mood card with three separate mood buttons', async () => {
