@@ -31,6 +31,7 @@ test("shared showcase has compact contents, visual panels and a clear choice act
   assert.match(component, /catalog-showcase-media/);
   assert.match(component, /catalog-showcase-action/);
   assert.match(component, /actionLabel/);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.catalog-showcase \{[\s\S]*?width: 100%/);
   assert.match(styles, /grid-template-columns: 76px minmax\(0, 1fr\) 24px/);
   assert.match(styles, /min-height: 72px/);
   assert.match(styles, /font-size: 18px/);
