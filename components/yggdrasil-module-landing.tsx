@@ -5,6 +5,7 @@ import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { YggdrasilCurriculum } from "@/components/yggdrasil-curriculum";
+import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings, type YggdrasilModuleLanding } from "@/data/academy/yggdrasil-module-map";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -73,6 +74,8 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
 
         <aside className="academy-archive-notice">{copy.notice}</aside>
         <p className="yggdrasil-program-source-note">{copy.source}</p>
+
+        {module.levelId <= 2 ? <YggdrasilEnglishVideoGuide locale={locale} compact /> : null}
 
         <YggdrasilCurriculum locale={locale} levelId={module.levelId} showSupport={module.levelId === 1} />
 
