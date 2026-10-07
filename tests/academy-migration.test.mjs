@@ -450,11 +450,14 @@ test("Academy promotes DAO Reiki Yggdrasil and Tantra Reiki as separate programs
   assert.match(hub, /\/academy\/reiki\/tantra-reiki/);
   assert.match(recordPage, /YggdrasilProgramLanding/);
   assert.match(routePage, /reiki\/master-shamanic-healing.*redirect/s);
-  assert.match(landing, /basic-course-description/);
-  assert.match(landing, /#yggdrasil-basic-course-learning/);
+  assert.match(routePage, /yggdrasil\/basic-course/);
+  assert.match(routePage, /YggdrasilModuleLandingPage/);
+  assert.match(routePage, /YggdrasilSourceArchivePage/);
+  assert.match(landing, /yggdrasil\/basic-course/);
+  assert.match(landing, /yggdrasil\/instructor-course/);
+  assert.match(landing, /yggdrasilModuleLandings/);
   const curriculumComponent = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
   assert.match(curriculumComponent, /id=\{level\.id === 1 \? "yggdrasil-basic-course-learning"/);
-  assert.match(landing, /yggdrasilProgramModules/);
   assert.match(programMap, /number: 10/);
   assert.match(programMap, /localUrl: "\/academy\/reiki-yggdrasil\/source\/school-introduction\.jpg"/);
   assert.match(programMap, /localUrl: "\/academy\/reiki-yggdrasil\/source\/program-overview\.jpg"/);
