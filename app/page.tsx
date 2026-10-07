@@ -9,8 +9,8 @@ import { uiLocaleCookie } from "@/lib/ui-locale";
 import { publicLocaleCookie } from "@/lib/public-locales";
 type PageProps = { searchParams: Promise<{ lang?: string | string[] }> };
 const meta = {
-  en: { title: "Holistic House — inner development, practice and personal work", description: "Holistic House: individual sessions, programs and workshops, a remedy reference library, books, and author materials." },
-  ru: { title: "Holistic House — развитие, практики и индивидуальная работа", description: "Holistic House: индивидуальные сессии, программы и воркшопы, навигация по препаратам, книги и авторские материалы." },
+  en: { title: "Holistic House — inner development, practice and personal work", description: "Holistic House: personal sessions, free self-checks, Academy programs, books, and a practical reference library." },
+  ru: { title: "Holistic House — развитие, практики и индивидуальная работа", description: "Holistic House: индивидуальная работа, бесплатные self-checks, программы Academy, книги и справочная библиотека." },
 } as const;
 async function homeLocale(searchParams: PageProps["searchParams"]): Promise<Locale> {
   const [{ lang }, cookieStore] = await Promise.all([searchParams, cookies()]);
