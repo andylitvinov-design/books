@@ -202,3 +202,75 @@
   .yggdrasil-source-gallery-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .yggdrasil-source-gallery .yggdrasil-source-visual { min-height: 120px; }
 }
+
+/* Tantra Reiki quick level overview */
+.tantra-level-summary {
+  margin: 18px 0 26px;
+  border: 1px solid #ddcfbf;
+  background: #fbf5ec;
+  padding: clamp(18px, 3vw, 28px);
+}
+.tantra-level-summary__heading { max-width: 760px; }
+.tantra-level-summary__heading h2 {
+  margin: 3px 0 8px;
+  color: #3a291f;
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 4.2vw, 42px);
+  font-weight: 400;
+  line-height: 1.05;
+}
+.tantra-level-summary__heading > p:last-child {
+  margin: 0;
+  color: #6a5a4e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.tantra-level-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+.tantra-level-summary__card {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border-top: 1px solid #d8c7b7;
+  padding: 14px 0 4px;
+}
+.tantra-level-summary__number {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #b9957d;
+  border-radius: 50%;
+  color: #784d36;
+  font-family: var(--font-serif);
+  font-size: 14px;
+}
+.tantra-level-summary__card h3 {
+  margin: 1px 0 5px;
+  color: #3c2a20;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+.tantra-level-summary__card p {
+  margin: 0;
+  color: #6b5c50;
+  font-size: 11px;
+  line-height: 1.52;
+}
+@media (max-width: 900px) {
+  .tantra-level-summary__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .tantra-level-summary { margin-top: 12px; padding: 16px 14px 18px; }
+  .tantra-level-summary__grid { grid-template-columns: 1fr; gap: 6px; }
+  .tantra-level-summary__card { grid-template-columns: 34px minmax(0, 1fr); padding-top: 12px; }
+  .tantra-level-summary__card h3 { font-size: 17px; }
+  .tantra-level-summary__card p { font-size: 12px; }
+}
