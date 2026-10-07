@@ -1,9 +1,8 @@
 import Link from "next/link";
 
-import { YggdrasilCurriculum } from "@/components/yggdrasil-curriculum";
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
+import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
 import {
-  yggdrasilProgramModules,
   yggdrasilProgramSourcePage,
   yggdrasilSourceImages,
 } from "@/data/academy/yggdrasil-program-map";
@@ -13,139 +12,109 @@ type BasicStep = {
   id: string;
   number: number;
   title: Record<PublicLocale, string>;
-  sourceText: {
-    intro: string;
-    meaning: string;
-    result: string;
-  };
+  sourceText: { intro: string; meaning: string; result: string };
   settings: Array<{ id: string; title: string }>;
 };
 
 const basicStepDescriptions: Record<number, Record<PublicLocale, string>> = {
   1: {
-    en: "An introduction to the Reiki Yggdrasil flow through body awareness, intuition, protection and work with a chosen situation.",
-    ru: "Вход в поток Рейки Иггдрасиль через внимание к телу, интуицию, защиту и работу с выбранной ситуацией.",
-    es: "Introducción al flujo de Reiki Yggdrasil mediante conciencia corporal, intuición, protección y trabajo con una situación elegida.",
+    en: "Health, intuition, protection and working with a chosen situation: the entry point into the Reiki Yggdrasil flow.",
+    ru: "Здоровье, интуиция, защита и работа с выбранной ситуацией — вход в поток Рейки Иггдрасиль.",
+    es: "Salud, intuición, protección y trabajo con una situación elegida: entrada al flujo Reiki Yggdrasil.",
   },
   2: {
-    en: "Cleansing and resource work: releasing what feels excessive, then directing attention toward stability, opportunities and money-related goals.",
-    ru: "Очищение и ресурсная работа: освобождение от лишнего и затем направление внимания на устойчивость, возможности и денежные цели.",
-    es: "Limpieza y trabajo con recursos: soltar lo innecesario y orientar la atención hacia estabilidad, oportunidades y objetivos económicos.",
+    en: "Cleansing, charging objects and money-flow activation: releasing what feels excessive and directing attention toward resource.",
+    ru: "Очищение, зарядка объектов и денежная активация: освобождение от лишнего и направление внимания на ресурс.",
+    es: "Limpieza, carga de objetos y activación del flujo del dinero: liberar lo innecesario y orientar la atención al recurso.",
   },
   3: {
-    en: "Predestination and personal power: clarifying direction, intention and the ability to act with more inner coherence.",
-    ru: "Предопределение и личная сила: прояснение направления, намерения и способности действовать более собранно.",
-    es: "Predestinación y poder personal: clarificar dirección, intención y capacidad de actuar con mayor coherencia interna.",
+    en: "Predestination, power, emotion, sexuality, intellect, karma and flight: direction and personal strength.",
+    ru: "Предопределение, сила, эмоция, сексуальность, интеллект, карма и полёт: направление и личная сила.",
+    es: "Predestinación, poder, emoción, sexualidad, intelecto, karma y vuelo: dirección y fuerza personal.",
   },
   4: {
-    en: "A perception-focused level devoted to observation, imagery and the traditional extrasensory-vision language of the system.",
-    ru: "Ступень восприятия: наблюдение, образы и традиционный для системы язык сверхчувственного видения.",
-    es: "Nivel centrado en percepción, observación, imágenes y el lenguaje tradicional de visión extrasensorial del sistema.",
+    en: "Extrasensory vision, past-life imagery, situation creation and knowledge: the perception-focused level.",
+    ru: "Сверхчувственное видение, прошлые жизни, создание ситуации и знание — ступень восприятия.",
+    es: "Visión extrasensorial, vidas pasadas, creación de situaciones y conocimiento: nivel de percepción.",
   },
   5: {
-    en: "The master level of the Basic Course, integrating the previous four levels into a more independent practice.",
-    ru: "Мастерская ступень Базового курса, объединяющая предыдущие четыре уровня в более самостоятельную практику.",
-    es: "Nivel de maestría del Curso Básico que integra los cuatro niveles anteriores en una práctica más autónoma.",
+    en: "Connection with the World and the Gods: the Master Level integrating the Basic Course.",
+    ru: "Связь с Миром и Богами — мастерская ступень, объединяющая Базовый курс.",
+    es: "Conexión con el Mundo y los Dioses: nivel de maestro que integra el Curso Básico.",
   },
 };
 
-const copy: Record<PublicLocale, {
-  eyebrow: string;
-  title: string;
-  lead: string;
-  start: string;
-  basicDescription: string;
-  mapEyebrow: string;
-  mapTitle: string;
-  mapLead: string;
-  module: string;
-  basicEyebrow: string;
-  basicTitle: string;
-  basicLead: string;
-  basicLevel: string;
-  basicSettings: string;
-  fullEyebrow: string;
-  fullTitle: string;
-  fullLead: string;
-  photosEyebrow: string;
-  photosTitle: string;
-  photosLead: string;
-  source: string;
-  sourceNote: string;
-}> = {
+const copy = {
   en: {
     eyebrow: "Academy · Current program",
     title: "DAO Reiki Yggdrasil",
-    lead: "A clear entrance to the complete system: first see the full program map, then open the five-level Basic Course, and continue into the detailed canonical curriculum.",
-    start: "Take the Basic Reiki Yggdrasil Course",
-    basicDescription: "Basic Course description",
-    mapEyebrow: "System map",
-    mapTitle: "All modules of Reiki Yggdrasil",
-    mapLead: "This overview preserves the module logic of the original PsiTrends school page while the detailed curriculum below follows the current canonical Reiki Yggdrasil project.",
+    lead: "The system is now organised as seven clear course landings. Start with the five-level Basic Course, continue through the six-step Instructor Course, then open each advanced module separately.",
+    start: "Open Basic Course",
+    instructor: "Open Instructor Course",
+    archive: "Full historical program text",
+    mapEyebrow: "Current course map",
+    mapTitle: "7 Reiki Yggdrasil modules",
+    mapLead: "Each module has its own landing page with all canonical steps, attunements and verified public video lectures. The older PsiTrends 10-module program wording remains preserved in the historical source archive.",
     module: "Module",
-    basicEyebrow: "Start here",
-    basicTitle: "Basic Reiki Yggdrasil Course · 5 levels",
-    basicLead: "The first module is shown separately so the beginning of the learning path is immediately understandable.",
+    open: "Open module",
+    basicEyebrow: "Basic Course preview",
+    basicTitle: "Basic Course · 5 levels",
+    basicLead: "The first five levels are shown here as a quick orientation. The dedicated Basic Course landing contains the full descriptions, attunements, videos and practice material.",
     basicLevel: "Level",
     basicSettings: "attunements",
-    fullEyebrow: "Complete curriculum",
-    fullTitle: "Detailed learning path",
-    fullLead: "After the overview, explore the complete current course structure with all levels, steps, attunements and verified public video lectures.",
     photosEyebrow: "Source preservation",
-    photosTitle: "Historical module imagery",
-    photosLead: "The original images used on the PsiTrends Reiki Yggdrasil program page are retained here with their source provenance so the visual history of the program is not lost.",
-    source: "Open original source",
-    sourceNote: "Source structure and imagery: PsiTrends. Detailed curriculum: canonical Reiki Yggdrasil project.",
+    photosTitle: "Historical program imagery",
+    photosLead: "Original PsiTrends Reiki Yggdrasil program images are preserved with their provenance.",
+    source: "Open original PsiTrends source",
+    sourceNote: "Current detailed curriculum: canonical Reiki Yggdrasil project. Historical program text and imagery: PsiTrends.",
   },
   ru: {
     eyebrow: "Академия · Актуальная программа",
     title: "Дао Рейки Иггдрасиль",
-    lead: "Понятный вход в полную систему: сначала вся карта программы, затем отдельно пять ступеней Базового курса, после этого — детальная актуальная структура обучения.",
-    start: "Пройти Базовый курс Рейки Иггдрасиль",
-    basicDescription: "Описание базового курса Рейки Иггдрасиль",
-    mapEyebrow: "Карта системы",
-    mapTitle: "Все модули Рейки Иггдрасиль",
-    mapLead: "Обзор сохраняет логику модулей исходной страницы школы PsiTrends, а подробная программа ниже следует актуальному каноническому проекту Reiki Yggdrasil.",
+    lead: "Теперь система разложена на семь понятных отдельных лендингов. Сначала Базовый курс из пяти уровней, затем Инструкторский курс из шести ступеней, после него — каждый продвинутый модуль отдельно.",
+    start: "Открыть Базовый курс",
+    instructor: "Открыть Инструкторский курс",
+    archive: "Полный исторический текст программы",
+    mapEyebrow: "Актуальная карта обучения",
+    mapTitle: "7 модулей Рейки Иггдрасиль",
+    mapLead: "Каждый модуль получил отдельную страницу со всеми каноническими ступенями, настройками и проверенными публичными видеолекциями. Старая 10-модульная формулировка PsiTrends сохранена в полном историческом архиве.",
     module: "Модуль",
-    basicEyebrow: "Начать отсюда",
-    basicTitle: "Базовый курс Рейки Иггдрасиль · 5 ступеней",
-    basicLead: "Первый модуль вынесен отдельно, чтобы начало обучения и структура первых пяти ступеней были видны сразу.",
-    basicLevel: "Ступень",
+    open: "Открыть модуль",
+    basicEyebrow: "Кратко о Базовом курсе",
+    basicTitle: "Базовый курс · 5 уровней",
+    basicLead: "Здесь пять уровней показаны кратко. На отдельном лендинге Базового курса находятся полные описания, настройки, видео и практические материалы.",
+    basicLevel: "Уровень",
     basicSettings: "настроек",
-    fullEyebrow: "Полная программа",
-    fullTitle: "Детальная структура обучения",
-    fullLead: "После общей карты можно раскрыть актуальную полную структуру курса со всеми уровнями, ступенями, настройками и проверенными публичными видеолекциями.",
     photosEyebrow: "Сохранение источника",
-    photosTitle: "Исторические изображения модулей",
-    photosLead: "Здесь сохранены изображения, использованные на исходной странице программы Reiki Yggdrasil на PsiTrends, вместе со ссылками на источник — чтобы визуальная история программы не потерялась.",
-    source: "Открыть исходную страницу",
-    sourceNote: "Структура и изображения источника: PsiTrends. Детальная программа: канонический проект Reiki Yggdrasil.",
+    photosTitle: "Исторические изображения программы",
+    photosLead: "Оригинальные изображения страницы Reiki Yggdrasil на PsiTrends сохранены вместе с происхождением.",
+    source: "Открыть исходную страницу PsiTrends",
+    sourceNote: "Актуальная детальная программа: канонический проект Reiki Yggdrasil. Исторический текст и изображения: PsiTrends.",
   },
   es: {
     eyebrow: "Academia · Programa actual",
     title: "DAO Reiki Yggdrasil",
-    lead: "Una entrada clara al sistema completo: primero el mapa del programa, luego los cinco niveles del Curso Básico y después el currículo canónico detallado.",
-    start: "Realizar el Curso Básico de Reiki Yggdrasil",
-    basicDescription: "Descripción del Curso Básico",
-    mapEyebrow: "Mapa del sistema",
-    mapTitle: "Todos los módulos de Reiki Yggdrasil",
-    mapLead: "El resumen conserva la lógica modular de la página original de PsiTrends, mientras que el currículo detallado sigue el proyecto canónico actual de Reiki Yggdrasil.",
+    lead: "El sistema está organizado en siete páginas de curso: Curso Básico, Curso de Instructor y cada módulo avanzado por separado.",
+    start: "Abrir Curso Básico",
+    instructor: "Abrir Curso de Instructor",
+    archive: "Texto histórico completo",
+    mapEyebrow: "Mapa formativo actual",
+    mapTitle: "7 módulos Reiki Yggdrasil",
+    mapLead: "Cada módulo tiene su propia página con etapas, sintonizaciones y videoclases verificadas.",
     module: "Módulo",
-    basicEyebrow: "Empieza aquí",
-    basicTitle: "Curso Básico de Reiki Yggdrasil · 5 niveles",
-    basicLead: "El primer módulo se muestra por separado para que el inicio del recorrido y sus cinco niveles sean claros desde el principio.",
+    open: "Abrir módulo",
+    basicEyebrow: "Vista rápida del Curso Básico",
+    basicTitle: "Curso Básico · 5 niveles",
+    basicLead: "La página específica del Curso Básico contiene las descripciones completas, sintonizaciones, videos y materiales.",
     basicLevel: "Nivel",
     basicSettings: "sintonizaciones",
-    fullEyebrow: "Currículo completo",
-    fullTitle: "Ruta formativa detallada",
-    fullLead: "Después del mapa general puedes explorar la estructura actual completa con todos los niveles, etapas, sintonizaciones y videoclases públicas verificadas.",
     photosEyebrow: "Preservación de la fuente",
-    photosTitle: "Imágenes históricas de los módulos",
-    photosLead: "Se conservan las imágenes originales utilizadas en la página de Reiki Yggdrasil de PsiTrends junto con su procedencia.",
-    source: "Abrir fuente original",
-    sourceNote: "Estructura e imágenes: PsiTrends. Currículo detallado: proyecto canónico Reiki Yggdrasil.",
+    photosTitle: "Imágenes históricas",
+    photosLead: "Se conservan las imágenes originales del programa PsiTrends.",
+    source: "Abrir fuente original de PsiTrends",
+    sourceNote: "Currículo actual: proyecto canónico Reiki Yggdrasil. Fuente histórica: PsiTrends.",
   },
-};
+} satisfies Record<PublicLocale, Record<string, string>>;
 
 function SourceVisual({ url, label, className = "" }: { url: string; label: string; className?: string }) {
   return (
@@ -173,8 +142,9 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           <h2>{text.title}</h2>
           <p>{text.lead}</p>
           <div className="yggdrasil-program-actions">
-            <a className="yggdrasil-primary-action" href="#yggdrasil-basic-course-learning">{text.start}</a>
-            <a className="yggdrasil-secondary-action" href="#basic-course-description">{text.basicDescription}</a>
+            <Link className="yggdrasil-primary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
+            <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/instructor-course`}>{text.instructor}</Link>
+            <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/archive`}>{text.archive}</Link>
           </div>
         </div>
       </section>
@@ -184,14 +154,14 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         <h2>{text.mapTitle}</h2>
         <p className="yggdrasil-program-section-lead">{text.mapLead}</p>
         <div className="yggdrasil-module-grid">
-          {yggdrasilProgramModules.map((module) => (
-            <article className="yggdrasil-module-card" key={module.id}>
-              {module.imageUrl ? <SourceVisual url={module.imageUrl} label={module.title[locale]} /> : <div className="yggdrasil-module-placeholder" aria-hidden="true">{String(module.number).padStart(2, "0")}</div>}
+          {yggdrasilModuleLandings.map((module) => (
+            <article className="yggdrasil-module-card" key={module.slug}>
+              <SourceVisual url={module.image} label={module.title[locale]} />
               <div className="yggdrasil-module-card-copy">
-                <small>{text.module} {module.number}</small>
+                <small>{text.module} {module.levelId}</small>
                 <h3>{module.title[locale]}</h3>
-                <p>{module.description[locale]}</p>
-                {module.id === "basic" ? <a href="#basic-course-description">{text.basicDescription}<span aria-hidden="true"> →</span></a> : null}
+                <p>{module.lead[locale]}</p>
+                <Link href={`/${locale}/academy/reiki/yggdrasil/${module.slug}`}>{text.open}<span aria-hidden="true"> →</span></Link>
               </div>
             </article>
           ))}
@@ -203,26 +173,20 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           <p className="homeopathy-kicker">{text.basicEyebrow}</p>
           <h2>{text.basicTitle}</h2>
           <p>{text.basicLead}</p>
+          <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}<span aria-hidden="true">→</span></Link>
         </div>
-        <div className="yggdrasil-basic-levels" id="basic-course-description">
+        <div className="yggdrasil-basic-levels">
           {basicSteps.map((step) => (
             <article className="yggdrasil-basic-level-card" key={step.id}>
               <div className="yggdrasil-basic-level-number">{String(step.number).padStart(2, "0")}</div>
               <div>
                 <small>{text.basicLevel} {step.number} · {step.settings.length} {text.basicSettings}</small>
                 <h3>{step.title[locale]}</h3>
-                <p>{basicStepDescriptions[step.number]?.[locale] ?? step.sourceText.intro}</p>
+                <p>{basicStepDescriptions[step.number][locale]}</p>
               </div>
             </article>
           ))}
         </div>
-      </section>
-
-      <section className="yggdrasil-program-section yggdrasil-full-curriculum" id="full-curriculum">
-        <p className="homeopathy-kicker">{text.fullEyebrow}</p>
-        <h2>{text.fullTitle}</h2>
-        <p className="yggdrasil-program-section-lead">{text.fullLead}</p>
-        <YggdrasilCurriculum locale={locale} />
       </section>
 
       <section className="yggdrasil-source-gallery" aria-labelledby="yggdrasil-source-gallery-title">
@@ -238,6 +202,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           ))}
         </div>
         <p className="yggdrasil-program-source-note">{text.sourceNote}</p>
+        <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/archive`}>{text.archive}<span aria-hidden="true">→</span></Link>
         <Link className="yggdrasil-source-link" href={yggdrasilProgramSourcePage} target="_blank" rel="noreferrer">{text.source}<span aria-hidden="true">↗</span></Link>
       </section>
     </div>
