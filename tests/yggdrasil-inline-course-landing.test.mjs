@@ -13,11 +13,12 @@ test("Reiki Yggdrasil course landing shows key information without opening step 
   assert.doesNotMatch(component, /<details className="yggdrasil-step">/);
 });
 
-test("only detailed attunement descriptions and videos remain optional", async () => {
+test("key information and videos stay visible while only detailed attunement descriptions remain optional", async () => {
   const component = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
   assert.match(component, /<details className="yggdrasil-step-more">/);
-  assert.match(component, /Full attunement descriptions & video lectures/);
-  assert.match(component, /Полные описания настроек и видеолекции/);
+  assert.match(component, /Full attunement descriptions/);
+  assert.match(component, /Полные описания настроек/);
+  assert.match(component, /className="yggdrasil-step-video-library"/);
   assert.match(component, /source\.meaning/);
   assert.match(component, /source\.result/);
   assert.match(component, /source\.opens/);
