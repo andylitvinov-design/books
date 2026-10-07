@@ -322,8 +322,8 @@ export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { l
   return (
     <section className="yggdrasil-curriculum" aria-labelledby="yggdrasil-curriculum-title">
       <div className="yggdrasil-curriculum-intro">
-        <p className="homeopathy-kicker">{text.eyebrow}</p>
-        <h2 id="yggdrasil-curriculum-title">{selected ? selected.title[locale] : text.title}</h2>
+        <p className="homeopathy-kicker">{selected ? (locale === "ru" ? "Курс без лишних кликов" : locale === "es" ? "Curso sin clics innecesarios" : "Course without extra clicks") : text.eyebrow}</p>
+        <h2 id="yggdrasil-curriculum-title">{selected ? (locale === "ru" ? "Что входит в курс" : locale === "es" ? "Qué incluye el curso" : "What the course includes") : text.title}</h2>
         <p>{selected ? selected.theme[locale] : text.lead}</p>
         <div className="yggdrasil-source-stats" aria-label="Source coverage">
           <span>{settingsCount} {locale === "ru" ? "настроек" : locale === "es" ? "sintonizaciones" : "attunements"}</span>
