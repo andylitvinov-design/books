@@ -96,7 +96,7 @@ const copy = {
       { n: "03", title: "Духовное развитие", note: "Верхний Дянь Тянь" },
     ],
     scaleTitle: "Как читать шкалу",
-    scaleText: "Все 18 ступеней показывают рост внутреннего ресурса по авторской шкале от 1 до 10.",
+    scaleText: "Первые два этапа содержат по 7 ступеней, третий — 4. Всего 18 ступеней. Они показывают рост внутреннего ресурса по авторской шкале от 1 до 10.",
     scale: [
       { range: "1–5", label: "ресурс здоровья" },
       { range: "5–8", label: "ресурс успеха" },
@@ -356,8 +356,8 @@ export default async function WuXingPage({ params }: Props) {
             <a href={item.href} key={item.href} rel="noreferrer" target="_blank">{item.label} ↗</a>
           ))}
           <span>{text.trauma}</span>
-          <Link href={`/${locale}/books`}>{text.daoPath}</Link>
-          <Link href={`/${locale}/books`}>{text.intro}</Link>
+          <span>{text.daoPath}</span>
+          <span>{text.intro}</span>
           <Link href={`/${locale}/books`}>{text.books}</Link>
         </div>
       </section>
