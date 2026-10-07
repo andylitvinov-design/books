@@ -22,7 +22,8 @@ test("Tantra Reiki bypasses the Academy summary/claim filter and renders its pho
   const page = await readFile("components/academy-record-page.tsx", "utf8");
 
   assert.match(catalog, /tantraReikiFullBlocks/);
-  assert.match(catalog, /record\.logicalId === "reiki\/tantra-reiki"\) return blocks/);
+  assert.match(catalog, /record\.logicalId === "reiki\/tantra-reiki"/);
+  assert.match(catalog, /return blocks;/);
   assert.match(catalog, /tantraReikiImages/);
   assert.match(page, /Ниже перенесён полный текст исходных материалов PsiTrends без пересказа и сокращения/);
   assert.match(page, /academy-photo-grid/);
