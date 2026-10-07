@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = pageTitle(locale, slug);
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
-  const module = child ? yggdrasilModuleBySlug(child) : null;
+  const courseModule = child ? yggdrasilModuleBySlug(child) : null;
   const description = courseModule
     ? courseModule.lead[locale]
     : routeKey(slug) === "reiki/yggdrasil"
