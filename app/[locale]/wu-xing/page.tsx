@@ -6,226 +6,243 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { metadataBaseFor } from "@/data/site-metadata";
 import type { PublicLocale } from "@/lib/public-locales";
 
+import styles from "./wu-xing-manual.module.css";
+
 type Props = { params: Promise<{ locale: string }> };
 
-const miasmUpdate = {
-  ru: {
-    title: "Новая авторская заметка · миазмы × У-Син",
-    lead: "В публикации 1072 автор переосмысливает миазмы как символическую карту глубинных защитных стратегий и сопоставляет их пяти стихиям.",
-    items: [
-      "Металл — сифилитическая динамика: разрушение структуры / поиск внутреннего стержня.",
-      "Вода — псорическая динамика: истощение.",
-      "Дерево — карциносная динамика: стыд, достоинство, желание нравиться.",
-      "Огонь — туберкулиновая динамика: свобода, ограничения, воля и вина.",
-      "Земля — сикотическая динамика: скрыть или проявиться, держать в себе или быть услышанным.",
-    ],
-    note: "Это авторская психообразовательная гипотеза, а не общепринятая медицинская классификация и не способ диагностики или лечения заболеваний.",
-    source: "Открыть исходную публикацию 1072",
-  },
-  en: {
-    title: "New author note · miasms × Wu Xing",
-    lead: "In post 1072 the author reframes miasms as a symbolic map of deep protective strategies and relates them to the five elements.",
-    items: [
-      "Metal — syphilitic dynamic: breakdown of structure / search for an inner core.",
-      "Water — psoric dynamic: depletion.",
-      "Wood — carcinosin dynamic: shame, dignity and the wish to please.",
-      "Fire — tubercular dynamic: freedom, restriction, will and guilt.",
-      "Earth — sycotic dynamic: conceal or express, hold in or be heard.",
-    ],
-    note: "This is an author-developed psychoeducational hypothesis, not a standard medical classification and not a method for diagnosing or treating disease.",
-    source: "Open source post 1072",
-  },
-  es: {
-    title: "Nueva nota del autor · miasmas × Wu Xing",
-    lead: "En la publicación 1072 el autor reinterpreta los miasmas como un mapa simbólico de estrategias protectoras profundas y los relaciona con los cinco elementos.",
-    items: [
-      "Metal — dinámica sifilítica: ruptura de estructura / búsqueda de eje interno.",
-      "Agua — dinámica psórica: agotamiento.",
-      "Madera — dinámica carcinosínica: vergüenza, dignidad y deseo de agradar.",
-      "Fuego — dinámica tuberculínica: libertad, límites, voluntad y culpa.",
-      "Tierra — dinámica sicótica: ocultar o expresar, contener o ser escuchado.",
-    ],
-    note: "Es una hipótesis psicoeducativa del autor, no una clasificación médica estándar ni un método de diagnóstico o tratamiento.",
-    source: "Abrir publicación fuente 1072",
-  },
-} as const;
+type Stage = {
+  number: number;
+  name: string;
+  resource: string;
+  text: string;
+  direction?: string;
+};
+
+const stagesRu: Stage[] = [
+  { number: 1, name: "Шторм (хаос)", resource: "1–2 ед.", text: "Болезнь, нет опоры, сил. Энергия как будто сползает вниз, проваливается.", direction: "Даем опору." },
+  { number: 2, name: "Снежная королева", resource: "2–2.5 ед.", text: "Замороженность жизни. Ресурс еще не активен, но не исчезает. Появляется первая точка опоры, равновесия.", direction: "Даем тепло." },
+  { number: 3, name: "Прометей", resource: "2.5–3.0 ед.", text: "Нестабильность ресурса. Первое наполнение силой. Свечение жизни. Ресурс уже можно нащупать, он начинает излучать, но пока очень мягко.", direction: "Даем структуру." },
+  { number: 4, name: "Крепость", resource: "3.0–3.5 ед.", text: "Начинается чувствоваться первая ось. Она пока слаба, но человек уже не соскальзывает в дефицит.", direction: "Даем проявленность." },
+  { number: 5, name: "Король / Королева", resource: "3.5–4.0 ед.", text: "Идут первые импульсы вовне. Заполнение пространства, проявление Я, свободной воли.", direction: "Даем силу." },
+  { number: 6, name: "Капитан", resource: "4.0–4.5 ед.", text: "Достаточно крепкий стержень. Есть способность заявлять о себе, подстраивать мир под себя. Пока слегка жестковато и скованно.", direction: "Даем мягкость." },
+  { number: 7, name: "Ручей", resource: "4.5–5.0 ед.", text: "Проявляются импульсы интереса к контакту с миром. Любопытство к мягкому взаимодействию.", direction: "Даем смелость." },
+  { number: 8, name: "Река", resource: "5.0–5.5 ед.", text: "Уже ощущается некоторая мягкая полнота, изобилие, но пока робкая, смущенная." },
+  { number: 9, name: "Озеро", resource: "5.5–6.0 ед.", text: "Возникает желание мягко делиться с миром своим ресурсом, тем, что накоплено, формировать связи и процессы." },
+  { number: 10, name: "Хозяин Гавани", resource: "6.0–6.5 ед.", text: "Легкий праздник. Открытие гавани. Возникает желание выходить в более большой мир, проявляться." },
+  { number: 11, name: "Парусник", resource: "6.5–7.0 ед.", text: "Больше целеустремленности. Есть цели, желание в большом мире довести их до реализации." },
+  { number: 12, name: "Владыка водопада", resource: "7.0–7.5 ед.", text: "Есть уверенность в том, что ты делаешь, смелость, готовность вещать широко, рассказывать, делиться, проявляться." },
+  { number: 13, name: "Дельта реки", resource: "7.5–8.0 ед.", text: "Возникает некоторая гордость, самоуверенность. Ощущение приближения миссии, значимости того, что ты делаешь, готовности вовлечь мир." },
+  { number: 14, name: "Океан / Хранитель морей", resource: "8.0–8.5 ед.", text: "Ощущение масштаба. Значимости и ценности того, что ты делаешь для мира. Самодостаточность, личная гордость, ценность." },
+  { number: 15, name: "Провидец / Исток реки в горах", resource: "8.5 ед.", text: "Соединение с ДАО. Ощущение, что тебя несет поток, волна. Ты делаешь не для себя, а помогаешь реализоваться через себя более большим течениям. Влияешь на сознание других через свою модель мышления, видение, философию." },
+  { number: 16, name: "Пустота / Дао Сюй", resource: "9 ед.", text: "Ты глубоко связан с какими-то линиями мира и реальности. Сам уже не столько творишь, сколько помогаешь реальности более мягко развернуться в определенном направлении. Больше даешь подсказки другим." },
+  { number: 17, name: "У-Вэй / Закон", resource: "9.5 ед.", text: "Глубокая связь со Стихиями, Дао. Ты больше направлен на то, чтобы помочь другим найти эту связь с Дао своим состоянием и присутствием. Материальные вопросы интересуют меньше." },
+  { number: 18, name: "У-цзи / Беспредельное", resource: "10 ед.", text: "Ты постоянно включен и сонастроен с Дао. Ты живешь в Дао. Ты и есть часть Дао. Основное внимание — на сохранении этой связи." },
+];
+
+const stagesEn: Stage[] = [
+  { number: 1, name: "Storm (chaos)", resource: "1–2", text: "Illness, little support or strength. Energy feels as if it is sliding downward or falling through.", direction: "Give support." },
+  { number: 2, name: "Snow Queen", resource: "2–2.5", text: "Life feels frozen. Resource is not yet active, but it is no longer disappearing. The first point of support and balance appears.", direction: "Give warmth." },
+  { number: 3, name: "Prometheus", resource: "2.5–3.0", text: "Resource is unstable. The first filling with strength appears; life begins to glow, but still very softly.", direction: "Give structure." },
+  { number: 4, name: "Fortress", resource: "3.0–3.5", text: "The first inner axis begins to be felt. It is still weak, but the person no longer slips so easily into deficit.", direction: "Give expression." },
+  { number: 5, name: "King / Queen", resource: "3.5–4.0", text: "The first impulses move outward: occupying space, expressing the self and free will.", direction: "Give strength." },
+  { number: 6, name: "Captain", resource: "4.0–4.5", text: "A fairly solid inner core. There is an ability to declare oneself and shape the environment, though still somewhat rigid.", direction: "Give softness." },
+  { number: 7, name: "Stream", resource: "4.5–5.0", text: "Interest in contact with the world appears. There is curiosity toward softer interaction.", direction: "Give courage." },
+  { number: 8, name: "River", resource: "5.0–5.5", text: "A soft sense of fullness and abundance is already present, though still shy and tentative." },
+  { number: 9, name: "Lake", resource: "5.5–6.0", text: "A desire appears to share accumulated resource with the world and to form connections and processes." },
+  { number: 10, name: "Harbour Keeper", resource: "6.0–6.5", text: "A light sense of celebration. The harbour opens and there is a wish to enter a larger world and become more visible." },
+  { number: 11, name: "Sailboat", resource: "6.5–7.0", text: "More purposefulness. Goals are clearer and there is a wish to bring them into reality in the larger world." },
+  { number: 12, name: "Lord of the Waterfall", resource: "7.0–7.5", text: "Confidence in what you do, courage, and readiness to speak widely, share and be visible." },
+  { number: 13, name: "River Delta", resource: "7.5–8.0", text: "Pride and self-confidence grow. There is a sense of approaching mission, meaning and readiness to involve the world." },
+  { number: 14, name: "Ocean / Keeper of the Seas", resource: "8.0–8.5", text: "A sense of scale and of the value of what you do for the world. Self-sufficiency, personal pride and value." },
+  { number: 15, name: "Seer / Mountain Source", resource: "8.5", text: "Connection with Dao. It feels as though a current or wave carries you. You act less for yourself and more as a channel for larger movements, influencing others through vision and philosophy." },
+  { number: 16, name: "Emptiness / Dao Xu", resource: "9", text: "A deep connection with lines of reality. You create less directly and instead help reality unfold more gently in a certain direction, offering guidance to others." },
+  { number: 17, name: "Wu Wei / Law", resource: "9.5", text: "Deep connection with the Elements and Dao. Attention shifts toward helping others find this connection through your state and presence. Material concerns matter less." },
+  { number: 18, name: "Wuji / The Boundless", resource: "10", text: "Continuous attunement with Dao. You live in Dao and experience yourself as part of it. The main task is to preserve this connection." },
+];
+
+const stagesEs: Stage[] = stagesEn.map((stage) => ({ ...stage }));
 
 const copy = {
-  en: {
-    title: "Wu Xing Levels: how to read your personal profile",
-    description: "A client guide to Andy Litvinov's five-elements, eight-phase Wu Xing profile.",
-    kicker: "Guide to your personal Wu Xing diagnostic",
-    heading: "Wu Xing Levels",
-    lead: "A practical way to read your five-elements profile: not as a label, but as a map of current resource, compensation and the next realistic step.",
-    sourceNote: "This guide consolidates Andy Litvinov's working texts “Dao Wu Xing”, “Wu Xing and Psychotherapy”, and later notes on gentle Wu Xing work.",
-    introTitle: "Not “good or bad” — but where you are now",
-    introText: "In this author-developed model, each element can be in a different phase. The purpose of a personal diagnostic is not simply to name a “weak element”, but to see how much of that function is available, how it is being held together, what supports it, and what one step of development is realistic now.",
-    restoreTitle: "Phases 1–4 · Restore",
-    restoreText: "First restore contact, reserve, regulation and a reliable base. Growth that outruns the base usually becomes another form of strain.",
-    growTitle: "Phases 5–8 · Unfold",
-    growText: "When a function is stable, the same element can become maturity, creativity, contribution and an integrated personal strength.",
-    elementsTitle: "Five elements — five human functions",
-    elementsLead: "The elements are read here as a cycle of psychological functions. A person may have a strong resource in one function and need support in another.",
-    elements: [
-      { symbol: "水", name: "Water", role: "Safety & support", development: "Birth · contact · receiving care", text: "Deep safety, trust, endurance and the ability to receive support. Core question: “I exist. Can I rely, receive care and stay in contact with myself?”" },
-      { symbol: "木", name: "Wood", role: "Autonomy & movement", development: "Autonomy · will · action", text: "Impulse, desire, boundaries, growth and the capacity to act. Core question: “Can I want, separate, choose and move?”" },
-      { symbol: "火", name: "Fire", role: "Feeling & expression", development: "Love · joy · manifestation", text: "Feelings, joy, love, openness and contact with others. Core question: “Can I feel, be seen and express what is alive in me?”" },
-      { symbol: "土", name: "Earth", role: "Value & belonging", development: "Value · care · belonging", text: "Stability, care, practical grounding and being part of a group or relationship. Core question: “Do I matter, and can I belong without losing myself?”" },
-      { symbol: "金", name: "Metal", role: "Identity & form", development: "Identity · structure · completion", text: "Clarity, boundaries, identity, completion and letting go. Core question: “Who am I? What is mine? What needs a clear form or an ending?”" },
-    ],
-    phasesTitle: "Eight phases of resource",
-    phasesLead: "The phase matters more than a single score. It describes how available and integrated a function feels right now.",
-    phases: [
-      { name: "Freeze", text: "Resource is organised around basic safety: withdrawal, constriction or shutting down. The task is not achievement; it is restoring minimal contact and support." },
-      { name: "Depletion", text: "Energy and initiative are low. The next step is replenishment and permission to recover rather than forcing a breakthrough." },
-      { name: "Hypercontrol", text: "The function is maintained through effort, tension or excessive control. The task is to add regulation, flexibility and less costly stability." },
-      { name: "Balance / support", text: "A reliable base appears: more clarity, contact and recovery. This is the foundation from which genuine growth becomes possible." },
-      { name: "Bloom / maturity", text: "The function is sufficiently resourced to move outward into relationships, work, creativity and sustained expression." },
-      { name: "Flow / charisma", text: "The quality moves more freely and can become creativity, influence and aliveness. Direction and grounding still matter." },
-      { name: "Guide / purpose", text: "A mature function starts to become contribution, mastery and meaningful service — while remaining rooted in a personal base." },
-      { name: "Gift / integration", text: "The quality feels natural and deeply integrated: less about proving strength, more about freely using it when life calls for it." },
-    ],
-    methodTitle: "How I read a personal profile",
-    methodLead: "A useful profile is a sequence, not a verdict.",
-    method: [
-      { title: "1. Find the current phase", text: "First ask how the element functions now: shut down, depleted, held by effort, stable, or already unfolding." },
-      { title: "2. Do not attack the weakest element", text: "A low element is not a defect to push harder. Direct activation can create more strain when the base is not ready." },
-      { title: "3. Look for the nourishing function", text: "In the Wu Xing generating cycle, support often comes from the preceding element. For example, when Wood lacks movement, Water — personal support and reserve — may need attention first." },
-      { title: "4. Move one sustainable step", text: "The working formula is: identify the phase → find support → add the smallest useful resource → move one phase forward → stabilise." },
-      { title: "5. Read the whole circle", text: "A strong element can be a resource, a weak one can be a request for support, and an apparently strong element can sometimes be expensive compensation. The pattern matters more than one number." },
-    ],
-    reportTitle: "Use this page next to your personal report",
-    reportText: "When you receive your Wu Xing profile, read it in three passes: which element is the main resource, which function is asking for support, and what the next phase — not the final ideal — looks like. This keeps the work gentle and measurable.",
-    resourceLabel: "Resource",
-    requestLabel: "Support request",
-    nextLabel: "Next phase",
-    resourceText: "What is already available and can support the rest of the system.",
-    requestText: "Where effort is costly, reserve is low, or the function is hard to access.",
-    nextText: "One realistic developmental task to practise and observe before adding more.",
-    ctaTitle: "Want a personal Wu Xing profile?",
-    ctaText: "The diagnostic is an individual interpretation of the five elements and their current phases. Bring your report back to this guide whenever you want to understand the logic behind the result.",
-    ctaPrimary: "Order personal Wu Xing diagnostic",
-    ctaSecondary: "Open Mind–Body Monitor",
-    note: "This is an author-developed self-reflection and psychoeducational framework. It is not a medical diagnosis, does not assess organ disease, and does not replace medical or mental-health care.",
-  },
   ru: {
-    title: "Уровни У-Син: как читать личный профиль",
-    description: "Клиентская методичка по пяти стихиям и восьми фазам ресурса в авторской модели У-Син Андрея Литвинова.",
-    kicker: "Методичка к персональной диагностике У-Син",
-    heading: "Уровни У-Син",
-    lead: "Как читать свой профиль по пяти стихиям: не как ярлык, а как карту текущего ресурса, компенсаций и следующего реалистичного шага.",
-    sourceNote: "Методичка собрана из рабочих текстов Андрея Литвинова «ДАО УСИН», «УСИН и ПСИХОТЕРАПИЯ» и более поздних заметок о мягкой работе с У-Син.",
-    introTitle: "Не «хорошо / плохо», а где вы сейчас",
-    introText: "В этой авторской модели каждая стихия может находиться на своей фазе. Поэтому задача персональной диагностики — не просто назвать «слабую стихию», а увидеть, насколько доступна эта функция, за счёт чего она держится, что её питает и какой следующий шаг сейчас действительно можно встроить.",
-    restoreTitle: "Фазы 1–4 · Восстановление",
-    restoreText: "Сначала возвращаем контакт, запас ресурса, регуляцию и опору. Рост, который обгоняет базу, часто превращается в новое напряжение.",
-    growTitle: "Фазы 5–8 · Раскрытие",
-    growText: "Когда функция уже устойчива, та же стихия может проявляться как зрелость, творчество, вклад и интегрированная сильная сторона.",
-    elementsTitle: "Пять стихий — пять функций личности",
-    elementsLead: "Здесь стихии читаются как цикл психических функций. В одной функции у человека может быть хороший ресурс, а другая в это же время может нуждаться в поддержке.",
-    elements: [
-      { symbol: "水", name: "Вода", role: "Безопасность и опора", development: "Рождение · контакт · принятие заботы", text: "Глубинная безопасность, доверие, выдержка и способность принимать поддержку. Главный вопрос: «Я есть. Могу ли я опираться, принимать заботу и оставаться в контакте с собой?»" },
-      { symbol: "木", name: "Дерево", role: "Автономия и движение", development: "Автономия · воля · действие", text: "Импульс, желание, границы, рост и способность действовать. Главный вопрос: «Могу ли я хотеть, отделяться, выбирать и двигаться?»" },
-      { symbol: "火", name: "Огонь", role: "Чувства и проявленность", development: "Любовь · радость · проявление", text: "Чувства, радость, любовь, открытость и контакт с другими. Главный вопрос: «Могу ли я чувствовать, быть видимым и проявлять то, что во мне живо?»" },
-      { symbol: "土", name: "Земля", role: "Ценность и принадлежность", development: "Ценность · забота · принадлежность", text: "Стабильность, забота, практическая опора и место в отношениях или группе. Главный вопрос: «Я важен? Могу ли я принадлежать, не теряя себя?»" },
-      { symbol: "金", name: "Металл", role: "Идентичность и форма", development: "Идентичность · структура · завершение", text: "Ясность, границы, идентичность, завершение и отпускание. Главный вопрос: «Кто я? Что моё? Чему нужна ясная форма, а что пора завершить?»" },
-    ],
-    phasesTitle: "Восемь фаз ресурса",
-    phasesLead: "Фаза важнее отдельной цифры. Она показывает, насколько функция сейчас доступна и встроена в жизнь.",
+    title: "Даосская алхимия. Уровни здоровья",
+    description: "Авторская методичка Андрея Литвинова: 18 ступеней ресурса в трёх этапах Даосской Алхимии.",
+    kicker: "ДАОССКАЯ АЛХИМИЯ",
+    heading: "Уровни здоровья",
+    badge: "МЕТОДИЧКА",
+    lead: "Простая карта из 18 ступеней: сначала восстановление ресурса, затем социальная проявленность и успех, затем духовное развитие.",
+    stagesTitle: "3 этапа внутренней алхимии",
     phases: [
-      { name: "Заморозка", text: "Ресурс организован вокруг базовой безопасности: сжатие, замирание, уход внутрь. Задача — не достижение, а возвращение минимального контакта и опоры." },
-      { name: "Истощение", text: "Энергии и импульса мало. Следующий шаг — восполнение и разрешение восстанавливаться, а не требование от себя рывка." },
-      { name: "Гиперконтроль", text: "Функция держится усилием, напряжением или чрезмерным контролем. Задача — добавить регуляцию, гибкость и менее затратную устойчивость." },
-      { name: "Баланс / опора", text: "Появляется надёжная база: больше ясности, контакта и восстановления. С этого уровня настоящий рост становится безопаснее." },
-      { name: "Расцвет / зрелость", text: "Ресурса уже достаточно, чтобы функция выходила наружу — в отношения, работу, творчество и устойчивое проявление." },
-      { name: "Поток / харизма", text: "Качество стихии движется свободнее и может становиться творчеством, влиянием и живостью. При этом всё ещё важны направление и основание." },
-      { name: "Проводник / предназначение", text: "Зрелая функция начинает становиться вкладом, мастерством и служением смыслу — при сохранении собственной опоры." },
-      { name: "Дар / интеграция", text: "Качество становится естественным и глубоко встроенным: меньше необходимости доказывать силу, больше свободы пользоваться ею тогда, когда она нужна." },
+      { n: "01", title: "Восстановление ресурсов тела и здоровья", note: "Нижний Дянь Тянь" },
+      { n: "02", title: "Социальная проявленность, дела и отношения", note: "Срединный Дянь Тянь" },
+      { n: "03", title: "Духовное развитие", note: "Верхний Дянь Тянь" },
     ],
-    methodTitle: "Как я читаю персональный профиль",
-    methodLead: "Полезная диагностика — это последовательность, а не приговор.",
-    method: [
-      { title: "1. Сначала определяем фазу", text: "Смотрим, как функция работает сейчас: выключена, истощена, держится усилием, стала устойчивой или уже раскрывается." },
-      { title: "2. Не идём в лоб в самую слабую стихию", text: "Низкий показатель — не дефект, который надо сильнее «качать». Прямая активация может добавить напряжение, если база ещё не готова." },
-      { title: "3. Ищем питающую функцию", text: "В порождающем круге У-Син поддержка часто приходит через предыдущую стихию. Например, если Дереву не хватает движения, сначала может понадобиться Вода — личная опора и запас." },
-      { title: "4. Поднимаемся на один устойчивый шаг", text: "Рабочая формула: определить фазу → найти опору → добавить минимально достаточный ресурс → перейти на следующую фазу → стабилизировать." },
-      { title: "5. Читаем весь круг, а не одну цифру", text: "Сильная стихия может быть ресурсом, слабая — просьбой о поддержке, а внешне сильная иногда оказывается дорогой компенсацией. Важен рисунок целиком." },
+    scaleTitle: "Как читать шкалу",
+    scaleText: "Все 18 ступеней показывают рост внутреннего ресурса по авторской шкале от 1 до 10.",
+    scale: [
+      { range: "1–5", label: "ресурс здоровья" },
+      { range: "5–8", label: "ресурс успеха" },
+      { range: "9–10", label: "духовная сила" },
     ],
-    reportTitle: "Читайте эту страницу рядом со своим отчётом",
-    reportText: "Получив профиль У-Син, пройдите его в три шага: какая стихия сейчас является ресурсом, какая функция просит поддержки и как выглядит именно следующая фаза — не далёкий идеал. Так работа остаётся мягкой и наблюдаемой.",
-    resourceLabel: "Ресурс",
-    requestLabel: "Запрос на поддержку",
-    nextLabel: "Следующая фаза",
-    resourceText: "Что уже доступно и может поддерживать остальные части системы.",
-    requestText: "Где устойчивость стоит дорого, запас мал или функцию трудно свободно использовать.",
-    nextText: "Одна реалистичная задача развития, которую стоит встроить и понаблюдать до следующего шага.",
-    ctaTitle: "Хотите получить личный профиль У-Син?",
-    ctaText: "Персональная диагностика — это индивидуальное чтение пяти стихий и их текущих фаз. После получения отчёта возвращайтесь к этой методичке, чтобы понимать логику результата.",
-    ctaPrimary: "Заказать персональную диагностику У-Син",
-    ctaSecondary: "Открыть монитор состояния",
-    note: "Это авторская модель самонаблюдения и психообразования. Она не является медицинской диагностикой, не оценивает заболевания органов и не заменяет врача, психотерапию или экстренную помощь.",
+    cycleTitle: "Как проходит цикл",
+    cycleText: "В моей рабочей модели один цикл Даосской Алхимии — это переход примерно на одну ступень вверх. В среднем я закладываю около 1 месяца и 2 сессии. Обычно клиенты начинают примерно со 2-й ступени.",
+    diagnostic: "Экспресс-диагностика подскажет, где вы сейчас.",
+    diagnosticCta: "Пройти экспресс-диагностику",
+    levels: "Описание ступеней",
+    health: "Этап 1. Алхимия здоровья",
+    success: "Этап 2. Алхимия успеха · Любовь и Деньги",
+    spirit: "Этап 3. Алхимия духа",
+    exampleTitle: "Как проходит работа на 1–7 ступени",
+    example: [
+      "Определяем текущую ступень по экспресс-диагностике и живому разбору.",
+      "Выбираем ближайшую задачу уровня: опора, тепло, структура, проявленность, сила, мягкость или смелость.",
+      "Проходим цикл из двух сессий примерно за месяц.",
+      "Повторно смотрим состояние и решаем, готов ли ресурс перейти на следующую ступень.",
+    ],
+    linksTitle: "Ключевые ссылки",
+    links: [
+      { label: "Описание этапов", href: "https://t.me/daomagic/170" },
+      { label: "Описание ступеней", href: "https://t.me/daomagic/131" },
+      { label: "Краткий тест (1–4 уровень)", href: "https://t.me/daomagic/93" },
+    ],
+    trauma: "Психотерапия травмы: прямой и обратный круг У-Син",
+    daoPath: "Мой путь к Китайской Традиции",
+    intro: "Краткое введение",
+    books: "Открыть книги и материалы по Даосской традиции",
+    contact: "Чтобы заказать личную диагностику и разбор ситуации, напишите мне в Telegram.",
+    contactCta: "Написать @AndyTherapist",
+    note: "Это авторская символическая шкала ресурса и развития, а не медицинская шкала здоровья и не диагноз. При физических или психических симптомах, требующих медицинской помощи, нужна обычная профессиональная оценка.",
+  },
+  en: {
+    title: "Daoist Alchemy. Levels of Health",
+    description: "Andy Litvinov’s 18-stage resource map across three stages of Daoist Alchemy.",
+    kicker: "DAOIST ALCHEMY",
+    heading: "Levels of Health",
+    badge: "GUIDE",
+    lead: "A simple 18-stage map: first restore resource, then expand social expression and success, then move toward spiritual development.",
+    stagesTitle: "3 stages of inner alchemy",
+    phases: [
+      { n: "01", title: "Restoring body resources and health", note: "Lower Dantian" },
+      { n: "02", title: "Social expression, work and relationships", note: "Middle Dantian" },
+      { n: "03", title: "Spiritual development", note: "Upper Dantian" },
+    ],
+    scaleTitle: "How to read the scale",
+    scaleText: "The 18 stages describe growth of inner resource on the author’s 1–10 scale.",
+    scale: [
+      { range: "1–5", label: "health resource" },
+      { range: "5–8", label: "success resource" },
+      { range: "9–10", label: "spiritual strength" },
+    ],
+    cycleTitle: "How one cycle works",
+    cycleText: "In my working model, one Daoist Alchemy cycle usually means moving roughly one stage upward. I normally allow about one month and two sessions. Many clients begin around stage 2.",
+    diagnostic: "A short assessment helps identify your current stage.",
+    diagnosticCta: "Start express assessment",
+    levels: "The 18 stages",
+    health: "Stage 1. Alchemy of Health",
+    success: "Stage 2. Alchemy of Success · Love & Money",
+    spirit: "Stage 3. Alchemy of Spirit",
+    exampleTitle: "How work usually proceeds through stages 1–7",
+    example: [
+      "Identify the current stage through a short assessment and personal review.",
+      "Choose the nearest task: support, warmth, structure, expression, strength, softness, or courage.",
+      "Complete a two-session cycle over about one month.",
+      "Review the state again and decide whether the resource is ready for the next stage.",
+    ],
+    linksTitle: "Key links",
+    links: [
+      { label: "Description of the three stages", href: "https://t.me/daomagic/170" },
+      { label: "Description of the levels", href: "https://t.me/daomagic/131" },
+      { label: "Short test (levels 1–4)", href: "https://t.me/daomagic/93" },
+    ],
+    trauma: "Trauma psychotherapy: direct and reverse Wu Xing cycle",
+    daoPath: "My path to the Chinese Tradition",
+    intro: "Short introduction",
+    books: "Open Daoist books and materials",
+    contact: "For a personal assessment and situation review, write to me on Telegram.",
+    contactCta: "Message @AndyTherapist",
+    note: "This is an author-developed symbolic resource and development scale, not a medical health scale or diagnosis. Physical or mental-health symptoms that need care require ordinary professional assessment.",
   },
   es: {
-    title: "Niveles Wu Xing: cómo leer tu perfil personal",
-    description: "Guía para clientes sobre cinco elementos y ocho fases de recurso en el modelo Wu Xing de Andy Litvinov.",
-    kicker: "Guía para tu diagnóstico personal Wu Xing",
-    heading: "Niveles Wu Xing",
-    lead: "Una forma práctica de leer tu perfil de cinco elementos: no como una etiqueta, sino como un mapa del recurso actual, la compensación y el siguiente paso realista.",
-    sourceNote: "Esta guía reúne textos de trabajo de Andy Litvinov sobre Dao Wu Xing, Wu Xing y psicoterapia, y notas posteriores sobre un enfoque gradual y suave.",
-    introTitle: "No “bien o mal”, sino dónde estás ahora",
-    introText: "En este modelo de autor, cada elemento puede encontrarse en una fase distinta. La finalidad no es nombrar un “elemento débil”, sino observar cuánta función está disponible, cómo se sostiene, qué la nutre y qué siguiente paso puede integrarse ahora.",
-    restoreTitle: "Fases 1–4 · Restaurar",
-    restoreText: "Primero se recuperan contacto, reserva, regulación y una base fiable. El crecimiento que supera la base suele convertirse en más tensión.",
-    growTitle: "Fases 5–8 · Desplegar",
-    growText: "Cuando una función es estable, el mismo elemento puede convertirse en madurez, creatividad, contribución y fortaleza integrada.",
-    elementsTitle: "Cinco elementos — cinco funciones humanas",
-    elementsLead: "Aquí los elementos se leen como un ciclo de funciones psicológicas. Puede haber buen recurso en una función y necesidad de apoyo en otra.",
-    elements: [
-      { symbol: "水", name: "Agua", role: "Seguridad y apoyo", development: "Nacimiento · contacto · recibir cuidado", text: "Seguridad profunda, confianza, resistencia y capacidad de recibir apoyo. Pregunta central: “Existo. ¿Puedo apoyarme, recibir cuidado y seguir en contacto conmigo?”" },
-      { symbol: "木", name: "Madera", role: "Autonomía y movimiento", development: "Autonomía · voluntad · acción", text: "Impulso, deseo, límites, crecimiento y capacidad de actuar. Pregunta central: “¿Puedo querer, separarme, elegir y moverme?”" },
-      { symbol: "火", name: "Fuego", role: "Sentir y expresarse", development: "Amor · alegría · expresión", text: "Sentimientos, alegría, amor, apertura y contacto. Pregunta central: “¿Puedo sentir, ser visto y expresar lo que está vivo en mí?”" },
-      { symbol: "土", name: "Tierra", role: "Valor y pertenencia", development: "Valor · cuidado · pertenencia", text: "Estabilidad, cuidado, arraigo práctico y pertenencia. Pregunta central: “¿Importo y puedo pertenecer sin perderme?”" },
-      { symbol: "金", name: "Metal", role: "Identidad y forma", development: "Identidad · estructura · cierre", text: "Claridad, límites, identidad, cierre y capacidad de soltar. Pregunta central: “¿Quién soy? ¿Qué es mío? ¿Qué necesita forma o un final?”" },
-    ],
-    phasesTitle: "Ocho fases de recurso",
-    phasesLead: "La fase importa más que una cifra aislada. Describe cuán disponible e integrada está una función en este momento.",
+    title: "Alquimia taoísta. Niveles de salud",
+    description: "Mapa de 18 etapas de recurso de Andy Litvinov en tres fases de Alquimia Taoísta.",
+    kicker: "ALQUIMIA TAOÍSTA",
+    heading: "Niveles de salud",
+    badge: "GUÍA",
+    lead: "Un mapa sencillo de 18 etapas: primero recuperar recurso, después ampliar la expresión social y el éxito, y luego avanzar hacia el desarrollo espiritual.",
+    stagesTitle: "3 etapas de alquimia interna",
     phases: [
-      { name: "Congelación", text: "El recurso se organiza alrededor de la seguridad básica: retirada, contracción o bloqueo. La tarea es recuperar contacto y apoyo mínimos." },
-      { name: "Agotamiento", text: "Hay poca energía e iniciativa. El siguiente paso es reponer y permitir recuperación, no forzar un salto." },
-      { name: "Hipercontrol", text: "La función se sostiene con esfuerzo, tensión o control excesivo. La tarea es sumar regulación, flexibilidad y estabilidad menos costosa." },
-      { name: "Equilibrio / apoyo", text: "Aparece una base fiable: más claridad, contacto y recuperación. Desde aquí el crecimiento puede ser más auténtico." },
-      { name: "Floración / madurez", text: "Hay suficiente recurso para llevar la función hacia relaciones, trabajo, creatividad y expresión sostenida." },
-      { name: "Flujo / carisma", text: "La cualidad circula con mayor libertad y puede convertirse en creatividad, influencia y vitalidad. Aún importan dirección y base." },
-      { name: "Guía / propósito", text: "La función madura empieza a convertirse en contribución, maestría y servicio con sentido, sin perder la base personal." },
-      { name: "Don / integración", text: "La cualidad se vuelve natural e integrada: menos necesidad de demostrar fuerza y más libertad para utilizarla cuando hace falta." },
+      { n: "01", title: "Restaurar recursos del cuerpo y la salud", note: "Dantian inferior" },
+      { n: "02", title: "Expresión social, trabajo y relaciones", note: "Dantian medio" },
+      { n: "03", title: "Desarrollo espiritual", note: "Dantian superior" },
     ],
-    methodTitle: "Cómo leo un perfil personal",
-    methodLead: "Un perfil útil es una secuencia, no un veredicto.",
-    method: [
-      { title: "1. Encontrar la fase actual", text: "Primero vemos si la función está bloqueada, agotada, sostenida por esfuerzo, estable o ya desplegándose." },
-      { title: "2. No atacar el elemento más bajo", text: "Un valor bajo no es un defecto que deba empujarse. La activación directa puede añadir tensión si la base aún no está lista." },
-      { title: "3. Buscar la función que nutre", text: "En el ciclo generador de Wu Xing, el apoyo suele venir del elemento anterior. Si a Madera le falta movimiento, Agua — apoyo y reserva — puede necesitar atención primero." },
-      { title: "4. Avanzar un paso sostenible", text: "Fórmula de trabajo: identificar la fase → encontrar apoyo → añadir el recurso mínimo útil → avanzar una fase → estabilizar." },
-      { title: "5. Leer el círculo completo", text: "Un elemento fuerte puede ser recurso, uno bajo puede pedir apoyo y una aparente fortaleza puede ser compensación costosa. Importa el patrón completo." },
+    scaleTitle: "Cómo leer la escala",
+    scaleText: "Las 18 etapas describen el crecimiento del recurso interno en la escala de autor de 1 a 10.",
+    scale: [
+      { range: "1–5", label: "recurso de salud" },
+      { range: "5–8", label: "recurso de éxito" },
+      { range: "9–10", label: "fuerza espiritual" },
     ],
-    reportTitle: "Usa esta página junto a tu informe personal",
-    reportText: "Al recibir tu perfil, haz tres lecturas: qué elemento es recurso, qué función pide apoyo y cómo se ve la siguiente fase — no el ideal final. Así el proceso sigue siendo suave y observable.",
-    resourceLabel: "Recurso",
-    requestLabel: "Necesidad de apoyo",
-    nextLabel: "Siguiente fase",
-    resourceText: "Lo que ya está disponible y puede sostener al resto del sistema.",
-    requestText: "Dónde la estabilidad cuesta demasiado, la reserva es baja o la función no está libremente disponible.",
-    nextText: "Una tarea realista de desarrollo para integrar y observar antes de añadir más.",
-    ctaTitle: "¿Quieres un perfil personal Wu Xing?",
-    ctaText: "El diagnóstico es una interpretación individual de los cinco elementos y sus fases actuales. Vuelve a esta guía con tu informe para comprender la lógica del resultado.",
-    ctaPrimary: "Solicitar diagnóstico personal Wu Xing",
-    ctaSecondary: "Abrir monitor mente–cuerpo",
-    note: "Es un marco de autor para autoobservación y psicoeducación. No es un diagnóstico médico, no evalúa enfermedades de órganos y no sustituye atención médica o de salud mental.",
+    cycleTitle: "Cómo funciona un ciclo",
+    cycleText: "En mi modelo de trabajo, un ciclo de Alquimia Taoísta suele equivaler a subir aproximadamente una etapa. Normalmente calculo alrededor de un mes y dos sesiones. Muchos clientes comienzan cerca de la etapa 2.",
+    diagnostic: "Una evaluación breve ayuda a identificar tu etapa actual.",
+    diagnosticCta: "Hacer evaluación breve",
+    levels: "Las 18 etapas",
+    health: "Etapa 1. Alquimia de la salud",
+    success: "Etapa 2. Alquimia del éxito · Amor y Dinero",
+    spirit: "Etapa 3. Alquimia del espíritu",
+    exampleTitle: "Cómo suele ser el trabajo en las etapas 1–7",
+    example: [
+      "Identificamos la etapa actual con una evaluación breve y una revisión personal.",
+      "Elegimos la tarea más cercana: apoyo, calor, estructura, expresión, fuerza, suavidad o valentía.",
+      "Realizamos un ciclo de dos sesiones durante aproximadamente un mes.",
+      "Revisamos de nuevo el estado y decidimos si el recurso está listo para la siguiente etapa.",
+    ],
+    linksTitle: "Enlaces clave",
+    links: [
+      { label: "Descripción de las tres etapas", href: "https://t.me/daomagic/170" },
+      { label: "Descripción de los niveles", href: "https://t.me/daomagic/131" },
+      { label: "Test breve (niveles 1–4)", href: "https://t.me/daomagic/93" },
+    ],
+    trauma: "Psicoterapia del trauma: ciclo Wu Xing directo e inverso",
+    daoPath: "Mi camino hacia la Tradición China",
+    intro: "Introducción breve",
+    books: "Abrir libros y materiales taoístas",
+    contact: "Para una evaluación personal y revisión de la situación, escríbeme por Telegram.",
+    contactCta: "Escribir a @AndyTherapist",
+    note: "Esta es una escala simbólica de recurso y desarrollo creada por el autor, no una escala médica de salud ni un diagnóstico. Los síntomas físicos o de salud mental que requieren atención necesitan una evaluación profesional habitual.",
   },
 } as const;
 
 function isLocale(value: string): value is PublicLocale {
   return value === "en" || value === "ru" || value === "es";
+}
+
+function stagesFor(locale: PublicLocale) {
+  if (locale === "ru") return stagesRu;
+  if (locale === "es") return stagesEs;
+  return stagesEn;
+}
+
+function StageList({ title, stages }: { title: string; stages: Stage[] }) {
+  return (
+    <section className={styles.levelSection}>
+      <h2>{title}</h2>
+      <div className={styles.levels}>
+        {stages.map((stage) => (
+          <article className={styles.levelCard} key={stage.number}>
+            <div className={styles.levelNumber}>{stage.number}</div>
+            <div className={styles.levelBody}>
+              <div className={styles.levelTop}>
+                <h3>{stage.name}</h3>
+                <span>{stage.resource}</span>
+              </div>
+              <p>{stage.text}</p>
+              {stage.direction ? <strong>{stage.direction}</strong> : null}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -246,132 +263,93 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function WuXingPage({ params }: Props) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
+
   const text = copy[locale];
+  const stages = stagesFor(locale);
 
   return (
-    <main className="wu-xing-guide" lang={locale}>
+    <main className={styles.page} lang={locale}>
       <PublicSiteHeader locale={locale} />
 
-      <section className="wu-xing-guide__hero">
+      <header className={styles.hero}>
         <p className="homeopathy-kicker">{text.kicker}</p>
         <h1>{text.heading}</h1>
-        <p className="wu-xing-guide__lead">{text.lead}</p>
-        <p className="wu-xing-guide__source">{text.sourceNote}</p>
-        <div className="wu-xing-guide__actions">
-          <Link className="hh-primary" href={`/${locale}/services#available-services`}>{text.ctaPrimary}</Link>
-          <Link href={`/${locale}/client#cabinet-tests`}>{text.ctaSecondary}</Link>
-        </div>
-      </section>
+        <span className={styles.badge}>{text.badge}</span>
+        <p className={styles.lead}>{text.lead}</p>
+      </header>
 
-      <section className="wu-xing-guide__section wu-xing-guide__intro">
-        <div className="wu-xing-guide__section-heading">
-          <h2>{text.introTitle}</h2>
-          <p>{text.introText}</p>
-        </div>
-        <div className="wu-xing-guide__zones">
-          <article>
-            <span>1–4</span>
-            <h3>{text.restoreTitle}</h3>
-            <p>{text.restoreText}</p>
-          </article>
-          <article>
-            <span>5–8</span>
-            <h3>{text.growTitle}</h3>
-            <p>{text.growText}</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="wu-xing-guide__section" id="elements">
-        <div className="wu-xing-guide__section-heading">
-          <h2>{text.elementsTitle}</h2>
-          <p>{text.elementsLead}</p>
-        </div>
-        <div className="wu-xing-guide__elements">
-          {text.elements.map((element) => (
-            <article className="wu-xing-guide__element" key={element.name}>
-              <div className="wu-xing-guide__element-symbol" aria-hidden="true">{element.symbol}</div>
-              <div>
-                <p className="wu-xing-guide__eyebrow">{element.role}</p>
-                <h3>{element.name}</h3>
-                <p className="wu-xing-guide__development">{element.development}</p>
-                <p>{element.text}</p>
-              </div>
+      <section className={styles.overview}>
+        <h2>{text.stagesTitle}</h2>
+        <div className={styles.phaseGrid}>
+          {text.phases.map((phase) => (
+            <article key={phase.n}>
+              <span>{phase.n}</span>
+              <h3>{phase.title}</h3>
+              <p>{phase.note}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="wu-xing-guide__section" id="phases">
-        <div className="wu-xing-guide__section-heading">
-          <h2>{text.phasesTitle}</h2>
-          <p>{text.phasesLead}</p>
-        </div>
-        <div className="wu-xing-guide__phases">
-          {text.phases.map((phase, index) => (
-            <article className="wu-xing-guide__phase" key={phase.name}>
-              <span className="wu-xing-guide__phase-number">{index + 1}</span>
-              <div>
-                <h3>{phase.name}</h3>
-                <p>{phase.text}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="wu-xing-guide__section wu-xing-guide__method" id="method">
-        <div className="wu-xing-guide__section-heading">
-          <h2>{text.methodTitle}</h2>
-          <p>{text.methodLead}</p>
-        </div>
-        <div className="wu-xing-guide__method-list">
-          {text.method.map((item) => (
-            <article key={item.title}>
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="wu-xing-guide__section wu-xing-guide__miasm-update">
-        <div className="wu-xing-guide__section-heading">
-          <h2>{miasmUpdate[locale].title}</h2>
-          <p>{miasmUpdate[locale].lead}</p>
-        </div>
-        <div className="wu-xing-guide__method-list">
-          {miasmUpdate[locale].items.map((item) => <article key={item}><p>{item}</p></article>)}
-        </div>
-        <p className="wu-xing-guide__note">{miasmUpdate[locale].note}</p>
-        <p><a href="https://t.me/psychic_alchemy/1072" rel="noreferrer" target="_blank">{miasmUpdate[locale].source} ↗</a></p>
-      </section>
-
-      <section className="wu-xing-guide__section wu-xing-guide__report">
-        <div className="wu-xing-guide__section-heading">
-          <h2>{text.reportTitle}</h2>
-          <p>{text.reportText}</p>
-        </div>
-        <div className="wu-xing-guide__report-grid">
-          <article><strong>{text.resourceLabel}</strong><p>{text.resourceText}</p></article>
-          <article><strong>{text.requestLabel}</strong><p>{text.requestText}</p></article>
-          <article><strong>{text.nextLabel}</strong><p>{text.nextText}</p></article>
-        </div>
-      </section>
-
-      <section className="wu-xing-guide__cta">
+      <section className={styles.scale}>
         <div>
-          <p className="homeopathy-kicker">{text.kicker}</p>
-          <h2>{text.ctaTitle}</h2>
-          <p>{text.ctaText}</p>
+          <h2>{text.scaleTitle}</h2>
+          <p>{text.scaleText}</p>
         </div>
-        <div className="wu-xing-guide__actions">
-          <Link className="hh-primary" href={`/${locale}/services#available-services`}>{text.ctaPrimary}</Link>
-          <Link href={`/${locale}/client#cabinet-tests`}>{text.ctaSecondary}</Link>
+        <div className={styles.scaleGrid}>
+          {text.scale.map((item) => (
+            <article key={item.range}>
+              <strong>{item.range}</strong>
+              <span>{item.label}</span>
+            </article>
+          ))}
         </div>
       </section>
 
-      <p className="wu-xing-guide__note">{text.note}</p>
+      <section className={styles.cycle}>
+        <div>
+          <h2>{text.cycleTitle}</h2>
+          <p>{text.cycleText}</p>
+          <strong>{text.diagnostic}</strong>
+        </div>
+        <Link className="hh-primary" href={`/${locale}/services#available-services`}>{text.diagnosticCta}</Link>
+      </section>
+
+      <div className={styles.levelsIntro}>
+        <p className="homeopathy-kicker">{text.levels}</p>
+      </div>
+
+      <StageList title={text.health} stages={stages.slice(0, 7)} />
+      <StageList title={text.success} stages={stages.slice(7, 14)} />
+      <StageList title={text.spirit} stages={stages.slice(14)} />
+
+      <section className={styles.example}>
+        <h2>{text.exampleTitle}</h2>
+        <ol>
+          {text.example.map((item) => <li key={item}>{item}</li>)}
+        </ol>
+      </section>
+
+      <section className={styles.links}>
+        <h2>{text.linksTitle}</h2>
+        <div className={styles.linkGrid}>
+          {text.links.map((item) => (
+            <a href={item.href} key={item.href} rel="noreferrer" target="_blank">{item.label} ↗</a>
+          ))}
+          <span>{text.trauma}</span>
+          <Link href={`/${locale}/books`}>{text.daoPath}</Link>
+          <Link href={`/${locale}/books`}>{text.intro}</Link>
+          <Link href={`/${locale}/books`}>{text.books}</Link>
+        </div>
+      </section>
+
+      <section className={styles.contact}>
+        <div>
+          <h2>{text.contact}</h2>
+          <p>{text.note}</p>
+        </div>
+        <a className="hh-primary" href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">{text.contactCta}</a>
+      </section>
     </main>
   );
 }
