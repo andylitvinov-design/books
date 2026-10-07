@@ -135,14 +135,39 @@ test("Academy program titles are localized without rewriting source records", as
 });
 
 
-test("Tantra Reiki has curated bilingual source-backed course content instead of an empty shell", async () => {
-  const catalog = await readFile("data/academy/catalog.ts", "utf8");
-  assert.match(catalog, /"reiki\/tantra-reiki"/);
-  assert.match(catalog, /Nine levels of study/);
-  assert.match(catalog, /Девять ступеней/);
-  assert.match(catalog, /Level 9 — Fullness of Unity/);
-  assert.match(catalog, /9 ступень — Полнота Единства/);
-  assert.match(catalog, /academySourceBlocks\(record\)/);
+test("Tantra Reiki publishes the full bilingual source archive instead of a summary", async () => {
+  const [catalog, archiveRaw, recordPage] = await Promise.all([
+    readFile("data/academy/catalog.ts", "utf8"),
+    readFile("data/academy/tantra-reiki-full.generated.json", "utf8"),
+    readFile("components/academy-record-page.tsx", "utf8"),
+  ]);
+  const archive = JSON.parse(archiveRaw);
+  const en = archive.blocks.en.map((block) => block.text).join("\n");
+  const ru = archive.blocks.ru.map((block) => block.text).join("\n");
+
+  assert.match(catalog, /tantraReikiFullArchive\.blocks/);
+  assert.match(catalog, /academyVerbatimArchiveIds/);
+  assert.match(catalog, /academyVerbatimArchiveIds\.has\(record\.logicalId\)/);
+
+  assert.match(en, /MASTER TEACHER OF TANTRA REIKI/);
+  assert.match(en, /LEVEL 9/);
+  assert.match(en, /TESTIMONIAL: OLGA/);
+  assert.match(en, /ANDRII LITVINOV/);
+
+  assert.match(ru, /ТАНТРА РЕЙКИ НАСТРОЙКИ/);
+  assert.match(ru, /9 ступень Тантра Рейки/);
+  assert.match(ru, /ТАНТРА РЕЙКИ ОШО/);
+  assert.match(ru, /излечиваются различные заболевания моче-половой системы/);
+  assert.match(ru, /становится Мастером Тантра Рэйки/);
+
+  assert.ok(archive.images.en.length >= 20);
+  assert.ok(archive.images.ru.length >= 20);
+  assert.equal(archive.html5Videos.ru.length, 2);
+  assert.ok(archive.youtubeIds.includes("qM_nFUkYJ1k"));
+
+  assert.match(recordPage, /academy-archive-notice/);
+  assert.match(recordPage, /academy-native-video/);
+  assert.match(recordPage, /academy-source-gallery/);
 });
 
 
