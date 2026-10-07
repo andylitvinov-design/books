@@ -58,8 +58,11 @@ test('public monitor discovery is wired without adding a seventh main navigation
     readFile('lib/site-navigation-model.js', 'utf8'),
   ])
   assert.match(header, /MindBodyMonitorStrip/)
-  assert.match(home, /MindBodyMonitorHome/)
-  assert.match(home, /MindBodyMonitorStrip/)
+  assert.match(home, /entry\.selfCheck\.href/)
+  assert.match(home, /Check how you’re doing/)
+  assert.match(home, /Проверить своё состояние/)
+  assert.doesNotMatch(home, /<MindBodyMonitorHome/)
+  assert.doesNotMatch(home, /<MindBodyMonitorStrip/)
   assert.match(wuXing, /DAOIST ALCHEMY/)
   assert.match(wuXing, /18 resource stages/)
   assert.match(wuXing, /author-developed symbolic resource and development model/)
