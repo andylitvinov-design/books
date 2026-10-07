@@ -4,7 +4,9 @@ import Link from "next/link";
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import { YggdrasilCurriculum } from "@/components/yggdrasil-curriculum";
+import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings, type YggdrasilModuleLanding } from "@/data/academy/yggdrasil-module-map";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -46,10 +48,12 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
   }[locale];
 
   return (
-    <main className="academy-reading-shell yggdrasil-module-page" lang={locale}>
+    <main className="academy-reading-shell academy-reading-shell--wide yggdrasil-module-page" lang={locale}>
       <PublicSiteHeader locale={locale} />
       <AcademyBackLink locale={locale} />
-      <article className="academy-reading">
+      <div className="academy-course-layout">
+        <YggdrasilSideNavigation locale={locale} activeSlug={module.slug} />
+        <article className="academy-reading">
         <nav className="yggdrasil-module-breadcrumb" aria-label="Reiki Yggdrasil">
           <Link href={`/${locale}/academy/reiki/yggdrasil`}>← {copy.back}</Link>
           <Link href={`/${locale}/academy/reiki/yggdrasil/archive`}>{copy.archive} →</Link>
@@ -74,13 +78,16 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
         <aside className="academy-archive-notice">{copy.notice}</aside>
         <p className="yggdrasil-program-source-note">{copy.source}</p>
 
+        {module.levelId <= 2 ? <YggdrasilEnglishVideoGuide locale={locale} compact /> : null}
+
         <YggdrasilCurriculum locale={locale} levelId={module.levelId} showSupport={module.levelId === 1} />
 
         <nav className="yggdrasil-module-pagination" aria-label="Reiki Yggdrasil modules">
           {previous ? <Link href={`/${locale}/academy/reiki/yggdrasil/${previous.slug}`}><small>{copy.previous}</small><strong>{previous.title[locale]}</strong></Link> : <span />}
           {next ? <Link href={`/${locale}/academy/reiki/yggdrasil/${next.slug}`}><small>{copy.next}</small><strong>{next.title[locale]}</strong></Link> : <span />}
         </nav>
-      </article>
+        </article>
+      </div>
       <PublicConsultationCta locale={locale} />
     </main>
   );

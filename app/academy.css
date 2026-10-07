@@ -679,3 +679,569 @@
     font-size: 10px;
   }
 }
+
+/* Reiki Yggdrasil bilingual video library + Tantra Reiki landing refresh */
+.yggdrasil-english-guide {
+  margin: 28px 0;
+  border: 1px solid #d4c1ad;
+  background: linear-gradient(180deg, #fbf4eb 0%, #fffaf4 100%);
+  padding: clamp(18px, 3vw, 28px);
+}
+.yggdrasil-english-guide__heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: end;
+}
+.yggdrasil-english-guide__heading h2 {
+  margin: 5px 0 8px;
+  color: #34261e;
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 400;
+  line-height: 1.05;
+}
+.yggdrasil-english-guide__heading p:not(.homeopathy-kicker) {
+  max-width: 720px;
+  margin: 0;
+  color: #67584d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.yggdrasil-english-guide__heading > a {
+  color: #754a33;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.yggdrasil-video-language-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 10px;
+}
+.yggdrasil-video-language-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.yggdrasil-video-language-heading h4 {
+  margin: 0;
+  color: #3d2d23;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+}
+.yggdrasil-video-language-heading > small {
+  display: grid;
+  min-width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  background: #efe2d5;
+  color: #76513c;
+  font-size: 10px;
+  font-weight: 800;
+}
+.yggdrasil-language-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.yggdrasil-language-badge--en {
+  border: 1px solid #9aa7b7;
+  background: #f2f5f8;
+  color: #45576c;
+}
+.yggdrasil-language-badge--ru {
+  border: 1px solid #d1b4a0;
+  background: #faf0e8;
+  color: #7d4e35;
+}
+.yggdrasil-video-grid--guide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.yggdrasil-step-video-library {
+  margin: 6px 0 18px;
+  border-top: 1px solid #ddcfc1;
+  padding-top: 4px;
+}
+.yggdrasil-video-language-group {
+  padding: 2px 0 14px;
+}
+.yggdrasil-video-language-group + .yggdrasil-video-language-group {
+  margin-top: 4px;
+  border-top: 1px dashed #decfc0;
+  padding-top: 10px;
+}
+.yggdrasil-video-language-group--secondary {
+  opacity: .94;
+}
+.yggdrasil-video-language-note {
+  margin: -2px 0 10px;
+  max-width: 720px;
+  color: #8a7464;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.yggdrasil-english-guide--compact {
+  margin-top: 18px;
+  margin-bottom: 22px;
+}
+.yggdrasil-english-guide--compact .yggdrasil-video-grid--guide {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.yggdrasil-module-page .yggdrasil-curriculum-intro {
+  margin-top: 26px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.yggdrasil-module-page .yggdrasil-level--landing {
+  border-color: #d5c2af;
+  box-shadow: 0 10px 28px rgba(91, 62, 43, .045);
+}
+.yggdrasil-module-page .yggdrasil-course-roadmap {
+  background: #f8efe4;
+}
+.yggdrasil-module-page .yggdrasil-step-card {
+  background: transparent;
+}
+.yggdrasil-module-page .yggdrasil-attunement-chips span {
+  background: #fff8f0;
+}
+.yggdrasil-module-hero {
+  border-radius: 2px;
+}
+.yggdrasil-module-hero-copy p:not(.homeopathy-kicker) {
+  font-size: 14px;
+}
+.yggdrasil-program-hero,
+.yggdrasil-module-card,
+.yggdrasil-basic-course,
+.yggdrasil-english-guide {
+  box-shadow: 0 10px 28px rgba(82, 55, 37, .04);
+}
+
+/* Tantra Reiki */
+.tantra-course-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+  gap: 22px;
+  margin: 14px 0 24px;
+  border: 1px solid #d4c1ae;
+  background: linear-gradient(145deg, #fbf2e8 0%, #fffaf4 58%, #f6ede2 100%);
+  padding: clamp(20px, 4vw, 38px);
+}
+.tantra-course-hero__copy h2 {
+  margin: 6px 0 10px;
+  color: #35261f;
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 4.8vw, 48px);
+  font-weight: 400;
+  line-height: 1.04;
+}
+.tantra-course-hero__copy > p:not(.homeopathy-kicker) {
+  max-width: 720px;
+  margin: 0;
+  color: #68584c;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.tantra-course-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+}
+.tantra-course-stats span {
+  border: 1px solid #d4c2b0;
+  border-radius: 999px;
+  background: rgba(255,255,255,.6);
+  padding: 6px 9px;
+  color: #72513e;
+  font-size: 9px;
+  font-weight: 800;
+}
+.tantra-course-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.tantra-course-nav a {
+  border-bottom: 1px solid #9c765e;
+  color: #6f4630;
+  padding: 4px 0;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.tantra-phase-grid {
+  display: grid;
+  gap: 8px;
+}
+.tantra-phase-grid article {
+  border: 1px solid #dccdbf;
+  background: rgba(255,255,255,.62);
+  padding: 14px 15px;
+}
+.tantra-phase-grid span {
+  color: #a06f50;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.tantra-phase-grid h3 {
+  margin: 5px 0 5px;
+  color: #4a352a;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+}
+.tantra-phase-grid p {
+  margin: 0;
+  color: #756458;
+  font-size: 10px;
+  line-height: 1.48;
+}
+.tantra-level-summary {
+  scroll-margin-top: 20px;
+  box-shadow: 0 10px 28px rgba(82, 55, 37, .035);
+}
+.tantra-level-summary__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 18px;
+}
+.tantra-level-summary__card {
+  min-height: 136px;
+  padding: 16px 0 12px;
+}
+.tantra-level-summary__card h3 {
+  font-size: 19px;
+}
+.tantra-level-summary__card p {
+  font-size: 11px;
+  line-height: 1.55;
+}
+.tantra-media-library,
+.tantra-full-source {
+  scroll-margin-top: 20px;
+  margin: 28px 0;
+  border-top: 1px solid #d8c9b9;
+  padding-top: 26px;
+}
+.tantra-section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 16px;
+}
+.tantra-section-heading h2 {
+  margin: 5px 0 8px;
+  color: #36271f;
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 400;
+}
+.tantra-section-heading p:not(.homeopathy-kicker) {
+  max-width: 760px;
+  margin: 0;
+  color: #736156;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.tantra-youtube-grid {
+  margin-top: 14px;
+}
+.tantra-source-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(180px, 240px);
+  gap: 9px;
+  overflow-x: auto;
+  margin-top: 16px;
+  padding: 2px 2px 8px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.tantra-source-strip a {
+  overflow: hidden;
+  border: 1px solid #d7c7b8;
+  background: #f5eee6;
+  scroll-snap-align: start;
+}
+.tantra-source-strip img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+.tantra-full-source {
+  border: 1px solid #dfd1c2;
+  background: #fffdf9;
+  padding: clamp(18px, 3vw, 30px);
+}
+.tantra-full-source .academy-source-content {
+  max-width: 820px;
+  margin-inline: auto;
+}
+.tantra-full-source .academy-source-content h2 {
+  border-top: 1px solid #e5d9cc;
+  padding-top: 22px;
+}
+.tantra-full-source .academy-source-content p,
+.tantra-full-source .academy-source-content li {
+  color: #5f5248;
+}
+@media (max-width: 860px) {
+  .yggdrasil-video-grid--guide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .tantra-course-hero {
+    grid-template-columns: 1fr;
+  }
+  .tantra-phase-grid {
+    grid-template-columns: repeat(3, minmax(0,1fr));
+  }
+}
+@media (max-width: 620px) {
+  .yggdrasil-english-guide {
+    padding: 16px 12px;
+  }
+  .yggdrasil-english-guide__heading {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .yggdrasil-english-guide__heading h2 {
+    font-size: 28px;
+  }
+  .yggdrasil-video-grid--guide,
+  .yggdrasil-english-guide--compact .yggdrasil-video-grid--guide,
+  .yggdrasil-step-video-library .yggdrasil-video-grid {
+    grid-template-columns: 1fr;
+  }
+  .yggdrasil-video-language-heading {
+    align-items: flex-start;
+  }
+  .yggdrasil-video-language-heading > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .tantra-course-hero {
+    padding: 18px 14px;
+    margin-top: 8px;
+  }
+  .tantra-course-hero__copy h2 {
+    font-size: 30px;
+  }
+  .tantra-phase-grid {
+    grid-template-columns: 1fr;
+  }
+  .tantra-level-summary__grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .tantra-level-summary__card {
+    min-height: 0;
+    padding: 13px 0 10px;
+  }
+  .tantra-source-strip {
+    grid-auto-columns: 78%;
+  }
+  .tantra-full-source {
+    padding: 16px 12px;
+  }
+}
+
+
+/* Course switcher: Reiki Yggdrasil modules + Tantra Reiki levels */
+.academy-reading-shell--wide {
+  max-width: 1180px;
+}
+.academy-course-layout {
+  display: grid;
+  grid-template-columns: minmax(176px, 205px) minmax(0, 760px);
+  gap: clamp(20px, 3vw, 34px);
+  align-items: start;
+  justify-content: center;
+}
+.academy-course-layout > .academy-reading {
+  width: 100%;
+  margin: 0;
+}
+.reiki-course-side-nav {
+  position: sticky;
+  top: 18px;
+  z-index: 8;
+  overflow: auto;
+  max-height: calc(100vh - 36px);
+  border: 1px solid #ddcfc1;
+  background: rgba(255, 250, 244, .96);
+  box-shadow: 0 10px 28px rgba(82, 55, 37, .045);
+  backdrop-filter: blur(10px);
+}
+.reiki-course-side-nav__header {
+  border-bottom: 1px solid #e2d5c8;
+  padding: 15px 14px 13px;
+}
+.reiki-course-side-nav__header small {
+  display: block;
+  color: #9a775f;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.reiki-course-side-nav__header strong {
+  display: block;
+  margin-top: 4px;
+  color: #3f2e24;
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.reiki-course-side-nav__items {
+  display: grid;
+  padding: 6px;
+}
+.reiki-course-side-nav__item {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  border-left: 2px solid transparent;
+  padding: 7px 8px 7px 6px;
+  color: #6f5b4d;
+  text-decoration: none;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+.reiki-course-side-nav__item:hover {
+  background: #f7eee4;
+  color: #593a29;
+}
+.reiki-course-side-nav__item.is-active {
+  border-left-color: #8f6044;
+  background: #f1e4d7;
+  color: #4f3020;
+}
+.reiki-course-side-nav__item > span {
+  display: grid;
+  min-width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid #d3bfad;
+  border-radius: 999px;
+  color: #8c5d42;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+.reiki-course-side-nav__item.is-active > span {
+  border-color: #9d6f54;
+  background: #fff8f0;
+}
+.reiki-course-side-nav__item > em {
+  overflow: hidden;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.28;
+}
+.tantra-level-summary__card {
+  scroll-margin-top: 96px;
+}
+
+@media (max-width: 920px) {
+  .academy-reading-shell--wide {
+    max-width: 980px;
+  }
+  .academy-course-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .reiki-course-side-nav {
+    top: 8px;
+    max-height: none;
+    overflow: hidden;
+  }
+  .reiki-course-side-nav__header {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    padding: 9px 11px 7px;
+  }
+  .reiki-course-side-nav__header strong {
+    margin-top: 0;
+    font-size: 15px;
+  }
+  .reiki-course-side-nav__items {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    padding: 5px 7px 8px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .reiki-course-side-nav__item {
+    flex: 0 0 auto;
+    grid-template-columns: 24px auto;
+    min-height: 34px;
+    max-width: 210px;
+    border: 1px solid #ddcfc1;
+    border-radius: 999px;
+    padding: 4px 9px 4px 5px;
+    background: #fffaf4;
+    scroll-snap-align: start;
+  }
+  .reiki-course-side-nav__item.is-active {
+    border-color: #9d6f54;
+    background: #efe0d1;
+  }
+  .reiki-course-side-nav__item > span {
+    min-width: 22px;
+    height: 22px;
+    border: 0;
+    background: transparent;
+  }
+  .reiki-course-side-nav__item > em {
+    max-width: 156px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .tantra-level-summary__card {
+    scroll-margin-top: 142px;
+  }
+  .tantra-media-library,
+  .tantra-full-source {
+    scroll-margin-top: 142px;
+  }
+}
+
+@media (max-width: 620px) {
+  .academy-reading-shell--wide {
+    padding-inline: 12px;
+  }
+  .reiki-course-side-nav__header small {
+    display: none;
+  }
+  .reiki-course-side-nav__header {
+    padding: 8px 9px 5px;
+  }
+  .reiki-course-side-nav__item > em {
+    max-width: 132px;
+    font-size: 9px;
+  }
+}

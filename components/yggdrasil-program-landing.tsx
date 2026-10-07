@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
+
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
 import {
@@ -149,6 +151,8 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           </div>
         </div>
       </section>
+
+      <YggdrasilEnglishVideoGuide locale={locale} />
 
       <section className="yggdrasil-program-section" id="system-modules">
         <p className="homeopathy-kicker">{text.mapEyebrow}</p>
