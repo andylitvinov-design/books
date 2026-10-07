@@ -7,6 +7,7 @@ import en4 from "@/data/academy/yggdrasil-en-settings-l4.json";
 import en5 from "@/data/academy/yggdrasil-en-settings-l5.json";
 import en6 from "@/data/academy/yggdrasil-en-settings-l6.json";
 import en7 from "@/data/academy/yggdrasil-en-settings-l7.json";
+import { yggdrasilEnglishStepVideos } from "@/data/academy/yggdrasil-legacy-english-videos";
 import type { PublicLocale } from "@/lib/public-locales";
 
 type Localized = Record<PublicLocale, string>;
@@ -197,28 +198,38 @@ function SourceList({ title, items }: { title: string; items: string[] }) {
 function StepDetail({ locale, level, step }: { locale: PublicLocale; level: CurriculumLevel; step: CurriculumStep }) {
   const text = copy[locale];
   const source = localizedSource(locale, level, step);
-  const videos = step.video?.videos?.filter((video) => Boolean(video.youtubeId)) ?? [];
+  const russianVideos = step.video?.videos?.filter((video) => Boolean(video.youtubeId)) ?? [];
+  const englishVideos = yggdrasilEnglishStepVideos[step.id] ?? [];
   const labels = {
     en: {
       key: "Key information",
       outcome: "What you get",
       attunements: "Attunements in this step",
-      full: "Full attunement descriptions & video lectures",
-      fullLead: "Open only if you want the detailed source material, individual attunement descriptions and videos.",
+      full: "Full attunement descriptions",
+      fullLead: "Open only if you want the detailed source wording for every attunement.",
+      englishVideos: "English videos for this step",
+      russianVideos: "Russian archive videos",
+      russianNote: "These source lectures are in Russian. They are kept here because they match this step in the original Reiki Yggdrasil video archive.",
     },
     ru: {
       key: "Главное о ступени",
       outcome: "Результат",
       attunements: "Настройки этой ступени",
-      full: "Полные описания настроек и видеолекции",
-      fullLead: "Открывайте только если нужны подробные описания каждой настройки и видео.",
+      full: "Полные описания настроек",
+      fullLead: "Открывайте, если нужны подробные исходные описания каждой настройки.",
+      englishVideos: "Видео на английском",
+      russianVideos: "Видео на русском",
+      russianNote: "Русские видеолекции из исходного архива, привязанные к этой ступени.",
     },
     es: {
       key: "Información clave",
       outcome: "Resultado",
       attunements: "Sintonizaciones de esta etapa",
-      full: "Descripciones completas y videoclases",
-      fullLead: "Ábrelo solo si necesitas el material detallado, las sintonizaciones y los videos.",
+      full: "Descripciones completas de las sintonizaciones",
+      fullLead: "Ábrelo solo si necesitas el texto detallado de cada sintonización.",
+      englishVideos: "Videos en inglés",
+      russianVideos: "Videos de archivo en ruso",
+      russianNote: "Estas videoclases históricas están en ruso y corresponden a esta etapa.",
     },
   }[locale];
 
@@ -262,6 +273,75 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
           </div>
         </section>
 
+        {englishVideos.length || russianVideos.length ? (
+          <section className="yggdrasil-step-video-library" aria-label={text.videos}>
+            {locale === "ru" ? (
+              <>
+                {russianVideos.length ? (
+                  <div className="yggdrasil-video-language-group">
+                    <div className="yggdrasil-video-language-heading">
+                      <div><span className="yggdrasil-language-badge yggdrasil-language-badge--ru">RU · Русский</span><h4>{labels.russianVideos}</h4></div>
+                      <small>{russianVideos.length}</small>
+                    </div>
+                    <div className="yggdrasil-video-grid">
+                      {russianVideos.map((video) => (
+                        <AcademyVideoPlayer
+                          key={video.youtubeId}
+                          youtubeId={video.youtubeId!}
+                          title={"RU · " + video.title + (video.label ? " — " + video.label : "")}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {englishVideos.length ? (
+                  <div className="yggdrasil-video-language-group">
+                    <div className="yggdrasil-video-language-heading">
+                      <div><span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span><h4>{labels.englishVideos}</h4></div>
+                      <small>{englishVideos.length}</small>
+                    </div>
+                    <div className="yggdrasil-video-grid">
+                      {englishVideos.map((video) => <AcademyVideoPlayer key={video.youtubeId} youtubeId={video.youtubeId} title={"EN · " + video.title} />)}
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <>
+                {englishVideos.length ? (
+                  <div className="yggdrasil-video-language-group">
+                    <div className="yggdrasil-video-language-heading">
+                      <div><span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span><h4>{labels.englishVideos}</h4></div>
+                      <small>{englishVideos.length}</small>
+                    </div>
+                    <div className="yggdrasil-video-grid">
+                      {englishVideos.map((video) => <AcademyVideoPlayer key={video.youtubeId} youtubeId={video.youtubeId} title={"EN · " + video.title} />)}
+                    </div>
+                  </div>
+                ) : null}
+                {russianVideos.length ? (
+                  <div className="yggdrasil-video-language-group yggdrasil-video-language-group--secondary">
+                    <div className="yggdrasil-video-language-heading">
+                      <div><span className="yggdrasil-language-badge yggdrasil-language-badge--ru">RU · Русский</span><h4>{labels.russianVideos}</h4></div>
+                      <small>{russianVideos.length}</small>
+                    </div>
+                    <p className="yggdrasil-video-language-note">{labels.russianNote}</p>
+                    <div className="yggdrasil-video-grid">
+                      {russianVideos.map((video) => (
+                        <AcademyVideoPlayer
+                          key={video.youtubeId}
+                          youtubeId={video.youtubeId!}
+                          title={"RU · Русский — " + step.title.en + (video.label ? " — " + video.label : "")}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </section>
+        ) : null}
+
         <details className="yggdrasil-step-more">
           <summary>
             <span>{labels.full}</span>
@@ -284,20 +364,6 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
               </div>
             </section>
 
-            <section className="yggdrasil-videos-section">
-              <div className="yggdrasil-section-heading"><h4>{text.videos}</h4><span>{videos.length}</span></div>
-              {videos.length ? (
-                <div className="yggdrasil-video-grid">
-                  {videos.map((video, index) => (
-                    <AcademyVideoPlayer
-                      key={video.youtubeId}
-                      youtubeId={video.youtubeId!}
-                      title={locale === "ru" ? video.title + (video.label ? " — " + video.label : "") : `${step.title[locale]} — ${text.videos} ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              ) : <p className="yggdrasil-no-video">{text.noVideo}</p>}
-            </section>
           </div>
         </details>
       </div>
@@ -318,6 +384,7 @@ export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { l
   const selected = levelId ? levels[0] : null;
   const settingsCount = levels.reduce((sum, level) => sum + level.steps.reduce((inner, step) => inner + step.settings.length, 0), 0);
   const videosCount = levels.reduce((sum, level) => sum + level.steps.reduce((inner, step) => inner + (step.video?.videos?.filter((video) => Boolean(video.youtubeId)).length ?? 0), 0), 0);
+  const englishVideosCount = levels.reduce((sum, level) => sum + level.steps.reduce((inner, step) => inner + (yggdrasilEnglishStepVideos[step.id]?.length ?? 0), 0), 0);
 
   return (
     <section className="yggdrasil-curriculum" aria-labelledby="yggdrasil-curriculum-title">
@@ -327,7 +394,8 @@ export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { l
         <p>{selected ? selected.theme[locale] : text.lead}</p>
         <div className="yggdrasil-source-stats" aria-label="Source coverage">
           <span>{settingsCount} {locale === "ru" ? "настроек" : locale === "es" ? "sintonizaciones" : "attunements"}</span>
-          <span>{videosCount} {locale === "ru" ? "видеолекций" : locale === "es" ? "videoclases" : "video lectures"}</span>
+          <span>{videosCount} {locale === "ru" ? "русских видеолекций" : locale === "es" ? "videoclases en ruso" : "Russian video lectures"}</span>
+          {englishVideosCount ? <span>{englishVideosCount} {locale === "ru" ? "видео на английском" : locale === "es" ? "videos en inglés" : "English videos"}</span> : null}
         </div>
         {text.sourceLanguage ? <p className="yggdrasil-source-language">{text.sourceLanguage}</p> : null}
         <small>{text.source}</small>
