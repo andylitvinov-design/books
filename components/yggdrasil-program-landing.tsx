@@ -64,7 +64,7 @@ const copy = {
     basicSettings: "attunements",
     photosEyebrow: "Source preservation",
     photosTitle: "Historical program imagery",
-    photosLead: "Original PsiTrends Reiki Yggdrasil program images are preserved with their provenance.",
+    photosLead: "All content images from the public PsiTrends Reiki Yggdrasil source page are preserved here: 19 on the English source page. Analytics pixels and interface icons are intentionally excluded.",
     source: "Open original PsiTrends source",
     sourceNote: "Current detailed curriculum: canonical Reiki Yggdrasil project. Historical program text and imagery: PsiTrends.",
   },
@@ -87,7 +87,7 @@ const copy = {
     basicSettings: "настроек",
     photosEyebrow: "Сохранение источника",
     photosTitle: "Исторические изображения программы",
-    photosLead: "Оригинальные изображения страницы Reiki Yggdrasil на PsiTrends сохранены вместе с происхождением.",
+    photosLead: "Здесь сохранены все содержательные изображения публичной страницы Reiki Yggdrasil на PsiTrends: 14 фотографий и иллюстраций русской версии. Служебные иконки и аналитические пиксели намеренно не считаются материалами курса.",
     source: "Открыть исходную страницу PsiTrends",
     sourceNote: "Актуальная детальная программа: канонический проект Reiki Yggdrasil. Исторический текст и изображения: PsiTrends.",
   },
@@ -110,7 +110,7 @@ const copy = {
     basicSettings: "sintonizaciones",
     photosEyebrow: "Preservación de la fuente",
     photosTitle: "Imágenes históricas",
-    photosLead: "Se conservan las imágenes originales del programa PsiTrends.",
+    photosLead: "Se conservan todas las imágenes de contenido de la fuente pública; los iconos de interfaz y píxeles analíticos no se cuentan como material del curso.",
     source: "Abrir fuente original de PsiTrends",
     sourceNote: "Currículo actual: proyecto canónico Reiki Yggdrasil. Fuente histórica: PsiTrends.",
   },
@@ -132,11 +132,12 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
   const basic = curriculum.levels[0];
   const basicSteps = basic.steps as BasicStep[];
   const hero = yggdrasilSourceImages[0];
+  const sourcePhotos = yggdrasilSourceImages.filter((item) => !item.locales || item.locales.includes(locale));
 
   return (
     <div className="yggdrasil-program-landing">
       <section className="yggdrasil-program-hero">
-        <SourceVisual url={hero.localUrl} label={hero.label[locale]} className="yggdrasil-program-hero-image" />
+        <SourceVisual url={hero.localUrl ?? hero.sourceUrl} label={hero.label[locale]} className="yggdrasil-program-hero-image" />
         <div className="yggdrasil-program-hero-copy">
           <p className="homeopathy-kicker">{text.eyebrow}</p>
           <h2>{text.title}</h2>
@@ -194,9 +195,9 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         <h2 id="yggdrasil-source-gallery-title">{text.photosTitle}</h2>
         <p>{text.photosLead}</p>
         <div className="yggdrasil-source-gallery-grid">
-          {yggdrasilSourceImages.map((item) => (
+          {sourcePhotos.map((item) => (
             <figure key={item.id}>
-              <SourceVisual url={item.localUrl} label={item.label[locale]} />
+              <SourceVisual url={item.localUrl ?? item.sourceUrl} label={item.label[locale]} />
               <figcaption>{item.label[locale]}</figcaption>
             </figure>
           ))}
