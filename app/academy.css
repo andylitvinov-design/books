@@ -1061,3 +1061,187 @@
     padding: 16px 12px;
   }
 }
+
+
+/* Course switcher: Reiki Yggdrasil modules + Tantra Reiki levels */
+.academy-reading-shell--wide {
+  max-width: 1180px;
+}
+.academy-course-layout {
+  display: grid;
+  grid-template-columns: minmax(176px, 205px) minmax(0, 760px);
+  gap: clamp(20px, 3vw, 34px);
+  align-items: start;
+  justify-content: center;
+}
+.academy-course-layout > .academy-reading {
+  width: 100%;
+  margin: 0;
+}
+.reiki-course-side-nav {
+  position: sticky;
+  top: 18px;
+  z-index: 8;
+  overflow: auto;
+  max-height: calc(100vh - 36px);
+  border: 1px solid #ddcfc1;
+  background: rgba(255, 250, 244, .96);
+  box-shadow: 0 10px 28px rgba(82, 55, 37, .045);
+  backdrop-filter: blur(10px);
+}
+.reiki-course-side-nav__header {
+  border-bottom: 1px solid #e2d5c8;
+  padding: 15px 14px 13px;
+}
+.reiki-course-side-nav__header small {
+  display: block;
+  color: #9a775f;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.reiki-course-side-nav__header strong {
+  display: block;
+  margin-top: 4px;
+  color: #3f2e24;
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.reiki-course-side-nav__items {
+  display: grid;
+  padding: 6px;
+}
+.reiki-course-side-nav__item {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  border-left: 2px solid transparent;
+  padding: 7px 8px 7px 6px;
+  color: #6f5b4d;
+  text-decoration: none;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+.reiki-course-side-nav__item:hover {
+  background: #f7eee4;
+  color: #593a29;
+}
+.reiki-course-side-nav__item.is-active {
+  border-left-color: #8f6044;
+  background: #f1e4d7;
+  color: #4f3020;
+}
+.reiki-course-side-nav__item > span {
+  display: grid;
+  min-width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid #d3bfad;
+  border-radius: 999px;
+  color: #8c5d42;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+.reiki-course-side-nav__item.is-active > span {
+  border-color: #9d6f54;
+  background: #fff8f0;
+}
+.reiki-course-side-nav__item > em {
+  overflow: hidden;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.28;
+}
+.tantra-level-summary__card {
+  scroll-margin-top: 96px;
+}
+
+@media (max-width: 920px) {
+  .academy-reading-shell--wide {
+    max-width: 980px;
+  }
+  .academy-course-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .reiki-course-side-nav {
+    top: 8px;
+    max-height: none;
+    overflow: hidden;
+  }
+  .reiki-course-side-nav__header {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    padding: 9px 11px 7px;
+  }
+  .reiki-course-side-nav__header strong {
+    margin-top: 0;
+    font-size: 15px;
+  }
+  .reiki-course-side-nav__items {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    padding: 5px 7px 8px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .reiki-course-side-nav__item {
+    flex: 0 0 auto;
+    grid-template-columns: 24px auto;
+    min-height: 34px;
+    max-width: 210px;
+    border: 1px solid #ddcfc1;
+    border-radius: 999px;
+    padding: 4px 9px 4px 5px;
+    background: #fffaf4;
+    scroll-snap-align: start;
+  }
+  .reiki-course-side-nav__item.is-active {
+    border-color: #9d6f54;
+    background: #efe0d1;
+  }
+  .reiki-course-side-nav__item > span {
+    min-width: 22px;
+    height: 22px;
+    border: 0;
+    background: transparent;
+  }
+  .reiki-course-side-nav__item > em {
+    max-width: 156px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .tantra-level-summary__card {
+    scroll-margin-top: 142px;
+  }
+  .tantra-media-library,
+  .tantra-full-source {
+    scroll-margin-top: 142px;
+  }
+}
+
+@media (max-width: 620px) {
+  .academy-reading-shell--wide {
+    padding-inline: 12px;
+  }
+  .reiki-course-side-nav__header small {
+    display: none;
+  }
+  .reiki-course-side-nav__header {
+    padding: 8px 9px 5px;
+  }
+  .reiki-course-side-nav__item > em {
+    max-width: 132px;
+    font-size: 9px;
+  }
+}
