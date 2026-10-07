@@ -34,9 +34,9 @@ test('All book catalog entries have real Spanish metadata without inventing Span
 });
 test('Public routes and navigation have genuine Spanish counterparts', async () => {
   const { publicCounterpart, hasSpanishCounterpart } = await loadTs('lib/public-locales.ts');
-  for (const page of ['app/es/page.tsx', 'app/es/services/page.tsx', 'app/es/books/page.tsx', 'app/es/about/page.tsx', 'app/es/client/page.tsx', 'app/es/homeopathy/page.tsx', 'app/es/homeopathy/remedies/page.tsx', 'app/es/homeopathy/remedies/[slug]/page.tsx']) assert.ok(existsSync(new URL('../' + page, import.meta.url)), page);
+  for (const page of ['app/es/page.tsx', 'app/es/services/page.tsx', 'app/es/books/page.tsx', 'app/es/about/page.tsx', 'app/es/client/page.tsx', 'app/es/homeopathy/page.tsx', 'app/es/homeopathy/remedies/page.tsx', 'app/es/homeopathy/remedies/[slug]/page.tsx', 'app/es/library/distance-homeopathy/page.tsx']) assert.ok(existsSync(new URL('../' + page, import.meta.url)), page);
   assert.equal(publicCounterpart('/', 'es'), '/es'); assert.equal(publicCounterpart('/es', 'en'), '/?lang=en');
-  for (const suffix of ['about', 'services', 'books', 'library', 'client', 'homeopathy', 'homeopathy/remedies', 'homeopathy/remedies/aconitum']) assert.equal(publicCounterpart('/en/' + suffix, 'es'), '/es/' + suffix);
+  for (const suffix of ['about', 'services', 'books', 'library', 'library/distance-homeopathy', 'client', 'homeopathy', 'homeopathy/remedies', 'homeopathy/remedies/aconitum']) assert.equal(publicCounterpart('/en/' + suffix, 'es'), '/es/' + suffix);
   assert.equal(hasSpanishCounterpart('/en/client/secret-selector'), false); assert.equal(hasSpanishCounterpart('/admin/videos'), false);
   for (const file of ['components/mobile-bottom-navigation.tsx', 'components/site-navigation.tsx']) { const text = source(file); assert.doesNotMatch(text, /Inicio \(EN\)|Remedios \(EN\)|Servicios \(EN\)/); }
 });
