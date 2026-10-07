@@ -73,21 +73,21 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
   } as const;
   const wuxing = {
     en: {
-      title: "Wu Xing guide",
-      subtitle: "Assessment & model",
-      description: "A practical guide to the five-element model, state analysis, and the author’s current working framework.",
-      action: "Open Wu Xing guide",
+      title: "Daoist Alchemy · Levels of Health",
+      subtitle: "18-stage practical guide",
+      description: "The author’s simple 18-stage map: restore resource, develop social expression and success, then move toward spiritual development.",
+      action: "Open the guide",
     },
     ru: {
-      title: "Методичка У-Син",
-      subtitle: "Диагностика и модель",
-      description: "Практическая методичка по пяти стихиям, анализу состояния и текущей авторской модели работы.",
+      title: "Даосская Алхимия · Уровни здоровья",
+      subtitle: "Методичка · 18 ступеней",
+      description: "Простая авторская карта из 18 ступеней: восстановление ресурса, проявленность и успех, затем духовное развитие.",
       action: "Открыть методичку",
     },
     es: {
-      title: "Guía Wu Xing",
-      subtitle: "Evaluación y modelo",
-      description: "Guía práctica del modelo de cinco elementos, análisis del estado y marco de trabajo del autor.",
+      title: "Alquimia Taoísta · Niveles de salud",
+      subtitle: "Guía práctica · 18 etapas",
+      description: "Un mapa sencillo de 18 etapas: recuperar recurso, desarrollar expresión social y éxito, y después avanzar hacia el desarrollo espiritual.",
       action: "Abrir guía",
     },
   } as const;
