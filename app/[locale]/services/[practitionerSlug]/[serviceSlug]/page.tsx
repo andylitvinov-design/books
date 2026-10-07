@@ -45,7 +45,7 @@ export default async function ServiceDetail({params}:PageProps){
         <p>{service.copy.shortDescription}</p>
         <div className="hh-actions">
           <Link className="services-studio-primary" href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Запросить бесплатно":"Request free service"):(ru?"Запросить услугу":"Request this service")}<span aria-hidden="true">→</span></Link>
-          {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методика: как читать профиль":"Guide: how to read your profile"}</Link>}
+          {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методичка: уровни здоровья":"Guide: Levels of Health"}</Link>}
           <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":"About practitioner"}</Link>
         </div>
       </div>
