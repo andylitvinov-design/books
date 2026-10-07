@@ -55,12 +55,68 @@ test("English Yggdrasil UI no longer forces Russian detailed content", async () 
 
 test("full EN and RU historical source pages are preserved", async () => {
   const archive = JSON.parse(await readFile("data/academy/yggdrasil-source-archive.generated.json", "utf8"));
-  assert.ok(archive.sources.en.markdown.length > 14000);
-  assert.ok(archive.sources.ru.markdown.length > 14000);
+  assert.ok(archive.sources.en.markdown.length > 14500);
+  assert.ok(archive.sources.ru.markdown.length > 14500);
   assert.equal(cyrillic.test(archive.sources.en.markdown), false);
-  assert.ok(archive.sources.ru.images.length >= 15);
-  assert.ok(archive.sources.en.images.length >= 19);
-  assert.match(archive.sources.en.markdown, /BASIC COURSE OF TAO REIKI YGGDRASIL/);
-  assert.match(archive.sources.ru.markdown, /БАЗОВЫЙ КУРС ДАО РЕЙКИ ИГГДРАСИЛЬ/);
-  assert.match(archive.sources.en.markdown, /MODULE 2\. INSTRUCTOR of TAO RY/);
+  assert.equal(archive.sources.en.images.length, 19);
+  assert.equal(archive.sources.ru.images.length, 14);
+  assert.equal(archive.sources.ru.images.some((url) => url.includes("telegram-svgrepo-com.svg")), false);
+
+  for (const marker of [
+    "MAGISTER of SHAMANIC & TEMPLE WORK",
+    "PROGRAM OVERVIEW",
+    "Module 10. Magister Temple Attunements",
+    "BASIC COURSE OF TAO REIKI YGGDRASIL",
+    "## REGISTRATION",
+    "The Academy was founded by Nicolai Zhuravlev 30 years ago",
+    "## LEVELS & CERTIFICATES",
+    "MODULE 2. INSTRUCTOR of TAO RY",
+    "## Testimonials",
+    "## REGISTER NOW",
+    "### ANDRII LITVINOV",
+    "Send a message to get details and register.",
+  ]) {
+    assert.ok(archive.sources.en.markdown.includes(marker), `Missing EN source marker: ${marker}`);
+  }
+
+  for (const marker of [
+    "Рейки Иггдрасиль - уникальная система",
+    "Обзор программы:",
+    "Модуль 10: Магистерские настройки храма",
+    "БАЗОВЫЙ КУРС ДАО РЕЙКИ ИГГДРАСИЛЬ",
+    "## РЕГИСТРАЦИЯ",
+    "Академия была основана Николаем Журавлевым 30 лет назад",
+    "## УРОВНИ И СЕРТИФИКАТЫ",
+    "МОДУЛЬ 2. ИНСТРУКТОР TAO RY",
+    "### АНДРЕЙ ЛИТВИНОВ",
+    "Напишите нам и узнайте детали!",
+  ]) {
+    assert.ok(archive.sources.ru.markdown.includes(marker), `Missing RU source marker: ${marker}`);
+  }
+
+  assert.equal(archive.verification.sourceContentImages.en, 19);
+  assert.equal(archive.verification.sourceContentImages.ru, 14);
+});
+
+test("program hub and archive expose the complete source-photo set with labels", async () => {
+  const [programMap, landing, sourceArchive] = await Promise.all([
+    readFile("data/academy/yggdrasil-program-map.ts", "utf8"),
+    readFile("components/yggdrasil-program-landing.tsx", "utf8"),
+    readFile("components/yggdrasil-source-archive.tsx", "utf8"),
+  ]);
+
+  for (const id of [
+    "hero", "overview", "basic", "shamanic", "temple", "runes", "western", "eastern", "slavic", "toltec",
+    "school-founder", "academy-history", "levels-certificates",
+    "testimonial-1", "testimonial-2", "testimonial-3", "testimonial-4", "testimonial-5",
+    "teacher-andrii",
+  ]) {
+    assert.match(programMap, new RegExp(`id: "${id}"`));
+  }
+
+  assert.match(landing, /sourcePhotos = yggdrasilSourceImages\.filter/);
+  assert.match(landing, /item\.localUrl \?\? item\.sourceUrl/);
+  assert.match(sourceArchive, /normalizedSourceUrl/);
+  assert.match(sourceArchive, /preserved\?\.label\[locale\]/);
+  assert.match(sourceArchive, /preserved\?\.localUrl \?\? src/);
 });

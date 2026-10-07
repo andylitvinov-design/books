@@ -12,8 +12,9 @@ export type YggdrasilProgramModule = {
 export type YggdrasilSourceImage = {
   id: string;
   label: Record<PublicLocale, string>;
-  localUrl: string;
+  localUrl?: string;
   sourceUrl: string;
+  locales?: PublicLocale[];
 };
 
 export const yggdrasilProgramModules: YggdrasilProgramModule[] = [
@@ -146,6 +147,15 @@ export const yggdrasilSourceImages: YggdrasilSourceImage[] = [
   { id: "eastern", label: { en: "Eastern tradition", ru: "Восточная традиция", es: "Tradición oriental" }, localUrl: "/academy/reiki-yggdrasil/source/eastern-tradition.png", sourceUrl: "https://psitrends.com/images/Screenshot_34.png" },
   { id: "slavic", label: { en: "Slavic tradition", ru: "Славянская традиция", es: "Tradición eslava" }, localUrl: "/academy/reiki-yggdrasil/source/slavic-tradition.png", sourceUrl: "https://psitrends.com/images/Screenshot_35.png" },
   { id: "toltec", label: { en: "Toltec tradition", ru: "Толтекская традиция", es: "Tradición tolteca" }, localUrl: "/academy/reiki-yggdrasil/source/toltec-tradition.jpg", sourceUrl: "https://psitrends.com/images/atlantean-warriors-temple-of-quetzalcoatl-archaeological-site-of-tula-mexico-toltec-civilization-479635169-57a4f6c23df78cf459636602.jpg" },
+  { id: "school-founder", label: { en: "School founder · Nicolai Zhuravlev", ru: "Основатель школы · Николай Журавлёв", es: "Fundador de la escuela · Nicolai Zhuravlev" }, sourceUrl: "https://www.psitrends.com/images/photo_2023-01-20_22-10-58.jpg" },
+  { id: "academy-history", label: { en: "Academy history & award", ru: "История Академии и награда", es: "Historia y reconocimiento de la Academia" }, sourceUrl: "https://www.psitrends.com/images/photo_2023-01-20_22-19-43.jpg" },
+  { id: "levels-certificates", label: { en: "Levels & certificates", ru: "Уровни и сертификаты", es: "Niveles y certificados" }, sourceUrl: "https://www.psitrends.com/images/Screenshot_38.png" },
+  { id: "testimonial-1", label: { en: "Student testimonial 1", ru: "Отзыв ученика 1", es: "Testimonio de estudiante 1" }, sourceUrl: "https://www.psitrends.com/images/photo_2023-10-11_01-10-43 (2).jpg", locales: ["en", "es"] },
+  { id: "testimonial-2", label: { en: "Student testimonial 2", ru: "Отзыв ученика 2", es: "Testimonio de estudiante 2" }, sourceUrl: "https://www.psitrends.com/images/photo_2023-10-11_01-10-43 (3).jpg", locales: ["en", "es"] },
+  { id: "testimonial-3", label: { en: "Student testimonial 3", ru: "Отзыв ученика 3", es: "Testimonio de estudiante 3" }, sourceUrl: "https://www.psitrends.com/images/photo_2023-10-11_01-10-43 (4).jpg", locales: ["en", "es"] },
+  { id: "testimonial-4", label: { en: "Student testimonial 4", ru: "Отзыв ученика 4", es: "Testimonio de estudiante 4" }, sourceUrl: "https://www.psitrends.com/images/photo_2023-10-11_01-10-43 (5).jpg", locales: ["en", "es"] },
+  { id: "testimonial-5", label: { en: "Student testimonial 5", ru: "Отзыв ученика 5", es: "Testimonio de estudiante 5" }, sourceUrl: "https://www.psitrends.com/images/photo_2023-10-11_01-10-43 (6).jpg", locales: ["en", "es"] },
+  { id: "teacher-andrii", label: { en: "Teacher · Andrii Litvinov", ru: "Преподаватель · Андрей Литвинов", es: "Profesor · Andrii Litvinov" }, sourceUrl: "https://www.psitrends.com/images/Screenshot_11.png" },
 ];
 
 export const yggdrasilProgramSourcePage = "https://psitrends.com/ru/cat-train-ru/shkola-rejki-iggdrasil";
