@@ -118,6 +118,20 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
     },
     {
       id: "library-distance-homeopathy",
+      title: locale === "ru" ? "Дистанционная гомеопатия" : locale === "es" ? "Homeopatía a distancia" : "Distance homeopathy",
+      subtitle: locale === "ru" ? "Как проходит работа?" : locale === "es" ? "¿Cómo funciona el proceso?" : "How does the process work?",
+      description:
+        locale === "ru"
+          ? "Практическая памятка о двухнедельном цикле наблюдения, работе с описаниями и фотографиями препаратов, дополнительными ритуалами и повторной проверке."
+          : locale === "es"
+            ? "Guía práctica sobre un ciclo de observación de dos semanas, trabajo con descripciones e imágenes de remedios, prácticas opcionales y revisión posterior."
+            : "A practical guide to a two-week observation cycle, remedy descriptions and images, optional reflective rituals, and follow-up review.",
+      href: `/${locale}/library/distance-homeopathy`,
+      actionLabel: text.open,
+      image: "/images/holistic-house/distance-homeopathy.webp",
+    },
+    {
+      id: "library-distance-homeopathy",
       title:
         locale === "ru"
           ? "Дистанционная гомеопатия"
