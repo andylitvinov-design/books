@@ -23,7 +23,7 @@ const copy = {
     optionOneTitle: "1. Принимать препарат внутрь",
     optionOneText: "В исходной рабочей схеме я часто использовал ориентир: 5 гранул 3 раза в день. Это не универсальная медицинская дозировка: конкретный продукт, состав и инструкция могут отличаться, поэтому ориентируйтесь на упаковку, фармацевта или специалиста, который знает вашу ситуацию.",
     optionTwoTitle: "2. Работать с фотографией препарата",
-    optionTwoText: "В моей практике второй вариант — смотреть на фотографию препарата несколько раз в день как на фокус внимания и сонастройки. Субъективно я считаю этот формат близким по силе; приём внутрь иногда ощущался быстрее примерно на 30–50%. Это личное наблюдение, а не установленная медицинская эффективность.",
+    optionTwoText: "В моей практике второй вариант — смотреть на фотографию препарата 3–4 раза в день как на фокус внимания и сонастройки. В исходной схеме я отмечаю, что основной момент этой практики — непосредственно просмотр фотографии. Субъективно я считаю этот формат близким по силе; приём внутрь иногда ощущался быстрее примерно на 30–50%. Это личное наблюдение, а не установленная медицинская эффективность.",
     photoTitle: "Как работать с фото",
     photoLead: "Здесь фотография используется как элемент ритуала внимания и наблюдения, а не как доказанный физиологический способ лечения.",
     photoSteps: [
@@ -40,8 +40,8 @@ const copy = {
     selfTitle: "А. Самостоятельно",
     selfItems: [
       { title: "Прочитать описание препаратов", text: "Не просто запомнить текст, а отметить, какие качества, образы и формулировки действительно откликаются." },
-      { title: "Выполнить задания и ритуалы", text: "Использовать упражнения из карточек препарата для раскрытия архетипа и записывать свои наблюдения." },
-      { title: "Добавить мандалу или изображение", text: "Можно поставить мандалу на заставку телефона или чаще возвращаться к фото как к фокусу внимания. При субъективном усилении напряжения можно делать это чаще, например коротко каждые 10 минут; при ухудшении физических симптомов это не заменяет медицинскую помощь." },
+      { title: "Выполнить задания и ритуалы", text: "Использовать упражнения из карточек препарата для раскрытия архетипа, а затем прислать или записать свои наблюдения." },
+      { title: "Добавить мандалу или изображение", text: "Можно поставить мандалу на заставку телефона или чаще возвращаться к фото препаратов как к фокусу внимания. В исходной схеме при обострении привычного симптома я предлагал коротко смотреть на фото примерно каждые 10 минут. Если физические симптомы усиливаются или появляются тревожные признаки, это не заменяет медицинскую помощь." },
       { title: "Ритуал со стаканом воды", text: "В моей практике встречается символический ритуал: поставить стакан воды на фотографии, добавить немного сахара, размешать, оставить на 10–20 минут и затем пить понемногу в течение дня. Это ритуальный элемент практики, а не доказанный способ «зарядить» воду или изменить её лечебные свойства." },
     ],
     sessionTitle: "Б. Расширенный формат сессии · около 1 часа",
@@ -68,7 +68,7 @@ const copy = {
     optionOneTitle: "1. Taking a remedy by mouth",
     optionOneText: "In my earlier working protocol I often used 5 pellets three times a day as a general reference. This is not a universal medical dose: products and instructions differ, so follow the product label and guidance from a pharmacist or clinician who knows your situation.",
     optionTwoTitle: "2. Working with a remedy photograph",
-    optionTwoText: "A second option in my practice is to look at a remedy photograph several times a day as an attention and attunement exercise. Subjectively I have found this close in perceived strength, while oral use sometimes felt about 30–50% faster. That is a personal observation, not an established medical effect.",
+    optionTwoText: "A second option in my practice is to look at a remedy photograph 3–4 times a day as an attention and attunement exercise. In the original working scheme, the main moment of this practice is the act of viewing the photograph itself. Subjectively I have found this close in perceived strength, while oral use sometimes felt about 30–50% faster. That is a personal observation, not an established medical effect.",
     photoTitle: "How to work with the photographs",
     photoLead: "The photograph is used here as part of an attention ritual and self-observation, not as a proven physiological treatment.",
     photoSteps: [
@@ -85,8 +85,8 @@ const copy = {
     selfTitle: "A. On your own",
     selfItems: [
       { title: "Read the remedy descriptions", text: "Notice which qualities, images, and phrases genuinely resonate rather than trying to memorise the text." },
-      { title: "Do the exercises and rituals", text: "Use the tasks from the remedy profiles to explore the archetype and write down your observations." },
-      { title: "Add a mandala or image", text: "You can use a mandala as your phone wallpaper or return to the remedy image more often as a focus of attention. During a subjective spike in tension you might check in briefly every 10 minutes; this is not a substitute for medical care if physical symptoms are worsening." },
+      { title: "Do the exercises and rituals", text: "Use the tasks from the remedy profiles to explore the archetype, then write down or send me your observations." },
+      { title: "Add a mandala or image", text: "You can use a mandala as your phone wallpaper or return to the remedy image more often as a focus of attention. In the original scheme, during a flare of a familiar symptom I suggested a brief look at the image about every 10 minutes. If physical symptoms worsen or warning signs appear, this is not a substitute for medical care." },
       { title: "Water-glass ritual", text: "My practice also includes a symbolic ritual: place a glass of water on the photographs, add a little sugar, stir, leave it for 10–20 minutes, then sip it through the day. This is a ritual element, not an evidence-based way to “charge” water or change its therapeutic properties." },
     ],
     sessionTitle: "B. Extended session format · about 1 hour",
@@ -113,7 +113,7 @@ const copy = {
     optionOneTitle: "1. Tomar un remedio por vía oral",
     optionOneText: "En mi protocolo de trabajo anterior utilizaba a menudo 5 gránulos tres veces al día como referencia general. No es una dosis médica universal: los productos e instrucciones varían, así que sigue la etiqueta del producto y la orientación de un farmacéutico o profesional que conozca tu situación.",
     optionTwoTitle: "2. Trabajar con una fotografía del remedio",
-    optionTwoText: "La segunda opción de mi práctica es mirar la fotografía de un remedio varias veces al día como ejercicio de atención y sintonización. Subjetivamente lo he percibido como cercano en intensidad, mientras que el uso oral a veces se sentía un 30–50% más rápido. Es una observación personal, no un efecto médico establecido.",
+    optionTwoText: "La segunda opción de mi práctica es mirar la fotografía de un remedio 3–4 veces al día como ejercicio de atención y sintonización. En el esquema original, el momento principal de esta práctica es el acto de mirar la fotografía. Subjetivamente lo he percibido como cercano en intensidad, mientras que el uso oral a veces se sentía un 30–50% más rápido. Es una observación personal, no un efecto médico establecido.",
     photoTitle: "Cómo trabajar con las fotografías",
     photoLead: "Aquí la fotografía forma parte de un ritual de atención y autoobservación, no de un tratamiento fisiológico demostrado.",
     photoSteps: [
@@ -130,8 +130,8 @@ const copy = {
     selfTitle: "A. Por tu cuenta",
     selfItems: [
       { title: "Leer las descripciones", text: "Observa qué cualidades, imágenes y frases realmente resuenan contigo." },
-      { title: "Hacer ejercicios y rituales", text: "Utiliza las tareas de las fichas para explorar el arquetipo y anota tus observaciones." },
-      { title: "Añadir una mandala o imagen", text: "Puedes usar una mandala como fondo del teléfono o volver a la imagen del remedio con más frecuencia como foco de atención. Si aumenta subjetivamente la tensión, puedes hacer una breve pausa cada 10 minutos; esto no sustituye atención médica si empeoran síntomas físicos." },
+      { title: "Hacer ejercicios y rituales", text: "Utiliza las tareas de las fichas para explorar el arquetipo y después anota o envíame tus observaciones." },
+      { title: "Añadir una mandala o imagen", text: "Puedes usar una mandala como fondo del teléfono o volver a la imagen del remedio con más frecuencia como foco de atención. En el esquema original, durante el empeoramiento de un síntoma habitual sugería mirar brevemente la imagen aproximadamente cada 10 minutos. Si empeoran los síntomas físicos o aparecen señales de alarma, esto no sustituye atención médica." },
       { title: "Ritual con un vaso de agua", text: "Mi práctica también incluye un ritual simbólico: colocar un vaso de agua sobre las fotografías, añadir un poco de azúcar, mezclar, dejarlo 10–20 minutos y beber poco a poco durante el día. Es un elemento ritual, no una forma demostrada de «cargar» el agua ni de cambiar sus propiedades terapéuticas." },
     ],
     sessionTitle: "B. Sesión ampliada · alrededor de 1 hora",
