@@ -4,6 +4,7 @@ import psimasterSources from "./psimaster-sources.generated.json";
 import psimasterMedia from "./psimaster-media.generated.json";
 import psimasterTranslations from "./psimaster-translations.generated.json";
 import legacyTranslations from "./legacy-translations.generated.json";
+import tantraReikiFull from "./tantra-reiki-full.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 export type AcademyDirectionId = "reiki" | "mysteries" | "symbolic" | "applied" | "school" | "archive";
@@ -133,6 +134,71 @@ export const academyCopy = {
 
 const sourceRecords = [...(sources as AcademySourceRecord[]), ...(psimasterSources as AcademySourceRecord[])];
 const mediaRecords = [...(media as AcademyMediaRecord[]), ...(psimasterMedia as AcademyMediaRecord[])];
+
+type TantraReikiFullLocale = "en" | "ru";
+type TantraReikiFullSource = {
+  sourceUrl: string;
+  finalUrl: string;
+  title: string;
+  description?: string | null;
+  markdown: string;
+  images: string[];
+  extractedFromLiveSource: boolean;
+};
+const tantraReikiFullSources = tantraReikiFull as unknown as Record<TantraReikiFullLocale, TantraReikiFullSource>;
+
+function stripTantraInlineMarkdown(value: string) {
+  return value
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/_(.*?)_/g, "$1")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/\\([\\*_[\]#])/g, "$1")
+    .trim();
+}
+
+function tantraMarkdownToBlocks(markdown: string): AcademyBlock[] {
+  const blocks: AcademyBlock[] = [];
+  let paragraph: string[] = [];
+  const flushParagraph = () => {
+    const text = stripTantraInlineMarkdown(paragraph.join(" ").replace(/\s+/g, " "));
+    paragraph = [];
+    if (text) blocks.push({ type: "p", text });
+  };
+
+  for (const rawLine of markdown.replace(/\r/g, "").split("\n")) {
+    const line = rawLine.trim();
+    if (!line) { flushParagraph(); continue; }
+    const heading = line.match(/^(#{1,4})\s+(.*)$/);
+    if (heading) {
+      flushParagraph();
+      const level = heading[1].length;
+      const type: AcademyBlock["type"] = level === 1 ? "h1" : level === 2 ? "h2" : level === 3 ? "h3" : "h4";
+      blocks.push({ type, text: stripTantraInlineMarkdown(heading[2]) });
+      continue;
+    }
+    const listItem = line.match(/^[-*]\s+(.*)$/);
+    if (listItem) {
+      flushParagraph();
+      blocks.push({ type: "li", text: stripTantraInlineMarkdown(listItem[1]) });
+      continue;
+    }
+    paragraph.push(line.replace(/\s{2,}$/, ""));
+  }
+  flushParagraph();
+  return blocks;
+}
+
+const tantraReikiFullBlocks: Record<TantraReikiFullLocale, AcademyBlock[]> = {
+  en: tantraMarkdownToBlocks(tantraReikiFullSources.en.markdown),
+  ru: tantraMarkdownToBlocks(tantraReikiFullSources.ru.markdown),
+};
+
+export function tantraReikiImages(locale: PublicLocale) {
+  const sourceLocale: TantraReikiFullLocale = locale === "ru" ? "ru" : "en";
+  return tantraReikiFullSources[sourceLocale].images.filter((url, index, all) => all.indexOf(url) === index);
+}
 
 const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademySourceRecord["sourceLocale"], AcademyBlock[]>>>> = {
   "reiki/tantra-reiki": {
@@ -684,6 +750,10 @@ function academyLocalizedTranslation(record: AcademySourceRecord, locale?: Publi
 }
 
 function academySourceBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
+  if (record.logicalId === "reiki/tantra-reiki") {
+    const sourceLocale: TantraReikiFullLocale = locale === "ru" || locale === "en" ? locale : record.sourceLocale;
+    return tantraReikiFullBlocks[sourceLocale];
+  }
   const translated = academyLocalizedTranslation(record, locale);
   if (translated?.length) return translated;
   const base = academyCuratedPublicBlocks[record.logicalId]?.[record.sourceLocale] ?? record.content;
@@ -695,10 +765,13 @@ function academySourceBlocks(record: AcademySourceRecord, locale?: PublicLocale)
 const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|^loading\.\.\.$|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
 
 export function academyPublicBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
-  return academySourceBlocks(record, locale).filter((block) => !academyPublicOmitPattern.test(block.text));
+  const blocks = academySourceBlocks(record, locale);
+  if (record.logicalId === "reiki/tantra-reiki") return blocks;
+  return blocks.filter((block) => !academyPublicOmitPattern.test(block.text));
 }
 
 export function academyPublicOmittedCount(record: AcademySourceRecord, locale?: PublicLocale) {
+  if (record.logicalId === "reiki/tantra-reiki") return 0;
   const blocks = academySourceBlocks(record, locale);
   return blocks.length - academyPublicBlocks(record, locale).length;
 }
