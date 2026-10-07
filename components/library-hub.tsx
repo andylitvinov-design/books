@@ -131,30 +131,6 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
       image: "/images/holistic-house/distance-homeopathy.webp",
     },
     {
-      id: "library-distance-homeopathy",
-      title:
-        locale === "ru"
-          ? "Дистанционная гомеопатия"
-          : locale === "es"
-            ? "Homeopatía a distancia"
-            : "Distance homeopathy",
-      subtitle:
-        locale === "ru"
-          ? "Как проходит работа?"
-          : locale === "es"
-            ? "¿Cómo funciona el proceso?"
-            : "How does the process work?",
-      description:
-        locale === "ru"
-          ? "Практическая памятка о базовом цикле, работе с фотографиями препаратов, наблюдениях и повторной проверке."
-          : locale === "es"
-            ? "Guía práctica sobre el ciclo básico, el trabajo con fotografías de remedios, la observación y la revisión posterior."
-            : "A practical guide to the basic cycle, remedy photographs, observation, and follow-up review.",
-      href: `/${locale}/library/distance-homeopathy`,
-      actionLabel: text.open,
-      image: "/images/holistic-house/distance-homeopathy.webp",
-    },
-    {
       id: "library-wuxing",
       title: wuxing[locale].title,
       subtitle: wuxing[locale].subtitle,
