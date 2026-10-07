@@ -389,3 +389,293 @@
   .yggdrasil-module-pagination { grid-template-columns: 1fr; }
   .yggdrasil-module-pagination > a:last-child { text-align: left; }
 }
+
+/* Reiki Yggdrasil inline course landing redesign */
+.yggdrasil-level--landing > .yggdrasil-level-summary {
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+  cursor: default;
+  border-bottom: 1px solid #e5d9cc;
+}
+.yggdrasil-level--landing > .yggdrasil-level-summary .yggdrasil-level-copy strong {
+  font-size: clamp(20px, 3vw, 28px);
+}
+.yggdrasil-course-roadmap {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px;
+  background: #f7efe5;
+}
+.yggdrasil-course-roadmap a {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 3px;
+  align-items: start;
+  border: 1px solid #ddcfc1;
+  background: #fffaf4;
+  padding: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.yggdrasil-course-roadmap a > span {
+  grid-row: 1 / span 2;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #cdb7a2;
+  border-radius: 50%;
+  color: #7b4d34;
+  font-family: var(--font-serif);
+  font-size: 12px;
+}
+.yggdrasil-course-roadmap strong {
+  color: #422f24;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.yggdrasil-course-roadmap small {
+  grid-column: 2;
+  display: -webkit-box;
+  overflow: hidden;
+  color: #806f62;
+  font-size: 10px;
+  line-height: 1.42;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.yggdrasil-step-list--inline {
+  display: grid;
+  gap: 16px;
+  border-top: 0;
+  padding: 0 16px 16px;
+}
+.yggdrasil-step-card {
+  scroll-margin-top: 18px;
+  border-top: 1px solid #d9c8b7;
+  background: #fffdf9;
+  padding: clamp(18px, 3vw, 28px) 0 4px;
+}
+.yggdrasil-step-card:first-child {
+  border-top: 0;
+}
+.yggdrasil-step-card__header {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.yggdrasil-step-card__header .yggdrasil-step-number {
+  width: 34px;
+  height: 34px;
+  font-size: 12px;
+}
+.yggdrasil-step-card__header small {
+  display: block;
+  margin-top: 1px;
+  color: #9a806d;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.yggdrasil-step-card__header h3 {
+  margin: 3px 0 0;
+  color: #3b2a20;
+  font-family: var(--font-serif);
+  font-size: clamp(24px, 3.8vw, 34px);
+  font-weight: 400;
+  line-height: 1.08;
+}
+.yggdrasil-step-card__body {
+  margin: 14px 0 0 48px;
+}
+.yggdrasil-step-card__body > .homeopathy-kicker {
+  margin-bottom: 7px;
+}
+.yggdrasil-step-card__body .yggdrasil-step-intro {
+  max-width: 760px;
+  margin: 0;
+  color: #4f4137;
+  font-size: clamp(17px, 2.2vw, 21px);
+  line-height: 1.5;
+}
+.yggdrasil-step-key-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin-top: 20px;
+}
+.yggdrasil-step-key-block,
+.yggdrasil-key-list {
+  min-width: 0;
+  border-top: 1px solid #dfd1c3;
+  padding: 14px 0 16px;
+}
+.yggdrasil-step-key-block h4,
+.yggdrasil-key-list h5 {
+  margin: 0 0 6px;
+  color: #68432f;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.yggdrasil-step-key-block p,
+.yggdrasil-key-list li {
+  color: #66584d;
+  font-size: 12px;
+  line-height: 1.52;
+}
+.yggdrasil-step-key-block p {
+  margin: 0;
+}
+.yggdrasil-key-list ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.yggdrasil-key-list li + li {
+  margin-top: 4px;
+}
+.yggdrasil-attunement-summary {
+  border-top: 1px solid #dfd1c3;
+  padding-top: 4px;
+}
+.yggdrasil-attunement-summary .yggdrasil-section-heading {
+  border-top: 0;
+  padding-top: 12px;
+}
+.yggdrasil-attunement-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 16px;
+}
+.yggdrasil-attunement-chips span {
+  border: 1px solid #d9c7b7;
+  border-radius: 999px;
+  background: #fbf3e9;
+  padding: 6px 9px;
+  color: #694834;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.yggdrasil-step-more {
+  border-top: 1px solid #d9c8b7;
+  border-bottom: 1px solid #d9c8b7;
+}
+.yggdrasil-step-more > summary {
+  display: grid;
+  gap: 3px;
+  padding: 13px 2px;
+  color: #744a33;
+  cursor: pointer;
+  list-style: none;
+}
+.yggdrasil-step-more > summary::-webkit-details-marker {
+  display: none;
+}
+.yggdrasil-step-more > summary span {
+  font-size: 11px;
+  font-weight: 800;
+}
+.yggdrasil-step-more > summary small {
+  color: #8a7768;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.yggdrasil-step-more > summary::after {
+  content: "+";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #8b5a3c;
+  font-size: 22px;
+  font-weight: 300;
+}
+.yggdrasil-step-more[open] > summary::after {
+  content: "×";
+}
+.yggdrasil-step-more__body {
+  padding: 0 0 16px;
+}
+.yggdrasil-step-more__body .yggdrasil-section-heading:first-child {
+  margin-top: 0;
+}
+@media (max-width: 700px) {
+  .yggdrasil-level--landing > .yggdrasil-level-summary {
+    grid-template-columns: 36px minmax(0, 1fr);
+    padding: 10px 12px;
+  }
+  .yggdrasil-course-roadmap {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+  .yggdrasil-course-roadmap a {
+    grid-template-columns: 30px minmax(0, 1fr);
+    padding: 10px;
+  }
+  .yggdrasil-course-roadmap a > span {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+  .yggdrasil-course-roadmap strong {
+    font-size: 15px;
+  }
+  .yggdrasil-step-list--inline {
+    gap: 8px;
+    padding: 0 12px 12px;
+  }
+  .yggdrasil-step-card {
+    padding: 18px 0 4px;
+  }
+  .yggdrasil-step-card__header {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 9px;
+  }
+  .yggdrasil-step-card__header .yggdrasil-step-number {
+    width: 30px;
+    height: 30px;
+  }
+  .yggdrasil-step-card__header h3 {
+    font-size: 24px;
+  }
+  .yggdrasil-step-card__body {
+    margin: 12px 0 0;
+  }
+  .yggdrasil-step-card__body .yggdrasil-step-intro {
+    font-size: 17px;
+    line-height: 1.48;
+  }
+  .yggdrasil-step-key-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-top: 16px;
+  }
+  .yggdrasil-step-key-block,
+  .yggdrasil-key-list {
+    padding: 12px 0 13px;
+  }
+  .yggdrasil-step-key-block h4,
+  .yggdrasil-key-list h5 {
+    font-size: 17px;
+  }
+  .yggdrasil-step-key-block p,
+  .yggdrasil-key-list li {
+    font-size: 12px;
+  }
+  .yggdrasil-attunement-chips {
+    gap: 5px;
+  }
+  .yggdrasil-attunement-chips span {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+}
