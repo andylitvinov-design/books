@@ -4,6 +4,7 @@ import psimasterSources from "./psimaster-sources.generated.json";
 import psimasterMedia from "./psimaster-media.generated.json";
 import psimasterTranslations from "./psimaster-translations.generated.json";
 import legacyTranslations from "./legacy-translations.generated.json";
+import tantraReikiFullArchive from "./tantra-reiki-full.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 export type AcademyDirectionId = "reiki" | "mysteries" | "symbolic" | "applied" | "school" | "archive";
@@ -135,68 +136,7 @@ const sourceRecords = [...(sources as AcademySourceRecord[]), ...(psimasterSourc
 const mediaRecords = [...(media as AcademyMediaRecord[]), ...(psimasterMedia as AcademyMediaRecord[])];
 
 const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademySourceRecord["sourceLocale"], AcademyBlock[]>>>> = {
-  "reiki/tantra-reiki": {
-    en: [
-      { type: "h2", text: "Tantra Reiki — overview" },
-      { type: "p", text: "The PsiTrends teaching archive presents Tantra Reiki as a contemplative energy-practice tradition focused on sensitivity, relaxation, inner vitality, self-connection and connection with others." },
-      { type: "p", text: "In this material, the practice is associated with the Osho Tantra Reiki lineage and is taught as a gradual deepening into one continuous flow rather than as nine unrelated techniques." },
-      { type: "h2", text: "Nine levels of study" },
-      { type: "h3", text: "Level 1 — activation and connection" },
-      { type: "p", text: "Traditional themes: sexual-energy activation, attractiveness or charisma, and bringing more energy into a chosen situation." },
-      { type: "h3", text: "Level 2 — accumulation and attunement" },
-      { type: "p", text: "Traditional themes: accumulation of energy, the historical “money magnet” setting, and attunement with another person or a group." },
-      { type: "h3", text: "Level 3 — unity, clearing and luck" },
-      { type: "p", text: "The archive describes deeper connection with the surrounding world, release of tension and limiting patterns, and a traditional setting called “Luck”." },
-      { type: "h3", text: "Level 4 — higher archetypal themes" },
-      { type: "p", text: "Traditional themes: Enlightenment, Gods of Love and the “Astral Child” image for the shared field of a couple or group." },
-      { type: "h3", text: "Level 5 — Inner Light" },
-      { type: "p", text: "A focus on the inner source of energy, creativity and the image of opening the energy centres." },
-      { type: "h3", text: "Level 6 — Worlds of Unity" },
-      { type: "p", text: "A contemplative level associated in the source material with calm, support, balance and a sense of spiritual unity." },
-      { type: "h3", text: "Level 7 — Illumination" },
-      { type: "p", text: "A level focused on awareness, mental clarity and the symbolic experience of consciousness becoming brighter." },
-      { type: "h3", text: "Level 8 — Creation of the World" },
-      { type: "p", text: "The source describes this as a creative impulse: moving from harmonising experience toward consciously creating and expressing." },
-      { type: "h3", text: "Level 9 — Fullness of Unity" },
-      { type: "p", text: "The final level is described through the images of inner harmony, fullness, strength and balance." },
-      { type: "h2", text: "How the historical training was structured" },
-      { type: "p", text: "The archived program grouped Levels 1–3 as basic practice, Levels 4–6 as advanced practice with mandalas and artifacts, and Levels 7–9 as a master-level study path with personal practice, written reflection and a final assessment." },
-      { type: "p", text: "The original page also connects Tantra Reiki with the wider Academy curriculum: Reiki Yggdrasil, temple traditions, archetypal work, runes, tarot and other symbolic systems." },
-      { type: "h2", text: "Practice orientation" },
-      { type: "p", text: "Across the source materials the recurring themes are love, connection, sensitivity, pleasure, personal growth, creative expression and the exploration of masculine/feminine or Shiva–Vishnu–Brahma archetypal imagery." },
-      { type: "p", text: "This page preserves the educational and historical structure of the PsiTrends course. Current teaching format, prerequisites and availability should be confirmed directly before joining." }
-    ],
-    ru: [
-      { type: "h2", text: "Тантра Рейки — о системе" },
-      { type: "p", text: "В учебном архиве PsiTrends Тантра Рейки описывается как традиция энергетической практики, связанная с чувствительностью, расслаблением, внутренней жизненностью, контактом с собой и более тонким контактом с другими." },
-      { type: "p", text: "Материал относит систему к линии Osho Tantra Reiki и рассматривает девять ступеней как постепенное углубление в один целостный поток, а не как набор отдельных техник." },
-      { type: "h2", text: "Девять ступеней" },
-      { type: "h3", text: "1 ступень — активация и контакт" },
-      { type: "p", text: "Традиционные темы: активизация сексуальной энергии, привлекательность и харизма, гармонизация ситуации." },
-      { type: "h3", text: "2 ступень — накопление и настройка" },
-      { type: "p", text: "Темы архива: накопление энергии, историческая настройка «Денежный магнит», освобождение от внутренних зажимов и сонастройка." },
-      { type: "h3", text: "3 ступень — единство и поток" },
-      { type: "p", text: "Углубление ощущения связи с окружающим пространством, настройка «Удача», работа с символическим талисманом и переживанием единства." },
-      { type: "h3", text: "4 ступень — архетипические уровни" },
-      { type: "p", text: "Традиционные темы: Боги любви, Просветление и образ «Астрального ребёнка» как общего поля пары или группы." },
-      { type: "h3", text: "5 ступень — Внутренний Свет" },
-      { type: "p", text: "Фокус на внутреннем источнике силы, творческом потенциале и образе раскрытия энергетических центров." },
-      { type: "h3", text: "6 ступень — Миры Единства" },
-      { type: "p", text: "Созерцательный уровень, который в исходном материале связан с успокоением, поддержкой, балансом и переживанием духовного единения." },
-      { type: "h3", text: "7 ступень — Озарение" },
-      { type: "p", text: "Работа с осознанностью, ясностью внимания и символическим переживанием более яркого, «светлого» состояния сознания." },
-      { type: "h3", text: "8 ступень — Созидание Мира" },
-      { type: "p", text: "Тема творческого импульса: переход от гармонизации переживания к сознательному созиданию и выражению." },
-      { type: "h3", text: "9 ступень — Полнота Единства" },
-      { type: "p", text: "Финальная ступень описывается через образы внутренней гармонии, наполненности, силы и баланса." },
-      { type: "h2", text: "Как была устроена программа обучения" },
-      { type: "p", text: "В исторической структуре PsiTrends ступени 1–3 составляли базовый уровень, 4–6 — продвинутую практику с мандалами и артефактами, а 7–9 — мастерский уровень с самостоятельной практикой, письменной рефлексией и итоговой проверкой." },
-      { type: "p", text: "Курс связывался с более широкой системой Академии: Рейки Иггдрасиль, храмовые и архетипические традиции, руны, Таро и другие символические методы." },
-      { type: "h2", text: "Основные темы практики" },
-      { type: "p", text: "В исходных материалах повторяются темы любви и соединённости, чувствительности, удовольствия, личностного роста, творческого выражения и исследования мужского/женского начала и архетипов Шивы, Вишну и Брахмы." },
-      { type: "p", text: "Эта страница сохраняет образовательную и историческую структуру курса PsiTrends. Актуальный формат обучения, условия участия и доступность программы следует уточнять отдельно." }
-    ]
-  },
+  "reiki/tantra-reiki": tantraReikiFullArchive.blocks as Partial<Record<AcademySourceRecord["sourceLocale"], AcademyBlock[]>>,
   "mysteries/initiations": {
     ru: [
       { type: "h2", text: "Мистерии и инициации — обзор" },
@@ -694,8 +634,12 @@ function academySourceBlocks(record: AcademySourceRecord, locale?: PublicLocale)
 // Curated + supplemental blocks above are source-backed recovery from live PsiTrends and preserved Joomla/Quix evidence.
 const academyPublicOmitPattern = /(free online course|limited time|register|registration|book your session|schedule your first|price|costs?:|certificate|certification|qualification|approx hours|full program takes|takes? (?:around )?\d+ (?:weeks?|months?|years?)|5\s*[-–]?\s*10 times|5 times faster|revenue growth.*times|^loading\.\.\.$|регистрац|записат|стоимост|сертифик|квалификац|бесплатн|ограниченн.*время)/i;
 
+const academyVerbatimArchiveIds = new Set(["reiki/tantra-reiki"]);
+
 export function academyPublicBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
-  return academySourceBlocks(record, locale).filter((block) => !academyPublicOmitPattern.test(block.text));
+  const blocks = academySourceBlocks(record, locale);
+  if (academyVerbatimArchiveIds.has(record.logicalId)) return blocks;
+  return blocks.filter((block) => !academyPublicOmitPattern.test(block.text));
 }
 
 export function academyPublicOmittedCount(record: AcademySourceRecord, locale?: PublicLocale) {
