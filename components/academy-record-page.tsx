@@ -35,6 +35,58 @@ function statusLabel(record: AcademySourceRecord, locale: PublicLocale) {
   return academyCopy[locale][record.status] ?? academyCopy[locale].historical;
 }
 
+const tantraReikiLevelSummary: Record<PublicLocale, {
+  title: string;
+  intro: string;
+  levels: Array<{ number: number; title: string; description: string }>;
+}> = {
+  ru: {
+    title: "Кратко о 9 ступенях",
+    intro: "Каждая ступень — это углубление в один и тот же поток Тантра Рейки: от телесной чувствительности и контакта к внутренней опоре, ясности и созиданию.",
+    levels: [
+      { number: 1, title: "Активация и контакт", description: "Пробуждение жизненности и сексуальной энергии, усиление чувствительности, привлекательности и способности наполнять энергией выбранную ситуацию." },
+      { number: 2, title: "Накопление и сонастройка", description: "Накопление внутренней энергии, настройка на другого человека или группу, работа с темой материального потока и внутренней собранности." },
+      { number: 3, title: "Единство, очищение и удача", description: "Более глубокое чувство связи с миром, отпускание напряжений и блоков, развитие интуитивного ощущения удачного хода событий." },
+      { number: 4, title: "Архетипические энергии", description: "Переход к более высоким образам: Просветление, Боги Любви и «Астральный ребёнок» как символ общего поля пары или группы." },
+      { number: 5, title: "Внутренний Свет", description: "Контакт с внутренним источником силы, творчеством и ощущением раскрытия энергетических центров." },
+      { number: 6, title: "Миры Единства", description: "Глубокое успокоение, поддержка, подпитка, стабилизация и переживание более цельного внутреннего состояния." },
+      { number: 7, title: "Озарение", description: "Усиление ясности и осознанности: внимание становится более собранным, а сознание — более светлым и устойчивым." },
+      { number: 8, title: "Созидание Мира", description: "Переход от гармонизации к творческому импульсу: не только чувствовать поток, но и направлять внимание в создание нового." },
+      { number: 9, title: "Полнота Единства", description: "Интеграция разных уровней опыта в состояние внутренней гармонии, наполненности, силы и баланса." },
+    ],
+  },
+  en: {
+    title: "The 9 levels at a glance",
+    intro: "Each level deepens the same Tantra Reiki flow: from embodied sensitivity and connection toward inner support, clarity and creative expression.",
+    levels: [
+      { number: 1, title: "Activation & connection", description: "Awakening vitality and sexual energy, increasing sensitivity, attractiveness and the ability to bring more energy into a chosen situation." },
+      { number: 2, title: "Accumulation & attunement", description: "Building inner energy, attuning with another person or group, and working with themes of material flow and inner coherence." },
+      { number: 3, title: "Unity, clearing & luck", description: "A deeper sense of connection with the world, release of tension and blocks, and a more intuitive sense of favourable movement." },
+      { number: 4, title: "Archetypal energies", description: "A transition toward higher symbolic themes: Enlightenment, Gods of Love and the “Astral Child” as an image of a shared couple or group field." },
+      { number: 5, title: "Inner Light", description: "Contact with an inner source of strength, creativity and the image of opening the energy centres." },
+      { number: 6, title: "Worlds of Unity", description: "Deep calming, support, nourishment, stabilisation and the experience of a more integrated inner state." },
+      { number: 7, title: "Illumination", description: "Greater clarity and awareness: attention becomes more focused and consciousness is experienced as brighter and steadier." },
+      { number: 8, title: "Creation of the World", description: "Moving from harmonising experience into creative impulse: not only sensing the flow, but directing attention toward creating something new." },
+      { number: 9, title: "Fullness of Unity", description: "Integrating different layers of experience into inner harmony, fullness, strength and balance." },
+    ],
+  },
+  es: {
+    title: "Las 9 etapas de un vistazo",
+    intro: "Cada etapa profundiza en el mismo flujo de Tantra Reiki: desde la sensibilidad corporal y la conexión hacia el apoyo interior, la claridad y la expresión creativa.",
+    levels: [
+      { number: 1, title: "Activación y conexión", description: "Despertar de la vitalidad y de la energía sexual, mayor sensibilidad, atractivo y capacidad de aportar energía a una situación elegida." },
+      { number: 2, title: "Acumulación y sintonización", description: "Acumulación de energía interior, sintonización con otra persona o grupo y trabajo simbólico con el flujo material y la coherencia interna." },
+      { number: 3, title: "Unidad, liberación y suerte", description: "Una conexión más profunda con el mundo, liberación de tensiones y bloqueos y un sentido más intuitivo del curso favorable de los acontecimientos." },
+      { number: 4, title: "Energías arquetípicas", description: "Transición a temas simbólicos más elevados: Iluminación, Dioses del Amor y el «Niño Astral» como imagen de un campo compartido." },
+      { number: 5, title: "Luz Interior", description: "Contacto con una fuente interior de fuerza, creatividad y la imagen de apertura de los centros energéticos." },
+      { number: 6, title: "Mundos de Unidad", description: "Calma profunda, apoyo, nutrición, estabilización y una experiencia de mayor integración interna." },
+      { number: 7, title: "Iluminación", description: "Mayor claridad y consciencia: la atención se vuelve más enfocada y la consciencia se siente más luminosa y estable." },
+      { number: 8, title: "Creación del Mundo", description: "Paso de la armonización al impulso creativo: no solo sentir el flujo, sino orientar la atención hacia la creación de algo nuevo." },
+      { number: 9, title: "Plenitud de la Unidad", description: "Integración de distintos niveles de experiencia en armonía interior, plenitud, fuerza y equilibrio." },
+    ],
+  },
+};
+
 export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; record: AcademySourceRecord }) {
   const text = academyCopy[locale];
   const sourceNotice = sourceLanguageNotice(record, locale);
@@ -69,6 +121,26 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
           <p className="homeopathy-kicker">{text.title}</p><h1>{academyDisplayTitle(record, locale)}</h1>
           <div className="academy-reading-meta"><span>{statusLabel(record, locale)}</span>{sourceNotice ? <span>{sourceNotice}</span> : null}</div>
         </header>
+        {isVerbatimTantraArchive ? (
+          <section className="tantra-level-summary" aria-labelledby="tantra-level-summary-title">
+            <div className="tantra-level-summary__heading">
+              <p className="homeopathy-kicker">{locale === "ru" ? "Быстрый обзор" : locale === "es" ? "Resumen rápido" : "Quick overview"}</p>
+              <h2 id="tantra-level-summary-title">{tantraReikiLevelSummary[locale].title}</h2>
+              <p>{tantraReikiLevelSummary[locale].intro}</p>
+            </div>
+            <div className="tantra-level-summary__grid">
+              {tantraReikiLevelSummary[locale].levels.map((level) => (
+                <article className="tantra-level-summary__card" key={level.number}>
+                  <span className="tantra-level-summary__number">{level.number}</span>
+                  <div>
+                    <h3>{level.title}</h3>
+                    <p>{level.description}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
         {record.routeKey === "history" ? <section className="academy-history-links" aria-label="Academy history"><Link href={"/" + locale + "/academy/history/faculties"}>{locale === "ru" ? "Исторические факультеты и традиции" : locale === "es" ? "Facultades y tradiciones históricas" : "Historical faculties & traditions"}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/academy/history/student-experiences"}>{locale === "ru" ? "Исторические отзывы студентов" : locale === "es" ? "Experiencias históricas de estudiantes" : "Historical student experiences"}<span aria-hidden="true">→</span></Link></section> : null}
         {isVerbatimTantraArchive ? (
