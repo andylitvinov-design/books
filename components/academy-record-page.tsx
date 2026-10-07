@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -6,7 +7,7 @@ import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
+import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, tantraReikiImages, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 
 function renderBlocks(blocks: AcademyBlock[]) {
@@ -49,6 +50,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
     .slice(0, 48);
   const isCanonicalYggdrasil = record.routeKey === "reiki/yggdrasil";
+  const isFullTantraReiki = record.logicalId === "reiki/tantra-reiki";
+  const tantraImages = isFullTantraReiki ? tantraReikiImages(locale) : [];
   const publicBlocks = isCanonicalYggdrasil ? [] : academyPublicBlocks(record, locale);
   const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record, locale);
   const hasBody = publicBlocks.some((block) => block.type !== "h1");
@@ -64,7 +67,9 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         </header>
         {outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
         {record.routeKey === "history" ? <section className="academy-history-links" aria-label="Academy history"><Link href={"/" + locale + "/academy/history/faculties"}>{locale === "ru" ? "Исторические факультеты и традиции" : locale === "es" ? "Facultades y tradiciones históricas" : "Historical faculties & traditions"}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/academy/history/student-experiences"}>{locale === "ru" ? "Исторические отзывы студентов" : locale === "es" ? "Experiencias históricas de estudiantes" : "Historical student experiences"}<span aria-hidden="true">→</span></Link></section> : null}
+        {isFullTantraReiki ? <aside className="academy-archive-notice">{locale === "ru" ? "Ниже перенесён полный текст исходных материалов PsiTrends без пересказа и сокращения. Исторические заявления о здоровье, энергетических эффектах, сертификации и старые предложения сохранены как часть архива и не являются медицинской рекомендацией или актуальной гарантией результата." : "Below is the complete PsiTrends source material, preserved without summarising or shortening. Historical health, energy-effect, certification and promotional claims are retained as archive material, not as medical guidance or current guarantees."}</aside> : null}
         {isCanonicalYggdrasil ? <YggdrasilProgramLanding locale={locale} /> : hasBody ? <div className="academy-source-content">{renderBlocks(publicBlocks)}</div> : <p className="academy-empty-source">{text.noContent}</p>}
+        {tantraImages.length ? <section className="academy-media-section academy-photo-archive" aria-label={locale === "ru" ? "Фотоматериалы Тантра Рейки" : "Tantra Reiki photo archive"}><h2>{locale === "ru" ? "Фотоматериалы исходной страницы" : "Photo materials from the source page"}</h2><div className="academy-photo-grid">{tantraImages.map((url, index) => <figure key={url}><img src={url} loading="lazy" alt={(locale === "ru" ? "Тантра Рейки — архивное фото " : "Tantra Reiki archive photo ") + (index + 1)} /><figcaption>{index + 1}</figcaption></figure>)}</div></section> : null}
         {videos.length ? <section className="academy-media-section" aria-label={text.videos}><h2>{text.videos}</h2><div className="academy-video-grid">{videos.map((video, index) => <AcademyVideoPlayer key={video.id} youtubeId={video.id} title={video.lessonTitle ?? academyDisplayTitle(record, locale) + " — video " + (index + 1)} />)}</div></section> : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
         <footer className="academy-source-footer">
