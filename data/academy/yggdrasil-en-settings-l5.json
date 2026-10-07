@@ -1,0 +1,87 @@
+{
+  "RY-L05-S01-A01": {
+    "title": "Arcana",
+    "description": "Entering the state associated with a chosen Arcana.",
+    "effect": "Intended to work with the Arcana's quality as a state of consciousness."
+  },
+  "RY-L05-S01-A02": {
+    "title": "Angels of the Arcana",
+    "description": "Working with the symbolic consciousness of an Arcana.",
+    "effect": "Intended to obtain additional information about the Arcana's symbolic space."
+  },
+  "RY-L05-S01-A03": {
+    "title": "Glyphs of the Arcana",
+    "description": "Isolating individual symbolic elements of an Arcana.",
+    "effect": "Intended to select an aspect of a situation more precisely and focus the work."
+  },
+  "RY-L05-S01-A04": {
+    "title": "Arcana on the Chakras",
+    "description": "Directing the symbolic energy of an Arcana toward a selected chakra.",
+    "effect": "Intended to make the practice more manageable through the Fireball framework."
+  },
+  "RY-L05-S02-A01": {
+    "title": "Fire",
+    "description": "Working with the element associated with the present, energy and vision.",
+    "effect": "Intended to diagnose, strengthen or direct the symbolic Fire quality."
+  },
+  "RY-L05-S02-A02": {
+    "title": "Earth",
+    "description": "Working with information, structures and the material level.",
+    "effect": "Intended to support awareness of finances, artifact work and accumulation."
+  },
+  "RY-L05-S02-A03": {
+    "title": "Water",
+    "description": "Working with the past, ancient laws and traditions.",
+    "effect": "Intended to explore causes, one's relationship with the past and alternative probabilities."
+  },
+  "RY-L05-S02-A04": {
+    "title": "Air",
+    "description": "Working with the future, alternatives and events.",
+    "effect": "Intended to choose a probability and direct attention toward a preferred option."
+  },
+  "RY-L05-S03-A01": {
+    "title": "Sephiroth",
+    "description": "Receiving the quality and mode of activity associated with a Sephirah.",
+    "effect": "Intended to build primary energy and a more harmonious state."
+  },
+  "RY-L05-S03-A02": {
+    "title": "Archangels of the Sephiroth",
+    "description": "More detailed work with the qualities and teachings associated with a Sephirah.",
+    "effect": "Intended to support gentler and more precise work with people."
+  },
+  "RY-L05-S03-A03": {
+    "title": "Orders",
+    "description": "Addressing a symbolic angelic order for teaching, protection or practical help.",
+    "effect": "Intended to provide support and direction."
+  },
+  "RY-L05-S04-A01": {
+    "title": "Page",
+    "description": "The potential of an element.",
+    "effect": "Intended to work with the emergence of a quality."
+  },
+  "RY-L05-S04-A02": {
+    "title": "Knight / Prince",
+    "description": "The prince of the element and its more material expression.",
+    "effect": "Intended to bring an elemental quality into practical action."
+  },
+  "RY-L05-S04-A03": {
+    "title": "Queen",
+    "description": "Information and analysis.",
+    "effect": "Intended to support understanding and processing of information."
+  },
+  "RY-L05-S04-A04": {
+    "title": "King",
+    "description": "Authority over a process.",
+    "effect": "Intended to manage a selected direction of work."
+  },
+  "RY-L05-S05-A01": {
+    "title": "Tarot Cards",
+    "description": "Working with the application and meanings of Tarot cards.",
+    "effect": "Intended to explore the development of a situation and the person's question."
+  },
+  "RY-L05-S05-A02": {
+    "title": "Divination Practice",
+    "description": "Developing intuition through reading a situation.",
+    "effect": "Intended to identify a problem and possible forms of support."
+  }
+}
