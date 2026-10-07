@@ -3,7 +3,10 @@ import { notFound, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub, AcademyPrefixDirectory } from "@/components/academy-hub";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
+import { YggdrasilModuleLandingPage } from "@/components/yggdrasil-module-landing";
+import { YggdrasilSourceArchivePage } from "@/components/yggdrasil-source-archive";
 import { academyCopy, academyDirections, academyDisplayTitle, findAcademyRecord, isPublicLocale, type AcademyDirectionId, type AcademyView } from "@/data/academy/catalog";
+import { yggdrasilModuleBySlug } from "@/data/academy/yggdrasil-module-map";
 import { metadataBaseFor } from "@/data/site-metadata";
 import type { PublicLocale } from "@/lib/public-locales";
 
@@ -30,8 +33,16 @@ const prefixCopy: Record<string, Record<PublicLocale, { title: string; descripti
 
 function routeKey(slug: string[] | undefined) { return (slug ?? []).join("/"); }
 function canonicalPath(locale: PublicLocale, slug: string[] | undefined) { const suffix = slug?.length ? "/" + slug.join("/") : ""; return "/" + locale + "/academy" + suffix; }
+function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 && slug[0] === "reiki" && slug[1] === "yggdrasil" ? slug[2] : null; }
+
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
+  const child = yggdrasilChild(slug);
+  if (child === "archive") return locale === "ru" ? "Рейки Иггдрасиль — полный исторический текст" : locale === "es" ? "Reiki Yggdrasil — fuente histórica completa" : "Reiki Yggdrasil — Complete Historical Source";
+  if (child) {
+    const module = yggdrasilModuleBySlug(child);
+    if (module) return module.title[locale];
+  }
   if (slug.length === 1 && directionPath[slug[0]]) return academyDirections.find((item) => item.id === directionPath[slug[0]])?.title[locale] ?? academyCopy[locale].title;
   if (slug.length === 1 && prefixCopy[slug[0]]) return prefixCopy[slug[0]][locale].title;
   if (slug.length === 1 && slug[0] === "videos") return academyCopy[locale].videoCollections;
@@ -48,13 +59,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const path = canonicalPath(locale, slug);
   const title = pageTitle(locale, slug);
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
-  const description = routeKey(slug) === "reiki/yggdrasil"
-    ? locale === "ru"
-      ? "Полная актуальная структура Reiki Yggdrasil: 7 уровней, 37 ступеней, 177 настроек и архив видеолекций."
-      : locale === "es"
-        ? "Estructura actual completa de Reiki Yggdrasil: 7 niveles, 37 etapas, 177 sintonizaciones y archivo de videoclases."
-        : "Complete current Reiki Yggdrasil curriculum: 7 levels, 37 steps, 177 attunements and the video lecture archive."
-    : academyCopy[locale].lead;
+  const child = yggdrasilChild(slug);
+  const module = child ? yggdrasilModuleBySlug(child) : null;
+  const description = module
+    ? module.lead[locale]
+    : routeKey(slug) === "reiki/yggdrasil"
+      ? locale === "ru"
+        ? "Полная актуальная структура Reiki Yggdrasil: 7 модулей, 37 ступеней, 177 настроек, отдельные лендинги и архив видеолекций."
+        : locale === "es"
+          ? "Estructura actual completa de Reiki Yggdrasil: 7 módulos, 37 etapas, 177 sintonizaciones y páginas separadas."
+          : "Complete current Reiki Yggdrasil curriculum: 7 modules, 37 steps, 177 attunements, separate landing pages and the video archive."
+      : academyCopy[locale].lead;
   return { metadataBase: metadataBaseFor(), title: title + " — Holistic House", description, alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix } } };
 }
 
@@ -63,17 +78,26 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   if (!isPublicLocale(rawLocale)) notFound();
   const locale = rawLocale;
   const key = routeKey(slug);
+  const child = yggdrasilChild(slug);
 
   if (!slug?.length) {
     const rawView = Array.isArray(query.view) ? query.view[0] : query.view;
     const view: AcademyView = rawView === "videos" ? "videos" : "programs";
     return <AcademyHub locale={locale} view={view} />;
   }
-  if (key === "reiki/master-shamanic-healing") redirect("/" + locale + "/academy/reiki/yggdrasil#basic-course-description");
+
+  if (key === "reiki/master-shamanic-healing") redirect("/" + locale + "/academy/reiki/yggdrasil/basic-course");
+  if (child === "archive") return <YggdrasilSourceArchivePage locale={locale} />;
+  if (child) {
+    const module = yggdrasilModuleBySlug(child);
+    if (module) return <YggdrasilModuleLandingPage locale={locale} module={module} />;
+  }
+
   if (slug.length === 1 && slug[0] === "videos") return <AcademyHub locale={locale} view="videos" />;
   if (slug.length === 1 && directionPath[slug[0]]) return <AcademyDirection locale={locale} direction={directionPath[slug[0]]} />;
   if (slug.length === 1 && prefixCopy[slug[0]]) { const copy = prefixCopy[slug[0]][locale]; return <AcademyPrefixDirectory locale={locale} prefix={slug[0]} title={copy.title} description={copy.description} />; }
   if (key === "history/faculties") { const history = findAcademyRecord("history", locale); if (!history) notFound(); return <AcademyRecordPage locale={locale} record={makeFacultiesRecord(history, locale)} />; }
+
   const record = findAcademyRecord(key, locale);
   if (!record) notFound();
   return <AcademyRecordPage locale={locale} record={record} />;
