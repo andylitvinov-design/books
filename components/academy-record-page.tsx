@@ -50,7 +50,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
     .slice(0, 48);
   const isCanonicalYggdrasil = record.routeKey === "reiki/yggdrasil";
-  const isFullTantraReiki = record.logicalId === "reiki/tantra-reiki";
+  const isFullTantraReiki = record.logicalId === "reiki/tantra-reiki" && (locale === "en" || locale === "ru");
   const tantraImages = isFullTantraReiki ? tantraReikiImages(locale) : [];
   const publicBlocks = isCanonicalYggdrasil ? [] : academyPublicBlocks(record, locale);
   const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record, locale);
