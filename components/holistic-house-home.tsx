@@ -134,7 +134,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </div>
       </section>
 
-      <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title">
+      <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
         <header className="service-home-start__heading">
           <p className="service-home-kicker">{text.startKicker}</p>
           <h2 id="service-home-start-title">{text.startTitle}</h2>
