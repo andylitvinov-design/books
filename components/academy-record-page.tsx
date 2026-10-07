@@ -6,6 +6,7 @@ import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { TantraReikiSideNavigation, YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import tantraReikiFullArchive from "@/data/academy/tantra-reiki-full.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -132,9 +133,12 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   const outline = publicBlocks.map((block, index) => ({ block, index })).filter(({ block }) => block.type === "h2" || block.type === "h3").slice(0, 32);
 
   return (
-    <main className="academy-reading-shell" lang={locale}>
+    <main className={"academy-reading-shell" + (isCanonicalYggdrasil || isVerbatimTantraArchive ? " academy-reading-shell--wide" : "")} lang={locale}>
       <PublicSiteHeader locale={locale} /><AcademyBackLink locale={locale} />
-      <article className="academy-reading">
+      <div className={isCanonicalYggdrasil || isVerbatimTantraArchive ? "academy-course-layout" : undefined}>
+        {isCanonicalYggdrasil ? <YggdrasilSideNavigation locale={locale} /> : null}
+        {isVerbatimTantraArchive ? <TantraReikiSideNavigation locale={locale} levels={tantraReikiLevelSummary[locale].levels} /> : null}
+        <article className="academy-reading">
         <header className="academy-reading-header">
           <p className="homeopathy-kicker">{text.title}</p><h1>{academyDisplayTitle(record, locale)}</h1>
           <div className="academy-reading-meta"><span>{statusLabel(record, locale)}</span>{sourceNotice ? <span>{sourceNotice}</span> : null}</div>
@@ -178,7 +182,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             </div>
             <div className="tantra-level-summary__grid">
               {tantraReikiLevelSummary[locale].levels.map((level) => (
-                <article className="tantra-level-summary__card" key={level.number}>
+                <article className="tantra-level-summary__card" id={`tantra-level-${level.number}`} key={level.number}>
                   <span className="tantra-level-summary__number">{level.number}</span>
                   <div>
                     <h3>{level.title}</h3>
@@ -267,7 +271,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
           )}
           {isCanonicalYggdrasil ? <code>reiki-yggdrasil@3fd7960aa77862c38f8a5754b64c3a79f5e0c96a</code> : record.contentHash ? <code>{record.hashAlgorithm ?? "hash"} {record.contentHash}</code> : null}
         </footer>
-      </article>
+        </article>
+      </div>
       <PublicConsultationCta locale={locale} />
     </main>
   );
