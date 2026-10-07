@@ -186,67 +186,122 @@ const collectionsEs = {
 };
 
 function SourceList({ title, items }: { title: string; items: string[] }) {
-  return <section className="yggdrasil-info-card"><h5>{title}</h5><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul></section>;
+  return (
+    <section className="yggdrasil-key-list">
+      <h5>{title}</h5>
+      <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
+    </section>
+  );
 }
 
 function StepDetail({ locale, level, step }: { locale: PublicLocale; level: CurriculumLevel; step: CurriculumStep }) {
   const text = copy[locale];
   const source = localizedSource(locale, level, step);
   const videos = step.video?.videos?.filter((video) => Boolean(video.youtubeId)) ?? [];
-  return (
-    <details className="yggdrasil-step">
-      <summary>
-        <span className="yggdrasil-step-number">{step.number}</span>
-        <span>
-          <small>{level.stepLabel[locale]} {step.number}</small>
-          <strong>{step.title[locale]}</strong>
-        </span>
-        <span className="yggdrasil-step-toggle" aria-hidden="true">+</span>
-      </summary>
-      <div className="yggdrasil-step-body" lang={locale === "ru" ? "ru" : locale === "es" ? "es" : "en"}>
-        <section className="yggdrasil-step-overview">
-          <p className="homeopathy-kicker">{text.overview}</p>
-          <p className="yggdrasil-step-intro">{source.intro}</p>
-          <div className="yggdrasil-info-grid">
-            <section className="yggdrasil-info-card"><h5>{text.meaning}</h5><p>{source.meaning}</p></section>
-            <SourceList title={text.opens} items={source.opens} />
-            <SourceList title={text.skills} items={source.skills} />
-            <section className="yggdrasil-info-card"><h5>{text.result}</h5><p>{source.result}</p></section>
-          </div>
-        </section>
+  const labels = {
+    en: {
+      key: "Key information",
+      outcome: "What you get",
+      attunements: "Attunements in this step",
+      full: "Full attunement descriptions & video lectures",
+      fullLead: "Open only if you want the detailed source material, individual attunement descriptions and videos.",
+    },
+    ru: {
+      key: "Главное о ступени",
+      outcome: "Результат",
+      attunements: "Настройки этой ступени",
+      full: "Полные описания настроек и видеолекции",
+      fullLead: "Открывайте только если нужны подробные описания каждой настройки и видео.",
+    },
+    es: {
+      key: "Información clave",
+      outcome: "Resultado",
+      attunements: "Sintonizaciones de esta etapa",
+      full: "Descripciones completas y videoclases",
+      fullLead: "Ábrelo solo si necesitas el material detallado, las sintonizaciones y los videos.",
+    },
+  }[locale];
 
-        <section className="yggdrasil-settings-section">
-          <div className="yggdrasil-section-heading"><h4>{text.settings}</h4><span>{step.settings.length}</span></div>
-          <div className="yggdrasil-settings-grid">
+  return (
+    <article className="yggdrasil-step-card" id={step.id.toLowerCase()}>
+      <header className="yggdrasil-step-card__header">
+        <span className="yggdrasil-step-number">{step.number}</span>
+        <div>
+          <small>{level.stepLabel[locale]} {step.number}</small>
+          <h3>{step.title[locale]}</h3>
+        </div>
+      </header>
+
+      <div className="yggdrasil-step-card__body" lang={locale === "ru" ? "ru" : locale === "es" ? "es" : "en"}>
+        <p className="homeopathy-kicker">{labels.key}</p>
+        <p className="yggdrasil-step-intro">{source.intro}</p>
+
+        <div className="yggdrasil-step-key-grid">
+          <section className="yggdrasil-step-key-block">
+            <h4>{text.meaning}</h4>
+            <p>{source.meaning}</p>
+          </section>
+          <section className="yggdrasil-step-key-block yggdrasil-step-key-block--result">
+            <h4>{labels.outcome}</h4>
+            <p>{source.result}</p>
+          </section>
+          <SourceList title={text.opens} items={source.opens} />
+          <SourceList title={text.skills} items={source.skills} />
+        </div>
+
+        <section className="yggdrasil-attunement-summary">
+          <div className="yggdrasil-section-heading">
+            <h4>{labels.attunements}</h4>
+            <span>{step.settings.length}</span>
+          </div>
+          <div className="yggdrasil-attunement-chips">
             {step.settings.map((setting) => {
               const localized = localizedSetting(locale, setting);
-              return (
-                <article className="yggdrasil-setting-card" key={setting.id}>
-                  <h5>{localized.title}</h5>
-                  <p>{localized.description}</p>
-                  <small>{localized.effect}</small>
-                </article>
-              );
+              return <span key={setting.id}>{localized.title}</span>;
             })}
           </div>
         </section>
 
-        <section className="yggdrasil-videos-section">
-          <div className="yggdrasil-section-heading"><h4>{text.videos}</h4><span>{videos.length}</span></div>
-          {videos.length ? (
-            <div className="yggdrasil-video-grid">
-              {videos.map((video, index) => (
-                <AcademyVideoPlayer
-                  key={video.youtubeId}
-                  youtubeId={video.youtubeId!}
-                  title={locale === "ru" ? video.title + (video.label ? " — " + video.label : "") : `${step.title[locale]} — ${text.videos} ${index + 1}`}
-                />
-              ))}
-            </div>
-          ) : <p className="yggdrasil-no-video">{text.noVideo}</p>}
-        </section>
+        <details className="yggdrasil-step-more">
+          <summary>
+            <span>{labels.full}</span>
+            <small>{labels.fullLead}</small>
+          </summary>
+          <div className="yggdrasil-step-more__body">
+            <section className="yggdrasil-settings-section">
+              <div className="yggdrasil-section-heading"><h4>{text.settings}</h4><span>{step.settings.length}</span></div>
+              <div className="yggdrasil-settings-grid">
+                {step.settings.map((setting) => {
+                  const localized = localizedSetting(locale, setting);
+                  return (
+                    <article className="yggdrasil-setting-card" key={setting.id}>
+                      <h5>{localized.title}</h5>
+                      <p>{localized.description}</p>
+                      <small>{localized.effect}</small>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="yggdrasil-videos-section">
+              <div className="yggdrasil-section-heading"><h4>{text.videos}</h4><span>{videos.length}</span></div>
+              {videos.length ? (
+                <div className="yggdrasil-video-grid">
+                  {videos.map((video, index) => (
+                    <AcademyVideoPlayer
+                      key={video.youtubeId}
+                      youtubeId={video.youtubeId!}
+                      title={locale === "ru" ? video.title + (video.label ? " — " + video.label : "") : `${step.title[locale]} — ${text.videos} ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              ) : <p className="yggdrasil-no-video">{text.noVideo}</p>}
+            </section>
+          </div>
+        </details>
       </div>
-    </details>
+    </article>
   );
 }
 
@@ -288,7 +343,19 @@ export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { l
                 <small>{level.steps.length} {text.steps} · {level.theme[locale]}</small>
               </span>
             </div>
-            <div className="yggdrasil-step-list">
+            <nav className="yggdrasil-course-roadmap" aria-label={locale === "ru" ? "Структура курса" : locale === "es" ? "Estructura del curso" : "Course roadmap"}>
+              {level.steps.map((step) => {
+                const source = localizedSource(locale, level, step);
+                return (
+                  <a href={"#" + step.id.toLowerCase()} key={step.id}>
+                    <span>{String(step.number).padStart(2, "0")}</span>
+                    <strong>{step.title[locale]}</strong>
+                    <small>{source.intro}</small>
+                  </a>
+                );
+              })}
+            </nav>
+            <div className="yggdrasil-step-list yggdrasil-step-list--inline">
               {level.steps.map((step) => <StepDetail key={step.id} locale={locale} level={level} step={step} />)}
             </div>
           </section>
