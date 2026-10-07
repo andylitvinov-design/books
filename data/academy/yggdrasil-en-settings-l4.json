@@ -1,0 +1,162 @@
+{
+  "RY-L04-S01-A01": {
+    "title": "Yang Energy",
+    "description": "Working with the active, warming aspect of energy.",
+    "effect": "Intended to add mobility and functional activity."
+  },
+  "RY-L04-S01-A02": {
+    "title": "Yin Energy",
+    "description": "Working with the nourishing and moistening aspect of energy.",
+    "effect": "Intended to restore inner foundation and resource."
+  },
+  "RY-L04-S01-A03": {
+    "title": "Yang Organs",
+    "description": "Working with yang organs according to the Wu Xing model used by the course.",
+    "effect": "Intended to balance active body functions in the source framework."
+  },
+  "RY-L04-S01-A04": {
+    "title": "Yin Organs",
+    "description": "Working with yin organs according to the Wu Xing model.",
+    "effect": "Intended to strengthen inner support and nourishment."
+  },
+  "RY-L04-S01-A05": {
+    "title": "Qi Activation",
+    "description": "Activating and strengthening the movement of vital energy.",
+    "effect": "Intended to build energy and increase a sense of mobility."
+  },
+  "RY-L04-S01-A06": {
+    "title": "Wind",
+    "description": "Working with Wind energy as a factor of movement.",
+    "effect": "Intended to harmonise dynamics and changeability."
+  },
+  "RY-L04-S01-A07": {
+    "title": "Heat",
+    "description": "Working with Heat energy.",
+    "effect": "Intended to notice and balance patterns of overheating and excess activity."
+  },
+  "RY-L04-S01-A08": {
+    "title": "Dampness",
+    "description": "Working with Dampness energy.",
+    "effect": "Intended to observe stagnation and accumulation."
+  },
+  "RY-L04-S01-A09": {
+    "title": "Dryness",
+    "description": "Working with Dryness energy.",
+    "effect": "Intended to observe depletion and lack of fluidity."
+  },
+  "RY-L04-S01-A10": {
+    "title": "Cold",
+    "description": "Working with Cold energy.",
+    "effect": "Intended to notice slowing and lack of warmth."
+  },
+  "RY-L04-S01-A11": {
+    "title": "Balancing",
+    "description": "General balancing of energies and elements.",
+    "effect": "Intended to bring the system into a more harmonious state."
+  },
+  "RY-L04-S02-A01": {
+    "title": "Organ Spirits",
+    "description": "Working with organ spirits as a symbolic regulatory system.",
+    "effect": "Intended to strengthen harmony and the perceived vitality of the organs."
+  },
+  "RY-L04-S02-A02": {
+    "title": "Shen",
+    "description": "The spirit of the Heart in the Chinese source model.",
+    "effect": "Used to work with the heart centre and a state of clarity."
+  },
+  "RY-L04-S02-A03": {
+    "title": "Hun",
+    "description": "The spirit of the Liver.",
+    "effect": "Intended to strengthen vitality, direction and inner movement."
+  },
+  "RY-L04-S02-A04": {
+    "title": "Po",
+    "description": "The spirit of the Lungs.",
+    "effect": "Used symbolically with breathing, boundaries and structure."
+  },
+  "RY-L04-S02-A05": {
+    "title": "Zhi",
+    "description": "The spirit of the Kidneys.",
+    "effect": "Intended to strengthen will, depth and the sense of vital reserve."
+  },
+  "RY-L04-S02-A06": {
+    "title": "Yi",
+    "description": "The spirit of the Spleen.",
+    "effect": "Intended to stabilise thought, nourishment and centredness."
+  },
+  "RY-L04-S02-A07": {
+    "title": "Animals of the Organs",
+    "description": "Working with symbolic power animals associated with the organs.",
+    "effect": "Intended to strengthen and protect the inner forces represented by the organs."
+  },
+  "RY-L04-S02-A08": {
+    "title": "Animals of the Meridians",
+    "description": "Activation of meridian flow and capacity in the course's energetic model.",
+    "effect": "Historically described as supporting well-being and energetic conductivity."
+  },
+  "RY-L04-S03-A01": {
+    "title": "Bagua",
+    "description": "Working with Bagua trigrams for personal harmonisation and energy gathering.",
+    "effect": "Intended to work with events through the symbolic structure of change."
+  },
+  "RY-L04-S03-A02": {
+    "title": "Bagua Protection",
+    "description": "Creating a protective symbolic boundary between the person and the outside world.",
+    "effect": "Intended to maintain clear energetic boundaries."
+  },
+  "RY-L04-S03-A03": {
+    "title": "Trigrams",
+    "description": "Working with the qualities associated with a selected trigram.",
+    "effect": "Intended to influence a situation through the chosen symbolic quality."
+  },
+  "RY-L04-S03-A04": {
+    "title": "Hexagrams",
+    "description": "Initiating processes and events through I Ching hexagrams.",
+    "effect": "Intended to focus attention on desired changes."
+  },
+  "RY-L04-S03-A05": {
+    "title": "Circle of Changes",
+    "description": "Initiating change where it is considered necessary.",
+    "effect": "Intended to orient practice toward the best available outcome."
+  },
+  "RY-L04-S03-A06": {
+    "title": "Zhou Yi Protection",
+    "description": "A protective practice extended symbolically into past and future.",
+    "effect": "Intended to strengthen the perceived continuity of an event line through time."
+  },
+  "RY-L04-S04-A01": {
+    "title": "Kundalini",
+    "description": "Activation of Kundalini energy with separate work on chakras and petals.",
+    "effect": "Intended to release and direct energy within a manageable range."
+  },
+  "RY-L04-S04-A02": {
+    "title": "Burning the Implant",
+    "description": "A source-tradition practice for removing unwanted energetic-information programs.",
+    "effect": "Intended to clear the field of interfering inclusions."
+  },
+  "RY-L04-S04-A03": {
+    "title": "Tattva",
+    "description": "Attunement to elements and the processes they symbolically initiate in body and consciousness.",
+    "effect": "Intended to deepen body-focused practice through elemental symbolism."
+  },
+  "RY-L04-S04-A04": {
+    "title": "Gods",
+    "description": "Attunement to archetypal forces associated with chakras and masculine/feminine principles.",
+    "effect": "Intended to bring archetypal support and balance into the practice."
+  },
+  "RY-L04-S05-A01": {
+    "title": "Money Magic 1",
+    "description": "Increasing sensitivity to financial flows.",
+    "effect": "Intended to improve awareness of resource movement."
+  },
+  "RY-L04-S05-A02": {
+    "title": "Money Magic 2",
+    "description": "Observing money movement, financial connections and attraction patterns.",
+    "effect": "Intended to make relationships and movement within financial flow more visible."
+  },
+  "RY-L04-S05-A03": {
+    "title": "Money Magic 3",
+    "description": "Working with changes in the amount of money.",
+    "effect": "Intended to explore mechanisms of growth and change in financial resource."
+  }
+}
