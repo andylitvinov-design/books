@@ -60,7 +60,26 @@ const stagesEn: Stage[] = [
   { number: 18, name: "Wuji / The Boundless", resource: "10", text: "Continuous attunement with Dao. You live in Dao and experience yourself as part of it. The main task is to preserve this connection." },
 ];
 
-const stagesEs: Stage[] = stagesEn.map((stage) => ({ ...stage }));
+const stagesEs: Stage[] = [
+  { number: 1, name: "Tormenta (caos)", resource: "1–2", text: "Enfermedad, poca base y poca fuerza. La energía parece deslizarse hacia abajo o hundirse.", direction: "Damos apoyo." },
+  { number: 2, name: "Reina de las Nieves", resource: "2–2.5", text: "La vida se siente congelada. El recurso aún no está activo, pero ya no desaparece. Aparece el primer punto de apoyo y equilibrio.", direction: "Damos calor." },
+  { number: 3, name: "Prometeo", resource: "2.5–3.0", text: "El recurso es inestable. Aparece el primer llenado de fuerza; la vida empieza a brillar, todavía de forma suave.", direction: "Damos estructura." },
+  { number: 4, name: "Fortaleza", resource: "3.0–3.5", text: "Empieza a sentirse el primer eje interno. Aún es débil, pero la persona ya no cae tan fácilmente en déficit.", direction: "Damos expresión." },
+  { number: 5, name: "Rey / Reina", resource: "3.5–4.0", text: "Aparecen los primeros impulsos hacia fuera: ocupar espacio, expresar el Yo y la voluntad libre.", direction: "Damos fuerza." },
+  { number: 6, name: "Capitán", resource: "4.0–4.5", text: "Un núcleo interno bastante firme. Hay capacidad de afirmarse y adaptar el mundo a uno mismo, aunque todavía con cierta rigidez.", direction: "Damos suavidad." },
+  { number: 7, name: "Arroyo", resource: "4.5–5.0", text: "Aparece interés por el contacto con el mundo y curiosidad por una interacción más suave.", direction: "Damos valentía." },
+  { number: 8, name: "Río", resource: "5.0–5.5", text: "Ya se siente cierta plenitud y abundancia suaves, aunque todavía tímidas." },
+  { number: 9, name: "Lago", resource: "5.5–6.0", text: "Aparece el deseo de compartir con el mundo el recurso acumulado y de crear vínculos y procesos." },
+  { number: 10, name: "Guardián del Puerto", resource: "6.0–6.5", text: "Una ligera sensación de fiesta. El puerto se abre y surge el deseo de salir a un mundo más grande y mostrarse." },
+  { number: 11, name: "Velero", resource: "6.5–7.0", text: "Más determinación. Hay objetivos y deseo de llevarlos a la realidad en un mundo más amplio." },
+  { number: 12, name: "Señor de la Cascada", resource: "7.0–7.5", text: "Confianza en lo que haces, valentía y disposición para hablar ampliamente, compartir y manifestarte." },
+  { number: 13, name: "Delta del Río", resource: "7.5–8.0", text: "Crecen el orgullo y la seguridad. Aparece la sensación de acercarse a una misión y de poder involucrar al mundo." },
+  { number: 14, name: "Océano / Guardián de los Mares", resource: "8.0–8.5", text: "Sensación de escala y del valor de lo que haces para el mundo. Autosuficiencia, orgullo personal y valor." },
+  { number: 15, name: "Vidente / Nacimiento del río en las montañas", resource: "8.5", text: "Conexión con el Dao. Se siente como si una corriente o una ola te llevara. Actúas menos para ti y más como canal de movimientos mayores, influyendo a través de visión y filosofía." },
+  { number: 16, name: "Vacío / Dao Xu", resource: "9", text: "Conexión profunda con ciertas líneas de la realidad. Creas menos directamente y ayudas a que la realidad se despliegue con más suavidad en una dirección, orientando a otros." },
+  { number: 17, name: "Wu Wei / Ley", resource: "9.5", text: "Conexión profunda con los Elementos y el Dao. La atención se dirige a ayudar a otros a encontrar esa conexión mediante tu estado y presencia. Los asuntos materiales importan menos." },
+  { number: 18, name: "Wuji / Lo ilimitado", resource: "10", text: "Sintonización continua con el Dao. Vives en el Dao y te experimentas como parte de él. La atención principal está en conservar esta conexión." },
+];
 
 const copy = {
   ru: {
