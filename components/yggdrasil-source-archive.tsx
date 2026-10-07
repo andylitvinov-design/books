@@ -5,10 +5,15 @@ import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import archive from "@/data/academy/yggdrasil-source-archive.generated.json";
+import { yggdrasilSourceImages } from "@/data/academy/yggdrasil-program-map";
 import type { PublicLocale } from "@/lib/public-locales";
 
 type SourceLocale = "en" | "ru";
 type SourceRecord = { sourceUrl: string; finalUrl: string; title: string; description?: string | null; markdown: string; images: string[] };
+
+function normalizedSourceUrl(value: string) {
+  return value.replace("https://www.psitrends.com/", "https://psitrends.com/");
+}
 
 function cleanInline(value: string) {
   return value
@@ -74,7 +79,7 @@ export function YggdrasilSourceArchivePage({ locale }: { locale: PublicLocale })
       notice: "This is historical source material. Claims about healing, clairvoyance, energetic effects, certification or outcomes are preserved for archival accuracy and are not current medical advice or guarantees.",
       program: "Current Reiki Yggdrasil program",
       source: "Original PsiTrends page",
-      photos: "Source images",
+      photos: "All source content images",
     },
     ru: {
       title: "Рейки Иггдрасиль — полный исторический текст программы",
@@ -82,7 +87,7 @@ export function YggdrasilSourceArchivePage({ locale }: { locale: PublicLocale })
       notice: "Это исторический учебный источник. Формулировки о целительстве, ясновидении, энергетических эффектах, сертификации и результатах сохранены для точности архива и не являются текущей медицинской рекомендацией или гарантией.",
       program: "Актуальная программа Рейки Иггдрасиль",
       source: "Оригинальная страница PsiTrends",
-      photos: "Изображения исходной страницы",
+      photos: "Все содержательные изображения исходной страницы",
     },
     es: {
       title: "Reiki Yggdrasil — fuente histórica completa",
@@ -90,7 +95,7 @@ export function YggdrasilSourceArchivePage({ locale }: { locale: PublicLocale })
       notice: "Material histórico: las afirmaciones de sanación, clarividencia, efectos energéticos, certificación o resultados no constituyen consejo médico ni garantías actuales.",
       program: "Programa actual Reiki Yggdrasil",
       source: "Página original de PsiTrends",
-      photos: "Imágenes de la fuente",
+      photos: "Todas las imágenes de contenido de la fuente",
     },
   }[locale];
 
@@ -114,12 +119,20 @@ export function YggdrasilSourceArchivePage({ locale }: { locale: PublicLocale })
           <section className="academy-source-gallery-section">
             <h2>{copy.photos}</h2>
             <div className="academy-source-gallery">
-              {source.images.map((src, index) => (
-                <a href={src} key={src} target="_blank" rel="noreferrer">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`${copy.photos} ${index + 1}`} loading="lazy" decoding="async" />
-                </a>
-              ))}
+              {source.images.map((src, index) => {
+                const preserved = yggdrasilSourceImages.find((item) => normalizedSourceUrl(item.sourceUrl) === normalizedSourceUrl(src));
+                const label = preserved?.label[locale] ?? `${copy.photos} ${index + 1}`;
+                const displayUrl = preserved?.localUrl ?? src;
+                return (
+                  <figure key={src}>
+                    <a href={src} target="_blank" rel="noreferrer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={displayUrl} alt={label} loading="lazy" decoding="async" />
+                    </a>
+                    <figcaption>{label}</figcaption>
+                  </figure>
+                );
+              })}
             </div>
           </section>
         ) : null}
