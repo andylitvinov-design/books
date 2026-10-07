@@ -10,7 +10,7 @@ export type LibraryView = "books" | "videos";
 export const libraryCopy = {
   en: {
     title: "Library",
-    lead: "Books and practical references are organized as one library: a single book catalog, the remedy reference, and the Wu Xing guide.",
+    lead: "Books and practical references are organized as one library: a single book catalog, the remedy reference, a distance-homeopathy guide, and the Wu Xing guide.",
     booksTab: "Books",
     videosTab: "Videos",
     sections: "Library materials",
@@ -23,7 +23,7 @@ export const libraryCopy = {
   },
   ru: {
     title: "Библиотека",
-    lead: "Книги и рабочие справочники собраны в одной библиотеке: единый каталог книг, каталог препаратов и методичка У-Син.",
+    lead: "Книги и рабочие справочники собраны в одной библиотеке: единый каталог книг, каталог препаратов, методичка по дистанционной гомеопатии и У-Син.",
     booksTab: "Книги",
     videosTab: "Видео",
     sections: "Материалы библиотеки",
@@ -36,7 +36,7 @@ export const libraryCopy = {
   },
   es: {
     title: "Biblioteca",
-    lead: "Libros y referencias prácticas en una sola biblioteca: catálogo de libros, remedios y guía Wu Xing.",
+    lead: "Libros y referencias prácticas en una sola biblioteca: catálogo de libros, remedios, guía de homeopatía a distancia y Wu Xing.",
     booksTab: "Libros",
     videosTab: "Videos",
     sections: "Materiales de la biblioteca",
@@ -115,6 +115,30 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
       href: `/${locale}/homeopathy/remedies`,
       actionLabel: text.open,
       image: "/media/remedies/arnica/message168-1.jpg",
+    },
+    {
+      id: "library-distance-homeopathy",
+      title:
+        locale === "ru"
+          ? "Дистанционная гомеопатия"
+          : locale === "es"
+            ? "Homeopatía a distancia"
+            : "Distance homeopathy",
+      subtitle:
+        locale === "ru"
+          ? "Как проходит работа?"
+          : locale === "es"
+            ? "¿Cómo funciona el proceso?"
+            : "How does the process work?",
+      description:
+        locale === "ru"
+          ? "Практическая памятка о базовом цикле, работе с фотографиями препаратов, наблюдениях и повторной проверке."
+          : locale === "es"
+            ? "Guía práctica sobre el ciclo básico, el trabajo con fotografías de remedios, la observación y la revisión posterior."
+            : "A practical guide to the basic cycle, remedy photographs, observation, and follow-up review.",
+      href: `/${locale}/library/distance-homeopathy`,
+      actionLabel: text.open,
+      image: "/images/holistic-house/distance-homeopathy.webp",
     },
     {
       id: "library-wuxing",
