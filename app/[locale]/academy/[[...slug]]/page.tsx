@@ -40,8 +40,8 @@ function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   const child = yggdrasilChild(slug);
   if (child === "archive") return locale === "ru" ? "Рейки Иггдрасиль — полный исторический текст" : locale === "es" ? "Reiki Yggdrasil — fuente histórica completa" : "Reiki Yggdrasil — Complete Historical Source";
   if (child) {
-    const module = yggdrasilModuleBySlug(child);
-    if (module) return module.title[locale];
+    const courseModule = yggdrasilModuleBySlug(child);
+    if (courseModule) return courseModule.title[locale];
   }
   if (slug.length === 1 && directionPath[slug[0]]) return academyDirections.find((item) => item.id === directionPath[slug[0]])?.title[locale] ?? academyCopy[locale].title;
   if (slug.length === 1 && prefixCopy[slug[0]]) return prefixCopy[slug[0]][locale].title;
@@ -61,8 +61,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const module = child ? yggdrasilModuleBySlug(child) : null;
-  const description = module
-    ? module.lead[locale]
+  const description = courseModule
+    ? courseModule.lead[locale]
     : routeKey(slug) === "reiki/yggdrasil"
       ? locale === "ru"
         ? "Полная актуальная структура Reiki Yggdrasil: 7 модулей, 37 ступеней, 177 настроек, отдельные лендинги и архив видеолекций."
@@ -89,8 +89,8 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   if (key === "reiki/master-shamanic-healing") redirect("/" + locale + "/academy/reiki/yggdrasil/basic-course");
   if (child === "archive") return <YggdrasilSourceArchivePage locale={locale} />;
   if (child) {
-    const module = yggdrasilModuleBySlug(child);
-    if (module) return <YggdrasilModuleLandingPage locale={locale} module={module} />;
+    const courseModule = yggdrasilModuleBySlug(child);
+    if (courseModule) return <YggdrasilModuleLandingPage locale={locale} module={courseModule} />;
   }
 
   if (slug.length === 1 && slug[0] === "videos") return <AcademyHub locale={locale} view="videos" />;
