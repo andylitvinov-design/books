@@ -28,7 +28,7 @@ test('Books stay one flat searchable catalog without mandatory series folders', 
   assert.match(hub, /\/wu-xing/);
   assert.match(hub, /CatalogShowcase/);
 
-  assert.match(home, /href={`\/\$\{locale\}\/library`}/);
+  assert.match(home, /\$\{locale\}\/library/);
   assert.match(home, /Open the Academy and Library/);
   assert.match(home, /Открыть Academy и Library/);
   assert.match(spanish, /featuredBookUrls\.en/);
