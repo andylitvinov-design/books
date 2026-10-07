@@ -6,6 +6,7 @@ import test from 'node:test'
 test('distance homeopathy guide is linked from the Library in all public locales', async () => {
   const library = await readFile('components/library-hub.tsx', 'utf8')
   assert.match(library, /library-distance-homeopathy/)
+  assert.equal((library.match(/id: "library-distance-homeopathy"/g) || []).length, 1)
   assert.match(library, /\/library\/distance-homeopathy/)
   assert.match(library, /Дистанционная гомеопатия/)
   assert.match(library, /Distance homeopathy/)
@@ -17,6 +18,8 @@ test('distance homeopathy guide preserves the author workflow with explicit evid
   const guide = await readFile('components/distance-homeopathy-guide.tsx', 'utf8')
   assert.match(guide, /Дистанционная гомеопатия/)
   assert.match(guide, /5 гранул 3 раза в день/)
+  assert.match(guide, /3–4 раза в день/)
+  assert.match(guide, /непосредственно просмотр фотографии/)
   assert.match(guide, /30–50%/)
   assert.match(guide, /10–20 минут/)
   assert.match(guide, /кристалл/)
