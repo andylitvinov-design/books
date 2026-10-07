@@ -118,7 +118,7 @@ const copy = {
     diagnosticText: "Сначала определите текущую ступень. Экспресс-диагностика нужна не ради точной цифры, а чтобы понять: что уже устойчиво и какое одно качество сейчас важнее всего дорастить.",
     diagnosticCta: "Пройти экспресс-диагностику",
     deeperTitle: "Если хотите глубже",
-    deeperText: "Полная методичка разбирает логику переходов, вызовы, задачи, критерии перехода и примеры по каждой ступени.",
+    deeperText: "Полная методичка подробнее разбирает логику переходов, базовые ступени, их вызовы, задачи, критерии перехода и примеры.",
     fullGuide: "Открыть полную методичку «Модель ДАО УСИН и ступени развития»",
     links: [
       { label: "Описание этапов · Telegram", href: "https://t.me/daomagic/170" },
@@ -167,7 +167,7 @@ const copy = {
     diagnosticText: "Identify the current stage first. The point of the short assessment is not a perfect number, but to see what is already stable and what one quality needs to grow next.",
     diagnosticCta: "Start express assessment",
     deeperTitle: "If you want more detail",
-    deeperText: "The full guide explains transition logic, challenges, tasks, criteria for moving on, and examples for each stage.",
+    deeperText: "The full guide goes deeper into transition logic, the foundational stages, their challenges, tasks, transition criteria, and examples.",
     fullGuide: "Open the full guide “DAO Wu Xing Model and Stages of Development”",
     links: [
       { label: "Three phases · Telegram", href: "https://t.me/daomagic/170" },
@@ -216,7 +216,7 @@ const copy = {
     diagnosticText: "Primero identifica la etapa actual. La evaluación breve no busca una cifra perfecta, sino entender qué ya es estable y qué cualidad conviene desarrollar ahora.",
     diagnosticCta: "Hacer evaluación breve",
     deeperTitle: "Si quieres profundizar",
-    deeperText: "La guía completa explica la lógica de transición, desafíos, tareas, criterios de paso y ejemplos para cada etapa.",
+    deeperText: "La guía completa profundiza en la lógica de transición, las etapas fundamentales, sus desafíos, tareas, criterios de paso y ejemplos.",
     fullGuide: "Abrir la guía completa «Modelo DAO Wu Xing y etapas de desarrollo»",
     links: [
       { label: "Tres fases · Telegram", href: "https://t.me/daomagic/170" },
@@ -388,7 +388,7 @@ export default async function WuXingPage({ params }: Props) {
           <h2>{text.deeperTitle}</h2>
           <p>{text.deeperText}</p>
         </div>
-        <Link className={styles.fullGuide} href="/books/dao-wuxing-model-steps">{text.fullGuide} →</Link>
+        <Link className={styles.fullGuide} href={locale === "en" ? "/books/dao-wuxing-model-steps?lang=en" : "/books/dao-wuxing-model-steps"}>{text.fullGuide} →</Link>
         <div className={styles.linkGrid}>
           {text.links.map((item) => (
             <a href={item.href} key={item.href} rel="noreferrer" target="_blank">{item.label} ↗</a>
