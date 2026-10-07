@@ -14,220 +14,219 @@ type Stage = {
   number: number;
   name: string;
   resource: string;
-  text: string;
-  direction?: string;
+  short: string;
 };
 
 const stagesRu: Stage[] = [
-  { number: 1, name: "Шторм (хаос)", resource: "1–2 ед.", text: "Болезнь, нет опоры, сил. Энергия как будто сползает вниз, проваливается.", direction: "Даем опору." },
-  { number: 2, name: "Снежная королева", resource: "2–2.5 ед.", text: "Замороженность жизни. Ресурс еще не активен, но не исчезает. Появляется первая точка опоры, равновесия.", direction: "Даем тепло." },
-  { number: 3, name: "Прометей", resource: "2.5–3.0 ед.", text: "Нестабильность ресурса. Первое наполнение силой. Свечение жизни. Ресурс уже можно нащупать, он начинает излучать, но пока очень мягко.", direction: "Даем структуру." },
-  { number: 4, name: "Крепость", resource: "3.0–3.5 ед.", text: "Начинается чувствоваться первая ось. Она пока слаба, но человек уже не соскальзывает в дефицит.", direction: "Даем проявленность." },
-  { number: 5, name: "Король / Королева", resource: "3.5–4.0 ед.", text: "Идут первые импульсы вовне. Заполнение пространства, проявление Я, свободной воли.", direction: "Даем силу." },
-  { number: 6, name: "Капитан", resource: "4.0–4.5 ед.", text: "Достаточно крепкий стержень. Есть способность заявлять о себе, подстраивать мир под себя. Пока слегка жестковато и скованно.", direction: "Даем мягкость." },
-  { number: 7, name: "Ручей", resource: "4.5–5.0 ед.", text: "Проявляются импульсы интереса к контакту с миром. Любопытство к мягкому взаимодействию.", direction: "Даем смелость." },
-  { number: 8, name: "Река", resource: "5.0–5.5 ед.", text: "Уже ощущается некоторая мягкая полнота, изобилие, но пока робкая, смущенная." },
-  { number: 9, name: "Озеро", resource: "5.5–6.0 ед.", text: "Возникает желание мягко делиться с миром своим ресурсом, тем, что накоплено, формировать связи и процессы." },
-  { number: 10, name: "Хозяин Гавани", resource: "6.0–6.5 ед.", text: "Легкий праздник. Открытие гавани. Возникает желание выходить в более большой мир, проявляться." },
-  { number: 11, name: "Парусник", resource: "6.5–7.0 ед.", text: "Больше целеустремленности. Есть цели, желание в большом мире довести их до реализации." },
-  { number: 12, name: "Владыка водопада", resource: "7.0–7.5 ед.", text: "Есть уверенность в том, что ты делаешь, смелость, готовность вещать широко, рассказывать, делиться, проявляться." },
-  { number: 13, name: "Дельта реки", resource: "7.5–8.0 ед.", text: "Возникает некоторая гордость, самоуверенность. Ощущение приближения миссии, значимости того, что ты делаешь, готовности вовлечь мир." },
-  { number: 14, name: "Океан / Хранитель морей", resource: "8.0–8.5 ед.", text: "Ощущение масштаба. Значимости и ценности того, что ты делаешь для мира. Самодостаточность, личная гордость, ценность." },
-  { number: 15, name: "Провидец / Исток реки в горах", resource: "8.5 ед.", text: "Соединение с ДАО. Ощущение, что тебя несет поток, волна. Ты делаешь не для себя, а помогаешь реализоваться через себя более большим течениям. Влияешь на сознание других через свою модель мышления, видение, философию." },
-  { number: 16, name: "Пустота / Дао Сюй", resource: "9 ед.", text: "Ты глубоко связан с какими-то линиями мира и реальности. Сам уже не столько творишь, сколько помогаешь реальности более мягко развернуться в определенном направлении. Больше даешь подсказки другим." },
-  { number: 17, name: "У-Вэй / Закон", resource: "9.5 ед.", text: "Глубокая связь со Стихиями, Дао. Ты больше направлен на то, чтобы помочь другим найти эту связь с Дао своим состоянием и присутствием. Материальные вопросы интересуют меньше." },
-  { number: 18, name: "У-цзи / Беспредельное", resource: "10 ед.", text: "Ты постоянно включен и сонастроен с Дао. Ты живешь в Дао. Ты и есть часть Дао. Основное внимание — на сохранении этой связи." },
+  { number: 1, name: "Шторм (хаос)", resource: "1–2", short: "Нет опоры и сил. Главная задача — не «развиваться», а собраться и почувствовать: «я есть»." },
+  { number: 2, name: "Снежная королева", resource: "2–2.5", short: "Жизнь как будто заморожена. Следующий шаг — тепло, безопасность и первая внутренняя опора." },
+  { number: 3, name: "Прометей", resource: "2.5–3.0", short: "Появляется первый огонь жизни. Важно разрешить себе хотеть, жить и проявляться." },
+  { number: 4, name: "Крепость", resource: "3.0–3.5", short: "Ресурс собирается в ось и границы. Человек уже может удерживать себя под нагрузкой." },
+  { number: 5, name: "Король / Королева", resource: "3.5–4.0", short: "Возвращаются достоинство и ценность. Появляется желание занимать пространство и показывать себя миру." },
+  { number: 6, name: "Капитан", resource: "4.0–4.5", short: "Есть руль и курс. Задача — управлять жизнью не из жёсткого контроля, а из внутренней силы." },
+  { number: 7, name: "Ручей", resource: "4.5–5.0", short: "Энергия начинает течь наружу мягко. Контакт с людьми и миром становится естественнее." },
+  { number: 8, name: "Река", resource: "5.0–5.5", short: "Появляется мягкая полнота и чувство, что ресурсом уже можно делиться." },
+  { number: 9, name: "Озеро", resource: "5.5–6.0", short: "Хочется формировать связи, процессы и делиться тем, что накоплено." },
+  { number: 10, name: "Хозяин Гавани", resource: "6.0–6.5", short: "Возникает готовность выходить в более большой мир и становиться заметнее." },
+  { number: 11, name: "Парусник", resource: "6.5–7.0", short: "Цели становятся яснее, появляется движение к реализации." },
+  { number: 12, name: "Владыка водопада", resource: "7.0–7.5", short: "Больше уверенности, смелости и готовности широко проявляться." },
+  { number: 13, name: "Дельта реки", resource: "7.5–8.0", short: "Ощущается приближение миссии и готовность сильнее вовлекать мир." },
+  { number: 14, name: "Океан / Хранитель морей", resource: "8.0–8.5", short: "Появляется ощущение масштаба, ценности и самодостаточности." },
+  { number: 15, name: "Провидец / Исток реки в горах", resource: "8.5", short: "Человек всё сильнее ощущает поток, видение и связь с чем-то большим, чем личная выгода." },
+  { number: 16, name: "Пустота / Дао Сюй", resource: "9", short: "Меньше прямого давления на мир, больше способности помогать реальности мягко развернуться." },
+  { number: 17, name: "У-Вэй / Закон", resource: "9.5", short: "Главным инструментом становится состояние и присутствие, через которое другие находят свой путь." },
+  { number: 18, name: "У-цзи / Беспредельное", resource: "10", short: "Состояние постоянной сонастройки с Дао. Главное — сохранять эту связь." },
 ];
 
 const stagesEn: Stage[] = [
-  { number: 1, name: "Storm (chaos)", resource: "1–2", text: "Illness, little support or strength. Energy feels as if it is sliding downward or falling through.", direction: "Give support." },
-  { number: 2, name: "Snow Queen", resource: "2–2.5", text: "Life feels frozen. Resource is not yet active, but it is no longer disappearing. The first point of support and balance appears.", direction: "Give warmth." },
-  { number: 3, name: "Prometheus", resource: "2.5–3.0", text: "Resource is unstable. The first filling with strength appears; life begins to glow, but still very softly.", direction: "Give structure." },
-  { number: 4, name: "Fortress", resource: "3.0–3.5", text: "The first inner axis begins to be felt. It is still weak, but the person no longer slips so easily into deficit.", direction: "Give expression." },
-  { number: 5, name: "King / Queen", resource: "3.5–4.0", text: "The first impulses move outward: occupying space, expressing the self and free will.", direction: "Give strength." },
-  { number: 6, name: "Captain", resource: "4.0–4.5", text: "A fairly solid inner core. There is an ability to declare oneself and shape the environment, though still somewhat rigid.", direction: "Give softness." },
-  { number: 7, name: "Stream", resource: "4.5–5.0", text: "Interest in contact with the world appears. There is curiosity toward softer interaction.", direction: "Give courage." },
-  { number: 8, name: "River", resource: "5.0–5.5", text: "A soft sense of fullness and abundance is already present, though still shy and tentative." },
-  { number: 9, name: "Lake", resource: "5.5–6.0", text: "A desire appears to share accumulated resource with the world and to form connections and processes." },
-  { number: 10, name: "Harbour Keeper", resource: "6.0–6.5", text: "A light sense of celebration. The harbour opens and there is a wish to enter a larger world and become more visible." },
-  { number: 11, name: "Sailboat", resource: "6.5–7.0", text: "More purposefulness. Goals are clearer and there is a wish to bring them into reality in the larger world." },
-  { number: 12, name: "Lord of the Waterfall", resource: "7.0–7.5", text: "Confidence in what you do, courage, and readiness to speak widely, share and be visible." },
-  { number: 13, name: "River Delta", resource: "7.5–8.0", text: "Pride and self-confidence grow. There is a sense of approaching mission, meaning and readiness to involve the world." },
-  { number: 14, name: "Ocean / Keeper of the Seas", resource: "8.0–8.5", text: "A sense of scale and of the value of what you do for the world. Self-sufficiency, personal pride and value." },
-  { number: 15, name: "Seer / Mountain Source", resource: "8.5", text: "Connection with Dao. It feels as though a current or wave carries you. You act less for yourself and more as a channel for larger movements, influencing others through vision and philosophy." },
-  { number: 16, name: "Emptiness / Dao Xu", resource: "9", text: "A deep connection with lines of reality. You create less directly and instead help reality unfold more gently in a certain direction, offering guidance to others." },
-  { number: 17, name: "Wu Wei / Law", resource: "9.5", text: "Deep connection with the Elements and Dao. Attention shifts toward helping others find this connection through your state and presence. Material concerns matter less." },
-  { number: 18, name: "Wuji / The Boundless", resource: "10", text: "Continuous attunement with Dao. You live in Dao and experience yourself as part of it. The main task is to preserve this connection." },
+  { number: 1, name: "Storm (chaos)", resource: "1–2", short: "There is little support or strength. The task is not growth yet, but to stabilise and feel: “I exist.”" },
+  { number: 2, name: "Snow Queen", resource: "2–2.5", short: "Life feels frozen. The next step is warmth, safety and the first inner point of support." },
+  { number: 3, name: "Prometheus", resource: "2.5–3.0", short: "The first fire of life appears. The task is to allow desire, life and expression." },
+  { number: 4, name: "Fortress", resource: "3.0–3.5", short: "Resource forms an inner axis and boundaries. The person can hold themselves more reliably under pressure." },
+  { number: 5, name: "King / Queen", resource: "3.5–4.0", short: "Dignity and value return. There is a wish to occupy space and show oneself to the world." },
+  { number: 6, name: "Captain", resource: "4.0–4.5", short: "There is a helm and a course. The task is to steer from inner strength rather than rigid control." },
+  { number: 7, name: "Stream", resource: "4.5–5.0", short: "Energy starts moving outward more softly. Contact with people and the world becomes more natural." },
+  { number: 8, name: "River", resource: "5.0–5.5", short: "Soft fullness appears and resource begins to feel shareable." },
+  { number: 9, name: "Lake", resource: "5.5–6.0", short: "There is a wish to form connections and processes and share what has accumulated." },
+  { number: 10, name: "Harbour Keeper", resource: "6.0–6.5", short: "Readiness to enter a larger world and become more visible." },
+  { number: 11, name: "Sailboat", resource: "6.5–7.0", short: "Goals become clearer and move toward realisation." },
+  { number: 12, name: "Lord of the Waterfall", resource: "7.0–7.5", short: "More confidence, courage and readiness for wider expression." },
+  { number: 13, name: "River Delta", resource: "7.5–8.0", short: "A sense of mission appears and the person is ready to involve the world more fully." },
+  { number: 14, name: "Ocean / Keeper of the Seas", resource: "8.0–8.5", short: "A sense of scale, value and self-sufficiency." },
+  { number: 15, name: "Seer / Mountain Source", resource: "8.5", short: "The person increasingly experiences flow, vision and connection with something larger than personal benefit." },
+  { number: 16, name: "Emptiness / Dao Xu", resource: "9", short: "Less direct force, more ability to help reality unfold gently." },
+  { number: 17, name: "Wu Wei / Law", resource: "9.5", short: "Presence itself becomes the main instrument through which others can find their way." },
+  { number: 18, name: "Wuji / The Boundless", resource: "10", short: "Continuous attunement with Dao. The task is to preserve the connection." },
 ];
 
 const stagesEs: Stage[] = [
-  { number: 1, name: "Tormenta (caos)", resource: "1–2", text: "Enfermedad, poca base y poca fuerza. La energía parece deslizarse hacia abajo o hundirse.", direction: "Damos apoyo." },
-  { number: 2, name: "Reina de las Nieves", resource: "2–2.5", text: "La vida se siente congelada. El recurso aún no está activo, pero ya no desaparece. Aparece el primer punto de apoyo y equilibrio.", direction: "Damos calor." },
-  { number: 3, name: "Prometeo", resource: "2.5–3.0", text: "El recurso es inestable. Aparece el primer llenado de fuerza; la vida empieza a brillar, todavía de forma suave.", direction: "Damos estructura." },
-  { number: 4, name: "Fortaleza", resource: "3.0–3.5", text: "Empieza a sentirse el primer eje interno. Aún es débil, pero la persona ya no cae tan fácilmente en déficit.", direction: "Damos expresión." },
-  { number: 5, name: "Rey / Reina", resource: "3.5–4.0", text: "Aparecen los primeros impulsos hacia fuera: ocupar espacio, expresar el Yo y la voluntad libre.", direction: "Damos fuerza." },
-  { number: 6, name: "Capitán", resource: "4.0–4.5", text: "Un núcleo interno bastante firme. Hay capacidad de afirmarse y adaptar el mundo a uno mismo, aunque todavía con cierta rigidez.", direction: "Damos suavidad." },
-  { number: 7, name: "Arroyo", resource: "4.5–5.0", text: "Aparece interés por el contacto con el mundo y curiosidad por una interacción más suave.", direction: "Damos valentía." },
-  { number: 8, name: "Río", resource: "5.0–5.5", text: "Ya se siente cierta plenitud y abundancia suaves, aunque todavía tímidas." },
-  { number: 9, name: "Lago", resource: "5.5–6.0", text: "Aparece el deseo de compartir con el mundo el recurso acumulado y de crear vínculos y procesos." },
-  { number: 10, name: "Guardián del Puerto", resource: "6.0–6.5", text: "Una ligera sensación de fiesta. El puerto se abre y surge el deseo de salir a un mundo más grande y mostrarse." },
-  { number: 11, name: "Velero", resource: "6.5–7.0", text: "Más determinación. Hay objetivos y deseo de llevarlos a la realidad en un mundo más amplio." },
-  { number: 12, name: "Señor de la Cascada", resource: "7.0–7.5", text: "Confianza en lo que haces, valentía y disposición para hablar ampliamente, compartir y manifestarte." },
-  { number: 13, name: "Delta del Río", resource: "7.5–8.0", text: "Crecen el orgullo y la seguridad. Aparece la sensación de acercarse a una misión y de poder involucrar al mundo." },
-  { number: 14, name: "Océano / Guardián de los Mares", resource: "8.0–8.5", text: "Sensación de escala y del valor de lo que haces para el mundo. Autosuficiencia, orgullo personal y valor." },
-  { number: 15, name: "Vidente / Nacimiento del río en las montañas", resource: "8.5", text: "Conexión con el Dao. Se siente como si una corriente o una ola te llevara. Actúas menos para ti y más como canal de movimientos mayores, influyendo a través de visión y filosofía." },
-  { number: 16, name: "Vacío / Dao Xu", resource: "9", text: "Conexión profunda con ciertas líneas de la realidad. Creas menos directamente y ayudas a que la realidad se despliegue con más suavidad en una dirección, orientando a otros." },
-  { number: 17, name: "Wu Wei / Ley", resource: "9.5", text: "Conexión profunda con los Elementos y el Dao. La atención se dirige a ayudar a otros a encontrar esa conexión mediante tu estado y presencia. Los asuntos materiales importan menos." },
-  { number: 18, name: "Wuji / Lo ilimitado", resource: "10", text: "Sintonización continua con el Dao. Vives en el Dao y te experimentas como parte de él. La atención principal está en conservar esta conexión." },
+  { number: 1, name: "Tormenta (caos)", resource: "1–2", short: "Hay poca base y poca fuerza. La tarea todavía no es crecer, sino estabilizarse y sentir: «existo»." },
+  { number: 2, name: "Reina de las Nieves", resource: "2–2.5", short: "La vida se siente congelada. El siguiente paso es calor, seguridad y el primer apoyo interno." },
+  { number: 3, name: "Prometeo", resource: "2.5–3.0", short: "Aparece el primer fuego de vida. La tarea es permitirse desear, vivir y expresarse." },
+  { number: 4, name: "Fortaleza", resource: "3.0–3.5", short: "El recurso forma un eje y límites internos. La persona puede sostenerse mejor bajo presión." },
+  { number: 5, name: "Rey / Reina", resource: "3.5–4.0", short: "Regresan dignidad y valor. Aparece el deseo de ocupar espacio y mostrarse al mundo." },
+  { number: 6, name: "Capitán", resource: "4.0–4.5", short: "Ya hay timón y rumbo. La tarea es dirigir desde la fuerza interna y no desde el control rígido." },
+  { number: 7, name: "Arroyo", resource: "4.5–5.0", short: "La energía empieza a fluir hacia fuera con más suavidad. El contacto se vuelve más natural." },
+  { number: 8, name: "Río", resource: "5.0–5.5", short: "Aparece una plenitud suave y el recurso empieza a poder compartirse." },
+  { number: 9, name: "Lago", resource: "5.5–6.0", short: "Surge el deseo de formar vínculos y procesos y compartir lo acumulado." },
+  { number: 10, name: "Guardián del Puerto", resource: "6.0–6.5", short: "Disposición a entrar en un mundo más grande y hacerse más visible." },
+  { number: 11, name: "Velero", resource: "6.5–7.0", short: "Los objetivos se vuelven más claros y avanzan hacia la realización." },
+  { number: 12, name: "Señor de la Cascada", resource: "7.0–7.5", short: "Más confianza, valentía y capacidad de expresarse ampliamente." },
+  { number: 13, name: "Delta del Río", resource: "7.5–8.0", short: "Aparece una sensación de misión y disposición a implicar más al mundo." },
+  { number: 14, name: "Océano / Guardián de los Mares", resource: "8.0–8.5", short: "Sensación de escala, valor y autosuficiencia." },
+  { number: 15, name: "Vidente / Nacimiento del río", resource: "8.5", short: "Se perciben cada vez más el flujo, la visión y la conexión con algo mayor que el beneficio personal." },
+  { number: 16, name: "Vacío / Dao Xu", resource: "9", short: "Menos fuerza directa y más capacidad de ayudar a que la realidad se despliegue suavemente." },
+  { number: 17, name: "Wu Wei / Ley", resource: "9.5", short: "La presencia se convierte en la herramienta principal para que otros encuentren su camino." },
+  { number: 18, name: "Wuji / Lo ilimitado", resource: "10", short: "Sintonización continua con el Dao. La tarea es conservar esa conexión." },
 ];
 
 const copy = {
   ru: {
-    title: "Даосская алхимия. Уровни здоровья",
-    description: "Авторская методичка Андрея Литвинова: 18 ступеней ресурса в трёх этапах Даосской Алхимии.",
+    title: "Уровни У-Син: краткая карта для новичка",
+    description: "Простое введение в авторскую модель ДАО УСИН: 18 ступеней ресурса, три этапа и следующий шаг для каждого уровня.",
     kicker: "ДАОССКАЯ АЛХИМИЯ",
-    heading: "Уровни здоровья",
-    badge: "МЕТОДИЧКА",
-    lead: "Простая карта из 18 ступеней: сначала восстановление ресурса, затем социальная проявленность и успех, затем духовное развитие.",
-    stagesTitle: "3 этапа внутренней алхимии",
-    phases: [
-      { n: "01", title: "Восстановление ресурсов тела и здоровья", note: "Нижний Дянь Тянь" },
-      { n: "02", title: "Социальная проявленность, дела и отношения", note: "Срединный Дянь Тянь" },
-      { n: "03", title: "Духовное развитие", note: "Верхний Дянь Тянь" },
+    heading: "Уровни У-Син",
+    badge: "КРАТКАЯ МЕТОДИЧКА",
+    lead: "Эта страница — не полная теория, а карта на 3–5 минут. Сначала поймите, где вы сейчас и какой следующий шаг нужен. Подробности можно открыть ниже.",
+    minuteTitle: "Суть за одну минуту",
+    minutePoints: [
+      "Уровень показывает не «хороший вы или плохой», а сколько внутреннего ресурса сейчас доступно.",
+      "Каждая ступень отвечает на 4 вопроса: где я сейчас → что уже собрано → чего не хватает → что развивать дальше.",
+      "Ступени лучше не перепрыгивать: следующая опирается на предыдущую. Если базы нет, система обычно откатывается.",
+      "Один рабочий цикл в моей модели обычно рассчитан примерно на одну ступень: около месяца и 2 сессии.",
     ],
-    scaleTitle: "Как читать шкалу",
-    scaleText: "Первые два этапа содержат по 7 ступеней, третий — 4. Всего 18 ступеней. Они показывают рост внутреннего ресурса по авторской шкале от 1 до 10.",
+    formulaTitle: "Главная логика первых ступеней",
+    formula: "выживание → тепло → огонь → границы → достоинство → управление → поток",
+    threeTitle: "Три больших этапа",
+    three: [
+      { range: "1–7", title: "Алхимия здоровья", note: "Нижний Дянь Тянь", text: "Сначала собираем тело, базовую опору и способность удерживать ресурс." },
+      { range: "8–14", title: "Алхимия успеха", note: "Срединный Дянь Тянь · Любовь и Деньги", text: "Ресурс начинает двигаться наружу: отношения, цели, влияние, реализация." },
+      { range: "15–18", title: "Алхимия духа", note: "Верхний Дянь Тянь", text: "Фокус смещается от личной реализации к видению, присутствию и связи с Дао." },
+    ],
+    scaleTitle: "Шкала ресурса",
+    scaleText: "Это авторская ориентировочная шкала 1–10. Важнее не точная цифра, а попадание в текущий диапазон и понимание следующего качества.",
     scale: [
       { range: "1–5", label: "ресурс здоровья" },
       { range: "5–8", label: "ресурс успеха" },
       { range: "9–10", label: "духовная сила" },
     ],
-    cycleTitle: "Как проходит цикл",
-    cycleText: "В моей рабочей модели один цикл Даосской Алхимии — это переход примерно на одну ступень вверх. В среднем я закладываю около 1 месяца и 2 сессии. Обычно клиенты начинают примерно со 2-й ступени.",
-    diagnostic: "Экспресс-диагностика подскажет, где вы сейчас.",
+    baseTitle: "Первые 7 ступеней — база",
+    baseLead: "Именно здесь лучше всего видно логику переходов. Каждая следующая ступень добавляет одно ключевое качество.",
+    allTitle: "Что идёт дальше",
+    allLead: "После Ручья начинается этап социальной реализации, а затем — духовный. Для быстрого обзора достаточно этой карты.",
+    diagnosticTitle: "С чего начать",
+    diagnosticText: "Сначала определите текущую ступень. Экспресс-диагностика нужна не ради точной цифры, а чтобы понять: что уже устойчиво и какое одно качество сейчас важнее всего дорастить.",
     diagnosticCta: "Пройти экспресс-диагностику",
-    levels: "Описание ступеней",
-    health: "Этап 1. Алхимия здоровья",
-    success: "Этап 2. Алхимия успеха · Любовь и Деньги",
-    spirit: "Этап 3. Алхимия духа",
-    exampleTitle: "Как проходит работа на 1–7 ступени",
-    example: [
-      "Определяем текущую ступень по экспресс-диагностике и живому разбору.",
-      "Выбираем ближайшую задачу уровня: опора, тепло, структура, проявленность, сила, мягкость или смелость.",
-      "Проходим цикл из двух сессий примерно за месяц.",
-      "Повторно смотрим состояние и решаем, готов ли ресурс перейти на следующую ступень.",
-    ],
-    linksTitle: "Ключевые ссылки",
+    deeperTitle: "Если хотите глубже",
+    deeperText: "Полная методичка разбирает логику переходов, вызовы, задачи, критерии перехода и примеры по каждой ступени.",
+    fullGuide: "Открыть полную методичку «Модель ДАО УСИН и ступени развития»",
     links: [
-      { label: "Описание этапов", href: "https://t.me/daomagic/170" },
-      { label: "Описание ступеней", href: "https://t.me/daomagic/131" },
-      { label: "Краткий тест (1–4 уровень)", href: "https://t.me/daomagic/93" },
+      { label: "Описание этапов · Telegram", href: "https://t.me/daomagic/170" },
+      { label: "Описание ступеней · Telegram", href: "https://t.me/daomagic/131" },
+      { label: "Краткий тест 1–4 уровня · Telegram", href: "https://t.me/daomagic/93" },
     ],
-    trauma: "Психотерапия травмы: прямой и обратный круг У-Син",
-    daoPath: "Мой путь к Китайской Традиции",
-    intro: "Краткое введение",
-    books: "Открыть книги и материалы по Даосской традиции",
-    contact: "Чтобы заказать личную диагностику и разбор ситуации, напишите мне в Telegram.",
+    contact: "Нужен личный разбор?",
+    contactText: "Можно пройти экспресс-диагностику или написать мне, чтобы вместе определить текущую ступень и ближайший шаг.",
     contactCta: "Написать @AndyTherapist",
-    note: "Это авторская символическая шкала ресурса и развития, а не медицинская шкала здоровья и не диагноз. При физических или психических симптомах, требующих медицинской помощи, нужна обычная профессиональная оценка.",
+    note: "Это авторская символическая модель ресурса и развития, а не медицинская шкала здоровья и не диагноз.",
   },
   en: {
-    title: "Daoist Alchemy. Levels of Health",
-    description: "Andy Litvinov’s 18-stage resource map across three stages of Daoist Alchemy.",
+    title: "Wu Xing Levels: a beginner’s map",
+    description: "A simple introduction to the author’s DAO Wu Xing model: 18 resource stages, three broad phases, and the next step at each level.",
     kicker: "DAOIST ALCHEMY",
-    heading: "Levels of Health",
-    badge: "GUIDE",
-    lead: "A simple 18-stage map: first restore resource, then expand social expression and success, then move toward spiritual development.",
-    stagesTitle: "3 stages of inner alchemy",
-    phases: [
-      { n: "01", title: "Restoring body resources and health", note: "Lower Dantian" },
-      { n: "02", title: "Social expression, work and relationships", note: "Middle Dantian" },
-      { n: "03", title: "Spiritual development", note: "Upper Dantian" },
+    heading: "Wu Xing Levels",
+    badge: "BEGINNER GUIDE",
+    lead: "This is not the full theory. It is a 3–5 minute map: first understand where you are and what the next quality is. Open the deeper material only if you need it.",
+    minuteTitle: "The idea in one minute",
+    minutePoints: [
+      "A level does not mean “good or bad”; it describes how much inner resource is currently available.",
+      "Each stage answers four questions: where am I → what is already built → what is missing → what should grow next.",
+      "Stages are not meant to be skipped: each one rests on the previous one.",
+      "In my working model, one cycle usually aims at roughly one stage: about one month and two sessions.",
     ],
-    scaleTitle: "How to read the scale",
-    scaleText: "The 18 stages describe growth of inner resource on the author’s 1–10 scale.",
+    formulaTitle: "The logic of the first stages",
+    formula: "survival → warmth → fire → boundaries → dignity → steering → flow",
+    threeTitle: "Three broad phases",
+    three: [
+      { range: "1–7", title: "Alchemy of Health", note: "Lower Dantian", text: "Build body resource, basic support and the ability to hold energy." },
+      { range: "8–14", title: "Alchemy of Success", note: "Middle Dantian · Love & Money", text: "Resource moves outward into relationships, goals, influence and realisation." },
+      { range: "15–18", title: "Alchemy of Spirit", note: "Upper Dantian", text: "Attention shifts from personal achievement toward vision, presence and connection with Dao." },
+    ],
+    scaleTitle: "Resource scale",
+    scaleText: "This is an author-developed 1–10 orientation scale. The exact number matters less than identifying the current range and the next quality.",
     scale: [
       { range: "1–5", label: "health resource" },
       { range: "5–8", label: "success resource" },
       { range: "9–10", label: "spiritual strength" },
     ],
-    cycleTitle: "How one cycle works",
-    cycleText: "In my working model, one Daoist Alchemy cycle usually means moving roughly one stage upward. I normally allow about one month and two sessions. Many clients begin around stage 2.",
-    diagnostic: "A short assessment helps identify your current stage.",
+    baseTitle: "The first 7 stages are the foundation",
+    baseLead: "This is where the transition logic is easiest to see. Each stage adds one central quality.",
+    allTitle: "What comes next",
+    allLead: "After Stream comes social realisation, then the spiritual stage. For a quick overview, this map is enough.",
+    diagnosticTitle: "Where to start",
+    diagnosticText: "Identify the current stage first. The point of the short assessment is not a perfect number, but to see what is already stable and what one quality needs to grow next.",
     diagnosticCta: "Start express assessment",
-    levels: "The 18 stages",
-    health: "Stage 1. Alchemy of Health",
-    success: "Stage 2. Alchemy of Success · Love & Money",
-    spirit: "Stage 3. Alchemy of Spirit",
-    exampleTitle: "How work usually proceeds through stages 1–7",
-    example: [
-      "Identify the current stage through a short assessment and personal review.",
-      "Choose the nearest task: support, warmth, structure, expression, strength, softness, or courage.",
-      "Complete a two-session cycle over about one month.",
-      "Review the state again and decide whether the resource is ready for the next stage.",
-    ],
-    linksTitle: "Key links",
+    deeperTitle: "If you want more detail",
+    deeperText: "The full guide explains transition logic, challenges, tasks, criteria for moving on, and examples for each stage.",
+    fullGuide: "Open the full guide “DAO Wu Xing Model and Stages of Development”",
     links: [
-      { label: "Description of the three stages", href: "https://t.me/daomagic/170" },
-      { label: "Description of the levels", href: "https://t.me/daomagic/131" },
-      { label: "Short test (levels 1–4)", href: "https://t.me/daomagic/93" },
+      { label: "Three phases · Telegram", href: "https://t.me/daomagic/170" },
+      { label: "Stage descriptions · Telegram", href: "https://t.me/daomagic/131" },
+      { label: "Short test, levels 1–4 · Telegram", href: "https://t.me/daomagic/93" },
     ],
-    trauma: "Trauma psychotherapy: direct and reverse Wu Xing cycle",
-    daoPath: "My path to the Chinese Tradition",
-    intro: "Short introduction",
-    books: "Open Daoist books and materials",
-    contact: "For a personal assessment and situation review, write to me on Telegram.",
+    contact: "Need a personal reading?",
+    contactText: "Use the express assessment or write to me so we can identify the current stage and the nearest step together.",
     contactCta: "Message @AndyTherapist",
-    note: "This is an author-developed symbolic resource and development scale, not a medical health scale or diagnosis. Physical or mental-health symptoms that need care require ordinary professional assessment.",
+    note: "This is an author-developed symbolic resource and development model, not a medical health scale or diagnosis.",
   },
   es: {
-    title: "Alquimia taoísta. Niveles de salud",
-    description: "Mapa de 18 etapas de recurso de Andy Litvinov en tres fases de Alquimia Taoísta.",
+    title: "Niveles Wu Xing: mapa para principiantes",
+    description: "Introducción sencilla al modelo DAO Wu Xing: 18 etapas de recurso, tres grandes fases y el siguiente paso en cada nivel.",
     kicker: "ALQUIMIA TAOÍSTA",
-    heading: "Niveles de salud",
-    badge: "GUÍA",
-    lead: "Un mapa sencillo de 18 etapas: primero recuperar recurso, después ampliar la expresión social y el éxito, y luego avanzar hacia el desarrollo espiritual.",
-    stagesTitle: "3 etapas de alquimia interna",
-    phases: [
-      { n: "01", title: "Restaurar recursos del cuerpo y la salud", note: "Dantian inferior" },
-      { n: "02", title: "Expresión social, trabajo y relaciones", note: "Dantian medio" },
-      { n: "03", title: "Desarrollo espiritual", note: "Dantian superior" },
+    heading: "Niveles Wu Xing",
+    badge: "GUÍA BREVE",
+    lead: "No es la teoría completa. Es un mapa de 3–5 minutos: primero entiende dónde estás y qué cualidad viene después; luego abre el material profundo si lo necesitas.",
+    minuteTitle: "La idea en un minuto",
+    minutePoints: [
+      "Un nivel no significa «bueno o malo»; describe cuánto recurso interno está disponible ahora.",
+      "Cada etapa responde cuatro preguntas: dónde estoy → qué ya está construido → qué falta → qué desarrollar después.",
+      "No conviene saltar etapas: cada una se apoya en la anterior.",
+      "En mi modelo de trabajo, un ciclo suele apuntar a una etapa: alrededor de un mes y dos sesiones.",
     ],
-    scaleTitle: "Cómo leer la escala",
-    scaleText: "Las 18 etapas describen el crecimiento del recurso interno en la escala de autor de 1 a 10.",
+    formulaTitle: "La lógica de las primeras etapas",
+    formula: "supervivencia → calor → fuego → límites → dignidad → dirección → flujo",
+    threeTitle: "Tres grandes fases",
+    three: [
+      { range: "1–7", title: "Alquimia de la salud", note: "Dantian inferior", text: "Construir recurso corporal, base y capacidad de sostener energía." },
+      { range: "8–14", title: "Alquimia del éxito", note: "Dantian medio · Amor y Dinero", text: "El recurso sale hacia relaciones, objetivos, influencia y realización." },
+      { range: "15–18", title: "Alquimia del espíritu", note: "Dantian superior", text: "La atención pasa del logro personal a visión, presencia y conexión con el Dao." },
+    ],
+    scaleTitle: "Escala de recurso",
+    scaleText: "Es una escala orientativa de autor de 1 a 10. Importa menos la cifra exacta que reconocer el rango actual y la siguiente cualidad.",
     scale: [
       { range: "1–5", label: "recurso de salud" },
       { range: "5–8", label: "recurso de éxito" },
       { range: "9–10", label: "fuerza espiritual" },
     ],
-    cycleTitle: "Cómo funciona un ciclo",
-    cycleText: "En mi modelo de trabajo, un ciclo de Alquimia Taoísta suele equivaler a subir aproximadamente una etapa. Normalmente calculo alrededor de un mes y dos sesiones. Muchos clientes comienzan cerca de la etapa 2.",
-    diagnostic: "Una evaluación breve ayuda a identificar tu etapa actual.",
+    baseTitle: "Las primeras 7 etapas son la base",
+    baseLead: "Aquí se ve mejor la lógica de transición. Cada etapa añade una cualidad central.",
+    allTitle: "Qué viene después",
+    allLead: "Después de Arroyo empieza la realización social y luego el nivel espiritual. Para una visión rápida, este mapa es suficiente.",
+    diagnosticTitle: "Por dónde empezar",
+    diagnosticText: "Primero identifica la etapa actual. La evaluación breve no busca una cifra perfecta, sino entender qué ya es estable y qué cualidad conviene desarrollar ahora.",
     diagnosticCta: "Hacer evaluación breve",
-    levels: "Las 18 etapas",
-    health: "Etapa 1. Alquimia de la salud",
-    success: "Etapa 2. Alquimia del éxito · Amor y Dinero",
-    spirit: "Etapa 3. Alquimia del espíritu",
-    exampleTitle: "Cómo suele ser el trabajo en las etapas 1–7",
-    example: [
-      "Identificamos la etapa actual con una evaluación breve y una revisión personal.",
-      "Elegimos la tarea más cercana: apoyo, calor, estructura, expresión, fuerza, suavidad o valentía.",
-      "Realizamos un ciclo de dos sesiones durante aproximadamente un mes.",
-      "Revisamos de nuevo el estado y decidimos si el recurso está listo para la siguiente etapa.",
-    ],
-    linksTitle: "Enlaces clave",
+    deeperTitle: "Si quieres profundizar",
+    deeperText: "La guía completa explica la lógica de transición, desafíos, tareas, criterios de paso y ejemplos para cada etapa.",
+    fullGuide: "Abrir la guía completa «Modelo DAO Wu Xing y etapas de desarrollo»",
     links: [
-      { label: "Descripción de las tres etapas", href: "https://t.me/daomagic/170" },
-      { label: "Descripción de los niveles", href: "https://t.me/daomagic/131" },
-      { label: "Test breve (niveles 1–4)", href: "https://t.me/daomagic/93" },
+      { label: "Tres fases · Telegram", href: "https://t.me/daomagic/170" },
+      { label: "Descripción de etapas · Telegram", href: "https://t.me/daomagic/131" },
+      { label: "Test breve, niveles 1–4 · Telegram", href: "https://t.me/daomagic/93" },
     ],
-    trauma: "Psicoterapia del trauma: ciclo Wu Xing directo e inverso",
-    daoPath: "Mi camino hacia la Tradición China",
-    intro: "Introducción breve",
-    books: "Abrir libros y materiales taoístas",
-    contact: "Para una evaluación personal y revisión de la situación, escríbeme por Telegram.",
+    contact: "¿Necesitas una lectura personal?",
+    contactText: "Haz la evaluación breve o escríbeme para identificar juntos la etapa actual y el paso más cercano.",
     contactCta: "Escribir a @AndyTherapist",
-    note: "Esta es una escala simbólica de recurso y desarrollo creada por el autor, no una escala médica de salud ni un diagnóstico. Los síntomas físicos o de salud mental que requieren atención necesitan una evaluación profesional habitual.",
+    note: "Es un modelo simbólico de recurso y desarrollo creado por el autor, no una escala médica de salud ni un diagnóstico.",
   },
 } as const;
 
@@ -239,29 +238,6 @@ function stagesFor(locale: PublicLocale) {
   if (locale === "ru") return stagesRu;
   if (locale === "es") return stagesEs;
   return stagesEn;
-}
-
-function StageList({ title, stages }: { title: string; stages: Stage[] }) {
-  return (
-    <section className={styles.levelSection}>
-      <h2>{title}</h2>
-      <div className={styles.levels}>
-        {stages.map((stage) => (
-          <article className={styles.levelCard} key={stage.number}>
-            <div className={styles.levelNumber}>{stage.number}</div>
-            <div className={styles.levelBody}>
-              <div className={styles.levelTop}>
-                <h3>{stage.name}</h3>
-                <span>{stage.resource}</span>
-              </div>
-              <p>{stage.text}</p>
-              {stage.direction ? <strong>{stage.direction}</strong> : null}
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -297,14 +273,33 @@ export default async function WuXingPage({ params }: Props) {
         <p className={styles.lead}>{text.lead}</p>
       </header>
 
+      <section className={styles.minute}>
+        <div>
+          <p className="homeopathy-kicker">01</p>
+          <h2>{text.minuteTitle}</h2>
+        </div>
+        <ol>
+          {text.minutePoints.map((point, index) => (
+            <li key={point}><span>{String(index + 1).padStart(2, "0")}</span><p>{point}</p></li>
+          ))}
+        </ol>
+      </section>
+
+      <section className={styles.formula}>
+        <p>{text.formulaTitle}</p>
+        <strong>{text.formula}</strong>
+      </section>
+
       <section className={styles.overview}>
-        <h2>{text.stagesTitle}</h2>
+        <p className="homeopathy-kicker">02</p>
+        <h2>{text.threeTitle}</h2>
         <div className={styles.phaseGrid}>
-          {text.phases.map((phase) => (
-            <article key={phase.n}>
-              <span>{phase.n}</span>
+          {text.three.map((phase) => (
+            <article key={phase.range}>
+              <span>{phase.range}</span>
               <h3>{phase.title}</h3>
-              <p>{phase.note}</p>
+              <strong>{phase.note}</strong>
+              <p>{phase.text}</p>
             </article>
           ))}
         </div>
@@ -312,6 +307,7 @@ export default async function WuXingPage({ params }: Props) {
 
       <section className={styles.scale}>
         <div>
+          <p className="homeopathy-kicker">03</p>
           <h2>{text.scaleTitle}</h2>
           <p>{text.scaleText}</p>
         </div>
@@ -325,47 +321,86 @@ export default async function WuXingPage({ params }: Props) {
         </div>
       </section>
 
-      <section className={styles.cycle}>
+      <section className={styles.baseStages}>
+        <div className={styles.sectionHeading}>
+          <p className="homeopathy-kicker">04</p>
+          <h2>{text.baseTitle}</h2>
+          <p>{text.baseLead}</p>
+        </div>
+        <div className={styles.stageList}>
+          {stages.slice(0, 7).map((stage) => (
+            <article key={stage.number}>
+              <span className={styles.stageNumber}>{stage.number}</span>
+              <div>
+                <div className={styles.stageTop}>
+                  <h3>{stage.name}</h3>
+                  <span>{stage.resource}</span>
+                </div>
+                <p>{stage.short}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.laterStages}>
+        <div className={styles.sectionHeading}>
+          <p className="homeopathy-kicker">05</p>
+          <h2>{text.allTitle}</h2>
+          <p>{text.allLead}</p>
+        </div>
+        <div className={styles.laterGroups}>
+          <div>
+            <h3>{text.three[1].title}</h3>
+            {stages.slice(7, 14).map((stage) => (
+              <div className={styles.compactStage} key={stage.number}>
+                <span>{stage.number}</span>
+                <strong>{stage.name}</strong>
+                <small>{stage.resource}</small>
+              </div>
+            ))}
+          </div>
+          <div>
+            <h3>{text.three[2].title}</h3>
+            {stages.slice(14).map((stage) => (
+              <div className={styles.compactStage} key={stage.number}>
+                <span>{stage.number}</span>
+                <strong>{stage.name}</strong>
+                <small>{stage.resource}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.start}>
         <div>
-          <h2>{text.cycleTitle}</h2>
-          <p>{text.cycleText}</p>
-          <strong>{text.diagnostic}</strong>
+          <p className="homeopathy-kicker">06</p>
+          <h2>{text.diagnosticTitle}</h2>
+          <p>{text.diagnosticText}</p>
         </div>
         <Link className="hh-primary" href={`/${locale}/services#available-services`}>{text.diagnosticCta}</Link>
       </section>
 
-      <div className={styles.levelsIntro}>
-        <p className="homeopathy-kicker">{text.levels}</p>
-      </div>
-
-      <StageList title={text.health} stages={stages.slice(0, 7)} />
-      <StageList title={text.success} stages={stages.slice(7, 14)} />
-      <StageList title={text.spirit} stages={stages.slice(14)} />
-
-      <section className={styles.example}>
-        <h2>{text.exampleTitle}</h2>
-        <ol>
-          {text.example.map((item) => <li key={item}>{item}</li>)}
-        </ol>
-      </section>
-
-      <section className={styles.links}>
-        <h2>{text.linksTitle}</h2>
+      <section className={styles.deeper}>
+        <div className={styles.sectionHeading}>
+          <p className="homeopathy-kicker">07</p>
+          <h2>{text.deeperTitle}</h2>
+          <p>{text.deeperText}</p>
+        </div>
+        <Link className={styles.fullGuide} href="/books/dao-wuxing-model-steps">{text.fullGuide} →</Link>
         <div className={styles.linkGrid}>
           {text.links.map((item) => (
             <a href={item.href} key={item.href} rel="noreferrer" target="_blank">{item.label} ↗</a>
           ))}
-          <span>{text.trauma}</span>
-          <span>{text.daoPath}</span>
-          <span>{text.intro}</span>
-          <Link href={`/${locale}/books`}>{text.books}</Link>
         </div>
       </section>
 
       <section className={styles.contact}>
         <div>
           <h2>{text.contact}</h2>
-          <p>{text.note}</p>
+          <p>{text.contactText}</p>
+          <small>{text.note}</small>
         </div>
         <a className="hh-primary" href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">{text.contactCta}</a>
       </section>
