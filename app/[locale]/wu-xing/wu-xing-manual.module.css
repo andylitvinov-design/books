@@ -1,0 +1,413 @@
+.page {
+  width: min(1120px, calc(100% - 36px));
+  margin: 0 auto;
+  padding-bottom: 88px;
+  color: #352820;
+}
+
+.hero {
+  padding: 42px 0 34px;
+  border-bottom: 1px solid #d9cdbd;
+}
+
+.hero h1 {
+  max-width: 10ch;
+  margin: 10px 0 0;
+  font-family: var(--font-serif);
+  font-size: clamp(54px, 8vw, 92px);
+  font-weight: 400;
+  line-height: .94;
+  letter-spacing: -.045em;
+}
+
+.badge {
+  display: inline-flex;
+  margin-top: 18px;
+  border: 1px solid #bfa98f;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #805943;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
+.lead {
+  max-width: 48rem;
+  margin: 20px 0 0;
+  color: #67584b;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.overview,
+.scale,
+.cycle,
+.levelSection,
+.example,
+.links,
+.contact {
+  padding: 52px 0;
+  border-bottom: 1px solid #d9cdbd;
+}
+
+.overview > h2,
+.scale h2,
+.cycle h2,
+.levelSection > h2,
+.example h2,
+.links h2,
+.contact h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(34px, 5vw, 54px);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -.03em;
+}
+
+.phaseGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.phaseGrid article {
+  border: 1px solid #d8c9b9;
+  border-radius: 18px;
+  background: #fffaf3;
+  padding: 22px;
+}
+
+.phaseGrid article > span {
+  color: #996f55;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.phaseGrid h3 {
+  margin: 12px 0 0;
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.08;
+}
+
+.phaseGrid p {
+  margin: 10px 0 0;
+  color: #7a6657;
+  font-size: 12px;
+}
+
+.scale {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, .9fr);
+  gap: 32px 52px;
+  align-items: end;
+}
+
+.scale > div:first-child > p {
+  max-width: 36rem;
+  margin: 14px 0 0;
+  color: #67584b;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.scaleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid #cdbca9;
+  border-left: 1px solid #cdbca9;
+}
+
+.scaleGrid article {
+  display: grid;
+  gap: 7px;
+  border-right: 1px solid #cdbca9;
+  border-bottom: 1px solid #cdbca9;
+  padding: 17px;
+  background: rgba(255,250,243,.55);
+}
+
+.scaleGrid strong {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.scaleGrid span {
+  color: #7a6657;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cycle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: end;
+}
+
+.cycle p {
+  max-width: 48rem;
+  margin: 14px 0 0;
+  color: #67584b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.cycle strong {
+  display: block;
+  margin-top: 14px;
+  color: #744b36;
+  font-size: 14px;
+}
+
+.cycle > a,
+.contact > a {
+  display: inline-flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 10px 20px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.levelsIntro {
+  padding-top: 54px;
+}
+
+.levelSection {
+  padding-top: 32px;
+}
+
+.levelSection > h2 {
+  max-width: 16ch;
+}
+
+.levels {
+  display: grid;
+  gap: 0;
+  margin-top: 24px;
+  border-top: 1px solid #d9cdbd;
+}
+
+.levelCard {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid #d9cdbd;
+}
+
+.levelNumber {
+  color: #986f56;
+  font-family: var(--font-serif);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.levelBody {
+  min-width: 0;
+}
+
+.levelTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.levelTop h3 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1.08;
+}
+
+.levelTop span {
+  flex: 0 0 auto;
+  border: 1px solid #d2bdab;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #7b5c49;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.levelBody > p {
+  max-width: 50rem;
+  margin: 10px 0 0;
+  color: #66574b;
+  font-size: 14px;
+  line-height: 1.62;
+}
+
+.levelBody > strong {
+  display: block;
+  margin-top: 8px;
+  color: #714936;
+  font-size: 12px;
+}
+
+.example ol {
+  display: grid;
+  gap: 0;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: flow;
+}
+
+.example li {
+  counter-increment: flow;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 14px;
+  padding: 15px 0;
+  border-top: 1px solid #ddd0c1;
+  color: #57483d;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.example li::before {
+  content: counter(flow, decimal-leading-zero);
+  color: #966e56;
+  font-family: var(--font-serif);
+  font-size: 21px;
+}
+
+.linkGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.linkGrid a,
+.linkGrid span {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  border: 1px solid #d8c9b9;
+  border-radius: 12px;
+  background: #fffaf3;
+  padding: 12px 15px;
+  color: #664733;
+  font-size: 13px;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.linkGrid a:hover {
+  border-color: #a97e61;
+}
+
+.linkGrid span {
+  color: #75675b;
+}
+
+.contact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: end;
+  border-bottom: 0;
+}
+
+.contact h2 {
+  max-width: 22ch;
+}
+
+.contact p {
+  max-width: 54rem;
+  margin: 14px 0 0;
+  color: #7b6c60;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 760px) {
+  .page {
+    width: calc(100% - 30px);
+    padding-bottom: 100px;
+  }
+
+  .hero {
+    padding-top: 28px;
+  }
+
+  .hero h1 {
+    font-size: clamp(48px, 15vw, 70px);
+  }
+
+  .phaseGrid,
+  .scale,
+  .cycle,
+  .contact {
+    grid-template-columns: 1fr;
+  }
+
+  .scaleGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cycle > a,
+  .contact > a {
+    width: 100%;
+  }
+
+  .levelCard {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .levelNumber {
+    font-size: 28px;
+  }
+
+  .levelTop {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .levelTop h3 {
+    font-size: 24px;
+  }
+
+  .linkGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 390px) {
+  .page {
+    width: calc(100% - 24px);
+  }
+
+  .overview,
+  .scale,
+  .cycle,
+  .levelSection,
+  .example,
+  .links,
+  .contact {
+    padding-block: 42px;
+  }
+
+  .levelSection {
+    padding-top: 28px;
+  }
+
+  .levelCard {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+}
