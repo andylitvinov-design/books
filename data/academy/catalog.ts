@@ -750,7 +750,7 @@ function academyLocalizedTranslation(record: AcademySourceRecord, locale?: Publi
 }
 
 function academySourceBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
-  if (record.logicalId === "reiki/tantra-reiki") {
+  if (record.logicalId === "reiki/tantra-reiki" && (locale === undefined || locale === "ru" || locale === "en")) {
     const sourceLocale: TantraReikiFullLocale = locale === "ru" || locale === "en" ? locale : record.sourceLocale;
     return tantraReikiFullBlocks[sourceLocale];
   }
@@ -766,12 +766,12 @@ const academyPublicOmitPattern = /(free online course|limited time|register|regi
 
 export function academyPublicBlocks(record: AcademySourceRecord, locale?: PublicLocale) {
   const blocks = academySourceBlocks(record, locale);
-  if (record.logicalId === "reiki/tantra-reiki") return blocks;
+  if (record.logicalId === "reiki/tantra-reiki" && (locale === undefined || locale === "ru" || locale === "en")) return blocks;
   return blocks.filter((block) => !academyPublicOmitPattern.test(block.text));
 }
 
 export function academyPublicOmittedCount(record: AcademySourceRecord, locale?: PublicLocale) {
-  if (record.logicalId === "reiki/tantra-reiki") return 0;
+  if (record.logicalId === "reiki/tantra-reiki" && (locale === undefined || locale === "ru" || locale === "en")) return 0;
   const blocks = academySourceBlocks(record, locale);
   return blocks.length - academyPublicBlocks(record, locale).length;
 }
