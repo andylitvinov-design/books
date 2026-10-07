@@ -41,9 +41,7 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
 
   assert.match(home, /восстановление · практика · поддержка/)
   assert.match(home, /healing · practice · guidance/)
-  assert.match(home, /Авторская книга/)
-  assert.match(home, /The Power of Life/)
-  assert.match(page, /uiLocale/)
+  assert.match(home, /Три простых пути/)\n  assert.match(home, /Three simple paths/)\n  assert.match(home, /Открыть Academy и Library/)\n  assert.match(home, /Open the Academy and Library/)\n  assert.match(page, /uiLocale/)
   assert.match(page, /cookieStore\.get\(uiLocaleCookie\)\?\.value === "ru" \? "ru" : "en"/)
   assert.match(page, /Holistic House — inner development, practice and personal work/)
 })
