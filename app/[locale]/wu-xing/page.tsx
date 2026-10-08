@@ -285,6 +285,9 @@ export default async function WuXingPage({ params }: Props) {
         <span className={styles.badge}>{text.badge}</span>
         <p className={styles.lead}>{text.lead}</p>
         <p className={styles.pathHint}>{text.pathHint}</p>
+        <figure className={styles.heroPhoto}>
+          <Image src="/academy/reiki-yggdrasil/source/eastern-tradition.png" alt="" fill sizes="(max-width: 800px) 100vw, 800px" loading="lazy" />
+        </figure>
         <nav className={styles.jumpNav} aria-label={text.badge}>
           <a href="#model-overview">{text.readingNav[0]}</a>
           <a href="#all-stages">{text.readingNav[1]}</a>
