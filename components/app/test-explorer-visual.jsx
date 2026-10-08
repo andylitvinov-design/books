@@ -15,6 +15,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const ru = locale === 'ru', es = locale === 'es'
   const spanishAxes = {"stress":"Estrés","anxiety":"Ansiedad","mood":"Estado de ánimo","sleep":"Sueño","energy":"Energía","clarity":"Claridad","focus":"Concentración","emotional_regulation":"Regulación emocional","relationships":"Relaciones","resource":"Recursos y resiliencia","self_support":"Apoyo interior","functioning":"Vida cotidiana","personality":"Personalidad","meaning":"Sentido y dirección"}
   const label = (axis) => (es ? spanishAxes[axis] : null) || TEST_EXPLORER_AXIS_LABELS[axis]?.[locale] || TEST_EXPLORER_AXIS_LABELS[axis]?.en || axis
+  const activeAxes = TEST_EXPLORER_AXES.filter((axis) => (coverage.axes[axis]?.coverage || 0) > 0).sort((a, b) => coverage.axes[b].coverage - coverage.axes[a].coverage)
   const update = (next) => setRotation({ x: Math.max(-8, Math.min(8, next.x)), y: Math.max(-22, Math.min(22, next.y)) })
   const onKeyDown = (event) => {
     const step = { ArrowLeft: { y: -4 }, ArrowRight: { y: 4 }, ArrowUp: { x: -2 }, ArrowDown: { x: 2 } }[event.key]
@@ -69,6 +70,14 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       </div>
     </div>
     <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>
+    {activeAxes.length > 0 && <div className={styles.axisMeters} aria-label={ru ? 'Активные оси' : es ? 'Ejes activos' : 'Active axes'}>
+      {activeAxes.map((axis) => <div key={axis} className={styles.axisMeter}>
+        <span>{label(axis)}</span>
+        {mode === 'selected'
+          ? <progress max={1} value={coverage.axes[axis].coverage} aria-label={label(axis)} />
+          : <span className={styles.axisInterest}>{ru ? 'В фокусе' : es ? 'Enfoque' : 'In focus'}</span>}
+      </div>)}
+    </div>}
     <div className={styles.visualFooter}><button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button><p>{ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.'}</p></div>
   </section>
 }
