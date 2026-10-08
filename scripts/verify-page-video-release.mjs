@@ -80,6 +80,13 @@ async function exercise(engine, browserType) {
         await page.evaluate(() => document.fonts.ready);
         const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`);
         await expect(block).toHaveCount(1);
+        // Editorial method videos are intentionally collapsed on Services.
+        // Expand their containing details before measuring or clicking the player.
+        const disclosure = block.locator('xpath=ancestor::details[not(contains(@class,"site-video-transcript"))][1]');
+        if (await disclosure.count() && await disclosure.getAttribute('open') === null) {
+          await disclosure.locator('summary').first().click();
+        }
+        await expect(block).toBeVisible();
         await expect(block.locator('.site-video-player')).toHaveClass(/site-video-player--minimal/);
         const play = block.locator('button.site-video-play');
         await expect(play).toBeEnabled({ timeout: 30000 });
