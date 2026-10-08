@@ -318,3 +318,8 @@
   .nextActions a:first-child, .contact > a { width: 100%; }
   .jumpNav { gap: 10px 19px; }
 }
+
+/* One source photograph in the long-form Wu Xing manual; preserve single-column reading. */
+.heroPhoto { position:relative; margin:24px 0 0; width:100%; aspect-ratio:16/8; border-radius:18px; overflow:hidden; background:#e6ddcf; }
+.heroPhoto img { object-fit:cover; object-position:center; }
+@media (max-width:767px) { .heroPhoto {aspect-ratio:16/10;border-radius:13px;} }
