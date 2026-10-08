@@ -5,6 +5,7 @@ import { ArrowDown, ArrowRight, BookOpen, Compass, ScrollText } from "lucide-rea
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TempleStudiesSideNavigation } from "@/components/reiki-course-side-nav";
+import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import {
   academyDisplayTitle,
   academyPublicBlocks,
@@ -14,6 +15,7 @@ import {
   type AcademySourceRecord,
 } from "@/data/academy/catalog";
 import { templeStages } from "@/data/academy/temple-studies-curriculum";
+import { templeVideoCollections } from "@/data/academy/temple-studies-videos";
 import type { PublicLocale } from "@/lib/public-locales";
 
 const copy: Record<PublicLocale, {
@@ -115,6 +117,7 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
               {courseRecords.map(({ stage, sources }, index) => {
                 const data = stage.copy[locale];
                 const nextStage = templeStages[index + 1];
+                const videoCollections = locale === "ru" ? templeVideoCollections(stage.id, locale) : [];
                 const legacyAliases: Record<string, string[]> = {
                   greek: ["mysteries"], traditions: ["traditions"], symbols: ["symbols"],
                   initiation: ["practice"], application: ["path"],
@@ -146,6 +149,37 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                         <div><span className="temple-practice-label">{t.exercise}</span><p>{data.exercise}</p></div>
                         <div><span className="temple-practice-label">{t.outcome}</span><p>{data.outcome}</p></div>
                       </div>
+                      {videoCollections.length ? (
+                        <section className="temple-video-archive" aria-label="Русские видеозаписи курса">
+                          <div className="temple-video-archive-heading">
+                            <h3>Видеоуроки из архива PsiMaster</h3>
+                            <p>Ваши оригинальные русскоязычные записи, распределённые по этапам обучения. Откройте курс и выберите урок. Повторяющиеся видео показаны один раз.</p>
+                          </div>
+                          {videoCollections.map((collection, collectionIndex) => (
+                            <details className="temple-video-series" key={collection.key} open={collectionIndex === 0}>
+                              <summary>
+                                <span>{collection.title}</span>
+                                <span className="temple-video-series-count">{collection.videos.length} видео</span>
+                              </summary>
+                              <div className="temple-video-series-content">
+                                <div className="temple-video-grid">
+                                  {collection.videos.map((video) => (
+                                    <div className="temple-video-lesson" key={video.id}>
+                                      <AcademyVideoPlayer youtubeId={video.id} title={video.title} />
+                                      <p className="temple-video-lesson-title">{video.title}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                                {collection.sourceUrl ? (
+                                  <a className="temple-video-provenance" href={collection.sourceUrl} target="_blank" rel="noopener noreferrer">
+                                    Оригинальная программа на PsiMaster <ArrowRight size={15} aria-hidden="true" />
+                                  </a>
+                                ) : null}
+                              </div>
+                            </details>
+                          ))}
+                        </section>
+                      ) : null}
                       {sources.length ? (
                         <details className="temple-sources">
                           <summary><BookOpen size={18} aria-hidden="true" /> {t.original} ({sources.length})</summary>
