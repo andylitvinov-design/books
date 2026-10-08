@@ -40,25 +40,31 @@ test('acquisition events are an allowlist and never describe personal or assessm
   assert.doesNotMatch(JSON.stringify(ACQUISITION_EVENTS), /answer|score|email|name|health/i)
 })
 
-test('the public Home and Services surfaces consume the single local acquisition model', () => {
+test('local acquisition stays on Home while Services presents three clear directions', () => {
   const home = readFileSync(new URL('../components/holistic-house-home.tsx', import.meta.url), 'utf8')
   const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8')
   const styles = readFileSync(new URL('../app/holistic-house-home.css', import.meta.url), 'utf8')
 
   assert.match(home, /LOCAL_ACQUISITION/)
-  assert.match(services, /LOCAL_ACQUISITION/)
   assert.match(styles, /\.service-home-self-check/)
+  assert.match(services, /id: "psychohomeopathy"/)
+  assert.match(services, /id: "imagery"/)
+  assert.match(services, /id: "constellations"/)
+  assert.match(services, /free-situation-review/)
+  assert.doesNotMatch(services, /CatalogShowcase/)
+  assert.doesNotMatch(services, /LOCAL_ACQUISITION/)
 })
 
-test('the local acquisition service cards use only registered page-video slots', () => {
+test('services keeps video explanations inside optional details and moves Reiki to Academy', () => {
   const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8')
-  const acquisitionCardsStart = services.indexOf('{entry.services.map')
-  const acquisitionCardsEnd = services.indexOf('</section>', acquisitionCardsStart)
-  const acquisitionCards = services.slice(acquisitionCardsStart, acquisitionCardsEnd)
 
-  assert.doesNotMatch(acquisitionCards, /PageVideo/)
-  assert.match(services, /current\.cards\.map/)
-  assert.match(services, /PageVideo slot=\{"service-" \+ id\}/)
+  assert.match(services, /<details>/)
+  assert.match(services, /PageVideo slot="services-intro"/)
+  assert.match(services, /PageVideo slot="method-hypnotherapy"/)
+  assert.match(services, /PageVideo slot="method-constellations"/)
+  assert.match(services, /academy\/reiki/)
+  assert.match(services, /<PersonalTestimonials/)
+  assert.match(services, /<PublicConsultationCta/)
 })
 
 test('event instrumentation is consent-gated and has no personal-data payload path', () => {
