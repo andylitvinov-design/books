@@ -88,6 +88,13 @@ export default function AppWorkspace({ locale, path = [] }) {
     setError(null)
     try {
       const fresh = await appFetch('bootstrap')
+      // A partially available response must not render an authenticated shell.
+      if (!fresh?.account || !Array.isArray(fresh.results)) {
+        const error = new Error('SERVICE_UNAVAILABLE')
+        error.code = 'SERVICE_UNAVAILABLE'
+        error.status = 503
+        throw error
+      }
       setData(fresh)
       setState('ready')
     } catch (e) {
@@ -238,7 +245,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <h1>{c.loading}</h1>
       </main>
     )
-  if (state === 'ready' && !data)
+  if (state === 'ready' && !data?.account)
     return (
       <main className="hh-app" aria-busy="true">
         <p className="hh-kicker">Holistic House</p>
@@ -284,7 +291,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           Holistic House<span>{locale === 'ru' ? 'Личный кабинет' : 'Private cabinet'}</span>
         </Link>
         <details className="hh-account-menu">
-          <summary>{data.account.displayName || c.account}</summary>
+          <summary>{data.account?.displayName || c.account}</summary>
           <div>
             <Link href={`${root}/settings`} prefetch={false}>
               {c.settings}
