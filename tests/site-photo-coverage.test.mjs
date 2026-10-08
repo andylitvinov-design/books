@@ -83,5 +83,7 @@ test("editorial images are visually integrated, responsive and appropriately var
   assert.match(context, /kind === "reading"/);
   assert.match(context, /andy-about\.png/);
   assert.match(context, /books-library\.webp/);
+  assert.match(read("app/[locale]/wu-xing/page.tsx"), /source\/eastern-tradition\.png/);
+  assert.match(context, /pathname\.includes\("wu-xing"\) \? "\/academy\/reiki-yggdrasil\/source\/temple-studies\.png"/);
   assert.match(read("app/es/page.tsx"), /service-home-hero-photo/);
 });
