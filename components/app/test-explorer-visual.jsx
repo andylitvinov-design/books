@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import Image from 'next/image'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import styles from './test-explorer.module.css'
 
@@ -8,7 +9,7 @@ const PRIMARY_AXES = TEST_EXPLORER_AXES.slice(0, 10)
 const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
 
 export function TestExplorerVisual({ locale, coverage, axisFilter, onAxisFilter }) {
-  const [variant, setVariant] = useState('female')
+  const [variant, setVariant] = useState('male')
   const [rotation, setRotation] = useState({ x: 0, y: 0 })
   const drag = useRef(null)
   const ru = locale === 'ru'
@@ -36,8 +37,11 @@ export function TestExplorerVisual({ locale, coverage, axisFilter, onAxisFilter 
         {['female', 'male'].map((key) => <button type="button" key={key} aria-pressed={variant === key} onClick={() => setVariant(key)}>{key === 'female' ? (ru ? 'Женская' : 'Female') : (ru ? 'Мужская' : 'Male')}</button>)}
       </div>
     </header>
-    <div className={styles.modelStage} tabIndex={0} role="application" aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }}>
-      <svg viewBox="0 0 360 390" className={styles.model} aria-hidden="true">
+    <div className={styles.modelStage} tabIndex={0} role="application" aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
+      <div className={styles.portraitArt} data-visible={variant === 'male' ? 'true' : 'false'} aria-hidden="true" style={{ transform: `translate3d(${rotation.y * .3}px, ${rotation.x * .3}px, 0)` }}>
+        <Image src="/images/holistic-house-test-brain-concept.png" width={1672} height={941} unoptimized alt="" draggable={false} className={styles.portraitSource} />
+      </div>
+      <svg viewBox="0 0 360 390" className={`${styles.model} ${variant === 'male' ? styles.modelPhoto : ''}`} aria-hidden="true">
         <g style={{ transform: `perspective(700px) rotateY(${rotation.y}deg) rotateX(${-rotation.x}deg)`, transformOrigin: '50% 52%' }}>
           <ellipse cx="180" cy="193" rx="116" ry="154" className={styles.aura} />
           <path className={styles.bust} d={variant === 'female' ? 'M106 365c8-73 36-108 74-112 38 4 66 39 74 112H106Z' : 'M94 365c8-69 38-102 86-108 48 6 78 39 86 108H94Z'} />
