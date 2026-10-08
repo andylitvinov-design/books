@@ -1840,3 +1840,158 @@
   .academy-reading-shell--yggdrasil .yggdrasil-module-art-image { transition: none; }
   .academy-reading-shell--yggdrasil .yggdrasil-module-art:hover .yggdrasil-module-art-image { transform: none; }
 }
+
+
+/* Reiki Yggdrasil attunements — open, readable vertical composition; never a card grid */
+.yggdrasil-step-card__body .yggdrasil-settings-section {
+  margin: clamp(24px, 3vw, 34px) 0 25px;
+  padding: 0;
+}
+.yggdrasil-step-card__body .yggdrasil-settings-heading {
+  border-top: 1px solid #cdb49c;
+  padding: 20px 0 5px;
+  align-items: center;
+}
+.yggdrasil-step-card__body .yggdrasil-settings-heading h4 {
+  color: #3a271f;
+  font-family: var(--font-serif);
+  font-size: clamp(29px, 3vw, 38px);
+  font-weight: 500;
+  letter-spacing: -.03em;
+  line-height: 1.12;
+}
+.yggdrasil-step-card__body .yggdrasil-settings-heading span {
+  min-width: 34px;
+  height: 34px;
+  color: #754932;
+  font-size: 13px;
+}
+.yggdrasil-settings-list {
+  display: block;
+}
+.yggdrasil-setting-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: clamp(13px, 2vw, 22px);
+  align-items: start;
+  padding: clamp(19px, 2.6vw, 29px) 0;
+  border-bottom: 1px solid #e0d1c2;
+}
+.yggdrasil-setting-glyph {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid #c7a58a;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 20%, #fffcf6, #eee0d0);
+  color: #98613c;
+  box-shadow: inset 0 0 0 5px #fcf5eb, 0 3px 12px rgb(94 56 29 / 7%);
+}
+.yggdrasil-setting-row__text {
+  min-width: 0;
+}
+.yggdrasil-setting-row__text h5 {
+  margin: -2px 0 7px;
+  color: #38251b;
+  font-family: var(--font-serif);
+  font-size: clamp(25px, 2.7vw, 34px);
+  font-weight: 500;
+  letter-spacing: -.026em;
+  line-height: 1.15;
+}
+.yggdrasil-setting-row__text p {
+  max-width: 700px;
+  margin: 0;
+  color: #5b4c40;
+  font-size: clamp(16px, 1.55vw, 19px);
+  line-height: 1.52;
+  text-wrap: pretty;
+}
+.yggdrasil-russian-archive {
+  margin: clamp(24px, 3vw, 38px) 0 10px;
+  border-top: 1px solid #dec9b5;
+  border-bottom: 1px solid #dec9b5;
+  background: #f9f4ed;
+}
+.yggdrasil-russian-archive > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 17px;
+  align-items: center;
+  padding: 19px clamp(13px, 2vw, 25px);
+  cursor: pointer;
+  list-style: none;
+}
+.yggdrasil-russian-archive > summary::-webkit-details-marker {
+  display: none;
+}
+.yggdrasil-russian-archive > summary:focus-visible {
+  outline: 2px solid #8e6041;
+  outline-offset: -3px;
+}
+.yggdrasil-russian-archive > summary:hover {
+  background: #f4eae0;
+}
+.yggdrasil-russian-archive__copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.yggdrasil-russian-archive__copy strong {
+  color: #4e3829;
+  font-family: var(--font-serif);
+  font-size: clamp(19px, 2.1vw, 26px);
+  font-weight: 500;
+  line-height: 1.18;
+}
+.yggdrasil-russian-archive__copy small {
+  color: #856f5e;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.yggdrasil-russian-archive__count {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #eee0d1;
+  color: #754d37;
+  font-size: 14px;
+  font-weight: 700;
+}
+.yggdrasil-russian-archive__chevron {
+  color: #82573a;
+  transition: transform .2s ease;
+}
+.yggdrasil-russian-archive[open] .yggdrasil-russian-archive__chevron {
+  transform: rotate(180deg);
+}
+.yggdrasil-russian-archive__contents {
+  padding: 0 clamp(13px, 2vw, 25px) 24px;
+}
+@media (max-width: 680px) {
+  .yggdrasil-step-card__body .yggdrasil-settings-heading h4 { font-size: 31px; }
+  .yggdrasil-setting-row {
+    grid-template-columns: 49px minmax(0, 1fr);
+    gap: 13px;
+    padding: 21px 0;
+  }
+  .yggdrasil-setting-glyph { width: 46px; height: 46px; box-shadow: inset 0 0 0 3px #fcf5eb; }
+  .yggdrasil-setting-glyph svg { width: 24px; height: 24px; }
+  .yggdrasil-setting-row__text h5 { font-size: clamp(24px, 6.6vw, 29px); }
+  .yggdrasil-setting-row__text p { font-size: 16px; line-height: 1.55; }
+  .yggdrasil-russian-archive > summary {
+    grid-template-columns: 1fr auto auto;
+    gap: 9px;
+    padding: 15px;
+  }
+  .yggdrasil-russian-archive > summary .yggdrasil-language-badge {
+    grid-column: 1 / -1;
+    width: max-content;
+  }
+  .yggdrasil-russian-archive__copy small {
+    font-size: 12px;
+  }
+}
