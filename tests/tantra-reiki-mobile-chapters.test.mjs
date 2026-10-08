@@ -11,7 +11,7 @@ test("Tantra Reiki renders one self-contained section per level, not a nine-card
   assert.match(journey, /id=\{"tantra-level-"\+n\}/);
   assert.match(journey, /copy\.att\.map/);
   assert.match(journey, /copy\.practice/);
-  assert.match(journey, /"tantra-level-"\+\(n\+1\)/);
+  assert.ok(journey.includes('"#tantra-level-"+(n+1)'));
   assert.match(journey, /#tantra-media/);
   assert.match(journey, /Link href=\{"\/"\+locale\+"\/services"\}/);
 });
@@ -33,7 +33,7 @@ test("Tantra Reiki contains nine grounded level names and preserves EN/RU attune
 test("Mobile Tantra Reiki chapters occupy a scroll screen without clipping content", async () => {
   const css = await readFile("app/academy.css", "utf8");
   assert.match(css, /\.tantra-journey__level \{ min-height: 100svh/);
-  assert.doesNotMatch(css, /\.tantra-journey__level \{[^}]*height: 100svh/);
+  assert.doesNotMatch(css, /(?<!min-)height: 100svh/);
   assert.match(css, /\.tantra-journey__actions/);
   assert.match(css, /prefers-reduced-motion/);
 });
