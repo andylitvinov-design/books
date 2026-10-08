@@ -6,6 +6,7 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import type { PublicLocale } from "@/lib/public-locales";
+import fullManual from "@/data/academy/yggdrasil-basic-manual-original.ru.json";
 
 type LevelCopy = {
   title: string;
@@ -89,7 +90,7 @@ const copy: Record<PublicLocale, DescriptionCopy> = {
     next: "Следующий этап в актуальной структуре школы — Инструкторский курс. К нему можно переходить после знакомства с базовой программой и её пятью ступенями.",
     openCourse: "Перейти к ступеням, настройкам и видео",
     overview: "Ко всей программе Рейки Иггдрасиль",
-    sourceNote: "Основано на русскоязычной методичке «Рейки-Иггдрасиль. Базовый курс. I–V ступени» и материалах Академии. Описание адаптировано для публичного ознакомления; полная методичка не размещается на открытой странице.",
+    sourceNote: "Основано на русскоязычной методичке «Рейки-Иггдрасиль. Базовый курс. I–V ступени» и материалах Академии. Описание адаптировано для публичного ознакомления; полный русский оригинал книги воспроизведён на этой странице без сокращений.",
     safetyNote: "Энергетические, эзотерические и целительские концепции описываются как содержание традиции. Они не являются доказанными медицинскими методами, не гарантируют результата и не заменяют медицинскую помощь.",
   },
   en: {
@@ -146,7 +147,7 @@ const copy: Record<PublicLocale, DescriptionCopy> = {
     next: "The next stage in the school's current seven-module structure is the Instructor Course, which follows the five foundation levels.",
     openCourse: "Explore all levels, attunements and videos",
     overview: "View the complete Reiki Yggdrasil program",
-    sourceNote: "Based on the Russian manual “Reiki Yggdrasil: Basic Course, Levels I–V” and Academy materials. This public overview is adapted from the source; the complete training manual is not published here.",
+    sourceNote: "Based on the Russian manual “Reiki Yggdrasil: Basic Course, Levels I–V” and Academy materials. This public overview is adapted from the source; the complete Russian original appears below. Full English translation is not yet available.",
     safetyNote: "Energy, esoteric and healing ideas are described as part of the tradition. They are not established medical treatments, do not guarantee outcomes and do not replace professional medical care.",
   },
   es: {
@@ -203,13 +204,60 @@ const copy: Record<PublicLocale, DescriptionCopy> = {
     next: "La siguiente etapa en la estructura actual de siete módulos es el Curso de Instructor, que continúa después de los cinco niveles fundamentales.",
     openCourse: "Ver niveles, sintonizaciones y videos",
     overview: "Ver el programa completo de Reiki Yggdrasil",
-    sourceNote: "Basado en el manual ruso «Reiki Yggdrasil: Curso Básico, niveles I–V» y en los materiales de la Academia. Este texto es una adaptación pública; el manual de formación completo no se publica aquí.",
+    sourceNote: "Basado en el manual ruso «Reiki Yggdrasil: Curso Básico, niveles I–V» y en los materiales de la Academia. Este texto es una adaptación pública; el original ruso completo aparece más abajo; la traducción integral al español aún no está disponible.",
     safetyNote: "Las ideas energéticas, esotéricas y de sanación se presentan como parte de la tradición. No son tratamientos médicos demostrados, no garantizan resultados ni sustituyen la atención médica profesional.",
   },
 };
 
+const bookUi: Record<PublicLocale, { heading: string; lead: string; start: string; note: string; contents: string; synopsis: string; page: string }> = {
+  ru: {
+    heading: "Книга «Рейки-Иггдрасиль. Базовый курс. I–V ступени»",
+    lead: "Полная электронная версия присланной авторской методички: введение, пять ступеней, все настройки, отработка практик и приложения о скандинавских богах.",
+    start: "Читать книгу",
+    note: "Полный оригинальный текст на русском языке. Сохранены 38 страниц источника, включая титульные листы; текст разделён на главы и абзацы для удобного чтения.",
+    contents: "Содержание книги",
+    synopsis: "Открыть краткое описание программы и ссылки на обучение",
+    page: "Страница оригинала",
+  },
+  en: {
+    heading: "Book: Reiki Yggdrasil — Basic Course, Levels I–V",
+    lead: "The complete original training book, including all five levels, attunements, exercises and Norse mythology reference material.",
+    start: "Read the complete book",
+    note: "The full original text is in Russian. The English overview remains available below; a complete English translation has not yet been prepared.",
+    contents: "Table of contents",
+    synopsis: "Open the English course overview and learning links",
+    page: "Original page",
+  },
+  es: {
+    heading: "Libro: Reiki Yggdrasil — Curso Básico, niveles I–V",
+    lead: "El texto original completo, con cinco niveles, sintonizaciones, ejercicios y materiales sobre la mitología nórdica.",
+    start: "Leer el libro completo",
+    note: "El texto original íntegro está en ruso. El resumen en español está disponible más abajo; la traducción completa aún está pendiente.",
+    contents: "Índice del libro",
+    synopsis: "Abrir el resumen del curso en español y los enlaces de formación",
+    page: "Página original",
+  },
+};
+
+const manualChapters = [
+  { page: 3, title: "Введение · Что такое Рейки Иггдрасиль?" },
+  { page: 5, title: "Пять ступеней · Обзор настроек" },
+  { page: 8, title: "I ступень · Лечение, Интуиция, Защита, Ситуации" },
+  { page: 14, title: "II ступень · Предметы, Деньги, Очищение, Связи" },
+  { page: 19, title: "III ступень · Предназначение, Эмоция, Сила и другие" },
+  { page: 28, title: "IV ступень · Видение, Прошлые жизни, Знание" },
+  { page: 32, title: "V ступень · Мир, Боги и архетипические качества" },
+  { page: 33, title: "Приложение · Скандинавский пантеон" },
+  { page: 37, title: "Приложение · Описание богов, вариант 2" },
+];
+
+function manualParagraphHeading(paragraph: string) {
+  return /^(?:Введение|Настройка\s+[«“]|ОТРАБОТКА НАСТРОЕК|Ступени Рэйки|Первая ступень системы|Вторая ступень системы|Третья ступень системы|Четвёртая ступень системы|Пятая ступень системы|Высшие божества|ОПИСАНИЕ БОГОВ)/i.test(paragraph);
+}
+
 export function YggdrasilBasicCourseDescription({ locale }: { locale: PublicLocale }) {
   const text = copy[locale];
+  const book = bookUi[locale];
   const base = "/" + locale + "/academy/reiki/yggdrasil";
   return (
     <main className="academy-reading-shell academy-reading-shell--wide yggdrasil-description-page" lang={locale}>
@@ -221,15 +269,39 @@ export function YggdrasilBasicCourseDescription({ locale }: { locale: PublicLoca
           <header className="yggdrasil-description-hero">
             <div>
               <p className="homeopathy-kicker">{text.eyebrow}</p>
-              <h1>{text.title}</h1>
-              <p className="yggdrasil-description-lead">{text.lead}</p>
-              <Link className="yggdrasil-primary-action" href={base + "/basic-course"}>{text.openCourse} →</Link>
+              <h1>{book.heading}</h1>
+              <p className="yggdrasil-description-lead">{book.lead}</p>
+              <div className="yggdrasil-description-actions"><a className="yggdrasil-primary-action" href="#full-book">{book.start} ↓</a><Link className="yggdrasil-secondary-action" href={base + "/basic-course"}>{text.openCourse} →</Link></div>
             </div>
             <figure>
               <Image src="/academy/reiki-yggdrasil/source/basic-program.jpg" alt="" width={640} height={520} sizes="(max-width: 780px) 100vw, 38vw" priority />
             </figure>
           </header>
 
+          <section className="yggdrasil-full-book" id="full-book" aria-label={book.heading}>
+            <p className="yggdrasil-book-edition">{book.note}</p>
+            <nav className="yggdrasil-book-toc" aria-label={book.contents}>
+              <h2>{book.contents}</h2>
+              <ol>{manualChapters.map((chapter) => (
+                <li key={chapter.page}><a href={"#book-page-" + chapter.page}>{chapter.title}</a></li>
+              ))}</ol>
+            </nav>
+            <div className="yggdrasil-book-pages" lang="ru">
+              {fullManual.pages.filter((sourcePage) => sourcePage.page >= 3).map((sourcePage) => (
+                <section className="yggdrasil-book-page" id={"book-page-" + sourcePage.page} key={sourcePage.page}>
+                  <div className="yggdrasil-book-page-counter">{book.page} {sourcePage.page} / {fullManual.originalPages}</div>
+                  {manualChapters.find((chapter) => chapter.page === sourcePage.page) ? <h2>{manualChapters.find((chapter) => chapter.page === sourcePage.page)?.title}</h2> : null}
+                  {sourcePage.paragraphs.map((paragraph, idx) => manualParagraphHeading(paragraph)
+                    ? <p className="yggdrasil-book-standout" key={idx}>{paragraph}</p>
+                    : <p key={idx}>{paragraph}</p>
+                  )}
+                </section>
+              ))}
+            </div>
+          </section>
+
+          <details className="yggdrasil-description-summary">
+            <summary>{book.synopsis}</summary>
           <section className="yggdrasil-description-section">
             <h2>{text.basisTitle}</h2>
             {text.basis.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
@@ -267,6 +339,8 @@ export function YggdrasilBasicCourseDescription({ locale }: { locale: PublicLoca
               <Link className="yggdrasil-secondary-action" href={base}>{text.overview} →</Link>
             </div>
           </section>
+
+          </details>
 
           <footer className="yggdrasil-description-source">
             <p>{text.sourceNote}</p>
