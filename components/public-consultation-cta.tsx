@@ -116,13 +116,13 @@ export function PublicConsultationCta({ locale, id }: { locale: "en" | "ru" | "e
         <span>{text.text}</span>
       </div>
       <div className="public-consultation-cta__actions">
-        <AcquisitionEventLink href={whatsappUrl} rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "whatsapp" }} event={mode === "training" ? "contact_click" : "service_request_start"}>
+        <AcquisitionEventLink prefetch={false} href={whatsappUrl} rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "whatsapp" }} event={mode === "training" ? "contact_click" : "service_request_start"}>
           <span data-contact-channel="whatsapp">{text.whatsapp}</span><ArrowUpRight aria-hidden="true" />
         </AcquisitionEventLink>
-        <AcquisitionEventLink href="https://t.me/AndyTherapist" rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "telegram" }} event="contact_click">
+        <AcquisitionEventLink prefetch={false} href="https://t.me/AndyTherapist" rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "telegram" }} event="contact_click">
           <span data-contact-channel="telegram">{text.telegram}</span><ArrowUpRight aria-hidden="true" />
         </AcquisitionEventLink>
-        <Link href={further}>{text.free}<ArrowRight aria-hidden="true" size={17}/></Link>
+        <Link prefetch={false} href={further}>{text.free}<ArrowRight aria-hidden="true" size={17}/></Link>
       </div>
     </aside>
   );
