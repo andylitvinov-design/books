@@ -4,8 +4,9 @@ import originalRussianEnglishTranslation from "@/data/academy/tantra-reiki-ru-en
 
 // Stage descriptions and attunements are editorially aligned with the captured
 // EN/RU PsiTrends source (data/academy/tantra-reiki-full.generated.json).
-// Historical EN and RU attunement assignments differ at stages 2–3;
-// retain each language's original assignments instead of silently merging them.
+// Historical EN/RU attunement assignments differ at stages 2–3;
+// present Andrey's full original RU author sequence in both EN and RU,
+// while preserving the original alternative EN assignments in the full archive.
 const stages = [
   {
     "en": {
@@ -50,9 +51,9 @@ const stages = [
       "att": [
         "Accumulation of energy",
         "Money Magnet",
-        "Attunement with a person or group"
+        "Burn Away Complexes"
       ],
-      "practice": "Begin creating simple Tantra Reiki mandalas. The English and Russian historical attunement lists differ for levels 2–3; see the source below."
+      "practice": "Begin creating simple Tantra Reiki mandalas. The historical English text places Attunement here, whereas Andrey’s Russian text places Burn Away Complexes here. Both originals remain in the archive."
     },
     "ru": {
       "title": "Жар жизни",
@@ -83,11 +84,11 @@ const stages = [
       "subtitle": "Attunement with the world",
       "intro": "The image of this level is the ocean: moving beyond the feeling of being separate and learning to notice connection with a larger field. It introduces the themes of unity, clearing and favourable movement.",
       "att": [
-        "Unity",
-        "Clearance · release of blocks",
-        "Luck · intuitive timing"
+        "Attunement",
+        "Luck · acceleration of time",
+        "Talisman"
       ],
-      "practice": "Write short reflections and create a Tantra Reiki mandala; the original Russian list also includes the Talisman setting."
+      "practice": "Write short reflections and create a Tantra Reiki mandala. The historical English text lists Unity, Clearance and Luck here; Andrey’s Russian text lists Attunement, Luck and Talisman."
     },
     "ru": {
       "title": "Океан единства",
