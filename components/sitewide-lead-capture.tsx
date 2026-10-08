@@ -141,10 +141,10 @@ export function SitewideLeadCapture() {
           <h2 id="sitewide-capture-title">{c.title}</h2>
           <p className={styles.description}>{c.description}</p>
           <div className={styles.actions}>
-            <AcquisitionEventLink className={styles.primary} event={external ? "contact_click" : "service_request_start"} href={primary} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+            <AcquisitionEventLink prefetch={false} className={styles.primary} event={external ? "contact_click" : "service_request_start"} href={primary} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
               {primaryLabel} {external ? <ArrowUpRight aria-hidden="true" size={19} /> : <ArrowRight aria-hidden="true" size={19}/>}
             </AcquisitionEventLink>
-            {kind !== "network" ? <Link className={styles.secondary} href={secondary}>{c.secondary} <ArrowRight aria-hidden="true" size={16}/></Link> : null}
+            {kind !== "network" ? <Link prefetch={false} className={styles.secondary} href={secondary}>{c.secondary} <ArrowRight aria-hidden="true" size={16}/></Link> : null}
           </div>
         </div>
         <div className={styles.portrait}>
