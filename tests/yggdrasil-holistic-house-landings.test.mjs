@@ -44,13 +44,14 @@ test("all 177 canonical Reiki Yggdrasil attunements have English text", async ()
   }
 });
 
-test("English Yggdrasil UI no longer forces Russian detailed content", async () => {
+test("English Yggdrasil UI uses English settings and source-based step summaries", async () => {
   const component = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
   assert.doesNotMatch(component, /className="yggdrasil-step-body" lang="ru"/);
   assert.match(component, /lang=\{locale === "ru" \? "ru"/);
   assert.match(component, /englishSettings/);
-  assert.match(component, /levelOneEnglish/);
-  assert.match(component, /genericEnglishSource/);
+  assert.match(component, /yggdrasilStepSummary/);
+  assert.doesNotMatch(component, /genericEnglishSource/);
+  assert.doesNotMatch(component, /levelOneEnglish/);
 });
 
 test("full EN and RU historical source pages are preserved", async () => {
