@@ -122,17 +122,18 @@ try {
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
  const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();await expect(otherPage).toHaveURL(origin+'/en/app');await otherPage.waitForLoadState('networkidle');assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
  // The public Start free testing button must transfer the exact selection into an existing Google account.
- // Finish synthetic onboarding navigation before the next route (WebKit).
- await otherPage.waitForLoadState('networkidle')
- await otherPage.goto(origin+'/en/client/tests',{waitUntil:'domcontentloaded'})
+ // Use a fresh tab in the SAME authenticated browser context. The onboarding
+ // tab can still receive Next.js route refreshes, which abort its goto in WebKit.
+ const publicPage=await other.newPage()
+ await publicPage.goto(origin+'/en/client/tests',{waitUntil:'domcontentloaded'})
  await expect(otherPage).toHaveURL(origin+'/en/client/tests')
- await expect(otherPage.getByRole('heading',{name:'Build your test set'})).toBeVisible()
- await otherPage.locator('article').filter({has:otherPage.getByRole('heading',{name:'Personality Baseline',exact:true})})
+ await expect(publicPage.getByRole('heading',{name:'Build your test set'})).toBeVisible()
+ await publicPage.locator('article').filter({has:publicPage.getByRole('heading',{name:'Personality Baseline',exact:true})})
    .getByRole('checkbox',{name:'Personality Baseline'}).check()
- await otherPage.getByRole('button',{name:'Start free testing',exact:true}).click()
+ await publicPage.getByRole('button',{name:'Start free testing',exact:true}).click()
  await expect(otherPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
- await expect(otherPage.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
- await expect(otherPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
+ await expect(publicPage.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+ await expect(publicPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
  assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.definitionIds.length,1)
  passed('public Start free testing preserves the selected test in authenticated personal Cabinet')
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
