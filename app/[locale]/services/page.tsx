@@ -340,6 +340,11 @@ export default async function ServicesPage({ params }: Props) {
               <div><h3>{t.videoImagery}</h3><PageVideo slot="method-hypnotherapy" locale="en"/></div>
               <div><h3>{t.videoConstellation}</h3><PageVideo slot="method-constellations" locale="en"/></div>
             </> : null}
+            {/* Keep every editorial video slot reachable after the three-service redesign.
+                These slots are also used by the existing admin video-publishing flow. */}
+            <div id="business"><h3>{locale === "ru" ? "Бизнес-расстановки" : "Business constellations"}</h3><PageVideo slot="service-business" locale={locale}/></div>
+            <div id="alchemy"><h3>{locale === "ru" ? "Алхимия души" : "Alchemy of the Soul"}</h3><PageVideo slot="service-alchemy" locale={locale}/></div>
+            <div id="archetypal"><h3>{locale === "ru" ? "Архетипические расстановки" : "Archetypal constellations"}</h3><PageVideo slot="service-archetypal" locale={locale}/></div>
           </div>
         </details>
       </section>
@@ -352,6 +357,9 @@ export default async function ServicesPage({ params }: Props) {
       </aside>
 
       <PublicConsultationCta locale={locale} id="consultation" />
+      <section className={styles.extra} aria-label={locale === "ru" ? "Видео о личной консультации" : "Personal consultation video"}>
+        <PageVideo slot="consultation" locale={locale}/>
+      </section>
       <p className={styles.disclaimer}>{t.bottomDisclaimer}</p>
     </main>
   );
