@@ -17,7 +17,7 @@ test("iteration 1: home hero leads directly to a free situation review", () => {
 });
 
 test("iteration 2: first contact does not require sharing a sensitive written situation", () => {
-  assert.match(form, /name="situation" rows={3}/);
+  assert.match(form, /name="situation" rows=\{3\}/);
   assert.doesNotMatch(form, /name="situation" required/);
   assert.doesNotMatch(form, /if \(!situation\) return/);
   assert.match(form, /situation \? t\.situation/);
