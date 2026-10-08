@@ -43,14 +43,51 @@ const PHOTO = {
   'hh-weekly-pulse': '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
   'phq-4': '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
   'k6': '/images/holistic-house/video-posters/constellations-en-v1.webp',
-  'phq-9': '/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png',
-  'gad-7': '/academy/reiki-yggdrasil/source/basic-program.jpg',
-  'hh-resource-pulse': '/academy/reiki-yggdrasil/source/program-overview.jpg',
-  'hh-monthly-profile': '/academy/reiki-yggdrasil/source/school-introduction.jpg',
-  'mspss': '/academy/reiki-yggdrasil/source/western-tradition.png',
-  'scs-sf': '/academy/reiki-yggdrasil/source/eastern-tradition.png',
+  'phq-9': '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+  'gad-7': '/images/holistic-house/video-posters/home-en-v2.webp',
+  'hh-resource-pulse': '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
+  'hh-monthly-profile': '/images/holistic-house/video-posters/services-en-v2.webp',
+  'mspss': '/images/holistic-house/video-posters/constellations-en-v1.webp',
+  'scs-sf': '/images/holistic-house/video-posters/home-en-v2.webp',
 }
-const fallbackPhoto = '/images/holistic-house/video-posters/home-en-v2.webp'
+const THEMED_PHOTOS = {
+  state: [
+    '/images/holistic-house/video-posters/home-en-v2.webp',
+    '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+    '/images/holistic-house/video-posters/services-en-v2.webp',
+  ],
+  symptoms: [
+    '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+    '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
+    '/images/holistic-house/video-posters/home-en-v2.webp',
+  ],
+  resources: [
+    '/images/holistic-house/video-posters/constellations-en-v1.webp',
+    '/images/holistic-house/video-posters/home-en-v2.webp',
+    '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
+  ],
+  function: [
+    '/images/holistic-house/video-posters/services-en-v2.webp',
+    '/images/holistic-house/video-posters/home-en-v2.webp',
+    '/images/holistic-house/video-posters/constellations-en-v1.webp',
+  ],
+  baseline: [
+    '/images/holistic-house/video-posters/services-en-v2.webp',
+    '/images/holistic-house/video-posters/home-en-v2.webp',
+  ],
+}
+// All photos are existing, approved local source assets. Never invent a patient photo.
+function photoForTest(item, catalog) {
+  if (PHOTO[item]) return PHOTO[item]
+  const topics = catalog?.topics || []
+  const themed = topics.includes('relationships')
+    ? THEMED_PHOTOS.resources
+    : topics.includes('body') || topics.includes('sleep')
+      ? THEMED_PHOTOS.symptoms
+      : THEMED_PHOTOS[catalog?.axis] || THEMED_PHOTOS.state
+  const fingerprint = [...item].reduce((sum, char) => sum * 31 + char.charCodeAt(0), 0) >>> 0
+  return themed[fingerprint % themed.length]
+}
 
 async function api(path, body) {
   const response = await fetch('/api/app/' + path, {
@@ -92,7 +129,7 @@ function planRows(plan, data, locale) {
       title: catalog?.title?.[locale] || catalog?.title?.en || definition.title,
       description: catalog?.description?.[locale] || catalog?.description?.en || '',
       minutes: catalog?.durationMinutes || Math.max(1, Math.round(definition.questions.length / 6)),
-      photo: PHOTO[item] || fallbackPhoto,
+      photo: photoForTest(item, catalog),
     }
   }).filter(Boolean)
 }
@@ -109,7 +146,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
   const entries = useMemo(() => buildExplorerEntries({ locale, audience: 'account' }), [locale])
   const currentPlan = plan || data.activeTestPlan || data.latestTestPlan || null
   const rows = useMemo(() => planRows(currentPlan, data, locale), [currentPlan, data, locale])
-  const completed = rows.filter((row) => !row.run && row.result).length
+  const completed = rows.filter((row) => Boolean(row.result)).length
   const root = '/' + locale + '/app'
 
   async function create(keys, replaceActive = false) {
@@ -251,9 +288,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
                   <span>~{row.minutes} {c.mins}</span></div>
                 <div className={styles.status}>
                   <strong className={row.run ? styles.inProgress : row.result ? styles.completed : ''}>{status}</strong>
-                  {row.result && !row.run
-                    ? <><span>100% {c.percent}</span><span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span></>
-                    : <><progress max="100" value={row.progress} aria-label={status} /><span>{row.progress}% {c.percent}</span></>}
+                  {row.run
+                    ? <><progress max="100" value={row.progress} aria-label={status} /><span>{row.progress}% {c.percent}</span>
+                        {row.result && <span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span>}</>
+                    : row.result
+                      ? <><span>100% {c.percent}</span><span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span></>
+                      : <><progress max="100" value="0" aria-label={status} /><span>0% {c.percent}</span></>}
                 </div>
               </div>
               <div className={styles.rowActions}>
