@@ -21,7 +21,7 @@ test("Temple Studies is exactly one progressive seven-stage curriculum", () => {
     const count = [...source.matchAll(new RegExp("^      " + lang + ": \\{", "gm"))].length;
     assert.equal(count, 7, "seven full " + lang + " modules required");
   }
-  assert.match(source, /Each step builds on the previous one|Каждый этап опирается на предыдущий/);
+  assert.match(source, /question → symbolism|запрос → символ/);
   assert.match(source, /validateTempleCurriculum/);
 });
 
@@ -75,7 +75,7 @@ test("Old Academy directories and historical sections stay reachable", () => {
   assert.match(route, /permanentRedirect\("\/" \+ locale \+ "\/academy\/temple-studies#"/);
   assert.match(route, /<AcademyRecordPage locale=\{locale\} record=\{record\}/);
   for (const anchor of ["mysteries", "traditions", "symbols", "practice", "path"]) {
-    assert.match(page, new RegExp("\\"" + anchor + "\\""));
+    assert.ok(page.includes('"' + anchor + '"'), 'legacy anchor alias ' + anchor + ' is still supported');
   }
   const sitemap = read("app/sitemap.ts");
   assert.match(sitemap, /temple-studies/);
