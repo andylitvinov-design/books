@@ -179,3 +179,35 @@ export function TantraReikiSideNavigation({
     />
   );
 }
+
+/** The same accessible, active-section sidebar used by the Yggdrasil and Tantra Reiki courses. */
+export function TempleStudiesSideNavigation({
+  locale,
+  stages,
+}: {
+  locale: PublicLocale;
+  stages: Array<{ id: string; title: string }>;
+}) {
+  const navigation = {
+    en: { eyebrow: "Your learning path", title: "Temple Studies" },
+    ru: { eyebrow: "Этапы единой программы", title: "Temple Studies" },
+    es: { eyebrow: "Etapas del programa", title: "Temple Studies" },
+  }[locale];
+
+  return (
+    <CourseSideNavigation
+      eyebrow={navigation.eyebrow}
+      title={navigation.title}
+      ariaLabel={navigation.eyebrow}
+      items={stages.map((stage, index) => ({
+        key: stage.id,
+        sectionId: "temple-" + stage.id,
+        href: "#temple-" + stage.id,
+        number: String(index + 1).padStart(2, "0"),
+        label: stage.title,
+      }))}
+      activeKey={stages[0]?.id}
+      observeSections
+    />
+  );
+}
