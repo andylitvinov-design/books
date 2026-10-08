@@ -175,8 +175,10 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setConflict(null)
       setPlan(created)
       setExploring(false)
-      router.replace(root + '/tests?plan=' + encodeURIComponent(created.id))
+      // Reconcile the saved account state before replacing the handoff URL.
+      // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
+      router.replace(root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
       if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict(valid)
       else setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
@@ -187,14 +189,16 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }
 
   useEffect(() => {
+    // React development StrictMode replays effect setup/cleanup without replacing
+    // the component. Keep this one-time guard across that replay: otherwise two
+    // OAuth handoff requests can create conflicting active plans.
     if (once.current) return
     once.current = true
-    let alive = true
     async function restore() {
       if (requestedPlanId) {
         try {
           const loaded = await api('test-plans/' + encodeURIComponent(requestedPlanId))
-          if (alive) setPlan(loaded)
+          setPlan(loaded)
         } catch { /* Use the last account plan, never a foreign plan. */ }
       }
       let pending = null
@@ -202,25 +206,24 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         pending = readTestSelectionIntent(window.sessionStorage.getItem(PENDING_TEST_SELECTION_KEY))
         if (!pending) window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY)
       } catch { /* Browser may disable tab storage. */ }
-      if (!alive) return
-      if (!pending) { setInitializing(false); return }
+      if (!pending) return
       if (data.activeTestPlan) {
         const ids = pending.keys.map((key) => entries.find((entry) => entry.key === key)?.definition?.id)
         if (JSON.stringify(ids) === JSON.stringify(data.activeTestPlan.definitionIds)) {
           setPlan(data.activeTestPlan)
           try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Private session. */ }
-          // This selection is already active; finish the pending handoff URL.
+          // A matching existing battery also resolves the one-time OAuth handoff.
+          // Leaving ?selection=pending causes an apparently unfinished sign-in.
           router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
         } else setConflict(pending.keys)
-        setInitializing(false)
         return
       }
       await create(pending.keys)
-      if (alive) setInitializing(false)
     }
-    restore()
-    return () => { alive = false; once.current = false }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- one handoff per mount, after onboarding.
+    // Do not reset the guard in cleanup: a StrictMode replay is not a new
+    // selection, and the first in-flight request must have a single owner.
+    void restore().catch(() => setError(c.error)).finally(() => setInitializing(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- one handoff per mounted selection, including StrictMode.
 
   async function choose(entriesToStart) {
     const keys = entriesToStart.map((entry) => entry.key)
