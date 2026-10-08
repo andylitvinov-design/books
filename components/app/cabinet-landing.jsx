@@ -593,7 +593,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function saveToCabinet(resultToSave = guestResult) {
+  async function saveToCabinet(selectedResult = guestResult) {
+    // React may pass a click event to the original result button; preserve that path.
+    const resultToSave = selectedResult?.id ? selectedResult : guestResult
     if (!resultToSave || busy) return
     setBusy(true)
     setError('')
