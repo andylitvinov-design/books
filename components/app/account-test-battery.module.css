@@ -39,3 +39,9 @@
  .overview progress{width:100%}
 }
 @media(max-width:410px){.row{grid-template-columns:78px minmax(0,1fr)}.status progress{width:66px}}
+
+/* Result-backed portrait on the right; single-column on narrow screens. */
+.batteryLayout{display:grid;grid-template-columns:minmax(0,1.46fr) minmax(330px,.86fr);gap:clamp(16px,2vw,26px);align-items:start;margin:16px auto 24px;max-width:1560px}
+.batteryLayout>*{min-width:0}
+.batteryLayout .shell{max-width:none;width:100%;margin:0}
+@media(max-width:1100px){.batteryLayout{grid-template-columns:1fr}.batteryLayout>section:last-child{max-width:760px;width:100%;margin-inline:auto}}

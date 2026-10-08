@@ -5,6 +5,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
+import { TestExplorerVisual } from './test-explorer-visual'
+import { coverageForFocus } from '@/lib/assessments/test-explorer'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { buildExplorerEntries } from '@/lib/assessments/test-explorer'
@@ -206,8 +209,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         if (JSON.stringify(ids) === JSON.stringify(data.activeTestPlan.definitionIds)) {
           setPlan(data.activeTestPlan)
           try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Private session. */ }
-          // The requested selection already exists: finish the URL handoff too.
-          // Leaving ?selection=pending creates an endless "preparing" state after Google sign-in.
+          // This selection is already active; finish the pending handoff URL.
           router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
         } else setConflict(pending.keys)
         setInitializing(false)
@@ -255,6 +257,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     }
   }
   return <>
+    <div className={styles.batteryLayout}>
     <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
       <div className={styles.header}>
         <div><p className="hh-kicker">{c.account} · Mind–Body Monitor</p><h1>{c.title}</h1>
@@ -269,7 +272,6 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browser storage may be disabled. */ }
             setConflict(null)
             setPlan(data.activeTestPlan)
-            // Explicitly keeping the active plan resolves the pending-selection URL.
             if (data.activeTestPlan?.id) router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
           }}>{c.keep}</button>
           <button type="button" className="hh-primary" disabled={busy} onClick={() => create(conflict, true)}>{c.replace}</button>
@@ -319,6 +321,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       </div>
       <p className={styles.muted}>{c.privacy}</p>
     </section>
+    <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
+    </div>
     {(exploring || (!rows.length && !initializing && !conflict)) &&
       <TestExplorer locale={locale} audience="account" onStart={choose}
         pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
