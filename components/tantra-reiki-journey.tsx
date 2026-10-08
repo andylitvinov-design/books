@@ -301,7 +301,7 @@ const stages = [
  * attendees are taking the precise initiation described alongside the image.
  */
 const levelPhotos = [
-  { src: tantraReikiArchive.images.ru[17], description: "Embodied awareness and first connection" },
+  { src: tantraReikiArchive.images.ru[16], description: "Embodied awareness and first connection" },
   { src: tantraReikiArchive.images.ru[13], description: "Grounded attention and the practice of energy" },
   { src: tantraReikiArchive.images.ru[18], description: "Connection and a shared field of practice" },
   { src: tantraReikiArchive.images.ru[19], description: "A conscious relationship with another person" },
