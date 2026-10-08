@@ -26,6 +26,7 @@ export function AcademyVideoPlayer({ youtubeId, title }: { youtubeId: string; ti
         alt=""
         height={270}
         loading="lazy"
+        unoptimized
         sizes="(max-width: 600px) 100vw, 380px"
         src={"https://i.ytimg.com/vi/" + safeId + "/hqdefault.jpg"}
         width={480}

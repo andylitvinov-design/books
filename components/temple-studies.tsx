@@ -5,6 +5,7 @@ import { ArrowDown, ArrowRight, BookOpen, Compass, ScrollText } from "lucide-rea
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TempleStudiesSideNavigation } from "@/components/reiki-course-side-nav";
+import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import {
   academyDisplayTitle,
   academyPublicBlocks,
@@ -14,6 +15,7 @@ import {
   type AcademySourceRecord,
 } from "@/data/academy/catalog";
 import { templeStages } from "@/data/academy/temple-studies-curriculum";
+import { templeVideoCollections } from "@/data/academy/temple-studies-videos";
 import type { PublicLocale } from "@/lib/public-locales";
 
 const copy: Record<PublicLocale, {
@@ -81,6 +83,20 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
       .filter((record) => hasSubstantialSource(record, locale)),
   }));
 
+  const videoIndex = locale === "ru"
+    ? templeStages.map((stage) => {
+        const groups = templeVideoCollections(stage.id, locale);
+        return {
+          id: stage.id,
+          title: stage.copy.ru.title,
+          collectionCount: groups.length,
+          videoCount: groups.reduce((sum, group) => sum + group.videos.length, 0),
+        };
+      }).filter((stage) => stage.videoCount > 0)
+    : [];
+  const totalVideoLessons = videoIndex.reduce((sum, stage) => sum + stage.videoCount, 0);
+  const totalVideoCollections = videoIndex.reduce((sum, stage) => sum + stage.collectionCount, 0);
+
   return (
     <main className="temple-shell" lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -111,10 +127,30 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
               </div>
             </header>
 
+            {videoIndex.length > 0 ? (
+              <section className="temple-video-index" aria-labelledby="temple-video-index-heading">
+                <div className="temple-video-index-intro">
+                  <p className="homeopathy-kicker">Оригинальные записи • Бесплатная видеотека</p>
+                  <h2 id="temple-video-index-heading">Видеокурсы и медитации</h2>
+                  <p>Все сохранившиеся открытые видеоуроки PsiMaster собраны по темам внутри единой программы. Выберите направление: ссылка ведёт прямо к нужному этапу.</p>
+                  <p className="temple-video-index-total">{totalVideoLessons} уникальная видеозапись · {totalVideoCollections} авторских подборок · {videoIndex.length} тематических этапов</p>
+                </div>
+                <nav className="temple-video-index-links" aria-label="Перейти к видеокурсам">
+                  {videoIndex.map((stage) => (
+                    <a href={"#temple-" + stage.id} key={stage.id}>
+                      <span>{stage.title}</span>
+                      <strong>{stage.videoCount} видео <ArrowRight size={15} aria-hidden="true" /></strong>
+                    </a>
+                  ))}
+                </nav>
+              </section>
+            ) : null}
+
             <div className="temple-stage-flow" aria-label={t.stages}>
               {courseRecords.map(({ stage, sources }, index) => {
                 const data = stage.copy[locale];
                 const nextStage = templeStages[index + 1];
+                const videoCollections = locale === "ru" ? templeVideoCollections(stage.id, locale) : [];
                 const legacyAliases: Record<string, string[]> = {
                   greek: ["mysteries"], traditions: ["traditions"], symbols: ["symbols"],
                   initiation: ["practice"], application: ["path"],
@@ -146,6 +182,45 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                         <div><span className="temple-practice-label">{t.exercise}</span><p>{data.exercise}</p></div>
                         <div><span className="temple-practice-label">{t.outcome}</span><p>{data.outcome}</p></div>
                       </div>
+                      {videoCollections.length ? (
+                        <section className="temple-video-archive" aria-label="Русские видеозаписи курса">
+                          <div className="temple-video-archive-heading">
+                            <h3>Видеоуроки из архива PsiMaster</h3>
+                            <p>Откройте интересующую подборку и выберите видеоурок. Все названия и порядок занятий сохранены из PsiMaster; повторяющиеся записи показаны один раз.</p>
+                          </div>
+                          {videoCollections.map((collection, collectionIndex) => (
+                            <details className="temple-video-series" key={collection.key} open={collectionIndex === 0}>
+                              <summary>
+                                <span className="temple-video-series-summary-text">
+                                  <strong>{collection.title}</strong>
+                                  <small>{collection.description}</small>
+                                </span>
+                                <span className="temple-video-series-count">{collection.videos.length} видео</span>
+                              </summary>
+                              <div className="temple-video-series-content">
+                                <ol className="temple-video-grid">
+                                  {collection.videos.map((video) => (
+                                    <li className="temple-video-lesson" key={video.id}>
+                                      <AcademyVideoPlayer youtubeId={video.id} title={video.title} />
+                                      <p className="temple-video-lesson-title"><span>Урок {video.order}</span>{video.title}</p>
+                                    </li>
+                                  ))}
+                                </ol>
+                                {collection.repeatedCount > 0 ? (
+                                  <p className="temple-video-repeats">
+                                    Ещё {collection.repeatedCount} записи из этой подборки уже представлены выше в курсе «Сила Планет», поэтому видео не дублируются. Полный исходный список доступен на PsiMaster.
+                                  </p>
+                                ) : null}
+                                {collection.sourceUrl ? (
+                                  <a className="temple-video-provenance" href={collection.sourceUrl} target="_blank" rel="noopener noreferrer">
+                                    Оригинальная программа на PsiMaster <ArrowRight size={15} aria-hidden="true" />
+                                  </a>
+                                ) : null}
+                              </div>
+                            </details>
+                          ))}
+                        </section>
+                      ) : null}
                       {sources.length ? (
                         <details className="temple-sources">
                           <summary><BookOpen size={18} aria-hidden="true" /> {t.original} ({sources.length})</summary>
