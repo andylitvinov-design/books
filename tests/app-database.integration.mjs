@@ -1106,3 +1106,66 @@ test('every published monitoring test completes through the repository and retur
   for (const id of created)
     assert.ok(bootstrap.results.some((result) => result.id === id), id + ' missing from history')
 })
+
+test('durable guest and account assessment plans enforce ordered private sequential batteries', async () => {
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential()
+  const otherCredential = createGuestCredential()
+  await Promise.all([credential, otherCredential].map((guest) => guestRepo.createSession(guest, {
+    adult: true,
+    necessary: true,
+    uiLocale: 'en',
+    timezone: 'UTC',
+  })))
+
+  const guestPlanInput = {
+    items: [enV2, weekly].map((definition) => ({ definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: definition.instrumentLocale })),
+    operationId: randomUUID(),
+  }
+  const guestPlan = await guestRepo.createTestPlan(credential, guestPlanInput)
+  assert.equal((await guestRepo.createTestPlan(credential, guestPlanInput)).id, guestPlan.id)
+  assert.equal(guestPlan.currentIndex, 0)
+  assert.equal((await guestRepo.bootstrap(credential)).activeTestPlan.id, guestPlan.id)
+  await assert.rejects(() => guestRepo.getTestPlan(otherCredential, guestPlan.id), /NOT_FOUND/)
+  await assert.rejects(() => guestRepo.createTestPlan(credential, {
+    items: [{ definitionKey: 'phq-9', definitionVersion: 'v1', instrumentLocale: 'en' }],
+    operationId: randomUUID(),
+  }), /GUEST_TEST_UNAVAILABLE/)
+
+  let guestRun = await guestRepo.startRun(credential, {
+    definitionKey: enV2.key,
+    definitionVersion: enV2.version,
+    instrumentLocale: enV2.instrumentLocale,
+    operationId: randomUUID(),
+  })
+  guestRun = await guestRepo.saveRun(credential, guestRun.id, {
+    answers: answer(enV2), context: {}, progress: enV2.questions.length, expectedRevision: guestRun.revision, operationId: randomUUID(),
+  })
+  const guestResult = await guestRepo.submitRun(credential, guestRun.id, { expectedRevision: guestRun.revision })
+  const progressedGuestPlan = await guestRepo.advanceTestPlan(credential, guestPlan.id, {
+    completedRunId: guestResult.runId,
+    expectedRevision: guestPlan.revision,
+  })
+  assert.equal(progressedGuestPlan.currentIndex, 1)
+  assert.equal(progressedGuestPlan.status, 'active')
+  assert.deepEqual(progressedGuestPlan.completedRunIds, [guestResult.runId])
+
+  const accountPlan = await repo.createTestPlan(a, {
+    items: [mini].map((definition) => ({ definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: definition.instrumentLocale })),
+    operationId: randomUUID(),
+  })
+  const accountRun = await start(a, mini)
+  const savedAccountRun = await save(accountRun, a)
+  const accountResult = await repo.submitRun(a, accountRun.id, { expectedRevision: savedAccountRun.revision })
+  const completedAccountPlan = await repo.advanceTestPlan(a, accountPlan.id, {
+    completedRunId: accountResult.runId,
+    expectedRevision: accountPlan.revision,
+  })
+  assert.equal(completedAccountPlan.status, 'completed')
+  assert.equal(completedAccountPlan.currentIndex, 1)
+  assert.deepEqual(completedAccountPlan.completedRunIds, [accountResult.runId])
+  await assert.rejects(
+    () => rawAs(a, 'authenticated', (db) => db.query('select * from app_private.assessment_plans')),
+    (error) => error.code === '42501',
+  )
+})

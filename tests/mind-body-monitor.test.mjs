@@ -78,7 +78,7 @@ test('public and signed-in monitor surfaces expose only real runnable tests', as
   assert.match(landing, /Current State Check/)
   assert.match(landing, /Personality Baseline/)
   assert.match(landing, /MONITORING_CATALOG/)
-  assert.match(landing, /rankAssessmentDefinitions/)
+  assert.match(landing, /guest\/test-plans/)
   assert.match(landing, /PUBLIC_GUEST_BLOCKED_KEYS = new Set\(\['phq-9'\]\)/)
   assert.doesNotMatch(landing, /MONITOR_AREAS\.slice/)
   assert.match(workspace, /Recommended/)

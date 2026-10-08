@@ -81,41 +81,26 @@ test('recommendation focus options cover practical monitoring themes in both lan
   }
 })
 
-test('personal Cabinet exposes action-first assessment choices and privacy-preserving ranked recommendations', async () => {
-  const workspace = await readFile('components/app/app-workspace.jsx', 'utf8')
-  assert.match(workspace, /Take a free state analysis and get recommendations/)
-  assert.match(workspace, /Build a personal test battery/)
-  assert.match(workspace, /Complete my profile/)
-  assert.match(workspace, /monitoring\/hh-current-state/)
-  assert.match(workspace, /mode=recommendations/)
-  assert.match(workspace, /TEST_RECOMMENDATION_FOCUS/)
-  assert.match(workspace, /rankAssessmentDefinitions/)
-  assert.match(workspace, /not saved to your profile/)
-  assert.match(workspace, /Ваш рекомендуемый порядок/)
-  assert.match(workspace, /hh-weekly-pulse/)
-  assert.doesNotMatch(workspace, /MIND_BODY_MONITOR_REGISTRY\.map/)
-})
-
-
-test('public Cabinet exposes the weighted recommender before registration and keeps safety-gated PHQ-9 out of guest starts', async () => {
-  const [landing, styles] = await Promise.all([
+test('public and signed-in routes share the complete Test Explorer rather than a top-three recommender', async () => {
+  const [landing, workspace, route, explorer, publicExplorer] = await Promise.all([
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
-    readFile('app/ia-v2.css', 'utf8'),
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+    readFile('app/[locale]/client/tests/page.tsx', 'utf8'),
+    readFile('components/app/test-explorer.jsx', 'utf8'),
+    readFile('components/app/public-test-explorer.jsx', 'utf8'),
   ])
-
-  assert.match(landing, /Подобрать комплект тестов под ваш запрос/)
-  assert.match(landing, /TEST_RECOMMENDATION_FOCUS\.map/)
-  assert.match(landing, /rankAssessmentDefinitions\(publicRecommendationDefinitions\(locale\)/)
-  assert.match(landing, /className="cabinet-test-recommender"/)
-  assert.match(landing, /className="cabinet-test-recommender-build"/)
-  assert.match(landing, /className="cabinet-ranked-tests"/)
-  assert.match(landing, /onClick=\{\(\) => begin\(item\.definition\.key\)\}/)
-  assert.match(landing, /PUBLIC_GUEST_BLOCKED_KEYS = new Set\(\['phq-9'\]\)/)
-  assert.doesNotMatch(landing, /MONITOR_AREAS/)
-  assert.match(landing, /not saved unless you explicitly consent to a test/)
-  assert.match(landing, /не сохраняется без вашего явного согласия/)
-  assert.match(styles, /Public Cabinet weighted test recommender/)
-  assert.match(styles, /\.cabinet-test-focus-grid button\[aria-pressed="true"\]/)
+  assert.match(landing, /\/\$\{locale\}\/client\/tests/)
+  assert.doesNotMatch(landing, /\.slice\(0, 3\)/)
+  assert.doesNotMatch(landing, /cabinet-test-recommender/)
+  assert.match(workspace, /<TestExplorer/)
+  assert.match(workspace, /audience="account"/)
+  assert.match(route, /PublicSiteHeader/)
+  assert.match(route, /PublicTestExplorer/)
+  assert.match(route, /robots: \{ index: false, follow: false \}/)
+  for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free testing']) assert.match(explorer, new RegExp(token))
+  assert.match(publicExplorer, /guest\/test-plans/)
+  assert.match(publicExplorer, /guest\/session/)
+  assert.doesNotMatch(publicExplorer, /localStorage|sessionStorage/)
 })
 
 
@@ -160,22 +145,15 @@ test('style and length filters combine before recommendation ranking', () => {
   assert.deepEqual(engagingComprehensive[0].matchedFocus, ['relationships'])
 })
 
-test('public and signed-in recommenders expose style and length switch groups', async () => {
-  const [landing, workspace] = await Promise.all([
-    readFile('components/app/cabinet-landing.jsx', 'utf8'),
-    readFile('components/app/app-workspace.jsx', 'utf8'),
+test('shared explorer exposes style, length, depth, area, free, search, and sort controls', async () => {
+  const [explorer, recommendationLabels] = await Promise.all([
+    readFile('components/app/test-explorer.jsx', 'utf8'),
+    readFile('lib/assessments/test-recommendations.js', 'utf8'),
   ])
-  for (const source of [landing, workspace]) {
-    assert.match(source, /TEST_STYLE_FILTERS/)
-    assert.match(source, /TEST_LENGTH_FILTERS/)
-    assert.match(source, /testStyles/)
-    assert.match(source, /testLengths/)
-  }
-  assert.match(landing, /Лёгкие \/ игровые/)
-  assert.match(landing, /Профессиональные/)
-  assert.match(landing, /Комплексные/)
-  assert.match(workspace, /Fun \/ engaging/)
-  assert.match(workspace, /Comprehensive/)
+  for (const token of ['TEST_STYLE_FILTERS', 'TEST_LENGTH_FILTERS', 'MONITOR_AREAS', 'freeOnly', 'setQuery', 'setSort', 'depthOptions']) assert.match(explorer, new RegExp(token))
+  assert.match(recommendationLabels, /Funny \/ light/)
+  assert.match(recommendationLabels, /Профессиональные/)
+  assert.match(recommendationLabels, /comprehensive/)
 })
 
 

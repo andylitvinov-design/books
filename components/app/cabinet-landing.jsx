@@ -3,19 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
-import { getAssessmentDefinition } from '@/lib/assessments/definitions'
-import {
-  TEST_LENGTH_FILTERS,
-  TEST_RECOMMENDATION_FOCUS,
-  TEST_STYLE_FILTERS,
-  rankAssessmentDefinitions,
-} from '@/lib/assessments/test-recommendations'
+import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 
 const UI = {
   en: {
@@ -288,6 +283,8 @@ async function guestFetch(path, body, method) {
 
 export function CabinetLanding({ locale = 'en', appAvailable = false, legacySelector = null }) {
   const c = UI[locale] || UI.en
+  const searchParams = useSearchParams()
+  const planId = searchParams.get('plan')
   const [active, setActive] = useState(null)
   const [run, setRun] = useState(null)
   const [answers, setAnswers] = useState({})
@@ -296,15 +293,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [mode, setMode] = useState(null)
   const [context, setContext] = useState({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
   const [guestResult, setGuestResult] = useState(null)
+  const [activePlan, setActivePlan] = useState(null)
+  const [planResults, setPlanResults] = useState([])
   const [sessionExpires, setSessionExpires] = useState(null)
   const [pendingMood, setPendingMood] = useState(null)
   const [latestGuestMood, setLatestGuestMood] = useState(null)
   const [adult, setAdult] = useState(false)
   const [necessary, setNecessary] = useState(false)
-  const [selectedFocus, setSelectedFocus] = useState([])
-  const [testStyles, setTestStyles] = useState(() => TEST_STYLE_FILTERS.map((item) => item.key))
-  const [testLengths, setTestLengths] = useState(() => TEST_LENGTH_FILTERS.map((item) => item.key))
-  const [personalized, setPersonalized] = useState(null)
   const [busy, setBusy] = useState(false)
   const [saveState, setSaveState] = useState('')
   const [error, setError] = useState('')
@@ -315,18 +310,38 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   useEffect(() => {
     let live = true
     guestFetch('guest/bootstrap')
-      .then((bootstrap) => {
+      .then(async (bootstrap) => {
         if (!live) return
         setSessionExpires(bootstrap.expiresAt)
         setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
-        // Keep the external Cabinet on the test catalog even when a guest run exists.
-        // A saved draft resumes only after the visitor explicitly chooses that test card.
+        if (!planId) return
+        const plan = await guestFetch('guest/test-plans/' + encodeURIComponent(planId))
+        if (!live) return
+        setActivePlan(plan)
+        const planResultRows = (bootstrap.results || []).filter((result) => plan.completedRunIds?.includes(result.runId))
+        setPlanResults(planResultRows)
+        if (plan.status === 'completed') {
+          setPhase('summary')
+          return
+        }
+        const nextDefinition = getDefinitionById(plan.definitionIds[plan.currentIndex])
+        const existing = bootstrap.runs.find((item) => item.definitionId === nextDefinition.id)
+        setActive(nextDefinition.key)
+        if (existing) {
+          setRun(existing)
+          setAnswers(existing.answers || {})
+          setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
+          setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, nextDefinition.questions.length - 1)))
+          setPhase('mode')
+        } else {
+          await startRun(nextDefinition)
+        }
       })
       .catch(() => {})
     return () => {
       live = false
     }
-  }, [locale])
+  }, [locale, planId])
 
   async function signIn(intentId = null) {
     if (!appAvailable) {
@@ -379,33 +394,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     } catch {
       return null
     }
-  }
-
-  function toggleFocus(key) {
-    setSelectedFocus((current) =>
-      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
-    )
-    setPersonalized(null)
-  }
-
-  function toggleFacet(setter, key) {
-    setter((current) => {
-      if (!current.includes(key)) return [...current, key]
-      return current.length > 1 ? current.filter((item) => item !== key) : current
-    })
-    setPersonalized(null)
-  }
-
-  function buildRecommendations() {
-    if (!selectedFocus.length) return
-    const ranked = rankAssessmentDefinitions(publicRecommendationDefinitions(locale), {
-      focus: selectedFocus,
-      styles: testStyles,
-      lengths: testLengths,
-    })
-      .filter((item) => item.matchedFocus.length)
-      .slice(0, 3)
-    setPersonalized(ranked)
   }
 
   async function startRun(def) {
@@ -496,7 +484,19 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       expectedRevision: currentRun.revision,
     })
     setGuestResult(result)
-    setPhase('result')
+    if (activePlan?.status === 'active') {
+      const advanced = await guestFetch(`guest/test-plans/${activePlan.id}/advance`, {
+        completedRunId: result.runId,
+        expectedRevision: activePlan.revision,
+      })
+      setActivePlan(advanced)
+      const bootstrap = await guestFetch('guest/bootstrap')
+      const rows = (bootstrap.results || []).filter((item) => advanced.completedRunIds?.includes(item.runId))
+      setPlanResults(rows)
+      setPhase(advanced.status === 'completed' ? 'summary' : 'result')
+    } else {
+      setPhase('result')
+    }
     return result
   }
 
@@ -645,8 +645,16 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setPhase('catalog')
     setContext({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     setGuestResult(null)
+    setActivePlan(null)
+    setPlanResults([])
     setSaveState('')
     setError('')
+  }
+
+  async function continuePlan() {
+    if (!activePlan || activePlan.status !== 'active') return
+    const definition = getDefinitionById(activePlan.definitionIds[activePlan.currentIndex])
+    await begin(definition.key)
   }
 
   return (
@@ -687,21 +695,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 </span>
                 <ChevronRight aria-hidden="true" />
               </button>
-              <button
-                className="cabinet-monitor-action"
-                type="button"
-                onClick={() =>
-                  document
-                    .getElementById('cabinet-test-recommender-title')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }
-              >
+              <Link className="cabinet-monitor-action" href={`/${locale}/client/tests`}>
                 <span>
                   <strong>{c.batteryCta}</strong>
                   <small>{c.batteryMeta}</small>
                 </span>
                 <ChevronRight aria-hidden="true" />
-              </button>
+              </Link>
             </div>
 
             <div className="cabinet-monitor-recommended">
@@ -732,103 +732,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </button>
             </div>
 
-            <section className="cabinet-test-recommender" aria-labelledby="cabinet-test-recommender-title">
-              <div className="cabinet-test-recommender-heading">
-                <p className="cabinet-monitor-label">{c.recommenderKicker}</p>
-                <h3 id="cabinet-test-recommender-title">{c.recommenderTitle}</h3>
-                <p>{c.recommenderText}</p>
-              </div>
-
-              <div className="cabinet-test-focus-grid" aria-label={c.recommenderTitle}>
-                {TEST_RECOMMENDATION_FOCUS.map((item) => (
-                  <button
-                    type="button"
-                    key={item.key}
-                    aria-pressed={selectedFocus.includes(item.key)}
-                    onClick={() => toggleFocus(item.key)}
-                  >
-                    {item.label[locale] || item.label.en}
-                  </button>
-                ))}
-              </div>
-
-              <div className="cabinet-test-facets">
-                <fieldset className="cabinet-test-filter">
-                  <legend>{c.recommenderStyle}</legend>
-                  {TEST_STYLE_FILTERS.map((item) => (
-                    <button
-                      type="button"
-                      key={item.key}
-                      aria-pressed={testStyles.includes(item.key)}
-                      onClick={() => toggleFacet(setTestStyles, item.key)}
-                    >
-                      {item.key === 'engaging' ? c.recommenderEngaging : c.recommenderProfessional}
-                    </button>
-                  ))}
-                </fieldset>
-                <fieldset className="cabinet-test-filter">
-                  <legend>{c.recommenderLength}</legend>
-                  {TEST_LENGTH_FILTERS.map((item) => (
-                    <button
-                      type="button"
-                      key={item.key}
-                      aria-pressed={testLengths.includes(item.key)}
-                      onClick={() => toggleFacet(setTestLengths, item.key)}
-                    >
-                      {item.key === 'short'
-                        ? c.recommenderShort
-                        : item.key === 'medium'
-                          ? c.recommenderMedium
-                          : c.recommenderComprehensive}
-                    </button>
-                  ))}
-                </fieldset>
-              </div>
-
-              <div className="cabinet-test-recommender-actions">
-                <button
-                  className="cabinet-test-recommender-build"
-                  type="button"
-                  disabled={!selectedFocus.length}
-                  onClick={buildRecommendations}
-                >
-                  {c.recommenderBuild}
-                  <ChevronRight aria-hidden="true" />
-                </button>
-                {!selectedFocus.length && <small>{c.recommenderChoose}</small>}
-              </div>
-
-              {personalized && (
-                <div className="cabinet-ranked-tests" aria-live="polite">
-                  <p className="cabinet-monitor-label">{c.recommenderResults}</p>
-                  {!personalized.length && <p className="cabinet-test-empty">{c.recommenderNoMatches}</p>}
-                  {personalized.map((item, index) => (
-                    <button
-                      className={`cabinet-test-row${index === 0 ? ' cabinet-test-row--recommended' : ''}`}
-                      type="button"
-                      key={item.definition.id}
-                      disabled={busy}
-                      onClick={() => begin(item.definition.key)}
-                    >
-                      <span className="cabinet-test-image" aria-hidden="true">
-                        <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, item.definition.key)} />
-                      </span>
-                      <span className="cabinet-test-row-copy">
-                        <small>{c.recommenderRank} #{index + 1}</small>
-                        <strong>{definitionTitle(item.definition, locale)}</strong>
-                        <small>{definitionMeta(item.definition, locale)}</small>
-                      </span>
-                      <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <p className="cabinet-test-recommender-privacy">{c.recommenderPrivacy}</p>
-              <Link className="cabinet-monitor-wuxing" href={`/${locale}/wu-xing`}>
-                {c.wuXing}<ChevronRight aria-hidden="true" />
-              </Link>
-            </section>
+            <Link className="cabinet-monitor-action cabinet-monitor-action--explorer" href={`/${locale}/client/tests`}>
+              <span><strong>{locale === 'ru' ? 'Подобрать набор тестов под мой запрос' : 'Build a test set for my needs'}</strong><small>{locale === 'ru' ? 'Откройте всю базу тестов, выберите темы и глубину — список будет автоматически расставлен по полезности.' : 'Explore the full test database, choose topics and depth, and see the list re-ranked for you.'}</small></span>
+              <ChevronRight aria-hidden="true" />
+            </Link>
           </>
         )}
 
@@ -1041,6 +948,11 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 </p>
               )}
               <div className="cabinet-test-actions">
+                {activePlan?.status === 'active' && (
+                  <button className="cabinet-save-result" type="button" disabled={busy} onClick={continuePlan}>
+                    {locale === 'ru' ? 'Продолжить набор' : 'Continue set'}
+                  </button>
+                )}
                 <button className="cabinet-text-button" type="button" disabled={busy} onClick={resetToCatalog}>
                   {c.restart}
                 </button>
@@ -1049,6 +961,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 </button>
               </div>
             </footer>
+          </article>
+        )}
+        {phase === 'summary' && activePlan && (
+          <article className="cabinet-guest-result cabinet-result-page">
+            <header className="cabinet-result-hero"><div><p className="about-kicker">{locale === 'ru' ? 'Набор завершён' : 'Set complete'}</p><h3>{locale === 'ru' ? 'Ваш общий обзор' : 'Your combined overview'}</h3><p className="cabinet-result-intro">{locale === 'ru' ? 'Здесь собраны отдельные результаты без единого медицинского балла или диагноза.' : 'This brings together your separate results without creating a single medical score or diagnosis.'}</p></div></header>
+            <section className="cabinet-result-section"><div className="cabinet-result-section-heading"><div><p className="about-kicker">{locale === 'ru' ? 'Пройдено' : 'Completed'}</p><h4>{planResults.length} {locale === 'ru' ? 'тестов' : 'tests'}</h4></div></div><div className="cabinet-test-list">{planResults.map((result) => <article className="cabinet-test-row" key={result.id}><span className="cabinet-test-row-copy"><strong>{definitionTitle(getAssessmentDefinition(result.definitionKey, result.definitionVersion, result.instrumentLocale), locale)}</strong><small>{result.dimensions.length} {locale === 'ru' ? 'показателей' : 'measurements'} · {new Date(result.measurementAt).toLocaleString(locale)}</small></span></article>)}</div></section>
+            <footer className="cabinet-result-footer"><p className="cabinet-test-note">{locale === 'ru' ? 'Каждый тест сохраняет свой собственный контекст и шкалы.' : 'Each test keeps its own context and scale.'}</p><div className="cabinet-test-actions"><button className="cabinet-text-button" type="button" onClick={resetToCatalog}>{c.restart}</button></div></footer>
           </article>
         )}
         {error && phase !== 'catalog' && <p className="client-entry-error" role="alert">{error}</p>}

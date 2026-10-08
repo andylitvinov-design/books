@@ -28,6 +28,12 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
+    guestEligible: true,
+    free: true,
+    analysisAxes: [
+      { key: 'stress', weight: 0.85 }, { key: 'mood', weight: 0.7 }, { key: 'energy', weight: 0.75 },
+      { key: 'functioning', weight: 0.65 }, { key: 'clarity', weight: 0.45 }, { key: 'resource', weight: 0.55 },
+    ],
     title: { en: 'Current State Check', ru: 'Состояние сейчас' },
     description: {
       en: 'A short check of difficulty, resource, tension, fatigue and daily-life impact.',
@@ -52,6 +58,12 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
+    guestEligible: true,
+    free: true,
+    analysisAxes: [
+      { key: 'personality', weight: 1 }, { key: 'relationships', weight: 0.55 }, { key: 'emotional_regulation', weight: 0.55 },
+      { key: 'focus', weight: 0.5 }, { key: 'functioning', weight: 0.45 },
+    ],
     title: { en: 'Personality Baseline', ru: 'Личностный baseline' },
     description: {
       en: 'A separate baseline of broad personality tendencies using the English Mini-IPIP original.',
@@ -76,6 +88,13 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
+    guestEligible: true,
+    free: true,
+    analysisAxes: [
+      { key: 'stress', weight: 0.85 }, { key: 'mood', weight: 0.7 }, { key: 'sleep', weight: 0.9 },
+      { key: 'energy', weight: 0.85 }, { key: 'relationships', weight: 0.5 }, { key: 'resource', weight: 0.7 },
+      { key: 'functioning', weight: 0.65 }, { key: 'emotional_regulation', weight: 0.55 },
+    ],
     title: { en: 'Weekly Psychic Health', ru: 'Психическое состояние за неделю' },
     description: {
       en: 'Original Holistic House weekly self-monitoring across state, symptoms, function and resources.',
@@ -100,6 +119,11 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
+    guestEligible: true,
+    free: true,
+    analysisAxes: [
+      { key: 'mood', weight: 0.95 }, { key: 'anxiety', weight: 0.95 }, { key: 'stress', weight: 0.55 }, { key: 'functioning', weight: 0.35 },
+    ],
     title: { en: 'Mood & Anxiety — 1 Minute', ru: 'Настроение и тревога — 1 минута · EN' },
     description: {
       en: 'A very short professional screening signal for mood and anxiety. Not a diagnosis.',
@@ -124,6 +148,12 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
+    guestEligible: true,
+    free: true,
+    analysisAxes: [
+      { key: 'stress', weight: 0.9 }, { key: 'mood', weight: 0.75 }, { key: 'functioning', weight: 0.6 },
+      { key: 'energy', weight: 0.45 }, { key: 'emotional_regulation', weight: 0.45 },
+    ],
     title: { en: 'Mental Load', ru: 'Психологическая нагрузка · EN' },
     description: {
       en: 'A short K6 measure of non-specific psychological distress over the past 30 days.',
@@ -148,6 +178,12 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
+    guestEligible: false,
+    free: true,
+    analysisAxes: [
+      { key: 'mood', weight: 1 }, { key: 'sleep', weight: 0.65 }, { key: 'energy', weight: 0.7 },
+      { key: 'focus', weight: 0.6 }, { key: 'self_support', weight: 0.45 }, { key: 'functioning', weight: 0.7 },
+    ],
     title: { en: 'Mood Deep Dive', ru: 'Глубокая проверка настроения · EN' },
     description: {
       en: 'A deeper PHQ-9 mood symptom check with an explicit safety question. Not a diagnosis.',
@@ -172,6 +208,12 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
+    guestEligible: true,
+    free: true,
+    analysisAxes: [
+      { key: 'anxiety', weight: 1 }, { key: 'stress', weight: 0.75 }, { key: 'emotional_regulation', weight: 0.6 },
+      { key: 'sleep', weight: 0.35 }, { key: 'focus', weight: 0.35 },
+    ],
     title: { en: 'Anxiety Deep Dive', ru: 'Глубокая проверка тревожности · EN' },
     description: {
       en: 'A GAD-7 check of anxiety symptom intensity over the past two weeks.',
@@ -196,6 +238,12 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
+    guestEligible: true,
+    free: true,
+    analysisAxes: [
+      { key: 'resource', weight: 1 }, { key: 'energy', weight: 0.85 }, { key: 'self_support', weight: 0.9 },
+      { key: 'relationships', weight: 0.65 }, { key: 'meaning', weight: 0.85 }, { key: 'emotional_regulation', weight: 0.5 },
+    ],
     title: { en: 'Resources & Inner Support', ru: 'Ресурс и внутренняя опора' },
     description: {
       en: 'Original Holistic House self-monitoring of energy, support, connection, agency and meaning.',
@@ -220,6 +268,12 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
+    guestEligible: true,
+    free: true,
+    analysisAxes: [
+      { key: 'functioning', weight: 0.9 }, { key: 'relationships', weight: 0.85 }, { key: 'energy', weight: 0.65 },
+      { key: 'resource', weight: 0.75 }, { key: 'meaning', weight: 0.8 }, { key: 'clarity', weight: 0.55 }, { key: 'self_support', weight: 0.45 },
+    ],
     title: { en: 'Monthly Life Profile', ru: 'Профиль месяца' },
     description: {
       en: 'A broader monthly Holistic House profile of self, relationships, body, work, meaning and support.',

@@ -10,6 +10,7 @@ import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
+import { TestExplorer } from '@/components/app/test-explorer'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import {
   TEST_LENGTH_FILTERS,
@@ -164,6 +165,33 @@ export default function AppWorkspace({ locale, path = [] }) {
       router.replace(root)
     }
   }
+  async function openPlanStep(plan) {
+    const definition = getDefinitionById(plan.definitionIds[plan.currentIndex])
+    const existing = data?.runs?.find((run) => run.definitionId === definition.id && ['draft', 'in_progress'].includes(run.status))
+    const run = existing || await appFetch('runs', {
+      definitionKey: definition.key,
+      definitionVersion: definition.version,
+      instrumentLocale: definition.instrumentLocale,
+      operationId: crypto.randomUUID(),
+    })
+    router.push(`${root}/runs/${run.id}?plan=${encodeURIComponent(plan.id)}`)
+  }
+  async function completePlan(result) {
+    const planId = searchParams.get('plan')
+    if (!planId) {
+      await load()
+      router.push(root + '/results/' + result.id)
+      return
+    }
+    const plan = await appFetch('test-plans/' + encodeURIComponent(planId))
+    const advanced = await appFetch(`test-plans/${encodeURIComponent(planId)}/advance`, {
+      completedRunId: result.runId,
+      expectedRevision: plan.revision,
+    })
+    await load()
+    if (advanced.status === 'active') await openPlanStep(advanced)
+    else router.push(`${root}/tests?plan=${encodeURIComponent(planId)}&summary=1`)
+  }
   if (deleted || state === 'deletion')
     return (
       <main className="hh-app">
@@ -284,11 +312,22 @@ export default function AppWorkspace({ locale, path = [] }) {
             />
           )}
           {page === 'tests' && (
-            <TestCatalog
-              data={data}
-              locale={locale}
-              onStarted={(run) => router.push(`${root}/runs/${run.id}`)}
-            />
+            searchParams.get('summary')
+              ? <TestPlanSummary locale={locale} planId={searchParams.get('plan')} results={data.results} onBack={() => router.push(root + '/tests')} />
+              : <TestExplorer
+                  locale={locale}
+                  audience="account"
+                  activePlan={data.activeTestPlan}
+                  onResume={openPlanStep}
+                  onStart={async (entries) => {
+                    const plan = await appFetch('test-plans', {
+                      items: entries.map((entry) => ({ definitionKey: entry.definition.key, definitionVersion: entry.definition.version, instrumentLocale: entry.definition.instrumentLocale })),
+                      operationId: crypto.randomUUID(),
+                      replaceActive: false,
+                    })
+                    await openPlanStep(plan)
+                  }}
+                />
           )}
           {page === 'runs' && (
             <Runner
@@ -300,8 +339,7 @@ export default function AppWorkspace({ locale, path = [] }) {
                 router.push(root + '/tests')
               }}
               onComplete={async (result) => {
-                await load()
-                router.push(root + '/results/' + result.id)
+                await completePlan(result)
               }}
             />
           )}
@@ -884,6 +922,18 @@ function TestCatalog({ data, locale, onStarted }) {
       {error && <p role="alert">{message(error, c)}</p>}
     </section>
   )
+}
+
+function TestPlanSummary({ locale, planId, results, onBack }) {
+  const [plan, setPlan] = useState(null)
+  const [error, setError] = useState(null)
+  useEffect(() => {
+    if (!planId) return
+    appFetch('test-plans/' + encodeURIComponent(planId)).then(setPlan).catch(setError)
+  }, [planId])
+  if (!plan) return <section className="hh-panel"><h1>{locale === 'ru' ? 'Загрузка набора…' : 'Loading set…'}</h1>{error && <p role="alert">{message(error, COPY[locale])}</p>}</section>
+  const completed = results.filter((result) => plan.completedRunIds?.includes(result.runId))
+  return <section className="hh-panel hh-test-plan-summary"><p className="hh-kicker">{locale === 'ru' ? 'Набор завершён' : 'Set complete'}</p><h1>{locale === 'ru' ? 'Ваш общий обзор' : 'Your combined overview'}</h1><p>{locale === 'ru' ? 'Каждый инструмент остаётся отдельным результатом: здесь нет синтетического медицинского балла или диагноза.' : 'Each instrument remains a separate result: this page does not create a synthetic medical score or diagnosis.'}</p><div className="hh-history-list">{completed.map((result) => <Link key={result.id} href={`/${locale}/app/results/${result.id}`} prefetch={false}>{getDefinitionById(result.definitionId).title} · {new Date(result.measurementAt).toLocaleDateString(locale)}</Link>)}</div><button type="button" onClick={onBack}>{locale === 'ru' ? 'К базе тестов' : 'Back to test explorer'}</button></section>
 }
 
 function Runner({ id, locale, onExit, onComplete }) {
