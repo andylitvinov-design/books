@@ -83,9 +83,10 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
         <aside className="academy-archive-notice">{copy.notice}</aside>
         <p className="yggdrasil-program-source-note">{copy.source}</p>
 
-        {module.levelId <= 2 ? <YggdrasilEnglishVideoGuide locale={locale} compact /> : null}
-
         <YggdrasilCurriculum locale={locale} levelId={module.levelId} showSupport={module.levelId === 1} />
+
+        {module.levelId === 1 ? <YggdrasilEnglishVideoGuide locale={locale} scope="basic" /> : null}
+        {module.levelId === 2 ? <YggdrasilEnglishVideoGuide locale={locale} scope="instructor" /> : null}
 
         <nav className="yggdrasil-module-pagination" aria-label="Reiki Yggdrasil modules">
           {previous ? <Link href={`/${locale}/academy/reiki/yggdrasil/${previous.slug}`}><small>{copy.previous}</small><strong>{previous.title[locale]}</strong></Link> : <span />}
