@@ -10,7 +10,7 @@ import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
-import { TestExplorer } from '@/components/app/test-explorer'
+import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import {
   TEST_LENGTH_FILTERS,
@@ -189,8 +189,8 @@ export default function AppWorkspace({ locale, path = [] }) {
       expectedRevision: plan.revision,
     })
     await load()
-    if (advanced.status === 'active') await openPlanStep(advanced)
-    else router.push(`${root}/tests?plan=${encodeURIComponent(planId)}&summary=1`)
+    // Return to the complete battery after each result so every test status stays visible.
+    router.push(`${root}/tests?plan=${encodeURIComponent(planId)}`)
   }
   if (deleted || state === 'deletion')
     return (
@@ -314,19 +314,11 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'tests' && (
             searchParams.get('summary')
               ? <TestPlanSummary locale={locale} planId={searchParams.get('plan')} results={data.results} onBack={() => router.push(root + '/tests')} />
-              : <TestExplorer
+              : <AccountTestBattery
+                  data={data}
                   locale={locale}
-                  audience="account"
-                  activePlan={data.activeTestPlan}
-                  onResume={openPlanStep}
-                  onStart={async (entries) => {
-                    const plan = await appFetch('test-plans', {
-                      items: entries.map((entry) => ({ definitionKey: entry.definition.key, definitionVersion: entry.definition.version, instrumentLocale: entry.definition.instrumentLocale })),
-                      operationId: crypto.randomUUID(),
-                      replaceActive: false,
-                    })
-                    await openPlanStep(plan)
-                  }}
+                  requestedPlanId={searchParams.get('plan')}
+                  reload={load}
                 />
           )}
           {page === 'runs' && (
