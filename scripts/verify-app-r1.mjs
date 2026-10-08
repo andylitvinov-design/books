@@ -29,26 +29,37 @@ async function api(path,body,ctx=context){
  throw error
 }
 async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
+async function chooseVisibleTest(testPage,name){
+ const customizer=testPage.getByRole('button',{name:'Choose my own tests and filters',exact:true})
+ if(!(await customizer.count())){
+  const toggle=testPage.getByRole('button',{name:'Choose or change tests',exact:true})
+  if(await toggle.count())await toggle.click()
+ }
+ await expect(customizer).toBeVisible({timeout:15000})
+ if((await customizer.getAttribute('aria-expanded'))!=='true')await customizer.click()
+ const card=()=>testPage.locator('article').filter({has:testPage.getByRole('heading',{name,exact:true})})
+  .filter({has:testPage.getByRole('checkbox',{name,exact:true})}).first()
+ if(!(await card().isVisible().catch(()=>false))){
+  const more=testPage.getByRole('button',{name:/^Show all matching tests/}).first()
+  if(await more.count())await more.click()
+ }
+ if(!(await card().isVisible().catch(()=>false))){
+  const all=testPage.getByRole('button',{name:'Full database',exact:true})
+  if(await all.count())await all.click()
+  const more=testPage.getByRole('button',{name:/^Show all matching tests/}).first()
+  if(await more.count())await more.click()
+ }
+ await expect(card()).toBeVisible({timeout:15000})
+ await card().getByRole('checkbox',{name,exact:true}).check()
+}
 async function enterTest(name='Current State Check',mode='Guided'){
  await page.goto(origin+'/en/app/tests');await ready()
  const candidate=()=>page.locator('article').filter({
    has:page.getByRole('heading',{name,exact:true}),
  }).filter({has:page.getByRole('button',{name:/^(Start testing|Continue test|Retake test)/})}).first()
  if(!(await candidate().count())){
-  const toggle=page.getByRole('button',{name:'Choose or change tests',exact:true})
-  if(await toggle.count())await toggle.click()
-  let card=page.locator('article').filter({
-   has:page.getByRole('heading',{name,exact:true}),
-  }).filter({has:page.getByRole('checkbox',{name,exact:true})}).first()
-  if(!(await card.count())){
-   const all=page.getByRole('button',{name:'Full database',exact:true})
-   if(await all.count())await all.click()
-   card=page.locator('article').filter({
-    has:page.getByRole('heading',{name,exact:true}),
-   }).filter({has:page.getByRole('checkbox',{name,exact:true})}).first()
-  }
-  await card.getByRole('checkbox',{name,exact:true}).check()
-  await page.getByRole('button',{name:'Start free testing',exact:true}).click()
+  await chooseVisibleTest(page,name)
+  await page.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true}).click()
   if(await page.getByRole('heading',{name:'You already have an active test set'}).count())
    await page.getByRole('button',{name:'Use new selection'}).click()
   await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
@@ -129,10 +140,10 @@ try {
  const selectionWrites=[]
  selectionPage.on('response',response=>{ if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST') selectionWrites.push(response.status()) })
  await selectionPage.goto(origin+'/en/client/tests')
- await expect(selectionPage.getByRole('heading',{name:'Build your test set'})).toBeVisible()
- await selectionPage.locator('article').filter({has:selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})})
-   .getByRole('checkbox',{name:'Personality Baseline'}).check()
- await selectionPage.getByRole('button',{name:'Start free testing',exact:true}).click()
+ await expect(selectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
+  await expect(selectionPage.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true})).toBeEnabled()
+ await chooseVisibleTest(selectionPage,'Personality Baseline')
+ await selectionPage.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true}).click()
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  await expect(selectionPage.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
@@ -146,10 +157,9 @@ try {
  // leave the OAuth handoff query pending or create a second plan.
  const repeatSelectionPage=await other.newPage()
  await repeatSelectionPage.goto(origin+'/en/client/tests')
- await expect(repeatSelectionPage.getByRole('heading',{name:'Build your test set'})).toBeVisible()
- await repeatSelectionPage.locator('article').filter({has:repeatSelectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})})
-   .getByRole('checkbox',{name:'Personality Baseline'}).check()
- await repeatSelectionPage.getByRole('button',{name:'Start free testing',exact:true}).click()
+ await expect(repeatSelectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
+ await chooseVisibleTest(repeatSelectionPage,'Personality Baseline')
+ await repeatSelectionPage.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true}).click()
  await expect(repeatSelectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  assert.equal(new URL(repeatSelectionPage.url()).searchParams.get('plan'),selectedPlan.id)
  assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.id,selectedPlan.id)
@@ -165,12 +175,12 @@ try {
  await page.goto(origin+'/en/client')
  await expect(page.getByRole('heading',{name:'Enter your personal cabinet'})).toBeVisible()
  await expect(page.getByRole('button',{name:'Enter personal cabinet with Google'})).toBeVisible()
- await expect(page.getByRole('heading',{name:'Build your test set'})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
  assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null)
  passed('Cabinet entry has a prominent Google sign-in and one integrated battery builder')
 
- await page.getByRole('checkbox',{name:'Personality Baseline',exact:true}).check()
- await page.getByRole('button',{name:'Start free testing',exact:true}).click()
+ await chooseVisibleTest(page,'Personality Baseline')
+ await page.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true}).click()
  // An existing in-progress battery must not be discarded silently.
  // Choose the newly requested set through the explicit replacement confirmation.
  await expect(page.getByRole('heading',{name:'You already have an active test set'})).toBeVisible()
