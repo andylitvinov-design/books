@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
 
