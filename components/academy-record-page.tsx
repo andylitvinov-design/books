@@ -117,6 +117,15 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record, locale);
   const hasBody = publicBlocks.some((block) => block.type !== "h1");
   const outline = publicBlocks.map((block, index) => ({ block, index })).filter(({ block }) => block.type === "h2" || block.type === "h3").slice(0, 32);
+  const tantraArchiveVideoGrid = isVerbatimTantraArchive && videos.length ? (
+    <div className="academy-video-grid tantra-youtube-grid">
+      {videos.map((video, index) => <AcademyVideoPlayer
+        key={video.id}
+        youtubeId={video.id}
+        title={video.id === "qM_nFUkYJ1k" ? (locale === "ru" ? "RU · Отзыв о Тантра Рейки — Алёна" : "RU · Tantra Reiki participant testimonial — Alena") : (video.lessonTitle ?? academyDisplayTitle(record, locale) + " — video " + (index + 1))}
+      />)}
+    </div>
+  ) : null;
 
   return (
     <main className={"academy-reading-shell" + (isCanonicalYggdrasil || isVerbatimTantraArchive ? " academy-reading-shell--wide" : "") + (isCanonicalYggdrasil ? " academy-reading-shell--yggdrasil" : "")} lang={locale}>
@@ -171,7 +180,14 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               </div>
             </div>
             {sourceVideos.length ? <div className="academy-native-video-grid">{sourceVideos.map((video, index) => <figure className="academy-native-video" key={video.src}><video controls playsInline preload="metadata" poster={video.poster ?? undefined}><source src={video.src} type={video.type} /></video><figcaption>{locale === "ru" ? "Видео из исходной страницы" : locale === "es" ? "Video de la página fuente" : "Video from the source page"} {index + 1}</figcaption></figure>)}</div> : null}
-            {videos.length ? <div className="academy-video-grid tantra-youtube-grid">{videos.map((video, index) => <AcademyVideoPlayer key={video.id} youtubeId={video.id} title={video.id === "qM_nFUkYJ1k" ? (locale === "ru" ? "RU · Отзыв о Тантра Рейки — Алёна" : "RU · Tantra Reiki participant testimonial — Alena") : (video.lessonTitle ?? academyDisplayTitle(record, locale) + " — video " + (index + 1))} />)}</div> : null}
+            {tantraArchiveVideoGrid ? (
+              locale !== "ru" && videos.every((video) => video.id === "qM_nFUkYJ1k") ? (
+                <details className="tantra-russian-review">
+                  <summary>{locale === "es" ? "RU · Testimonio histórico en ruso — mostrar" : "RU · Russian-language historical testimonial — show video"}</summary>
+                  {tantraArchiveVideoGrid}
+                </details>
+              ) : tantraArchiveVideoGrid
+            ) : null}
           </section>
         ) : null}
         {isVerbatimTantraArchive ? (
