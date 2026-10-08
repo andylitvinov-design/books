@@ -11,6 +11,8 @@ import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { CabinetHome } from '@/components/app/cabinet-home'
+import { CabinetGuide } from '@/components/app/cabinet-guide'
+import guideStyles from '@/components/app/cabinet-guide.module.css'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { TestExplorer } from '@/components/app/test-explorer'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
@@ -284,6 +286,9 @@ export default function AppWorkspace({ locale, path = [] }) {
     ['consultations', c.consultations, '/consultations'],
     ...(data.practitioner ? [['tools', ru ? 'Рабочий кабинет' : 'Practice tools', '/tools']] : []),
   ]
+  // The mentor follows completed, account-owned data only; do not crowd the test runner.
+  const showCabinetGuide = data.account.onboardingState === 'active'
+    && ['portrait', 'tests', 'history', 'results', 'portfolio'].includes(page)
   return (
     <main className="hh-app">
       <header className="hh-header">
@@ -328,7 +333,8 @@ export default function AppWorkspace({ locale, path = [] }) {
       {data.account.onboardingState !== 'active' ? (
         <Preferences data={data} locale={locale} onboarding onDone={load} />
       ) : (
-        <>
+        <div className={showCabinetGuide ? guideStyles.layout : guideStyles.passthrough}>
+          <div className={showCabinetGuide ? guideStyles.main : guideStyles.passthrough}>
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} />
           )}
@@ -422,7 +428,9 @@ export default function AppWorkspace({ locale, path = [] }) {
               />
             </>
           )}
-        </>
+          </div>
+          {showCabinetGuide && <CabinetGuide data={data} locale={locale} page={page} recordId={recordId} />}
+        </div>
       )}
       <footer className="hh-footer">
         <p>{c.nonDiagnostic}</p>
