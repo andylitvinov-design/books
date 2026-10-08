@@ -8,7 +8,7 @@ import styles from './test-explorer.module.css'
 const PRIMARY_AXES = TEST_EXPLORER_AXES.slice(0, 10)
 const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
 
-export function TestExplorerVisual({ locale, coverage, axisFilter, onAxisFilter }) {
+export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter }) {
   const [variant, setVariant] = useState('male')
   const [rotation, setRotation] = useState({ x: 0, y: 0 })
   const drag = useRef(null)
@@ -23,6 +23,7 @@ export function TestExplorerVisual({ locale, coverage, axisFilter, onAxisFilter 
     update({ x: rotation.x + (step.x || 0), y: rotation.y + (step.y || 0) })
   }
   const start = (event) => {
+    if (event.target.closest?.('button')) return
     drag.current = { x: event.clientX, y: event.clientY, rotation }
     event.currentTarget.setPointerCapture?.(event.pointerId)
   }
@@ -33,11 +34,19 @@ export function TestExplorerVisual({ locale, coverage, axisFilter, onAxisFilter 
 
   return <section className={styles.visual} aria-label={ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes'}>
     <header className={styles.visualHeader}>
-      <div><p className={styles.eyebrow}>{ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes'}</p><h2>{ru ? 'Покрытие выбранного набора' : es ? 'Cobertura de tu selección' : 'Coverage of your selected set'}</h2></div>
+      <div><p className={styles.eyebrow}>{ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes'}</p><h2>{mode === 'selected' ? (ru ? 'Покрытие вашей батареи' : es ? 'Cobertura de tus pruebas' : 'Coverage of your test set') : (ru ? 'Темы для исследования' : es ? 'Áreas de interés' : 'Your areas of interest')}</h2></div>
       <div className={styles.variantToggle} role="group" aria-label={ru ? 'Вариант модели' : es ? 'Modelo' : 'Model variant'}>
         {['female', 'male'].map((key) => <button type="button" key={key} aria-pressed={variant === key} onClick={() => setVariant(key)}>{key === 'female' ? (ru ? 'Женская' : es ? 'Femenino' : 'Female') : (ru ? 'Мужская' : es ? 'Masculino' : 'Male')}</button>)}
       </div>
     </header>
+    <div className={styles.visualState} role="status" aria-live="polite">
+      <strong>{mode === 'selected'
+        ? (ru ? `${selectedCount} тестов · ${coverage.coveredCount} осей покрыто` : es ? `${selectedCount} pruebas · ${coverage.coveredCount} ejes cubiertos` : `${selectedCount} tests · ${coverage.coveredCount} axes covered`)
+        : (ru ? `${topicCount} тем · ${coverage.coveredCount} связанных осей` : es ? `${topicCount} temas · ${coverage.coveredCount} ejes relacionados` : `${topicCount} topics · ${coverage.coveredCount} related axes`)}</strong>
+      <span>{mode === 'selected'
+        ? (ru ? 'Цветные точки показывают оси, которые охватывают отмеченные тесты.' : es ? 'Los puntos muestran los ejes cubiertos por las pruebas elegidas.' : 'Highlighted points show axes covered by the tests you selected.')
+        : (ru ? 'Выберите темы слева: соответствующие оси подсветятся. Это предварительный просмотр, не результат.' : es ? 'Elige temas a la izquierda para destacar ejes; es una vista previa, no un resultado.' : 'Choose topics on the left to highlight axes. This is a preview, not a test result.')}</span>
+    </div>
     <div className={styles.modelStage} tabIndex={0} role="application" aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
       <div className={styles.portraitArt} data-visible={variant === 'male' ? 'true' : 'false'} aria-hidden="true" style={{ transform: `translate3d(${rotation.y * .3}px, ${rotation.x * .3}px, 0)` }}>
         <Image src="/images/holistic-house-test-brain-concept.png" width={1672} height={941} unoptimized alt="" draggable={false} className={styles.portraitSource} />
