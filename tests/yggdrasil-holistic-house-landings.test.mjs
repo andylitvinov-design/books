@@ -98,7 +98,7 @@ test("full EN and RU historical source pages are preserved", async () => {
   assert.equal(archive.verification.sourceContentImages.ru, 14);
 });
 
-test("program hub and archive expose the complete source-photo set with labels", async () => {
+test("source-photo set stays preserved in the archive while the program hub uses only contextual imagery", async () => {
   const [programMap, landing, sourceArchive] = await Promise.all([
     readFile("data/academy/yggdrasil-program-map.ts", "utf8"),
     readFile("components/yggdrasil-program-landing.tsx", "utf8"),
@@ -114,8 +114,10 @@ test("program hub and archive expose the complete source-photo set with labels",
     assert.match(programMap, new RegExp(`id: "${id}"`));
   }
 
-  assert.match(landing, /sourcePhotos = yggdrasilSourceImages\.filter/);
-  assert.match(landing, /item\.localUrl \?\? item\.sourceUrl/);
+  assert.doesNotMatch(landing, /sourcePhotos = yggdrasilSourceImages\.filter/);
+  assert.doesNotMatch(landing, /className="yggdrasil-source-gallery"/);
+  assert.match(landing, /academyStory\[locale\]/);
+  assert.match(landing, /yggdrasilAcademyStoryImages\[item\.key\]/);
   assert.match(sourceArchive, /normalizedSourceUrl/);
   assert.match(sourceArchive, /preserved\?\.label\[locale\]/);
   assert.match(sourceArchive, /preserved\?\.localUrl \?\? src/);
