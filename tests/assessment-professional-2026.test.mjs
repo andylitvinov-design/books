@@ -83,6 +83,9 @@ test('source-backed instruments integrate into locale-aware explorer without lea
     assert.ok(coverage.axes.mood.coverage>0)
   }
   const component=await readFile(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
+  const guestComponent=await readFile(new URL('../components/app/cabinet-landing.jsx',import.meta.url),'utf8')
+  assert.match(guestComponent, /item\.guestEligible === false/)
+  assert.match(guestComponent, /question\.responseAnchors \|\| definition\.responseAnchors/)
   assert.match(component,/question\.responseAnchors \|\| def\.responseAnchors/)
 })
 
