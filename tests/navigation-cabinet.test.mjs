@@ -180,7 +180,9 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
   assert.match(cta, /t\.me\/AndyTherapist/)
   assert.match(cta, /data-contact-channel="whatsapp"/)
   assert.match(cta, /data-contact-channel="telegram"/)
-  assert.match(cta, /No long form and no pressure/)
+  assert.match(cta, /Ask about working together/)
+  assert.match(cta, /Interested in training or the next level/)
+  assert.match(cta, /data-conversion-kind=\{mode\}/)
   assert.match(styles, /\.public-consultation-cta__actions/)
   for (const source of [home, homeopathy, services, spanishServices, library, academy, academyRecord, remedies, remedyPage, bookReader]) {
     assert.match(source, /PublicConsultationCta/)
