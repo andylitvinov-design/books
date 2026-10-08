@@ -30,7 +30,7 @@ async function api(path,body,ctx=context){
 }
 async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
 async function chooseVisibleTest(testPage,name){
- const customizer=testPage.getByRole('button',{name:'Choose my own tests and filters',exact:true})
+ const customizer=testPage.getByRole('button',{name:/Choose my own tests and filters/})
  if(!(await customizer.count())){
   const toggle=testPage.getByRole('button',{name:'Choose or change tests',exact:true})
   if(await toggle.count())await toggle.click()
