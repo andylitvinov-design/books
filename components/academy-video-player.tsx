@@ -14,6 +14,7 @@ export function AcademyVideoPlayer({ youtubeId, title }: { youtubeId: string; ti
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           loading="lazy"
+        unoptimized
           src={"https://www.youtube-nocookie.com/embed/" + safeId + "?autoplay=1"}
           title={title}
         />
