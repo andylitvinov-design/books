@@ -18,7 +18,7 @@ const UI = {
     title: 'Enter your personal cabinet',
     intro: 'Sign in to see saved test batteries, track changes over time and keep your private results together.',
     google: 'Enter personal cabinet with Google',
-    googleNote: 'Optional: you can select and take a battery of tests without signing in.',
+    googleNote: 'Continue with Google to keep your selected tests and results in your private Cabinet.',
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
     testsKicker: 'Mind–Body Monitor',
     tryTitle: 'Your Mind–Body Monitor',
@@ -107,7 +107,7 @@ const UI = {
     title: 'Войти в личный кабинет',
     intro: 'Войдите, чтобы видеть свои наборы тестов, отслеживать динамику и хранить результаты в личном кабинете.',
     google: 'Войти в личный кабинет через Google',
-    googleNote: 'Необязательно: набор тестов можно подобрать и пройти без входа.',
+    googleNote: 'Для сохранения выбранных тестов и результатов предусмотрен вход через Google.',
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
     testsKicker: 'Монитор состояния',
     tryTitle: 'Ваш монитор состояния',
@@ -653,6 +653,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   return (
     <>
+      {phase === 'catalog' && <PublicTestExplorer locale={locale} embedded />}
       {phase === 'catalog' && (
       <section className="cabinet-signin-strip cabinet-signin-hero" aria-labelledby="cabinet-title">
         <div className="cabinet-signin-copy">
@@ -682,8 +683,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         }}
         disabled={busy}
       />
-
-      {phase === "catalog" && <PublicTestExplorer locale={locale} embedded />}
 
       {phase !== 'catalog' && <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
         <header className="library-heading cabinet-tests-heading">
