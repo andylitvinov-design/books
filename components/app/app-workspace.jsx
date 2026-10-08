@@ -10,6 +10,7 @@ import { assessmentHistoryGroups, nextPersonalRecommendation, resultChangeSummar
 import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
+import { CabinetHome } from '@/components/app/cabinet-home'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { TestExplorer } from '@/components/app/test-explorer'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
@@ -177,6 +178,32 @@ export default function AppWorkspace({ locale, path = [] }) {
     })
     router.push(`${root}/runs/${run.id}?plan=${encodeURIComponent(plan.id)}`)
   }
+  async function startCabinetDefinition(definition) {
+    if (!definition) return
+    const existing = data?.runs?.find((run) => run.definitionId === definition.id && ['draft', 'in_progress'].includes(run.status))
+    if (existing) { router.push(`${root}/runs/${existing.id}`); return }
+    const run = await appFetch('runs', {
+      definitionKey: definition.key,
+      definitionVersion: definition.version,
+      instrumentLocale: definition.instrumentLocale,
+      operationId: crypto.randomUUID(),
+    })
+    router.push(`${root}/runs/${run.id}`)
+  }
+  async function saveCabinetMood(payload) {
+    const saved = await appFetch('mood', {
+      ...payload,
+      timezone: localZone(),
+      sourceSurface: 'portrait',
+    })
+    if (saved?.id) {
+      setData((current) => current ? {
+        ...current,
+        moodCheckins: [saved, ...(current.moodCheckins || []).filter((item) => item.id !== saved.id)].slice(0, 15),
+      } : current)
+    }
+    return saved
+  }
   async function completePlan(result) {
     const planId = searchParams.get('plan')
     if (!planId) {
@@ -242,17 +269,19 @@ export default function AppWorkspace({ locale, path = [] }) {
         </section>
       </main>
     )
+  const ru = locale === 'ru'
   const nav = [
-    ['portrait', c.portrait, ''],
-    ['monitoring', c.monitoring, '/monitoring'],
-    ['history', c.history, '/history'],
+    ['portrait', ru ? 'Главная' : 'Home', ''],
+    ['tests', ru ? 'Подобрать тесты' : 'Find tests', '/tests'],
+    ['history', ru ? 'Результаты и история' : 'Results & history', '/history'],
     ['consultations', c.consultations, '/consultations'],
+    ...(data.practitioner ? [['tools', ru ? 'Рабочий кабинет' : 'Practice tools', '/tools']] : []),
   ]
   return (
     <main className="hh-app">
       <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
-          Holistic House<span>{c.portrait}</span>
+          Holistic House<span>{locale === 'ru' ? 'Личный кабинет' : 'Private cabinet'}</span>
         </Link>
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
@@ -282,7 +311,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               key={id}
               href={root + url}
               prefetch={false}
-              aria-current={page === id || (id === 'portrait' && page === 'portfolio') ? 'page' : undefined}
+              aria-current={page === id || (id === 'history' && ['portfolio', 'results', 'reports', 'documents'].includes(page)) || (id === 'tests' && ['monitoring', 'runs'].includes(page)) ? 'page' : undefined}
             >
               {label}
             </Link>
@@ -297,13 +326,22 @@ export default function AppWorkspace({ locale, path = [] }) {
             <SaveContinuation data={data} locale={locale} reload={load} />
           )}
           {page === 'portrait' && (
-            <>
-              <Portrait data={data} locale={locale} />
-              <PracticeEntry data={data} locale={locale} />
-            </>
+            <CabinetHome
+              data={data}
+              locale={locale}
+              onMoodChange={saveCabinetMood}
+              onStartDefinition={startCabinetDefinition}
+              onResumePlan={openPlanStep}
+            />
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} />}
+          {page === 'tools' && data.practitioner && (
+            <section className="hh-practice-page">
+              <Link href={root} prefetch={false} className="hh-text-link">{ru ? '← Назад к моему кабинету' : '← Back to my cabinet'}</Link>
+              <OwnerTools locale={locale} />
+            </section>
+          )}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}

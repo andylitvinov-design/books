@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
@@ -20,6 +21,8 @@ const depthOptions = ['quick', 'balanced', 'deep']
 
 export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null }) {
   const c = COPY[locale] || COPY.en
+  const params = useSearchParams()
+  const initialFocus = (params.get('focus') || '').split(',').filter((key) => TEST_RECOMMENDATION_FOCUS.some((item) => item.key === key))
   const [availability, setAvailability] = useState('available')
   const [concern, setConcern] = useState('')
   const [voiceSupported, setVoiceSupported] = useState(false)
@@ -57,13 +60,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       recognizer.start()
     } catch { setListening(false); setSpeechError(locale === 'ru' ? 'Микрофон недоступен. Введите запрос текстом.' : 'Microphone unavailable. Please type instead.') }
   }
-  const [focus, setFocus] = useState([])
+  const [focus, setFocus] = useState(initialFocus)
   const [stylesFilter, setStylesFilter] = useState([])
   const [lengths, setLengths] = useState([])
   const [depth, setDepth] = useState('balanced')
   const [areas, setAreas] = useState([])
   const [freeOnly, setFreeOnly] = useState(false)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(params.get('q') || '')
   const [sort, setSort] = useState('recommended')
   const [selectedKeys, setSelectedKeys] = useState(() => recommendedKey ? [recommendedKey] : [])
   const [axisFilter, setAxisFilter] = useState(null)

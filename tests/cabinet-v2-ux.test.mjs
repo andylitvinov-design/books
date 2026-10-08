@@ -129,7 +129,7 @@ test('latest change compares every compatible current-state dimension to the imm
   )
 })
 
-test('workspace keeps four primary sections and exposes Reports through Portrait, History and direct routes', async () => {
+test('workspace has a focused personal home, working tests, history and consultations while preserving private report routes', async () => {
   const [workspace, catalog] = await Promise.all([
     readFile('components/app/app-workspace.jsx', 'utf8'),
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
@@ -138,7 +138,13 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /getPortraitNextStep/)
   assert.doesNotMatch(workspace, /\['reports', c\.reports, '\/reports'\]/)
   assert.match(workspace, /\['consultations', c\.consultations, '\/consultations'\]/)
-  assert.match(workspace, /\['monitoring', c\.monitoring, '\/monitoring'\]/)
+  assert.match(workspace, /\['portrait', ru \? 'Главная' : 'Home', ''\]/)
+  assert.match(workspace, /\['tests', ru \? 'Подобрать тесты' : 'Find tests', '\/tests'\]/)
+  assert.match(workspace, /\['history', ru \? 'Результаты и история' : 'Results & history', '\/history'\]/)
+  assert.match(workspace, /\['tools', ru \? 'Рабочий кабинет' : 'Practice tools', '\/tools'\]/)
+  assert.match(workspace, /<CabinetHome[\s\S]*onStartDefinition={startCabinetDefinition}/)
+  assert.match(workspace, /page === 'tools' && data\.practitioner/)
+  assert.match(workspace, /<OwnerTools locale={locale} \/>/)
   assert.match(workspace, /function ReportsIndex/)
   assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
   assert.match(workspace, /LatestChange/)
