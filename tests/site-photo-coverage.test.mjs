@@ -42,7 +42,7 @@ test("three personal services show three distinct photos on EN/RU and Spanish ro
   assert.equal(new Set(images).size, 3);
   assert.match(es, /services-studio-card-photo/);
   const esHome = read("app/es/page.tsx");
-  const esHomePhotos = [...esHome.matchAll(/image: \'(\\/[^\\\']+)\\\'/g)].map(x => x[1]);
+  const esHomePhotos = [...esHome.matchAll(/image: '([^']+)'/g)].map(x => x[1]);
   assert.equal(esHomePhotos.length, 3);
   assert.equal(new Set(esHomePhotos).size, 3);
   assert.match(esHome, /service-home-card-photo/);
