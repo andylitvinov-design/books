@@ -110,9 +110,31 @@ test("All 41 unique recovered PsiMaster videos appear in their matching Russian 
   }
   assert.deepEqual(stageTotals, { greek: 12, egypt: 7, traditions: 6, symbols: 14, initiation: 2 });
   assert.equal(seen.size, 41, "no same video repeated between collections");
+  const historicalCollectionCounts = Object.fromEntries(
+    [...new Set(media.map((video) => video.logicalId))].map((id) => [id, media.filter((video) => video.logicalId === id).length]),
+  );
+  assert.deepEqual(historicalCollectionCounts, {
+    "videos/egypt-osiris": 7,
+    "videos/energy-pump-ups": 2,
+    "videos/greek-mysteries-demeter": 5,
+    "videos/greek-mysteries-dionysus": 7,
+    "videos/maya-archetypes": 6,
+    "videos/planetary-power": 11,
+    "videos/strength-protection": 7,
+  });
+  const planetary = new Set(media.filter((video) => video.logicalId === "videos/planetary-power").map((video) => video.videoId));
+  assert.equal(media.filter((video) => video.logicalId === "videos/strength-protection" && planetary.has(video.videoId)).length, 4, "show transparent overlap note instead of losing four historical cross-links");
+  assert.ok(media.every((video) => video.sourceUrl.startsWith("https://psimaster.net/service?")), "every record retains its exact PsiMaster origin");
   assert.match(page, /locale === "ru" \? templeVideoCollections/);
   assert.match(page, /<AcademyVideoPlayer youtubeId=\{video\.id\}/);
   assert.match(page, /className="temple-video-series"/);
+  assert.match(page, /className="temple-video-index"/);
+  assert.match(page, /aria-label="Перейти к видеокурсам"/);
+  assert.match(page, /className="temple-video-series-summary-text"/);
+  assert.match(page, /collection\.repeatedCount > 0/);
+  assert.match(page, /<ol className="temple-video-grid">/);
+  assert.match(assignments, /repeatedCount: originals\.length - videos\.length/);
+  assert.match(assignments, /description: ".*"/);
   assert.match(page, /collection\.sourceUrl/);
   assert.match(css, /\.temple-video-grid/);
   assert.match(css, /@media \(max-width: 700px\)/);
