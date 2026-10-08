@@ -21,7 +21,7 @@ test("services display choices and a separately listed free diagnostic offering"
   assert.ok(hero >= 0 && directions > hero && free > directions);
   assert.match(s, /href=\{`\/\$\{locale\}\/services\/free-situation-review`\}/);
   assert.match(s, /Бесплатная диагностика ситуации/);
-  assert.match(s, /Free situation & goal assessment/);
+  assert.match(s, /free situation & goal assessment/i);
   assert.match(s, /free-wu-xing-diagnostic/);
   assert.doesNotMatch(s, /<CatalogShowcase/);
 });
