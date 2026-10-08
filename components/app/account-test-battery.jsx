@@ -275,6 +275,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browser storage may be disabled. */ }
             setConflict(null)
             setPlan(data.activeTestPlan)
+            if (data.activeTestPlan?.id) router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
           }}>{c.keep}</button>
           <button type="button" className="hh-primary" disabled={busy} onClick={() => create(conflict, true)}>{c.replace}</button>
         </div>
