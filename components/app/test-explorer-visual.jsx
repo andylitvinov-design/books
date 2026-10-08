@@ -7,6 +7,8 @@ import styles from './test-explorer.module.css'
 
 const PRIMARY_AXES = TEST_EXPLORER_AXES.slice(0, 10)
 const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
+// A personality trait is descriptive and must never be presented as an ideal-to-reach ray.
+const PORTRAIT_AXES = TEST_EXPLORER_AXES.filter((axis) => axis !== 'personality')
 
 export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null }) {
   const [variant, setVariant] = useState('male')
@@ -17,16 +19,19 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const ru = locale === 'ru', es = locale === 'es'
   const spanishAxes = {"stress":"Estrés","anxiety":"Ansiedad","mood":"Estado de ánimo","sleep":"Sueño","energy":"Energía","clarity":"Claridad","focus":"Concentración","emotional_regulation":"Regulación emocional","relationships":"Relaciones","resource":"Recursos y resiliencia","self_support":"Apoyo interior","functioning":"Vida cotidiana","personality":"Personalidad","meaning":"Sentido y dirección"}
   const label = (axis) => (es ? spanishAxes[axis] : null) || TEST_EXPLORER_AXIS_LABELS[axis]?.[locale] || TEST_EXPLORER_AXIS_LABELS[axis]?.en || axis
-  const measuredAxes = portrait ? TEST_EXPLORER_AXES.filter((axis) => portrait.axes?.[axis] != null) : []
-  const suggestedRays = [...measuredAxes, ...TEST_EXPLORER_AXES.filter((axis) => !measuredAxes.includes(axis))].slice(0, 8)
-  const visibleRays = (chosenRays === null ? suggestedRays : chosenRays.filter((axis) => TEST_EXPLORER_AXES.includes(axis))).slice(0, 10)
+  const measuredAxes = portrait ? PORTRAIT_AXES.filter((axis) => portrait.axes?.[axis] != null) : []
+  const suggestedRays = portrait ? [...measuredAxes, ...PORTRAIT_AXES.filter((axis) => !measuredAxes.includes(axis))].slice(0, 8) : []
+  const visibleRays = (chosenRays === null ? suggestedRays : chosenRays.filter((axis) => PORTRAIT_AXES.includes(axis))).slice(0, 10)
   const rays = visibleRays.map((axis, index) => {
-    const angle = (-Math.PI / 2) + index * (Math.PI * 2 / visibleRays.length)
-    const percent = portrait.axes[axis]?.percent ?? null
+    // Stable positions: selecting another ray must never rotate the remaining axes.
+    const angle = (-Math.PI / 2) + PORTRAIT_AXES.indexOf(axis) * (Math.PI * 2 / PORTRAIT_AXES.length)
+    const measure = portrait?.axes?.[axis] || null
+    const percent = measure?.percent ?? null
     const project = (r) => ({ x: 180 + Math.cos(angle) * r, y: 182 + Math.sin(angle) * r })
-    return { axis, percent, end: percent === null ? null : project(12 + (percent / 100) * 119), ideal: project(131) }
+    return { axis, percent, end: percent === null ? null : project(12 + (percent / 100) * 119), previousEnd: measure?.previousPercent === null || measure?.previousPercent === undefined ? null : project(12 + (measure.previousPercent / 100) * 119), ideal: project(131) }
   })
   const polygon = (kind) => rays.map((ray) => `${ray[kind].x},${ray[kind].y}`).join(' ')
+  const formatDate = (value) => value && Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat(ru ? 'ru-RU' : es ? 'es-ES' : 'en-CA', { dateStyle: 'medium' }).format(new Date(value)) : ''
   const toggleRay = (axis) => setChosenRays((current) => {
     const selected = current === null ? suggestedRays : current
     return selected.includes(axis) ? selected.filter((key) => key !== axis) : selected.length >= 10 ? selected : [...selected, axis]
@@ -35,12 +40,12 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const update = (next) => setRotation({ x: Math.max(-8, Math.min(8, next.x)), y: Math.max(-22, Math.min(22, next.y)) })
   const onKeyDown = (event) => {
     const step = { ArrowLeft: { y: -4 }, ArrowRight: { y: 4 }, ArrowUp: { x: -2 }, ArrowDown: { x: 2 } }[event.key]
-    if (!step) return
+    if (!step || portrait) return
     event.preventDefault()
     update({ x: rotation.x + (step.x || 0), y: rotation.y + (step.y || 0) })
   }
   const start = (event) => {
-    if (event.target.closest?.('button')) return
+    if (portrait || event.target.closest?.('button')) return
     drag.current = { x: event.clientX, y: event.clientY, rotation }
     event.currentTarget.setPointerCapture?.(event.pointerId)
   }
@@ -64,7 +69,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         ? (ru ? 'Цветные точки показывают оси, которые охватывают отмеченные тесты.' : es ? 'Los puntos muestran los ejes cubiertos por las pruebas elegidas.' : 'Highlighted points show axes covered by the tests you selected.')
         : (ru ? 'Выберите темы слева: соответствующие оси подсветятся. Это предварительный просмотр, не результат.' : es ? 'Elige temas a la izquierda para destacar ejes; es una vista previa, no un resultado.' : 'Choose topics on the left to highlight axes. This is a preview, not a test result.')}</span>
     </div>
-    <div className={styles.modelStage} tabIndex={0} role="application" aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
+    <div className={styles.modelStage} tabIndex={portrait ? -1 : 0} role={portrait ? 'presentation' : 'application'} aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
       <div className={styles.portraitArt} data-visible={variant === 'male' ? 'true' : 'false'} aria-hidden="true" style={{ transform: `translate3d(${rotation.y * .3}px, ${rotation.x * .3}px, 0)` }}>
         <Image src="/images/holistic-house-test-brain-concept.png" width={1672} height={941} unoptimized alt="" draggable={false} className={styles.portraitSource} />
       </div>
@@ -89,6 +94,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           <line x1="180" y1="182" x2={ray.ideal.x} y2={ray.ideal.y} className={styles.radarGuide} />
           {ray.end && <line x1="180" y1="182" x2={ray.end.x} y2={ray.end.y} className={styles.radarRay} />}
           {ray.end && <circle cx={ray.end.x} cy={ray.end.y} r="5.5" className={styles.radarPoint} />}
+          {ray.previousEnd && <circle cx={ray.previousEnd.x} cy={ray.previousEnd.y} r="3.8" className={styles.radarPrior} />}
         </g>)}
         {rays.length >= 3 && rays.every((ray) => ray.end) && <polygon points={polygon('end')} className={styles.radarArea} />}
         {rays.length >= 3 && rays.every((ray) => ray.end) && <polygon points={polygon('end')} className={styles.radarOutline} />}
@@ -102,14 +108,16 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     {portrait && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
       <div className={styles.portraitControlsHeading}>
         <strong>{ru ? 'Лучи моего портрета' : es ? 'Escalas de mi retrato' : 'Choose my portrait rays'}</strong>
-        <span>{visibleRays.length} / {TEST_EXPLORER_AXES.length}</span>
+        <span>{visibleRays.length} / {PORTRAIT_AXES.length}</span>
       </div>
       {measuredAxes.length === 0 && <p>{ru ? 'Измерений пока нет. Выберите шкалы: после прохождения соответствующих тестов пустые лучи заполнятся.' : es ? 'Aún no hay resultados. Selecciona escalas y completa pruebas para ver los rayos.' : 'No results yet. Choose scales now; the empty rays will fill after you complete their tests.'}</p>}
-      <div className={styles.portraitRayOptions}>{TEST_EXPLORER_AXES.map((axis) => <label key={axis} className={styles.portraitRayOption} title={portrait.axes[axis] ? `${portrait.axes[axis].source} · ${portrait.axes[axis].measuredAt || ""}` : (ru ? 'Нет измерения' : 'Not measured')}>
+      <div className={styles.portraitRayOptions}>{PORTRAIT_AXES.map((axis) => <label key={axis} className={styles.portraitRayOption} title={portrait?.axes?.[axis] ? `${portrait.axes[axis].source} · ${formatDate(portrait.axes[axis].measuredAt)}` : (ru ? 'Нет измерения' : 'Not measured')}>
           <input type="checkbox" checked={visibleRays.includes(axis)} onChange={() => toggleRay(axis)} disabled={!visibleRays.includes(axis) && visibleRays.length >= 10} />
           <span>{label(axis)}</span>
-          <strong>{portrait.axes[axis] ? `${portrait.axes[axis].percent}%` : '—'}</strong>
+          <strong>{portrait?.axes?.[axis] ? `${portrait.axes[axis].percent}%` : '—'}</strong>
+          {portrait?.axes?.[axis]?.change != null && <small className={styles.portraitDelta} aria-label={ru ? 'Изменение относительно предыдущего совместимого замера' : 'Change from previous compatible measurement'}>{portrait.axes[axis].change > 0 ? '+' : ''}{portrait.axes[axis].change} {ru ? 'п.п.' : 'pp'}</small>}
         </label>)}</div>
+      {rays.some((ray) => ray.previousEnd) && <div className={styles.portraitLegend}><span className={styles.legendCurrent}>{ru ? 'Сейчас' : es ? 'Actual' : 'Current'}</span><span className={styles.legendPrior}>{ru ? 'Предыдущий совместимый тест' : es ? 'Medición previa compatible' : 'Previous comparable test'}</span></div>}
       <p>{ru ? 'Процент — положение на шкале с учётом её направления, а не процент здоровья. Личностные черты без направления «лучше/хуже» сюда не включаются.' : es ? 'El porcentaje representa la posición orientada en la escala, no un porcentaje de salud.' : 'Each percentage is a direction-adjusted scale position, not a health score. Non-normative personality traits are excluded.'}</p>
     </section>}
     {!portrait && activeAxes.length > 0 && <div className={styles.axisMeters} aria-label={ru ? 'Активные оси' : es ? 'Ejes activos' : 'Active axes'}>
