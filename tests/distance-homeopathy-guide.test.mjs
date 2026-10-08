@@ -44,3 +44,18 @@ test('distance homeopathy guide has RU EN ES routes, sitemap entries, language c
   for (const locale of ['ru', 'en', 'es']) assert.match(sitemap, new RegExp('/' + locale + '/library/distance-homeopathy'))
   assert.match(locales, /library\(\?:\\\/distance-homeopathy\)\?/)
 })
+
+test('distance homeopathy guide is one readable editorial column at every breakpoint', async () => {
+  const [guide, css] = await Promise.all([
+    readFile('components/distance-homeopathy-guide.tsx', 'utf8'),
+    readFile('components/distance-homeopathy-guide.module.css', 'utf8'),
+  ])
+  assert.match(guide, /<article className=\{styles\.article\}>/)
+  assert.match(guide, /<figure className=\{styles\.heroImage\}>/)
+  assert.match(guide, /text\.photoSteps\.map/)
+  assert.match(guide, /text\.selfItems\.map/)
+  assert.match(guide, /text\.sessionItems\.map/)
+  assert.doesNotMatch(guide, /styles\.(?:optionGrid|advancedGrid|sessionGrid)/)
+  assert.doesNotMatch(css, /grid-template-columns/)
+  assert.match(css, /\.article\s*\{[^}]*width:\s*min\(100%,\s*790px\)/)
+})
