@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { spanishMetadata } from "@/lib/spanish-metadata";
-export const metadata = spanishMetadata("/es/privacy", "Privacidad — Holistic House", "Cómo usa Holistic House la información de cuentas y evaluaciones.");
+import { metadataBaseFor } from "@/data/site-metadata";
+export const metadata = { metadataBase: metadataBaseFor(), title: "Privacidad — Holistic House", description: "Cómo usa Holistic House la información de cuentas y evaluaciones.", alternates: { canonical: "/es/privacy", languages: { es: "/es/privacy", en: "/privacy" } } };
 export default function SpanishPrivacyPage() {
  return <main className="legal-page" lang="es">
   <Link href="/es" className="legal-page__brand">Holistic House</Link>

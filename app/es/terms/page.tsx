@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { spanishMetadata } from "@/lib/spanish-metadata";
-export const metadata = spanishMetadata("/es/terms", "Condiciones de uso — Holistic House", "Condiciones para utilizar los materiales y las funciones de cuenta de Holistic House.");
+import { metadataBaseFor } from "@/data/site-metadata";
+export const metadata = { metadataBase: metadataBaseFor(), title: "Condiciones de uso — Holistic House", description: "Condiciones para utilizar los materiales y las funciones de cuenta de Holistic House.", alternates: { canonical: "/es/terms", languages: { es: "/es/terms", en: "/terms" } } };
 export default function SpanishTermsPage() {
  return <main className="legal-page" lang="es">
   <Link href="/es" className="legal-page__brand">Holistic House</Link>
