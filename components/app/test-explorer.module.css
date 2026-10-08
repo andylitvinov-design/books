@@ -87,3 +87,12 @@
   .databaseHeader{align-items:start;flex-wrap:wrap}
   .visualState{padding:10px}
 }
+
+.axisMeters{position:relative;z-index:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;margin:12px 0;padding:12px 0;border-top:1px solid var(--line)}
+.axisMeter{min-width:0;display:grid;gap:4px;font-size:.75rem;color:#5b493d}
+.axisMeter progress{appearance:none;width:100%;height:7px;border:0;border-radius:99px;overflow:hidden}
+.axisMeter progress::-webkit-progress-bar{background:#ebdfd0;border-radius:99px}
+.axisMeter progress::-webkit-progress-value{background:#467a73;border-radius:99px}
+.axisMeter progress::-moz-progress-bar{background:#467a73;border-radius:99px}
+.axisInterest{font-size:.7rem;color:#376e64;font-weight:700}
+@media(max-width:400px){.axisMeters{grid-template-columns:1fr}}
