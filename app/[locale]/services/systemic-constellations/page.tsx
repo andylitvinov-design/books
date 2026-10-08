@@ -6,7 +6,7 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { personalServiceCopy, type ServicePageLocale } from "@/data/personal-service-pages";
 
 type Props = { params: Promise<{ locale: string }> };
-const service = "imagery-therapy" as const;
+const service = "systemic-constellations" as const;
 
 export function generateStaticParams() { return [{ locale: "en" }, { locale: "ru" }, { locale: "es" }]; }
 
@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: t.title + " — Holistic House",
     description: t.description,
     alternates: {
-      canonical: `/${locale}/services/imagery-therapy`,
-      languages: { en: "/en/services/imagery-therapy", ru: "/ru/services/imagery-therapy", es: "/es/services/imagery-therapy" },
+      canonical: `/${locale}/services/systemic-constellations`,
+      languages: { en: "/en/services/systemic-constellations", ru: "/ru/services/systemic-constellations", es: "/es/services/systemic-constellations" },
     },
   };
 }

@@ -66,9 +66,9 @@ test("mini cards navigate to direct destinations instead of in-page anchors", ()
   assert.match(services, /indexHref: serviceIndexHrefs\[id\]/);
   assert.match(services, /academy\/applied\/hypnotherapy-regressions/);
   assert.match(services, /academy\/reiki/);
-  assert.match(services, /personal-constellation-session/);
+  assert.match(services, /systemic-constellations/);
   assert.match(services, /business-situation-constellation/);
-  assert.match(services, /homeopathy-consultation/);
+  assert.match(services, /psychohomeopathy/);
 
   assert.match(academy, /academy\/temple-studies/);
   assert.match(library, /href: `\/\$\{locale\}\/books`/);

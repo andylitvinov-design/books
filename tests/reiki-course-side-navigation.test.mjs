@@ -40,3 +40,16 @@ test("course switcher is sticky on desktop and horizontal on smaller screens", a
   assert.match(css, /@media \(max-width: 920px\)[\s\S]*\.reiki-course-side-nav__items[\s\S]*overflow-x: auto/);
   assert.match(css, /\.reiki-course-side-nav__item\.is-active/);
 });
+
+
+test("unnumbered Yggdrasil links use the full sidebar width on desktop and readable pills on mobile", async () => {
+  const css = await readFile("app/academy.css", "utf8");
+  const nav = await readFile("components/reiki-course-side-nav.tsx", "utf8");
+
+  assert.match(nav, /!item\.number \? " reiki-course-side-nav__item--wide"/);
+  // The overview CSS also defines a numbered two-column layout; unnumbered items
+  // must explicitly override that more-specific rule rather than inherit a 34px track.
+  assert.match(css, /\.academy-reading-shell--yggdrasil \.reiki-course-side-nav__item--wide\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(css, /\.academy-reading-shell--yggdrasil \.reiki-course-side-nav__item > em\s*\{[^}]*overflow-wrap:\s*normal/);
+  assert.match(css, /@media \(max-width: 920px\)\s*\{[\s\S]*?\.academy-reading-shell--yggdrasil \.reiki-course-side-nav__item--wide\s*\{\s*grid-template-columns:\s*auto/);
+});
