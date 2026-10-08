@@ -45,8 +45,8 @@ export function ServicesConversionHero({ locale }: { locale: Locale }) {
       </div>
       <div className={styles.visual}>
         <Image
-          src="/images/holistic-house/hero-olive-incense.webp"
-          alt=""
+          src="/images/holistic-house/andy-about.png"
+          alt={locale === "ru" ? "Портрет Андрея Литвинова" : "Portrait of Andrey Litvinov"}
           fill
           priority
           sizes="(max-width: 760px) 100vw, 42vw"
