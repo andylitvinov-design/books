@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, HeartHandshake, Flower2, Compass } from "lucide-react";
-import { PersonalConsultationForm } from "@/components/personal-consultation-form";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { spanishMetadata } from "@/lib/spanish-metadata";

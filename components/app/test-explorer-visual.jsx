@@ -12,8 +12,9 @@ export function TestExplorerVisual({ locale, coverage, axisFilter, onAxisFilter 
   const [variant, setVariant] = useState('male')
   const [rotation, setRotation] = useState({ x: 0, y: 0 })
   const drag = useRef(null)
-  const ru = locale === 'ru'
-  const label = (axis) => TEST_EXPLORER_AXIS_LABELS[axis]?.[locale] || TEST_EXPLORER_AXIS_LABELS[axis]?.en || axis
+  const ru = locale === 'ru', es = locale === 'es'
+  const spanishAxes = {"stress":"Estrés","anxiety":"Ansiedad","mood":"Estado de ánimo","sleep":"Sueño","energy":"Energía","clarity":"Claridad","focus":"Concentración","emotional_regulation":"Regulación emocional","relationships":"Relaciones","resource":"Recursos y resiliencia","self_support":"Apoyo interior","functioning":"Vida cotidiana","personality":"Personalidad","meaning":"Sentido y dirección"}
+  const label = (axis) => (es ? spanishAxes[axis] : null) || TEST_EXPLORER_AXIS_LABELS[axis]?.[locale] || TEST_EXPLORER_AXIS_LABELS[axis]?.en || axis
   const update = (next) => setRotation({ x: Math.max(-8, Math.min(8, next.x)), y: Math.max(-22, Math.min(22, next.y)) })
   const onKeyDown = (event) => {
     const step = { ArrowLeft: { y: -4 }, ArrowRight: { y: 4 }, ArrowUp: { x: -2 }, ArrowDown: { x: 2 } }[event.key]
@@ -30,14 +31,14 @@ export function TestExplorerVisual({ locale, coverage, axisFilter, onAxisFilter 
     update({ x: drag.current.rotation.x + (event.clientY - drag.current.y) / 14, y: drag.current.rotation.y + (event.clientX - drag.current.x) / 6 })
   }
 
-  return <section className={styles.visual} aria-label={ru ? 'Оси анализа' : 'Analysis axes'}>
+  return <section className={styles.visual} aria-label={ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes'}>
     <header className={styles.visualHeader}>
-      <div><p className={styles.eyebrow}>{ru ? 'Оси анализа' : 'Analysis axes'}</p><h2>{ru ? 'Покрытие выбранного набора' : 'Coverage of your selected set'}</h2></div>
-      <div className={styles.variantToggle} role="group" aria-label={ru ? 'Вариант модели' : 'Model variant'}>
-        {['female', 'male'].map((key) => <button type="button" key={key} aria-pressed={variant === key} onClick={() => setVariant(key)}>{key === 'female' ? (ru ? 'Женская' : 'Female') : (ru ? 'Мужская' : 'Male')}</button>)}
+      <div><p className={styles.eyebrow}>{ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes'}</p><h2>{ru ? 'Покрытие выбранного набора' : es ? 'Cobertura de tu selección' : 'Coverage of your selected set'}</h2></div>
+      <div className={styles.variantToggle} role="group" aria-label={ru ? 'Вариант модели' : es ? 'Modelo' : 'Model variant'}>
+        {['female', 'male'].map((key) => <button type="button" key={key} aria-pressed={variant === key} onClick={() => setVariant(key)}>{key === 'female' ? (ru ? 'Женская' : es ? 'Femenino' : 'Female') : (ru ? 'Мужская' : es ? 'Masculino' : 'Male')}</button>)}
       </div>
     </header>
-    <div className={styles.modelStage} tabIndex={0} role="application" aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
+    <div className={styles.modelStage} tabIndex={0} role="application" aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
       <div className={styles.portraitArt} data-visible={variant === 'male' ? 'true' : 'false'} aria-hidden="true" style={{ transform: `translate3d(${rotation.y * .3}px, ${rotation.x * .3}px, 0)` }}>
         <Image src="/images/holistic-house-test-brain-concept.png" width={1672} height={941} unoptimized alt="" draggable={false} className={styles.portraitSource} />
       </div>
@@ -59,6 +60,6 @@ export function TestExplorerVisual({ locale, coverage, axisFilter, onAxisFilter 
       </div>
     </div>
     <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>
-    <div className={styles.visualFooter}><button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : 'Reset rotation'}</button><p>{ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : 'The visual model is display-only and does not change test scoring.'}</p></div>
+    <div className={styles.visualFooter}><button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button><p>{ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.'}</p></div>
   </section>
 }
