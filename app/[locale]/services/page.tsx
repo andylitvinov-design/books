@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PageVideo } from "@/components/page-video";
+import { PersonalWorkJourney } from "@/components/personal-work-journey";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
@@ -215,6 +216,8 @@ export default async function ServicesPage({ params }: PageProps) {
           />
         </div>
       </section>
+
+      <PersonalWorkJourney locale={locale as Locale} />
 
       <CatalogShowcase
         items={serviceShowcaseItems}
