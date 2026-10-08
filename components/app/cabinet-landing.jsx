@@ -199,7 +199,7 @@ function definitionFor(id, locale) {
   if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V2 : CURRENT_STATE_EN_V2
   if (id === 'trait') return MINI_IPIP_20_EN_V1
   const item = monitoringCatalogItem(id)
-  if (!item?.startable || PUBLIC_GUEST_BLOCKED_KEYS.has(item.key)) return null
+  if (!item?.startable || item.guestEligible === false || PUBLIC_GUEST_BLOCKED_KEYS.has(item.key)) return null
   return getAssessmentDefinition(
     item.key,
     item.version,
@@ -209,7 +209,7 @@ function definitionFor(id, locale) {
 
 function publicRecommendationDefinitions(locale) {
   return MONITORING_CATALOG
-    .filter((item) => item.startable && !PUBLIC_GUEST_BLOCKED_KEYS.has(item.key))
+    .filter((item) => item.startable && item.guestEligible !== false && !PUBLIC_GUEST_BLOCKED_KEYS.has(item.key))
     .map((item) =>
       getAssessmentDefinition(
         item.key,
@@ -235,8 +235,9 @@ function definitionMeta(definition, locale) {
 function answerLabels(definition, question) {
   const min = question.min ?? definition.answerScale?.min
   const max = question.max ?? definition.answerScale?.max
-  if (Array.isArray(definition.responseAnchors) && Number.isInteger(min))
-    return definition.responseAnchors.map((label, index) => ({ value: min + index, label }))
+  const anchors = question.responseAnchors || definition.responseAnchors
+  if (Array.isArray(anchors) && Number.isInteger(min))
+    return anchors.map((label, index) => ({ value: min + index, label }))
   return Array.from({ length: max - min + 1 }, (_, index) => ({
     value: min + index,
     label: String(min + index),
