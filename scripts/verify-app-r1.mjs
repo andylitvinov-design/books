@@ -153,6 +153,10 @@ try {
 
  await page.getByRole('checkbox',{name:'Personality Baseline',exact:true}).check()
  await page.getByRole('button',{name:'Start free testing',exact:true}).click()
+ // An existing in-progress battery must not be discarded silently.
+ // Choose the newly requested set through the explicit replacement confirmation.
+ await expect(page.getByRole('heading',{name:'You already have an active test set'})).toBeVisible()
+ await page.getByRole('button',{name:'Use new selection'}).click()
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
