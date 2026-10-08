@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
+import { YggdrasilTestimonials } from "@/components/yggdrasil-testimonials";
 
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
@@ -137,7 +138,6 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
   const basic = curriculum.levels[0];
   const basicSteps = basic.steps as BasicStep[];
   const hero = yggdrasilSourceImages[0];
-  const sourcePhotos = yggdrasilSourceImages.filter((item) => !item.locales || item.locales.includes(locale));
 
   return (
     <div className="yggdrasil-program-landing">
@@ -155,8 +155,6 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           </div>
         </div>
       </section>
-
-      <YggdrasilEnglishVideoGuide locale={locale} />
 
       <section className="yggdrasil-program-section" id="system-modules">
         <p className="homeopathy-kicker">{text.mapEyebrow}</p>
@@ -199,21 +197,16 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         </div>
       </section>
 
-      <section className="yggdrasil-source-gallery" aria-labelledby="yggdrasil-source-gallery-title">
-        <p className="homeopathy-kicker">{text.photosEyebrow}</p>
-        <h2 id="yggdrasil-source-gallery-title">{text.photosTitle}</h2>
-        <p>{text.photosLead}</p>
-        <div className="yggdrasil-source-gallery-grid">
-          {sourcePhotos.map((item) => (
-            <figure key={item.id}>
-              <SourceVisual url={item.localUrl ?? item.sourceUrl} label={item.label[locale]} />
-              <figcaption>{item.label[locale]}</figcaption>
-            </figure>
-          ))}
-        </div>
+      <YggdrasilTestimonials locale={locale} />
+
+      <YggdrasilEnglishVideoGuide locale={locale} scope="all" />
+
+      <section className="yggdrasil-source-footer-panel" aria-label={locale === "ru" ? "Источники программы" : locale === "es" ? "Fuentes del programa" : "Program sources"}>
         <p className="yggdrasil-program-source-note">{text.sourceNote}</p>
-        <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/archive`}>{text.archive}<span aria-hidden="true">→</span></Link>
-        <Link className="yggdrasil-source-link" href={yggdrasilProgramSourcePage} target="_blank" rel="noreferrer">{text.source}<span aria-hidden="true">↗</span></Link>
+        <div>
+          <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/archive`}>{text.archive}<span aria-hidden="true">→</span></Link>
+          <Link className="yggdrasil-source-link" href={yggdrasilProgramSourcePage} target="_blank" rel="noreferrer">{text.source}<span aria-hidden="true">↗</span></Link>
+        </div>
       </section>
     </div>
   );

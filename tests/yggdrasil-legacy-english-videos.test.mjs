@@ -38,13 +38,27 @@ test("English course pages visibly label Russian archive videos", async () => {
   assert.match(component, /yggdrasil-video-language-group--secondary/);
 });
 
-test("English overview video guide is surfaced on program, Basic and Instructor landings", async () => {
+test("English video guide is grouped by topics and placed at the bottom of program and course landings", async () => {
   const [guide, hub, module] = await Promise.all([
     readFile("components/yggdrasil-english-video-guide.tsx", "utf8"),
     readFile("components/yggdrasil-program-landing.tsx", "utf8"),
     readFile("components/yggdrasil-module-landing.tsx", "utf8"),
   ]);
   assert.match(guide, /Reiki Yggdrasil explained in English/);
-  assert.match(hub, /YggdrasilEnglishVideoGuide locale=\{locale\}/);
-  assert.match(module, /module\.levelId <= 2 \? <YggdrasilEnglishVideoGuide/);
+  assert.match(guide, /General introduction/);
+  assert.match(guide, /Basic Course · Level 1 · Healing/);
+  assert.match(guide, /Instructor Course · Healing/);
+  assert.match(guide, /Golden Calf · Business/);
+  assert.match(guide, /Man & Woman · Relationships/);
+  assert.doesNotMatch(guide, /kind === "testimonial"/);
+
+  const hubReviews = hub.indexOf("<YggdrasilTestimonials");
+  const hubGuide = hub.indexOf("<YggdrasilEnglishVideoGuide");
+  assert.ok(hubReviews >= 0 && hubGuide > hubReviews);
+
+  const moduleCurriculum = module.indexOf("<YggdrasilCurriculum");
+  const moduleGuide = module.indexOf("<YggdrasilEnglishVideoGuide");
+  assert.ok(moduleCurriculum >= 0 && moduleGuide > moduleCurriculum);
+  assert.match(module, /scope="basic"/);
+  assert.match(module, /scope="instructor"/);
 });
