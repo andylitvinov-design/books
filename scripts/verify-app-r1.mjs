@@ -73,9 +73,9 @@ async function saveAndExit(){
  await ready()
 }
 async function openCompletedPlanResult(){
- // A finished battery returns to its photo-led status dashboard; a retake may directly show the result.
+ // A completed battery returns to the overview; a retake may navigate to its result directly.
+ await expect(page).toHaveURL(/\/(?:tests\?plan=|results\/)/,{timeout:15000})
  if(/\/results\//.test(page.url()))return
- await expect(page).toHaveURL(/\/tests\?plan=/)
  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await page.getByRole('link',{name:'View result'}).first().click()
  await expect(page).toHaveURL(/\/results\//)
