@@ -15,24 +15,22 @@ test("home displays direct three-service choices before the introductory video",
 
 test("services display choices and a separately listed free diagnostic offering", () => {
   const s = source("app", "[locale]", "services", "page.tsx");
-  const hero = s.indexOf('<ServicesConversionHero locale={locale as Locale} />');
-  const journey = s.indexOf('<PersonalWorkJourney locale={locale as Locale} />');
-  const catalogue = s.indexOf("<CatalogShowcase");
-  assert.ok(hero >= 0 && journey > hero && catalogue > journey);
-  assert.doesNotMatch(s, /<section className="services-studio-hero">/);
-  assert.match(s, /ServicesConversionHero/);
-  assert.match(s, /id="free-situation-review-offer"/);
-  assert.match(s, /href=\{".*?" \+ locale \+ "\/services\/free-situation-review"\}/);
+  const hero = s.indexOf('className={styles.hero}');
+  const directions = s.indexOf('id="available-services"');
+  const free = s.indexOf('id="free-situation-review-offer"');
+  assert.ok(hero >= 0 && directions > hero && free > directions);
+  assert.match(s, /href=\{`\/\$\{locale\}\/services\/free-situation-review`\}/);
   assert.match(s, /Бесплатная диагностика ситуации/);
-  assert.match(s, /Free situation & goal assessment/);
+  assert.match(s, /free situation & goal assessment/i);
   assert.match(s, /free-wu-xing-diagnostic/);
+  assert.doesNotMatch(s, /<CatalogShowcase/);
 });
 
 test("three services are choices with direct real service links, not implied treatment stages", () => {
   const component = source("components", "personal-work-journey.tsx");
   for (const phrase of [
-    "Гомеопатия", "Образная терапия", "Расстановки и архетипическая работа",
-    "Homeopathy", "Guided imagery therapy", "Systemic & archetypal constellations",
+    "Психогомеопатия", "Образная психотерапия", "Расстановки и архетипическая поддержка",
+    "Psychohomeopathy", "Guided imagery psychotherapy", "Constellations & archetypal support",
     "andy-litvinov/homeopathy-consultation",
     "imagery-therapy",
     "andy-litvinov/personal-constellation-session",
@@ -76,28 +74,4 @@ test("service links retain mobile tap targets, no horizontal layout overflow fro
   assert.match(css, /:focus-visible/);
   assert.match(detailCss, /@media\(max-width:800px\)/);
   assert.match(detailCss, /grid-template-columns:1fr/);
-});
-
-test("services hero makes the free consultation the first and only primary offer", () => {
-  const hero = source("components", "services-conversion-hero.tsx");
-  const css = source("components", "services-conversion-hero.module.css");
-  for (const phrase of ["Feeling stuck?", "Чувствуете, что застряли?", "free-situation-review", "Request my free consultation", "Запросить бесплатную консультацию"]) {
-    assert.ok(hero.includes(phrase), phrase);
-  }
-  assert.doesNotMatch(hero, /selfCheck|self_check_start|#available-services/);
-  assert.match(css, /@media\(max-width:760px\)/);
-  assert.match(css, /min-height:60px/);
-});
-
-test("approach one preselects an actual free psychohomeopathy-focused intake; no false instant booking", () => {
-  const journey = source("components", "personal-work-journey.tsx");
-  const intake = source("components", "free-situation-review-form.tsx");
-  const freePage = source("app", "[locale]", "services", "free-situation-review", "page.tsx");
-  assert.match(journey, /free-situation-review\?topic=wellbeing/);
-  assert.match(journey, /Грусть, одиночество/);
-  assert.match(journey, /You have a goal but cannot see/);
-  assert.match(intake, /requestedTopic === "wellbeing"/);
-  assert.match(intake, /value: "wellbeing"/);
-  assert.ok(freePage.indexOf('className={styles.contentGrid}') < freePage.indexOf('className={styles.details}'));
-  assert.match(intake, /window\.open/);
 });

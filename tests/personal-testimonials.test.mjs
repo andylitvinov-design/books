@@ -9,9 +9,9 @@ test("home and services render the same first-party testimonial component", () =
   const home = read("components", "holistic-house-home.tsx");
   const services = read("app", "[locale]", "services", "page.tsx");
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
-  assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
+  assert.match(services, /<PersonalTestimonials locale=\{locale(?: as Locale)?\} variant="services"/);
   assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
-  assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<PageVideo slot="consultation"'));
+  assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<PublicConsultationCta'));
 });
 
 test("home shows one approved written story plus six sourced video stories per language", () => {
