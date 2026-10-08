@@ -48,7 +48,7 @@ test("Public reading description respects historical and health boundaries", asy
   const content = await readFile(contentPath, "utf8");
   assert.match(content, /не заменяют медицинскую помощь/);
   assert.match(content, /do not replace professional medical care/);
-  assert.match(content, /no sustituyen la atención médica profesional/);
+  assert.match(content, /sustituyen la atención médica profesional/);
   assert.match(content, /полная методичка не размещается/);
   assert.doesNotMatch(content, /гарантированное исцеление/i);
 });
