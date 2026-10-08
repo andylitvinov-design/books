@@ -1,10 +1,12 @@
 import type { PublicLocale } from "@/lib/public-locales";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
+import originalRussianEnglishTranslation from "@/data/academy/tantra-reiki-ru-en.generated.json";
 
 // Stage descriptions and attunements are editorially aligned with the captured
 // EN/RU PsiTrends source (data/academy/tantra-reiki-full.generated.json).
-// Historical EN and RU attunement assignments differ at stages 2–3;
-// retain each language's original assignments instead of silently merging them.
+// Historical EN/RU attunement assignments differ at stages 2–3;
+// present Andrey's full original RU author sequence in both EN and RU,
+// while preserving the original alternative EN assignments in the full archive.
 const stages = [
   {
     "en": {
@@ -49,9 +51,9 @@ const stages = [
       "att": [
         "Accumulation of energy",
         "Money Magnet",
-        "Attunement with a person or group"
+        "Burn Away Complexes"
       ],
-      "practice": "Begin creating simple Tantra Reiki mandalas. The English and Russian historical attunement lists differ for levels 2–3; see the source below."
+      "practice": "Begin creating simple Tantra Reiki mandalas. The historical English text places Attunement here, whereas Andrey’s Russian text places Burn Away Complexes here. Both originals remain in the archive."
     },
     "ru": {
       "title": "Жар жизни",
@@ -82,11 +84,11 @@ const stages = [
       "subtitle": "Attunement with the world",
       "intro": "The image of this level is the ocean: moving beyond the feeling of being separate and learning to notice connection with a larger field. It introduces the themes of unity, clearing and favourable movement.",
       "att": [
-        "Unity",
-        "Clearance · release of blocks",
-        "Luck · intuitive timing"
+        "Attunement",
+        "Luck · acceleration of time",
+        "Talisman"
       ],
-      "practice": "Write short reflections and create a Tantra Reiki mandala; the original Russian list also includes the Talisman setting."
+      "practice": "Write short reflections and create a Tantra Reiki mandala. The historical English text lists Unity, Clearance and Luck here; Andrey’s Russian text lists Attunement, Luck and Talisman."
     },
     "ru": {
       "title": "Океан единства",
@@ -301,16 +303,43 @@ const stages = [
  * attendees are taking the precise initiation described alongside the image.
  */
 const levelPhotos = [
-  { src: tantraReikiArchive.images.ru[16], description: "Embodied awareness and first connection" },
-  { src: tantraReikiArchive.images.ru[13], description: "Grounded attention and the practice of energy" },
-  { src: tantraReikiArchive.images.ru[18], description: "Connection and a shared field of practice" },
-  { src: tantraReikiArchive.images.ru[19], description: "A conscious relationship with another person" },
-  { src: tantraReikiArchive.images.ru[14], description: "Creative expression and inner presence" },
-  { src: tantraReikiArchive.images.ru[20], description: "A quieter, more integrated inner state" },
-  { src: tantraReikiArchive.images.ru[15], description: "Reflection and clear attention" },
-  { src: tantraReikiArchive.images.ru[21], description: "Exploration, creation and shared practice" },
-  { src: tantraReikiArchive.images.ru[22], description: "The shared experience of an embodied practice" }
+  { src: tantraReikiArchive.images.ru[17], description: "Gentle embodied connection during practice", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[14], description: "Quiet reflective meditation in nature", archive: false, position: "center 52%" },
+  { src: tantraReikiArchive.images.ru[18], description: "Shared mindful experience", archive: true, position: "center 44%" },
+  { src: tantraReikiArchive.images.ru[11], description: "Presence and connection during a workshop", archive: true, position: "center 46%" },
+  { src: tantraReikiArchive.images.ru[20], description: "Creative practice and mindful attention", archive: true, position: "center 45%" },
+  { src: tantraReikiArchive.images.ru[10], description: "Calm reflection and integration", archive: true, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[15], description: "Quiet attention during a shared gathering", archive: true, position: "center 42%" },
+  { src: tantraReikiArchive.images.ru[21], description: "Embodied creative expression in practice", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[22], description: "A moment from the original practice archive", archive: true, position: "center 45%" }
 ] as const;
+
+/**
+ * The actual paragraphs written by Andrey, not shortened stage summaries.
+ * Stable block indices refer to the verbatim PsiTrends RU snapshot (2026-10-07).
+ * The English translation preserves its 1:1 block order and is rendered here.
+ * The entire RU original and full translated transcript remain in the archive.
+ */
+const authorStageBlockIndices = [
+  [75, 76, 77],
+  [86, 87],
+  [89, 90, 91],
+  [99, 100, 101, 102],
+  [104, 105, 106, 107],
+  [121, 122, 123],
+  [136, 137, 138],
+  [140, 141],
+  [143, 144, 145, 146],
+] as const;
+
+function originalAuthorDescription(locale: PublicLocale, levelIndex: number): string[] {
+  if (locale === "es") return [];
+  return authorStageBlockIndices[levelIndex].map((sourceIndex) =>
+    locale === "ru"
+      ? tantraReikiArchive.blocks.ru[sourceIndex].text
+      : originalRussianEnglishTranslation.blocks[sourceIndex].text
+  );
+}
 
 const levelApplications: Record<PublicLocale, string[]> = {
   en: [
@@ -349,9 +378,9 @@ const levelApplications: Record<PublicLocale, string[]> = {
 };
 
 const ui = {
-  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
-  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
-  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
+  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", original: "Andrey’s original description · translated from Russian", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
+  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", original: "Авторское описание Андрея · без сокращений", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
+  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", original: "Descripción original", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
 } as const;
 
 export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
@@ -370,13 +399,13 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
         const n=i+1;
         const copy=stage[locale];
         const phase=Math.floor(i/3);
-    const photo = levelPhotos[i];
+        const photo = levelPhotos[i];
         return (
           <article className={"tantra-journey__level tantra-journey__level--phase-"+phase} id={"tantra-level-"+n} key={n} aria-labelledby={"tantra-heading-"+n}>
             <figure className="tantra-journey__photo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.src} alt={photo.description} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
-              <figcaption>{locale === "ru" ? "Фото из архива практик · иллюстрация темы" : locale === "es" ? "Foto del archivo · imagen ilustrativa" : "From our practice archive · illustrative photograph"}</figcaption>
+              <img src={photo.src} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+              <figcaption>{photo.archive ? (locale === "ru" ? "Фото из архива практик · иллюстрация темы" : locale === "es" ? "Foto del archivo · imagen ilustrativa" : "From our practice archive · illustrative photograph") : (locale === "ru" ? "Тематическая фотография" : locale === "es" ? "Fotografía ilustrativa" : "Illustrative photograph")}</figcaption>
             </figure>
             <div className="tantra-journey__level-heading">
               <div className="tantra-journey__chapter">
@@ -388,7 +417,17 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
             </div>
             
             <div className="tantra-journey__details">
-              <p className="tantra-journey__description">{copy.intro}</p>
+              
+              {locale !== "es" ? (
+                <div className="tantra-journey__author-text" lang={locale}>
+                  <h4>{c.original}</h4>
+                  {originalAuthorDescription(locale, i).map((paragraph, j) => (
+                    <p key={j}>{paragraph}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="tantra-journey__spanish-intro">{copy.intro}</p>
+              )}
               <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
               <div className="tantra-journey__settings">
                 <h4>{c.settings}</h4>

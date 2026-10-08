@@ -186,7 +186,8 @@ test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused i
   assert.ok(landing.includes('<MoodCheckIn'))
   assert.ok(landing.includes('onMoodChange={handleGuestMoodChange}'))
   assert.ok(landing.includes("begin('state', payload)"))
-  assert.ok(landing.includes('className="cabinet-monitor-actions"'))
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded />'))
+  assert.ok(!landing.includes('className="cabinet-monitor-actions"'))
   assert.ok(landing.includes('Take a free state analysis and get recommendations'))
   assert.ok(landing.includes('Build a personal test battery'))
   assert.ok(landing.includes('Пройти бесплатный тест-анализ состояния и получить рекомендации'))
@@ -209,8 +210,9 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
   assert.ok(landing.includes('<h2 id="cabinet-title">{c.title}</h2>'))
   assert.ok(landing.includes("testsKicker: 'Mind–Body Monitor'"))
   assert.ok(landing.includes("tryTitle: 'Your Mind–Body Monitor'"))
-  assert.ok(landing.includes("title: 'Your personal space'"))
-  assert.ok(landing.includes("title: 'Ваше личное пространство'"))
+  assert.ok(landing.includes("title: 'Enter your personal cabinet'"))
+  assert.ok(landing.includes("title: 'Войти в личный кабинет'"))
+  assert.ok(landing.includes('cabinet-signin-hero'))
   assert.ok(ia.includes('Cabinet v2.6'))
   assert.ok(ia.includes('.cabinet-signin-strip'))
   assert.ok(ia.includes('.cabinet-test-list'))
@@ -219,33 +221,25 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
   assert.ok(!ia.includes('Cabinet v2.4'))
 })
 
-test('Cabinet catalog uses accessible image-led Mind–Body Monitor cards', async () => {
-  const [landing, ia] = await Promise.all([
+test('Cabinet entry prioritizes login and one monitoring battery instead of duplicate test cards', async () => {
+  const [landing, explorer, styles] = await Promise.all([
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
-    readFile('app/ia-v2.css', 'utf8'),
+    readFile('components/app/test-explorer.jsx', 'utf8'),
+    readFile('app/globals.css', 'utf8'),
   ])
-  assert.ok(landing.includes('className="cabinet-signin-strip"'))
-  assert.ok(landing.includes('className="cabinet-test-list"'))
-  assert.ok(landing.includes('className="cabinet-test-row"'))
-  assert.ok(
-    landing.indexOf('className="cabinet-guest-tests"') <
-      landing.indexOf('className="cabinet-signin-strip"'),
-    'public Cabinet should show Mind–Body Monitor before Google sign-in',
-  )
-  assert.ok(landing.includes("import Image from 'next/image'"))
-  assert.ok(landing.includes('className="cabinet-test-image"'))
-  assert.ok(landing.includes("stateText: '5 questions · ~1 min'"))
-  assert.ok(landing.includes("traitText: '20 questions · ~3 min'"))
-  assert.ok(landing.includes('aria-label={`${c.start}: ${c.stateTitle}`}'))
-  assert.ok(landing.includes('aria-label={`${c.start}: ${c.traitTitle}`}'))
-  assert.ok(!landing.includes('className="cabinet-test-count"'))
-  assert.ok(!landing.includes('className="cabinet-account-row"'))
-  assert.ok(ia.includes('.cabinet-test-image'))
-  assert.ok(ia.includes('grid-template-columns: 128px minmax(0,1fr) 28px'))
-  assert.ok(ia.includes('.hh-monitoring-grid'))
-  assert.ok(ia.includes('.hh-monitoring-card'))
+  assert.ok(landing.includes('className="cabinet-signin-strip cabinet-signin-hero"'))
+  assert.ok(landing.includes('Enter personal cabinet with Google'))
+  assert.ok(landing.includes('Войти в личный кабинет через Google'))
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded />'))
+  assert.ok(landing.includes("phase !== 'catalog' && <section"))
+  assert.ok(landing.indexOf('cabinet-signin-hero') < landing.indexOf('<PublicTestExplorer locale={locale} embedded />'))
+  assert.ok(!landing.includes('className="cabinet-test-image"'))
+  assert.ok(!landing.includes('className="cabinet-monitor-actions"'))
+  assert.ok(!landing.includes("import Image from 'next/image'"))
+  assert.ok(explorer.includes('matchCount'))
+  assert.ok(styles.includes('.cabinet-signin-hero'))
+  assert.ok(landing.includes('className="cabinet-legacy-entry"') || landing.includes('cabinet-legacy-entry'))
 })
-
 
 test('signed-in tests use the registry-driven Mind–Body Monitor catalogue', async () => {
   const workspace = await readFile('components/app/app-workspace.jsx', 'utf8')

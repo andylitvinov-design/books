@@ -6,9 +6,9 @@ import { PublicSiteHeader } from '@/components/public-site-header';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 export const metadata = spanishMetadata('/es', 'Holistic House — desarrollo interior, práctica y trabajo personal', 'Sesiones individuales, programas y talleres, una biblioteca de remedios, libros y materiales del autor.');
 const cards = [
-  { icon: BriefcaseBusiness, image: '/images/holistic-house/video-posters/constellations-en-v1.webp', title: 'Constelaciones y apoyo arquetípico', text: 'Explora obstáculos y nuevas posibilidades para avanzar hacia tus objetivos.', href: '/es/services#constellations' },
-  { icon: Flower2, image: '/images/holistic-house/distance-homeopathy.webp', title: 'Psicohomeopatía', text: 'Explora tu bienestar, tus síntomas y tus recursos personales con una conversación gratuita.', href: '/es/services#psychohomeopathy' },
-  { icon: Sparkles, image: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp', title: 'Psicoterapia con imágenes', text: 'Comprende las emociones y patrones que se repiten; construye claridad y apoyo interior.', href: '/es/services#imagery' },
+  { icon: BriefcaseBusiness, image: '/images/holistic-house/video-posters/constellations-en-v1.webp', title: 'Constelaciones y apoyo arquetípico', text: 'Explora obstáculos y nuevas posibilidades para avanzar hacia tus objetivos.', href: '/es/services/systemic-constellations' },
+  { icon: Flower2, image: '/images/holistic-house/distance-homeopathy.webp', title: 'Psicohomeopatía', text: 'Explora tu bienestar, tus síntomas y tus recursos personales con una conversación gratuita.', href: '/es/services/psychohomeopathy' },
+  { icon: Sparkles, image: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp', title: 'Psicoterapia con imágenes', text: 'Comprende las emociones y patrones que se repiten; construye claridad y apoyo interior.', href: '/es/services/imagery-therapy' },
 ];
 export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">

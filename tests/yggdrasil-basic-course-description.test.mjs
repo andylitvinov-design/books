@@ -68,8 +68,54 @@ test("Complete Russian manual is preserved on the book page, not replaced by sum
     assert.ok(original.includes(marker), "Missing chapter / attunement: " + marker);
   }
   assert.match(component, /import fullManual/);
-  assert.match(component, /fullManual\.pages\.filter/);
+  assert.match(component, /manualForLocale\.pages\.filter/);
+  assert.match(component, /locale === "en" \? englishManual : fullManual/);
+  assert.match(component, /locale === "en" \? manualChaptersEn : manualChapters/);
   assert.match(component, /yggdrasil-book-toc/);
-  assert.match(component, /lang="ru"/);
+  assert.match(component, /lang=\{manualLanguage\}/);
   assert.doesNotMatch(component, /полная методичка не размещается/);
+});
+
+
+test("English edition faithfully covers all 38 source pages, in English", async () => {
+  const [sourceText, translationText, component] = await Promise.all([
+    readFile("data/academy/yggdrasil-basic-manual-original.ru.json", "utf8"),
+    readFile("data/academy/yggdrasil-basic-manual.en.json", "utf8"),
+    readFile(contentPath, "utf8"),
+  ]);
+  const source = JSON.parse(sourceText);
+  const translated = JSON.parse(translationText);
+  assert.equal(translated.language, "en");
+  assert.equal(translated.originalPages, 38);
+  assert.equal(translated.pages.length, source.pages.length);
+  assert.deepEqual(
+    translated.pages.map((entry) => entry.page),
+    source.pages.map((entry) => entry.page),
+  );
+  for (let index = 0; index < source.pages.length; index += 1) {
+    assert.equal(
+      translated.pages[index].paragraphs.length,
+      source.pages[index].paragraphs.length,
+      "Translation paragraph alignment mismatch on page " + (index + 1),
+    );
+  }
+  const english = translated.pages.flatMap((entry) => entry.paragraphs).join(" ");
+  assert.ok(english.length > 65000, "Full English text must not be an abbreviated synopsis");
+  assert.doesNotMatch(english, /[А-Яа-яЁё]/u, "English book should contain no untranslated Cyrillic passages");
+  for (const marker of [
+    "Introduction",
+    "Intuition",
+    "Breaking a Connection",
+    "Life Purpose",
+    "Vision",
+    "Connection with the World",
+    "Principal Deities",
+    "Var",
+    "Eir",
+  ]) assert.ok(english.includes(marker), "Missing translated chapter or attunement: " + marker);
+  assert.match(component, /import englishManual/);
+  assert.match(component, /manualForLocale = locale === "en" \? englishManual : fullManual/);
+  assert.match(component, /manualLanguage = locale === "en" \? "en" : "ru"/);
+  assert.match(component, /English translation aligned with all 38 pages/);
+  assert.doesNotMatch(component, /Full English translation is not yet available/);
 });

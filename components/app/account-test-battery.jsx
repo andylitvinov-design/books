@@ -133,7 +133,7 @@ function planRows(plan, data, locale) {
     }
   }).filter(Boolean)
 }
-export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
+export function AccountTestBattery({ data, locale, requestedPlanId, recommendedKey = null, reload }) {
   const c = COPY[locale] || COPY.en
   const router = useRouter()
   const once = useRef(false)
@@ -315,6 +315,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
       <p className={styles.muted}>{c.privacy}</p>
     </section>
     {(exploring || (!rows.length && !initializing && !conflict)) &&
-      <TestExplorer locale={locale} audience="account" onStart={choose} />}
+      <TestExplorer locale={locale} audience="account" onStart={choose}
+        pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
+        recommendedKey={recommendedKey}
+        onResumeRun={(run) => router.push(root + '/runs/' + encodeURIComponent(run.id))} />}
   </>
 }

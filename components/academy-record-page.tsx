@@ -10,6 +10,7 @@ import { TantraReikiSideNavigation, YggdrasilSideNavigation } from "@/components
 import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
 import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import tantraReikiFullArchive from "@/data/academy/tantra-reiki-full.generated.json";
+import tantraReikiOriginalRuEnglish from "@/data/academy/tantra-reiki-ru-en.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 function renderBlocks(blocks: AcademyBlock[]) {
@@ -48,8 +49,8 @@ const tantraReikiLevelSummary: Record<PublicLocale, {
     intro: "Каждая ступень — это углубление в один и тот же поток Тантра Рейки: от телесной чувствительности и контакта к внутренней опоре, ясности и созиданию.",
     levels: [
       { number: 1, title: "Активация и контакт", description: "Пробуждение жизненности и сексуальной энергии, усиление чувствительности, привлекательности и способности наполнять энергией выбранную ситуацию." },
-      { number: 2, title: "Накопление и сонастройка", description: "Накопление внутренней энергии, настройка на другого человека или группу, работа с темой материального потока и внутренней собранности." },
-      { number: 3, title: "Единство, очищение и удача", description: "Более глубокое чувство связи с миром, отпускание напряжений и блоков, развитие интуитивного ощущения удачного хода событий." },
+      { number: 2, title: "Жар жизни · накопление и комплексы", description: "Накопление внутренней энергии, настройка «Денежный магнит» и работа с комплексами — как в оригинальном русском описании второй ступени." },
+      { number: 3, title: "Океан единства · сонастройка и талисман", description: "Сонастройка с миром, удача («ускорение времени») и создание талисмана — настройки третьей ступени в оригинальной русской программе." },
       { number: 4, title: "Архетипические энергии", description: "Переход к более высоким образам: Просветление, Боги Любви и «Астральный ребёнок» как символ общего поля пары или группы." },
       { number: 5, title: "Внутренний Свет", description: "Контакт с внутренним источником силы, творчеством и ощущением раскрытия энергетических центров." },
       { number: 6, title: "Миры Единства", description: "Глубокое успокоение, поддержка, подпитка, стабилизация и переживание более цельного внутреннего состояния." },
@@ -63,8 +64,8 @@ const tantraReikiLevelSummary: Record<PublicLocale, {
     intro: "Each level deepens the same Tantra Reiki flow: from embodied sensitivity and connection toward inner support, clarity and creative expression.",
     levels: [
       { number: 1, title: "Activation & connection", description: "Awakening vitality and sexual energy, increasing sensitivity, attractiveness and the ability to bring more energy into a chosen situation." },
-      { number: 2, title: "Accumulation & attunement", description: "Building inner energy, attuning with another person or group, and working with themes of material flow and inner coherence." },
-      { number: 3, title: "Unity, clearing & luck", description: "A deeper sense of connection with the world, release of tension and blocks, and a more intuitive sense of favourable movement." },
+      { number: 2, title: "Fire of Life · energy and complexes", description: "Accumulating energy, the Money Magnet and Burn Away Complexes — faithfully following Andrey’s original Russian Level 2 attunements." },
+      { number: 3, title: "Ocean of Unity · attunement and talisman", description: "Attunement with the world, Luck (acceleration of time) and Talisman — the attunements from the original Russian Level 3 text." },
       { number: 4, title: "Archetypal energies", description: "A transition toward higher symbolic themes: Enlightenment, Gods of Love and the “Astral Child” as an image of a shared couple or group field." },
       { number: 5, title: "Inner Light", description: "Contact with an inner source of strength, creativity and the image of opening the energy centres." },
       { number: 6, title: "Worlds of Unity", description: "Deep calming, support, nourishment, stabilisation and the experience of a more integrated inner state." },
@@ -78,8 +79,8 @@ const tantraReikiLevelSummary: Record<PublicLocale, {
     intro: "Cada etapa profundiza en el mismo flujo de Tantra Reiki: desde la sensibilidad corporal y la conexión hacia el apoyo interior, la claridad y la expresión creativa.",
     levels: [
       { number: 1, title: "Activación y conexión", description: "Despertar de la vitalidad y de la energía sexual, mayor sensibilidad, atractivo y capacidad de aportar energía a una situación elegida." },
-      { number: 2, title: "Acumulación y sintonización", description: "Acumulación de energía interior, sintonización con otra persona o grupo y trabajo simbólico con el flujo material y la coherencia interna." },
-      { number: 3, title: "Unidad, liberación y suerte", description: "Una conexión más profunda con el mundo, liberación de tensiones y bloqueos y un sentido más intuitivo del curso favorable de los acontecimientos." },
+      { number: 2, title: "Fuego de vida · energía y complejos", description: "Acumulación de energía, Imán del dinero y Disolver complejos, siguiendo el texto ruso original." },
+      { number: 3, title: "Océano de unidad · sintonía y talismán", description: "Sintonización, Suerte y Talismán, según los nombres del tercer nivel en el texto original ruso." },
       { number: 4, title: "Energías arquetípicas", description: "Transición a temas simbólicos más elevados: Iluminación, Dioses del Amor y el «Niño Astral» como imagen de un campo compartido." },
       { number: 5, title: "Luz Interior", description: "Contacto con una fuente interior de fuerza, creatividad y la imagen de apertura de los centros energéticos." },
       { number: 6, title: "Mundos de Unidad", description: "Calma profunda, apoyo, nutrición, estabilización y una experiencia de mayor integración interna." },
@@ -149,7 +150,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               </div>
               <figure className="tantra-course-hero__visual">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={tantraReikiFullArchive.images.ru[16]} alt={locale === "ru" ? "Архивное фото участников практик" : locale === "es" ? "Fotografía del archivo de prácticas" : "Photograph from the original practice archive"} loading="eager" decoding="async" />
+                <img src={tantraReikiFullArchive.images.ru[12]} alt={locale === "ru" ? "Архивное фото участников практик" : locale === "es" ? "Fotografía del archivo de prácticas" : "Photograph from the original practice archive"} loading="eager" decoding="async" />
                 <figcaption>{locale === "ru" ? "Реальная фотография из архива практик" : locale === "es" ? "Fotografía real del archivo" : "Real photograph from the practice archive"}</figcaption>
               </figure>
             </section>
@@ -191,6 +192,25 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                 <p>{locale === "ru" ? "Ниже сохранён полный исторический текст без пересказа. Ключевая структура курса уже вынесена выше." : locale === "es" ? "El texto histórico completo se conserva a continuación sin resumir." : "The complete historical source text is preserved below without summarising; the key course structure is already surfaced above."}</p>
               </div>
             </div>
+            {locale === "en" ? (
+              <>
+                <section className="tantra-translation-intro" aria-labelledby="tantra-original-ru-english-heading">
+                  <h3 id="tantra-original-ru-english-heading">Full English translation of Andrey’s original Russian text</h3>
+                  <p>The original Russian page is preserved in full. Below is its complete English translation — including the nine attunements, Andrey’s research and descriptions, historical testimonials and original course information. Historical health, money and certification claims are reproduced as archival claims, not independently verified outcomes or current offers.</p>
+                  <a href="https://psitrends.com/ru/cat-train-ru/advanced-ru/tantra-ru" target="_blank" rel="noreferrer">Original Russian source ↗</a>
+                </section>
+                <div className="academy-source-content tantra-translation-text" lang="en">
+                  {renderBlocks(tantraReikiOriginalRuEnglish.blocks.map((block) => ({
+                    type: block.type as AcademyBlock["type"],
+                    text: block.text,
+                  })))}
+                </div>
+                <div className="tantra-translation-intro">
+                  <h3>Original English course text · preserved without omissions</h3>
+                  <p>This is the separate historical English PsiTrends course text, including its Master Teacher syllabus and original English attunement assignments. Where the historic English and Russian level 2–3 settings differ, both records are retained.</p>
+                </div>
+              </>
+            ) : null}
             <div className="academy-source-content">{renderBlocks(publicBlocks)}</div>
           </section>
         ) : hasBody ? <div className="academy-source-content">{renderBlocks(publicBlocks)}</div> : <p className="academy-empty-source">{text.noContent}</p>}

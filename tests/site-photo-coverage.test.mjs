@@ -23,7 +23,7 @@ test("critical photo-first sections use existing local image files, never placeh
     "data/academy/temple-studies-curriculum.ts",
     "app/[locale]/services/page.tsx",
     "components/sitewide-lead-capture.tsx",
-    "app/[locale]/services/imagery-therapy/page.tsx",
+    "data/personal-service-pages.ts",
     "app/[locale]/wu-xing/page.tsx",
     "app/es/page.tsx",
   ]) validateFiles(file);
@@ -86,4 +86,9 @@ test("editorial images are visually integrated, responsive and appropriately var
   assert.match(read("app/[locale]/wu-xing/page.tsx"), /source\/eastern-tradition\.png/);
   assert.match(context, /pathname\.includes\("wu-xing"\) \? "\/academy\/reiki-yggdrasil\/source\/temple-studies\.png"/);
   assert.match(read("app/es/page.tsx"), /service-home-hero-photo/);
+  const landing = read("components/personal-service-landing.tsx");
+  assert.match(landing, /personalServiceImages\[service\]/);
+  assert.match(landing, /heroMedia/);
+  assert.match(landing, /<Image src=\{personalServiceImages\[service\]\}/);
+
 });

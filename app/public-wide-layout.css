@@ -1,0 +1,58 @@
+/* Public Holistic House pages use the same edge-to-edge canvas as the homepage.
+   Keep a comfortable viewport gutter and preserve narrow reading/form columns inside it.
+   Only desktop/tablet containers change; existing mobile and print layouts remain intact. */
+
+:root {
+  --hh-wide-page-gutter: clamp(18px, 3.5vw, 72px);
+}
+
+@media screen and (min-width: 768px) {
+  :is(
+    .library-shell,
+    .catalog-shell,
+    .reader-shell,
+    .book-reference-shell,
+    .homeopathy-shell,
+    .services-shell,
+    .about-shell,
+    .academy-reading-shell,
+    .client-entry-shell,
+    .cabinet-landing-shell,
+    .shared-report-shell
+  ) {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: var(--hh-wide-page-gutter);
+  }
+}
+
+/* Courses should take advantage of the additional room instead of keeping
+   their old 760px-wide two-column layout inside a newly widened shell. */
+@media screen and (min-width: 1024px) {
+  .academy-reading-shell--wide .academy-course-layout {
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    justify-content: stretch;
+  }
+
+  .academy-reading-shell--wide .academy-course-layout > .academy-reading {
+    max-width: none;
+    min-width: 0;
+  }
+
+  .academy-reading-shell--wide .academy-source-content {
+    max-width: 78ch;
+  }
+}
+
+/* Temple Studies has its own separate width-limited inner container. */
+@media screen and (min-width: 921px) {
+  .temple-inner {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: var(--hh-wide-page-gutter);
+  }
+}

@@ -6,6 +6,7 @@ import {
   buildExplorerEntries,
   buildStarterBattery,
   coverageForSelection,
+  coverageForFocus,
   coverageLevel,
   filterExplorerEntries,
   rankExplorerEntries,
@@ -91,4 +92,41 @@ test('coverage uses diminishing returns, remains bounded, and classifies breadth
   assert.equal(coverageLevel({ coveredCount: 1 }), 'focused')
   assert.equal(coverageLevel({ coveredCount: 5 }), 'balanced')
   assert.equal(coverageLevel({ coveredCount: 9 }), 'broad')
+})
+
+test('choosing concerns immediately narrows the result count and combines topic facets', () => {
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const available = filterExplorerEntries(entries, { availability: 'available' })
+  const anxiety = filterExplorerEntries(entries, { availability: 'available', focus: ['anxiety'] })
+  const mood = filterExplorerEntries(entries, { availability: 'available', focus: ['mood'] })
+  const together = filterExplorerEntries(entries, { availability: 'available', focus: ['anxiety', 'mood'] })
+  assert.ok(anxiety.length > 0 && anxiety.length < available.length)
+  assert.ok(together.length >= anxiety.length && together.length >= mood.length)
+  assert.ok(!anxiety.some((entry) => entry.key === 'mini-ipip-20'))
+  assert.ok(anxiety.some((entry) => entry.key === 'gad-7'))
+  const narrowed = filterExplorerEntries(entries, { availability: 'available', focus: ['anxiety'], styles: ['professional'] })
+  assert.ok(narrowed.length <= anxiety.length)
+  assert.ok(narrowed.every((entry) => entry.testStyle === 'professional'))
+})
+
+test('a selected battery test stays visible without inflating the actual number of matches', () => {
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const matched = filterExplorerEntries(entries, { availability: 'available', focus: ['anxiety'] })
+  const shown = filterExplorerEntries(entries, { availability: 'available', focus: ['anxiety'], selectedKeys: ['mini-ipip-20'] })
+  assert.equal(shown.length, matched.length + 1)
+  assert.ok(shown.some((entry) => entry.key === 'mini-ipip-20'))
+})
+
+test('analysis axes change with chosen topics, then use actual test-set coverage', () => {
+  const noTopics = coverageForFocus([])
+  const anxiety = coverageForFocus(['anxiety'])
+  const sleep = coverageForFocus(['sleep'])
+  assert.equal(noTopics.coveredCount, 0)
+  assert.equal(anxiety.axes.anxiety.intensity, 'medium')
+  assert.equal(anxiety.axes.sleep.intensity, 'inactive')
+  assert.equal(sleep.axes.sleep.intensity, 'medium')
+  assert.equal(sleep.axes.anxiety.intensity, 'inactive')
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  assert.equal(coverageForSelection(entries, ['gad-7']).axes.anxiety.coverage, 1)
+  assert.equal(coverageForFocus(['anxiety']).axes.anxiety.coverage, 0.6)
 })

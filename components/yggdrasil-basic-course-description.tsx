@@ -7,6 +7,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import type { PublicLocale } from "@/lib/public-locales";
 import fullManual from "@/data/academy/yggdrasil-basic-manual-original.ru.json";
+import englishManual from "@/data/academy/yggdrasil-basic-manual.en.json";
 
 type LevelCopy = {
   title: string;
@@ -147,7 +148,7 @@ const copy: Record<PublicLocale, DescriptionCopy> = {
     next: "The next stage in the school's current seven-module structure is the Instructor Course, which follows the five foundation levels.",
     openCourse: "Explore all levels, attunements and videos",
     overview: "View the complete Reiki Yggdrasil program",
-    sourceNote: "Based on the Russian manual “Reiki Yggdrasil: Basic Course, Levels I–V” and Academy materials. This public overview is adapted from the source; the complete Russian original appears below. Full English translation is not yet available.",
+    sourceNote: "Based on the Russian manual “Reiki Yggdrasil: Basic Course, Levels I–V” and Academy materials. The complete English translation of the 38-page source manual is reproduced above, with every original paragraph preserved in its source-page order.",
     safetyNote: "Energy, esoteric and healing ideas are described as part of the tradition. They are not established medical treatments, do not guarantee outcomes and do not replace professional medical care.",
   },
   es: {
@@ -221,12 +222,12 @@ const bookUi: Record<PublicLocale, { heading: string; lead: string; start: strin
   },
   en: {
     heading: "Book: Reiki Yggdrasil — Basic Course, Levels I–V",
-    lead: "The complete original training book, including all five levels, attunements, exercises and Norse mythology reference material.",
+    lead: "Read the complete English translation of the training book, including all five levels, attunements, exercises and Norse mythology reference material.",
     start: "Read the complete book",
-    note: "The full original text is in Russian. The English overview remains available below; a complete English translation has not yet been prepared. Historical healing claims in the source are not proven medical guidance.",
+    note: "Complete English translation aligned with all 38 pages of the Russian original. Page references, exercises and appendices are preserved. Historical healing and esoteric claims are translated as statements of the source, not as proven medical guidance. This book does not replace professional medical care.",
     contents: "Table of contents",
     synopsis: "Open the English course overview and learning links",
-    page: "Original page",
+    page: "Source page",
   },
   es: {
     heading: "Libro: Reiki Yggdrasil — Curso Básico, niveles I–V",
@@ -251,13 +252,28 @@ const manualChapters = [
   { page: 37, title: "Приложение · Описание богов, вариант 2" },
 ];
 
+const manualChaptersEn = [
+  { page: 3, title: "Introduction · What Is Reiki Yggdrasil?" },
+  { page: 5, title: "Five Levels · Attunements at a Glance" },
+  { page: 8, title: "Level I · Healing, Intuition, Protection and Situations" },
+  { page: 14, title: "Level II · Objects, Money, Cleansing and Connections" },
+  { page: 19, title: "Level III · Life Purpose, Emotions, Power and More" },
+  { page: 28, title: "Level IV · Vision, Past Lives and Knowledge" },
+  { page: 32, title: "Level V · The World, Gods and Archetypal Qualities" },
+  { page: 33, title: "Appendix · The Norse Pantheon" },
+  { page: 37, title: "Appendix · Description of the Gods, Version 2" },
+];
+
 function manualParagraphHeading(paragraph: string) {
-  return /^(?:Введение|Настройка\s+[«“]|ОТРАБОТКА НАСТРОЕК|Ступени Рэйки|Первая ступень системы|Вторая ступень системы|Третья ступень системы|Четвёртая ступень системы|Пятая ступень системы|Высшие божества|ОПИСАНИЕ БОГОВ)/i.test(paragraph);
+  return /^(?:Введение|Настройка\s+[«“]|ОТРАБОТКА НАСТРОЕК|Ступени Рэйки|Первая ступень системы|Вторая ступень системы|Третья ступень системы|Четвёртая ступень системы|Пятая ступень системы|Высшие божества|ОПИСАНИЕ БОГОВ|Introduction|Attunement:|PRACTICING THE ATTUNEMENTS|The levels of Reiki Yggdrasil|First Level|Second Level|Third Level|Fourth Level|Fifth Level|Principal Deities|DESCRIPTION OF THE GODS)/i.test(paragraph);
 }
 
 export function YggdrasilBasicCourseDescription({ locale }: { locale: PublicLocale }) {
   const text = copy[locale];
   const book = bookUi[locale];
+  const manualForLocale = locale === "en" ? englishManual : fullManual;
+  const chapters = locale === "en" ? manualChaptersEn : manualChapters;
+  const manualLanguage = locale === "en" ? "en" : "ru";
   const base = "/" + locale + "/academy/reiki/yggdrasil";
   return (
     <main className="academy-reading-shell academy-reading-shell--wide yggdrasil-description-page" lang={locale}>
@@ -282,15 +298,15 @@ export function YggdrasilBasicCourseDescription({ locale }: { locale: PublicLoca
             <p className="yggdrasil-book-edition">{book.note}</p>
             <nav className="yggdrasil-book-toc" aria-label={book.contents}>
               <h2>{book.contents}</h2>
-              <ol>{manualChapters.map((chapter) => (
+              <ol>{chapters.map((chapter) => (
                 <li key={chapter.page}><a href={"#book-page-" + chapter.page}>{chapter.title}</a></li>
               ))}</ol>
             </nav>
-            <div className="yggdrasil-book-pages" lang="ru">
-              {fullManual.pages.filter((sourcePage) => sourcePage.page >= 3).map((sourcePage) => (
+            <div className="yggdrasil-book-pages" lang={manualLanguage}>
+              {manualForLocale.pages.filter((sourcePage) => sourcePage.page >= 3).map((sourcePage) => (
                 <section className="yggdrasil-book-page" id={"book-page-" + sourcePage.page} key={sourcePage.page}>
-                  <div className="yggdrasil-book-page-counter">{book.page} {sourcePage.page} / {fullManual.originalPages}</div>
-                  {manualChapters.find((chapter) => chapter.page === sourcePage.page) ? <h2>{manualChapters.find((chapter) => chapter.page === sourcePage.page)?.title}</h2> : null}
+                  <div className="yggdrasil-book-page-counter">{book.page} {sourcePage.page} / {manualForLocale.originalPages}</div>
+                  {chapters.find((chapter) => chapter.page === sourcePage.page) ? <h2>{chapters.find((chapter) => chapter.page === sourcePage.page)?.title}</h2> : null}
                   {sourcePage.paragraphs.map((paragraph, idx) => manualParagraphHeading(paragraph)
                     ? <p className="yggdrasil-book-standout" key={idx}>{paragraph}</p>
                     : <p key={idx}>{paragraph}</p>

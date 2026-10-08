@@ -33,9 +33,9 @@ test("three services are choices with direct real service links, not implied tre
   for (const phrase of [
     "Гомеопатия", "Образная терапия", "Расстановки и архетипическая работа",
     "Homeopathy", "Guided imagery therapy", "Systemic & archetypal constellations",
-    "andy-litvinov/homeopathy-consultation",
+    "psychohomeopathy",
     "imagery-therapy",
-    "andy-litvinov/personal-constellation-session",
+    "systemic-constellations",
     "free-situation-review",
     "Три типа моих услуг",
     "three different services",
@@ -54,7 +54,7 @@ test("free situation review and imagery therapy have real bilingual pages and ac
   const form = source("components", "free-situation-review-form.tsx");
   const consultation = source("components", "personal-consultation-form.tsx");
   for (const phrase of ["Бесплатная диагностика ситуации", "Free situation & goal assessment", "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata"]) assert.ok(free.includes(phrase), phrase);
-  for (const phrase of ["Образная терапия", "Guided imagery therapy", "PersonalConsultationForm", "service={t.title}"]) assert.ok(imagery.includes(phrase), phrase);
+  for (const phrase of ["PersonalServiceLanding", "imagery-therapy", "service={service}"]) assert.ok(imagery.includes(phrase), phrase);
   assert.match(consultation, /service\?: string/);
   assert.match(consultation, /Service: \$\{service\}/);
   assert.match(form, /"goal"/);

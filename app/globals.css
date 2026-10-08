@@ -5614,3 +5614,37 @@
 @media (prefers-reduced-motion: reduce) {
   .hh-mood-checkin .hh-mood-button { transition: none !important; }
 }
+
+/* Clear primary account entry on the public Client page. */
+.cabinet-landing-shell .cabinet-signin-hero{
+  position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:22px;
+  max-width:1560px;margin:20px auto 12px;padding:24px clamp(18px,3vw,38px);
+  border:1px solid #d6baa0;border-radius:22px;
+  background:linear-gradient(118deg,#f1dfc4 0%,#fff8ee 61%,#f0e9df 100%);
+  box-shadow:0 12px 30px rgba(80,55,32,.1);
+}
+.cabinet-landing-shell .cabinet-signin-hero .cabinet-signin-copy h2{font-family:Georgia,serif;font-size:clamp(1.55rem,3vw,2.45rem);line-height:1.12;margin:8px 0}
+.cabinet-landing-shell .cabinet-signin-hero .cabinet-signin-copy p:not(.about-kicker){max-width:62ch;font-size:1rem;line-height:1.5}
+.cabinet-landing-shell .cabinet-signin-hero .cabinet-signin-copy small{font-size:.82rem;color:#735e4b}
+.cabinet-landing-shell .cabinet-signin-hero .cabinet-google-button{
+  display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:54px;
+  padding:14px 23px;margin:0;background:#63432f;color:#fff7ee;font-size:.95rem;font-weight:700;
+  border:1px solid #63432f;border-radius:999px;text-align:center;
+}
+.cabinet-landing-shell .cabinet-signin-hero .cabinet-google-button:hover{background:#453024}
+.cabinet-landing-shell .cabinet-signin-hero .cabinet-account-error{grid-column:1/-1}
+@media(max-width:760px){
+  .cabinet-landing-shell .cabinet-signin-hero{grid-template-columns:1fr;gap:14px;margin:12px;padding:20px 18px}
+  .cabinet-landing-shell .cabinet-signin-hero .cabinet-google-button{width:100%}
+}
+
+/* Completed battery results no longer inherit the old image/arrow card grid. */
+.cabinet-landing-shell .cabinet-battery-result-row{
+ display:block;width:100%;min-height:auto;padding:16px 18px;
+ border:1px solid #d8c6b4;border-radius:16px;background:#fffaf3;
+}
+.cabinet-landing-shell .cabinet-battery-result-row .cabinet-test-row-copy{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
+.cabinet-landing-shell .cabinet-battery-result-row .cabinet-save-result{
+ display:inline-flex;min-height:42px;margin-top:7px;padding:10px 17px;font-size:.85rem;
+ border:1px solid #654632;background:#654632;color:#fff8f0;border-radius:999px;
+}

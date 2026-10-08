@@ -1388,3 +1388,33 @@
 @media (prefers-reduced-motion:reduce) {
   .hh-runner-question,.hh-app .hh-test-mode-card,.hh-runner-segments > span,.hh-runner--quick .hh-scale button { animation:none; transition:none; }
 }
+
+
+/* Client-owned assessment history: one test group, dated attempts, no pseudo health score. */
+.hh-assessment-history{margin:22px 0 30px}
+.hh-assessment-history-heading{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:16px}
+.hh-assessment-history-heading h2{font:600 clamp(1.35rem,2.5vw,2rem)/1.17 Georgia,serif;margin:5px 0}
+.hh-assessment-history-heading p{max-width:65ch;line-height:1.5}
+.hh-assessment-history-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.hh-assessment-history-item{border:1px solid #e1d0be;border-radius:17px;background:#fffaf4;padding:18px;min-width:0}
+.hh-assessment-history-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.hh-assessment-history-item h3,.hh-assessment-history-next h3{font:600 1.25rem/1.25 Georgia,serif;margin:0 0 10px;color:#4b3326}
+.hh-assessment-history-item p{font-size:.86rem;color:#725e51;line-height:1.4}
+.hh-assessment-history-item a,.hh-assessment-history-next a{color:#734b35;font-weight:700;text-underline-offset:3px}
+.hh-assessment-history-dimensions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.hh-assessment-history-dimensions>div{display:grid;gap:4px;background:#f3e9dc;border-radius:12px;padding:10px;min-width:110px;flex:1}
+.hh-assessment-history-dimensions span{font-size:.78rem;color:#6a5244}
+.hh-assessment-history-dimensions strong{font-size:1.15rem;color:#493328}
+.hh-assessment-history-dimensions small{font-size:.75rem;font-weight:400}
+.hh-assessment-history-previous{border-top:1px solid #ebdfd3;padding-top:10px;margin-top:8px}
+.hh-assessment-history-previous summary{cursor:pointer;font-weight:650;color:#5c4436}
+.hh-assessment-history-previous ul{list-style:none;padding:5px 0;margin:0;display:grid;gap:8px}
+.hh-assessment-history-previous li{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.hh-assessment-history-item .hh-actions{margin-top:14px}
+.hh-assessment-history-next,.hh-result-guidance{display:grid;gap:10px;margin:18px 0;padding:20px 24px;border:1px solid #c9d9c7;background:#f1f5eb;border-radius:18px;line-height:1.5}
+.hh-assessment-history-next{grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.hh-result-guidance h2{font:600 1.55rem/1.3 Georgia,serif}
+.hh-result-guidance ul{padding-left:22px;margin:4px 0}
+.hh-result-guidance small,.hh-assessment-history-next small{color:#67675b}
+@media(max-width:800px){.hh-assessment-history-list{grid-template-columns:1fr}.hh-assessment-history-heading,.hh-assessment-history-next{display:grid;grid-template-columns:1fr}}
+@media(max-width:450px){.hh-assessment-history-item-head{display:block}.hh-assessment-history-item{padding:14px}.hh-assessment-history-dimensions>div{min-width:90px}}
