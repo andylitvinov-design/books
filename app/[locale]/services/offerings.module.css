@@ -1,0 +1,36 @@
+.page { min-height:100vh; color:#352b24; background:#fbf7ef; padding-bottom:38px; }
+.hero { max-width:1090px; margin:0 auto; padding:clamp(28px,6vw,64px) max(18px,4vw) 25px; }
+.eyebrow { font:700 11px/1.5 Arial,Helvetica,sans-serif; letter-spacing:.15em; text-transform:uppercase; color:#855139; }
+.hero h1 { max-width:800px; margin:13px 0 17px; font:400 clamp(35px,4.5vw,59px)/1.11 Georgia,"Times New Roman",serif; letter-spacing:-.03em; }
+.hero > p:not(.eyebrow) { max-width:750px; margin:10px 0; color:#65594f; font:16px/1.75 Arial,Helvetica,sans-serif; }
+.breadcrumb { display:inline-flex; min-height:44px; align-items:center; margin-top:12px; color:#855139; text-decoration:none; font:700 13px/1.5 Arial,Helvetica,sans-serif; }
+.breadcrumb:hover { text-decoration:underline; text-underline-offset:3px; }
+.details { max-width:1090px; margin:0 auto 26px; padding:0 max(18px,4vw); }
+.details h2 { font:400 clamp(27px,3vw,34px)/1.25 Georgia,"Times New Roman",serif; margin:0 0 18px; }
+.cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.card { border:1px solid #e5d7c8; background:white; border-radius:18px; padding:20px; }
+.card h3 { margin:0 0 9px; font:400 23px/1.22 Georgia,"Times New Roman",serif; }
+.card p { margin:0; color:#665a50; font:13px/1.65 Arial,Helvetica,sans-serif; }
+.contentGrid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(275px,.75fr); gap:22px; max-width:1090px; margin:0 auto 32px; padding:0 max(18px,4vw); align-items:start; }
+.article { border:1px solid #e5d7c8; background:#fffdf9; border-radius:20px; padding:28px; }
+.article h2 { font:400 31px/1.2 Georgia,"Times New Roman",serif; margin:0 0 12px; }
+.article p,.article li { color:#65594f; font:14px/1.75 Arial,Helvetica,sans-serif; }
+.article ul { padding-left:22px; }
+.form { width:100%; min-width:0; display:grid; gap:14px; border:1px solid #e2d3c2; border-radius:22px; background:#fffdf9; padding:clamp(20px,3vw,31px); }
+.form h2 { margin:0; font:400 clamp(26px,3vw,35px)/1.17 Georgia,"Times New Roman",serif; }
+.form>p:not(.formNote):not(.disclaimer){ margin:0 0 7px; color:#65594f; font:14px/1.65 Arial,Helvetica,sans-serif; }
+.form label { display:grid; gap:7px; min-width:0; }
+.form label span { color:#564739; font:700 13px/1.5 Arial,Helvetica,sans-serif; }
+.form input,.form textarea,.form select { width:100%; box-sizing:border-box; min-height:44px; border:1px solid #cebba8; border-radius:12px; background:#fff; color:#352b24; padding:11px 13px; font:14px/1.5 Arial,Helvetica,sans-serif; }
+.form textarea { resize:vertical; }
+.form button,.cta { display:inline-flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; border:1px solid #855139; border-radius:999px; padding:11px 20px; background:#855139; color:#fffaf4; text-decoration:none; font:700 13px/1.5 Arial,Helvetica,sans-serif; cursor:pointer; }
+.form button:disabled { opacity:.55; cursor:wait; }
+.form a { display:inline-flex; align-items:center; min-height:40px; color:#855139; text-decoration:underline; text-underline-offset:3px; font:700 13px/1.5 Arial,Helvetica,sans-serif; }
+.formNote { margin:0; font:12px/1.65 Arial,Helvetica,sans-serif; color:#74665a; }
+.disclaimer { color:#74665a; font:12px/1.7 Arial,Helvetica,sans-serif; }
+.form :is(button,input,textarea,select,a):focus-visible,.cta:focus-visible,.breadcrumb:focus-visible { outline:3px solid #ae7a55; outline-offset:3px; }
+.offer { margin:20px 0 26px; padding:22px; border:1px solid #dbbea1; border-radius:18px; background:#f2e5d5; }
+.offer h3 { margin:7px 0 9px; font:400 30px/1.17 Georgia,"Times New Roman",serif; }
+.offer p { margin:0 0 15px; color:#66594d; font:14px/1.65 Arial,Helvetica,sans-serif; }
+.offer a { display:inline-flex; align-items:center; min-height:44px; border-radius:999px; padding:10px 16px; background:#855139; color:#fff; text-decoration:none; font:700 13px/1.5 Arial,Helvetica,sans-serif; }
+@media(max-width:800px){ .cards{grid-template-columns:1fr;} .contentGrid{grid-template-columns:1fr;} .hero h1{font-size:36px;} .article{padding:21px;} .form{padding:22px;} }
