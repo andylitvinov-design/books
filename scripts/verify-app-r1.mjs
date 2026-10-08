@@ -120,9 +120,12 @@ try {
  await page.getByRole('button',{name:'Send request',exact:true}).click();await expect(page.getByText('Received',{exact:true})).toBeVisible();data=(await api('bootstrap')).data;assert.equal(data.requests.length,1);assert.equal(data.requests[0].sharedExcerpt,null);passed('real consultation request without implicit profile sharing')
  const admin=await browser.newContext();await admin.addCookies([{name:'prescriptions_admin',value:createHmac('sha256',process.env.PRESCRIPTIONS_ADMIN_TOKEN).update('prescriptions-admin-v1').digest('base64url'),url:origin+'/admin',httpOnly:true,sameSite:'Strict'}]);const adminPage=await admin.newPage();await adminPage.goto(origin+'/admin/app-requests');await expect(adminPage.getByText('synthetic@example.invalid',{exact:true})).toBeVisible();await adminPage.getByRole('button',{name:'Contacted',exact:true}).click();await expect(adminPage.locator('.hh-badge')).toHaveText('Contacted');await adminPage.screenshot({path:output+'/practitioner-inbox.png',fullPage:true});passed('existing practitioner authorization and real request status inbox')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
- const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
+ const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();await expect(otherPage).toHaveURL(origin+'/en/app');await otherPage.waitForLoadState('networkidle');assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
  // The public Start free testing button must transfer the exact selection into an existing Google account.
- await otherPage.goto(origin+'/en/client/tests')
+ // Finish synthetic onboarding navigation before the next route (WebKit).
+ await otherPage.waitForLoadState('networkidle')
+ await otherPage.goto(origin+'/en/client/tests',{waitUntil:'domcontentloaded'})
+ await expect(otherPage).toHaveURL(origin+'/en/client/tests')
  await expect(otherPage.getByRole('heading',{name:'Build your test set'})).toBeVisible()
  await otherPage.locator('article').filter({has:otherPage.getByRole('heading',{name:'Personality Baseline',exact:true})})
    .getByRole('checkbox',{name:'Personality Baseline'}).check()
@@ -148,6 +151,12 @@ try {
 
  await page.getByRole('checkbox',{name:'Personality Baseline',exact:true}).check()
  await page.getByRole('button',{name:'Start free testing',exact:true}).click()
+ // This returning account already has an unfinished Weekly Psychic Health plan.
+ // The user must explicitly approve replacement rather than silently losing it.
+ await expect(page.getByRole('heading',{name:'You already have an active test set'})).toBeVisible({timeout:30000})
+ await expect(page).toHaveURL(/\/en\/app\/tests\?selection=pending/)
+ await page.getByRole('button',{name:'Use new selection'}).click()
+ passed('returning user explicitly approves replacement of an unfinished test plan')
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
