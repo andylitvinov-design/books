@@ -15,6 +15,7 @@ import {
 import { MONITORING_CATALOG, monitoringCatalogItem } from '../data/assessments/catalog.js'
 import { EXPANDED_BATTERY_V3_KEYS } from '../data/assessments/expanded-battery-v3.js'
 import { EXPANDED_BATTERY_V4_KEYS } from '../data/assessments/expanded-battery-v4.js'
+import { PROFESSIONAL_BATTERY_2026_CATALOG } from '../data/assessments/professional-battery-2026.js'
 import { validateMoodInput } from '../lib/app/mood.js'
 
 const accountId = '10000000-0000-4000-8000-000000000001'
@@ -79,6 +80,7 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
     'phq-9',
     ...EXPANDED_BATTERY_V3_KEYS,
     ...EXPANDED_BATTERY_V4_KEYS,
+    ...PROFESSIONAL_BATTERY_2026_CATALOG.map((item) => item.key),
   ].sort())
   for (const key of ['scs-sf', 'functioning-review'])
     assert.equal(monitoringCatalogItem(key).startable, false)
