@@ -47,6 +47,7 @@ function row(
   duration,
   rightsStatus,
   access = 'account',
+  metadata = {},
 ) {
   return Object.freeze({
     key,
@@ -60,6 +61,7 @@ function row(
     rightsStatus,
     access,
     enabled: false,
+    ...metadata,
   })
 }
 
@@ -75,6 +77,7 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
   // 2. Mood & anxiety — 8
   row('phq-2', 'mood_anxiety', 'mood', 'A', 'Patient Health Questionnaire-2', 'PHQ-2', 2, '<1 min', RIGHTS_STATUS.READY_PUBLIC, 'public'),
   row('phq-9', 'mood_anxiety', 'mood', 'A', 'Patient Health Questionnaire-9', 'PHQ-9', 9, '~2 min', RIGHTS_STATUS.MANAGED_SAFETY_ONLY, 'managed'),
+  row('phq-8', 'mood_anxiety', 'mood', 'A', 'Patient Health Questionnaire – 8', 'PHQ-8', 8, '2–3 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/18752852/', rightsNote: 'Pfizer PHQ family: no copyright restriction; EN only here' }),
   row('gad-2', 'mood_anxiety', 'mood', 'A', 'Generalized Anxiety Disorder-2', 'GAD-2', 2, '<1 min', RIGHTS_STATUS.READY_PUBLIC, 'public'),
   row('gad-7', 'mood_anxiety', 'mood', 'A', 'Generalized Anxiety Disorder-7', 'GAD-7', 7, '1–2 min', RIGHTS_STATUS.READY_ACCOUNT),
   row('promis-anxiety-4a', 'mood_anxiety', 'mood', 'B', 'PROMIS Anxiety Short Form 4a', 'PROMIS Anxiety 4a', 4, '~1 min', RIGHTS_STATUS.RIGHTS_REVIEW),
@@ -123,6 +126,9 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
 
   // 9. Burnout & work health — 2
   row('cbi', 'burnout_work', 'stress', 'A', 'Copenhagen Burnout Inventory', 'CBI', 19, '4–5 min', RIGHTS_STATUS.RIGHTS_REVIEW),
+  row('cbi-personal', 'burnout_work', 'stress', 'A', 'Copenhagen Burnout Inventory — Personal', 'CBI Personal', 6, '2 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://nfa.dk/media/a4wheblj/cbi-scales.pdf', rightsNote: 'NFA commercial reuse with attribution: Borritz et al. (2006)' }),
+  row('cbi-work', 'burnout_work', 'stress', 'A', 'Copenhagen Burnout Inventory — Work', 'CBI Work', 7, '2 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://nfa.dk/media/a4wheblj/cbi-scales.pdf', rightsNote: 'NFA commercial reuse with attribution: Borritz et al. (2006)' }),
+  row('cbi-client', 'burnout_work', 'stress', 'B', 'Copenhagen Burnout Inventory — Client Work', 'CBI Client', 6, '2 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://nfa.dk/media/a4wheblj/cbi-scales.pdf', rightsNote: 'NFA commercial reuse with attribution: Borritz et al. (2006)' }),
   row('mbi', 'burnout_work', 'stress', 'C', 'Maslach Burnout Inventory', 'MBI', 22, '5–10 min', RIGHTS_STATUS.LICENSED_ONLY),
 
   // 10. Product-specific monitoring — 3
@@ -172,6 +178,18 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
   row('mmpi-3', 'clinician_reference', 'personality', 'C', 'Minnesota Multiphasic Personality Inventory-3', 'MMPI-3', 335, '25–50 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician'),
   row('pai', 'clinician_reference', 'personality', 'C', 'Personality Assessment Inventory', 'PAI', 344, '25–55 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician'),
   row('mini-interview', 'clinician_reference', 'personality', 'C', 'Mini International Neuropsychiatric Interview', 'MINI', 'structured modules', '15–30 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician'),
+
+  // Additional validated professional instruments. Metadata only until commercial rights, original items and scoring are cleared.
+  row('ders-16', 'emotion_recovery', 'resources', 'A', 'Difficulties in Emotion Regulation Scale – 16', 'DERS-16', 16, '2–4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4882111/', rightsNote: 'Published psychometric validation does not by itself authorize commercial digital reproduction' }),
+  row('wemwbs-14', 'overall_wellbeing', 'resources', 'B', 'Warwick–Edinburgh Mental Wellbeing Scale', 'WEMWBS', 14, '3–5 min', RIGHTS_STATUS.LICENSED_ONLY, 'account', { sourceUrl: 'https://warwick.ac.uk/services/innovations/wemwbs/how/', rightsNote: 'Commercial use requires Warwick licence' }),
+  row('swemwbs-7', 'overall_wellbeing', 'resources', 'B', 'Short Warwick–Edinburgh Mental Wellbeing Scale', 'SWEMWBS', 7, '2 min', RIGHTS_STATUS.LICENSED_ONLY, 'account', { sourceUrl: 'https://warwick.ac.uk/services/innovations/wemwbs/how/', rightsNote: 'Commercial use requires Warwick licence' }),
+  row('bdi-ii', 'mood_anxiety', 'mood', 'C', 'Beck Depression Inventory – II', 'BDI-II', 21, '5–10 min', RIGHTS_STATUS.LICENSED_ONLY, 'account', { sourceUrl: 'https://www.pearsonassessments.com/en-us/Store/Professional-Assessments/Personality-%26-Biopsychosocial/Beck-Depression-Inventory/p/100000159', rightsNote: 'Pearson digital administration licensed; qualification required' }),
+  row('bai-21', 'mood_anxiety', 'mood', 'C', 'Beck Anxiety Inventory', 'BAI', 21, '5–10 min', RIGHTS_STATUS.LICENSED_ONLY, 'account', { sourceUrl: 'https://www.pearsonassessments.com/en-us/Store/Professional-Assessments/Personality-%26-Biopsychosocial/Beck-Anxiety-Inventory/p/100000251', rightsNote: 'Pearson digital administration licensed; qualification required' }),
+  row('maas-15', 'emotion_recovery', 'resources', 'B', 'Mindful Attention Awareness Scale', 'MAAS', 15, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://ppc.sas.upenn.edu/node/214', rightsNote: 'Publisher/author commercial electronic reproduction terms not confirmed' }),
+  row('tas-20', 'emotion_recovery', 'resources', 'B', 'Toronto Alexithymia Scale – 20', 'TAS-20', 20, '4–6 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'account', { sourceUrl: 'https://doi.org/10.1016/0022-3999(94)90005-1', rightsNote: 'Copyright holder permission required; not a free online test' }),
+  row('panas-20', 'overall_wellbeing', 'mood', 'B', 'Positive and Negative Affect Schedule', 'PANAS', 20, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://doi.org/10.1037/0022-3514.54.6.1063', rightsNote: 'Commercial online item use not verified' }),
+  row('gse-10', 'resilience_coping', 'resources', 'B', 'General Self-Efficacy Scale', 'GSE', 10, '2–4 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'account', { sourceUrl: 'https://userpage.fu-berlin.de/~health/selfscal.htm', rightsNote: 'Authors support research/educational use; commercial site terms must be confirmed' }),
+  row('spane-12', 'overall_wellbeing', 'mood', 'B', 'Scale of Positive and Negative Experience', 'SPANE', 12, '3 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'account', { sourceUrl: 'https://eddiener.com/scale-of-positive-and-negative-experience-spane/', rightsNote: 'Author site limits free use to non-commercial purposes' }),
 ])
 
 export const PRODUCT_MONITOR_MODULES = Object.freeze([
