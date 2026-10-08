@@ -301,16 +301,157 @@ const stages = [
  * attendees are taking the precise initiation described alongside the image.
  */
 const levelPhotos = [
-  { src: tantraReikiArchive.images.ru[16], description: "Embodied awareness and first connection" },
-  { src: tantraReikiArchive.images.ru[13], description: "Grounded attention and the practice of energy" },
-  { src: tantraReikiArchive.images.ru[18], description: "Connection and a shared field of practice" },
-  { src: tantraReikiArchive.images.ru[19], description: "A conscious relationship with another person" },
-  { src: tantraReikiArchive.images.ru[14], description: "Creative expression and inner presence" },
-  { src: tantraReikiArchive.images.ru[20], description: "A quieter, more integrated inner state" },
-  { src: tantraReikiArchive.images.ru[15], description: "Reflection and clear attention" },
-  { src: tantraReikiArchive.images.ru[21], description: "Exploration, creation and shared practice" },
-  { src: tantraReikiArchive.images.ru[22], description: "The shared experience of an embodied practice" }
+  { src: tantraReikiArchive.images.ru[17], description: "Gentle embodied connection in a practice setting", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[14], description: "A quiet meditative moment in nature", archive: false, position: "center 52%" },
+  { src: tantraReikiArchive.images.ru[18], description: "Shared mindful experience in a group", archive: true, position: "center 44%" },
+  { src: tantraReikiArchive.images.ru[11], description: "Connection and presence during a workshop", archive: true, position: "center 46%" },
+  { src: tantraReikiArchive.images.ru[20], description: "Calm presence and creative practice", archive: true, position: "center 45%" },
+  { src: tantraReikiArchive.images.ru[10], description: "Rest, reflection and mindful integration", archive: true, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[15], description: "Quiet attention during a shared event", archive: true, position: "center 42%" },
+  { src: tantraReikiArchive.images.ru[21], description: "Embodied creative expression", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[22], description: "A shared moment from the practice archive", archive: true, position: "center 45%" }
 ] as const;
+
+
+// Restored from the author's full original Russian source, rather than the editorial summaries.
+// EN and ES are close translations of these source paragraphs; RU is verbatim.
+const authorDescriptions: Record<PublicLocale, string[][]> = {
+  "ru": [
+    [
+      "В этих энергиях весь мир вокруг вас становится вкусным, текучим, и приятная волна удовольствия начинает журчать по вашему телу.",
+      "Вы как открываете родник целительной энергии Жизни, которая мягко очищает и пробуждает внутреннюю силу.",
+      "Нежное экстатическое удовольствие, передается по всему телу и начинает пробуждать чувства и эмоции."
+    ],
+    [
+      "Здесь мы пробуждаем Жар Жизни. Страсть. Ваша энергетика начинает разгораться огнем, заполняя собой все возможное пространство вокруг, сжигая страхи, ступоры и ограничения.",
+      "Энергия жизни не только входит в вас - Вы сами и есть Жизнь, и расцветаете в ее полноте."
+    ],
+    [
+      "На 3й ступени начинает плавиться пространство. Вы начинаете ощущать соединение со всем миром вокруг.",
+      "Вы уже не рыбка в океане - а уже и есть этот Океан.",
+      "Это потрясающее состояние, когда в потоке тантра-рейки ты не просто перераспределяешь энергии внутри - но ты играешь энергиями всего пространства вокруг."
+    ],
+    [
+      "На 4й ступени ты начинаешь чувствовать Вертикаль. Не только текущий мир, но и миры над ним, Миры Богов.",
+      "Поток энергии начинает струиться с Божественных Планов, впитывая качества Богов Любви.",
+      "В этом потоке ты соединяешься с Большими Силами мира, а твой тантрический танец, твоя жизнь получает дополнительную поддержку.",
+      "Твой танец жизни становится изысканным, осознанным и филигранным."
+    ],
+    [
+      "На 5й ступени вы раскрываете Источник Силы изнутри.",
+      "Это не поток, в котором Вы купаетесь, это Поток, в котором вы купаете Вселенную, излучая изнутри.",
+      "Этот внутренний Свет не знает преград и пределов. Он может вспыхнуть, озаряя все грани реальности.",
+      "Мы учимся раскрывать внутренний бесконечный свет."
+    ],
+    [
+      "На 6 ступени мы попадаем в состояние Вечности.",
+      "Мир замирает и ты переносишься бесконечно вверх в зону всеобщего единения.",
+      "Поток выносит тебя в миры Вечного Блаженства."
+    ],
+    [
+      "На 7й ступени сознание заливается светом. Включается дополнительная высокочастотная подкачка сознания. Повышается уровень осознанности.",
+      "Уже фокуса твоего внимания достаточно, чтобы запускался процесс гармонии и очищения."
+    ],
+    [
+      "Включается Импульс творчества по уровню верхних центров. Ты уже не только гармонизируешь миры, но и созидаешь их своим вниманием."
+    ],
+    [
+      "На 9 ступени включается особая полнота. Ты обьединяешь в себе различные пласты реальности. И в этом обьединении начинает проявляться общий баланс и гармония.",
+      "Последние 3 ступени напоминают состояния Богов: Брахма, Шива, Вишну.",
+      "7-9 ступень подобна 4-6, но на более высоком уровне."
+    ]
+  ],
+  "en": [
+    [
+      "In these energies, the world around you becomes rich with sensation and fluid, and a pleasant wave of pleasure begins to flow through your body.",
+      "It is as though you open a spring of the healing energy of Life, gently cleansing and awakening your inner strength.",
+      "A gentle, ecstatic pleasure spreads through your body and begins to awaken feelings and emotions."
+    ],
+    [
+      "Here we awaken the Fire of Life. Passion. Your energy begins to blaze like fire, filling the space around you, burning through fears, paralysis and limitations.",
+      "Life energy does not simply enter you — you yourself are Life, blossoming in its fullness."
+    ],
+    [
+      "At the third level, space itself begins to melt. You begin to experience being connected with the entire world around you.",
+      "You are no longer a fish in the ocean — you are the Ocean itself.",
+      "It is an amazing state: in the Tantra Reiki flow, you do not merely move energy within yourself; you play with the energies of the whole space around you."
+    ],
+    [
+      "At the fourth level, you begin to feel the Vertical — not only this world, but the worlds above it, the Worlds of the Gods.",
+      "The flow of energy begins to stream from Divine Planes, taking on the qualities of the Gods of Love.",
+      "In this flow you connect with the Great Forces of the world, and your tantric dance — your life — receives additional support.",
+      "Your dance of life becomes refined, conscious and delicate."
+    ],
+    [
+      "At the fifth level, you discover the Source of Power within.",
+      "It is not a flow in which you bathe; it is a Flow in which you bathe the Universe, radiating from within.",
+      "This inner Light knows no barriers or limits. It can flare up, illuminating every facet of reality.",
+      "We learn to open this boundless inner light."
+    ],
+    [
+      "At the sixth level, we enter a state of Eternity.",
+      "The world becomes still, and you travel endlessly upwards into a place of universal unity.",
+      "The flow carries you into worlds of Eternal Bliss."
+    ],
+    [
+      "At the seventh level, consciousness fills with light. An additional high-frequency flow of energy is felt, and awareness grows.",
+      "The focus of your attention alone is enough to set a process of harmony and clearing in motion."
+    ],
+    [
+      "A creative impulse awakens at the level of the upper centres. You no longer merely harmonise worlds — you create them through your attention."
+    ],
+    [
+      "At the ninth level, a special fullness awakens. You unite different layers of reality within yourself, and through this union a common balance and harmony begins to emerge.",
+      "The final three levels recall the states of the Gods: Brahma, Shiva and Vishnu.",
+      "Levels 7–9 echo levels 4–6, but on a higher plane."
+    ]
+  ],
+  "es": [
+    [
+      "En estas energías, el mundo a tu alrededor se vuelve lleno de sensaciones y fluido; una agradable ola de placer comienza a recorrer tu cuerpo.",
+      "Es como abrir un manantial de energía vital sanadora que suavemente limpia y despierta tu fuerza interior.",
+      "Un placer suave y extático se extiende por el cuerpo y comienza a despertar sentimientos y emociones."
+    ],
+    [
+      "Aquí despertamos el Fuego de la Vida. La pasión. Tu energía se enciende como el fuego, llena el espacio a tu alrededor y quema miedos, bloqueos y limitaciones.",
+      "La energía de la vida no solo entra en ti: tú eres la Vida misma, floreciendo en toda su plenitud."
+    ],
+    [
+      "En la tercera etapa, el espacio empieza a fundirse. Comienzas a sentir la conexión con todo el mundo que te rodea.",
+      "Ya no eres un pez en el océano: eres el Océano mismo.",
+      "Es un estado sorprendente: en el flujo de Tantra Reiki no solo mueves energía dentro de ti, sino que juegas con la energía de todo el espacio."
+    ],
+    [
+      "En la cuarta etapa comienzas a sentir la Vertical: no solo este mundo, sino también los mundos superiores, los Mundos de los Dioses.",
+      "El flujo de energía comienza a descender de los Planos Divinos, incorporando las cualidades de los Dioses del Amor.",
+      "En este flujo te unes a las Grandes Fuerzas del mundo, y tu danza tántrica —tu vida— recibe un apoyo adicional.",
+      "Tu danza de la vida se vuelve refinada, consciente y delicada."
+    ],
+    [
+      "En la quinta etapa descubres la Fuente del Poder en tu interior.",
+      "No es un flujo en el que te bañas: es un Flujo en el que bañas al Universo, irradiando desde dentro.",
+      "Esta Luz interior no conoce barreras ni límites. Puede encenderse e iluminar cada aspecto de la realidad.",
+      "Aprendemos a abrir esta luz interior infinita."
+    ],
+    [
+      "En la sexta etapa entramos en un estado de Eternidad.",
+      "El mundo se detiene y asciendes sin fin hacia una zona de unidad universal.",
+      "El flujo te lleva a mundos de Dicha Eterna."
+    ],
+    [
+      "En la séptima etapa, la conciencia se llena de luz. Se activa una corriente adicional de energía y aumenta la consciencia.",
+      "Basta con enfocar tu atención para poner en marcha un proceso de armonía y purificación."
+    ],
+    [
+      "Se enciende un impulso creativo a través de los centros superiores. Ya no solo armonizas mundos: también los creas mediante tu atención."
+    ],
+    [
+      "En la novena etapa aparece una plenitud especial. Unes dentro de ti diferentes capas de la realidad, y de esta unión nace un equilibrio y una armonía comunes.",
+      "Las últimas tres etapas recuerdan los estados de los dioses Brahma, Shiva y Vishnu.",
+      "Las etapas 7–9 son semejantes a las 4–6, pero en un plano más elevado."
+    ]
+  ]
+};
 
 const levelApplications: Record<PublicLocale, string[]> = {
   en: [
@@ -349,9 +490,9 @@ const levelApplications: Record<PublicLocale, string[]> = {
 };
 
 const ui = {
-  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
-  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
-  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
+  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], source: "From the author’s original notes · English translation", stock: "Illustrative photograph", archival: "From the practice archive · illustrative photo", notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
+  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], source: "Ваше авторское описание ступени", stock: "Тематическая иллюстрация", archival: "Фото из архива практик · иллюстрация темы", notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
+  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], source: "De las notas originales del autor · traducción", stock: "Fotografía ilustrativa", archival: "Del archivo de prácticas · foto ilustrativa", notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
 } as const;
 
 export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
@@ -370,13 +511,13 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
         const n=i+1;
         const copy=stage[locale];
         const phase=Math.floor(i/3);
-    const photo = levelPhotos[i];
+        const photo = levelPhotos[i];
         return (
           <article className={"tantra-journey__level tantra-journey__level--phase-"+phase} id={"tantra-level-"+n} key={n} aria-labelledby={"tantra-heading-"+n}>
             <figure className="tantra-journey__photo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.src} alt={photo.description} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
-              <figcaption>{locale === "ru" ? "Фото из архива практик · иллюстрация темы" : locale === "es" ? "Foto del archivo · imagen ilustrativa" : "From our practice archive · illustrative photograph"}</figcaption>
+              <img src={photo.src} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+              <figcaption>{photo.archive ? c.archival : c.stock}</figcaption>
             </figure>
             <div className="tantra-journey__level-heading">
               <div className="tantra-journey__chapter">
@@ -388,7 +529,10 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
             </div>
             
             <div className="tantra-journey__details">
-              <p className="tantra-journey__description">{copy.intro}</p>
+              <div className="tantra-journey__author-copy" aria-label={c.source}>
+                <p className="tantra-journey__source-label">{c.source}</p>
+                {authorDescriptions[locale][i].map((paragraph, paragraphIndex) => <p key={paragraphIndex}>{paragraph}</p>)}
+              </div>
               <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
               <div className="tantra-journey__settings">
                 <h4>{c.settings}</h4>
