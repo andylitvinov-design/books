@@ -44,7 +44,7 @@ export default async function ServiceDetail({params}:PageProps){
         <h1>{service.copy.title}</h1>
         <p>{service.copy.shortDescription}</p>
         <div className="hh-actions">
-          <Link className="services-studio-primary" href={es ? `/es/services/free-situation-review?topic=${isFree ? "wellbeing" : "goal"}` : `/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Запросить бесплатно":es?"Solicitar gratis":"Request free service"):(ru?"Запросить услугу":es?"Consultar disponibilidad":"Request this service")}<span aria-hidden="true">→</span></Link>
+          <Link id="request-service" className="services-studio-primary" href={es ? `/es/services/free-situation-review?topic=${isFree ? "wellbeing" : "goal"}` : `/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Запросить бесплатно":es?"Solicitar gratis":"Request free service"):(ru?"Запросить услугу":es?"Consultar disponibilidad":"Request this service")}<span aria-hidden="true">→</span></Link>
           {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методичка: уровни здоровья":es?"Guía: Niveles de salud":"Guide: Levels of Health"}</Link>}
           <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":es?"Sobre el profesional":"About practitioner"}</Link>
         </div>
@@ -55,6 +55,6 @@ export default async function ServiceDetail({params}:PageProps){
       <div><p>{service.copy.description||service.copy.shortDescription}</p>{es&&<p className="remedy-disclaimer">La descripción facilitada por el profesional puede permanecer en inglés mientras se prepara su traducción.</p>}<p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":es?"En línea / presencial":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":es?"Presencial":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
     </section>
     <p className="remedy-disclaimer services-disclaimer">{ru?"Информация представлена для выбора формата поддержки и не является медицинской диагностикой или гарантией результата.":es?"La información ayuda a elegir una modalidad de acompañamiento; no constituye diagnóstico médico ni garantía de resultados.":"This information is for choosing a support format and is not medical diagnosis or a guarantee of outcome."}</p>
-    <PublicConsultationCta locale={locale as PublicLocale}/>
+    {practitioner.slug === "andy-litvinov" ? <PublicConsultationCta locale={locale as PublicLocale}/> : null}
   </main>
 }
