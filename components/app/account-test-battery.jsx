@@ -212,6 +212,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         if (JSON.stringify(ids) === JSON.stringify(data.activeTestPlan.definitionIds)) {
           setPlan(data.activeTestPlan)
           try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Private session. */ }
+          // A matching existing battery also resolves the one-time OAuth handoff.
+          // Leaving ?selection=pending causes an apparently unfinished sign-in.
+          router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
         } else setConflict(pending.keys)
         return
       }
