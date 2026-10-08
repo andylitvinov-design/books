@@ -21,5 +21,8 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   assert.match(explorer, /onStart\(activeBattery\)/)
   assert.match(explorer, /aria-expanded=\{customizeOpen\}/)
   assert.match(explorer, /showAll \? visible : visible\.slice\(0, 8\)/)
+  assert.match(explorer, /if \(aSelected !== bSelected\) return aSelected \? -1 : 1/)
+  assert.match(explorer, /selectedKeys\.includes\(a\.key\)/)
+  assert.match(explorer, /selectedKeys\.includes\(b\.key\)/)
   assert.match(cabinet, /<MoodCheckIn/)
 })
