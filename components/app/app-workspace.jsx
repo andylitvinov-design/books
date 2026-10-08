@@ -165,17 +165,6 @@ export default function AppWorkspace({ locale, path = [] }) {
       router.replace(root)
     }
   }
-  async function openPlanStep(plan) {
-    const definition = getDefinitionById(plan.definitionIds[plan.currentIndex])
-    const existing = data?.runs?.find((run) => run.definitionId === definition.id && ['draft', 'in_progress'].includes(run.status))
-    const run = existing || await appFetch('runs', {
-      definitionKey: definition.key,
-      definitionVersion: definition.version,
-      instrumentLocale: definition.instrumentLocale,
-      operationId: crypto.randomUUID(),
-    })
-    router.push(`${root}/runs/${run.id}?plan=${encodeURIComponent(plan.id)}`)
-  }
   async function completePlan(result) {
     const planId = searchParams.get('plan')
     if (!planId) {
