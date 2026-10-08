@@ -67,7 +67,7 @@ test("every applicable public route has a responsive global fallback without two
   assert.match(component, /data-sitewide-capture=\{kind\}/);
   assert.match(component, /services\/free-situation-review/);
   assert.match(component, /sitewide-capture-title/);
-  assert.match(component, /Holistic House Academy/);
+  assert.match(component, /Explore the Academy/);
   assert.match(local, /data-consultation-cta/);
   assert.match(local, /data-conversion-kind=\{mode\}/);
   assert.match(local, /trainingEnquiryUrl\(locale, pathname\)/);
@@ -82,7 +82,7 @@ test("all three languages explain safe voluntary next steps and historic course 
   const source = read("components/sitewide-lead-capture.tsx");
   const shared = read("components/public-consultation-cta.tsx");
   for (const text of [
-    "No obligation", "Бесплатный разбор", "Sin compromiso",
+    "No obligation", "Бесплатный разбор", "No hay obligación",
     "historical archive materials are not necessarily open", "архивные программы", "del archivo",
   ]) {
     assert.ok((source + shared).toLowerCase().includes(text.toLowerCase()), text);
