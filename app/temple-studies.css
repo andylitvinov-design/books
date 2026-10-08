@@ -543,3 +543,70 @@
   .temple-video-series-content { padding: 13px; }
   .temple-video-archive-heading p { font-size: 13px; }
 }
+
+
+/* Editorial index: exact original video collections, grouped by learning stage. */
+.temple-video-index {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(235px, 40%);
+  gap: 26px;
+  align-items: start;
+  background: #f7efe4;
+  border: 1px solid #e5d4c2;
+  border-radius: 18px;
+  padding: clamp(21px, 3vw, 32px);
+  margin: 26px 0 0;
+}
+.temple-video-index-intro h2 {
+  font-family: var(--font-serif, Georgia, serif);
+  color: #3d2b20;
+  font-weight: 550;
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1.2;
+  margin: 9px 0 14px;
+}
+.temple-video-index-intro > p:not(.homeopathy-kicker) {
+  color: #665449;
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 0 0 12px;
+}
+.temple-video-index-intro .temple-video-index-total {
+  color: #7b5134 !important;
+  font-size: 13px !important;
+  font-weight: 700;
+}
+.temple-video-index-links { display: grid; gap: 7px; }
+.temple-video-index-links a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 13px;
+  min-height: 50px;
+  color: #4d3729;
+  border: 1px solid #e4d6c7;
+  border-radius: 10px;
+  background: #fffcf8;
+  text-decoration: none;
+}
+.temple-video-index-links a:hover,
+.temple-video-index-links a:focus-visible { background: #f0e2d2; border-color: #aa8a6e; }
+.temple-video-index-links a > span { font-size: 13px; font-weight: 650; line-height: 1.4; }
+.temple-video-index-links strong { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 12px; color: #7a553d; }
+.temple-video-series-summary-text { display: grid; gap: 6px; min-width: 0; }
+.temple-video-series-summary-text strong { font-size: 16px; }
+.temple-video-series-summary-text small { color: #7f6e60; font-weight: 400; font-size: 13px; line-height: 1.5; }
+.temple-video-grid { list-style: none; margin: 0; padding: 0; }
+.temple-video-lesson-title { display: grid; gap: 4px; }
+.temple-video-lesson-title span { font-size: 11px; color: #88684e; text-transform: uppercase; letter-spacing: .08em; }
+.temple-video-repeats { margin: 16px 0 0; border-top: 1px solid #eaded3; padding-top: 14px; color: #745d4e; font-size: 13px; line-height: 1.6; }
+@media (max-width: 1100px) {
+  .temple-video-index { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .temple-video-index { padding: 21px 17px; gap: 12px; border-radius: 14px; }
+  .temple-video-index-links a { flex-wrap: wrap; gap: 6px; }
+  .temple-video-series-summary-text strong { font-size: 15px; }
+  .temple-video-series-summary-text small { font-size: 12px; }
+}
