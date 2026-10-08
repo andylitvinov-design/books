@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { EXPANDED_BATTERY_V3_KEYS } from '../data/assessments/expanded-battery-v3.js'
+import { EXPANDED_BATTERY_V4_KEYS } from '../data/assessments/expanded-battery-v4.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { safetySignal } from '../lib/assessments/safety.js'
@@ -12,7 +13,7 @@ const answers = (definition, value) =>
 
 test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 42 + EXPANDED_BATTERY_V3_KEYS.length)
+  assert.equal(items.length, 42 + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length)
   assert.deepEqual(
     items.map((item) => item.key).sort(),
     [
@@ -59,6 +60,7 @@ test('all active published monitoring tests resolve to executable definitions', 
     'phq-4',
     'phq-9',
     ...EXPANDED_BATTERY_V3_KEYS,
+    ...EXPANDED_BATTERY_V4_KEYS,
   ].sort(),
   )
   for (const item of items) {
