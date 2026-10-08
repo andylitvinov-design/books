@@ -10,6 +10,14 @@ import styles from "./sitewide-lead-capture.module.css";
 
 const copy = {
   en: {
+    network: {
+      eyebrow: "Holistic House practitioner network",
+      title: "Explore a service with the right practitioner.",
+      description: "Review the practitioner's services and request the one that interests you. Each independent practitioner confirms their own availability, format and fees.",
+      primary: "Explore practitioner services",
+      service: "Request this service",
+      secondary: "See all services",
+    },
     training: {
       eyebrow: "Explore training with Holistic House",
       title: "Would you like to learn this practice?",
@@ -33,6 +41,14 @@ const copy = {
     },
   },
   ru: {
+    network: {
+      eyebrow: "Сеть практиков Holistic House",
+      title: "Выберите специалиста под свой запрос.",
+      description: "Посмотрите услуги выбранного практика и отправьте запрос. Условия, доступность и стоимость каждый практик уточняет индивидуально.",
+      primary: "Посмотреть услуги практика",
+      service: "Запросить эту услугу",
+      secondary: "Все услуги",
+    },
     training: {
       eyebrow: "Обучение в Holistic House",
       title: "Хотите изучить эту практику?",
@@ -56,6 +72,14 @@ const copy = {
     },
   },
   es: {
+    network: {
+      eyebrow: "Red de profesionales de Holistic House",
+      title: "Encuentra al profesional para tu consulta.",
+      description: "Explora los servicios y solicita el que te interesa. Cada profesional confirma su disponibilidad, modalidad y tarifas de manera individual.",
+      primary: "Explorar los servicios",
+      service: "Solicitar este servicio",
+      secondary: "Todos los servicios",
+    },
     training: {
       eyebrow: "Formación en Holistic House",
       title: "¿Quieres aprender esta práctica?",
@@ -85,14 +109,18 @@ export function SitewideLeadCapture() {
   const route = classifyPublicLead(pathname);
   if (!route) return null;
   const locale = route.locale as "en" | "ru" | "es";
-  const kind = route.kind as "training" | "reading" | "personal";
+  const kind = route.kind as "training" | "reading" | "personal" | "network";
   const c = copy[locale][kind];
-  const primary = kind === "training"
-    ? trainingEnquiryUrl(locale, pathname)
+  const relative = pathname.replace(/^\/(en|ru|es)(?=\/|$)/, "");
+  const networkService = kind === "network" && /^\/services\/[a-z0-9-]+\/[a-z0-9-]+/.test(relative);
+  const networkMaster = kind === "network" && /^\/masters\/[a-z0-9-]+/.test(relative);
+  const primary = kind === "training" ? trainingEnquiryUrl(locale, pathname)
+    : kind === "network" ? networkService ? "#request-service" : networkMaster ? "#practitioner-services" : "/" + locale + "/services"
     : "/" + locale + "/services/free-situation-review";
   const secondary = kind === "training" ? "/" + locale + "/academy"
-    : kind === "reading" ? "/" + locale + "/services"
+    : kind === "reading" || kind === "network" ? "/" + locale + "/services"
     : "/" + locale + "/about";
+  const primaryLabel = networkService ? copy[locale].network.service : c.primary;
   const external = kind === "training";
   return (
     <aside className={styles.section} aria-labelledby="sitewide-capture-title" data-sitewide-capture={kind} lang={locale}>
@@ -103,13 +131,13 @@ export function SitewideLeadCapture() {
           <p className={styles.description}>{c.description}</p>
           <div className={styles.actions}>
             <AcquisitionEventLink className={styles.primary} event={external ? "contact_click" : "service_request_start"} href={primary} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-              {c.primary} {external ? <ArrowUpRight aria-hidden="true" size={19} /> : <ArrowRight aria-hidden="true" size={19}/>}
+              {primaryLabel} {external ? <ArrowUpRight aria-hidden="true" size={19} /> : <ArrowRight aria-hidden="true" size={19}/>}
             </AcquisitionEventLink>
-            <Link className={styles.secondary} href={secondary}>{c.secondary} <ArrowRight aria-hidden="true" size={16}/></Link>
+            {kind !== "network" ? <Link className={styles.secondary} href={secondary}>{c.secondary} <ArrowRight aria-hidden="true" size={16}/></Link> : null}
           </div>
         </div>
         <div className={styles.portrait}>
-          <Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 767px) 110px, 224px" />
+          <Image src={kind === "network" ? "/images/holistic-house/hero-olive-incense.webp" : "/images/holistic-house/andy-about.png"} alt="" fill sizes="(max-width: 767px) 110px, 224px" />
         </div>
       </div>
     </aside>
