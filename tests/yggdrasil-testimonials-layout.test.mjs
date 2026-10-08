@@ -33,3 +33,13 @@ test("testimonial videos are removed from the English explanation guide", async 
   assert.match(data, /wN_SNwZ1Epo/);
   assert.match(data, /3Apc8P1Yudc/);
 });
+
+
+test("unnumbered course navigation items keep full-width labels", async () => {
+  const [nav, css] = await Promise.all([
+    readFile("components/reiki-course-side-nav.tsx", "utf8"),
+    readFile("app/academy.css", "utf8"),
+  ]);
+  assert.match(nav, /reiki-course-side-nav__item--wide/);
+  assert.match(css, /\.reiki-course-side-nav__item--wide \{/);
+});
