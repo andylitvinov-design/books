@@ -79,6 +79,7 @@ const copy = {
     basicLead: "See what you will explore at each level. Each stage has its own practices and attunements; open the complete course for lessons and videos.",
     basicLevel: "Level",
     basicSettings: "attunements",
+    basicStepOpen: "Explore level",
     photosEyebrow: "Source preservation",
     photosTitle: "Historical program imagery",
     photosLead: "All content images from the public PsiTrends Reiki Yggdrasil source page are preserved here: 19 on the English source page. Analytics pixels and interface icons are intentionally excluded.",
@@ -105,6 +106,7 @@ const copy = {
     basicLead: "Коротко и понятно о каждой ступени. Полные описания, настройки, уроки и видео находятся на странице Базового курса.",
     basicLevel: "Уровень",
     basicSettings: "настроек",
+    basicStepOpen: "Подробнее о ступени",
     photosEyebrow: "Сохранение источника",
     photosTitle: "Исторические изображения программы",
     photosLead: "Здесь сохранены все содержательные изображения публичной страницы Reiki Yggdrasil на PsiTrends: 14 фотографий и иллюстраций русской версии. Служебные иконки и аналитические пиксели намеренно не считаются материалами курса.",
@@ -131,6 +133,7 @@ const copy = {
     basicLead: "Descubre qué se aprende en cada nivel. Abre el Curso Básico para ver prácticas, sintonizaciones, lecciones y videos.",
     basicLevel: "Nivel",
     basicSettings: "sintonizaciones",
+    basicStepOpen: "Explorar nivel",
     photosEyebrow: "Preservación de la fuente",
     photosTitle: "Imágenes históricas",
     photosLead: "Se conservan todas las imágenes de contenido de la fuente pública; los iconos de interfaz y píxeles analíticos no se cuentan como material del curso.",
@@ -220,8 +223,10 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           <p className="homeopathy-kicker">{text.basicEyebrow}</p>
           <h2>{text.basicTitle}</h2>
           <p>{text.basicLead}</p>
-          <Link className="yggdrasil-source-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description}<span aria-hidden="true">→</span></Link>
-          <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}<span aria-hidden="true">→</span></Link>
+          <div className="yggdrasil-basic-course-actions">
+            <Link className="yggdrasil-source-link yggdrasil-basic-course-start" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}<span aria-hidden="true">→</span></Link>
+            <Link className="yggdrasil-source-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description}<span aria-hidden="true">↗</span></Link>
+          </div>
         </div>
         <div className="yggdrasil-basic-levels">
           {basicSteps.map((step) => (
@@ -243,7 +248,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
                 <h3>{step.title[locale]}</h3>
                 <p>{basicStepDescriptions[step.number][locale]}</p>
                 <Link className="yggdrasil-basic-level-open" href={`/${locale}/academy/reiki/yggdrasil/basic-course#${step.id.toLowerCase()}`}>
-                  {text.open} {text.basicLevel.toLowerCase()} {step.number} <span aria-hidden="true">→</span>
+                  {text.basicStepOpen} {step.number} <span aria-hidden="true">→</span>
                 </Link>
               </div>
             </article>
