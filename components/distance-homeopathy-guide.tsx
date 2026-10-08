@@ -153,6 +153,7 @@ export function distanceHomeopathyMetadata(locale: PublicLocale) {
   };
 }
 
+
 export function DistanceHomeopathyGuide({ locale }: { locale: PublicLocale }) {
   const text = copy[locale];
 
@@ -161,117 +162,85 @@ export function DistanceHomeopathyGuide({ locale }: { locale: PublicLocale }) {
       <PublicSiteHeader locale={locale} />
       <LibraryBackLink locale={locale} />
 
-      <section className={styles.hero}>
-        <div className={styles.heroCopy}>
-          <p className="homeopathy-kicker">{text.kicker}</p>
+      <article className={styles.article}>
+        <header className={styles.hero}>
+          <p className={styles.eyebrow}>{text.kicker}</p>
           <h1>{text.heading}</h1>
           <h2>{text.subheading}</h2>
           <p className={styles.lead}>{text.lead}</p>
-          <div className={styles.heroActions}>
-            <Link className="hh-primary" href={`/${locale}/homeopathy/remedies`}>{text.remedies}</Link>
-            <Link href={`/${locale}/library`}>{text.library}</Link>
-          </div>
-        </div>
-        <div className={styles.heroImage}>
-          <Image
-            alt={locale === "ru" ? "Флаконы, стакан воды и фотографии на рабочем столе" : locale === "es" ? "Frascos, un vaso de agua y fotografías sobre una mesa" : "Remedy bottles, a glass of water, and photographs on a desk"}
-            fill
-            priority
-            sizes="(max-width: 760px) 100vw, 46vw"
-            src="/images/holistic-house/distance-homeopathy.webp"
-          />
-        </div>
-      </section>
+          <figure className={styles.heroImage}>
+            <Image
+              alt={locale === "ru" ? "Флаконы, стакан воды и фотографии на рабочем столе" : locale === "es" ? "Frascos, un vaso de agua y fotografías sobre una mesa" : "Remedy bottles, a glass of water, and photographs on a desk"}
+              fill
+              priority
+              sizes="(max-width: 820px) 100vw, 780px"
+              src="/images/holistic-house/distance-homeopathy.webp"
+            />
+          </figure>
+        </header>
 
-      <aside className={styles.safety}>
-        <strong>{text.safetyTitle}</strong>
-        <p>{text.safetyText}</p>
-      </aside>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}>
-          <p className="homeopathy-kicker">01</p>
-          <h2>{text.baseTitle}</h2>
-          <p>{text.baseIntro}</p>
-        </div>
-
-        <div className={styles.optionGrid}>
-          <article>
-            <span>01</span>
-            <h3>{text.optionOneTitle}</h3>
-            <p>{text.optionOneText}</p>
-          </article>
-          <article>
-            <span>02</span>
-            <h3>{text.optionTwoTitle}</h3>
-            <p>{text.optionTwoText}</p>
-          </article>
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}>
-          <p className="homeopathy-kicker">02</p>
-          <h2>{text.photoTitle}</h2>
-          <p>{text.photoLead}</p>
-        </div>
-        <ol className={styles.steps}>
-          {text.photoSteps.map((step, index) => (
-            <li key={step}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <p>{step}</p>
-            </li>
-          ))}
-        </ol>
-        <aside className={styles.review}>
-          <h3>{text.observeTitle}</h3>
-          <p>{text.observeText}</p>
+        <aside className={styles.safety}>
+          <strong>{text.safetyTitle}.</strong> {text.safetyText}
         </aside>
-      </section>
 
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}>
-          <p className="homeopathy-kicker">03</p>
-          <h2>{text.advancedTitle}</h2>
+        <section className={styles.section} aria-labelledby="guide-basic">
+          <h2 id="guide-basic">{text.baseTitle}</h2>
+          <p>{text.baseIntro}</p>
+          <h3>{text.optionOneTitle}</h3>
+          <p>{text.optionOneText}</p>
+          <h3>{text.optionTwoTitle}</h3>
+          <p>{text.optionTwoText}</p>
+        </section>
+
+        <section className={styles.section} aria-labelledby="guide-photos">
+          <h2 id="guide-photos">{text.photoTitle}</h2>
+          <p>{text.photoLead}</p>
+          <ol className={styles.steps}>
+            {text.photoSteps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          <div className={styles.review}>
+            <h3>{text.observeTitle}</h3>
+            <p>{text.observeText}</p>
+          </div>
+        </section>
+
+        <section className={styles.section} aria-labelledby="guide-advanced">
+          <h2 id="guide-advanced">{text.advancedTitle}</h2>
           <p>{text.advancedLead}</p>
-        </div>
-
-        <div className={styles.advancedBlock}>
           <h3>{text.selfTitle}</h3>
-          <div className={styles.advancedGrid}>
-            {text.selfItems.map((item, index) => (
-              <article key={item.title}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
+          <ol className={styles.practices}>
+            {text.selfItems.map((item) => (
+              <li key={item.title}>
                 <h4>{item.title}</h4>
                 <p>{item.text}</p>
-              </article>
+              </li>
             ))}
-          </div>
-        </div>
-
-        <div className={styles.advancedBlock}>
+          </ol>
           <h3>{text.sessionTitle}</h3>
-          <div className={styles.sessionGrid}>
-            {text.sessionItems.map((item) => (
-              <article key={item.title}>
-                <h4>{item.title}</h4>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+          {text.sessionItems.map((item) => (
+            <div className={styles.sessionItem} key={item.title}>
+              <h4>{item.title}</h4>
+              <p>{item.text}</p>
+            </div>
+          ))}
+        </section>
 
-      <section className={styles.finish}>
-        <div>
-          <p className="homeopathy-kicker">04</p>
-          <h2>{text.finishTitle}</h2>
+        <section className={styles.section} aria-labelledby="guide-finish">
+          <h2 id="guide-finish">{text.finishTitle}</h2>
           <p>{text.finishText}</p>
-        </div>
-        <Link className="hh-primary" href={`/${locale}/homeopathy/remedies`}>{text.remedies}</Link>
-      </section>
+        </section>
 
-      <PublicConsultationCta locale={locale} />
+        <nav className={styles.articleLinks} aria-label={text.library}>
+          <Link className="hh-primary" href={`/${locale}/homeopathy/remedies`}>{text.remedies}</Link>
+          <Link href={`/${locale}/library`}>{text.library}</Link>
+        </nav>
+      </article>
+
+      <div className={styles.consultation}>
+        <PublicConsultationCta locale={locale} />
+      </div>
     </main>
   );
 }
