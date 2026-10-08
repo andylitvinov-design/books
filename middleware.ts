@@ -55,7 +55,7 @@ export function middleware(request: NextRequest) {
   const academyVideoPage = /^\/(en|ru|es)\/academy(?:\/|$)/.test(request.nextUrl.pathname)
   const csp = [
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentEval}`, "style-src 'self' 'unsafe-inline'",
-    videoManager || academyVideoPage ? "img-src 'self' data: https://i.ytimg.com" : "img-src 'self' data:",
+    videoManager || academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com" : "img-src 'self' data:",
     videoManager ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : academyVideoPage ? "frame-src https://www.youtube-nocookie.com" : "frame-src 'none'",
     "font-src 'self'", "connect-src 'self'", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')
