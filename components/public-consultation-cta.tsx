@@ -1,6 +1,7 @@
 "use client";
 import { ArrowUpRight, ArrowRight } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-capture";
@@ -97,7 +98,10 @@ const copy = {
 
 export function PublicConsultationCta({ locale, id }: { locale: "en" | "ru" | "es"; id?: string }) {
   const pathname = usePathname();
-  const route = classifyPublicLead(pathname);
+  // Match the server-rendered default on first hydration; resolve route intent after mount.
+  const [clientPath, setClientPath] = useState<string | null>(null);
+  useEffect(() => setClientPath(pathname), [pathname]);
+  const route = clientPath ? classifyPublicLead(clientPath) : null;
   const mode = route?.kind === "training" ? "training" : route?.kind === "reading" ? "reading" : "personal";
   const text = copy[locale][mode];
   const whatsappUrl = mode === "training"
