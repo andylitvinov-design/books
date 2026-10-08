@@ -7,7 +7,7 @@ import styles from "@/app/[locale]/services/offerings.module.css";
 const copy = {
   ru: {
     title: "Запросить бесплатную консультацию",
-    intro: "Оставьте короткий запрос. Я прочту его, и мы сможем договориться о бесплатной вводной беседе, чтобы прояснить вашу ситуацию и возможный следующий шаг.",
+    intro: "Выберите тему и, если хотите, напишите пару слов о запросе. Нажатие на кнопку подготовит сообщение в WhatsApp, которое вы отправите сами. Регистрация не нужна.",
     topic: "Что хотите разобрать?",
     topicOptions: [
       { value: "goal", label: "Цель или важное решение" },
@@ -17,12 +17,12 @@ const copy = {
     ],
     name: "Как к вам обращаться?",
     namePlaceholder: "Имя (необязательно)",
-    situation: "Где сейчас ощущается точка ступора?",
-    situationPlaceholder: "Что происходит и что не удаётся сдвинуть?",
+    situation: "Пара слов о ситуации (необязательно)",
+    situationPlaceholder: "Можете оставить поле пустым и рассказать лично. Не указывайте медицинские или другие чувствительные сведения.",
     outcome: "Куда хотите прийти?",
     outcomePlaceholder: "Ваш желаемый результат (необязательно)",
     submit: "Подготовить запрос в WhatsApp",
-    pending: "Откроется WhatsApp с вашим сообщением. Проверьте его и нажмите «Отправить» — до этого ничего не отправляется.",
+    pending: "После нажатия откроется WhatsApp с подготовленным сообщением. Ваша заявка НЕ отправляется автоматически: проверьте сообщение и нажмите «Отправить» в WhatsApp.",
     resumed: "Запрос подготовлен, но ещё не отправлен. Если WhatsApp не открылся, перейдите по ссылке.",
     resume: "Открыть подготовленный запрос",
     telegram: "Или написать напрямую в Telegram",
@@ -32,7 +32,7 @@ const copy = {
   },
   en: {
     title: "Request your free personal consultation",
-    intro: "Send a short request to begin. I will read it, and we can arrange a free introductory conversation about your situation and a possible next step.",
+    intro: "Choose a topic and, if you wish, add a short note. The button prepares a WhatsApp message for you to review and send yourself. No account required.",
     topic: "What would you like to explore?",
     topicOptions: [
       { value: "goal", label: "A goal or important decision" },
@@ -42,12 +42,12 @@ const copy = {
     ],
     name: "How should I address you?",
     namePlaceholder: "First name (optional)",
-    situation: "Where do you feel stuck?",
-    situationPlaceholder: "What is happening and what is not moving forward?",
+    situation: "A few words about your situation (optional)",
+    situationPlaceholder: "You can leave this blank and explain in person. Please avoid medical or other sensitive details.",
     outcome: "What would you like instead?",
     outcomePlaceholder: "Your desired outcome (optional)",
     submit: "Prepare request in WhatsApp",
-    pending: "WhatsApp will open with your message. Review it and tap Send — nothing is sent before you confirm.",
+    pending: "WhatsApp opens with your prepared message. This does NOT automatically submit a request; review it and tap Send in WhatsApp.",
     resumed: "Your request is prepared but not sent. If WhatsApp did not open, use the link.",
     resume: "Open prepared request",
     telegram: "Or write directly on Telegram",
@@ -75,13 +75,12 @@ export function FreeSituationReviewForm({ locale }: { locale: Locale }) {
     const name = String(form.get("name") || "").trim().slice(0, 100);
     const situation = String(form.get("situation") || "").trim().slice(0, 900);
     const outcome = String(form.get("outcome") || "").trim().slice(0, 500);
-    if (!situation) return;
     const message = [
       t.messageTitle,
       "",
       t.topic + ": " + (t.labels[topic] || t.labels.goal),
       name ? t.name + " " + name : "",
-      t.situation + " " + situation,
+      situation ? t.situation + " " + situation : "",
       outcome ? t.outcome + " " + outcome : "",
     ].filter(Boolean).join("\n");
     const url = "https://wa.me/14376066502?text=" + encodeURIComponent(message);
@@ -105,7 +104,7 @@ export function FreeSituationReviewForm({ locale }: { locale: Locale }) {
       </label>
       <label>
         <span>{t.situation}</span>
-        <textarea name="situation" required rows={4} maxLength={900} placeholder={t.situationPlaceholder}/>
+        <textarea name="situation" rows={3} maxLength={900} placeholder={t.situationPlaceholder}/>
       </label>
       <label>
         <span>{t.outcome}</span>
