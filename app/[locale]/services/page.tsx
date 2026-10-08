@@ -8,6 +8,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PageVideo } from "@/components/page-video";
 import { PersonalWorkJourney } from "@/components/personal-work-journey";
+import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
@@ -380,6 +381,8 @@ export default async function ServicesPage({ params }: PageProps) {
           <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true">→</span></Link>
         </div>
       </section>
+
+      <PersonalTestimonials locale={locale as Locale} variant="services" />
 
       <PageVideo slot="consultation" locale={locale} />
 

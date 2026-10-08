@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PersonalWorkJourney } from "@/components/personal-work-journey";
+import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
@@ -197,6 +198,8 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           </div>
         </section>
       ) : null}
+
+      <PersonalTestimonials locale={locale} variant="home" />
 
       <section className="service-home-about" aria-labelledby="service-home-about-title">
         <div>
