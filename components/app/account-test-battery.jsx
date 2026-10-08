@@ -178,7 +178,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
     }
     restore()
     return () => { alive = false; once.current = false }
-  }, []) // Selection is processed once, after the account's explicit onboarding consent.
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- one handoff per mount, after onboarding.
 
   async function choose(entriesToStart) {
     const keys = entriesToStart.map((entry) => entry.key)
@@ -252,7 +252,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
                 <div className={styles.status}>
                   <strong className={row.run ? styles.inProgress : row.result ? styles.completed : ''}>{status}</strong>
                   {row.result && !row.run
-                    ? <span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span>
+                    ? <><span>100% {c.percent}</span><span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span></>
                     : <><progress max="100" value={row.progress} aria-label={status} /><span>{row.progress}% {c.percent}</span></>}
                 </div>
               </div>
