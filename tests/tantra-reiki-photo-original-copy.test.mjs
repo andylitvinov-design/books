@@ -10,8 +10,8 @@ test("Each level prioritises its original author passage, not the editorial para
   ]);
   assert.match(code, /originalAuthorDescription\(locale, i\)\.map/);
   assert.doesNotMatch(code, /<p className="tantra-journey__description">\{copy\.intro\}<\/p>/);
-  assert.match(code, /locale !== "es" \?/);
-  assert.match(code, /tantra-journey__spanish-intro/);
+  assert.match(code, /if \(locale === "es"\) return spanishAuthorDescriptions\[levelIndex\]/);
+  assert.doesNotMatch(code, /tantra-journey__spanish-intro/);
   assert.match(code, /tantraReikiArchive\.blocks\.ru\[sourceIndex\]\.text/);
   assert.match(code, /originalRussianEnglishTranslation\.blocks\[sourceIndex\]\.text/);
   const source = JSON.parse(archived);
