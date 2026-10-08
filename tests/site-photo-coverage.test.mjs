@@ -61,7 +61,7 @@ test("Academy featured courses and six directions have distinct suitable cover a
   assert.match(hub, /i\.ytimg\.com\/vi\//);
   assert.match(hub, /recordImage\(record, index\)/);
   const decks = hub.slice(hub.indexOf("const imageDeck"), hub.indexOf("function recordImage"));
-  for (const [name, body] of [...decks.matchAll(/  ([a-z]+): \[([\s\S]*?)\],/g)]) {
+  for (const [, name, body] of [...decks.matchAll(/  ([a-z]+): \[([\s\S]*?)\],/g)]) {
     const items = [...body.matchAll(/"(\/[^"]+)"/g)].map(x => x[1]);
     assert.ok(items.length >= 4, "Insufficient rotation for " + name);
     assert.equal(items.length, new Set(items).size, "Repeats within " + name);
