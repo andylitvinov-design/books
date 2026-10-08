@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
-import { isSupportedLocale, getHomeopathyLocaleParams } from "@/data/remedies";
+import { getHomeopathyLocaleParams } from "@/data/remedies";
+import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "../offerings.module.css";
 
@@ -35,25 +36,39 @@ const copy = {
     ],
     back: "All personal services",
   },
+  es: {
+    title: "Consulta personal gratuita",
+    shortName: "Evaluación gratuita de tu situación",
+    description: "Una primera conversación gratuita sobre tu objetivo, negocio o dificultad personal para localizar el bloqueo y explorar próximos pasos.",
+    eyebrow: "Evaluación inicial gratuita · sin compromiso",
+    lead: "No tienes que elegir una terapia antes de hablar conmigo. Cuéntame qué te sucede: en una conversación gratuita exploraremos dónde te sientes bloqueado/a, tus recursos y posibles próximos pasos. No se trata de un diagnóstico médico.",
+    cards: [
+      { title: "1. Tu situación", text: "Cuéntame qué te gustaría cambiar o conseguir." },
+      { title: "2. El bloqueo", text: "Exploramos juntos qué dificulta tu avance o claridad." },
+      { title: "3. Próximo paso", text: "Identificamos posibilidades de crecimiento; tú decides si quieres continuar." },
+    ],
+    back: "Todos los servicios personales",
+  },
 } as const;
 
-export function generateStaticParams() { return getHomeopathyLocaleParams(); }
+export function generateStaticParams() { return [...getHomeopathyLocaleParams(), { locale: "es" }]; }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) return { title: "Not found" };
+  if (!isPublicLocale(locale)) return { title: "Not found" };
   const t = copy[locale];
   return {
     metadataBase: metadataBaseFor(),
     title: t.title + " — Holistic House",
     description: t.description,
-    alternates: { canonical: "/" + locale + "/services/free-situation-review", languages: { en: "/en/services/free-situation-review", ru: "/ru/services/free-situation-review" } },
+    alternates: { canonical: "/" + locale + "/services/free-situation-review", languages: { en: "/en/services/free-situation-review", ru: "/ru/services/free-situation-review", es: "/es/services/free-situation-review" } },
   };
 }
 
 export default async function FreeSituationReviewPage({ params }: Props) {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) notFound();
+  if (!isPublicLocale(locale)) notFound();
   const t = copy[locale];
+  const es = locale === "es";
   return (
     <main className={styles.page} lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -66,14 +81,14 @@ export default async function FreeSituationReviewPage({ params }: Props) {
       <div className={styles.contentGrid}>
         <FreeSituationReviewForm locale={locale} />
         <aside className={styles.article}>
-          <h2>{locale === "ru" ? "После разбора" : "After the review"}</h2>
-          <p>{locale === "ru" ? "Вы можете остановиться на первичном разборе или выбрать один из трёх форматов индивидуальной работы. Никакой обязательной покупки нет." : "You can stop after the initial review or explore one of three personal-work services. There is no obligation to purchase anything."}</p>
+          <h2>{locale === "ru" ? "После разбора" : es ? "Después de la conversación" : "After the review"}</h2>
+          <p>{locale === "ru" ? "Вы можете остановиться на первичном разборе или выбрать один из трёх форматов индивидуальной работы. Никакой обязательной покупки нет." : es ? "Puedes quedarte con la conversación inicial o explorar una de tres modalidades: psicohomeopatía, terapia con imágenes o constelaciones. No hay obligación de compra." : "You can stop after the initial review or explore one of three personal-work services. There is no obligation to purchase anything."}</p>
           <ul>
-            <li><Link href={"/" + locale + "/services/andy-litvinov/homeopathy-consultation"}>{locale === "ru" ? "Гомеопатия — обсуждение ресурса и самочувствия" : "Homeopathy — wellbeing and personal resources"}</Link></li>
-            <li><Link href={"/" + locale + "/services/imagery-therapy"}>{locale === "ru" ? "Образная терапия — внутренняя устойчивость" : "Guided imagery — inner stability"}</Link></li>
-            <li><Link href={"/" + locale + "/services/andy-litvinov/personal-constellation-session"}>{locale === "ru" ? "Расстановки — цели и новые перспективы" : "Constellations — goals and new perspectives"}</Link></li>
+            <li><Link href={"/" + locale + "/services/andy-litvinov/homeopathy-consultation"}>{locale === "ru" ? "Гомеопатия — обсуждение ресурса и самочувствия" : es ? "Psicohomeopatía — bienestar y recursos personales" : "Homeopathy — wellbeing and personal resources"}</Link></li>
+            <li><Link href={"/" + locale + "/services/imagery-therapy"}>{locale === "ru" ? "Образная терапия — внутренняя устойчивость" : es ? "Terapia con imágenes — estabilidad interior" : "Guided imagery — inner stability"}</Link></li>
+            <li><Link href={"/" + locale + "/services/andy-litvinov/personal-constellation-session"}>{locale === "ru" ? "Расстановки — цели и новые перспективы" : es ? "Constelaciones — objetivos y nuevas perspectivas" : "Constellations — goals and new perspectives"}</Link></li>
           </ul>
-          <p className={styles.disclaimer}>{locale === "ru" ? "Этот разбор не заменяет медицинскую диагностику, лечение или профессиональную финансовую и юридическую экспертизу." : "This review is not a substitute for medical diagnosis, treatment, or professional financial and legal advice."}</p>
+          <p className={styles.disclaimer}>{locale === "ru" ? "Этот разбор не заменяет медицинскую диагностику, лечение или профессиональную финансовую и юридическую экспертизу." : es ? "La conversación no sustituye la evaluación o el tratamiento médico ni el asesoramiento financiero o jurídico profesional." : "This review is not a substitute for medical diagnosis, treatment, or professional financial and legal advice."}</p>
         </aside>
       </div>
       <section className={styles.details} aria-label={t.title}>

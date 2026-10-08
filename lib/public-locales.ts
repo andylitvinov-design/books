@@ -6,7 +6,7 @@ export function publicHomePath(locale: PublicLocale) {
   return locale === 'es' ? '/es' : `/?lang=${locale}`;
 }
 export function hasSpanishCounterpart(pathname: string) {
-  return pathname === '/' || /^\/(en|ru|es)(?:\/(?:about|services|books|library(?:\/distance-homeopathy)?|client|academy(?:\/[a-z0-9-]+)*|wu-xing|homeopathy(?:\/remedies(?:\/[a-z0-9-]+)?)?))?\/?$/.test(pathname);
+  return pathname === '/' || /^\/(en|ru|es)(?:\/(?:about|services(?:\/(?:free-situation-review|imagery-therapy|[a-z0-9-]+\/[a-z0-9-]+))?|books|library(?:\/distance-homeopathy)?|client(?:\/tests)?|masters(?:\/[a-z0-9-]+)?|academy(?:\/[a-z0-9-]+)*|wu-xing|homeopathy(?:\/remedies(?:\/[a-z0-9-]+)?)?))?\/?$/.test(pathname);
 }
 export function publicCounterpart(pathname: string, locale: PublicLocale) {
   if (pathname === '/' || /^\/(?:en|ru|es)\/?$/.test(pathname)) return publicHomePath(locale);
