@@ -206,6 +206,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         if (JSON.stringify(ids) === JSON.stringify(data.activeTestPlan.definitionIds)) {
           setPlan(data.activeTestPlan)
           try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Private session. */ }
+          // The requested selection already exists: finish the URL handoff too.
+          // Leaving ?selection=pending creates an endless "preparing" state after Google sign-in.
+          router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
         } else setConflict(pending.keys)
         setInitializing(false)
         return
@@ -266,6 +269,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browser storage may be disabled. */ }
             setConflict(null)
             setPlan(data.activeTestPlan)
+            // Explicitly keeping the active plan resolves the pending-selection URL.
+            if (data.activeTestPlan?.id) router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
           }}>{c.keep}</button>
           <button type="button" className="hh-primary" disabled={busy} onClick={() => create(conflict, true)}>{c.replace}</button>
         </div>
