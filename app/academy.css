@@ -1561,3 +1561,282 @@
     padding-left: 10px;
   }
 }
+
+/* Reiki Yggdrasil programme overview: concise first screen and legible sidebar.
+   Scoped to the overview route, preserving other Academy and Tantra pages. */
+.academy-reading-shell--yggdrasil {
+  max-width: 1500px;
+  padding: 12px clamp(16px, 3vw, 46px) 100px;
+}
+.academy-reading-shell--yggdrasil .mind-body-monitor-strip { display: none; }
+.academy-reading-shell--yggdrasil .library-back-link { display: inline-flex; margin: 10px 0 16px; }
+.academy-reading-shell--yggdrasil .academy-course-layout {
+  grid-template-columns: minmax(248px, 268px) minmax(0, 1fr);
+  gap: clamp(20px, 2.4vw, 34px);
+  justify-content: stretch;
+}
+.academy-reading-shell--yggdrasil .academy-reading { max-width: none; min-width: 0; }
+.academy-reading-shell--yggdrasil .reiki-course-side-nav {
+  top: 105px;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(73, 53, 36, .07);
+}
+.academy-reading-shell--yggdrasil .reiki-course-side-nav__header { padding: 20px 18px 16px; }
+.academy-reading-shell--yggdrasil .reiki-course-side-nav__header small { font-size: 10px; }
+.academy-reading-shell--yggdrasil .reiki-course-side-nav__header strong { font-size: 24px; }
+.academy-reading-shell--yggdrasil .reiki-course-side-nav__items { padding: 9px; gap: 2px; }
+.academy-reading-shell--yggdrasil .reiki-course-side-nav__item {
+  min-height: 46px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 8px;
+}
+.academy-reading-shell--yggdrasil .reiki-course-side-nav__item > em {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: break-word;
+  word-break: normal;
+  font-size: 12px;
+  line-height: 1.42;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-landing { gap: 32px; padding: 0 0 10px; }
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  border-radius: 18px;
+  background: #fffcf7;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero-copy {
+  order: -1;
+  min-width: 0;
+  justify-content: center;
+  padding: clamp(24px, 3.2vw, 52px);
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero-copy h1 {
+  margin: 7px 0 15px;
+  font-family: var(--font-serif);
+  font-size: clamp(40px, 4.4vw, 68px);
+  font-weight: 400;
+  line-height: 1.01;
+  letter-spacing: -.035em;
+  color: #34261e;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero-copy .yggdrasil-program-intro {
+  margin: 0;
+  max-width: 610px;
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 1.3vw, 17px);
+  line-height: 1.65;
+  color: #65564b;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero-image {
+  order: 1;
+  min-height: 410px;
+  background-position: center 36%;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero-copy > .yggdrasil-program-benefits-title {
+  margin: 19px 0 9px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #87634e;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-highlights {
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  padding: 0;
+  margin: 0;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-highlights li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #46372d;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-highlights li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #587053;
+  font-weight: 900;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-actions { margin-top: 23px; }
+.academy-reading-shell--yggdrasil .yggdrasil-program-actions a {
+  border-radius: 9px;
+  min-height: 46px;
+  font-size: 13px;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-primary-action {
+  background: #405442;
+  border-color: #405442;
+  color: #fff;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-primary-action:hover { background: #304232; }
+.academy-reading-shell--yggdrasil .yggdrasil-program-detail-link {
+  align-self: flex-start;
+  margin-top: 13px;
+  font-size: 12px;
+  color: #744a33;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-section { scroll-margin-top: 100px; }
+.academy-reading-shell--yggdrasil .yggdrasil-program-section > h2 { font-size: clamp(30px, 4vw, 45px); }
+.academy-reading-shell--yggdrasil .yggdrasil-program-section-lead { max-width: 760px; font-size: 14px; }
+.academy-reading-shell--yggdrasil .yggdrasil-module-card {
+  border-radius: 12px;
+  transition: border-color .16s, transform .16s;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-card:hover {
+  border-color: #a9856d;
+  transform: translateY(-2px);
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-card-copy h3 { font-size: 19px; }
+.academy-reading-shell--yggdrasil .yggdrasil-module-card-copy p { font-size: 12px; line-height: 1.55; }
+.academy-reading-shell--yggdrasil .yggdrasil-module-card-copy a { font-size: 12px; }
+@media (max-width: 1100px) {
+  .academy-reading-shell--yggdrasil .academy-course-layout {
+    grid-template-columns: minmax(215px, 240px) minmax(0, 1fr);
+    gap: 18px;
+  }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-hero-image { min-height: 380px; }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-hero-copy { padding: 24px; }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 920px) {
+  .academy-reading-shell--yggdrasil .academy-course-layout { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .academy-reading-shell--yggdrasil .reiki-course-side-nav { position: relative; top: auto; overflow: hidden; }
+  .academy-reading-shell--yggdrasil .reiki-course-side-nav__header { padding: 9px 12px; }
+  .academy-reading-shell--yggdrasil .reiki-course-side-nav__header strong { font-size: 17px; }
+  .academy-reading-shell--yggdrasil .reiki-course-side-nav__items { display: flex; gap: 7px; overflow-x: auto; padding: 8px 10px 11px; }
+  .academy-reading-shell--yggdrasil .reiki-course-side-nav__item {
+    flex: 0 0 auto;
+    max-width: 210px;
+    min-height: 40px;
+    grid-template-columns: 25px auto;
+    border: 1px solid #e0d3c4;
+    border-radius: 999px;
+    padding: 6px 10px;
+  }
+  .academy-reading-shell--yggdrasil .reiki-course-side-nav__item > em { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+@media (max-width: 680px) {
+  .academy-reading-shell--yggdrasil { padding-inline: 12px; }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-hero { grid-template-columns: 1fr; }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-hero-copy { padding: 22px 18px 24px; }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-hero-copy h1 { font-size: clamp(36px, 10vw, 47px); }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-hero-image { min-height: 195px; order: 1; }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-actions { display: grid; grid-template-columns: 1fr; }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-actions a { width: 100%; }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-grid { grid-template-columns: 1fr; }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card { grid-template-columns: 105px minmax(0, 1fr); }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card-copy h3 { font-size: 17px; }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card-copy p { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card { transition: none; transform: none; }
+}
+
+
+/* Keep each of the seven original illustrated module cards visible and clickable. */
+.academy-reading-shell--yggdrasil .yggdrasil-module-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-card {
+  grid-template-columns: minmax(180px, 40%) minmax(0, 1fr);
+  min-height: 268px;
+  border-radius: 12px;
+  background: #fffcf7;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-art {
+  display: block;
+  position: relative;
+  min-height: 268px;
+  height: 100%;
+  overflow: hidden;
+  background: #21314b;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-art-image {
+  object-fit: cover;
+  object-position: center center;
+  transition: transform .2s ease;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-art--basic-course .yggdrasil-module-art-image {
+  object-fit: contain;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-art:hover .yggdrasil-module-art-image {
+  transform: scale(1.03);
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-card-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: clamp(16px, 2.2vw, 25px);
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-card-copy small {
+  font-size: 10px;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-card-copy h3 {
+  font-size: clamp(21px, 2.1vw, 29px);
+  line-height: 1.14;
+  overflow-wrap: break-word;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-card-copy p {
+  font-size: 13px;
+  line-height: 1.62;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-module-card-copy > a {
+  margin-top: auto;
+  padding-top: 18px;
+  font-size: 13px;
+}
+@media (max-width: 1190px) {
+  .academy-reading-shell--yggdrasil .yggdrasil-module-grid {
+    grid-template-columns: 1fr;
+  }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card {
+    grid-template-columns: minmax(210px, 34%) minmax(0, 1fr);
+  }
+}
+@media (max-width: 680px) {
+  .academy-reading-shell--yggdrasil .yggdrasil-module-grid {
+    gap: 12px;
+  }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card {
+    grid-template-columns: 34% minmax(0, 1fr);
+    min-height: 195px;
+  }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-art {
+    min-height: 195px;
+  }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card-copy {
+    padding: 14px 13px;
+  }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card-copy h3 {
+    font-size: 18px;
+  }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card-copy p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-card-copy > a {
+    padding-top: 12px;
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .academy-reading-shell--yggdrasil .yggdrasil-module-art-image { transition: none; }
+  .academy-reading-shell--yggdrasil .yggdrasil-module-art:hover .yggdrasil-module-art-image { transform: none; }
+}
