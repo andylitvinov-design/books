@@ -14,7 +14,6 @@ export function AcademyVideoPlayer({ youtubeId, title }: { youtubeId: string; ti
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           loading="lazy"
-        unoptimized
           src={"https://www.youtube-nocookie.com/embed/" + safeId + "?autoplay=1"}
           title={title}
         />
@@ -27,6 +26,7 @@ export function AcademyVideoPlayer({ youtubeId, title }: { youtubeId: string; ti
         alt=""
         height={270}
         loading="lazy"
+        unoptimized
         sizes="(max-width: 600px) 100vw, 380px"
         src={"https://i.ytimg.com/vi/" + safeId + "/hqdefault.jpg"}
         width={480}
