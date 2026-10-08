@@ -1,6 +1,7 @@
 import { deepFreeze } from '../../lib/assessments/contracts.js'
 import { EXPANDED_CATALOG_V2 } from './catalog-v2.js'
 import { EXPANDED_CATALOG_V3 } from './expanded-battery-v3.js'
+import { EXPANDED_CATALOG_V4 } from './expanded-battery-v4.js'
 
 export const MONITORING_AXES = deepFreeze([
   'state',
@@ -648,6 +649,7 @@ export const MONITORING_CATALOG = deepFreeze([
   },
   ...EXPANDED_CATALOG_V2,
   ...EXPANDED_CATALOG_V3,
+  ...EXPANDED_CATALOG_V4,
   {
     key: 'mspss',
     version: 'v1',
