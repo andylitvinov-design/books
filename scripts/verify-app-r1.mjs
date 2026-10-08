@@ -31,14 +31,30 @@ async function api(path,body,ctx=context){
 async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
 async function enterTest(name='Current State Check',mode='Guided'){
  await page.goto(origin+'/en/app/tests');await ready()
- let card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
- if(await card.count()===0){
-  const all=page.getByRole('button',{name:'All available',exact:true})
-  if(await all.count())await all.click()
-  card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
+ const candidate=()=>page.locator('article').filter({
+   has:page.getByRole('heading',{name,exact:true}),
+ }).filter({has:page.getByRole('button',{name:/^(Start testing|Continue test|Retake test)/})}).first()
+ if(!(await candidate().count())){
+  const toggle=page.getByRole('button',{name:'Choose or change tests',exact:true})
+  if(await toggle.count())await toggle.click()
+  let card=page.locator('article').filter({
+   has:page.getByRole('heading',{name,exact:true}),
+  }).filter({has:page.getByRole('checkbox',{name,exact:true})}).first()
+  if(!(await card.count())){
+   const all=page.getByRole('button',{name:'Full database',exact:true})
+   if(await all.count())await all.click()
+   card=page.locator('article').filter({
+    has:page.getByRole('heading',{name,exact:true}),
+   }).filter({has:page.getByRole('checkbox',{name,exact:true})}).first()
+  }
+  await card.getByRole('checkbox',{name,exact:true}).check()
+  await page.getByRole('button',{name:'Start free testing',exact:true}).click()
+  if(await page.getByRole('heading',{name:'You already have an active test set'}).count())
+   await page.getByRole('button',{name:'Use new selection'}).click()
+  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  }
- await card.getByRole('checkbox',{name,exact:true}).check()
- await page.getByRole('button',{name:'Start free testing',exact:true}).click()
+ await expect(candidate()).toBeVisible({timeout:15000})
+ await candidate().getByRole('button',{name:/^(Start testing|Continue test|Retake test)/}).click()
  await expect(page).toHaveURL(/\/runs\//)
  await expect(page.locator('.hh-runner')).toBeVisible()
  const modeChoice=page.locator('.hh-test-mode-card').filter({hasText:mode}).first()
@@ -57,8 +73,11 @@ async function saveAndExit(){
  await ready()
 }
 async function openCompletedPlanResult(){
- await expect(page).toHaveURL(/\/tests\?plan=.*summary=1/)
- await page.locator('.hh-history-list a').first().click()
+ // A completed battery returns to the overview; a retake may navigate to its result directly.
+ await expect(page).toHaveURL(/\/(?:tests\?plan=|results\/)/,{timeout:15000})
+ if(/\/results\//.test(page.url()))return
+ await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+ await page.getByRole('link',{name:'View result'}).first().click()
  await expect(page).toHaveURL(/\/results\//)
 }
 try {
@@ -94,7 +113,7 @@ try {
  await page.screenshot({path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
  await page.getByRole('button',{name:'Save my result'}).click();await openCompletedPlanResult();data=(await api('bootstrap')).data;const trait=data.results.find(r=>r.definitionKey==='mini-ipip-20');assert.deepEqual(trait.dimensions.map(d=>d.value),[12,12,12,12,12]);assert.equal(data.snapshot.dimensions.length,10);passed('Mini-IPIP scoring is preserved alongside completed plan summaries')
- await enterTest('Weekly Psychic Health','Quick');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await savedClick(page.locator('.hh-scale button').first());await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();passed('Quick mode saves and auto-advances in the signed-in runner');await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.getByRole('button',{name:'Resume set: step 1',exact:true}).click();await page.locator('.hh-test-mode-card').filter({hasText:'Quick'}).click();await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.goto(origin+'/en/app');await ready();await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible();passed('Weekly Psychic Health is a resumable sequential plan step')
+ await enterTest('Weekly Psychic Health','Quick');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await savedClick(page.locator('.hh-scale button').first());await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();passed('Quick mode saves and auto-advances in the signed-in runner');await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.locator('article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})}).getByRole('button',{name:'Continue test'}).click();await page.locator('.hh-test-mode-card').filter({hasText:'Quick'}).click();await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.goto(origin+'/en/app');await ready();await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible();passed('Weekly Psychic Health is a resumable sequential plan step')
  await page.goto(origin+'/ru/app');await ready();await expect(page.getByRole('heading',{name:'Мой профиль',exact:true})).toBeVisible();await page.screenshot({path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Request a consultation',exact:true}).first().click();await page.getByLabel('How should Andy contact you?').fill('synthetic@example.invalid');await page.getByLabel('Your message (optional)').fill('A synthetic request for CI only.')
  await page.screenshot({path:output+'/consultation-request.png',fullPage:true})
@@ -102,6 +121,17 @@ try {
  const admin=await browser.newContext();await admin.addCookies([{name:'prescriptions_admin',value:createHmac('sha256',process.env.PRESCRIPTIONS_ADMIN_TOKEN).update('prescriptions-admin-v1').digest('base64url'),url:origin+'/admin',httpOnly:true,sameSite:'Strict'}]);const adminPage=await admin.newPage();await adminPage.goto(origin+'/admin/app-requests');await expect(adminPage.getByText('synthetic@example.invalid',{exact:true})).toBeVisible();await adminPage.getByRole('button',{name:'Contacted',exact:true}).click();await expect(adminPage.locator('.hh-badge')).toHaveText('Contacted');await adminPage.screenshot({path:output+'/practitioner-inbox.png',fullPage:true});passed('existing practitioner authorization and real request status inbox')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
  const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
+ // The public Start free testing button must transfer the exact selection into an existing Google account.
+ await otherPage.goto(origin+'/en/client/tests')
+ await expect(otherPage.getByRole('heading',{name:'Build your test set'})).toBeVisible()
+ await otherPage.locator('article').filter({has:otherPage.getByRole('heading',{name:'Personality Baseline',exact:true})})
+   .getByRole('checkbox',{name:'Personality Baseline'}).check()
+ await otherPage.getByRole('button',{name:'Start free testing',exact:true}).click()
+ await expect(otherPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
+ await expect(otherPage.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+ await expect(otherPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
+ assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.definitionIds.length,1)
+ passed('public Start free testing preserves the selected test in authenticated personal Cabinet')
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
  const storage=await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),caches:await Promise.all((await caches.keys()).map(async k=>(await(await caches.open(k)).keys()).map(r=>new URL(r.url).pathname)))}));assert.ok(!JSON.stringify(storage).match(/hh-app-auth|profile:first|\/api\/app|\/en\/app|\/ru\/app/));passed('no private browser storage or service-worker response cache')
  const exported=await api('export');assert.equal(exported.status,200);assert.ok(exported.data.runs.every(r=>r.accountId===first.accountId));assert.equal(exported.data.results.length,3);passed('own complete data export')
@@ -118,42 +148,10 @@ try {
 
  await page.getByRole('checkbox',{name:'Personality Baseline',exact:true}).check()
  await page.getByRole('button',{name:'Start free testing',exact:true}).click()
- await expect(page.getByRole('dialog',{name:'Before you start'})).toBeVisible()
- await page.getByLabel('I am 18 or older.').check()
- await page.getByLabel('I agree to temporary private processing',{exact:false}).check()
- await page.getByRole('button',{name:'Continue',exact:true}).click()
- await expect(page).toHaveURL(/\/en\/client\?plan=/)
- await page.locator('.hh-test-mode-card').filter({hasText:'Guided'}).click()
- await expect(page.getByText('Question 1 of 20',{exact:true})).toBeVisible()
- await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click()
- await expect(page.getByRole('status')).toHaveText('Saved')
- await page.getByRole('button',{name:'Next',exact:true}).click()
- await expect(page.getByText('Question 2 of 20',{exact:true})).toBeVisible()
- await page.reload()
- await expect(page.getByRole('heading',{name:'Your Mind–Body Monitor'})).toBeVisible()
- await page.locator('.hh-test-mode-card').filter({hasText:'Guided'}).click()
- await expect(page.getByText('Question 2 of 20',{exact:true})).toBeVisible()
- passed('guest battery resumes progress directly from its private plan link')
- for(let i=1;i<20;i++){await page.getByRole('button',{name:/Neither Inaccurate nor Accurate/}).click();await expect(page.getByRole('status')).toHaveText('Saved');await page.getByRole('button',{name:i===19?'See my result':'Next',exact:true}).click()}
- await expect(page.getByRole('heading',{name:'Your combined overview'})).toBeVisible()
- await expect(page.getByText('Personality Baseline',{exact:true})).toBeVisible()
- passed('personality guest battery finishes with a combined overview')
- await page.getByRole('button',{name:'Take another test'}).click()
- await expect(page.getByRole('heading',{name:'Build your test set'})).toBeVisible()
- await page.getByRole('checkbox',{name:'Current State Check',exact:true}).check()
- await page.getByRole('button',{name:'Start free testing',exact:true}).click()
- await expect(page).toHaveURL(/\/en\/client\?plan=/)
- await page.locator('.hh-test-mode-card').filter({hasText:'Quick'}).click()
- for(const [i,v] of [4,6,3,5,2].entries()){await page.getByRole('button',{name:String(v),exact:true}).click();if(i<4){await expect(page.getByRole('status')).toHaveText('Saved');await expect(page.getByText(`Question ${i+2} of 5`,{exact:true})).toBeVisible()}}
- await expect(page.getByRole('heading',{name:'Optional context'})).toBeVisible()
- passed('Quick mode saves and auto-advances in the guest battery runner')
- await page.getByLabel('Anything else you want to note?').fill('Synthetic guest context.')
- await page.getByRole('button',{name:'See my result',exact:true}).click()
- await expect(page.getByRole('heading',{name:'Your combined overview'})).toBeVisible()
- await expect(page.getByText('Current State Check',{exact:true})).toBeVisible()
- passed('current-state guest battery completes while signed out')
- const privateStorage=await page.evaluate(()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage)}));assert.deepEqual(privateStorage,{local:[],session:[]});passed('guest flow uses no localStorage/sessionStorage canonical data')
- await page.getByRole('button',{name:'Save to my Cabinet'}).click();await expect(page).toHaveURL(/\/app\/continue\?intent=/,{timeout:60000});await ready();await expect(page.getByRole('heading',{name:'Save to your Cabinet'})).toBeVisible();await page.getByRole('button',{name:'Save',exact:true}).click();await expect(page).toHaveURL(/\/results\//,{timeout:60000});await ready();data=(await api('bootstrap')).data;assert.equal(data.results.length,4);passed('explicit guest save intent survives Google and imports exactly one selected result')
+ await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
+ await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
+ passed('public test selection starts Google authentication and opens account test battery')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
