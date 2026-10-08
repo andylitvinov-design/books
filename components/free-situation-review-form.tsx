@@ -51,7 +51,7 @@ const copy = {
     outcome: "What would you like instead?",
     outcomePlaceholder: "Your desired outcome (optional)",
     submit: "Continue in WhatsApp",
-    pending: "WhatsApp opens with your prepared message. This does NOT automatically submit a request; review it and tap Send in WhatsApp.",
+    pending: "Your message is not sent automatically. WhatsApp opens a prepared text: please review it and press Send there.",
     resumed: "Your request is prepared but not sent. If WhatsApp did not open, use the link.",
     resume: "Open prepared request",
     telegram: "Or write directly on Telegram",
