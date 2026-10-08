@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { AcademyDirection, AcademyHub, AcademyPrefixDirectory } from "@/components/academy-hub";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
 import { YggdrasilModuleLandingPage } from "@/components/yggdrasil-module-landing";
+import { YggdrasilBasicCourseDescription } from "@/components/yggdrasil-basic-course-description";
 import { YggdrasilSourceArchivePage } from "@/components/yggdrasil-source-archive";
 import { academyCopy, academyDirections, academyDisplayTitle, findAcademyRecord, isPublicLocale, type AcademyDirectionId, type AcademyView } from "@/data/academy/catalog";
 import { yggdrasilModuleBySlug } from "@/data/academy/yggdrasil-module-map";
@@ -38,6 +39,7 @@ function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
   const child = yggdrasilChild(slug);
+  if (routeKey(slug) === "reiki/yggdrasil/basic-course/description") return locale === "ru" ? "Базовый курс Рейки Иггдрасиль — описание" : locale === "es" ? "Curso Básico de Reiki Yggdrasil — descripción" : "Reiki Yggdrasil Basic Course — Description";
   if (child === "archive") return locale === "ru" ? "Рейки Иггдрасиль — полный исторический текст" : locale === "es" ? "Reiki Yggdrasil — fuente histórica completa" : "Reiki Yggdrasil — Complete Historical Source";
   if (child) {
     const courseModule = yggdrasilModuleBySlug(child);
@@ -61,7 +63,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
-  const description = courseModule
+  const description = routeKey(slug) === "reiki/yggdrasil/basic-course/description"
+    ? locale === "ru" ? "Текстовое описание пяти ступеней базового курса Рейки Иггдрасиль: темы, настройки и формат обучения." : locale === "es" ? "Descripción de los cinco niveles del Curso Básico Reiki Yggdrasil: temas, sintonizaciones y formación." : "An introduction to the five Reiki Yggdrasil Basic Course levels, attunements and learning format."
+    : courseModule
     ? courseModule.lead[locale]
     : routeKey(slug) === "reiki/yggdrasil"
       ? locale === "ru"
@@ -86,6 +90,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
     return <AcademyHub locale={locale} view={view} />;
   }
 
+  if (key === "reiki/yggdrasil/basic-course/description") return <YggdrasilBasicCourseDescription locale={locale} />;
   if (key === "reiki/master-shamanic-healing") redirect("/" + locale + "/academy/reiki/yggdrasil/basic-course");
   if (child === "archive") return <YggdrasilSourceArchivePage locale={locale} />;
   if (child) {
