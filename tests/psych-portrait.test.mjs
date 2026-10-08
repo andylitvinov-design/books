@@ -25,3 +25,31 @@ test('latest completed compatible measurement wins for each explicitly measured 
   assert.equal(portrait.axes.anxiety, null)
   assert.equal(buildPsychPortrait([]).measuredCount, 0)
 })
+
+test('missing values and non-normative personality do not become numbers or claims of health', () => {
+  assert.equal(scorePortraitDimension({ key: 'weekly.energy', value: null, min: 0, max: 10, direction: 'higher-reported-energy' }), null)
+  assert.equal(scorePortraitDimension({ key: 'weekly.energy', min: 0, max: 10, direction: 'higher-reported-energy' }), null)
+  assert.equal(scorePortraitDimension({ key: 'weekly.energy', value: Number.NaN, min: 0, max: 10, direction: 'higher-reported-energy' }), null)
+  assert.equal(buildPsychPortrait([{ id: 'a', dimensions: [{ key: 'trait.agreeableness', value: 11, min: 4, max: 20, direction: 'non-normative' }] }]).measuredCount, 0)
+})
+
+test('repeated compatible scales get directional history, regardless of input order', () => {
+  const basic = { definitionKey: 'hh-weekly-pulse', definitionVersion: 'v1', instrumentLocale: 'en' }
+  const dimension = (value) => ({ key: 'weekly.tension', value, min: 0, max: 10, direction: 'lower-reported-tension' })
+  const early = { ...basic, id: 'early', measurementAt: '2026-10-01T12:00:00Z', dimensions: [dimension(8)] }
+  const later = { ...basic, id: 'later', measurementAt: '2026-10-08T12:00:00Z', dimensions: [dimension(3)] }
+  const portrait = buildPsychPortrait([later, early])
+  assert.equal(portrait.axes.anxiety.percent, 70)
+  assert.equal(portrait.axes.anxiety.previousPercent, 20)
+  assert.equal(portrait.axes.anxiety.change, 50)
+  assert.equal(portrait.axes.anxiety.previousResultId, 'early')
+})
+
+test('incompatible instruments are never shown as a repeated time series', () => {
+  const one = { id: 'screen', definitionKey: 'phq-4', definitionVersion: 'v1', instrumentLocale: 'en', measurementAt: '2026-10-01', dimensions: [{ key: 'symptoms.phq4.anxiety', value: 4, min: 0, max: 6, direction: 'non-normative' }] }
+  const two = { id: 'weekly', definitionKey: 'hh-weekly-pulse', definitionVersion: 'v1', instrumentLocale: 'en', measurementAt: '2026-10-08', dimensions: [{ key: 'weekly.tension', value: 2, min: 0, max: 10, direction: 'lower-reported-tension' }] }
+  const portrait = buildPsychPortrait([one, two])
+  assert.equal(portrait.axes.anxiety.percent, 80)
+  assert.equal(portrait.axes.anxiety.previousPercent, null)
+  assert.equal(portrait.axes.anxiety.change, null)
+})
