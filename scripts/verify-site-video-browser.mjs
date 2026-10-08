@@ -240,12 +240,15 @@ try {
     await expect(page.getByText('QA editor B retained edits', { exact: true })).toBeVisible()
     pass('Concurrent edit rejected; refresh keeps edits and resets review; republish works')
     assert.equal(await page.locator('iframe').count(), 0)
-    // Test the edited homepage introduction specifically; unrelated public testimonial\n    // videos must not make the selector ambiguous.\n    await page.locator('[data-video-slot="home-intro"] .site-video-play').click()
+    // Test the edited homepage introduction specifically; unrelated public testimonial
+    // videos must not make the selector ambiguous.
+    await page.locator('[data-video-slot="home-intro"] .site-video-play').click()
     await expect(page.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/OkLEN8Zb-sY\?/)
     pass('YouTube privacy-enhanced iframe exists only after click')
     await save('hide', second)
     await navigate('/?lang=en')
-    // Hiding a managed intro should leave independently published testimonials intact.\n    assert.equal(await page.locator('[data-video-slot="home-intro"] .site-video-player').count(), 0)
+    // Hiding a managed intro should leave independently published testimonials intact.
+    assert.equal(await page.locator('[data-video-slot="home-intro"] .site-video-player').count(), 0)
     await navigate('/?lang=ru')
     await expect(page.getByText('QA home-intro ru', { exact: true })).toBeVisible()
     await openEditor(second)
