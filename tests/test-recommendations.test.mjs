@@ -224,7 +224,7 @@ test('advanced controls are included on the embedded client page and in shared e
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('components/app/test-explorer.jsx', 'utf8'),
   ])
-  assert.match(landing, /<PublicTestExplorer locale=\\{locale\\} embedded \\/>/)
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded />'))
   for (const token of ['TEST_EXPLORER_DETAIL_TOPICS', 'TEST_EXPLORER_AXES', 'detailCounts', 'setMaxMinutes', 'setLanguage', 'setTracking', 'coverageForFilters', 'const matchCount =']) {
     assert.ok(source.includes(token), token)
   }
