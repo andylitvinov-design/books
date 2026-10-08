@@ -100,7 +100,8 @@ test('public and signed-in routes share the complete Test Explorer rather than a
   for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free testing']) assert.match(explorer, new RegExp(token))
   assert.match(publicExplorer, /auth\/start/)
   assert.match(publicExplorer, /makeTestSelectionIntent/)
-  assert.doesNotMatch(publicExplorer, /localStorage|sessionStorage/)
+  assert.doesNotMatch(publicExplorer, /localStorage/)
+  assert.match(publicExplorer, /sessionStorage\.setItem/)
 })
 
 
