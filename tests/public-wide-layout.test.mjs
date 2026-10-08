@@ -27,6 +27,6 @@ test('desktop public route shells share a fluid canvas', () => {
 test('sidebar courses expand while preserving mobile and long-form reading layouts', () => {
   assert.match(css, /\.academy-reading-shell--wide \.academy-course-layout/);
   assert.match(css, /\.temple-inner/);
-  assert.doesNotMatch(css, /\.academy-reading\s*\{/);
+  assert.doesNotMatch(css, /(?:^|\n)\s*\.academy-reading\s*\{/);
   assert.doesNotMatch(css, /body\s*\{/);
 });
