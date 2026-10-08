@@ -668,4 +668,4 @@ export const PROFESSIONAL_BATTERY_2026_CATALOG = deepFreeze([
       "ru": "Шесть вопросов CBI для специалистов, которые работают с клиентами, пациентами или получателями услуг. Borritz и др. (2006). Вопросы EN."
     }
   }
-])
+].map((item) => ({ ...item, starterEligible: item.key === 'cbi-personal' })))
