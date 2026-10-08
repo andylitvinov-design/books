@@ -10,6 +10,8 @@ import {
   academyDirections,
   academyDisplayTitle,
   recordsForDirection,
+  mediaForRecord,
+  youtubeIdFromUrl,
   videoRecords,
   type AcademyDirectionId,
   type AcademySourceRecord,
@@ -19,9 +21,73 @@ import type { PublicLocale } from "@/lib/public-locales";
 
 type AcademyItem = { key: string; title: string; href: string; image: string; meta?: string; };
 
-function recordImage(record: AcademySourceRecord) {
-  if (record.direction === "videos") return "/images/holistic-house/video-posters/services-en-v2.webp";
-  return academyDirections.find((item) => item.id === record.direction)?.image ?? "/images/holistic-house/books-library.webp";
+// Use each published video's own frame. For text-only archive records, rotate
+// distinct locally held source images within their appropriate study direction.
+const imageDeck: Record<string, readonly string[]> = {
+  reiki: [
+    "/academy/reiki-yggdrasil/source/basic-program.jpg",
+    "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
+    "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+    "/academy/reiki-yggdrasil/source/western-tradition.png",
+    "/academy/reiki-yggdrasil/source/advanced-runes.png",
+    "/academy/reiki-yggdrasil/source/slavic-tradition.png",
+    "/academy/reiki-yggdrasil/source/toltec-tradition.jpg",
+  ],
+  mysteries: [
+    "/library/maya-mysteries/media/post-244-1.jpg",
+    "/library/maya-mysteries/media/post-249-1.jpg",
+    "/library/maya-mysteries/media/post-217-1.jpg",
+    "/library/maya-mysteries/media/post-229-1.jpg",
+    "/library/maya-mysteries/media/post-226-1.jpg",
+    "/academy/reiki-yggdrasil/source/temple-studies.png",
+  ],
+  symbolic: [
+    "/academy/reiki-yggdrasil/source/advanced-runes.png",
+    "/academy/reiki-yggdrasil/source/western-tradition.png",
+    "/academy/reiki-yggdrasil/source/slavic-tradition.png",
+    "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+    "/academy/reiki-yggdrasil/source/temple-studies.png",
+    "/library/maya-egregor-gods/media/post-203-1.jpg",
+  ],
+  applied: [
+    "/images/holistic-house/video-posters/constellations-en-v1.webp",
+    "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+    "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
+    "/academy/reiki-yggdrasil/source/temple-studies.png",
+    "/library/maya-mysteries/media/post-217-1.jpg",
+    "/library/maya-mysteries/media/post-249-1.jpg",
+  ],
+  school: [
+    "/academy/reiki-yggdrasil/source/school-introduction.jpg",
+    "/academy/reiki-yggdrasil/source/program-overview.jpg",
+    "/academy/reiki-yggdrasil/source/basic-program.jpg",
+    "/academy/reiki-yggdrasil/source/temple-studies.png",
+  ],
+  archive: [
+    "/academy/reiki-yggdrasil/source/program-overview.jpg",
+    "/academy/reiki-yggdrasil/source/school-introduction.jpg",
+    "/library/maya-mysteries/media/post-229-1.jpg",
+    "/academy/reiki-yggdrasil/source/toltec-tradition.jpg",
+    "/library/maya-mysteries/media/post-217-1.jpg",
+  ],
+  videos: [
+    "/images/holistic-house/video-posters/home-en-v2.webp",
+    "/images/holistic-house/video-posters/services-en-v2.webp",
+    "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+    "/images/holistic-house/video-posters/constellations-en-v1.webp",
+    "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
+  ],
+};
+
+function recordImage(record: AcademySourceRecord, index = 0) {
+  const videoId = mediaForRecord(record)
+    .map((item) => youtubeIdFromUrl(item.mediaUrl))
+    .find((id): id is string => Boolean(id));
+  if (videoId) return "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg";
+  const deck = imageDeck[record.direction];
+  return deck?.[index % deck.length] ??
+    academyDirections.find((item) => item.id === record.direction)?.image ??
+    "/academy/reiki-yggdrasil/source/program-overview.jpg";
 }
 
 const academyActionCopy: Record<PublicLocale, { direction: string; video: string; program: string; videoDescription: string; featured: string }> = {
@@ -77,13 +143,13 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   const text = academyCopy[locale];
   const action = academyActionCopy[locale];
   const items: CatalogShowcaseItem[] = view === "videos"
-    ? videoRecords(locale).map((record) => ({
+    ? videoRecords(locale).map((record, index) => ({
         id: "academy-video-" + record.routeKey.replace(/[^a-z0-9]+/gi, "-"),
         title: academyDisplayTitle(record, locale),
         subtitle: statusLabel(record, locale),
         description: action.videoDescription,
         href: "/" + locale + "/academy/" + record.routeKey,
-        image: recordImage(record),
+        image: recordImage(record, index),
         actionLabel: action.video,
         meta: statusLabel(record, locale),
       }))
@@ -98,7 +164,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Sistema completo: mapa de módulos, Curso Básico de 5 niveles y currículo actual detallado."
               : "The complete learning system: all modules, a dedicated 5-level Basic Course and the detailed current curriculum.",
           href: "/" + locale + "/academy/reiki/yggdrasil",
-          image: "/images/holistic-house/hero-olive-incense.webp",
+          image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
           actionLabel: action.program,
         },
         {
@@ -111,7 +177,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Programa independiente de Tantra Reiki en nueve niveles, organizado como una ruta formativa coherente."
               : "A separate nine-level Tantra Reiki program, organized as one coherent study path.",
           href: "/" + locale + "/academy/reiki/tantra-reiki",
-          image: "/library/maya-mysteries/media/post-244-1.jpg",
+          image: "/library/maya-mysteries/media/post-217-1.jpg",
           actionLabel: action.program,
         },
         {
@@ -124,7 +190,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Un programa de siete etapas conectadas: misterios antiguos, runas y Tarot, experiencia arquetípica y aplicación personal."
               : "One progressive seven-stage course: from ancient mysteries and symbols to inner archetypal work and practical integration.",
           href: "/" + locale + "/academy/temple-studies",
-          image: "/library/maya-egregor-gods/media/post-203-1.jpg",
+          image: "/academy/reiki-yggdrasil/source/temple-studies.png",
           actionLabel: action.program,
         },
       ];
@@ -164,11 +230,11 @@ export function AcademyDirection({ locale, direction }: { locale: PublicLocale; 
       const rank = (id: string) => id === "reiki/yggdrasil" ? 0 : id === "reiki/tantra-reiki" ? 1 : 2;
       return rank(a.logicalId) - rank(b.logicalId);
     });
-  const items = records.map((record) => ({
+  const items = records.map((record, index) => ({
     key: record.logicalId,
     title: academyDisplayTitle(record, locale),
     href: "/" + locale + "/academy/" + record.routeKey,
-    image: recordImage(record),
+    image: recordImage(record, index),
     meta: statusLabel(record, locale),
   }));
   return (
@@ -193,11 +259,11 @@ export function AcademyPrefixDirectory({ locale, prefix, title, description }: {
       .filter((record) => record.routeKey.startsWith(prefix + "/"))
       .map((record) => [record.logicalId, record]),
   ).values()];
-  const items = records.map((record) => ({
+  const items = records.map((record, index) => ({
     key: record.logicalId,
     title: academyDisplayTitle(record, locale),
     href: "/" + locale + "/academy/" + record.routeKey,
-    image: recordImage(record),
+    image: recordImage(record, index),
     meta: statusLabel(record, locale),
   }));
   return (
