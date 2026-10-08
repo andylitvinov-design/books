@@ -17,7 +17,7 @@ test("Services, Academy and Library share the same showcase component", () => {
   assert.match(services, /serviceShowcaseItems/);
   assert.match(academy, /academy-featured-yggdrasil/);
   assert.match(academy, /academy-featured-tantra-reiki/);
-  assert.match(academy, /academyDirections\.filter/);
+  assert.match(academy, /academy-featured-temple-studies/);
   assert.match(library, /bookItems\(locale\)/);
 });
 
@@ -70,7 +70,7 @@ test("mini cards navigate to direct destinations instead of in-page anchors", ()
   assert.match(services, /business-situation-constellation/);
   assert.match(services, /homeopathy-consultation/);
 
-  assert.match(academy, /href: "\/" \+ locale \+ "\/academy\/" \+ direction\.path/);
+  assert.match(academy, /academy\/temple-studies/);
   assert.match(library, /href: `\/\$\{locale\}\/books`/);
   assert.match(library, /href: `\/\$\{locale\}\/homeopathy\/remedies`/);
   assert.match(library, /href: `\/\$\{locale\}\/wu-xing`/);
