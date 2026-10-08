@@ -13,7 +13,9 @@ test("Tantra Reiki renders one self-contained section per level, not a nine-card
   assert.match(journey, /copy\.practice/);
   assert.ok(journey.includes('"#tantra-level-"+(n+1)'));
   assert.match(journey, /#tantra-media/);
-  assert.match(journey, /Link href=\{"\/"\+locale\+"\/services"\}/);
+  assert.match(journey, /href="https:\/\/t.me\/AndyTherapist"/);
+  assert.match(journey, /className="tantra-journey__photo"/);
+  assert.match(journey, /levelApplications\[locale\]\[i\]/);
 });
 
 test("Tantra Reiki contains nine grounded level names and preserves EN/RU attunement variants", async () => {
