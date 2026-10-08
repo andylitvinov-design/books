@@ -60,8 +60,8 @@ const CONFIGS = [
       "ru": "d02f69c6-a6b2-5c3f-a367-4e3f43427118"
     },
     "hashes": {
-      "en": "sha256:99989c982bef5984fb84cfe32ba415fbe5eac4e9ba5ca3419892f9ff594d5e9f",
-      "ru": "sha256:4977df42c8c14f813375100a354823dbdbcacc14c243e9506862ff93d7eb1d20"
+      "en": "sha256:88fba1c7ff6ca1a26fc368351f5d55cb5b89ad886bcf8fc881b3df2294c7e9ad",
+      "ru": "sha256:101dc34d4bb09c0eb37ce3f4c7f8266389835114fd79ac7c1991251842ce1c05"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -122,8 +122,8 @@ const CONFIGS = [
       "ru": "9daaadc2-6236-5b46-a187-1029dfa1c13d"
     },
     "hashes": {
-      "en": "sha256:7921a9c7706c3b6c513da113d1c45625871d96196dfaf1c73680378a241d842f",
-      "ru": "sha256:50e1944a64ec6ae3c468132bbde9bd3dba4e805b5cdf63853595b73f9aa38b6f"
+      "en": "sha256:f9791a64ffbc8116a2c0f4d6b74a44264cf7f777f9f1fc6ed317fb2e94eee7ea",
+      "ru": "sha256:ca1e44148405a28f41e1a56a55fcff8d44bd977ff96dc512afcb3ae0cd8f11ac"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -186,8 +186,8 @@ const CONFIGS = [
       "ru": "ceab5e3f-dac8-5fc2-a303-ea6fb33d2036"
     },
     "hashes": {
-      "en": "sha256:93e57f8e8b875cd3c69f71ff4eec3378e2fc006e9f513b50eb9fca0306d726fe",
-      "ru": "sha256:26f40db601ad096115e757d49420b45275ac4131e94f25acf8286332da74d3c5"
+      "en": "sha256:00d003687b63a09d5414f3626be7b06a963e453c15c94b931848641dff540875",
+      "ru": "sha256:a41286aae856f63254e92fc5fd29ef7aec9c8d90490a0fcdf4265ab4e0db62ff"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -249,8 +249,8 @@ const CONFIGS = [
       "ru": "412ea9e7-a00e-565c-aeaa-174191fa10bd"
     },
     "hashes": {
-      "en": "sha256:a28befafb70b6b8f9176e6ec6f2cc989265e6cac4f7abc3fe69126d461ad304a",
-      "ru": "sha256:3a43e818f7852b725c4f102a397b4c9376fe89f089d86460a1c4018e4ef6c5ac"
+      "en": "sha256:3c33992af4e355167111b38f7f51ea2aa71116103790d2fe0e9222b28e4d2b05",
+      "ru": "sha256:3ce04fe0617342e5e70e5ec058ab55b887ab0d8bd614c15b2098ffecc6056b5a"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -312,8 +312,8 @@ const CONFIGS = [
       "ru": "32656416-981e-5710-aaca-adeabb7288c1"
     },
     "hashes": {
-      "en": "sha256:eca1b3be548853517b0c218404d1c3c39513a25588c7e34a7b0b6332ed26d28e",
-      "ru": "sha256:370b402db42490e8ec62d9201738a83ea7378225fcebfa0dfa3fff1b763b631e"
+      "en": "sha256:81431d3e392eaa5462dcd8c1b2c6a7de93e31bdaa46487c031766318e74117e5",
+      "ru": "sha256:2f459f4bc10951e51c7910e8e38273e5ad4cd05dcac2a9d0096a49b6cafd883e"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -375,8 +375,8 @@ const CONFIGS = [
       "ru": "79bc7b6c-eb6e-568d-a506-010c134f0f87"
     },
     "hashes": {
-      "en": "sha256:fe10cad5463196107d5b37b48248dd45e3ac47deb9127949981d99a731afedc2",
-      "ru": "sha256:32c4866188ea69dbb3c50cab35603c0513071522cf764ba4e72840fd35c85d09"
+      "en": "sha256:38d26052de8ca7253024aaf341583225da0e7ca3e2176d3d1c26c4f43ff6b832",
+      "ru": "sha256:3115cfadc8612e9b555cdd0042e27a2306fffaab3e53a1570a79dc4907ba75f8"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -438,8 +438,8 @@ const CONFIGS = [
       "ru": "fb657a43-39cd-5ebc-af98-b25ad72cb5bf"
     },
     "hashes": {
-      "en": "sha256:a1128e33ea6eaf7eb0a1ef4fcf58a914d103dc3fde0fd61f6a0e318eba6100bc",
-      "ru": "sha256:b8cb31fcdafa14ac5f6dec363469f07c6b85bc2359d82810a8167a91f9704f02"
+      "en": "sha256:d36b08688ba6637c3eec663e09a1419506a5038bb5b8a0db34d2d70eb6c3a73e",
+      "ru": "sha256:aee65c291e19e7979eef1ccfe3f49ae86aa0bcda424eee57b472769d528bfe84"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -502,8 +502,8 @@ const CONFIGS = [
       "ru": "319361bc-2c02-52ae-a5b8-77b9e95c3af9"
     },
     "hashes": {
-      "en": "sha256:53d2c0f55340bb3b013ffb03a4bbfe61af85228e60d2ba977b97b0cdf54c6a54",
-      "ru": "sha256:b69726f088d3eceb33770d5b5dd6f12dd22fe67cccb2bf9a6f3eb7f27a9ea638"
+      "en": "sha256:263078b8df5261d1f6cbe6bf2a26bc65666054bec447f3abf99e30099f6ed05f",
+      "ru": "sha256:a76a7e355e3da2877a5ce31f2eb858dc14c78e7193073383eafe0da295006cbc"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -571,8 +571,8 @@ const CONFIGS = [
       "ru": "3f1dd101-1586-5f0d-a02e-e2f4be0dee3f"
     },
     "hashes": {
-      "en": "sha256:29d8d4bd4c8b3f7b58226e056d4d3afac70c682c98aad8d4c8ae00c8298301d4",
-      "ru": "sha256:4fc4f58fd622630ccae4628874f54e2b67b68eb2ecc132530c613321ee5cd27d"
+      "en": "sha256:9e6e0842af0c7063b543b56ecaaeb70dac87f2ad5d01cf473b625ccac9b1f07e",
+      "ru": "sha256:195935f56f334c596f5d4ef5cf0e93cf063b40634b8a7469a52388e517de1e7d"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -635,8 +635,8 @@ const CONFIGS = [
       "ru": "2aeb8a89-8879-56ad-ac3d-09d5762d61dd"
     },
     "hashes": {
-      "en": "sha256:97654bb8579d40e976e1bcc4b105d2eb17cca4889a7409b896bdf12b8a911714",
-      "ru": "sha256:7b353878bfbc4185d99f2bb6ba867fdb7fb799a262436ba324be4faa05590169"
+      "en": "sha256:26bbe8cceeac0594dacddcfee2d373819a8dad16551f4a70f503eab14a2305fe",
+      "ru": "sha256:84f5539cc85ff6ef4d3af0baf7eda84f8101e168e91e6f6094fb8eb21b018807"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -704,8 +704,8 @@ const CONFIGS = [
       "ru": "804e857a-1568-5ae4-a053-b889a24b225b"
     },
     "hashes": {
-      "en": "sha256:160c241df6f52c8ca32e64746d33427d2d08a9589d3f4b9a1b23a079917e4893",
-      "ru": "sha256:f67302b6999bfa679b1da87704e8e5eb18320faaa872e9a06435bbb36c1c4262"
+      "en": "sha256:60bfde93a89d3e652e74c18d2fd13abc3628d4a07634d6fd9e059709e9f993b6",
+      "ru": "sha256:f3ba493db26308c56d7087150e936e9b2f92e988325bb0384ea9511817eae4e4"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -767,8 +767,8 @@ const CONFIGS = [
       "ru": "31b95974-1368-5048-a299-27968ce8ae59"
     },
     "hashes": {
-      "en": "sha256:00516e6d558277813c80802032a031014d50fb539799c9b289071d9fdb43860a",
-      "ru": "sha256:d5d815da7b5b30dcdacfe7d320ac72b61958bcb39101f65b653e1cd729bc7b65"
+      "en": "sha256:c4d059e26d67bc6c503f9f3d4d6a05fa6286f729ba226013d487e3fd99948656",
+      "ru": "sha256:50241f026c7c5e2b01c8994c133ad249b4be55ad66c6374740709840a29580e1"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -831,8 +831,8 @@ const CONFIGS = [
       "ru": "604048de-3ee3-521a-aab0-3c0ee0e3b673"
     },
     "hashes": {
-      "en": "sha256:70de713c8bc358e2b3a532b12d733cd0e1eb07a5f329c2a096795e70836a6618",
-      "ru": "sha256:4eae04c5357aff99cded28cd07ce56aecdeaa2a33e882f0315d8fa17cc253ef7"
+      "en": "sha256:1753b08c2e5e67b5b0f78dffb21064b91c0142d2b466e26f152b1c279f4ee9e2",
+      "ru": "sha256:de3297aaa9ed8cc63c9c01c57f9f1c126807e1b433a5e9d44489c99a7926a3fe"
     },
     "negative": false,
     "timeframe": "past-7-days",
@@ -899,8 +899,8 @@ const CONFIGS = [
       "ru": "8f8b5fe4-b555-529a-a91e-75134194d6f8"
     },
     "hashes": {
-      "en": "sha256:62fe09f2389a941f830b43d803bfdcba71a7993fac4a0cbecf8624b5f9588113",
-      "ru": "sha256:648ebd4ab751a6e52c14f398c496c71f748ed0acd887e26b77fe9140b8afa8bc"
+      "en": "sha256:a65c763622b2f5d018a218b895909da08a56d09865267dccbb7273b066ac294d",
+      "ru": "sha256:54bd6a4a225cc8f2612dae30a0fe1a67f88213068405388303c95ce4b63bfdca"
     },
     "negative": false,
     "timeframe": "past-7-days",
