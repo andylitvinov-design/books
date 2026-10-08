@@ -91,5 +91,7 @@ test('R2 UI exposes My Practice, public Masters and moderation without changing 
   assert.match(route,/practice\/onboarding/)
   assert.match(repository,/async onboarding\(actor,input\)/)
   assert.match(repository,/pricingMode:'free'/)
-  assert.match(services,/Request free service/)
+  assert.match(services,/listPublicServices\(locale\)/)
+  assert.match(services,/app\/consultations\?service=/)
+  assert.match(services,/grouped\[group\]\.push\(offering\)/)
 })
