@@ -27,6 +27,15 @@ const nextConfig: NextConfig = {
       { source: "/homeopathy/remedies/:path*", destination: "/ru/homeopathy/remedies/:path*", permanent: true },
     ];
   },
+  // Vercel redirects these images to pinned public sources; do not bundle
+  // the ~211 MB original corpus into each retained Function deployment.
+  outputFileTracingExcludes: {
+    "/media/**": [
+      "./source-books/book-1-alchemy-soul/media/**/*",
+      "./source-books/book-2-dao-books/photos/**/*",
+      "./source-books/book-3-maya-tradition/raw/photos/**/*",
+    ],
+  },
   outputFileTracingIncludes: {
     "/[locale]/client/[selector]/documents/[id]": ["./assets/documents/*"],
     "/api/client/[selector]/documents/[id]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
@@ -40,11 +49,6 @@ const nextConfig: NextConfig = {
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
-    ],
-    "/media/[series]/[file]": [
-      "./source-books/book-1-alchemy-soul/media/**/*",
-      "./source-books/book-2-dao-books/photos/**/*",
-      "./source-books/book-3-maya-tradition/raw/photos/**/*",
     ],
     "/[locale]/homeopathy/remedies/[slug]": ["./content/remedies/**/*.md"],
     "/api/prescriptions/[selector]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
