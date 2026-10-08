@@ -4,10 +4,10 @@ import test from "node:test";
 
 test("Reiki Yggdrasil course landing shows key information without opening step accordions", async () => {
   const component = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
-  assert.match(component, /className="yggdrasil-step-card"/);
-  assert.match(component, /className="yggdrasil-step-source-summary"/);
-  assert.match(component, /className="yggdrasil-attunement-chips"/);
-  assert.match(component, /className="yggdrasil-course-roadmap"/);
+  assert.match(component, /className=\{visualStyles\.stepCard\}/);
+  assert.match(component, /className=\{visualStyles\.stepIntroduction\}/);
+  assert.match(component, /className=\{visualStyles\.attunementChips\}/);
+  assert.match(component, /className=\{visualStyles\.stageNavigation\}/);
   assert.match(component, /What the course includes/);
   assert.match(component, /Что входит в курс/);
   assert.doesNotMatch(component, /<details className="yggdrasil-step">/);
@@ -26,12 +26,12 @@ test("real source-based step summary and videos stay visible while detailed attu
   assert.doesNotMatch(component, /source\.skills/);
 });
 
-test("mobile layout keeps the roadmap readable and source summary uncluttered", async () => {
-  const css = await readFile("app/academy.css", "utf8");
-  assert.match(css, /Reiki Yggdrasil inline course landing redesign/);
-  assert.match(css, /\.yggdrasil-course-roadmap \{/);
-  assert.match(css, /\.yggdrasil-step-source-summary \{/);
+test("mobile layout keeps visual chapters readable and images above their descriptions", async () => {
+  const css = await readFile("components/yggdrasil-curriculum-visual.module.css", "utf8");
+  assert.match(css, /\.stepCard \{/);
+  assert.match(css, /\.stepPhoto \{/);
+  assert.match(css, /\.stageNavigation \{/);
   assert.match(css, /@media \(max-width: 700px\)/);
-  assert.match(css, /\.yggdrasil-course-roadmap \{[\s\S]*?grid-template-columns: 1fr;/);
-  assert.match(css, /\.yggdrasil-step-source-summary \{[\s\S]*?max-width:/);
+  assert.match(css, /\.stepCard \{ grid-template-columns: minmax\(0,1fr\);/);
+  assert.match(css, /\.stepPhoto \{ height: 230px; min-height: 230px;/);
 });
