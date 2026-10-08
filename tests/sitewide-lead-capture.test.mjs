@@ -10,6 +10,8 @@ test("all public service, learning and reading families get a relevant lead capt
     ["/en/services", "en", "personal"],
     ["/ru/services/imagery-therapy", "ru", "personal"],
     ["/es/masters/andy-litvinov", "es", "personal"],
+    ["/en/masters/another-practitioner", "en", "network"],
+    ["/ru/services/another-practitioner/therapy-session", "ru", "network"],
     ["/en/services/andy-litvinov/homeopathy-consultation", "en", "personal"],
     ["/en/academy", "en", "training"],
     ["/ru/academy/reiki/yggdrasil/basic-course", "ru", "training"],
@@ -72,6 +74,14 @@ test("every applicable public route has a responsive global fallback without two
   assert.match(local, /data-conversion-kind=\{mode\}/);
   assert.match(local, /trainingEnquiryUrl\(locale, pathname\)/);
   assert.match(local, /free-situation-review/);
+  const services = read("app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx");
+  const practitioner = read("app/[locale]/masters/[slug]/page.tsx");
+  assert.match(services, /id="request-service"/);
+  assert.match(services, /practitioner.slug === "andy-litvinov"/);
+  assert.match(practitioner, /id="practitioner-services"/);
+  assert.match(component, /kind === "network"/);
+  assert.match(component, /networkService \? "#request-service"/);
+  assert.match(component, /networkMaster \? "#practitioner-services"/);
   assert.match(suppress, /body:has\(\[data-consultation-cta\]\) \[data-sitewide-capture\] \{ display: none; \}/);
   assert.match(css, /@media\(max-width:767px\)/);
   assert.match(css, /min-height:48px/);
