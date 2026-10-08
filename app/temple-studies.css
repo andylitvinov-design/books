@@ -455,3 +455,91 @@
   .temple-primary-cta { width: 100%; }
   .temple-finish { padding: 42px 22px; border-radius: 16px; }
 }
+
+
+/* PsiMaster Russian course recordings, embedded in the matching Temple stage. */
+.temple-video-archive {
+  margin: 32px 0 26px;
+  padding: 25px 0 10px;
+  border-top: 1px solid #dfd1c1;
+}
+.temple-video-archive-heading h3 {
+  margin: 0 0 9px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: clamp(23px, 2vw, 30px);
+  font-weight: 550;
+  line-height: 1.25;
+  color: #36271f;
+}
+.temple-video-archive-heading p {
+  color: #685a4d;
+  line-height: 1.65;
+  margin: 0 0 20px;
+  font-size: 14px;
+}
+.temple-video-series {
+  border: 1px solid #e3d4c5;
+  border-radius: 13px;
+  background: #fffcf7;
+  margin: 0 0 12px;
+  overflow: hidden;
+}
+.temple-video-series summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 16px 19px;
+  color: #3e2f26;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.temple-video-series[open] > summary { border-bottom: 1px solid #e8dbcf; }
+.temple-video-series summary:hover { background: #f7eee4; }
+.temple-video-series-count {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: #795b46;
+}
+.temple-video-series-content { padding: 18px; }
+.temple-video-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 19px;
+}
+.temple-video-lesson { min-width: 0; }
+.temple-video-lesson .academy-video-poster { border-radius: 10px; }
+.temple-video-lesson .academy-video-frame { overflow: hidden; border-radius: 10px; }
+.temple-video-lesson-title {
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 620;
+  color: #514035;
+  margin: 9px 0 0;
+}
+.temple-video-provenance {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 20px 0 0;
+  color: #745038;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 13px;
+}
+.temple-video-provenance:hover { color: #3a2a20; }
+.temple-video-series summary:focus-visible,
+.temple-video-provenance:focus-visible,
+.temple-video-lesson .academy-video-poster:focus-visible {
+  outline: 3px solid #927459;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .temple-video-grid { grid-template-columns: 1fr; gap: 20px; }
+  .temple-video-series summary { padding: 15px 14px; font-size: 15px; }
+  .temple-video-series-content { padding: 13px; }
+  .temple-video-archive-heading p { font-size: 13px; }
+}
