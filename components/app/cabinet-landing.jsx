@@ -16,14 +16,14 @@ import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/de
 const UI = {
   en: {
     kicker: 'Account',
-    title: 'Your personal space',
-    intro: 'Keep your results and history across devices.',
-    google: 'Continue with Google',
-    googleNote: 'Optional — the quick checks below work without signing in.',
+    title: 'Enter your personal cabinet',
+    intro: 'Sign in to see saved test batteries, track changes over time and keep your private results together.',
+    google: 'Enter personal cabinet with Google',
+    googleNote: 'Optional: you can select and take a battery of tests without signing in.',
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
     testsKicker: 'Mind–Body Monitor',
     tryTitle: 'Your Mind–Body Monitor',
-    tryText: 'Start with one useful check-in. Save results only if you want to build a personal timeline over time.',
+    tryText: 'Complete the selected test battery to track your concerns and review each result.',
     recommended: 'Recommended now',
     otherChecks: 'Other self-checks',
     areasTitle: 'What you can monitor',
@@ -105,14 +105,14 @@ const UI = {
   },
   ru: {
     kicker: 'Аккаунт',
-    title: 'Ваше личное пространство',
-    intro: 'Сохраняйте результаты и историю между устройствами.',
-    google: 'Продолжить с Google',
-    googleNote: 'Необязательно — быстрые тесты ниже работают без регистрации.',
+    title: 'Войти в личный кабинет',
+    intro: 'Войдите, чтобы видеть свои наборы тестов, отслеживать динамику и хранить результаты в личном кабинете.',
+    google: 'Войти в личный кабинет через Google',
+    googleNote: 'Необязательно: набор тестов можно подобрать и пройти без входа.',
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
     testsKicker: 'Монитор состояния',
     tryTitle: 'Ваш монитор состояния',
-    tryText: 'Начните с одной полезной проверки. Сохраняйте результаты только если хотите наблюдать личную динамику со временем.',
+    tryText: 'Пройдите подобранный набор тестов и просматривайте результаты по каждому направлению.',
     recommended: 'Рекомендуем сейчас',
     otherChecks: 'Другие самопроверки',
     areasTitle: 'Что можно отслеживать',
@@ -660,6 +660,22 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   return (
     <>
+      {phase === 'catalog' && (
+      <section className="cabinet-signin-strip cabinet-signin-hero" aria-labelledby="cabinet-title">
+        <div className="cabinet-signin-copy">
+          <p className="about-kicker">{c.kicker}</p>
+          <h2 id="cabinet-title">{c.title}</h2>
+          <p>{c.intro}</p>
+          <small>{c.googleNote}</small>
+        </div>
+        <button className="cabinet-google-button cabinet-google-inline" type="button" onClick={() => signIn()} disabled={busy}>
+          <span>{c.google}</span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        {error && phase === 'catalog' && <p className="client-entry-error cabinet-account-error" role="alert">{error}</p>}
+      </section>
+      )}
+
       <MoodCheckIn
         locale={locale}
         latestMood={latestGuestMood}
@@ -676,68 +692,12 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
       {phase === "catalog" && <PublicTestExplorer locale={locale} embedded />}
 
-      <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
+      {phase !== 'catalog' && <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
         <header className="library-heading cabinet-tests-heading">
           <p className="about-kicker">{c.testsKicker}</p>
           <h2 id="guest-tests-title">{c.tryTitle}</h2>
           <p>{c.tryText}</p>
         </header>
-
-        {phase === 'catalog' && (
-          <>
-            <div className="cabinet-monitor-actions" aria-label={locale === 'ru' ? 'Быстрые действия' : 'Quick actions'}>
-              <button
-                className="cabinet-monitor-action cabinet-monitor-action--primary"
-                type="button"
-                disabled={busy}
-                onClick={() => begin('state')}
-              >
-                <span>
-                  <strong>{c.stateAnalysisCta}</strong>
-                  <small>{c.stateAnalysisMeta}</small>
-                </span>
-                <ChevronRight aria-hidden="true" />
-              </button>
-              <Link className="cabinet-monitor-action" href={`/${locale}/client/tests`}>
-                <span>
-                  <strong>{c.batteryCta}</strong>
-                  <small>{c.batteryMeta}</small>
-                </span>
-                <ChevronRight aria-hidden="true" />
-              </Link>
-            </div>
-
-            <div className="cabinet-monitor-recommended">
-              <p className="cabinet-monitor-label">{c.recommended}</p>
-              <button className="cabinet-test-row cabinet-test-row--recommended" type="button" aria-label={`${c.start}: ${c.stateTitle}`} disabled={busy} onClick={() => begin('state')}>
-                <span className="cabinet-test-image" aria-hidden="true">
-                  <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'state')} />
-                </span>
-                <span className="cabinet-test-row-copy">
-                  <strong>{c.stateTitle}</strong>
-                  <small>{c.stateText}</small>
-                </span>
-                <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="cabinet-test-list" aria-label={c.otherChecks}>
-              <p className="cabinet-monitor-label">{c.otherChecks}</p>
-              <button className="cabinet-test-row" type="button" aria-label={`${c.start}: ${c.traitTitle}`} disabled={busy} onClick={() => begin('trait')}>
-                <span className="cabinet-test-image" aria-hidden="true">
-                  <Image alt="" fill sizes="(max-width: 600px) 72px, 128px" src={testArtwork(locale, 'trait')} />
-                </span>
-                <span className="cabinet-test-row-copy">
-                  <strong>{c.traitTitle}</strong>
-                  <small>{c.traitText}</small>
-                </span>
-                <ChevronRight className="cabinet-test-chevron" aria-hidden="true" />
-              </button>
-            </div>
-
-
-          </>
-        )}
 
         {phase === 'consent' && (
           <div className="cabinet-guest-runner">
@@ -972,21 +932,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         )}
         {error && phase !== 'catalog' && <p className="client-entry-error" role="alert">{error}</p>}
         <p className="cabinet-test-note">{c.nonDiagnostic}</p>
-      </section>
-
-      <section className="cabinet-signin-strip" aria-labelledby="cabinet-title">
-        <div className="cabinet-signin-copy">
-          <p className="about-kicker">{c.kicker}</p>
-          <h2 id="cabinet-title">{c.title}</h2>
-          <p>{c.intro}</p>
-          <small>{c.googleNote}</small>
-        </div>
-        <button className="cabinet-google-button cabinet-google-inline" type="button" onClick={() => signIn()} disabled={busy}>
-          <span>{c.google}</span>
-          <ChevronRight aria-hidden="true" />
-        </button>
-        {error && phase === 'catalog' && <p className="client-entry-error cabinet-account-error" role="alert">{error}</p>}
-      </section>
+      </section>}
 
       <details className="client-entry-card cabinet-legacy-entry">
         <summary>{c.legacyTitle}</summary>
