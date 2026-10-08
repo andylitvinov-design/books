@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'next.config.ts'
+      - 'app/media/**'
+      - 'data/media.*'
+      - 'scripts/verify-vercel-media-trace.mjs'
+      - 'tests/vercel-media-trace.test.mjs'
       - 'app/books/**'
       - 'data/library.ts'
       - 'data/reader-content.ts'
@@ -35,7 +39,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: node --test tests/maya-reader-release.test.mjs tests/maya-tradition-hub.test.mjs tests/maya-volumes.test.mjs
+      - run: node --test tests/maya-reader-release.test.mjs tests/maya-tradition-hub.test.mjs tests/maya-volumes.test.mjs tests/vercel-media-trace.test.mjs
       - run: npm ci --no-audit --no-fund
       - name: Build the real application
         run: npm run build
@@ -43,6 +47,8 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Verify the built server trace includes all four Maya HTML sources
         run: node scripts/verify-maya-reader-release.mjs
+      - name: Verify that Vercel media function excludes source-book photos
+        run: node scripts/verify-vercel-media-trace.mjs
       - name: Check published hub and all four readers in EN and RU, read-only
         if: github.event_name == 'push'
         run: node scripts/verify-maya-reader-release.mjs --live
