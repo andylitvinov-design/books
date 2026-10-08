@@ -8,3 +8,8 @@
   .house-home--services:lang(es) .service-home-card-action { font-size: 13px; min-height: 36px; }
   .house-home--services:lang(es) .service-home-section-heading { flex-wrap: wrap; align-items: baseline; }
 }
+
+/* Three Spanish service offers use the same photo-first presentation as EN/RU. */
+.services-shell:lang(es) .services-studio-card-photo { position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; border-radius:15px; margin:0 0 16px; background:#e7dfd3; }
+.services-shell:lang(es) .services-studio-card-photo img { object-fit:cover; object-position:center; }
+@media(max-width:600px) { .services-shell:lang(es) .services-studio-card-photo { aspect-ratio:16/9; } }
