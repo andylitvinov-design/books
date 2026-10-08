@@ -1,0 +1,2 @@
+/* A page with its own localized lead-capture block should not receive a second sales panel. */
+body:has([data-consultation-cta]) [data-sitewide-capture] { display: none; }
