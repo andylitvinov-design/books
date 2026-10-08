@@ -84,7 +84,7 @@ test('recommendation focus options cover practical monitoring themes in both lan
 test('public and signed-in routes share the complete Test Explorer rather than a top-three recommender', async () => {
   const [landing, workspace, route, explorer, publicExplorer] = await Promise.all([
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
-    readFile('components/app/app-workspace.jsx', 'utf8'),
+    readFile('components/app/account-test-battery.jsx', 'utf8'),
     readFile('app/[locale]/client/tests/page.tsx', 'utf8'),
     readFile('components/app/test-explorer.jsx', 'utf8'),
     readFile('components/app/public-test-explorer.jsx', 'utf8'),
@@ -98,8 +98,8 @@ test('public and signed-in routes share the complete Test Explorer rather than a
   assert.match(route, /PublicTestExplorer/)
   assert.match(route, /robots: \{ index: false, follow: false \}/)
   for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free testing']) assert.match(explorer, new RegExp(token))
-  assert.match(publicExplorer, /guest\/test-plans/)
-  assert.match(publicExplorer, /guest\/session/)
+  assert.match(publicExplorer, /auth\/start/)
+  assert.match(publicExplorer, /makeTestSelectionIntent/)
   assert.doesNotMatch(publicExplorer, /localStorage|sessionStorage/)
 })
 
