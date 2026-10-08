@@ -134,16 +134,18 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   const outline = publicBlocks.map((block, index) => ({ block, index })).filter(({ block }) => block.type === "h2" || block.type === "h3").slice(0, 32);
 
   return (
-    <main className={"academy-reading-shell" + (isCanonicalYggdrasil || isVerbatimTantraArchive ? " academy-reading-shell--wide" : "")} lang={locale}>
+    <main className={"academy-reading-shell" + (isCanonicalYggdrasil || isVerbatimTantraArchive ? " academy-reading-shell--wide" : "") + (isCanonicalYggdrasil ? " academy-reading-shell--yggdrasil" : "")} lang={locale}>
       <PublicSiteHeader locale={locale} /><AcademyBackLink locale={locale} />
       <div className={isCanonicalYggdrasil || isVerbatimTantraArchive ? "academy-course-layout" : undefined}>
         {isCanonicalYggdrasil ? <YggdrasilSideNavigation locale={locale} /> : null}
         {isVerbatimTantraArchive ? <TantraReikiSideNavigation locale={locale} levels={tantraReikiLevelSummary[locale].levels} /> : null}
         <article className="academy-reading">
-        <header className="academy-reading-header">
-          <p className="homeopathy-kicker">{text.title}</p><h1>{academyDisplayTitle(record, locale)}</h1>
-          <div className="academy-reading-meta"><span>{statusLabel(record, locale)}</span>{sourceNotice ? <span>{sourceNotice}</span> : null}</div>
-        </header>
+        {!isCanonicalYggdrasil ? (
+          <header className="academy-reading-header">
+            <p className="homeopathy-kicker">{text.title}</p><h1>{academyDisplayTitle(record, locale)}</h1>
+            <div className="academy-reading-meta"><span>{statusLabel(record, locale)}</span>{sourceNotice ? <span>{sourceNotice}</span> : null}</div>
+          </header>
+        ) : null}
         {isVerbatimTantraArchive ? (
           <>
             <section className="tantra-course-hero" aria-labelledby="tantra-course-hero-title">
