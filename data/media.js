@@ -27,6 +27,20 @@ export function mediaPathFor(series, file) {
   return `${mediaRoots[series]}/${file}`
 }
 
+// Serve source-book photos from the public, immutable Git commit on Vercel.
+// Keeping ~211 MB of photos out of the function bundle avoids replicating
+// the same binaries with every Preview/Production deployment.
+export const VERIFIED_FALLBACK_MEDIA_COMMIT = 'f55b1f830e62efb5867faf3a4df8940e90080a7d'
+
+export function mediaSourceUrlFor(series, file, revision) {
+  const mediaPath = mediaPathFor(series, file)
+  if (!mediaPath || !mediaTypes.has(path.extname(file).toLowerCase())) return undefined
+  if (!/^[0-9a-f]{40}$/i.test(revision || '')) return undefined
+
+  const escaped = mediaPath.split('/').map(encodeURIComponent).join('/')
+  return `https://raw.githubusercontent.com/andylitvinov-design/books/${revision}/${escaped}`
+}
+
 export async function getMediaAsset(series, file) {
   const relativePath = mediaPathFor(series, file)
   const contentType = mediaTypes.get(path.extname(file).toLowerCase())
