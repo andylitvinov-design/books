@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, ArrowRight } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-capture";
 import styles from "./sitewide-lead-capture.module.css";
@@ -106,9 +107,14 @@ const copy = {
 
 export function SitewideLeadCapture() {
   const pathname = usePathname();
+  const [legacyBookLocale, setLegacyBookLocale] = useState<"en" | "ru">("ru");
+  useEffect(() => {
+    if (!/^\/books\/[^/]+/.test(pathname)) return;
+    setLegacyBookLocale(new URLSearchParams(window.location.search).get("lang") === "en" ? "en" : "ru");
+  }, [pathname]);
   const route = classifyPublicLead(pathname);
   if (!route) return null;
-  const locale = route.locale as "en" | "ru" | "es";
+  const locale = (/^\/books\/[^/]+/.test(pathname) ? legacyBookLocale : route.locale) as "en" | "ru" | "es";
   const kind = route.kind as "training" | "reading" | "personal" | "network";
   const c = copy[locale][kind];
   const relative = pathname.replace(/^\/(en|ru|es)(?=\/|$)/, "");
