@@ -21,7 +21,7 @@ test("all public service, learning and reading families get a relevant lead capt
     ["/ru/homeopathy/remedies/aconitum", "ru", "reading"],
     ["/en/wu-xing", "en", "reading"],
     ["/en/books", "en", "reading"],
-    ["/books/dao-wuxing-model-steps", "en", "reading"],
+    ["/books/dao-wuxing-model-steps", "ru", "reading"],
     ["/en/academy/archive", "en", "training"],
   ];
   for (const [url, locale, kind] of cases) {
@@ -65,6 +65,8 @@ test("every applicable public route has a responsive global fallback without two
   assert.ok(root.indexOf("{children}") < root.indexOf("<SitewideLeadCapture"));
   assert.ok(root.indexOf("<SitewideLeadCapture") < root.indexOf("<MobileBottomNavigation"));
   assert.match(component, /classifyPublicLead\(pathname\)/);
+  assert.match(component, /setLegacyBookLocale/);
+  assert.match(component, /window.location.search/);
   assert.match(component, /trainingEnquiryUrl\(locale, pathname\)/);
   assert.match(component, /data-sitewide-capture=\{kind\}/);
   assert.match(component, /services\/free-situation-review/);
