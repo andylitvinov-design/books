@@ -31,7 +31,7 @@ test("home shows one approved written story plus six sourced video stories per l
 test("the personal story is permissioned, anonymized, attributed, and translated transparently", () => {
   const component = read("components", "personal-testimonials.tsx");
   assert.match(component, /shared with permission/);
-  assert.match(component, /опубликовано с её разрешения/);
+  assert.match(component, /опубликовано с разрешения автора/);
   assert.match(component, /translated from Russian/);
   assert.match(component, /не гарантируется/);
   assert.match(component, /not typical or guaranteed outcomes/);
