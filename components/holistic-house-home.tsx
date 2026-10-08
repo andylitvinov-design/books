@@ -19,13 +19,13 @@ const copy = {
   ru: {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
-    heroTitle: "Понятная точка входа",
-    heroIntro: "Holistic House объединяет индивидуальную работу, бесплатные self-checks и обучение. Не нужно разбираться во всём сайте — выберите то, что вам нужно сейчас.",
-    heroPrimary: "Выбрать, с чего начать",
-    heroSecondary: "Личная работа",
-    startKicker: "С чего начать",
-    startTitle: "Три простых пути",
-    startIntro: "Выберите один вариант. Всё остальное можно открыть позже.",
+    heroTitle: "Нет сил, ясности или движения к цели?",
+    heroIntro: "Начните с бесплатного личного разбора ситуации. Мы обсудим, где вы чувствуете затруднение, что уже пробовали и какие следующие шаги можно рассмотреть. Без обязательства продолжать работу.",
+    heroPrimary: "Записаться на бесплатный разбор",
+    heroSecondary: "Посмотреть три направления",
+    startKicker: "Другие возможности",
+    startTitle: "Исследуйте Holistic House",
+    startIntro: "Индивидуальная работа — главный путь к личной консультации. Тесты, обучение и библиотека доступны отдельно, если вы хотите исследовать тему самостоятельно.",
     personalEyebrow: "1 · Личная работа",
     personalTitle: "Разобрать важный вопрос",
     personalText: "Индивидуальные консультации, гипнотерапия, расстановки и другие форматы работы с вашим запросом.",
@@ -50,13 +50,13 @@ const copy = {
   en: {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
-    heroTitle: "A clear place to start",
-    heroIntro: "Holistic House brings together personal work, free self-checks and learning. You do not need to understand the whole site — just choose what you need today.",
-    heroPrimary: "Choose where to start",
-    heroSecondary: "Personal work",
-    startKicker: "Start here",
-    startTitle: "Three simple paths",
-    startIntro: "Choose one. Everything else can wait until you need it.",
+    heroTitle: "Feeling stuck, exhausted, or unsure what comes next?",
+    heroIntro: "Start with a free personal conversation. We can explore what feels difficult right now, where progress seems blocked and what next step might suit your situation. No obligation to continue.",
+    heroPrimary: "Request a free situation review",
+    heroSecondary: "Explore three approaches",
+    startKicker: "Other ways to explore",
+    startTitle: "Explore Holistic House",
+    startIntro: "Personal sessions are one path. Self-checks, courses and books are separate options if you prefer to explore on your own.",
     personalEyebrow: "1 · Personal work",
     personalTitle: "Work on an important question",
     personalText: "One-to-one consultations, hypnotherapy, constellations and other ways to explore your current situation.",
@@ -110,7 +110,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
       <section className="service-home-hero" aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
           <Image
-            src="/images/holistic-house/hero-olive-incense.webp"
+            src="/images/holistic-house/andy-about.png"
             alt=""
             fill
             priority
@@ -122,9 +122,9 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <h1 id="house-title"><span>{text.heroTitle}</span></h1>
           <p className="service-home-intro">{text.heroIntro}</p>
           <div className="service-home-actions">
-            <Link className="service-home-button service-home-button--primary" href="#start-here">
+            <AcquisitionEventLink className="service-home-button service-home-button--primary" href={`/${locale}/services/free-situation-review`} event="service_request_start">
               {text.heroPrimary}<span aria-hidden="true">→</span>
-            </Link>
+            </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--secondary"
               href={`/${locale}/services`}
@@ -135,6 +135,8 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           </div>
         </div>
       </section>
+
+      <PersonalWorkJourney locale={locale} variant="compact" />
 
       <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
         <header className="service-home-start__heading">
@@ -184,8 +186,6 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           {text.returning} <Link href={`/${locale}/client`}>{text.cabinetAction}<span aria-hidden="true">→</span></Link>
         </p>
       </section>
-
-      <PersonalWorkJourney locale={locale} variant="compact" />
 
       {introVideo ? (
         <section className="service-home-video" aria-labelledby="service-home-video-title">
