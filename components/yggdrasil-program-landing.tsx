@@ -52,6 +52,7 @@ const copy = {
     title: "DAO Reiki Yggdrasil",
     lead: "The system is now organised as seven clear course landings. Start with the five-level Basic Course, continue through the six-step Instructor Course, then open each advanced module separately.",
     start: "Open Basic Course",
+    description: "Read Basic Course description",
     instructor: "Open Instructor Course",
     archive: "Full historical program text",
     mapEyebrow: "Current course map",
@@ -75,6 +76,7 @@ const copy = {
     title: "Дао Рейки Иггдрасиль",
     lead: "Теперь система разложена на семь понятных отдельных лендингов. Сначала Базовый курс из пяти уровней, затем Инструкторский курс из шести ступеней, после него — каждый продвинутый модуль отдельно.",
     start: "Открыть Базовый курс",
+    description: "Читать описание Базового курса",
     instructor: "Открыть Инструкторский курс",
     archive: "Полный исторический текст программы",
     mapEyebrow: "Актуальная карта обучения",
@@ -98,6 +100,7 @@ const copy = {
     title: "DAO Reiki Yggdrasil",
     lead: "El sistema está organizado en siete páginas de curso: Curso Básico, Curso de Instructor y cada módulo avanzado por separado.",
     start: "Abrir Curso Básico",
+    description: "Leer descripción del Curso Básico",
     instructor: "Abrir Curso de Instructor",
     archive: "Texto histórico completo",
     mapEyebrow: "Mapa formativo actual",
@@ -146,6 +149,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           <p>{text.lead}</p>
           <div className="yggdrasil-program-actions">
             <Link className="yggdrasil-primary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
+            <Link className="yggdrasil-secondary-action" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description}</Link>
             <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/instructor-course`}>{text.instructor}</Link>
             <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/archive`}>{text.archive}</Link>
           </div>
@@ -178,6 +182,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           <p className="homeopathy-kicker">{text.basicEyebrow}</p>
           <h2>{text.basicTitle}</h2>
           <p>{text.basicLead}</p>
+          <Link className="yggdrasil-source-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description}<span aria-hidden="true">→</span></Link>
           <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}<span aria-hidden="true">→</span></Link>
         </div>
         <div className="yggdrasil-basic-levels">
