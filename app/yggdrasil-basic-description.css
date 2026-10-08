@@ -34,3 +34,35 @@
   .yggdrasil-description-level > p { font-size: 15px; }
   .yggdrasil-description-hero .yggdrasil-primary-action, .yggdrasil-description-actions a { width: 100%; justify-content: center; text-align: center; }
 }
+
+/* Long-form original manual: book rather than landing-page cards */
+.yggdrasil-description-page .academy-reading { max-width: 960px; }
+.yggdrasil-description-page .yggdrasil-description-hero h1 { font-size: clamp(30px,4vw,51px); }
+.yggdrasil-full-book { padding: 30px 0 35px; scroll-margin-top: 100px; }
+.yggdrasil-book-edition { border-left: 3px solid #98694c; padding: 10px 15px; margin: 0 0 30px; color: #594639; font: 15px/1.65 var(--font-serif); background: #fcf8f1; }
+.yggdrasil-book-toc { padding: clamp(20px,3vw,32px); margin: 0 0 32px; background: #f6efe5; border: 1px solid #e2d3c0; }
+.yggdrasil-book-toc h2 { margin: 0 0 15px; font: 400 clamp(23px,3vw,31px)/1.2 var(--font-serif); color: #38291f; }
+.yggdrasil-book-toc ol { list-style: decimal; columns: 2; gap: 42px; padding-left: 24px; margin: 0; }
+.yggdrasil-book-toc li { padding: 0 0 11px 4px; break-inside: avoid; font: 15px/1.5 var(--font-serif); color: #76513b; }
+.yggdrasil-book-toc a { color: #65432f; text-decoration: underline; text-underline-offset: 3px; }
+.yggdrasil-book-toc a:hover { color: #a26e41; }
+.yggdrasil-book-pages { max-width: 740px; margin: 0 auto; }
+.yggdrasil-book-page { scroll-margin-top: 98px; border-bottom: 1px solid #e3d9cd; padding: 22px 0 34px; overflow-wrap: anywhere; }
+.yggdrasil-book-page-counter { display: block; text-transform: uppercase; letter-spacing: .1em; font: 700 10px/1.5 sans-serif; color: #9b806d; margin: 0 0 18px; }
+.yggdrasil-book-page h2 { margin: 0 0 25px; color: #33251b; font: 400 clamp(26px,3vw,34px)/1.2 var(--font-serif); }
+.yggdrasil-book-page > p { font: 17px/1.82 var(--font-serif); color: #3d352f; margin: 0 0 17px; white-space: normal; hyphens: auto; }
+.yggdrasil-book-page > p.yggdrasil-book-standout { color: #432e1f; font-size: 18px; font-weight: 600; }
+.yggdrasil-description-summary { margin: 25px 0 25px; padding: 0 20px; border: 1px solid #dbc7b2; background: #fdf9f4; }
+.yggdrasil-description-summary summary { padding: 17px 0; color: #69452f; font-weight: 700; cursor: pointer; font-size: 15px; }
+.yggdrasil-description-summary .yggdrasil-description-section { padding: 22px 0; }
+.yggdrasil-book-page:target { outline: none; }
+@media (max-width: 780px) {
+  .yggdrasil-description-page .yggdrasil-description-hero figure { max-height: 190px; }
+  .yggdrasil-book-toc ol { columns: 1; }
+  .yggdrasil-full-book { padding-top: 20px; }
+  .yggdrasil-book-pages { width: 100%; }
+  .yggdrasil-book-page { padding: 22px 0 24px; }
+  .yggdrasil-book-page > p { font-size: 16px; line-height: 1.75; }
+  .yggdrasil-book-page h2 { font-size: 25px; }
+  .yggdrasil-description-summary { padding: 0 14px; }
+}
