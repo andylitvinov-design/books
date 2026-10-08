@@ -12,7 +12,7 @@ async function request(path, body, method = 'POST') {
   return value
 }
 
-export function PublicTestExplorer({ locale }) {
+export function PublicTestExplorer({ locale, embedded = false }) {
   const [pending, setPending] = useState(null), [adult, setAdult] = useState(false), [necessary, setNecessary] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(null)
   const router = useRouter(), ru = locale === 'ru'
   const submit = async (entries, createSession = false) => {
@@ -26,7 +26,7 @@ export function PublicTestExplorer({ locale }) {
       else setError(cause)
     } finally { setBusy(false) }
   }
-  return <><TestExplorer locale={locale} audience="guest" onStart={(entries) => submit(entries)} />
+  return <><TestExplorer locale={locale} audience="guest" embedded={embedded} onStart={(entries) => submit(entries)} />
     {pending && <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label={ru ? 'Перед началом' : 'Before you start'}><section className={styles.dialog}><h2>{ru ? 'Перед началом' : 'Before you start'}</h2><p>{ru ? 'Чтобы временно сохранить выбранный набор и ответы, подтвердите необходимые условия обработки.' : 'To temporarily store your selected set and answers, confirm the necessary processing conditions.'}</p><label><input type="checkbox" checked={adult} onChange={(event) => setAdult(event.target.checked)} />{ru ? 'Мне исполнилось 18 лет.' : 'I am 18 or older.'}</label><label><input type="checkbox" checked={necessary} onChange={(event) => setNecessary(event.target.checked)} />{ru ? 'Я согласен(-на) на временную приватную обработку ответов и результатов.' : 'I agree to temporary private processing of my answers and result.'}</label>{error && <p role="alert">{error.code || error.message}</p>}<div className={styles.actions}><button type="button" onClick={() => setPending(null)}>{ru ? 'Назад' : 'Back'}</button><button type="button" disabled={busy || !adult || !necessary} onClick={() => submit(pending, true)}>{busy ? '…' : (ru ? 'Продолжить' : 'Continue')}</button></div></section></div>}
   </>
 }
