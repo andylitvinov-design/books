@@ -89,7 +89,8 @@ test('public and signed-in routes share the complete Test Explorer rather than a
     readFile('components/app/test-explorer.jsx', 'utf8'),
     readFile('components/app/public-test-explorer.jsx', 'utf8'),
   ])
-  assert.match(landing, /<PublicTestExplorer locale=\{locale\} embedded \/>/)\n  assert.match(explorer, /const matchCount =/)
+  assert.match(landing, /<PublicTestExplorer locale=\{locale\} embedded \/>/)
+  assert.match(explorer, /const matchCount =/)
   assert.doesNotMatch(landing, /\.slice\(0, 3\)/)
   assert.doesNotMatch(landing, /cabinet-test-recommender/)
   assert.match(workspace, /<TestExplorer/)
