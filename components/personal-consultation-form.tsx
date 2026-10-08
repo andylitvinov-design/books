@@ -30,7 +30,7 @@ const copy = {
   },
 } as const;
 
-export function PersonalConsultationForm({ locale }: { locale: Locale | "es" }) {
+export function PersonalConsultationForm({ locale, service }: { locale: Locale | "es"; service?: string }) {
   const text = copy[locale];
   const [preparedUrl, setPreparedUrl] = useState("");
   const [interactive, setInteractive] = useState(false);
@@ -50,10 +50,10 @@ export function PersonalConsultationForm({ locale }: { locale: Locale | "es" }) 
     }
 
     const message = locale === "es"
-      ? ["Solicitud de consulta personal — Holistic House", "", `Nombre: ${name}`, contact ? `Contacto preferido: ${contact}` : "", "", "Lo que me gustaría explorar:", request].filter(Boolean).join("\n")
+      ? ["Solicitud de consulta personal — Holistic House", service ? `Servicio: ${service}` : "", "", `Nombre: ${name}`, contact ? `Contacto preferido: ${contact}` : "", "", "Lo que me gustaría explorar:", request].filter(Boolean).join("\n")
       : locale === "ru"
-        ? ["Заявка на личную консультацию — Holistic House", "", `Имя: ${name}`, contact ? `Контакт: ${contact}` : "", "", "Запрос:", request].filter(Boolean).join("\n")
-        : ["Personal consultation request — Holistic House", "", `Name: ${name}`, contact ? `Preferred contact: ${contact}` : "", "", "What I would like to explore:", request].filter(Boolean).join("\n");
+        ? ["Заявка на личную консультацию — Holistic House", service ? `Услуга: ${service}` : "", "", `Имя: ${name}`, contact ? `Контакт: ${contact}` : "", "", "Запрос:", request].filter(Boolean).join("\n")
+        : ["Personal consultation request — Holistic House", service ? `Service: ${service}` : "", "", `Name: ${name}`, contact ? `Preferred contact: ${contact}` : "", "", "What I would like to explore:", request].filter(Boolean).join("\n");
 
     const url = `https://wa.me/14376066502?text=${encodeURIComponent(message)}`;
     setPreparedUrl(url);

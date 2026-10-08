@@ -1,132 +1,126 @@
-"use client";
-
 import Link from "next/link";
-
-import { AcquisitionEventLink } from "@/components/acquisition-event-link";
-import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import type { Locale } from "@/data/remedies";
-
 import styles from "./personal-work-journey.module.css";
 
 const copy = {
   ru: {
-    eyebrow: "Мой подход к индивидуальной работе",
-    compactTitle: "Сначала опора. Затем ясность и движение.",
-    compactIntro: "Меня до сих пор удивляет, как работа с внутренними образами помогает человеку иначе увидеть свои желания и возможности. Но иногда даже для глубокой работы сначала нужен внутренний ресурс.",
-    fullTitle: "Как я предлагаю работать со мной",
-    fullIntro: "Мы можем двигаться от поиска опоры к пониманию своих желаний и затем к конкретным решениям. Это не обязательный курс из трёх ступеней: порядок и методы мы выбираем вместе, исходя из вашего запроса.",
-    steps: [
+    eyebrow: "Три типа моих услуг",
+    title: "Выберите направление работы",
+    compactIntro: "Это три разные услуги, а не обязательные этапы. Выберите, что ближе вашему запросу, или начните с бесплатной диагностики ситуации.",
+    fullIntro: "Можно работать с состоянием и личным ресурсом, разбирать внутреннюю проблему или искать новые возможности для целей и отношений. Направления самостоятельные — выбор зависит от вашего запроса.",
+    services: [
       {
-        title: "Найти опору",
-        short: "Понять текущее состояние и что сейчас поддерживает вас.",
-        detail: "Начинаем с разговора о состоянии, напряжении и доступных ресурсах. При желании можно отдельно обсудить гомеопатию как дополнительную практику — без обещаний устранения симптомов и без замены медицинской помощи.",
+        title: "Гомеопатия",
+        focus: "Личный ресурс и самочувствие",
+        short: "Обсудить нехватку ресурса, состояние и симптомы.",
+        detail: "Индивидуальная дополнительная консультация о самочувствии, текущем состоянии и симптомах. Гомеопатия не имеет надёжных доказательств эффективности лечения заболеваний и не заменяет медицинскую помощь.",
+        action: "Консультация по гомеопатии",
+        slug: "andy-litvinov/homeopathy-consultation",
       },
       {
-        title: "Прояснить желания",
-        short: "Исследовать свой запрос через образы и внутренние переживания.",
-        detail: "В образной терапии и работе с внутренними частями исследуем ваши желания, чувства, ограничения и то, что мешает сделать следующий шаг. Цель — лучше понять себя и найти направление.",
+        title: "Образная терапия",
+        focus: "Разобрать проблему и укрепить устойчивость",
+        short: "Исследовать внутренние блоки, чувства и повторяющиеся реакции.",
+        detail: "Психотерапевтическая работа с образами и внутренними частями для исследования проблемы, эмоциональных реакций, личной силы, границ и внутренней устойчивости.",
+        action: "Сессии образной терапии",
+        slug: "imagery-therapy",
       },
       {
-        title: "Перейти к действиям",
-        short: "Посмотреть на отношения, роли и возможные решения шире.",
-        detail: "Системные и архетипические расстановки позволяют по-новому рассмотреть ситуацию, свои роли и варианты действий. Они помогают исследовать выбор, но не предсказывают и не гарантируют внешние события.",
+        title: "Расстановки и архетипическая работа",
+        focus: "Цели, возможности и направление движения",
+        short: "Увидеть новые возможности и шаги к личным или деловым целям.",
+        detail: "Системные расстановки и архетипические подходы помогают исследовать роли, отношения, бизнес и варианты решений. Внешние результаты и скорость достижения целей не гарантируются.",
+        action: "Расстановочная сессия",
+        slug: "andy-litvinov/personal-constellation-session",
       },
     ],
-    note: "Не всем нужны все три этапа. Гомеопатия — только дополнительная практика, не доказанный способ лечения и не замена стандартной или неотложной медицинской помощи.",
-    compactAction: "Подробнее о личной работе",
-    freeAction: "Начать с бесплатного self-check",
-    contactAction: "Обсудить мой запрос",
+    freeEyebrow: "Входящая услуга · бесплатно",
+    freeTitle: "Не знаете, что выбрать?",
+    freeText: "Начните с бесплатной диагностики ситуации: цель, бизнес или проблема. Вместе попробуем найти точку ступора, область возможного роста и подходящий формат дальнейшей работы. Это не медицинская диагностика.",
+    freeAction: "Бесплатная диагностика ситуации",
+    note: "Вы сами выбираете, продолжать ли работу. При медицинских симптомах обращайтесь к квалифицированному медицинскому специалисту.",
   },
   en: {
-    eyebrow: "My approach to personal work",
-    compactTitle: "First, find your footing. Then clarity and movement.",
-    compactIntro: "I am still surprised by how working with inner imagery can help someone see their wishes and possibilities differently. But sometimes we need enough inner resources before we feel ready to go deeper.",
-    fullTitle: "How I suggest we work together",
-    fullIntro: "We can move from finding a sense of support to understanding what you want, and then to practical choices. This is not a required three-step program: we choose the methods and sequence together based on your needs.",
-    steps: [
+    eyebrow: "My three services",
+    title: "Choose the kind of personal work you need",
+    compactIntro: "These are three different services, not a required sequence. Choose what speaks to your situation, or start with a free situation assessment.",
+    fullIntro: "We can explore your wellbeing and resources, an inner difficulty, or possibilities for your relationships, business and goals. You can choose the direction that fits your question.",
+    services: [
       {
-        title: "Find your footing",
-        short: "Understand where you are and what helps you feel supported.",
-        detail: "We begin by discussing how you feel, what is difficult and what resources you have. If you wish, we can also discuss homeopathy as a complementary practice, without promises of symptom relief or replacing medical care.",
+        title: "Homeopathy",
+        focus: "Personal resources & wellbeing",
+        short: "Discuss low energy, wellbeing and symptoms.",
+        detail: "A complementary one-to-one consultation about how you feel and your symptoms. Homeopathy lacks reliable evidence for treating medical conditions and does not replace standard or urgent medical care.",
+        action: "Homeopathy consultation",
+        slug: "andy-litvinov/homeopathy-consultation",
       },
       {
-        title: "Clarify what you want",
-        short: "Explore your question through imagery and inner experience.",
-        detail: "Guided imagery and parts-oriented work invite you to explore wishes, emotions and patterns that may keep you stuck. The aim is a clearer understanding of yourself and your possible next step.",
+        title: "Guided imagery therapy",
+        focus: "Explore a difficulty & build inner stability",
+        short: "Explore inner blocks, feelings and repeating reactions.",
+        detail: "Psychotherapy-informed imagery and parts-oriented work to explore difficulties, emotional responses, boundaries, personal strengths and inner stability.",
+        action: "Guided imagery sessions",
+        slug: "imagery-therapy",
       },
       {
-        title: "Move towards action",
-        short: "Look more broadly at roles, relationships and choices.",
-        detail: "Systemic and archetypal constellations offer a way to reflect on a situation, explore your role within it and consider options. They do not predict or guarantee external events.",
+        title: "Systemic & archetypal constellations",
+        focus: "Goals, choices & new possibilities",
+        short: "Explore possibilities and next steps for personal or business goals.",
+        detail: "Systemic constellations and archetypal approaches explore roles, relationships, business questions and choices. Faster progress or external outcomes cannot be guaranteed.",
+        action: "Constellation session",
+        slug: "andy-litvinov/personal-constellation-session",
       },
     ],
-    note: "You do not need all three stages. Homeopathy is a complementary practice, not an evidence-based treatment or a substitute for standard or urgent medical care.",
-    compactAction: "Explore my approach",
-    freeAction: "Start with a free self-check",
-    contactAction: "Discuss my situation",
+    freeEyebrow: "Free introductory service",
+    freeTitle: "Not sure where to begin?",
+    freeText: "Start with a free situation assessment for a goal, business or personal problem. We can identify where you feel stuck, explore possible areas for growth and decide which approach fits. This is not a medical diagnosis.",
+    freeAction: "Free situation & goal assessment",
+    note: "You decide whether to continue. Medical symptoms require assessment by a qualified healthcare professional.",
   },
 } as const;
 
-export function PersonalWorkJourney({
-  locale,
-  variant = "full",
-}: {
-  locale: Locale;
-  variant?: "compact" | "full";
-}) {
+export function PersonalWorkJourney({ locale, variant = "full" }: { locale: Locale; variant?: "compact" | "full" }) {
   const text = copy[locale];
   const compact = variant === "compact";
   const titleId = compact ? "journey-preview-title" : "personal-path-title";
-  const href = "/" + locale + "/services#personal-path";
-
   return (
     <section
       id={compact ? undefined : "personal-path"}
-      className={styles.section + " " + (compact ? styles.compact : styles.full)}
+      className={[styles.section, compact ? styles.compact : styles.full].join(" ")}
       aria-labelledby={titleId}
       data-personal-work-journey={variant}
+      lang={locale}
     >
-      <div className={styles.intro}>
+      <header className={styles.intro}>
         <p className={styles.eyebrow}>{text.eyebrow}</p>
-        <h2 id={titleId}>{compact ? text.compactTitle : text.fullTitle}</h2>
+        <h2 id={titleId}>{text.title}</h2>
         <p>{compact ? text.compactIntro : text.fullIntro}</p>
-      </div>
-
-      <ol className={styles.steps}>
-        {text.steps.map((step, index) => (
-          <li className={styles.step} key={step.title}>
-            <span className={styles.number} aria-hidden="true">{"0" + (index + 1)}</span>
+      </header>
+      <div className={styles.services}>
+        {text.services.map((service) => (
+          <article className={styles.service} key={service.slug}>
             <div>
-              <h3>{step.title}</h3>
-              <p>{compact ? step.short : step.detail}</p>
+              <p className={styles.focus}>{service.focus}</p>
+              <h3>{service.title}</h3>
+              <p className={styles.description}>{compact ? service.short : service.detail}</p>
             </div>
-          </li>
+            <Link className={styles.serviceLink} href={"/" + locale + "/services/" + service.slug}>
+              {service.action}<span aria-hidden="true">→</span>
+            </Link>
+          </article>
         ))}
-      </ol>
-
-      <div className={styles.bottom}>
-        {compact ? (
-          <Link className={styles.primaryLink} href={href}>
-            {text.compactAction}<span aria-hidden="true">→</span>
-          </Link>
-        ) : (
-          <>
-            <p className={styles.note}>{text.note}</p>
-            <div className={styles.actions}>
-              <AcquisitionEventLink
-                href={LOCAL_ACQUISITION[locale].selfCheck.href}
-                event="self_check_start"
-                className={styles.primaryLink}
-              >
-                {text.freeAction}<span aria-hidden="true">→</span>
-              </AcquisitionEventLink>
-              <Link className={styles.secondaryLink} href="#consultation">
-                {text.contactAction}<span aria-hidden="true">→</span>
-              </Link>
-            </div>
-          </>
-        )}
       </div>
+      <aside className={styles.free}>
+        <div>
+          <p className={styles.eyebrow}>{text.freeEyebrow}</p>
+          <h3>{text.freeTitle}</h3>
+          <p>{text.freeText}</p>
+        </div>
+        <Link className={styles.primaryLink} href={"/" + locale + "/services/free-situation-review"}>
+          {text.freeAction}<span aria-hidden="true">→</span>
+        </Link>
+      </aside>
+      {!compact && <p className={styles.note}>{text.note}</p>}
     </section>
   );
 }

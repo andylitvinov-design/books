@@ -45,9 +45,23 @@ async function exercise(engine, browserType, width) {
           assert.equal(await page.locator('.public-consultation-cta').count(), 0, 'About must not repeat the generic consultation CTA');
         }
         assert.deepEqual(errors, [], 'Unexpected page JS error');
-        for (const img of await page.locator('.site-video-poster').all()) {
-          await img.scrollIntoViewIfNeeded();
-          await img.evaluate(el => el.decode());
+        // React may swap a max-resolution YouTube poster for its HQ fallback
+        // while WebKit scrolls or decodes. Re-query the current image and retry
+        // only these transient source/DOM-change errors, never a genuinely broken image.
+        const posters = page.locator('.site-video-poster');
+        for (let i = 0; i < await posters.count(); i++) {
+          for (let attempt = 0; attempt < 4; attempt++) {
+            if (i >= await posters.count()) break;
+            try {
+              await posters.nth(i).scrollIntoViewIfNeeded({ timeout: 7000 });
+              await posters.nth(i).evaluate(el => el.decode(), { timeout: 7000 });
+              break;
+            } catch (error) {
+              const message = String(error?.message || error);
+              if (!/Aborted by source change|Element is not attached to the DOM|not attached to the DOM/.test(message) || attempt === 3) throw error;
+              await page.waitForTimeout(250);
+            }
+          }
         }
         if (['/en/about', '/es/about', '/books/maya-tradition'].includes(path)) {
           await page.evaluate(() => scrollTo(0, 0));
