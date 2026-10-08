@@ -39,7 +39,7 @@ function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
   const child = yggdrasilChild(slug);
-  if (routeKey(slug) === "reiki/yggdrasil/basic-course/description") return locale === "ru" ? "Базовый курс Рейки Иггдрасиль — описание" : locale === "es" ? "Curso Básico de Reiki Yggdrasil — descripción" : "Reiki Yggdrasil Basic Course — Description";
+  if (routeKey(slug) === "reiki/yggdrasil/basic-course/description") return locale === "ru" ? "Рейки Иггдрасиль — книга базового курса I–V ступени" : locale === "es" ? "Libro: Reiki Yggdrasil — Curso Básico I–V" : "Reiki Yggdrasil — Basic Course Book I–V";
   if (child === "archive") return locale === "ru" ? "Рейки Иггдрасиль — полный исторический текст" : locale === "es" ? "Reiki Yggdrasil — fuente histórica completa" : "Reiki Yggdrasil — Complete Historical Source";
   if (child) {
     const courseModule = yggdrasilModuleBySlug(child);
@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
   const description = routeKey(slug) === "reiki/yggdrasil/basic-course/description"
-    ? locale === "ru" ? "Текстовое описание пяти ступеней базового курса Рейки Иггдрасиль: темы, настройки и формат обучения." : locale === "es" ? "Descripción de los cinco niveles del Curso Básico Reiki Yggdrasil: temas, sintonizaciones y formación." : "An introduction to the five Reiki Yggdrasil Basic Course levels, attunements and learning format."
+    ? locale === "ru" ? "Полная книга-методичка по базовому курсу Рейки Иггдрасиль I–V: все 38 страниц, настройки и упражнения." : locale === "es" ? "Libro completo del Curso Básico de Reiki Yggdrasil, niveles I–V, en ruso original, con índice; resumen en español." : "Complete original Russian Reiki Yggdrasil Basic Course book, Levels I–V, with all attunements and exercises; English overview."
     : courseModule
     ? courseModule.lead[locale]
     : routeKey(slug) === "reiki/yggdrasil"

@@ -49,6 +49,27 @@ test("Public reading description respects historical and health boundaries", asy
   assert.match(content, /не заменяют медицинскую помощь/);
   assert.match(content, /do not replace professional medical care/);
   assert.match(content, /sustituyen la atención médica profesional/);
-  assert.match(content, /полная методичка не размещается/);
+  assert.match(content, /полный русский оригинал книги воспроизведён/);
   assert.doesNotMatch(content, /гарантированное исцеление/i);
+});
+
+test("Complete Russian manual is preserved on the book page, not replaced by summaries", async () => {
+  const [bookText, component] = await Promise.all([
+    readFile("data/academy/yggdrasil-basic-manual-original.ru.json", "utf8"),
+    readFile(contentPath, "utf8"),
+  ]);
+  const book = JSON.parse(bookText);
+  assert.equal(book.originalPages, 38);
+  assert.equal(book.pages.length, 38);
+  assert.deepEqual(book.pages.map((entry) => entry.page), Array.from({ length: 38 }, (_, index) => index + 1));
+  const original = book.pages.flatMap((entry) => entry.paragraphs).join(" ");
+  assert.ok(original.length > 64000, "Whole source text must be retained, not an outline");
+  for (const marker of ["Введение", "Интуиция", "Разрушение связи", "Предназначение", "Видение", "Связь с миром", "ОПИСАНИЕ БОГОВ", "Вар", "Эйр"]) {
+    assert.ok(original.includes(marker), "Missing chapter / attunement: " + marker);
+  }
+  assert.match(component, /import fullManual/);
+  assert.match(component, /fullManual\.pages\.filter/);
+  assert.match(component, /yggdrasil-book-toc/);
+  assert.match(component, /lang="ru"/);
+  assert.doesNotMatch(component, /полная методичка не размещается/);
 });
