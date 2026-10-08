@@ -1074,7 +1074,7 @@ function minimumMonitoringAnswers(definition) {
 
 test('every published monitoring test completes through the repository and returns a readable result', async () => {
   const items = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(items.length, 42)
+  assert.ok(items.length >= 42, 'the published catalog should not shrink when adding instruments')
   const created = []
 
   for (const item of items) {

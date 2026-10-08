@@ -320,6 +320,60 @@ const levelPhotos = [
  * The English translation preserves its 1:1 block order and is rendered here.
  * The entire RU original and full translated transcript remain in the archive.
  */
+/**
+ * Spanish translations of the original Russian stage notes (not short stage summaries).
+ * Paragraph groups correspond 1:1 to authorStageBlockIndices below.
+ * The Russian archive remains the source of truth.
+ */
+const spanishAuthorDescriptions: string[][] = [
+  [
+    "En estas energías, el mundo que te rodea se vuelve lleno de sabor, fluido, y una agradable ola de placer comienza a recorrer tu cuerpo.",
+    "Es como si abrieras un manantial de energía de Vida que, según la imagen de esta tradición, te limpia suavemente y despierta tu fuerza interior.",
+    "Un placer suave y extático se extiende por todo el cuerpo y empieza a despertar sentimientos y emociones."
+  ],
+  [
+    "Aquí despertamos el Fuego de la Vida. La pasión. Tu energía comienza a arder como una llama, llenando el espacio que te rodea y quemando simbólicamente los miedos, la parálisis y las limitaciones.",
+    "La energía de la vida no solo entra en ti: tú mismo eres la Vida y floreces en toda su plenitud."
+  ],
+  [
+    "En la tercera etapa, el espacio empieza a derretirse. Comienzas a sentirte unido a todo el mundo que te rodea.",
+    "Ya no eres un pez en el océano: tú eres el Océano.",
+    "Es un estado sorprendente: en el flujo de Tantra Reiki no solo redistribuyes la energía dentro de ti, sino que juegas con las energías de todo el espacio que te rodea."
+  ],
+  [
+    "En la cuarta etapa comienzas a sentir la Vertical. No solo el mundo presente, sino también los mundos que están por encima de él, los Mundos de los Dioses.",
+    "El flujo de energía comienza a descender de los Planos Divinos, absorbiendo las cualidades de los Dioses del Amor.",
+    "En este flujo te unes a las Grandes Fuerzas del mundo, y tu danza tántrica, tu vida, recibe un apoyo adicional.",
+    "Tu danza de la vida se vuelve refinada, consciente y delicada."
+  ],
+  [
+    "En la quinta etapa descubres la Fuente de la Fuerza en tu interior.",
+    "No es una corriente en la que tú te bañas: es una Corriente en la que bañas al Universo, irradiando desde dentro.",
+    "Esta Luz interior no conoce obstáculos ni límites.",
+    "Puede encenderse e iluminar todas las facetas de la realidad. Aprendemos a abrir esta luz interior infinita."
+  ],
+  [
+    "En la sexta etapa entramos en un estado de Eternidad.",
+    "El mundo queda inmóvil y te elevas sin fin hacia una zona de unión universal.",
+    "La corriente te lleva hacia los mundos de la Bienaventuranza Eterna."
+  ],
+  [
+    "En la séptima etapa la conciencia se llena de luz.",
+    "Se activa una corriente adicional de alta frecuencia hacia la conciencia. Aumenta el nivel de consciencia.",
+    "Basta con dirigir tu atención para iniciar, en el lenguaje simbólico de esta tradición, un proceso de armonía y limpieza."
+  ],
+  [
+    "Se activa el Impulso Creativo en el nivel de los centros superiores.",
+    "Ya no solo armonizas los mundos: también los creas con tu atención."
+  ],
+  [
+    "En la novena etapa se manifiesta una plenitud especial. Unes dentro de ti distintas capas de la realidad.",
+    "En esa unión comienza a aparecer un equilibrio y una armonía generales.",
+    "Las últimas tres etapas recuerdan los estados de los Dioses: Brahma, Shiva y Vishnu.",
+    "Las etapas 7–9 se asemejan a las etapas 4–6, pero en un nivel más alto."
+  ]
+];
+
 const authorStageBlockIndices = [
   [75, 76, 77],
   [86, 87],
@@ -333,7 +387,7 @@ const authorStageBlockIndices = [
 ] as const;
 
 function originalAuthorDescription(locale: PublicLocale, levelIndex: number): string[] {
-  if (locale === "es") return [];
+  if (locale === "es") return spanishAuthorDescriptions[levelIndex];
   return authorStageBlockIndices[levelIndex].map((sourceIndex) =>
     locale === "ru"
       ? tantraReikiArchive.blocks.ru[sourceIndex].text
@@ -380,7 +434,7 @@ const levelApplications: Record<PublicLocale, string[]> = {
 const ui = {
   en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", original: "Andrey’s original description · translated from Russian", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
   ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", original: "Авторское описание Андрея · без сокращений", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
-  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", original: "Descripción original", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
+  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", original: "Texto original de Andrey · traducción del ruso", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
 } as const;
 
 export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
@@ -418,16 +472,12 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
             
             <div className="tantra-journey__details">
               
-              {locale !== "es" ? (
-                <div className="tantra-journey__author-text" lang={locale}>
-                  <h4>{c.original}</h4>
-                  {originalAuthorDescription(locale, i).map((paragraph, j) => (
-                    <p key={j}>{paragraph}</p>
-                  ))}
-                </div>
-              ) : (
-                <p className="tantra-journey__spanish-intro">{copy.intro}</p>
-              )}
+              <div className="tantra-journey__author-text" lang={locale}>
+                <h4>{c.original}</h4>
+                {originalAuthorDescription(locale, i).map((paragraph, j) => (
+                  <p key={j}>{paragraph}</p>
+                ))}
+              </div>
               <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
               <div className="tantra-journey__settings">
                 <h4>{c.settings}</h4>

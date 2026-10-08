@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
+import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, coverageForFilters, TEST_EXPLORER_DETAIL_TOPICS } from '../lib/assessments/test-explorer.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import {
   TEST_LENGTH_FILTERS,
@@ -84,7 +85,7 @@ test('recommendation focus options cover practical monitoring themes in both lan
 test('public and signed-in routes share the complete Test Explorer rather than a top-three recommender', async () => {
   const [landing, workspace, route, explorer, publicExplorer] = await Promise.all([
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
-    readFile('components/app/app-workspace.jsx', 'utf8'),
+    readFile('components/app/account-test-battery.jsx', 'utf8'),
     readFile('app/[locale]/client/tests/page.tsx', 'utf8'),
     readFile('components/app/test-explorer.jsx', 'utf8'),
     readFile('components/app/public-test-explorer.jsx', 'utf8'),
@@ -99,19 +100,20 @@ test('public and signed-in routes share the complete Test Explorer rather than a
   assert.match(route, /PublicTestExplorer/)
   assert.match(route, /robots: \{ index: false, follow: false \}/)
   for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free testing']) assert.match(explorer, new RegExp(token))
-  assert.match(publicExplorer, /guest\/test-plans/)
-  assert.match(publicExplorer, /guest\/session/)
-  assert.doesNotMatch(publicExplorer, /localStorage|sessionStorage/)
+  assert.match(publicExplorer, /auth\/start/)
+  assert.match(publicExplorer, /makeTestSelectionIntent/)
+  assert.doesNotMatch(publicExplorer, /localStorage/)
+  assert.match(publicExplorer, /sessionStorage\.setItem/)
 })
 
 
 test('active assessment inventory is classified for style and length filters', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 42)
-  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 30)
+  assert.equal(active.length, 66)
+  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 54)
   assert.equal(active.filter((item) => item.testStyle === 'professional').length, 12)
-  assert.equal(active.filter((item) => item.testLength === 'short').length, 25)
-  assert.equal(active.filter((item) => item.testLength === 'medium').length, 12)
+  assert.equal(active.filter((item) => item.testLength === 'short').length, 29)
+  assert.equal(active.filter((item) => item.testLength === 'medium').length, 32)
   assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 5)
   assert.ok(active.every((item) => TEST_STYLE_FILTERS.some((filter) => filter.key === item.testStyle)))
   assert.ok(active.every((item) => TEST_LENGTH_FILTERS.some((filter) => filter.key === item.testLength)))
@@ -166,4 +168,65 @@ test('expanded battery includes cleared professional quick screens and original 
     assert.ok(getAssessmentDefinition(key, 'v1', 'ru'))
   }
   for (const key of ['phq-2','gad-2','k10']) assert.equal(getAssessmentDefinition(key, 'v1', 'en').instrumentLocale, 'en')
+})
+
+test('advanced discovery combines detailed concern, axis, duration, language and tracking criteria', () => {
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const base = filterExplorerEntries(entries, { availability: 'available' })
+  assert.ok(base.length > 0)
+  assert.ok(TEST_EXPLORER_DETAIL_TOPICS.every((item) => item.label.en && item.label.ru && item.label.es))
+  const narrow = filterExplorerEntries(entries, {
+    availability: 'available', details: ['sleep'], axes: ['energy'],
+    maxMinutes: 5, language: 'bilingual', tracking: 'repeat',
+  })
+  assert.ok(narrow.length > 0)
+  assert.ok(narrow.length < base.length)
+  for (const entry of narrow) {
+    assert.ok(entry.selectable)
+    assert.ok(entry.topics.includes('sleep'))
+    assert.ok(entry.analysisAxes.some((axis) => axis.key === 'energy'))
+    assert.ok(entry.durationMinutes <= 5)
+    assert.equal(entry.catalog.instrumentLocale, 'dynamic')
+    assert.ok(entry.catalog.suggestedRepeatDays > 0)
+  }
+  assert.equal(filterExplorerEntries(entries, { details: ['not_a_real_topic'] }).length, base.length)
+  assert.deepEqual(filterExplorerEntries(entries, { availability: 'available', maxMinutes: 0 }).map((entry) => entry.key), base.map((entry) => entry.key))
+})
+
+test('English originals, baseline instruments and selected-test pinning are respected', () => {
+  const entries = buildExplorerEntries({ locale: 'ru', audience: 'guest' })
+  const originals = filterExplorerEntries(entries, { language: 'english', availability: 'available' })
+  assert.ok(originals.length)
+  assert.ok(originals.every((entry) => entry.catalog.instrumentLocale === 'en'))
+  const baseline = filterExplorerEntries(entries, { tracking: 'baseline', availability: 'available' })
+  assert.ok(baseline.some((entry) => entry.key === 'mini-ipip-20'))
+  assert.ok(baseline.every((entry) => !(entry.catalog.suggestedRepeatDays > 0)))
+  const pinned = filterExplorerEntries(entries, { availability: 'available', details: ['sleep'], selectedKeys: ['mini-ipip-20'] })
+  assert.ok(pinned.some((entry) => entry.key === 'mini-ipip-20'))
+  const withoutPin = filterExplorerEntries(entries, { availability: 'available', details: ['sleep'] })
+  assert.ok(!withoutPin.some((entry) => entry.key === 'mini-ipip-20'))
+})
+
+test('filter preview highlights relevant scales without implying measured outcomes', () => {
+  const entries = buildExplorerEntries({ locale: 'en' })
+  const preview = coverageForFilters(entries, { details: ['sleep'], axes: ['relationships'] })
+  assert.equal(preview.axes.relationships.coverage, .6)
+  assert.ok(preview.coveredCount >= 1)
+  assert.equal(preview.axes.relationships.intensity, 'medium')
+  const repeated = coverageForFilters(entries, { details: ['sleep'], axes: ['relationships'] })
+  assert.deepEqual(preview, repeated)
+  const rankA = rankExplorerEntries(entries.filter((entry) => entry.selectable), { details: ['sleep'], axes: ['energy'] })
+  const rankB = rankExplorerEntries(entries.filter((entry) => entry.selectable), { details: ['sleep'], axes: ['energy'] })
+  assert.deepEqual(rankA.map((entry) => entry.key), rankB.map((entry) => entry.key))
+})
+
+test('advanced controls are included on the embedded client page and in shared explorer', async () => {
+  const [landing, source] = await Promise.all([
+    readFile('components/app/cabinet-landing.jsx', 'utf8'),
+    readFile('components/app/test-explorer.jsx', 'utf8'),
+  ])
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded />'))
+  for (const token of ['TEST_EXPLORER_DETAIL_TOPICS', 'TEST_EXPLORER_AXES', 'detailCounts', 'setMaxMinutes', 'setLanguage', 'setTracking', 'coverageForFilters', 'const matchCount =']) {
+    assert.ok(source.includes(token), token)
+  }
 })

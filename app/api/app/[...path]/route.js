@@ -57,13 +57,15 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId'])
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo'])
       const locale = body.locale === 'ru' ? 'ru' : 'en'
       const intentId = body.intentId || null,
-        serviceId = body.serviceId || null
+        serviceId = body.serviceId || null,
+        continueTo = body.continueTo || null
+      if (continueTo !== null && continueTo !== 'tests') throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
-      if (intentId && serviceId) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       await consumeRate(
         config,
         {
@@ -77,7 +79,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo === 'tests' ? '&continue=tests' : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -90,15 +92,18 @@ async function handle(request, { params }) {
         locale = url.searchParams.get('locale') === 'ru' ? 'ru' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
-        serviceId = url.searchParams.get('service')
+        serviceId = url.searchParams.get('service'),
+        continueTo = url.searchParams.get('continue')
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
-      if (intentId && serviceId) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (continueTo !== 'tests' || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}`
         : serviceId
           ? `${origin}/${locale}/app/consultations?service=${encodeURIComponent(serviceId)}`
-          : `${origin}/${locale}/app`
+          : continueTo === 'tests'
+            ? `${origin}/${locale}/app/tests?selection=pending`
+            : `${origin}/${locale}/app`
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.apply(
           NextResponse.redirect(destination + (destination.includes('?') ? '&auth=cancelled' : '?auth=cancelled'), {

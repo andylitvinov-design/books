@@ -11,7 +11,7 @@ import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
-import { TestExplorer } from '@/components/app/test-explorer'
+import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
@@ -149,6 +149,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       const result = await appFetch('auth/start', {
         locale,
         serviceId: searchParams.get('service') || null,
+        ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
       })
       window.location.assign(result.redirectUrl)
     } catch (e) {
@@ -169,17 +170,6 @@ export default function AppWorkspace({ locale, path = [] }) {
       router.replace(root)
     }
   }
-  async function openPlanStep(plan) {
-    const definition = getDefinitionById(plan.definitionIds[plan.currentIndex])
-    const existing = data?.runs?.find((run) => run.definitionId === definition.id && ['draft', 'in_progress'].includes(run.status))
-    const run = existing || await appFetch('runs', {
-      definitionKey: definition.key,
-      definitionVersion: definition.version,
-      instrumentLocale: definition.instrumentLocale,
-      operationId: crypto.randomUUID(),
-    })
-    router.push(`${root}/runs/${run.id}?plan=${encodeURIComponent(plan.id)}`)
-  }
   async function completePlan(result) {
     const planId = searchParams.get('plan')
     if (!planId) {
@@ -188,13 +178,13 @@ export default function AppWorkspace({ locale, path = [] }) {
       return
     }
     const plan = await appFetch('test-plans/' + encodeURIComponent(planId))
-    const advanced = await appFetch(`test-plans/${encodeURIComponent(planId)}/advance`, {
+    await appFetch(`test-plans/${encodeURIComponent(planId)}/advance`, {
       completedRunId: result.runId,
       expectedRevision: plan.revision,
     })
     await load()
-    if (advanced.status === 'active') await openPlanStep(advanced)
-    else router.push(`${root}/tests?plan=${encodeURIComponent(planId)}&summary=1`)
+    // Return to the complete battery after each result; no forced next test.
+    router.push(`${root}/tests?plan=${encodeURIComponent(planId)}`)
   }
   if (deleted || state === 'deletion')
     return (
@@ -247,6 +237,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   const nav = [
     ['portrait', c.portrait, ''],
+    ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', '/tests'],
     ['monitoring', c.monitoring, '/monitoring'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
@@ -318,25 +309,10 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'tests' && (
             searchParams.get('summary')
               ? <TestPlanSummary locale={locale} planId={searchParams.get('plan')} results={data.results} onBack={() => router.push(root + '/tests')} />
-              : <TestExplorer
-                  locale={locale}
-                  audience="account"
-                  activePlan={data.activeTestPlan}
-                  pastResults={data.results}
-                  draftRuns={data.runs}
-                  profileSnapshot={data.snapshot}
+              : <AccountTestBattery data={data} locale={locale}
+                  requestedPlanId={searchParams.get('plan')}
                   recommendedKey={searchParams.get('suggest')}
-                  onResumeRun={(run) => router.push(root + '/runs/' + run.id)}
-                  onResume={openPlanStep}
-                  onStart={async (entries) => {
-                    const plan = await appFetch('test-plans', {
-                      items: entries.map((entry) => ({ definitionKey: entry.definition.key, definitionVersion: entry.definition.version, instrumentLocale: entry.definition.instrumentLocale })),
-                      operationId: crypto.randomUUID(),
-                      replaceActive: false,
-                    })
-                    await openPlanStep(plan)
-                  }}
-                />
+                  reload={load} />
           )}
           {page === 'runs' && (
             <Runner
@@ -2006,15 +1982,9 @@ function Portrait({ data, locale }) {
         <p className="hh-fine">{c.private}</p>
       </div>
 
-<div className="hh-portrait-with-metrics">
+      <div className="hh-portrait-with-metrics">
         <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
-        <TestExplorerVisual
-          locale={locale}
-          coverage={coverageForFocus([])}
-          portrait={buildPsychPortrait(data.results)}
-          axisFilter={null}
-          onAxisFilter={() => {}}
-        />
+        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
       </div>
 
       <div className="hh-profile-mood">
