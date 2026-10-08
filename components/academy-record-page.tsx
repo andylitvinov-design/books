@@ -10,6 +10,7 @@ import { TantraReikiSideNavigation, YggdrasilSideNavigation } from "@/components
 import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
 import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import tantraReikiFullArchive from "@/data/academy/tantra-reiki-full.generated.json";
+import tantraReikiOriginalRuEnglish from "@/data/academy/tantra-reiki-ru-en.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 function renderBlocks(blocks: AcademyBlock[]) {
@@ -191,6 +192,25 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                 <p>{locale === "ru" ? "Ниже сохранён полный исторический текст без пересказа. Ключевая структура курса уже вынесена выше." : locale === "es" ? "El texto histórico completo se conserva a continuación sin resumir." : "The complete historical source text is preserved below without summarising; the key course structure is already surfaced above."}</p>
               </div>
             </div>
+            {locale === "en" ? (
+              <>
+                <section className="tantra-translation-intro" aria-labelledby="tantra-original-ru-english-heading">
+                  <h3 id="tantra-original-ru-english-heading">Full English translation of Andrey’s original Russian text</h3>
+                  <p>The original Russian page is preserved in full. Below is its complete English translation — including the nine attunements, Andrey’s research and descriptions, historical testimonials and original course information. Historical health, money and certification claims are reproduced as archival claims, not independently verified outcomes or current offers.</p>
+                  <a href="https://psitrends.com/ru/cat-train-ru/advanced-ru/tantra-ru" target="_blank" rel="noreferrer">Original Russian source ↗</a>
+                </section>
+                <div className="academy-source-content tantra-translation-text" lang="en">
+                  {renderBlocks(tantraReikiOriginalRuEnglish.blocks.map((block) => ({
+                    type: block.type as AcademyBlock["type"],
+                    text: block.text,
+                  })))}
+                </div>
+                <div className="tantra-translation-intro">
+                  <h3>Original English course text · preserved without omissions</h3>
+                  <p>This is the separate historical English PsiTrends course text, including its Master Teacher syllabus and original English attunement assignments. Where the historic English and Russian level 2–3 settings differ, both records are retained.</p>
+                </div>
+              </>
+            ) : null}
             <div className="academy-source-content">{renderBlocks(publicBlocks)}</div>
           </section>
         ) : hasBody ? <div className="academy-source-content">{renderBlocks(publicBlocks)}</div> : <p className="academy-empty-source">{text.noContent}</p>}
