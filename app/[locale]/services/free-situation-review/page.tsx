@@ -16,7 +16,7 @@ const copy = {
   ru: {
     title: "Бесплатная диагностика ситуации",
     description: "Бесплатный личный разбор цели, проблемы или бизнес-ситуации: прояснить точку затруднения, увидеть зону роста и следующий шаг. Без обязательств.",
-    eyebrow: "Личная вводная беседа · бесплатно",
+    eyebrow: "Бесплатная диагностика ситуации · личный разбор",
     heading: "Застряли в проблеме или не понимаете, куда двигаться дальше?",
     lead: "Не нужно самостоятельно разбираться в методах. Начнём с вашей реальной ситуации: что вас беспокоит, где ощущается тупик и какие возможности вы пока не видите.",
     bullets: ["Проясним вашу главную задачу", "Исследуем точку затруднения", "Наметим реалистичный следующий шаг"],
@@ -57,7 +57,7 @@ const copy = {
   en: {
     title: "Free situation & goal assessment",
     description: "A free personal conversation to clarify your life, work or business situation, identify where you feel stuck and explore a useful next step. No obligation.",
-    eyebrow: "A personal introduction · free",
+    eyebrow: "Free Situation Review · personal introduction",
     heading: "Feeling stuck or unsure what to do next?",
     lead: "You don't need to choose a method or a long programme first. Let's start with your real situation: what's difficult, where progress has stalled and what possibilities may be worth exploring.",
     bullets: ["Clarify the question that matters most", "Explore where you feel stuck", "Identify a possible next step"],
@@ -98,7 +98,7 @@ const copy = {
   es: {
     title: "Evaluación gratuita de tu situación",
     description: "Una conversación personal gratuita para aclarar tu situación, identificar dónde te sientes bloqueado y explorar un próximo paso. Sin compromiso.",
-    eyebrow: "Primera conversación personal · gratis",
+    eyebrow: "Evaluación gratuita de tu situación · conversación personal",
     heading: "¿Te sientes bloqueado o no sabes cómo seguir?",
     lead: "No necesitas elegir un método o un programa antes de hablar conmigo. Empecemos por tu situación: qué te preocupa, dónde sientes el bloqueo y qué opciones vale la pena explorar.",
     bullets: ["Aclarar tu pregunta principal", "Explorar dónde está el bloqueo", "Identificar un posible próximo paso"],
