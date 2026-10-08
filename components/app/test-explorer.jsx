@@ -146,7 +146,16 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   // A selected test stays visible even if new filters no longer match it.
   const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
   const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, axes, depth, stylesFilter, lengths, selectedKeys])
-  const visible = useMemo(() => ranked.filter((entry) => !axisFilter || selectedKeys.includes(entry.key) || entry.analysisAxes.some((axis) => axis.key === axisFilter)).sort((a, b) => sort === 'shortest' ? (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity) : sort === 'deepest' ? (b.durationMinutes ?? 0) - (a.durationMinutes ?? 0) : sort === 'alphabetic' ? a.title.localeCompare(b.title, locale) : 0), [ranked, sort, locale, axisFilter, selectedKeys])
+  // Keep checked tests above the shortened discovery list. Re-ranking after
+  // a checkbox change must never make that same checkbox disappear mid-click.
+  const visible = useMemo(() => ranked.filter((entry) => !axisFilter || selectedKeys.includes(entry.key) || entry.analysisAxes.some((axis) => axis.key === axisFilter)).sort((a, b) => {
+    const aSelected = selectedKeys.includes(a.key), bSelected = selectedKeys.includes(b.key)
+    if (aSelected !== bSelected) return aSelected ? -1 : 1
+    if (sort === 'shortest') return (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity)
+    if (sort === 'deepest') return (b.durationMinutes ?? 0) - (a.durationMinutes ?? 0)
+    if (sort === 'alphabetic') return a.title.localeCompare(b.title, locale)
+    return 0
+  }), [ranked, sort, locale, axisFilter, selectedKeys])
   const selected = entries.filter((entry) => selectedKeys.includes(entry.key) && entry.selectable)
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
