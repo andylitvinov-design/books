@@ -25,6 +25,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
       back: "Reiki Yggdrasil program",
       source: "This page uses the current canonical Reiki Yggdrasil course map and preserves the historical PsiTrends program as source context.",
       archive: "Full historical program source",
+      description: "Read Basic Course description",
       notice: "Historical descriptions of healing, energy, clairvoyance and other esoteric effects are presented as course/source material, not as medical advice or guaranteed outcomes.",
       steps: "steps", attunements: "attunements", videos: "video lectures",
       previous: "Previous module", next: "Next module",
@@ -33,6 +34,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
       back: "Программа Рейки Иггдрасиль",
       source: "Страница использует актуальную каноническую карту курса Reiki Yggdrasil и сохраняет историческую программу PsiTrends как источник.",
       archive: "Полный исторический текст программы",
+      description: "Читать описание Базового курса",
       notice: "Исторические описания целительства, энергетических, ясновидческих и других эзотерических эффектов сохранены как учебный материал системы, а не как медицинская рекомендация или гарантия результата.",
       steps: "ступеней", attunements: "настроек", videos: "видеолекций",
       previous: "Предыдущий модуль", next: "Следующий модуль",
@@ -41,6 +43,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
       back: "Programa Reiki Yggdrasil",
       source: "La página usa el mapa canónico actual de Reiki Yggdrasil y conserva el programa histórico de PsiTrends como contexto.",
       archive: "Fuente histórica completa",
+      description: "Leer descripción del Curso Básico",
       notice: "Las descripciones históricas de sanación, energía, clarividencia y otros efectos esotéricos se presentan como material del curso, no como consejo médico ni garantía.",
       steps: "etapas", attunements: "sintonizaciones", videos: "videoclases",
       previous: "Módulo anterior", next: "Módulo siguiente",
@@ -56,6 +59,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
         <article className="academy-reading">
         <nav className="yggdrasil-module-breadcrumb" aria-label="Reiki Yggdrasil">
           <Link href={`/${locale}/academy/reiki/yggdrasil`}>← {copy.back}</Link>
+          {module.slug === "basic-course" ? <Link href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{copy.description} →</Link> : null}
           <Link href={`/${locale}/academy/reiki/yggdrasil/archive`}>{copy.archive} →</Link>
         </nav>
 
@@ -75,6 +79,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
           </div>
         </header>
 
+        {module.slug === "basic-course" ? <div className="yggdrasil-program-actions"><Link className="yggdrasil-secondary-action" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{copy.description} →</Link></div> : null}
         <aside className="academy-archive-notice">{copy.notice}</aside>
         <p className="yggdrasil-program-source-note">{copy.source}</p>
 

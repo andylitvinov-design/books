@@ -108,9 +108,9 @@ export function YggdrasilSideNavigation({
   activeSlug?: string;
 }) {
   const copy = {
-    en: { eyebrow: "Course navigation", title: "Reiki Yggdrasil", overview: "Program overview", module: "M" },
-    ru: { eyebrow: "Навигация по курсу", title: "Рейки Иггдрасиль", overview: "Обзор программы", module: "М" },
-    es: { eyebrow: "Navegación del curso", title: "Reiki Yggdrasil", overview: "Resumen del programa", module: "M" },
+    en: { eyebrow: "Course navigation", title: "Reiki Yggdrasil", overview: "Program overview", description: "Basic Course description", module: "M" },
+    ru: { eyebrow: "Навигация по курсу", title: "Рейки Иггдрасиль", overview: "Обзор программы", description: "Описание Базового курса", module: "М" },
+    es: { eyebrow: "Navegación del curso", title: "Reiki Yggdrasil", overview: "Resumen del programa", description: "Descripción del Curso Básico", module: "M" },
   }[locale];
 
   const items: NavItem[] = [
@@ -119,6 +119,7 @@ export function YggdrasilSideNavigation({
       href: `/${locale}/academy/reiki/yggdrasil`,
       label: copy.overview,
     },
+    { key: "basic-description", href: "/" + locale + "/academy/reiki/yggdrasil/basic-course/description", label: copy.description },
     ...yggdrasilModuleLandings.map((module) => ({
       key: module.slug,
       href: `/${locale}/academy/reiki/yggdrasil/${module.slug}`,
