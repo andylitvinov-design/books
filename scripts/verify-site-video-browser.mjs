@@ -96,6 +96,13 @@ try {
     await navigate(target)
     const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`)
     await expect(block).toHaveCount(1)
+    // The redesigned Services page intentionally nests longer explanations in
+    // a closed disclosure. Open that user-visible control before testing play.
+    const disclosure = block.locator('xpath=ancestor::details[1]')
+    if (await disclosure.count() && await disclosure.getAttribute('open') === null) {
+      await disclosure.locator('summary').first().click()
+    }
+    await expect(block).toBeVisible()
     assert.equal(await block.locator('iframe').count(), 0)
     const play = block.getByRole('button', { name: /^(Watch video|Open video|Смотреть видео):/ })
     if (live) await pause(1200)
