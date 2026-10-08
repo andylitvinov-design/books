@@ -81,3 +81,39 @@ test("Old Academy directories and historical sections stay reachable", () => {
   const sitemap = read("app/sitemap.ts");
   assert.match(sitemap, /temple-studies/);
 });
+
+
+test("All 41 unique recovered PsiMaster videos appear in their matching Russian Temple stage", () => {
+  const media = JSON.parse(read("data/academy/psimaster-media.generated.json"));
+  const assignments = read("data/academy/temple-studies-videos.ts");
+  const page = read("components/temple-studies.tsx");
+  const css = read("app/temple-studies.css");
+  const collections = [...assignments.matchAll(/key: "(videos\/[^"]+)", stage: "([^"]+)"/g)]
+    .map(([, key, stage]) => ({ key, stage }));
+  assert.equal(media.length, 45, "preserved source archive remains complete");
+  assert.equal(new Set(media.map((video) => video.videoId)).size, 41);
+  assert.equal(collections.length, 7);
+  assert.deepEqual(new Set(collections.map((record) => record.stage)),
+    new Set(["greek", "egypt", "traditions", "symbols", "initiation"]));
+  const assigned = new Set(collections.map((record) => record.key));
+  assert.deepEqual(assigned, new Set(media.map((video) => video.logicalId)));
+  const seen = new Set();
+  const stageTotals = {};
+  for (const { key, stage } of collections) {
+    for (const video of media.filter((item) => item.logicalId === key).sort((a, b) => a.order - b.order)) {
+      assert.match(video.videoId, /^[A-Za-z0-9_-]{11}$/);
+      assert.ok(video.mediaUrl.includes("/embed/" + video.videoId));
+      if (seen.has(video.videoId)) continue;
+      seen.add(video.videoId);
+      stageTotals[stage] = (stageTotals[stage] ?? 0) + 1;
+    }
+  }
+  assert.deepEqual(stageTotals, { greek: 12, egypt: 7, traditions: 6, symbols: 14, initiation: 2 });
+  assert.equal(seen.size, 41, "no same video repeated between collections");
+  assert.match(page, /locale === "ru" \? templeVideoCollections/);
+  assert.match(page, /<AcademyVideoPlayer youtubeId=\{video\.id\}/);
+  assert.match(page, /className="temple-video-series"/);
+  assert.match(page, /collection\.sourceUrl/);
+  assert.match(css, /\.temple-video-grid/);
+  assert.match(css, /@media \(max-width: 700px\)/);
+});
