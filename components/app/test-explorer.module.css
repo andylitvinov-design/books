@@ -180,12 +180,12 @@
 .quickStart h1{max-width:19ch;margin:5px 0 13px;font:500 clamp(2rem,4vw,3.35rem)/1.07 Georgia,serif;letter-spacing:-.04em;color:#46352e}
 .quickIntro{max-width:55ch;margin:0 0 22px;font-size:clamp(1rem,1.4vw,1.13rem);line-height:1.5;color:#5f5147}
 .quickActions{display:flex;align-items:center;flex-wrap:wrap;gap:11px 20px}
-.quickPrimary{appearance:none;min-height:56px;min-width:270px;padding:13px 25px;border:1px solid #604532;border-radius:15px;background:#573d30;color:#fffaf2;font:700 1.08rem/1.3 inherit;cursor:pointer;box-shadow:0 6px 16px rgba(77,50,37,.14)}
+.quickPrimary{appearance:none;min-height:56px;min-width:270px;padding:13px 25px;border:1px solid #604532;border-radius:15px;background:#573d30;color:#fffaf2;font-family:inherit;font-size:1.08rem;font-weight:700;line-height:1.3;cursor:pointer;box-shadow:0 6px 16px rgba(77,50,37,.14)}
 .quickPrimary:hover:not(:disabled){background:#3e3029}
 .quickPrimary:focus-visible,.customizeButton:focus-visible,.showMore:focus-visible,.battery button:focus-visible,.problemDetails summary:focus-visible,.visualDetails summary:focus-visible{outline:3px solid #2f7d76;outline-offset:3px}
 .quickPrimary:disabled{opacity:.55;cursor:not-allowed}
 .quickActions span{font-size:.85rem;color:#76604d}
-.customizeButton{display:inline-flex;align-items:center;min-height:44px;margin-top:9px;padding:8px 0;border:0;background:transparent;color:#5c4134;text-align:left;font:650 .95rem/1.45 inherit;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+.customizeButton{display:inline-flex;align-items:center;min-height:44px;margin-top:9px;padding:8px 0;border:0;background:transparent;color:#5c4134;text-align:left;font-family:inherit;font-size:.95rem;font-weight:650;line-height:1.45;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
 .quickPrivacy{font-size:.76rem;line-height:1.5;color:#806c5b;max-width:75ch;margin:9px 0 0}
 .quickError{margin:8px 0 0;color:#96382f;font-size:.9rem}
 .resumeButton{display:inline-flex;margin:0 0 18px;padding:11px 17px;border:1px solid #4b776a;border-radius:12px;background:#e0eee7;color:#2e584e;cursor:pointer}
