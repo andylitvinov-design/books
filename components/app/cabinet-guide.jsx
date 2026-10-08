@@ -81,8 +81,8 @@ export function CabinetGuide({ data, locale = 'en', page = 'portrait', recordId 
         </div>
       </div>
 
-      {expanded && selected && (
-        <div className={styles.body} id="hh-cabinet-guide-body">
+      <div className={styles.body} id="hh-cabinet-guide-body" hidden={!expanded}>
+        {selected && (<>
           <p className={styles.heading}>{c.next}</p>
           <div className={styles.steps} role="group" aria-label={c.next}>
             {suggestions.map((suggestion, index) => (
@@ -107,8 +107,8 @@ export function CabinetGuide({ data, locale = 'en', page = 'portrait', recordId 
             </Link>
           </div>
           <p className={styles.privacy}><LockKeyhole size={13} aria-hidden="true" /> {c.note}</p>
-        </div>
-      )}
+        </>)}
+      </div>
     </aside>
   )
 }
