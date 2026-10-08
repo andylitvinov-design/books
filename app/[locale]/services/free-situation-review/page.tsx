@@ -178,6 +178,7 @@ export default async function FreeSituationReviewPage({ params }: Props) {
             {t.bullets.map((point) => <li key={point}><CheckCircle2 size={21} aria-hidden="true"/><span>{point}</span></li>)}
           </ul>
           <p className={styles.freeLine}>{t.free}</p>
+          <a className={styles.mobileCta} href="#request-free-review">{t.request} <ArrowRight size={18} aria-hidden="true"/></a>
           <div className={styles.introContact}>
             <div className={styles.photo}>
               <Image src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill sizes="88px" />
