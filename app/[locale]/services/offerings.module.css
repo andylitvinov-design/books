@@ -41,3 +41,8 @@
 .optionalDetails[open] { padding-bottom:12px; }
 .optionalDetails label + label { margin-top:14px; }
 .optionalDetails summary:focus-visible { outline:3px solid #ae7a55; outline-offset:3px; }
+
+/* Imagery therapy's own photograph, independent of shared global marketing media. */
+.editorialPhoto { position:relative; margin:23px 0 0; width:min(100%,760px); aspect-ratio:16/9; overflow:hidden; border-radius:19px; background:#e7dfd3; }
+.editorialPhoto img { object-fit:cover; object-position:center; }
+@media(max-width:767px){ .editorialPhoto {aspect-ratio:16/10;border-radius:13px;} }
