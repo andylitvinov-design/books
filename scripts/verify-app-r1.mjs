@@ -31,14 +31,30 @@ async function api(path,body,ctx=context){
 async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
 async function enterTest(name='Current State Check',mode='Guided'){
  await page.goto(origin+'/en/app/tests');await ready()
- let card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
- if(await card.count()===0){
-  const all=page.getByRole('button',{name:'All available',exact:true})
-  if(await all.count())await all.click()
-  card=page.locator('article').filter({has:page.getByRole('heading',{name,exact:true})})
+ const candidate=()=>page.locator('article').filter({
+   has:page.getByRole('heading',{name,exact:true}),
+ }).filter({has:page.getByRole('button',{name:/^(Start testing|Continue test|Retake test)/})}).first()
+ if(!(await candidate().count())){
+  const toggle=page.getByRole('button',{name:'Choose or change tests',exact:true})
+  if(await toggle.count())await toggle.click()
+  let card=page.locator('article').filter({
+   has:page.getByRole('heading',{name,exact:true}),
+  }).filter({has:page.getByRole('checkbox',{name,exact:true})}).first()
+  if(!(await card.count())){
+   const all=page.getByRole('button',{name:'Full database',exact:true})
+   if(await all.count())await all.click()
+   card=page.locator('article').filter({
+    has:page.getByRole('heading',{name,exact:true}),
+   }).filter({has:page.getByRole('checkbox',{name,exact:true})}).first()
+  }
+  await card.getByRole('checkbox',{name,exact:true}).check()
+  await page.getByRole('button',{name:'Start free testing',exact:true}).click()
+  if(await page.getByRole('heading',{name:'You already have an active test set'}).count())
+   await page.getByRole('button',{name:'Use new selection'}).click()
+  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  }
- await card.getByRole('checkbox',{name,exact:true}).check()
- await page.getByRole('button',{name:'Start free testing',exact:true}).click()
+ await expect(candidate()).toBeVisible({timeout:15000})
+ await candidate().getByRole('button',{name:/^(Start testing|Continue test|Retake test)/}).click()
  await expect(page).toHaveURL(/\/runs\//)
  await expect(page.locator('.hh-runner')).toBeVisible()
  const modeChoice=page.locator('.hh-test-mode-card').filter({hasText:mode}).first()
@@ -57,8 +73,11 @@ async function saveAndExit(){
  await ready()
 }
 async function openCompletedPlanResult(){
- await expect(page).toHaveURL(/\/tests\?plan=.*summary=1/)
- await page.locator('.hh-history-list a').first().click()
+ // A finished battery returns to its photo-led status dashboard; a retake may directly show the result.
+ if(/\/results\//.test(page.url()))return
+ await expect(page).toHaveURL(/\/tests\?plan=/)
+ await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+ await page.getByRole('link',{name:'View result'}).first().click()
  await expect(page).toHaveURL(/\/results\//)
 }
 try {
@@ -94,7 +113,7 @@ try {
  await page.screenshot({path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
  await page.getByRole('button',{name:'Save my result'}).click();await openCompletedPlanResult();data=(await api('bootstrap')).data;const trait=data.results.find(r=>r.definitionKey==='mini-ipip-20');assert.deepEqual(trait.dimensions.map(d=>d.value),[12,12,12,12,12]);assert.equal(data.snapshot.dimensions.length,10);passed('Mini-IPIP scoring is preserved alongside completed plan summaries')
- await enterTest('Weekly Psychic Health','Quick');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await savedClick(page.locator('.hh-scale button').first());await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();passed('Quick mode saves and auto-advances in the signed-in runner');await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.getByRole('button',{name:'Resume set: step 1',exact:true}).click();await page.locator('.hh-test-mode-card').filter({hasText:'Quick'}).click();await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.goto(origin+'/en/app');await ready();await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible();passed('Weekly Psychic Health is a resumable sequential plan step')
+ await enterTest('Weekly Psychic Health','Quick');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await savedClick(page.locator('.hh-scale button').first());await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();passed('Quick mode saves and auto-advances in the signed-in runner');await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.locator('article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})}).getByRole('button',{name:'Continue test'}).click();await page.locator('.hh-test-mode-card').filter({hasText:'Quick'}).click();await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.goto(origin+'/en/app');await ready();await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible();passed('Weekly Psychic Health is a resumable sequential plan step')
  await page.goto(origin+'/ru/app');await ready();await expect(page.getByRole('heading',{name:'Мой профиль',exact:true})).toBeVisible();await page.screenshot({path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Request a consultation',exact:true}).first().click();await page.getByLabel('How should Andy contact you?').fill('synthetic@example.invalid');await page.getByLabel('Your message (optional)').fill('A synthetic request for CI only.')
  await page.screenshot({path:output+'/consultation-request.png',fullPage:true})
