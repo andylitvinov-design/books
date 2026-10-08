@@ -50,6 +50,8 @@ test("privacy-first multilingual intake only prepares a WhatsApp draft", () => {
 test("mobile editorial layout has no card-grid overload, usable input controls and reduced motion", () => {
   for (const s of [".contentGrid", ".capturePanel", ".steps", ".directions", ".about", ".faq", ".closing"]) assert.ok(css.includes(s));
   assert.ok(css.includes("@media(max-width:767px)"));
+  assert.ok(landing.includes('className={styles.mobileCta}'));
+  assert.ok(css.includes(".mobileCta { display:inline-flex"));
   assert.ok(css.includes("grid-template-columns:minmax(0,1fr)"));
   assert.ok(css.includes("min-height:58px"));
   assert.ok(css.includes(":focus-visible"));
