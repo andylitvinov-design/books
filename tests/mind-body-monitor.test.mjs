@@ -66,7 +66,9 @@ test('public monitor discovery is wired without adding a seventh main navigation
   assert.match(wuXing, /DAOIST ALCHEMY/)
   assert.match(wuXing, /18 resource stages/)
   assert.match(wuXing, /author-developed symbolic resource and development model/)
-  assert.match(wuXing, /\/services#available-services/)
+  assert.match(wuXing, /client\\/tests/)
+  assert.match(wuXing, /https:\\/\\/t\\.me\\/AndyTherapist/)
+  assert.doesNotMatch(wuXing, /services#available-services/)
   assert.doesNotMatch(navigation, /mind-body|monitor|wu-xing/i)
 })
 
