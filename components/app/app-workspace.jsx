@@ -1181,14 +1181,15 @@ function Runner({ id, locale, onExit, onComplete }) {
         </div>
       </header>
 
-      {def.source?.copyright && (
+      {(def.source?.copyright || def.source?.citation) && (
         <aside className="hh-instrument-attribution">
-          <small>{def.source.copyright}</small>
+          {def.source.copyright && <small>{def.source.copyright}</small>}
           {def.source.citation && <small>{def.source.citation}</small>}
+          {def.source.url && <a href={def.source.url} target="_blank" rel="noopener noreferrer">{locale === 'ru' ? 'Источник и методика' : 'Source and methodology'}</a>}
         </aside>
       )}
       <p className="hh-muted">
-        {def.timeframe === 'past-7-days' ? c.pastWeek : def.timeframe === 'right-now' ? c.rightNow : c.general}
+        {def.timeframe === 'past-2-weeks' ? (locale === 'ru' ? 'За последние две недели' : 'Over the past two weeks') : def.timeframe === 'past-7-days' ? c.pastWeek : def.timeframe === 'right-now' ? c.rightNow : c.general}
       </p>
 
       {question ? (
