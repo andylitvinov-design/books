@@ -47,3 +47,13 @@ test('compatible prior comparisons show raw differences only, not clinical infer
   assert.deepEqual(change.changes.map(({ delta }) => delta), [3])
   assert.equal(resultChangeSummary(latest, [{ ...prior, contentHash: 'different' }, latest]).previous, null)
 })
+
+test('change summary never mixes different owners, instruments or translations', () => {
+  const one = { ...result('old', '2026-09-01T00:00:00Z', 'hh-current-state', 2), accountId: 'account-A', instrumentLocale: 'en', scoringVersion: 'v1', resultVersion: 'v1' }
+  const current = { ...result('new', '2026-10-01T00:00:00Z', 'hh-current-state', 8), accountId: 'account-A', instrumentLocale: 'en', scoringVersion: 'v1', resultVersion: 'v1' }
+  assert.equal(resultChangeSummary(current, [one, current]).previous.id, 'old')
+  assert.equal(resultChangeSummary(current, [{ ...one, accountId: 'account-B' }, current]).previous, null)
+  assert.equal(resultChangeSummary(current, [{ ...one, instrumentLocale: 'ru' }, current]).previous, null)
+  assert.equal(resultChangeSummary(current, [{ ...one, scoringVersion: 'v2' }, current]).previous, null)
+  assert.equal(resultChangeSummary(current, [{ ...one, definitionId: 'another-instrument' }, current]).previous, null)
+})
