@@ -32,6 +32,9 @@ const copy = {
     heading: "Индивидуальная работа",
     lead: "Исследуйте повторяющиеся паттерны, отношения, важные решения и внутренние блоки в бережной индивидуальной работе.",
     marketplaceCta: "Выбрать услугу",
+    freeReviewTitle: "Бесплатная диагностика ситуации",
+    freeReviewText: "Разбор вашей цели, бизнеса или личной проблемы: точка ступора, зона роста и возможный следующий шаг. Без обязательств продолжать работу.",
+    freeReviewAction: "Запросить бесплатный разбор",
     cards: [
       {
         id: "business",
@@ -73,6 +76,9 @@ const copy = {
     heading: "Personal work",
     lead: "Explore repeating patterns, relationships, important decisions and inner blocks through thoughtful one-to-one work.",
     marketplaceCta: "Choose a service",
+    freeReviewTitle: "Free situation & goal assessment",
+    freeReviewText: "A free review of your goal, business or personal challenge: where you feel stuck, possible growth areas and a next step. No obligation to book paid work.",
+    freeReviewAction: "Request a free review",
     cards: [
       {
         id: "business",
@@ -235,6 +241,19 @@ export default async function ServicesPage({ params }: PageProps) {
               : "Open the details or send a request directly to the practitioner. Public profiles and services are moderated."}
           </p>
         </div>
+
+        <article className="services-marketplace-featured" id="free-situation-review-offer">
+          <div className="services-marketplace-featured-copy">
+            <div className="services-marketplace-featured-topline"><span className="services-marketplace-free-badge">{locale === "ru" ? "Бесплатно" : "Free"}</span><span>Andrey Litvinov</span></div>
+            <h3>{current.freeReviewTitle}</h3>
+            <p>{current.freeReviewText}</p>
+            <div className="services-marketplace-actions">
+              <Link className="services-marketplace-request services-marketplace-request--featured" href={"/" + locale + "/services/free-situation-review"}>
+                {current.freeReviewAction}<span aria-hidden="true">→</span>
+              </Link>
+            </div>
+          </div>
+        </article>
 
         {featuredService ? (
           <article className="services-marketplace-featured">
