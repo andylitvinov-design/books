@@ -18,16 +18,17 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const spanishAxes = {"stress":"Estrés","anxiety":"Ansiedad","mood":"Estado de ánimo","sleep":"Sueño","energy":"Energía","clarity":"Claridad","focus":"Concentración","emotional_regulation":"Regulación emocional","relationships":"Relaciones","resource":"Recursos y resiliencia","self_support":"Apoyo interior","functioning":"Vida cotidiana","personality":"Personalidad","meaning":"Sentido y dirección"}
   const label = (axis) => (es ? spanishAxes[axis] : null) || TEST_EXPLORER_AXIS_LABELS[axis]?.[locale] || TEST_EXPLORER_AXIS_LABELS[axis]?.en || axis
   const measuredAxes = portrait ? TEST_EXPLORER_AXES.filter((axis) => portrait.axes?.[axis] != null) : []
-  const visibleRays = (chosenRays === null ? measuredAxes.slice(0, 8) : chosenRays.filter((axis) => measuredAxes.includes(axis))).slice(0, 10)
+  const suggestedRays = [...measuredAxes, ...TEST_EXPLORER_AXES.filter((axis) => !measuredAxes.includes(axis))].slice(0, 8)
+  const visibleRays = (chosenRays === null ? suggestedRays : chosenRays.filter((axis) => TEST_EXPLORER_AXES.includes(axis))).slice(0, 10)
   const rays = visibleRays.map((axis, index) => {
     const angle = (-Math.PI / 2) + index * (Math.PI * 2 / visibleRays.length)
-    const percent = portrait.axes[axis].percent
+    const percent = portrait.axes[axis]?.percent ?? null
     const project = (r) => ({ x: 180 + Math.cos(angle) * r, y: 182 + Math.sin(angle) * r })
-    return { axis, percent, end: project(12 + (percent / 100) * 119), ideal: project(131) }
+    return { axis, percent, end: percent === null ? null : project(12 + (percent / 100) * 119), ideal: project(131) }
   })
   const polygon = (kind) => rays.map((ray) => `${ray[kind].x},${ray[kind].y}`).join(' ')
   const toggleRay = (axis) => setChosenRays((current) => {
-    const selected = current === null ? measuredAxes.slice(0, 8) : current
+    const selected = current === null ? suggestedRays : current
     return selected.includes(axis) ? selected.filter((key) => key !== axis) : selected.length >= 10 ? selected : [...selected, axis]
   })
   const activeAxes = TEST_EXPLORER_AXES.filter((axis) => (coverage.axes[axis]?.coverage || 0) > 0).sort((a, b) => coverage.axes[b].coverage - coverage.axes[a].coverage)
@@ -86,11 +87,11 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         <circle cx="180" cy="182" r="70" className={styles.radarGrid} />
         {rays.map((ray) => <g key={ray.axis}>
           <line x1="180" y1="182" x2={ray.ideal.x} y2={ray.ideal.y} className={styles.radarGuide} />
-          <line x1="180" y1="182" x2={ray.end.x} y2={ray.end.y} className={styles.radarRay} />
-          <circle cx={ray.end.x} cy={ray.end.y} r="5.5" className={styles.radarPoint} />
+          {ray.end && <line x1="180" y1="182" x2={ray.end.x} y2={ray.end.y} className={styles.radarRay} />}
+          {ray.end && <circle cx={ray.end.x} cy={ray.end.y} r="5.5" className={styles.radarPoint} />}
         </g>)}
-        {rays.length >= 3 && <polygon points={polygon('end')} className={styles.radarArea} />}
-        {rays.length >= 3 && <polygon points={polygon('end')} className={styles.radarOutline} />}
+        {rays.length >= 3 && rays.every((ray) => ray.end) && <polygon points={polygon('end')} className={styles.radarArea} />}
+        {rays.length >= 3 && rays.every((ray) => ray.end) && <polygon points={polygon('end')} className={styles.radarOutline} />}
         <circle cx="180" cy="182" r="7" className={styles.radarCenter} />
       </svg>}
       {!portrait && <div className={styles.axisRing}>
@@ -101,15 +102,14 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     {portrait && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
       <div className={styles.portraitControlsHeading}>
         <strong>{ru ? 'Лучи моего портрета' : es ? 'Escalas de mi retrato' : 'Choose my portrait rays'}</strong>
-        <span>{visibleRays.length} / {measuredAxes.length}</span>
+        <span>{visibleRays.length} / {TEST_EXPLORER_AXES.length}</span>
       </div>
-      {measuredAxes.length === 0
-        ? <p>{ru ? 'Вы ещё не прошли тесты с измеряемыми показателями. После прохождения шкалы и лучи появятся автоматически.' : es ? 'Completa primero una prueba; tus resultados aparecerán aquí.' : 'No measured results yet. Complete a test to grow your personal portrait.'}</p>
-        : <div className={styles.portraitRayOptions}>{measuredAxes.map((axis) => <label key={axis} className={styles.portraitRayOption} title={`${portrait.axes[axis].source} · ${portrait.axes[axis].measuredAt || ""}`}>
+      {measuredAxes.length === 0 && <p>{ru ? 'Измерений пока нет. Выберите шкалы: после прохождения соответствующих тестов пустые лучи заполнятся.' : es ? 'Aún no hay resultados. Selecciona escalas y completa pruebas para ver los rayos.' : 'No results yet. Choose scales now; the empty rays will fill after you complete their tests.'}</p>}
+      <div className={styles.portraitRayOptions}>{TEST_EXPLORER_AXES.map((axis) => <label key={axis} className={styles.portraitRayOption} title={portrait.axes[axis] ? `${portrait.axes[axis].source} · ${portrait.axes[axis].measuredAt || ""}` : (ru ? 'Нет измерения' : 'Not measured')}>
           <input type="checkbox" checked={visibleRays.includes(axis)} onChange={() => toggleRay(axis)} disabled={!visibleRays.includes(axis) && visibleRays.length >= 10} />
           <span>{label(axis)}</span>
-          <strong>{portrait.axes[axis].percent}%</strong>
-        </label>)}</div>}
+          <strong>{portrait.axes[axis] ? `${portrait.axes[axis].percent}%` : '—'}</strong>
+        </label>)}</div>
       <p>{ru ? 'Процент — положение на шкале с учётом её направления, а не процент здоровья. Личностные черты без направления «лучше/хуже» сюда не включаются.' : es ? 'El porcentaje representa la posición orientada en la escala, no un porcentaje de salud.' : 'Each percentage is a direction-adjusted scale position, not a health score. Non-normative personality traits are excluded.'}</p>
     </section>}
     {!portrait && activeAxes.length > 0 && <div className={styles.axisMeters} aria-label={ru ? 'Активные оси' : es ? 'Ejes activos' : 'Active axes'}>
