@@ -145,6 +145,9 @@ export default function AppWorkspace({ locale, path = [] }) {
       const result = await appFetch('auth/start', {
         locale,
         serviceId: searchParams.get('service') || null,
+        ...(page === 'tests' && searchParams.get('selection') === 'pending'
+          ? { continueTo: 'tests' }
+          : {}),
       })
       window.location.assign(result.redirectUrl)
     } catch (e) {
