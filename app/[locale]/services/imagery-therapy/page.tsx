@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
@@ -78,6 +79,9 @@ export default async function ImageryTherapyPage({ params }: Props) {
         <p className={styles.eyebrow}>{t.eyebrow}</p>
         <h1>{t.title}</h1>
         <p>{t.lead}</p>
+        <figure className={styles.editorialPhoto}>
+          <Image src="/images/holistic-house/video-posters/hypnotherapy-en-v1.webp" alt="" fill sizes="(max-width: 800px) 100vw, 760px" loading="lazy"/>
+        </figure>
         <Link className={styles.breadcrumb} href={"/" + locale + "/services"}>← {t.back}</Link>
       </section>
       <div className={styles.contentGrid}>

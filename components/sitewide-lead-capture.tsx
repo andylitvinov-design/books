@@ -148,7 +148,14 @@ export function SitewideLeadCapture() {
           </div>
         </div>
         <div className={styles.portrait}>
-          <Image src={kind === "network" ? "/images/holistic-house/hero-olive-incense.webp" : "/images/holistic-house/andy-about.png"} alt="" fill sizes="(max-width: 767px) 110px, 224px" />
+          <Image src={kind === "network" ? "/images/holistic-house/hero-olive-incense.webp"
+            : kind === "training" ? pathname.includes("temple") ? "/academy/reiki-yggdrasil/source/temple-studies.png"
+              : pathname.includes("tantra-reiki") ? "/library/maya-mysteries/media/post-217-1.jpg"
+              : "/academy/reiki-yggdrasil/source/basic-program.jpg"
+            : kind === "reading" ? pathname.includes("homeopathy") ? "/images/holistic-house/distance-homeopathy.webp"
+              : pathname.includes("wu-xing") ? "/academy/reiki-yggdrasil/source/temple-studies.png"
+              : "/images/holistic-house/books-library.webp"
+            : "/images/holistic-house/andy-about.png"} alt="" fill sizes="(max-width: 767px) 110px, 224px" />
         </div>
       </div>
     </aside>

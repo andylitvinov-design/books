@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { HeartPulse, HeartHandshake, Route } from "lucide-react";
 import type { Locale } from "@/data/remedies";
@@ -130,8 +131,16 @@ export function PersonalWorkJourney({ locale, variant = "full" }: { locale: Loca
       <div className={styles.services}>
         {text.services.map((service, index) => {
           const ServiceIcon = [HeartPulse, HeartHandshake, Route][index];
+          const photos = [
+            "/images/holistic-house/distance-homeopathy.webp",
+            "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+            "/images/holistic-house/video-posters/constellations-en-v1.webp",
+          ];
           return (
             <article className={styles.service} key={service.slug}>
+              <div className={styles.servicePhoto}>
+                <Image src={photos[index]} alt="" fill sizes={compact ? "(max-width: 880px) 100vw, 350px" : "(max-width: 880px) 100vw, 360px"} loading="lazy" />
+              </div>
               <div>
                 {!compact && <span className={styles.iconWrap}><ServiceIcon size={26} strokeWidth={1.7} aria-hidden="true" /></span>}
                 <p className={styles.focus}>{compact ? service.focus : service.problem}</p>

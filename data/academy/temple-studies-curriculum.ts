@@ -19,7 +19,7 @@ export type TempleStage = {
 export const templeStages: TempleStage[] = [
   {
     id: "foundations",
-    image: "/images/holistic-house/hero-olive-incense.webp",
+    image: "/academy/reiki-yggdrasil/source/school-introduction.jpg",
     sourceIds: ["history"],
     copy: {
       en: {
@@ -139,7 +139,7 @@ export const templeStages: TempleStage[] = [
   },
   {
     id: "traditions",
-    image: "/images/holistic-house/books-library.webp",
+    image: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
     sourceIds: ["mysteries/maya-aztec/feathered-serpent","mysteries/slavic/fairy-tales-mysteries","mysteries/slavic/shamanism","mysteries/zoroastrism/eastern-magic","symbolic/scandinavian-mysteries"],
     copy: {
       en: {
@@ -179,7 +179,7 @@ export const templeStages: TempleStage[] = [
   },
   {
     id: "symbols",
-    image: "/images/holistic-house/hero-olive-incense.webp",
+    image: "/academy/reiki-yggdrasil/source/advanced-runes.png",
     sourceIds: ["runes/northern-runes","elements/elemental-magic","elements/water","symbolic/tarot/major-arcana-mysteries","symbolic/artifacts-talismans"],
     copy: {
       en: {
@@ -219,7 +219,7 @@ export const templeStages: TempleStage[] = [
   },
   {
     id: "initiation",
-    image: "/library/maya-egregor-gods/media/post-203-1.jpg",
+    image: "/academy/reiki-yggdrasil/source/temple-studies.png",
     sourceIds: ["mysteries/initiations","applied/archetypal-attunements","applied/archetypal-therapy/big-figures","applied/imagery-therapy-symboldrama","applied/imagery-therapy/mirrorland","applied/hypnotherapy-regressions","applied/body-psychotherapy-bodynamics"],
     copy: {
       en: {

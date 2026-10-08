@@ -117,9 +117,9 @@ const copy = {
 const serviceShowcaseImages: Record<string, string> = {
   hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
   "systemic-constellations": "/images/holistic-house/video-posters/constellations-en-v1.webp",
-  "business-decision-constellations": "/images/holistic-house/books-library.webp",
-  "reiki-energy-work": "/images/holistic-house/hero-olive-incense.webp",
-  business: "/images/holistic-house/books-library.webp",
+  "business-decision-constellations": "/images/holistic-house/video-posters/services-en-v2.webp",
+  "reiki-energy-work": "/academy/reiki-yggdrasil/source/basic-program.jpg",
+  business: "/academy/reiki-yggdrasil/source/program-overview.jpg",
   alchemy: "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
   archetypal: "/library/maya-mysteries/media/post-244-1.jpg",
 };
@@ -179,7 +179,7 @@ export default async function ServicesPage({ params }: PageProps) {
     href: "#available-services",
     indexHref: serviceIndexHrefs[id],
     actionLabel: chooseFormatLabel,
-    image: serviceShowcaseImages[id] ?? "/images/holistic-house/hero-olive-incense.webp",
+    image: serviceShowcaseImages[id] ?? "/academy/reiki-yggdrasil/source/school-introduction.jpg",
     eyebrow: locale === "ru" ? "Формат индивидуальной работы" : "Personal work format",
   }));
   const additionalShowcaseItems: CatalogShowcaseItem[] = current.cards.map(({ id, title, subtitle, text }) => ({
@@ -190,7 +190,7 @@ export default async function ServicesPage({ params }: PageProps) {
     href: "#available-services",
     indexHref: serviceIndexHrefs[id],
     actionLabel: chooseFormatLabel,
-    image: serviceShowcaseImages[id] ?? "/images/holistic-house/books-library.webp",
+    image: serviceShowcaseImages[id] ?? "/academy/reiki-yggdrasil/source/school-introduction.jpg",
     media: <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />,
     eyebrow: locale === "ru" ? "Дополнительное направление" : "Additional direction",
   }));
