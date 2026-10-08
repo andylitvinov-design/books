@@ -59,7 +59,7 @@ async function enterTest(name='Current State Check',mode='Guided'){
  }).filter({has:page.getByRole('button',{name:/^(Start testing|Continue test|Retake test)/})}).first()
  if(!(await candidate().count())){
   await chooseVisibleTest(page,name)
-  await page.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true}).click()
+  await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
   if(await page.getByRole('heading',{name:'You already have an active test set'}).count())
    await page.getByRole('button',{name:'Use new selection'}).click()
   await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
@@ -141,9 +141,9 @@ try {
  selectionPage.on('response',response=>{ if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST') selectionWrites.push(response.status()) })
  await selectionPage.goto(origin+'/en/client/tests')
  await expect(selectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
-  await expect(selectionPage.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true})).toBeEnabled()
+  await expect(selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first()).toBeEnabled()
  await chooseVisibleTest(selectionPage,'Personality Baseline')
- await selectionPage.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true}).click()
+ await selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  await expect(selectionPage.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
@@ -159,7 +159,7 @@ try {
  await repeatSelectionPage.goto(origin+'/en/client/tests')
  await expect(repeatSelectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
  await chooseVisibleTest(repeatSelectionPage,'Personality Baseline')
- await repeatSelectionPage.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true}).click()
+ await repeatSelectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
  await expect(repeatSelectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  assert.equal(new URL(repeatSelectionPage.url()).searchParams.get('plan'),selectedPlan.id)
  assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.id,selectedPlan.id)
@@ -180,7 +180,7 @@ try {
  passed('Cabinet entry has a prominent Google sign-in and one integrated battery builder')
 
  await chooseVisibleTest(page,'Personality Baseline')
- await page.locator('.quickStart').getByRole('button',{name:'Start free testing',exact:true}).click()
+ await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
  // An existing in-progress battery must not be discarded silently.
  // Choose the newly requested set through the explicit replacement confirmation.
  await expect(page.getByRole('heading',{name:'You already have an active test set'})).toBeVisible()
