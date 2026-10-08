@@ -17,16 +17,17 @@ test("Reiki Yggdrasil has a persistent module switcher on overview and module pa
 });
 
 test("Tantra Reiki side navigation links all nine levels plus media and source", async () => {
-  const [nav, record] = await Promise.all([
+  const [nav, record, journey] = await Promise.all([
     readFile("components/reiki-course-side-nav.tsx", "utf8"),
     readFile("components/academy-record-page.tsx", "utf8"),
+    readFile("components/tantra-reiki-journey.tsx", "utf8"),
   ]);
 
   assert.match(nav, /TantraReikiSideNavigation/);
   assert.match(nav, /#tantra-level-/);
   assert.match(nav, /#tantra-media/);
   assert.match(nav, /#tantra-full-source/);
-  assert.match(record, /id=\{\`tantra-level-\$\{level\.number\}\`\}/);
+  assert.match(journey, /id=\{"tantra-level-"\+n\}/);
   assert.match(record, /levels=\{tantraReikiLevelSummary\[locale\]\.levels\}/);
 });
 

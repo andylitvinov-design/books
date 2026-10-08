@@ -7,6 +7,7 @@ import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing"
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraReikiSideNavigation, YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
+import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
 import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import tantraReikiFullArchive from "@/data/academy/tantra-reiki-full.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -174,24 +175,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                 ))}
               </div>
             </section>
-            <section className="tantra-level-summary" id="tantra-levels" aria-labelledby="tantra-level-summary-title">
-            <div className="tantra-level-summary__heading">
-              <p className="homeopathy-kicker">{locale === "ru" ? "Быстрый обзор" : locale === "es" ? "Resumen rápido" : "Quick overview"}</p>
-              <h2 id="tantra-level-summary-title">{tantraReikiLevelSummary[locale].title}</h2>
-              <p>{tantraReikiLevelSummary[locale].intro}</p>
-            </div>
-            <div className="tantra-level-summary__grid">
-              {tantraReikiLevelSummary[locale].levels.map((level) => (
-                <article className="tantra-level-summary__card" id={`tantra-level-${level.number}`} key={level.number}>
-                  <span className="tantra-level-summary__number">{level.number}</span>
-                  <div>
-                    <h3>{level.title}</h3>
-                    <p>{level.description}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+            <section className="tantra-level-summary" id="tantra-levels" aria-labelledby="tantra-level-summary-title"><TantraReikiJourney locale={locale} /></section>
           </>
         ) : null}
         {!isVerbatimTantraArchive && outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
