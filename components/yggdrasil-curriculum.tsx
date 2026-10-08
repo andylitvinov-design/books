@@ -1,4 +1,5 @@
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import visualStyles from "./yggdrasil-curriculum-visual.module.css";
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import en1 from "@/data/academy/yggdrasil-en-settings-l1.json";
 import en2 from "@/data/academy/yggdrasil-en-settings-l2.json";
@@ -121,9 +122,58 @@ const collectionsEs = {
   ],
 };
 
+
+/**
+ * Original per-level photos from the five-level Basic Course:
+ * https://psitrends.com/studies/master-taory
+ * Keep the curricular text in the canonical source; these visuals are only presentation.
+ */
+const basicLevelPhotos: Record<number, string> = {
+  1: "https://psitrends.com/images/Screenshot_25.png",
+  2: "https://psitrends.com/images/photo_2023-07-10_08-26-39.jpg",
+  3: "https://psitrends.com/images/Screenshot_31.png",
+  4: "https://psitrends.com/images/tulumhypnotherapy.jpg",
+  5: "https://psitrends.com/images/world_magic_traditions_overview.jpg",
+};
+
+const advancedLevelPhotos: Record<number, string> = {
+  2: "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
+  3: "/academy/reiki-yggdrasil/source/temple-studies.png",
+  4: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+  5: "/academy/reiki-yggdrasil/source/western-tradition.png",
+  6: "/academy/reiki-yggdrasil/source/advanced-runes.png",
+  7: "/academy/reiki-yggdrasil/source/slavic-tradition.png",
+};
+
+const basicLevelIntroductions: Record<PublicLocale, Record<number, string>> = {
+  en: {
+    1: "Begin with four foundation attunements: healing practices, intuition, protection and working with a personal situation.",
+    2: "Explore cleansing practices, charging objects, releasing unwanted connections and symbolic work with the money stream.",
+    3: "Work with personal direction and inner strength through eight attunements, including emotions, power, intellect and karma.",
+    4: "Explore perception and imagery through clairvoyance, previous-life symbolism, knowledge and creating a situation.",
+    5: "Bring the foundation together through two master-level attunements: Connection with the World and Connection with the Gods.",
+  },
+  ru: {
+    1: "Начало практики: четыре настройки — целительство, интуиция, защита и работа с личной ситуацией.",
+    2: "Практики очищения, зарядки предметов, освобождения от нежелательных связей и работы с денежным потоком.",
+    3: "Восемь настроек о направлении жизни и личной силе: эмоции, активация, сила, интеллект, карма и другие темы.",
+    4: "Практики образного восприятия: ясновидение, символика прошлых жизней, знание и создание ситуации.",
+    5: "Завершение базового курса: две мастерские настройки — Связь с Миром и Связь с Богами.",
+  },
+  es: {
+    1: "Empieza con cuatro sintonizaciones: sanación simbólica, intuición, protección y trabajo con una situación personal.",
+    2: "Explora limpieza, carga de objetos, liberación de vínculos y trabajo simbólico con el flujo del dinero.",
+    3: "Ocho sintonizaciones sobre dirección personal y fuerza interior: emociones, poder, intelecto, karma y más.",
+    4: "Explora la percepción y las imágenes: clarividencia, vidas pasadas, conocimiento y creación de situaciones.",
+    5: "Integra el curso básico con dos sintonizaciones de maestría: Conexión con el Mundo y con los Dioses.",
+  },
+};
+
 function StepDetail({ locale, level, step }: { locale: PublicLocale; level: CurriculumLevel; step: CurriculumStep }) {
   const text = copy[locale];
   const sourceSummary = yggdrasilStepSummary(step.id, locale);
+  const visualPhoto = level.id === 1 ? basicLevelPhotos[step.number] : advancedLevelPhotos[level.id];
+  const shortIntroduction = level.id === 1 ? basicLevelIntroductions[locale][step.number] : sourceSummary;
   const russianVideos = step.video?.videos?.filter((video) => Boolean(video.youtubeId)) ?? [];
   const englishVideos = yggdrasilEnglishStepVideos[step.id] ?? [];
   const labels = {
@@ -157,29 +207,35 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
   }[locale];
 
   return (
-    <article className="yggdrasil-step-card" id={step.id.toLowerCase()}>
-      <header className="yggdrasil-step-card__header">
-        <span className="yggdrasil-step-number">{step.number}</span>
-        <div>
-          <small>{level.stepLabel[locale]} {step.number}</small>
+    <article className={visualStyles.stepCard} id={step.id.toLowerCase()}>
+      <div
+        className={visualStyles.stepPhoto}
+        role="img"
+        aria-label={step.title[locale]}
+        style={{ backgroundImage: `linear-gradient(180deg, rgba(34, 28, 23, .05) 55%, rgba(34, 28, 23, .45)), url("${visualPhoto}")` }}
+      >
+        <span className={visualStyles.photoRibbon}>{level.stepLabel[locale]} {String(step.number).padStart(2, "0")}</span>
+      </div>
+      <div className={visualStyles.stepText}>
+        <header className={visualStyles.stepHeader}>
+          <span className={visualStyles.stageKicker}>{level.stepLabel[locale]} {step.number} / {level.steps.length}</span>
           <h3>{step.title[locale]}</h3>
-        </div>
-      </header>
+        </header>
 
-      <div className="yggdrasil-step-card__body" lang={locale === "ru" ? "ru" : locale === "es" ? "es" : "en"}>
-        <p className="homeopathy-kicker">{labels.about}</p>
-        <p className="yggdrasil-step-source-summary">{sourceSummary}</p>
+      <div className={visualStyles.stepBody} lang={locale === "ru" ? "ru" : locale === "es" ? "es" : "en"}>
+        <p className={visualStyles.stepIntroduction}>{shortIntroduction}</p>
 
         <section className="yggdrasil-attunement-summary">
           <div className="yggdrasil-section-heading">
             <h4>{labels.attunements}</h4>
             <span>{step.settings.length}</span>
           </div>
-          <div className="yggdrasil-attunement-chips">
-            {step.settings.map((setting) => {
+          <div className={visualStyles.attunementChips}>
+            {step.settings.slice(0, 4).map((setting) => {
               const localized = localizedSetting(locale, setting);
               return <span key={setting.id}>{localized.title}</span>;
             })}
+            {step.settings.length > 4 ? <span className={visualStyles.moreChips}>+{step.settings.length - 4}</span> : null}
           </div>
         </section>
 
@@ -277,6 +333,7 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
           </div>
         </details>
       </div>
+      </div>
     </article>
   );
 }
@@ -297,45 +354,48 @@ export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { l
   const englishVideosCount = levels.reduce((sum, level) => sum + level.steps.reduce((inner, step) => inner + (yggdrasilEnglishStepVideos[step.id]?.length ?? 0), 0), 0);
 
   return (
-    <section className="yggdrasil-curriculum" aria-labelledby="yggdrasil-curriculum-title">
-      <div className="yggdrasil-curriculum-intro">
+    <section className={visualStyles.curriculum} aria-labelledby="yggdrasil-curriculum-title">
+      <div className={visualStyles.curriculumIntro}>
         <p className="homeopathy-kicker">{selected ? (locale === "ru" ? "Курс без лишних кликов" : locale === "es" ? "Curso sin clics innecesarios" : "Course without extra clicks") : text.eyebrow}</p>
         <h2 id="yggdrasil-curriculum-title">{selected ? (locale === "ru" ? "Что входит в курс" : locale === "es" ? "Qué incluye el curso" : "What the course includes") : text.title}</h2>
-        <p>{selected ? selected.theme[locale] : text.lead}</p>
-        <div className="yggdrasil-source-stats" aria-label="Source coverage">
-          <span>{settingsCount} {locale === "ru" ? "настроек" : locale === "es" ? "sintonizaciones" : "attunements"}</span>
-          <span>{videosCount} {locale === "ru" ? "русских видеолекций" : locale === "es" ? "videoclases en ruso" : "Russian video lectures"}</span>
-          {englishVideosCount ? <span>{englishVideosCount} {locale === "ru" ? "видео на английском" : locale === "es" ? "videos en inglés" : "English videos"}</span> : null}
-        </div>
-        {text.sourceLanguage ? <p className="yggdrasil-source-language">{text.sourceLanguage}</p> : null}
-        <small>{text.source}</small>
+        <p>{selected ? (locale === "ru" ? "Каждая ступень — отдельный шаг практики. Смотрите фото и главное содержание, подробности открывайте по желанию." : locale === "es" ? "Cada etapa tiene una imagen y una explicación clara. Abre los detalles solo cuando los necesites." : "Five clear stages, from foundational practices to the Master Level. Explore each stage visually; open details when you need them.") : text.lead}</p>
       </div>
 
-      <div className="yggdrasil-levels">
+      <div className={visualStyles.levels}>
         {levels.map((level) => (
-          <section className="yggdrasil-level yggdrasil-level--landing" id={level.id === 1 ? "yggdrasil-basic-course-learning" : undefined} key={level.id}>
-            <div className="yggdrasil-level-summary">
-              <span className="yggdrasil-level-number">{String(level.id).padStart(2, "0")}</span>
-              <span className="yggdrasil-level-copy">
+          <section className={visualStyles.level} id={level.id === 1 ? "yggdrasil-basic-course-learning" : undefined} key={level.id}>
+            <div className={visualStyles.levelHeading}>
+              <span className={visualStyles.levelNumber}>{String(level.id).padStart(2, "0")}</span>
+              <span className={visualStyles.levelTitle}>
                 <strong>{level.title[locale]}</strong>
-                <small>{level.steps.length} {text.steps} · {level.theme[locale]}</small>
+                <small>{level.steps.length} {text.steps}</small>
               </span>
             </div>
-            <nav className="yggdrasil-course-roadmap" aria-label={locale === "ru" ? "Структура курса" : locale === "es" ? "Estructura del curso" : "Course roadmap"}>
+            <nav className={visualStyles.stageNavigation} aria-label={locale === "ru" ? "Перейти к ступени" : locale === "es" ? "Ir a la etapa" : "Jump to a level"}>
               {level.steps.map((step) => (
                 <a href={"#" + step.id.toLowerCase()} key={step.id}>
                   <span>{String(step.number).padStart(2, "0")}</span>
                   <strong>{step.title[locale]}</strong>
-                  <small>{yggdrasilStepSummary(step.id, locale)}</small>
                 </a>
               ))}
             </nav>
-            <div className="yggdrasil-step-list yggdrasil-step-list--inline">
+            <div className={visualStyles.visualSteps}>
               {level.steps.map((step) => <StepDetail key={step.id} locale={locale} level={level} step={step} />)}
             </div>
           </section>
         ))}
       </div>
+
+      <details className={visualStyles.sourceDetails}>
+        <summary>{locale === "ru" ? "Источники, языки и количество материалов" : locale === "es" ? "Fuentes, idiomas y materiales" : "Course sources, languages and materials"}</summary>
+        <div className="yggdrasil-source-stats" aria-label="Source coverage">
+          <span>{settingsCount} {locale === "ru" ? "настроек" : locale === "es" ? "sintonizaciones" : "attunements"}</span>
+          <span>{videosCount} {locale === "ru" ? "русских видеолекций" : locale === "es" ? "videoclases en ruso" : "Russian video lectures"}</span>
+          {englishVideosCount ? <span>{englishVideosCount} {locale === "ru" ? "видео на английском" : locale === "es" ? "videos en inglés" : "English videos"}</span> : null}
+        </div>
+        {text.sourceLanguage ? <p>{text.sourceLanguage}</p> : null}
+        <small>{text.source}</small>
+      </details>
 
       {showSupport ? (
         <>
