@@ -51,3 +51,17 @@ test('account Cabinet waits for onboarding, restores selection, keeps progress a
   assert.ok(paths.length >= 10)
   for (const [quoted] of paths) assert.ok(existsSync(new URL('../public' + quoted.slice(1, -1), import.meta.url)), quoted)
 })
+
+test('a personal battery counts completion in any order and ignores already recorded instruments', async () => {
+  const { nextOutstandingDefinitionIndex } = await import('../lib/app/test-plans.js')
+  const ids = ['first', 'second', 'third']
+  assert.equal(nextOutstandingDefinitionIndex(ids, []), 0)
+  assert.equal(nextOutstandingDefinitionIndex(ids, ['third']), 0)
+  assert.equal(nextOutstandingDefinitionIndex(ids, ['first', 'third']), 1)
+  assert.equal(nextOutstandingDefinitionIndex(ids, ['third', 'first', 'second', 'second']), 3)
+  const server = read('lib/app/repository.js')
+  assert.match(server, /completedDefinitionIds\.has/)
+  assert.match(server, /nextOutstandingDefinitionIndex/)
+  const dashboard = read('components/app/account-test-battery.jsx')
+  assert.match(dashboard, /currentPlan\.definitionIds\.includes\(row\.definition\.id\)/)
+})
