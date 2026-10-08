@@ -35,6 +35,8 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
       language: "Testimonio original en inglés",
     },
   }[locale];
+  const featuredVideos = yggdrasilVideoTestimonials.slice(0, 2);
+  const additionalVideos = yggdrasilVideoTestimonials.slice(2);
 
   return (
     <section className="yggdrasil-testimonials" id="yggdrasil-testimonials">
@@ -70,13 +72,29 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
           <span>{yggdrasilVideoTestimonials.length}</span>
         </div>
         <div className="yggdrasil-video-grid yggdrasil-testimonial-video-grid">
-          {yggdrasilVideoTestimonials.map((video) => (
+          {featuredVideos.map((video) => (
             <div className="yggdrasil-testimonial-video" key={video.youtubeId}>
               <span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span>
               <AcademyVideoPlayer youtubeId={video.youtubeId} title={video.title[locale]} />
             </div>
           ))}
         </div>
+        {additionalVideos.length ? (
+          <details className="yggdrasil-more-testimonials">
+            <summary>
+              {locale === "ru" ? "Показать дополнительные видеоотзывы" : locale === "es" ? "Ver más testimonios en video" : "More English video reviews"}
+              <span>{additionalVideos.length}</span>
+            </summary>
+            <div className="yggdrasil-video-grid yggdrasil-testimonial-video-grid">
+              {additionalVideos.map((video) => (
+                <div className="yggdrasil-testimonial-video" key={video.youtubeId}>
+                  <span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span>
+                  <AcademyVideoPlayer youtubeId={video.youtubeId} title={video.title[locale]} />
+                </div>
+              ))}
+            </div>
+          </details>
+        ) : null}
       </section>
     </section>
   );
