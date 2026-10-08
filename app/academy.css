@@ -148,13 +148,13 @@
 .yggdrasil-program-hero-image { min-height: 340px; }
 .yggdrasil-source-visual { min-height: 190px; background-position: center; background-size: cover; }
 .yggdrasil-program-hero-copy { display: flex; flex-direction: column; justify-content: center; padding: clamp(24px,4vw,44px); }
-.yggdrasil-program-hero-copy h2, .yggdrasil-program-section > h2, .yggdrasil-basic-course-heading h2, .yggdrasil-source-gallery > h2 { margin: 7px 0 10px; color: #2c2119; font-family: var(--font-serif); font-size: clamp(30px,5vw,46px); font-weight: 400; line-height: 1.06; letter-spacing: -.02em; }
-.yggdrasil-program-hero-copy > p:not(.homeopathy-kicker), .yggdrasil-program-section-lead, .yggdrasil-basic-course-heading > p:not(.homeopathy-kicker), .yggdrasil-source-gallery > p { margin: 0; color: #65564b; font-family: var(--font-serif); font-size: 16px; line-height: 1.58; }
+.yggdrasil-program-hero-copy h2, .yggdrasil-program-section > h2, .yggdrasil-basic-course-heading h2, .yggdrasil-school-story__heading h2 { margin: 7px 0 10px; color: #2c2119; font-family: var(--font-serif); font-size: clamp(30px,5vw,46px); font-weight: 400; line-height: 1.06; letter-spacing: -.02em; }
+.yggdrasil-program-hero-copy > p:not(.homeopathy-kicker), .yggdrasil-program-section-lead, .yggdrasil-basic-course-heading > p:not(.homeopathy-kicker), .yggdrasil-school-story__heading > p:not(.homeopathy-kicker) { margin: 0; color: #65564b; font-family: var(--font-serif); font-size: 16px; line-height: 1.58; }
 .yggdrasil-program-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
 .yggdrasil-program-actions a { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; border: 1px solid #8d6248; padding: 10px 15px; font-size: 12px; font-weight: 700; line-height: 1.25; text-decoration: none; }
 .yggdrasil-primary-action { background: #70442d; color: #fffaf3; }
 .yggdrasil-secondary-action { background: transparent; color: #70442d; }
-.yggdrasil-program-section, .yggdrasil-basic-course, .yggdrasil-source-gallery { scroll-margin-top: 28px; }
+.yggdrasil-program-section, .yggdrasil-basic-course, .yggdrasil-school-story { scroll-margin-top: 28px; }
 .yggdrasil-module-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 20px; }
 .yggdrasil-module-card { display: grid; grid-template-columns: 150px minmax(0,1fr); min-height: 180px; overflow: hidden; border: 1px solid #d8c9b5; background: #fffaf3; }
 .yggdrasil-module-card .yggdrasil-source-visual { min-height: 100%; }
@@ -186,6 +186,49 @@
 .yggdrasil-program-source-note { margin-top: 12px !important; color: #8a7869 !important; font-family: inherit !important; font-size: 10px !important; }
 .yggdrasil-source-link { display: inline-flex; gap: 6px; margin-top: 9px; color: #70442d; font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 
+/* Contextual Academy story on the Reiki Yggdrasil overview */
+.yggdrasil-school-story { border-top: 1px solid #ded1c2; padding-top: 30px; }
+.yggdrasil-school-story__heading { max-width: 760px; }
+.yggdrasil-school-story__grid { display: grid; gap: 12px; margin-top: 20px; }
+.yggdrasil-school-story__item {
+  display: grid;
+  grid-template-columns: minmax(220px, .82fr) minmax(0, 1.18fr);
+  min-height: 250px;
+  overflow: hidden;
+  border: 1px solid #d8c9b5;
+  background: #fffaf3;
+}
+.yggdrasil-school-story__item:nth-child(even) .yggdrasil-source-visual { order: 2; }
+.yggdrasil-school-story__item .yggdrasil-source-visual { min-height: 250px; background-position: center; }
+.yggdrasil-school-story__copy { display: flex; flex-direction: column; justify-content: center; padding: clamp(20px, 3.5vw, 34px); }
+.yggdrasil-school-story__copy small {
+  color: #98745c;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.yggdrasil-school-story__copy h3 {
+  margin: 6px 0 8px;
+  color: #3a291f;
+  font-family: var(--font-serif);
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 500;
+  line-height: 1.08;
+}
+.yggdrasil-school-story__copy p { margin: 0; color: #66574c; font-size: 13px; line-height: 1.58; }
+.yggdrasil-school-story__copy a {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 12px;
+  color: #70442d;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.yggdrasil-school-story__sources { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+
+
 @media (max-width: 760px) {
   .yggdrasil-program-landing { gap: 30px; padding-top: 16px; }
   .yggdrasil-program-hero { grid-template-columns: 1fr; }
@@ -204,6 +247,11 @@
   .yggdrasil-basic-level-card h3 { font-size: 18px; }
   .yggdrasil-source-gallery-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .yggdrasil-source-gallery .yggdrasil-source-visual { min-height: 120px; }
+  .yggdrasil-school-story__item { grid-template-columns: 1fr; min-height: 0; }
+  .yggdrasil-school-story__item:nth-child(even) .yggdrasil-source-visual { order: 0; }
+  .yggdrasil-school-story__item .yggdrasil-source-visual { min-height: 210px; }
+  .yggdrasil-school-story__copy { padding: 18px 15px 20px; }
+  .yggdrasil-school-story__sources { display: grid; gap: 4px; }
 }
 
 /* Tantra Reiki quick level overview */
