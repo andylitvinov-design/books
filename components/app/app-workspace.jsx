@@ -180,7 +180,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       expectedRevision: plan.revision,
     })
     await load()
-    // Return to the photo-led test battery after each result.
+    // Return to the complete battery after each result; no forced next test.
     router.push(`${root}/tests?plan=${encodeURIComponent(planId)}`)
   }
   if (deleted || state === 'deletion')
