@@ -221,7 +221,7 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
   assert.ok(!ia.includes('Cabinet v2.4'))
 })
 
-test('Cabinet entry prioritizes login and one monitoring battery instead of duplicate test cards', async () => {
+test('Cabinet entry prioritizes the one-click monitoring battery with optional Google entry instead of duplicate test cards', async () => {
   const [landing, explorer, styles] = await Promise.all([
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('components/app/test-explorer.jsx', 'utf8'),
@@ -232,7 +232,7 @@ test('Cabinet entry prioritizes login and one monitoring battery instead of dupl
   assert.ok(landing.includes('Войти в личный кабинет через Google'))
   assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded />'))
   assert.ok(landing.includes("phase !== 'catalog' && <section"))
-  assert.ok(landing.indexOf('cabinet-signin-hero') < landing.indexOf('<PublicTestExplorer locale={locale} embedded />'))
+  assert.ok(landing.indexOf('<PublicTestExplorer locale={locale} embedded />') < landing.indexOf('cabinet-signin-hero'))
   assert.ok(!landing.includes('className="cabinet-test-image"'))
   assert.ok(!landing.includes('className="cabinet-monitor-actions"'))
   assert.ok(!landing.includes("import Image from 'next/image'"))

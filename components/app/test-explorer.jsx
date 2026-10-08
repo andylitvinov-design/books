@@ -21,12 +21,55 @@ const ADVANCED_COPY = {
   ru: { subtitle: 'Уточните подбор', hint: 'Комбинируйте фильтры по запросу, времени и цели. Количество тестов меняется сразу.', detail: 'Конкретные проблемы', scales: 'Измеряемые шкалы', time: 'Время на прохождение', language: 'Язык вопросов', tracking: 'Цель тестирования', any: 'Любой', two: 'До 2 минут', five: 'До 5 минут', ten: 'До 10 минут', bilingual: 'Английский + русский', english: 'Английский оригинал', repeat: 'Отслеживать изменения', baseline: 'Разовое / базовый профиль', about: 'Это параметры подбора опросников, не результаты диагностики.', filterCount: 'активных параметров' },
   es: { subtitle: 'Afinar tu elección', hint: 'Combina criterios por tema, tiempo y objetivo. El número se actualiza al instante.', detail: 'Temas específicos', scales: 'Escalas a seguir', time: 'Tiempo disponible', language: 'Idioma del cuestionario', tracking: 'Objetivo', any: 'Cualquiera', two: 'Hasta 2 min', five: 'Hasta 5 min', ten: 'Hasta 10 min', bilingual: 'Inglés y ruso', english: 'Original en inglés', repeat: 'Seguir la evolución', baseline: 'Una vez / perfil inicial', about: 'Filtros para elegir pruebas, no resultados clínicos.', filterCount: 'criterios activos' },
 }
+const QUICK_COPY = {
+  en: {
+    title: 'Start with a simple check-in',
+    intro: 'A short set of questionnaires is ready for you. Start now, or adjust the tests if you prefer.',
+    customize: 'Choose my own tests and filters',
+    hide: 'Hide test options',
+    describe: 'Describe what concerns you (optional)',
+    preview: 'Preview the areas covered by these tests',
+    showAll: 'Show all matching tests',
+    showLess: 'Show fewer tests',
+    resetSet: 'Use suggested set',
+    summary: 'suggested tests',
+    google: 'Continue with Google to create or open your private Cabinet. Tests are for self-reflection, not a diagnosis.',
+  },
+  ru: {
+    title: 'Начните с простого тестирования',
+    intro: 'Мы уже подобрали короткий набор тестов. Можно сразу начать или настроить подбор под себя.',
+    customize: 'Подобрать свои тесты и фильтры',
+    hide: 'Скрыть настройки тестов',
+    describe: 'Опишите, что вас беспокоит (необязательно)',
+    preview: 'Посмотреть, какие стороны состояния охватывают тесты',
+    showAll: 'Показать все подходящие тесты',
+    showLess: 'Показать меньше',
+    resetSet: 'Вернуть рекомендованный набор',
+    summary: 'тестов в подборке',
+    google: 'Вход через Google откроет ваш личный кабинет. Тесты предназначены для самонаблюдения, а не диагностики.',
+  },
+  es: {
+    title: 'Empieza con una evaluación sencilla',
+    intro: 'Ya tienes una selección breve de cuestionarios. Puedes empezar ahora o personalizarlos.',
+    customize: 'Elegir pruebas y filtros',
+    hide: 'Ocultar opciones',
+    describe: 'Describe tu inquietud (opcional)',
+    preview: 'Ver las áreas que cubren las pruebas',
+    showAll: 'Mostrar todas las pruebas',
+    showLess: 'Mostrar menos',
+    resetSet: 'Usar la selección sugerida',
+    summary: 'pruebas sugeridas',
+    google: 'Continúa con Google para abrir tu espacio privado. Las pruebas son para autoobservación, no diagnósticos.',
+  },
+}
+
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
 export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null }) {
   const c = COPY[locale] || COPY.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
+  const quick = QUICK_COPY[locale] || QUICK_COPY.en
   const [availability, setAvailability] = useState('available')
   const [concern, setConcern] = useState('')
   const [voiceSupported, setVoiceSupported] = useState(false)
@@ -82,7 +125,9 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [axisFilter, setAxisFilter] = useState(null)
   const [actionError, setActionError] = useState(null)
   const [starting, setStarting] = useState(false)
-  const [filtersOpen, setFiltersOpen] = useState(true)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [showAll, setShowAll] = useState(false)
   const entries = useMemo(() => buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience }), [locale, audience])
   // Direct History -> Test selection must also work when the URL changes without remounting.
   useEffect(() => {
@@ -101,28 +146,61 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   // A selected test stays visible even if new filters no longer match it.
   const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
   const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, axes, depth, stylesFilter, lengths, selectedKeys])
-  const visible = useMemo(() => ranked.filter((entry) => !axisFilter || selectedKeys.includes(entry.key) || entry.analysisAxes.some((axis) => axis.key === axisFilter)).sort((a, b) => sort === 'shortest' ? (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity) : sort === 'deepest' ? (b.durationMinutes ?? 0) - (a.durationMinutes ?? 0) : sort === 'alphabetic' ? a.title.localeCompare(b.title, locale) : 0), [ranked, sort, locale, axisFilter, selectedKeys])
+  // Keep checked tests above the shortened discovery list. Re-ranking after
+  // a checkbox change must never make that same checkbox disappear mid-click.
+  const visible = useMemo(() => ranked.filter((entry) => !axisFilter || selectedKeys.includes(entry.key) || entry.analysisAxes.some((axis) => axis.key === axisFilter)).sort((a, b) => {
+    const aSelected = selectedKeys.includes(a.key), bSelected = selectedKeys.includes(b.key)
+    if (aSelected !== bSelected) return aSelected ? -1 : 1
+    if (sort === 'shortest') return (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity)
+    if (sort === 'deepest') return (b.durationMinutes ?? 0) - (a.durationMinutes ?? 0)
+    if (sort === 'alphabetic') return a.title.localeCompare(b.title, locale)
+    return 0
+  }), [ranked, sort, locale, axisFilter, selectedKeys])
   const selected = entries.filter((entry) => selectedKeys.includes(entry.key) && entry.selectable)
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
+  // The start button works without requiring a visitor to select any filters.
+  // Use only existing, rights-cleared, startable questionnaires.
+  const autoBattery = useMemo(() => buildStarterBattery(
+    matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)),
+    { focus, details, axes, depth, styles: stylesFilter, lengths },
+  ), [matching, axisFilter, focus, details, axes, depth, stylesFilter, lengths])
+  const activeBattery = selected.length ? selected : autoBattery
+  const activeCoverage = selected.length ? coverage : coverageForSelection(entries, autoBattery.map((entry) => entry.key))
   const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes }), [entries, focus, details, axes])
   const showingCoverage = selectedKeys.length > 0
   const displayedCoverage = showingCoverage ? coverage : topicCoverage
   const matchCount = matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)).length
   const appliedFilters = stylesFilter.length + lengths.length + areas.length + details.length + axes.length + (maxMinutes ? 1 : 0) + (language !== 'any' ? 1 : 0) + (tracking !== 'any' ? 1 : 0) + (freeOnly ? 1 : 0) + (query.trim() ? 1 : 0) + (axisFilter ? 1 : 0)
-  const questions = selected.reduce((sum, entry) => sum + (entry.questionCount || 0), 0)
-  const minutes = selected.reduce((sum, entry) => sum + (entry.durationMinutes || 0), 0)
-  const breadth = c[coverage.breadth]
+  const questions = activeBattery.reduce((sum, entry) => sum + (entry.questionCount || 0), 0)
+  const minutes = activeBattery.reduce((sum, entry) => sum + (entry.durationMinutes || 0), 0)
+  const breadth = c[activeCoverage.breadth]
   const chooseSuggested = () => setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
   const resetFilters = () => { setAvailability('available'); setFocus([]); setStylesFilter([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
   const toggleSelected = (key) => setSelectedKeys((current) => current.includes(key) ? current.filter((item) => item !== key) : current.length < 12 ? [...current, key] : current)
   const start = async () => {
-    if (!selected.length || !onStart) return
+    if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
-    try { await onStart(selected) } catch (error) { setActionError(error) } finally { setStarting(false) }
+    try { await onStart(activeBattery) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
 
   return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
-    <section className={styles.concernPanel} aria-labelledby="hh-concern-title">
+    <header className={styles.quickStart}>
+      <p className={styles.eyebrow}>{c.kicker}</p>
+      <h1>{quick.title}</h1>
+      <p className={styles.quickIntro}>{quick.intro}</p>
+      {activePlan?.status === 'active' && <button className={styles.resumeButton} type="button" onClick={() => onResume?.(activePlan)}>{locale === 'ru' ? `Продолжить набор: шаг ${activePlan.currentIndex + 1}` : locale === 'es' ? `Continuar selección: paso ${activePlan.currentIndex + 1}` : `Resume set: step ${activePlan.currentIndex + 1}`}</button>}
+      <div className={styles.quickActions}>
+        <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : c.start}</button>
+        <span>{activeBattery.length} {quick.summary} · {questions} {c.questions} · ~{minutes} {c.minutes}</span>
+      </div>
+      <button type="button" className={styles.customizeButton} aria-expanded={customizeOpen} aria-controls="hh-test-customizer" onClick={() => setCustomizeOpen((open) => !open)}>{customizeOpen ? '− ' + quick.hide : '+ ' + quick.customize}</button>
+      <p className={styles.quickPrivacy}>{quick.google}</p>
+      {actionError && <p role="alert" className={styles.quickError}>{actionError.code || actionError.message}</p>}
+    </header>
+    <div id="hh-test-customizer" className={styles.customizer} hidden={!customizeOpen}>
+      <details className={styles.problemDetails}>
+        <summary>{quick.describe}</summary>
+        <section className={styles.concernPanel} aria-labelledby="hh-concern-title">
       <div><p className={styles.eyebrow}>{locale === 'ru' ? 'Подбор по вашей ситуации' : locale === 'es' ? 'Encontrar pruebas por tu situación' : 'Find tests for your situation'}</p>
         <h2 id="hh-concern-title">{locale === 'ru' ? 'Расскажите, что вас беспокоит' : locale === 'es' ? 'Describe qué te preocupa' : 'What would you like to understand?'}</h2>
         <p>{locale === 'ru' ? 'Напишите своими словами или воспользуйтесь микрофоном. Система подберёт подходящие темы, а вы сможете уточнить их фильтрами.' : locale === 'es' ? 'Escribe tu inquietud o usa el micrófono. Después puedes ajustar los filtros.' : 'Describe a concern in your own words, or use the microphone. You can refine the suggested topics with the filters.'}</p></div>
@@ -136,12 +214,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       {speechError && <p role="status">{speechError}</p>}
       {concernAnalysis.urgent && <p role="alert">{locale === 'ru' ? 'Если вы сейчас в опасности или думаете причинить себе вред, немедленно обратитесь в местную экстренную службу или кризисную линию. Тест не заменяет срочную помощь.' : 'If you may be in immediate danger or thinking of self-harm, contact local emergency services or a crisis line now. A self-test is not emergency support.'}</p>}
       <small>{locale === 'ru' ? 'Текст не отправляется в аккаунт и не сохраняется. При использовании микрофона распознавание может выполняться службой вашего браузера.' : 'This text is not saved to your account. If you use your microphone, your browser’s speech service may process audio.'}</small>
-    </section>
+        </section>
+      </details>
     {audience === 'account' && recommendedNext && <aside className={styles.personalNext} aria-label={locale === 'ru' ? 'Личная рекомендация' : 'Personal recommendation'}>
       <div><p className={styles.eyebrow}>{locale === 'ru' ? 'На основе ваших прошлых результатов' : 'Based on your past results'}</p><h2>{recommendedNext.title}</h2><p>{recommendedNext.reason}</p><small>{locale === 'ru' ? 'Это рекомендация по самонаблюдению, не диагноз и не назначение лечения.' : 'A self-monitoring suggestion, not a diagnosis or treatment advice.'}</small></div>
       {recommendedNext.key ? <button type="button" onClick={() => { setAvailability('available'); setFocus([]); setSelectedKeys([recommendedNext.key]); setConcern('') }}>{locale === 'ru' ? 'Выбрать этот тест' : 'Select this test'}</button> : <Link href={`/${locale}/app/history`}>{locale === 'ru' ? 'Открыть историю' : 'View history'}</Link>}
     </aside>}
-        <header className={styles.header}><p className={styles.eyebrow}>{c.kicker}</p><h1>{c.title}</h1><p>{c.intro}</p>{activePlan?.status === 'active' && <button type="button" onClick={() => onResume?.(activePlan)}>{locale === 'ru' ? `Продолжить набор: шаг ${activePlan.currentIndex + 1}` : locale === 'es' ? `Continuar selección: paso ${activePlan.currentIndex + 1}` : `Resume set: step ${activePlan.currentIndex + 1}`}</button>}</header>
+    <header className={styles.header}><h2>{c.title}</h2><p>{c.intro}</p></header>
     <div className={styles.availability} role="tablist" aria-label={c.title}><button type="button" role="tab" aria-selected={availability === 'available'} onClick={() => setAvailability('available')}>{c.available}</button><button type="button" role="tab" aria-selected={availability === 'full'} onClick={() => setAvailability('full')}>{c.full}</button></div>
     <section className={styles.toolbar} aria-label={c.themes}>
       <div className={styles.filterStatus} role="status" aria-live="polite"><strong>{matchCount} {c.matching}</strong><span>{focus.length} {c.selectedThemes} · {appliedFilters} {c.filters.toLocaleLowerCase()}</span><button type="button" onClick={resetFilters}>{c.filterClear}</button></div>
@@ -164,14 +243,27 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     </section>
     <div className={styles.workspace}><div className={styles.database}><div className={styles.databaseHeader}><div className={styles.countBlock}><strong role="status" aria-live="polite">{matchCount} {c.matching}</strong><small>{c.of} {availability === 'available' ? entries.filter((entry) => entry.selectable).length : entries.length} · {c.totalAvailable}{selectedKeys.length > 0 && ` · ${selectedKeys.length} ${c.kept}`}</small></div><button type="button" onClick={chooseSuggested}>{c.suggested}</button></div>
       {visible.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
-      <div className={styles.list}>{visible.map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.analysisAxes.some((axis) => axis.key === axisFilter) ? styles.rowAxis : ''}`}>
+      <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.analysisAxes.some((axis) => axis.key === axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{entry.description || entry.category}</p>{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
         {entry.selectable && <div className={styles.relevance} title={c.matchNote} style={{ '--match': `${Math.max(0, Math.min(100, Math.round(entry.score / 1.2)))}%` }}><strong>{Math.max(0, Math.min(100, Math.round(entry.score / 1.2)))}%</strong><span>{c.relevance}</span></div>}
-      </article>)}</div></div>
-      <TestExplorerVisual portrait={portrait} locale={locale} coverage={displayedCoverage} mode={showingCoverage ? 'selected' : 'topics'} topicCount={focus.length} selectedCount={selectedKeys.length} axisFilter={axisFilter} onAxisFilter={setAxisFilter} />
+      </article>)}</div>
+        {visible.length > 8 && <button className={styles.showMore} type="button" onClick={() => setShowAll((value) => !value)}>{showAll ? quick.showLess : `${quick.showAll} (${visible.length})`}</button>}
+      </div>
+      <details className={styles.visualDetails}><summary>{quick.preview}</summary><TestExplorerVisual portrait={portrait} locale={locale} coverage={displayedCoverage} mode={showingCoverage ? 'selected' : 'topics'} topicCount={focus.length} selectedCount={selectedKeys.length} axisFilter={axisFilter} onAxisFilter={setAxisFilter} /></details>
     </div>
-        <footer className={styles.battery}><div><strong>{selected.length ? `${selected.length} · ${questions} ${c.questions} · ~${minutes} ${c.minutes} · ${coverage.coveredCount} ${c.axes} · ${breadth}` : c.choose}</strong>{(selected.length > 8 || minutes > 30) && <p>{c.warning}</p>}<small>{c.privacy}</small>{actionError && <p role="alert">{actionError.code || actionError.message}</p>}</div><div><button type="button" onClick={() => setSelectedKeys([])}>{c.clear}</button><button className={styles.primary} type="button" disabled={!selected.length || starting} onClick={start}>{starting ? '…' : c.start}</button></div></footer>
+      <footer className={styles.battery}>
+        <div>
+          <strong>{activeBattery.length ? `${activeBattery.length} · ${questions} ${c.questions} · ~${minutes} ${c.minutes} · ${activeCoverage.coveredCount} ${c.axes} · ${breadth}` : c.choose}</strong>
+          {(activeBattery.length > 8 || minutes > 30) && <p>{c.warning}</p>}
+          <small>{c.privacy}</small>
+        </div>
+        <div>
+          <button type="button" onClick={() => setSelectedKeys([])}>{quick.resetSet}</button>
+          <button className={styles.primary} type="button" disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : c.start}</button>
+        </div>
+      </footer>
+    </div>
   </section>
 }
 

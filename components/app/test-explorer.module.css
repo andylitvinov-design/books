@@ -171,3 +171,71 @@
 .portraitSourceRow:last-child{border-bottom:0}
 .portraitSourceRow span{color:#776557;overflow-wrap:anywhere}
 .portraitSourceRow a{color:#265d54;text-decoration:underline;font-weight:650;margin-top:3px}
+
+
+/* One-click progressive test explorer: keep the first screen focused on starting,
+   and never obscure mobile content with a fixed test-selection banner. */
+.explorer{display:block;min-height:0;padding-bottom:42px}
+.quickStart{max-width:900px;margin:0 auto 12px;padding:30px clamp(20px,3vw,44px);border:1px solid #dfcbb1;border-radius:25px;background:linear-gradient(118deg,#fffaf2 0%,#f8eddd 100%);box-shadow:0 10px 30px rgba(74,51,37,.07)}
+.quickStart h1{max-width:19ch;margin:5px 0 13px;font:500 clamp(2rem,4vw,3.35rem)/1.07 Georgia,serif;letter-spacing:-.04em;color:#46352e}
+.quickIntro{max-width:55ch;margin:0 0 22px;font-size:clamp(1rem,1.4vw,1.13rem);line-height:1.5;color:#5f5147}
+.quickActions{display:flex;align-items:center;flex-wrap:wrap;gap:11px 20px}
+.quickPrimary{appearance:none;min-height:56px;min-width:270px;padding:13px 25px;border:1px solid #604532;border-radius:15px;background:#573d30;color:#fffaf2;font-family:inherit;font-size:1.08rem;font-weight:700;line-height:1.3;cursor:pointer;box-shadow:0 6px 16px rgba(77,50,37,.14)}
+.quickPrimary:hover:not(:disabled){background:#3e3029}
+.quickPrimary:focus-visible,.customizeButton:focus-visible,.showMore:focus-visible,.battery button:focus-visible,.problemDetails summary:focus-visible,.visualDetails summary:focus-visible{outline:3px solid #2f7d76;outline-offset:3px}
+.quickPrimary:disabled{opacity:.55;cursor:not-allowed}
+.quickActions span{font-size:.85rem;color:#76604d}
+.customizeButton{display:inline-flex;align-items:center;min-height:44px;margin-top:9px;padding:8px 0;border:0;background:transparent;color:#5c4134;text-align:left;font-family:inherit;font-size:.95rem;font-weight:650;line-height:1.45;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+.quickPrivacy{font-size:.76rem;line-height:1.5;color:#806c5b;max-width:75ch;margin:9px 0 0}
+.quickError{margin:8px 0 0;color:#96382f;font-size:.9rem}
+.resumeButton{display:inline-flex;margin:0 0 18px;padding:11px 17px;border:1px solid #4b776a;border-radius:12px;background:#e0eee7;color:#2e584e;cursor:pointer}
+.customizer[hidden]{display:none!important}
+.customizer{max-width:1440px;margin:25px auto 0;padding-top:19px;border-top:1px solid #ddcab1}
+.problemDetails{border:1px solid #dfcbb2;border-radius:14px;background:#fffaf2;margin-bottom:20px}
+.problemDetails summary{cursor:pointer;padding:14px 17px;font-size:.93rem;color:#5c4134;font-weight:650;list-style-position:inside;min-height:48px}
+.problemDetails .concernPanel{margin:0;border:0;border-top:1px solid #e7d9c7;border-radius:0 0 14px 14px}
+.explorer .header{max-width:860px;margin:8px 0 12px}
+.explorer .header h2{font:500 clamp(1.6rem,3vw,2.5rem)/1.1 Georgia,serif;letter-spacing:-.03em;margin:0}
+.explorer .header p{margin:8px 0 0;font-size:.96rem;line-height:1.45}
+.explorer .availability{margin:16px 0 12px}
+.explorer .toolbar{grid-template-columns:minmax(0,1fr) auto;gap:12px}
+.explorer .filterGroup,.explorer .filterStatus,.explorer .moreFilters{grid-column:1/-1}
+.explorer .workspace{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(270px,.85fr);gap:18px;margin:24px 0 0;align-items:start}
+.explorer .database{grid-column:auto;grid-row:auto;margin-top:0}
+.visualDetails{min-width:0;border:1px solid #dfcdb6;background:rgba(255,250,243,.75);border-radius:15px;align-self:start}
+.visualDetails summary{min-height:52px;cursor:pointer;padding:14px 16px;font-size:.92rem;font-weight:650;color:#5a4336;line-height:1.35}
+.visualDetails[open]{background:#fffaf2}
+.visualDetails[open] .visual{position:static;top:auto;margin:0 8px 8px;padding:12px;border-radius:13px;box-shadow:none}
+.explorer .battery{position:static;left:auto;right:auto;bottom:auto;display:flex;grid-column:auto;margin:20px 0 0;padding:17px 20px;border:1px solid #dcc7ac;border-radius:16px;background:#f1e7d8;color:#46352e;box-shadow:none;gap:16px}
+.explorer .battery strong{color:#46352e}
+.explorer .battery small,.explorer .battery p{color:#675344}
+.explorer .battery button{margin-left:0;border-color:#c1a88c;color:#533e32;background:#fffaf2;min-height:43px}
+.explorer .battery>div:last-child{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.explorer .battery .primary{background:#5c4134;color:#fffaf2;border-color:#5c4134}
+.showMore{display:block;width:100%;padding:13px 16px;margin:14px 0 0;border:1px solid #c6aa87;border-radius:12px;background:#fffaf2;color:#5c4134;font-weight:650;cursor:pointer}
+.embedded .quickStart{margin:0 auto;padding:12px 10px 18px;border:0;border-radius:0;box-shadow:none;background:transparent}
+@media(min-width:980px){.explorer{display:block}.explorer .workspace{display:grid}.explorer .visual{grid-column:auto;grid-row:auto;position:static}}
+@media(max-width:800px){
+  .explorer{padding:12px 12px 96px;min-height:0}
+  .embedded{padding:14px 12px calc(90px + env(safe-area-inset-bottom));margin:14px auto 24px}
+  .quickStart,.embedded .quickStart{padding:14px 8px 18px;margin:0 auto}
+  .quickStart h1{font-size:clamp(1.9rem,8vw,2.5rem);line-height:1.07}
+  .quickIntro{font-size:.98rem;line-height:1.45;margin-bottom:18px}
+  .quickActions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .quickPrimary{width:100%;min-width:0;min-height:55px;font-size:1rem}
+  .quickActions span{font-size:.79rem}
+  .customizeButton{font-size:.9rem}
+  .customizer{margin-top:12px;padding-top:14px}
+  .explorer .toolbar{display:grid;grid-template-columns:minmax(0,1fr);padding:12px 0}
+  .explorer .workspace{grid-template-columns:minmax(0,1fr);gap:14px}
+  .visualDetails{grid-column:1;grid-row:auto}
+  .explorer .battery{display:grid;padding:14px;gap:12px}
+  .explorer .battery>div:first-child{width:auto;max-width:none}
+  .explorer .battery>div:last-child{width:100%;justify-content:stretch}
+  .explorer .battery>div:last-child button{flex:1;min-width:0;margin:0}
+  .explorer .battery>div:last-child .primary{flex:1.3;font-size:.86rem}
+  .explorer .databaseHeader{gap:10px}
+  .filterGroup>div{gap:6px}
+  .filterGroup button{min-height:42px;line-height:1.3}
+}
+@media(max-width:390px){.explorer .battery>div:last-child{flex-direction:column}.explorer .battery>div:last-child button{width:100%}}
