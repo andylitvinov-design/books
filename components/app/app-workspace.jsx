@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
+import { assessmentHistoryGroups, nextPersonalRecommendation, resultChangeSummary } from '@/lib/assessments/personal-guidance'
 import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
@@ -318,6 +319,11 @@ export default function AppWorkspace({ locale, path = [] }) {
                   locale={locale}
                   audience="account"
                   activePlan={data.activeTestPlan}
+                  pastResults={data.results}
+                  draftRuns={data.runs}
+                  profileSnapshot={data.snapshot}
+                  recommendedKey={searchParams.get('suggest')}
+                  onResumeRun={(run) => router.push(root + '/runs/' + run.id)}
                   onResume={openPlanStep}
                   onStart={async (entries) => {
                     const plan = await appFetch('test-plans', {
@@ -2159,6 +2165,8 @@ function ResultPage({ id, locale, data }) {
   }, [id])
   if (error) return <p role="alert">{message(error, c)}</p>
   if (!result) return <p>{c.loading}</p>
+  const guidance = nextPersonalRecommendation({ results: data.results, snapshot: data.snapshot, locale })
+  const changeSummary = resultChangeSummary(result, data.results, locale)
   const series = seriesFor(data.results, result),
     previous = series
       .filter(
@@ -2233,6 +2241,13 @@ function ResultPage({ id, locale, data }) {
         </div>
       </section>
 
+      <aside className="hh-result-guidance"><p className="hh-kicker">{locale === 'ru' ? 'Что означает этот замер' : 'What this check-in tells you'}</p>
+        <h2>{locale === 'ru' ? 'Ваша личная динамика и следующий шаг' : 'Your progress and next step'}</h2>
+        {changeSummary.previous ? <p>{locale === 'ru' ? 'Есть совместимый предыдущий замер' : 'Compatible previous result'}: {dateLabel(changeSummary.previous.measurementAt, locale)}. {locale === 'ru' ? 'Изменения показателей не доказывают причину или диагноз.' : 'Score changes alone do not establish a cause or diagnosis.'}</p> : <p>{locale === 'ru' ? 'Это первая совместимая точка отсчёта. В дальнейшем можно сравнить результат с повторным прохождением.' : 'This is your first comparable baseline. Future check-ins can be compared with it.'}</p>}
+        {!!changeSummary.changes.length && <ul>{changeSummary.changes.slice(0, 5).map((change) => <li key={change.key}>{change.label}: {change.from} → {change.to} ({change.delta > 0 ? '+' : ''}{change.delta})</li>)}</ul>}
+        <h3>{guidance.title}</h3><p>{guidance.reason}</p><div className="hh-actions"><Link href={guidance.key ? `/${locale}/app/tests?suggest=${encodeURIComponent(guidance.key)}` : `/${locale}/app/history`}>{guidance.key ? (locale === 'ru' ? 'Выбрать рекомендуемый тест' : 'Choose suggested test') : (locale === 'ru' ? 'Посмотреть историю' : 'Review history')}</Link><Link href={`/${locale}/app/history`}>{locale === 'ru' ? 'Все прошлые результаты' : 'All past results'}</Link></div>
+        <small>{locale === 'ru' ? 'Автоматическая подсказка не является диагнозом или индивидуальным назначением лечения.' : 'This automatic suggestion is not a diagnosis or personalized treatment.'}</small>
+      </aside>
       {Object.entries(result.context || {}).length > 0 && (
         <aside className="hh-context-at-checkin hh-result-context">
           <p className="hh-kicker">{locale === 'ru' ? 'Ваш контекст' : 'Your context'}</p>
@@ -2502,7 +2517,7 @@ function HistoryView({ data, locale, reload }) {
     [error, setError] = useState(null)
   const latest = results.find((r) => r.id === latestId) || results.at(-1),
     series = latest ? seriesFor(results, latest) : [],
-    prior = series.find((r) => r.id === priorId) || series.filter((r) => r.id !== latest?.id)[0]
+    prior = series.find((r) => r.id === priorId) || series.filter((r) => r.id !== latest?.id && Date.parse(r.measurementAt) <= Date.parse(latest.measurementAt)).at(-1)
   const dimension = latest?.dimensions.find((d) => d.key === dimensionKey) || latest?.dimensions[0],
     delta = latest && prior && latest.id !== prior.id ? compareResults(latest, prior) : []
   const points = dimension
@@ -2517,6 +2532,8 @@ function HistoryView({ data, locale, reload }) {
     (580 * (Date.parse(p.date) - Date.parse(points[0].date))) /
       Math.max(1, Date.parse(points.at(-1).date) - Date.parse(points[0].date))
   const y = (p) => 170 - (140 * (p.value - dimension.min)) / (dimension.max - dimension.min)
+  const testGroups = assessmentHistoryGroups(data.results, data.runs, locale)
+  const personalNext = nextPersonalRecommendation({ results: data.results, snapshot: data.snapshot, locale })
   const timeline = [
     ...results.map((r) => ({
       id: r.id,
@@ -2582,6 +2599,28 @@ function HistoryView({ data, locale, reload }) {
         <p>{c.historyIntro}</p>
         <p className="hh-fine">{c.versionBoundary}</p>
       </div>
+      <section className="hh-assessment-history" aria-labelledby="hh-past-tests-title">
+        <div className="hh-assessment-history-heading">
+          <div><p className="hh-kicker">{locale === 'ru' ? 'Мои сохранённые замеры' : 'My saved measurements'}</p>
+          <h2 id="hh-past-tests-title">{locale === 'ru' ? 'Результаты прошлых тестов' : 'Past test results'}</h2>
+          <p>{locale === 'ru' ? 'Вся история сохраняется по датам. Каждый тест можно открыть, сравнить с совместимым предыдущим результатом или пройти повторно.' : 'Your results are kept by date. Open any result, compare compatible measurements, or take the test again.'}</p></div>
+          <Link className="hh-primary" href={`/${locale}/app/tests`}>{locale === 'ru' ? 'Подобрать тесты' : 'Find tests'}</Link>
+        </div>
+        {testGroups.length ? <div className="hh-assessment-history-list">{testGroups.map((group) => (
+          <article className="hh-assessment-history-item" key={group.key}>
+            <div className="hh-assessment-history-item-head"><div><h3>{group.title}</h3>
+              <p>{locale === 'ru' ? 'Прохождений' : 'Completed'}: <strong>{group.count}</strong>{group.latest && <> · {locale === 'ru' ? 'Последний' : 'Most recent'}: <time>{dateLabel(group.latest.measurementAt, locale)}</time></>}</p></div>
+              {group.latest && <Link href={`/${locale}/app/results/${group.latest.id}`}>{locale === 'ru' ? 'Последний результат →' : 'Latest result →'}</Link>}</div>
+            {group.latest && <div className="hh-assessment-history-dimensions">{group.latest.dimensions.map((d) => (
+              <div key={d.key}><span>{d.sourceConstruct || labelFor(d.key, locale)}</span><strong>{d.value} <small>/ {d.max}</small></strong></div>
+            ))}</div>}
+            {group.count > 1 && <details className="hh-assessment-history-previous"><summary>{locale === 'ru' ? `Все прохождения (${group.count})` : `All attempts (${group.count})`}</summary><ul>{group.history.map((result) => <li key={result.id}><time>{dateLabel(result.measurementAt, locale)}</time> <Link href={`/${locale}/app/results/${result.id}`}>{locale === 'ru' ? 'Открыть результат' : 'Open result'}</Link></li>)}</ul></details>}
+            <div className="hh-actions">{group.draft && <Link href={`/${locale}/app/runs/${group.draft.id}`}>{locale === 'ru' ? 'Продолжить начатый тест' : 'Resume unfinished test'}</Link>}
+              <Link href={`/${locale}/app/tests?suggest=${encodeURIComponent(group.key)}`}>{group.count ? (locale === 'ru' ? 'Пройти ещё раз' : 'Retake test') : (locale === 'ru' ? 'Начать тест' : 'Start test')}</Link></div>
+          </article>
+        ))}</div> : <p className="hh-panel">{locale === 'ru' ? 'Пока нет завершённых тестов. Начните с короткого замера: он станет вашей личной точкой отсчёта.' : 'No completed tests yet. Start with a short check-in to create your personal baseline.'}</p>}
+        <aside className="hh-assessment-history-next"><div><p className="hh-kicker">{locale === 'ru' ? 'Персональная подсказка' : 'Personal next step'}</p><h3>{personalNext.title}</h3><p>{personalNext.reason}</p><small>{locale === 'ru' ? 'Это навигация по самонаблюдению, а не медицинская оценка. Ваши результаты не отправляются специалисту автоматически.' : 'Guidance for self-monitoring, not a medical judgement. Your results are not automatically sent to a practitioner.'}</small></div><Link href={personalNext.key ? `/${locale}/app/tests?suggest=${encodeURIComponent(personalNext.key)}` : `/${locale}/app/history`}>{personalNext.key ? (locale === 'ru' ? 'Выбрать тест' : 'Choose test') : (locale === 'ru' ? 'Моя история' : 'My history')}</Link></aside>
+      </section>
       {latest ? (
         <article className="hh-panel">
           <h2>{c.compare}</h2>
