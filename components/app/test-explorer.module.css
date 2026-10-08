@@ -144,3 +144,13 @@
 }
 @media(max-width:380px){.portraitRayOptions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.portraitRadar{transition:none}}
+
+/* Prior comparison is shown only when the same scored instrument has a repeat. */
+.radarPrior{fill:#fff6e9;stroke:#915e44;stroke-width:2.3}
+.portraitDelta{color:#475e58;white-space:nowrap;font-size:.68rem;font-variant-numeric:tabular-nums}
+.portraitLegend{display:flex;gap:12px;flex-wrap:wrap;font-size:.74rem;margin-top:12px;color:#655747}
+.legendCurrent::before,.legendPrior::before{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.legendCurrent::before{background:#1d716a}
+.legendPrior::before{background:#fff6e9;border:2px solid #915e44;box-sizing:border-box}
+.modelStage:has(.portraitRadar){cursor:default;touch-action:auto}
+.portraitRayOption:focus-within{outline:2px solid #467a73;outline-offset:2px}
