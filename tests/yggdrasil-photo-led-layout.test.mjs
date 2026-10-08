@@ -38,3 +38,9 @@ test("new photo-led chapter cards have a responsive mobile image-first layout", 
   assert.match(css, /@media \(max-width:\s*700px\)/);
   assert.match(css, /\.stepCard\s*\{\s*grid-template-columns:\s*minmax\(0,1fr\)/);
 });
+
+test("Academy content security policy allows only required original photo origin", async () => {
+  const middleware = await readFile("middleware.ts", "utf8");
+  assert.match(middleware, /https:\/\/psitrends\.com https:\/\/www\.psitrends\.com/);
+  assert.match(middleware, /academyVideoPage \? "img-src/);
+});
