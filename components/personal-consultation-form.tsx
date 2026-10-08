@@ -7,7 +7,7 @@ const copy = {
   en: {
     name: "Name", contact: "How can I reply to you?", contactHint: "Email, Telegram, WhatsApp or another contact",
     request: "What would you like to work with?", requestHint: "A few sentences are enough.",
-    submit: "Continue in WhatsApp",
+    submit: "Continue in WhatsApp", paidSubmit: "Request this session via WhatsApp",
     note: "Nothing is sent automatically. WhatsApp opens with your note prepared for you to review.",
     opened: "Your note is ready but not sent. Continue in WhatsApp when you want to send it.",
     telegram: "Or write in Telegram · @AndyTherapist",
@@ -15,7 +15,7 @@ const copy = {
   ru: {
     name: "Имя", contact: "Как с вами связаться?", contactHint: "Email, Telegram, WhatsApp или другой контакт",
     request: "С чем вы хотели бы поработать?", requestHint: "Достаточно нескольких предложений.",
-    submit: "Продолжить в WhatsApp",
+    submit: "Продолжить в WhatsApp", paidSubmit: "Запросить запись через WhatsApp",
     note: "Ничего не отправляется автоматически. WhatsApp откроется с подготовленным сообщением — вы сможете его проверить.",
     opened: "Заявка подготовлена, но ещё не отправлена. Перейдите в WhatsApp, когда захотите её отправить.",
     telegram: "Или написать в Telegram · @AndyTherapist",
@@ -23,7 +23,7 @@ const copy = {
   es: {
     name: "Nombre", contact: "¿Cómo puedo responderte?", contactHint: "Correo electrónico, Telegram, WhatsApp u otro contacto",
     request: "¿Qué te gustaría trabajar?", requestHint: "Bastan unas pocas frases.",
-    submit: "Continuar en WhatsApp",
+    submit: "Continuar en WhatsApp", paidSubmit: "Solicitar esta sesión por WhatsApp",
     note: "No se envía nada automáticamente. WhatsApp se abre con tu mensaje preparado para que lo revises.",
     opened: "Tu mensaje está listo, pero no se ha enviado. Continúa en WhatsApp cuando quieras enviarlo.",
     telegram: "O escribe por Telegram · @AndyTherapist",
@@ -66,7 +66,7 @@ export function PersonalConsultationForm({ locale, service }: { locale: Locale |
       <label><span>{text.contact}</span><input autoComplete="email" name="contact" placeholder={text.contactHint} /></label>
       <label className="personal-consultation-form__wide"><span>{text.request}</span><textarea name="request" placeholder={text.requestHint} required rows={5} onInvalid={(event) => { if (locale === "es") event.currentTarget.setCustomValidity("Cuéntame qué te gustaría trabajar."); }} onInput={(event) => event.currentTarget.setCustomValidity("")} /></label>
       <div className="personal-consultation-form__actions">
-        <button type="submit" disabled={!interactive} aria-busy={!interactive}>{text.submit}<span aria-hidden="true">→</span></button>
+        <button type="submit" disabled={!interactive} aria-busy={!interactive}>{service ? text.paidSubmit : text.submit}<span aria-hidden="true">→</span></button>
         <a href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">{text.telegram}</a>
       </div>
       <p className="personal-consultation-form__note" role="status">{preparedUrl ? text.opened : text.note}</p>
