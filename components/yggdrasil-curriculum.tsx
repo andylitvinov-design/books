@@ -144,27 +144,18 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
   const labels = {
     en: {
       about: "About this step",
-      attunements: "Attunements in this step",
-      full: "Full attunement descriptions",
-      fullLead: "Open only if you want the detailed source wording for every attunement.",
       englishVideos: "English videos for this step",
       russianVideos: "Russian archive videos",
       russianNote: "These source lectures are in Russian. They are kept here because they match this step in the original Reiki Yggdrasil video archive.",
     },
     ru: {
       about: "О ступени",
-      attunements: "Настройки этой ступени",
-      full: "Полные описания настроек",
-      fullLead: "Открывайте, если нужны подробные исходные описания каждой настройки.",
       englishVideos: "Видео на английском",
       russianVideos: "Видео на русском",
       russianNote: "Русские видеолекции из исходного архива, привязанные к этой ступени.",
     },
     es: {
       about: "Sobre esta etapa",
-      attunements: "Sintonizaciones de esta etapa",
-      full: "Descripciones completas de las sintonizaciones",
-      fullLead: "Ábrelo solo si necesitas el texto detallado de cada sintonización.",
       englishVideos: "Videos en inglés",
       russianVideos: "Videos de archivo en ruso",
       russianNote: "Estas videoclases históricas están en ruso y corresponden a esta etapa.",
