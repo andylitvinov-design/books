@@ -115,3 +115,32 @@
 .historyStatus{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:#5c493b;font-size:.84rem;margin:7px 0}
 .historyStatus button,.historyStatus a{background:#fff8ec;border:1px solid #d4bea4;padding:5px 10px;border-radius:99px;color:#5e4031;cursor:pointer;font-size:.78rem}
 @media(max-width:760px){.concernPanel,.personalNext{padding:16px}.personalNext{grid-template-columns:1fr}.concernActions>div button{flex:1}}
+
+
+/* Individual measurements on the photographic portrait. Coverage of selected
+   tests is intentionally NOT presented as a person's measured state. */
+.portraitRadar{position:absolute;inset:0;width:100%;height:390px;z-index:2;pointer-events:none;overflow:visible;filter:drop-shadow(0 5px 8px rgba(49,65,58,.1))}
+.radarReference{fill:none;stroke:#7f9b91;stroke-width:1.75;stroke-dasharray:4 7;opacity:.75}
+.radarGrid{fill:none;stroke:#846c5e;stroke-width:1;stroke-dasharray:3 9;opacity:.42}
+.radarGuide{stroke:#a89277;stroke-width:1.4;stroke-dasharray:2 5;opacity:.75}
+.radarRay{stroke:#185f59;stroke-width:5;stroke-linecap:round;opacity:.97}
+.radarArea{fill:rgba(53,143,134,.18);stroke:none}
+.radarOutline{fill:none;stroke:#155f58;stroke-width:2.4;stroke-linejoin:round}
+.radarPoint{fill:#fffcf4;stroke:#1d716a;stroke-width:2.8}
+.radarCenter{fill:#2d6760;stroke:#fff7eb;stroke-width:2}
+.portraitControls{margin-top:15px;padding:13px 14px;border:1px solid #d9cab4;border-radius:15px;background:rgba(255,253,248,.84)}
+.portraitControlsHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:.93rem}
+.portraitControlsHeading span{color:#6e6558;font-size:.79rem}
+.portraitRayOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.portraitRayOption{display:flex;align-items:center;min-width:0;gap:6px;padding:8px 9px;background:#f8f1e6;border-radius:10px;font-size:.78rem;cursor:pointer}
+.portraitRayOption:has(input:checked){background:#dcece5;color:#285b53}
+.portraitRayOption input{accent-color:#2d726b;width:16px;height:16px;flex:none}
+.portraitRayOption span{min-width:0;overflow-wrap:anywhere}
+.portraitRayOption strong{margin-left:auto;font-size:.8rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.portraitControls>p{margin:11px 0 0;font-size:.75rem;color:#78675b;line-height:1.5}
+@media(max-width:760px){
+  .portraitRadar{height:320px}
+  .portraitRayOptions{grid-template-columns:1fr 1fr}
+}
+@media(max-width:380px){.portraitRayOptions{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.portraitRadar{transition:none}}
