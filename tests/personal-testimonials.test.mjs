@@ -46,7 +46,7 @@ test("videos use existing lazy click-to-play player and mobile layout; links are
   const css = read("components", "personal-testimonials.module.css");
   assert.match(component, /SiteVideoPlayer/);
   assert.match(component, /\/about#testimonials-title/);
-  assert.match(component, /#consultation/);
+  assert.ok(component.includes("/services/free-situation-review"));
   assert.match(component, /aria-labelledby=\{titleId\}/);
   assert.match(css, /@media \(max-width: 767px\)/);
   assert.match(css, /grid-template-columns: 1fr/);
