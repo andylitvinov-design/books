@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { PwaRegistration } from "@/components/pwa-registration";
 import { MobileBottomNavigation } from "@/components/mobile-bottom-navigation";
+import { SitewideLeadCapture } from "@/components/sitewide-lead-capture";
 import { NativeLinkHandler } from "@/components/native-link-handler";
 import { NativeExternalLinks } from "@/components/native-external-links";
 import "./globals.css";
@@ -15,6 +16,7 @@ import "./academy.css";
 import "./yggdrasil-basic-description.css";
 import "./catalog-showcase.css";
 import "./temple-studies.css";
+import "./sitewide-capture.css";
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
@@ -28,7 +30,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const lang = pageLocale === "es" || pageLocale === "en" ? pageLocale : "ru";
   return (
     <html lang={lang}>
-      <body className="font-sans"><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks />{children}<MobileBottomNavigation initialLocale={lang} /></body>
+      <body className="font-sans"><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks />{children}<SitewideLeadCapture /><MobileBottomNavigation initialLocale={lang} /></body>
     </html>
   );
 }
