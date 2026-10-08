@@ -114,15 +114,19 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           image: "/library/maya-mysteries/media/post-244-1.jpg",
           actionLabel: action.program,
         },
-        ...academyDirections.filter((direction) => direction.id !== "reiki").map((direction) => ({
-          id: "academy-" + direction.id,
-          title: direction.title[locale],
-          subtitle: text.allPrograms,
-          description: direction.description[locale],
-          href: "/" + locale + "/academy/" + direction.path,
-          image: direction.image,
-          actionLabel: action.direction,
-        })),
+        {
+          id: "academy-featured-temple-studies",
+          title: locale === "ru" ? "Temple Studies — Храмовые традиции" : locale === "es" ? "Temple Studies — Tradiciones del Templo" : "Temple Studies",
+          subtitle: action.featured,
+          description: locale === "ru"
+            ? "Единая программа: древние мистерии, руны и символы, архетипическая практика и история школы — четыре ясных раздела с сохранёнными первоисточниками."
+            : locale === "es"
+              ? "Un programa completo de cuatro capítulos: misterios antiguos, símbolos, práctica arquetípica e historia de la escuela."
+              : "One connected four-part program: ancient mysteries, runes and symbols, applied archetypal work and the original school path.",
+          href: "/" + locale + "/academy/temple-studies",
+          image: "/library/maya-egregor-gods/media/post-203-1.jpg",
+          actionLabel: action.program,
+        },
       ];
 
   return (
@@ -138,6 +142,13 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         <p>{text.lead}</p>
       </header>
       <CatalogShowcase items={items} label={view === "videos" ? text.videoCollections : text.allPrograms} />
+      {view === "programs" ? (
+        <p className="academy-archive-nav">
+          <Link href={"/" + locale + "/academy/archive"}>
+            {locale === "ru" ? "Архив прежних программ и мероприятий →" : locale === "es" ? "Archivo de programas y eventos anteriores →" : "Archive of past programs and events →"}
+          </Link>
+        </p>
+      ) : null}
       <PublicConsultationCta locale={locale} />
     </main>
   );
