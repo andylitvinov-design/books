@@ -1,0 +1,117 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowUpRight, ArrowRight } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-capture";
+import styles from "./sitewide-lead-capture.module.css";
+
+const copy = {
+  en: {
+    training: {
+      eyebrow: "Explore training with Holistic House",
+      title: "Would you like to learn this practice?",
+      description: "Ask about the programme, entry level, teaching format and current availability. Dates and fees are discussed directly; historical archive materials are not necessarily open for enrolment.",
+      primary: "Ask about training",
+      secondary: "Explore the Academy",
+    },
+    reading: {
+      eyebrow: "From reading to a personal question",
+      title: "Want to explore how this relates to your life?",
+      description: "If something in this material speaks to a situation you're facing, start with a free personal conversation. No obligation to choose a method or book paid work.",
+      primary: "Start with a free situation review",
+      secondary: "Explore personal work",
+    },
+    personal: {
+      eyebrow: "Your personal first step",
+      title: "You don't have to choose a method alone.",
+      description: "Tell me what's important to you. We'll explore where you're stuck and which of the three approaches, if any, may be appropriate. The introductory review is free.",
+      primary: "Request a free situation review",
+      secondary: "Meet Andrey",
+    },
+  },
+  ru: {
+    training: {
+      eyebrow: "Обучение в Holistic House",
+      title: "Хотите изучить эту практику?",
+      description: "Уточните программу, подходящую ступень, формат и доступность обучения. Даты и стоимость согласуются лично; исторические архивные программы могут быть закрыты для записи.",
+      primary: "Узнать об обучении",
+      secondary: "Вся Академия",
+    },
+    reading: {
+      eyebrow: "От чтения — к личному запросу",
+      title: "Хотите обсудить, как это связано с вашей жизнью?",
+      description: "Если материал затронул важный для вас вопрос, начните с бесплатного личного разбора ситуации. Не нужно заранее выбирать метод или покупать сеансы.",
+      primary: "Бесплатный разбор ситуации",
+      secondary: "Мои услуги",
+    },
+    personal: {
+      eyebrow: "Первый шаг к ясности",
+      title: "Вам не нужно самостоятельно выбирать метод.",
+      description: "Расскажите, что сейчас важно. Мы обсудим точку затруднения и подходящее направление, если оно нужно. Первая вводная беседа бесплатная.",
+      primary: "Запросить бесплатный разбор",
+      secondary: "Об Андрее",
+    },
+  },
+  es: {
+    training: {
+      eyebrow: "Formación en Holistic House",
+      title: "¿Quieres aprender esta práctica?",
+      description: "Pregunta por el programa, el nivel de entrada, el formato y la disponibilidad. Las fechas y los precios se confirman directamente; los materiales de archivo no siempre están abiertos a inscripción.",
+      primary: "Consultar la formación",
+      secondary: "Explorar la Academia",
+    },
+    reading: {
+      eyebrow: "De la lectura a tu pregunta personal",
+      title: "¿Quieres explorar cómo se relaciona esto con tu vida?",
+      description: "Si este material refleja algo importante para ti, puedes empezar con una conversación introductoria gratuita. No hay obligación de contratar sesiones.",
+      primary: "Evaluación gratuita de tu situación",
+      secondary: "Explorar servicios",
+    },
+    personal: {
+      eyebrow: "Tu primer paso personal",
+      title: "No tienes que elegir el método a solas.",
+      description: "Cuéntame qué es importante hoy. Podemos explorar dónde te sientes bloqueado y qué enfoque podría tener sentido. La conversación inicial es gratuita.",
+      primary: "Solicitar una evaluación gratuita",
+      secondary: "Conoce a Andrey",
+    },
+  },
+} as const;
+
+export function SitewideLeadCapture() {
+  const pathname = usePathname();
+  const route = classifyPublicLead(pathname);
+  if (!route) return null;
+  const locale = route.locale as "en" | "ru" | "es";
+  const kind = route.kind as "training" | "reading" | "personal";
+  const c = copy[locale][kind];
+  const primary = kind === "training"
+    ? trainingEnquiryUrl(locale, pathname)
+    : "/" + locale + "/services/free-situation-review";
+  const secondary = kind === "training" ? "/" + locale + "/academy"
+    : kind === "reading" ? "/" + locale + "/services"
+    : "/" + locale + "/about";
+  const external = kind === "training";
+  return (
+    <aside className={styles.section} aria-labelledby="sitewide-capture-title" data-sitewide-capture={kind} lang={locale}>
+      <div className={styles.inner}>
+        <div className={styles.copy}>
+          <p className={styles.eyebrow}>{c.eyebrow}</p>
+          <h2 id="sitewide-capture-title">{c.title}</h2>
+          <p className={styles.description}>{c.description}</p>
+          <div className={styles.actions}>
+            <AcquisitionEventLink className={styles.primary} event={external ? "contact_click" : "service_request_start"} href={primary} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+              {c.primary} {external ? <ArrowUpRight aria-hidden="true" size={19} /> : <ArrowRight aria-hidden="true" size={19}/>}
+            </AcquisitionEventLink>
+            <Link className={styles.secondary} href={secondary}>{c.secondary} <ArrowRight aria-hidden="true" size={16}/></Link>
+          </div>
+        </div>
+        <div className={styles.portrait}>
+          <Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 767px) 110px, 224px" />
+        </div>
+      </div>
+    </aside>
+  );
+}
