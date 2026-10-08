@@ -136,7 +136,7 @@ test('style and length filters combine before recommendation ranking', () => {
   })
   assert.deepEqual(
     professionalMedium.map((definition) => definition.key).sort(),
-    ['erq', 'gad-7', 'phq-9'].sort(),
+    ['cbi-client','cbi-personal','cbi-work','erq', 'gad-7', 'phq-9'].sort(),
   )
 
   const engagingComprehensive = rankAssessmentDefinitions(definitions, {
