@@ -4,16 +4,16 @@
 // came from individual public YouTube metadata checks on 2026-10-08.
 export type LegacyVideoAudit = {
   youtubeId: string;
-  classification: "testimonial" | "needs-verification";
+  classification: "testimonial";
   observedTitle: string;
 };
 
 export const yggdrasilLegacyEnglishVideoSource = "https://psitrends.com/studies/master-taory";
 export const yggdrasilMislabelledLegacyVideos: readonly LegacyVideoAudit[] = [
   { youtubeId: "XvMdX5czoOc", classification: "testimonial", observedTitle: "Video testimonial, as promised. Part 1." },
-  { youtubeId: "hjmVJrgEsZ8", classification: "needs-verification", observedTitle: "Title not confirmed" },
+  { youtubeId: "hjmVJrgEsZ8", classification: "testimonial", observedTitle: "Video testimonial, as promised. Part 2." },
   { youtubeId: "u275Zz78vhs", classification: "testimonial", observedTitle: "Video testimonial, as promised. Part 3." },
-  { youtubeId: "wN_SNwZ1Epo", classification: "needs-verification", observedTitle: "Title not confirmed independently" },
+  { youtubeId: "wN_SNwZ1Epo", classification: "testimonial", observedTitle: "Testimonial Reiki Yggdrasil Course" },
   { youtubeId: "3Apc8P1Yudc", classification: "testimonial", observedTitle: "Testimonial (2) Reiki Yggdrasil Course" },
   { youtubeId: "Hk9XpeUI0BQ", classification: "testimonial", observedTitle: "Video testimonial, as promised. Part 6." },
   { youtubeId: "p29qu8-dtZk", classification: "testimonial", observedTitle: "Video testimonial, as promised. Part 8." },
