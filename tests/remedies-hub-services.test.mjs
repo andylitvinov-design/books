@@ -58,7 +58,7 @@ test('Services page is bilingual and grounds Alchemy of the Soul in the publishe
   assert.match(page, /Start with a free situation/)
   assert.match(page, /app\/consultations\?service=/)
   assert.match(page, /\/masters/)
-  assert.match(page, /не заменяет диагностику или лечение у врача/)
+  assert.match(page, /не заменяет диагностику или лечение у врача/i)
   assert.match(page, /does not replace medical diagnosis or treatment/)
 })
 
