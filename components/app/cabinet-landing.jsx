@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
@@ -195,14 +194,6 @@ const UI = {
 }
 
 const PUBLIC_GUEST_BLOCKED_KEYS = new Set(['phq-9'])
-
-function testArtwork(locale, id) {
-  const suffix = locale === 'ru' ? 'ru-v1' : 'en-v2'
-  const item = monitoringCatalogItem(id === 'state' ? 'hh-current-state' : id === 'trait' ? 'mini-ipip-20' : id)
-  return item?.axis === 'baseline'
-    ? `/images/holistic-house/video-posters/services-${suffix}.webp`
-    : `/images/holistic-house/video-posters/home-${suffix}.webp`
-}
 
 function definitionFor(id, locale) {
   if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V2 : CURRENT_STATE_EN_V2
