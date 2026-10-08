@@ -425,7 +425,9 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
                     <p key={j}>{paragraph}</p>
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <p className="tantra-journey__spanish-intro">{copy.intro}</p>
+              )}
               <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
               <div className="tantra-journey__settings">
                 <h4>{c.settings}</h4>
