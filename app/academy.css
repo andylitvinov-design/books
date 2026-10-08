@@ -1335,3 +1335,229 @@
  .tantra-journey__actions a { font-size: 11px; }
 }
 @media(prefers-reduced-motion:reduce) { .tantra-journey *, .tantra-journey *:before, .tantra-journey *:after { scroll-behavior: auto!important; transition: none!important; animation: none!important; } }
+
+/* Reiki Yggdrasil reviews + topic video guide */
+.yggdrasil-testimonials {
+  scroll-margin-top: 96px;
+  margin: 8px 0 0;
+  border-top: 1px solid #d8c9b9;
+  padding-top: 30px;
+}
+.yggdrasil-testimonials__heading {
+  max-width: 780px;
+}
+.yggdrasil-testimonials__heading h2 {
+  margin: 6px 0 9px;
+  color: #2f231c;
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 4.6vw, 44px);
+  font-weight: 400;
+  line-height: 1.05;
+}
+.yggdrasil-testimonials__heading > p:last-child {
+  margin: 0;
+  color: #6c5b4f;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.58;
+}
+.yggdrasil-testimonials__text-group,
+.yggdrasil-testimonials__video-group {
+  margin-top: 24px;
+}
+.yggdrasil-testimonials__section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #ddcfc1;
+  padding-bottom: 8px;
+}
+.yggdrasil-testimonials__section-title h3 {
+  margin: 0;
+  color: #4a3427;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 500;
+}
+.yggdrasil-testimonials__section-title > span {
+  display: grid;
+  min-width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  background: #efe2d5;
+  color: #76513c;
+  font-size: 10px;
+  font-weight: 800;
+}
+.yggdrasil-testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.yggdrasil-testimonial-card {
+  position: relative;
+  min-height: 210px;
+  border: 1px solid #d8c9b5;
+  background: #fffaf3;
+  padding: 22px 20px 18px;
+}
+.yggdrasil-testimonial-card__quote {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  color: #decabb;
+  font-family: var(--font-serif);
+  font-size: 54px;
+  line-height: 1;
+}
+.yggdrasil-testimonial-card blockquote {
+  margin: 0;
+  max-width: 92%;
+  color: #45352b;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  line-height: 1.48;
+}
+.yggdrasil-testimonial-card footer {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+  border-top: 1px solid #eaded2;
+  padding-top: 11px;
+}
+.yggdrasil-testimonial-card footer > span {
+  color: #775441;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.yggdrasil-testimonial-card footer small {
+  color: #9b8878;
+  font-size: 9px;
+}
+.yggdrasil-testimonial-card footer a {
+  width: fit-content;
+  margin-top: 3px;
+  color: #744a33;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.yggdrasil-testimonial-video-grid {
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  margin-top: 12px;
+}
+.yggdrasil-testimonial-video {
+  display: grid;
+  gap: 7px;
+}
+.yggdrasil-testimonial-video > .yggdrasil-language-badge {
+  width: fit-content;
+}
+
+.yggdrasil-english-guide {
+  scroll-margin-top: 96px;
+  margin-top: 34px;
+}
+.yggdrasil-video-topic-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+.yggdrasil-video-topic {
+  border-top: 1px solid #d8c9b9;
+  padding-top: 16px;
+}
+.yggdrasil-video-topic__heading {
+  display: grid;
+  grid-template-columns: minmax(240px,.7fr) minmax(0,1.3fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+.yggdrasil-video-topic__heading > div {
+  display: grid;
+  gap: 7px;
+}
+.yggdrasil-video-topic__heading h3 {
+  margin: 0;
+  color: #3e2d23;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+.yggdrasil-video-topic__heading > p {
+  margin: 2px 0 0;
+  color: #79675a;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.yggdrasil-video-grid--topic {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+}
+.yggdrasil-video-topic:first-child .yggdrasil-video-grid--topic {
+  grid-template-columns: repeat(3,minmax(0,1fr));
+}
+.yggdrasil-source-footer-panel {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid #ded1c2;
+  padding-top: 18px;
+}
+.yggdrasil-source-footer-panel > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.yggdrasil-source-footer-panel .yggdrasil-program-source-note {
+  max-width: 620px;
+  margin: 0 !important;
+}
+@media (max-width: 760px) {
+  .yggdrasil-testimonial-grid,
+  .yggdrasil-testimonial-video-grid,
+  .yggdrasil-video-grid--topic,
+  .yggdrasil-video-topic:first-child .yggdrasil-video-grid--topic {
+    grid-template-columns: 1fr;
+  }
+  .yggdrasil-testimonial-card {
+    min-height: 0;
+    padding: 18px 16px 15px;
+  }
+  .yggdrasil-testimonial-card blockquote {
+    font-size: 18px;
+  }
+  .yggdrasil-video-topic__heading {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  .yggdrasil-video-topic__heading h3 {
+    font-size: 20px;
+  }
+  .yggdrasil-source-footer-panel {
+    display: grid;
+    align-items: start;
+  }
+}
+
+.reiki-course-side-nav__item--wide {
+  grid-template-columns: minmax(0,1fr);
+  padding-left: 10px;
+}
+.reiki-course-side-nav__item--wide > em {
+  max-width: none;
+}
+@media (max-width: 920px) {
+  .reiki-course-side-nav__item--wide {
+    grid-template-columns: auto;
+    padding-left: 10px;
+  }
+}
