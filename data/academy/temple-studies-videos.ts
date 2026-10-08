@@ -18,12 +18,12 @@ type PsimasVideo = {
 };
 
 const series = [
-  { key: "videos/greek-mysteries-demeter", stage: "greek", title: "Греческие мистерии — Деметра" },
-  { key: "videos/greek-mysteries-dionysus", stage: "greek", title: "Мистерии Диониса" },
-  { key: "videos/egypt-osiris", stage: "egypt", title: "Египетские мистерии — Осирис" },
-  { key: "videos/maya-archetypes", stage: "traditions", title: "Архетипы Майя и ацтеков" },
-  { key: "videos/planetary-power", stage: "symbols", title: "Сила планет" },
-  { key: "videos/strength-protection", stage: "symbols", title: "Медитации силы и защиты" },
+  { key: "videos/greek-mysteries-demeter", stage: "greek", title: "Курс Греческие Мистерии. Канал Деметры." },
+  { key: "videos/greek-mysteries-dionysus", stage: "greek", title: "Курс Мистерии Диониса" },
+  { key: "videos/egypt-osiris", stage: "egypt", title: "Курс Жречество Египта. Осирис" },
+  { key: "videos/maya-archetypes", stage: "traditions", title: "Архетипы Майя (видео)" },
+  { key: "videos/planetary-power", stage: "symbols", title: "Курс Сила Планет" },
+  { key: "videos/strength-protection", stage: "symbols", title: "Медитации Силы и Защиты" },
   { key: "videos/energy-pump-ups", stage: "initiation", title: "Практики энергоподдержки" },
 ] as const;
 
