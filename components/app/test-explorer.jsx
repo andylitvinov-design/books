@@ -1,6 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import { buildExplorerEntries, buildStarterBattery, coverageForSelection, coverageForFocus, filterExplorerEntries, rankExplorerEntries } from '@/lib/assessments/test-explorer'
@@ -16,9 +18,45 @@ const COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null }) {
   const c = COPY[locale] || COPY.en
   const [availability, setAvailability] = useState('available')
+  const [concern, setConcern] = useState('')
+  const [voiceSupported, setVoiceSupported] = useState(false)
+  const [listening, setListening] = useState(false)
+  const [speechError, setSpeechError] = useState('')
+  const [concernMessage, setConcernMessage] = useState('')
+  const concernAnalysis = useMemo(() => interpretConcern(concern), [concern])
+  const historyGroups = useMemo(() => assessmentHistoryGroups(pastResults, draftRuns, locale), [pastResults, draftRuns, locale])
+  const historyByKey = useMemo(() => new Map(historyGroups.map((group) => [group.key, group])), [historyGroups])
+  const recommendedNext = useMemo(() => audience === 'account' ? nextPersonalRecommendation({ results: pastResults, snapshot: profileSnapshot, locale }) : null, [audience, pastResults, profileSnapshot, locale])
+  useEffect(() => { setVoiceSupported(Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)) }, [])
+  const applyConcern = () => {
+    if (concernAnalysis.urgent) return
+    if (!concernAnalysis.focus.length) {
+      setConcernMessage(locale === 'ru' ? 'Не удалось однозначно определить тему. Выберите подходящие темы ниже.' : locale === 'es' ? 'No encontramos una categoría clara. Elige los temas manualmente.' : 'No clear topic was found. Please choose a topic below.')
+      return
+    }
+    setFocus(concernAnalysis.focus)
+    setAvailability('available')
+    setConcernMessage('')
+  }
+  const dictate = () => {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!Recognition || listening) return
+    try {
+      const recognizer = new Recognition()
+      recognizer.lang = locale === 'ru' ? 'ru-RU' : locale === 'es' ? 'es-ES' : 'en-US'
+      recognizer.interimResults = false
+      recognizer.maxAlternatives = 1
+      recognizer.onresult = (event) => { setConcern(String(event.results?.[0]?.[0]?.transcript || '').slice(0, 500)); setConcernMessage('') }
+      recognizer.onerror = () => setSpeechError(locale === 'ru' ? 'Речь не распознана. Введите запрос текстом.' : 'Speech unavailable. Please type your concern.')
+      recognizer.onend = () => setListening(false)
+      setSpeechError('')
+      setListening(true)
+      recognizer.start()
+    } catch { setListening(false); setSpeechError(locale === 'ru' ? 'Микрофон недоступен. Введите запрос текстом.' : 'Microphone unavailable. Please type instead.') }
+  }
   const [focus, setFocus] = useState([])
   const [stylesFilter, setStylesFilter] = useState([])
   const [lengths, setLengths] = useState([])
@@ -27,12 +65,16 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [freeOnly, setFreeOnly] = useState(false)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('recommended')
-  const [selectedKeys, setSelectedKeys] = useState([])
+  const [selectedKeys, setSelectedKeys] = useState(() => recommendedKey ? [recommendedKey] : [])
   const [axisFilter, setAxisFilter] = useState(null)
   const [actionError, setActionError] = useState(null)
   const [starting, setStarting] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(true)
   const entries = useMemo(() => buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience }), [locale, audience])
+  // Direct History -> Test selection must also work when the URL changes without remounting.
+  useEffect(() => {
+    if (recommendedKey && entries.some((entry) => entry.key === recommendedKey && entry.selectable)) setSelectedKeys([recommendedKey])
+  }, [recommendedKey, entries])
   const matching = useMemo(() => filterExplorerEntries(entries, { availability, focus, styles: stylesFilter, lengths, areas, freeOnly, search: query }), [entries, availability, focus, stylesFilter, lengths, areas, freeOnly, query])
   // A selected test stays visible even if new filters no longer match it.
   const filtered = useMemo(() => filterExplorerEntries(entries, { availability, focus, styles: stylesFilter, lengths, areas, freeOnly, search: query, selectedKeys }), [entries, availability, focus, stylesFilter, lengths, areas, freeOnly, query, selectedKeys])
@@ -58,6 +100,25 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   }
 
   return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
+    <section className={styles.concernPanel} aria-labelledby="hh-concern-title">
+      <div><p className={styles.eyebrow}>{locale === 'ru' ? 'Подбор по вашей ситуации' : locale === 'es' ? 'Encontrar pruebas por tu situación' : 'Find tests for your situation'}</p>
+        <h2 id="hh-concern-title">{locale === 'ru' ? 'Расскажите, что вас беспокоит' : locale === 'es' ? 'Describe qué te preocupa' : 'What would you like to understand?'}</h2>
+        <p>{locale === 'ru' ? 'Напишите своими словами или воспользуйтесь микрофоном. Система подберёт подходящие темы, а вы сможете уточнить их фильтрами.' : locale === 'es' ? 'Escribe tu inquietud o usa el micrófono. Después puedes ajustar los filtros.' : 'Describe a concern in your own words, or use the microphone. You can refine the suggested topics with the filters.'}</p></div>
+      <div className={styles.concernActions}>
+        <textarea maxLength={500} rows={2} value={concern} onChange={(event) => { setConcern(event.target.value); setConcernMessage('') }} placeholder={locale === 'ru' ? 'Например: быстро устаю, трудно сосредоточиться и плохо сплю…' : locale === 'es' ? 'Por ejemplo: estoy cansado y duermo mal…' : 'For example: I feel exhausted and cannot sleep well…'} aria-label={locale === 'ru' ? 'Опишите вашу проблему' : 'Describe your concern'} />
+        <div><button type="button" onClick={applyConcern} disabled={!concern.trim() || concernAnalysis.urgent}>{locale === 'ru' ? 'Подобрать тесты' : locale === 'es' ? 'Buscar pruebas' : 'Find matching tests'}</button>
+        {voiceSupported && <button type="button" onClick={dictate} disabled={listening} aria-label={locale === 'ru' ? 'Продиктовать проблему' : 'Dictate your concern'}>{listening ? (locale === 'ru' ? 'Слушаю…' : 'Listening…') : '🎙 ' + (locale === 'ru' ? 'Сказать' : locale === 'es' ? 'Hablar' : 'Speak')}</button>}</div>
+      </div>
+      {!!concern && !!concernAnalysis.focus.length && <p role="status" className={styles.concernHint}>{locale === 'ru' ? 'Распознаны темы: ' : 'Suggested topics: '}{concernAnalysis.focus.map((key) => TEST_RECOMMENDATION_FOCUS.find((item) => item.key === key)?.label?.[locale] || key).join(' · ')}</p>}
+      {concernMessage && <p role="status">{concernMessage}</p>}
+      {speechError && <p role="status">{speechError}</p>}
+      {concernAnalysis.urgent && <p role="alert">{locale === 'ru' ? 'Если вы сейчас в опасности или думаете причинить себе вред, немедленно обратитесь в местную экстренную службу или кризисную линию. Тест не заменяет срочную помощь.' : 'If you may be in immediate danger or thinking of self-harm, contact local emergency services or a crisis line now. A self-test is not emergency support.'}</p>}
+      <small>{locale === 'ru' ? 'Текст не отправляется в аккаунт и не сохраняется. При использовании микрофона распознавание может выполняться службой вашего браузера.' : 'This text is not saved to your account. If you use your microphone, your browser’s speech service may process audio.'}</small>
+    </section>
+    {audience === 'account' && recommendedNext && <aside className={styles.personalNext} aria-label={locale === 'ru' ? 'Личная рекомендация' : 'Personal recommendation'}>
+      <div><p className={styles.eyebrow}>{locale === 'ru' ? 'На основе ваших прошлых результатов' : 'Based on your past results'}</p><h2>{recommendedNext.title}</h2><p>{recommendedNext.reason}</p><small>{locale === 'ru' ? 'Это рекомендация по самонаблюдению, не диагноз и не назначение лечения.' : 'A self-monitoring suggestion, not a diagnosis or treatment advice.'}</small></div>
+      {recommendedNext.key ? <button type="button" onClick={() => { setAvailability('available'); setFocus([]); setSelectedKeys([recommendedNext.key]); setConcern('') }}>{locale === 'ru' ? 'Выбрать этот тест' : 'Select this test'}</button> : <Link href={`/${locale}/app/history`}>{locale === 'ru' ? 'Открыть историю' : 'View history'}</Link>}
+    </aside>}
         <header className={styles.header}><p className={styles.eyebrow}>{c.kicker}</p><h1>{c.title}</h1><p>{c.intro}</p>{activePlan?.status === 'active' && <button type="button" onClick={() => onResume?.(activePlan)}>{locale === 'ru' ? `Продолжить набор: шаг ${activePlan.currentIndex + 1}` : locale === 'es' ? `Continuar selección: paso ${activePlan.currentIndex + 1}` : `Resume set: step ${activePlan.currentIndex + 1}`}</button>}</header>
     <div className={styles.availability} role="tablist" aria-label={c.title}><button type="button" role="tab" aria-selected={availability === 'available'} onClick={() => setAvailability('available')}>{c.available}</button><button type="button" role="tab" aria-selected={availability === 'full'} onClick={() => setAvailability('full')}>{c.full}</button></div>
     <section className={styles.toolbar} aria-label={c.themes}>
@@ -77,7 +138,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       {visible.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
       <div className={styles.list}>{visible.map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.analysisAxes.some((axis) => axis.key === axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
-        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{entry.description || entry.category}</p><div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
+        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{entry.description || entry.category}</p>{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
         {entry.selectable && <div className={styles.relevance} title={c.matchNote} style={{ '--match': `${Math.max(0, Math.min(100, Math.round(entry.score / 1.2)))}%` }}><strong>{Math.max(0, Math.min(100, Math.round(entry.score / 1.2)))}%</strong><span>{c.relevance}</span></div>}
       </article>)}</div></div>
       <TestExplorerVisual locale={locale} coverage={displayedCoverage} mode={showingCoverage ? 'selected' : 'topics'} topicCount={focus.length} selectedCount={selectedKeys.length} axisFilter={axisFilter} onAxisFilter={setAxisFilter} />
