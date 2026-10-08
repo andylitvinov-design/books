@@ -6,13 +6,14 @@ import styles from "@/app/[locale]/services/offerings.module.css";
 
 const copy = {
   ru: {
-    title: "Запросить бесплатную диагностику ситуации",
-    intro: "Опишите коротко вашу ситуацию. Я прочту ваш запрос, и мы сможем обсудить, где возникает затруднение и какое направление работы может подойти.",
+    title: "Запросить бесплатную консультацию",
+    intro: "Оставьте короткий запрос. Я прочту его, и мы сможем договориться о бесплатной вводной беседе, чтобы прояснить вашу ситуацию и возможный следующий шаг.",
     topic: "Что хотите разобрать?",
     topicOptions: [
       { value: "goal", label: "Цель или важное решение" },
       { value: "business", label: "Бизнес / работа" },
       { value: "personal", label: "Личная проблема" },
+      { value: "wellbeing", label: "Самочувствие, ресурс, психогомеопатия" },
     ],
     name: "Как к вам обращаться?",
     namePlaceholder: "Имя (необязательно)",
@@ -26,17 +27,18 @@ const copy = {
     resume: "Открыть подготовленный запрос",
     telegram: "Или написать напрямую в Telegram",
     emailTip: "Это разбор личной, жизненной или деловой ситуации, а не медицинский диагноз. Продолжение и платные услуги — только по вашему решению.",
-    messageTitle: "Запрос на бесплатную диагностику ситуации — Holistic House",
-    labels: { goal: "Цель / решение", business: "Бизнес / работа", personal: "Личная проблема" },
+    messageTitle: "Запрос на бесплатную вводную консультацию — Holistic House",
+    labels: { goal: "Цель / решение", business: "Бизнес / работа", personal: "Личная проблема", wellbeing: "Самочувствие / психогомеопатия" },
   },
   en: {
-    title: "Request your free situation assessment",
-    intro: "Tell me briefly what is happening. I can review your question and discuss where you feel stuck, possible growth areas and which kind of personal work may suit you.",
+    title: "Request your free personal consultation",
+    intro: "Send a short request to begin. I will read it, and we can arrange a free introductory conversation about your situation and a possible next step.",
     topic: "What would you like to explore?",
     topicOptions: [
       { value: "goal", label: "A goal or important decision" },
       { value: "business", label: "Business / work" },
       { value: "personal", label: "A personal difficulty" },
+      { value: "wellbeing", label: "Wellbeing, energy or psychohomeopathy" },
     ],
     name: "How should I address you?",
     namePlaceholder: "First name (optional)",
@@ -50,8 +52,8 @@ const copy = {
     resume: "Open prepared request",
     telegram: "Or write directly on Telegram",
     emailTip: "This explores a personal or business situation, not a medical diagnosis. There is no obligation to book paid work.",
-    messageTitle: "Free situation assessment request — Holistic House",
-    labels: { goal: "Goal / decision", business: "Business / work", personal: "Personal difficulty" },
+    messageTitle: "Free introductory consultation request — Holistic House",
+    labels: { goal: "Goal / decision", business: "Business / work", personal: "Personal difficulty", wellbeing: "Wellbeing / psychohomeopathy" },
   },
 } as const;
 
@@ -59,7 +61,12 @@ export function FreeSituationReviewForm({ locale }: { locale: Locale }) {
   const t = copy[locale];
   const [readyUrl, setReadyUrl] = useState("");
   const [interactive, setInteractive] = useState(false);
-  useEffect(() => setInteractive(true), []);
+  const [topic, setTopic] = useState<keyof typeof t.labels>("goal");
+  useEffect(() => {
+    const requestedTopic = new URLSearchParams(window.location.search).get("topic");
+    if (requestedTopic === "wellbeing" || requestedTopic === "personal" || requestedTopic === "business" || requestedTopic === "goal") setTopic(requestedTopic);
+    setInteractive(true);
+  }, []);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -88,7 +95,7 @@ export function FreeSituationReviewForm({ locale }: { locale: Locale }) {
       <p>{t.intro}</p>
       <label>
         <span>{t.topic}</span>
-        <select name="topic" required defaultValue="goal">
+        <select name="topic" required value={topic} onChange={(event) => setTopic(event.target.value as keyof typeof t.labels)}>
           {t.topicOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
       </label>
