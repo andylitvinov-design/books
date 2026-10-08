@@ -7,8 +7,8 @@ test("Tantra Reiki starts with a concise nine-level overview before the full arc
 
   assert.match(page, /Кратко о 9 ступенях/);
   assert.match(page, /1, title: "Активация и контакт"/);
-  assert.match(page, /2, title: "Накопление и сонастройка"/);
-  assert.match(page, /3, title: "Единство, очищение и удача"/);
+  assert.match(page, /2, title: "Жар жизни · накопление и комплексы"/);
+  assert.match(page, /3, title: "Океан единства · сонастройка и талисман"/);
   assert.match(page, /4, title: "Архетипические энергии"/);
   assert.match(page, /5, title: "Внутренний Свет"/);
   assert.match(page, /6, title: "Миры Единства"/);
