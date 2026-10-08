@@ -119,10 +119,10 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           title: locale === "ru" ? "Temple Studies — Храмовые традиции" : locale === "es" ? "Temple Studies — Tradiciones del Templo" : "Temple Studies",
           subtitle: action.featured,
           description: locale === "ru"
-            ? "Единая программа: древние мистерии, руны и символы, архетипическая практика и история школы — четыре ясных раздела с сохранёнными первоисточниками."
+            ? "Единый путь из 7 этапов: от основ мистерий и культурных традиций через руны и Таро — к архетипической практике и применению к личным запросам."
             : locale === "es"
-              ? "Un programa completo de cuatro capítulos: misterios antiguos, símbolos, práctica arquetípica e historia de la escuela."
-              : "One connected four-part program: ancient mysteries, runes and symbols, applied archetypal work and the original school path.",
+              ? "Un programa de siete etapas conectadas: misterios antiguos, runas y Tarot, experiencia arquetípica y aplicación personal."
+              : "One progressive seven-stage course: from ancient mysteries and symbols to inner archetypal work and practical integration.",
           href: "/" + locale + "/academy/temple-studies",
           image: "/library/maya-egregor-gods/media/post-203-1.jpg",
           actionLabel: action.program,
