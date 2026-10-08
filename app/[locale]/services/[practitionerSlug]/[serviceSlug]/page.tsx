@@ -24,7 +24,7 @@ export async function generateMetadata({params}:PageProps):Promise<Metadata>{
   const value=await load(locale,practitionerSlug,serviceSlug);
   if(!value)return{title:"Not found",robots:{index:false,follow:false}};
   const title=value.service.copy.title+" — "+value.service.practitionerName+" | Holistic House";
-  return{metadataBase:metadataBaseFor(),title,description:value.service.copy.shortDescription,alternates:{canonical:`/${locale}/services/${practitionerSlug}/${serviceSlug}`},robots:{index:true,follow:true}};
+  return{metadataBase:metadataBaseFor(),title,description:value.service.copy.shortDescription,alternates:{canonical:`/${locale}/services/${practitionerSlug}/${serviceSlug}`,languages:{en:`/en/services/${practitionerSlug}/${serviceSlug}`,ru:`/ru/services/${practitionerSlug}/${serviceSlug}`,es:`/es/services/${practitionerSlug}/${serviceSlug}`}},robots:{index:true,follow:true}};
 }
 export default async function ServiceDetail({params}:PageProps){
   const {locale,practitionerSlug,serviceSlug}=await params;
