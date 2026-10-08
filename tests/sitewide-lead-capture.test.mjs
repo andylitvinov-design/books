@@ -64,7 +64,10 @@ test("every applicable public route has a responsive global fallback without two
   assert.match(root, /<SitewideLeadCapture \/>/);
   assert.ok(root.indexOf("{children}") < root.indexOf("<SitewideLeadCapture"));
   assert.ok(root.indexOf("<SitewideLeadCapture") < root.indexOf("<MobileBottomNavigation"));
-  assert.match(component, /classifyPublicLead\(pathname\)/);
+  assert.match(component, /clientPath \? classifyPublicLead\(clientPath\) : null/);
+  assert.match(component, /setClientPath\(pathname\)/);
+  assert.match(local, /clientPath \? classifyPublicLead\(clientPath\) : null/);
+  assert.match(local, /useEffect\(\(\) => setClientPath\(pathname\)/);
   assert.match(component, /setLegacyBookLocale/);
   assert.match(component, /window.location.search/);
   assert.match(component, /trainingEnquiryUrl\(locale, pathname\)/);
