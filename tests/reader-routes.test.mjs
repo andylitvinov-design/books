@@ -44,11 +44,11 @@ test('creates safe immutable external media URLs for hosted functions', () => {
 test('prevents the full media corpus being traced into serverless functions', async () => {
   const config = await readFile('next.config.ts', 'utf8')
   const route = await readFile('app/media/[series]/[file]/route.ts', 'utf8')
-  assert.match(config, /outputFileTracingExcludes/)
-  assert.match(config, /"\\/media\\/\\*\\*"/)
-  assert.doesNotMatch(config, /"\\/media\\/\\[series\\]\\/\\[file\\]": \\[/)
-  assert.match(route, /mediaSourceUrlFor/)
-  assert.match(route, /VERCEL_GIT_COMMIT_SHA/)
+  assert.ok(config.includes('outputFileTracingExcludes'))
+  assert.ok(config.includes('"/media/**"'))
+  assert.ok(!config.includes('"/media/[series]/[file]": ['))
+  assert.ok(route.includes('mediaSourceUrlFor'))
+  assert.ok(route.includes('VERCEL_GIT_COMMIT_SHA'))
 })
 
 test('keeps reader metadata complete for canonical book records', () => {
