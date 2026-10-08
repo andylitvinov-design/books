@@ -1,0 +1,76 @@
+
+/* Photo-led curriculum: source-backed images, editorial hierarchy, book/library visual language. */
+.curriculum { padding: 20px 0 36px; color: #34271f; }
+.curriculumIntro { max-width: 880px; margin: 0 0 24px; }
+.curriculumIntro :global(.homeopathy-kicker) { margin-bottom: 8px; }
+.curriculumIntro h2 { margin: 0 0 12px; font-family: var(--font-serif), Georgia, serif; font-size: clamp(34px, 5.2vw, 58px); font-weight: 450; line-height: 1.03; letter-spacing: -.035em; }
+.curriculumIntro > p:not(:global(.homeopathy-kicker)) { max-width: 700px; margin: 0; font-size: clamp(15px, 1.6vw, 19px); line-height: 1.6; color: #645347; }
+.levels { display: grid; gap: 26px; }
+.level { min-width: 0; overflow: visible; }
+.levelHeading { display: flex; align-items: center; gap: 12px; margin: 0 0 15px; }
+.levelNumber { display: grid; flex: none; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #e9dccb; color: #744630; font-family: var(--font-serif),Georgia,serif; font-size: 21px; }
+.levelTitle { display: grid; gap: 3px; min-width: 0; }
+.levelTitle strong { font-family: var(--font-serif),Georgia,serif; font-size: clamp(21px, 3.1vw, 30px); font-weight: 500; line-height: 1.2; }
+.levelTitle small { color: #907969; font-size: 12px; }
+.stageNavigation { display: flex; gap: 9px; overflow-x: auto; padding: 3px 1px 18px; margin-bottom: 4px; scrollbar-width: thin; }
+.stageNavigation a { display: inline-flex; gap: 10px; align-items: center; flex: 0 0 auto; max-width: 225px; padding: 10px 13px; border: 1px solid #dcd0c4; border-radius: 999px; background: #fffaf3; color: #533f34; text-decoration: none; }
+.stageNavigation a:hover, .stageNavigation a:focus-visible { background: #efe2d3; border-color: #bca48c; outline-offset: 2px; }
+.stageNavigation a span { font-size: 11px; font-weight: 800; color: #8a5b3d; }
+.stageNavigation a strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 650; }
+.visualSteps { display: grid; gap: 22px; }
+.stepCard { scroll-margin-top: 22px; display: grid; grid-template-columns: minmax(0, 43%) minmax(0, 57%); overflow: hidden; min-width: 0; padding: 0; border: 1px solid #e0d3c4; border-radius: 17px; background: #fffcf8; box-shadow: 0 12px 28px rgba(69, 46, 29, .09), 0 2px 5px rgba(69,46,29,.03); }
+.stepPhoto { min-height: 340px; height: 100%; background-color: #bca68e; background-position: 50% 42%; background-size: cover; position: relative; }
+.photoRibbon { position: absolute; top: 20px; left: 20px; border: 1px solid rgba(255,255,255,.42); border-radius: 999px; padding: 9px 14px; background: rgba(31,25,20,.53); color: #fffaf2; font-size: 12px; font-weight: 750; letter-spacing: .03em; backdrop-filter: blur(5px); }
+.stepText { min-width: 0; padding: clamp(20px, 3vw, 32px); }
+.stepHeader { display: grid; gap: 11px; }
+.stageKicker { color: #a36d4e; font-size: 11px; font-weight: 800; letter-spacing: .105em; text-transform: uppercase; }
+.stepHeader h3 { margin: 0; font-family: var(--font-serif),Georgia,serif; font-size: clamp(29px, 3.3vw, 43px); line-height: 1.08; letter-spacing: -.025em; font-weight: 500; color: #34251f; overflow-wrap: break-word; }
+.stepBody { margin: 0; padding: 0; }
+.stepIntroduction { margin: 17px 0 20px; color: #645247; font-size: clamp(15px, 1.75vw, 18px); line-height: 1.56; max-width: 580px; }
+.stepBody :global(.yggdrasil-attunement-summary) { border-top: 1px solid #e3d6c9; margin: 0; padding-top: 12px; }
+.stepBody :global(.yggdrasil-section-heading) { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0; margin: 0 0 11px; border: 0; }
+.stepBody :global(.yggdrasil-section-heading h4) { margin: 0; color: #71462f; font-size: 15px; font-weight: 750; }
+.stepBody :global(.yggdrasil-section-heading span) { color: #927966; }
+.attunementChips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 19px; }
+.attunementChips span { display: inline-flex; align-items: center; padding: 8px 11px; background: #f3e9dd; border: 1px solid #e5d6c6; border-radius: 999px; color: #684935; font-size: 12px; font-weight: 650; line-height: 1.25; }
+.attunementChips .moreChips { background: #dfccb9; border-color: #d1b49c; font-weight: 800; }
+.stepBody :global(.yggdrasil-step-video-library) { margin-top: 20px; }
+.stepBody :global(.yggdrasil-step-more) { border-top: 1px solid #e3d6c9; border-bottom: 0; margin-top: 3px; }
+.stepBody :global(.yggdrasil-step-more > summary) { padding: 13px 2px 5px; }
+.stepBody :global(.yggdrasil-step-more > summary span) { font-size: 13px; }
+.stepBody :global(.yggdrasil-settings-grid) { grid-template-columns: 1fr; }
+.stepBody :global(.yggdrasil-setting-card) { border-radius: 10px; padding: 13px; }
+.videoDetails { border-top: 1px solid #e3d6c9; margin: 12px 0 10px; }
+.videoDetails > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 3px; color: #71462f; font-size: 13px; font-weight: 800; cursor: pointer; }
+.videoDetails > summary::after { content: "+"; font-size: 20px; line-height: 1; }
+.videoDetails[open] > summary::after { content: "−"; }
+.videoDetails :global(.yggdrasil-video-grid) { grid-template-columns: 1fr; }
+.sourceDetails { border-top: 1px solid #ddd0c3; margin: 32px 0 0; padding: 14px 0; color: #7d6c60; font-size: 12px; }
+.sourceDetails summary { cursor: pointer; font-size: 12px; font-weight: 750; }
+.sourceDetails > div { margin: 14px 0 10px; }
+.sourceDetails p { max-width: 740px; line-height: 1.55; }
+.sourceDetails small { color: #917d6d; }
+
+@media (max-width: 920px) {
+  .stepCard { grid-template-columns: minmax(0, 39%) minmax(0, 61%); }
+  .stepText { padding: 20px; }
+  .stepHeader h3 { font-size: clamp(26px, 3.9vw, 36px); }
+}
+@media (max-width: 700px) {
+  .curriculum { padding-top: 12px; }
+  .curriculumIntro h2 { font-size: clamp(34px, 10vw, 46px); }
+  .levelHeading { padding: 0 2px; }
+  .levelNumber { width: 42px; height: 42px; font-size: 18px; }
+  .stageNavigation { margin-right: -12px; padding-bottom: 16px; }
+  .stageNavigation a { max-width: 190px; padding: 9px 11px; }
+  .visualSteps { gap: 16px; }
+  .stepCard { grid-template-columns: minmax(0,1fr); border-radius: 15px; }
+  .stepPhoto { height: 230px; min-height: 230px; background-position: center 43%; }
+  .photoRibbon { top: 14px; left: 14px; font-size: 11px; }
+  .stepText { padding: 20px 18px 22px; }
+  .stepHeader { gap: 7px; }
+  .stepHeader h3 { font-size: clamp(30px, 8vw, 38px); }
+  .stepIntroduction { margin: 12px 0 17px; font-size: 16px; }
+  .attunementChips span { font-size: 11px; padding: 7px 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .stageNavigation { scroll-behavior: auto; } }

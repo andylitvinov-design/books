@@ -36,7 +36,7 @@ test("Ifrits summary explains the actual helper taxonomy instead of generic lear
 
 test("course UI no longer renders Meaning, What you get, What it opens, or Skills filler panels", async () => {
   const component = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
-  assert.match(component, /className="yggdrasil-step-source-summary"/);
+  assert.match(component, /className=\{visualStyles\.stepIntroduction\}/);
   assert.match(component, /yggdrasilStepSummary/);
   assert.doesNotMatch(component, /className="yggdrasil-step-key-grid"/);
   assert.doesNotMatch(component, /labels\.outcome/);
