@@ -55,3 +55,35 @@
  .embedded .battery>div:last-child{display:flex;width:100%;justify-content:flex-end;gap:8px}
  .embedded .battery button{margin-left:0}
 }
+
+/* Live discovery: all working facets are visible and the result count is never hidden. */
+.filterStatus{grid-column:1/-1;display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap;background:#efe3d2;border:1px solid #dbc7ad;border-radius:14px;padding:10px 14px}
+.filterStatus strong{font-size:1.05rem;color:#423128}
+.filterStatus span{font-size:.78rem;color:#79604c}
+.filterStatus button{margin-left:auto;background:#fffaf2;border:1px solid #cfb89c;border-radius:999px;padding:7px 12px;font-weight:650;cursor:pointer}
+.topicHint{font-size:.8rem;color:#7e6551;line-height:1.45;margin:5px 0 8px}
+.moreFilters{grid-column:1/-1;padding:12px 14px;border:1px solid var(--line);background:rgba(255,250,242,.67);border-radius:14px;min-width:0}
+.moreFilters summary{font-size:.88rem;min-height:28px}
+.filterGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px;margin-top:14px}
+.filter{display:flex;flex-wrap:wrap;align-content:start;gap:7px;min-width:0}
+.filter legend{margin-bottom:7px}
+.filter button{background:#fffaf3;min-height:36px}
+.filter button[aria-pressed=true],.filterGroup button[aria-pressed=true]{box-shadow:0 0 0 2px #cda56c66}
+.check{align-self:center}
+.countBlock{display:grid;gap:4px}
+.countBlock strong{font-size:1.15rem}
+.countBlock small{font-size:.74rem;color:#786250}
+.emptyState{border:1px dashed var(--line);border-radius:12px;background:rgba(255,250,242,.65);padding:24px 16px;color:#705941}
+.visualState{position:relative;z-index:3;display:grid;gap:5px;margin:14px 0 6px;padding:12px;border-radius:12px;background:rgba(230,238,233,.82);border:1px solid #a9c3b7}
+.visualState strong{font-size:.92rem;color:#356d64}
+.visualState span{font-size:.76rem;color:#615447;line-height:1.4}
+.axisRing button[data-intensity=medium],.secondaryAxes button[data-intensity=medium]{background:#e3efe9;border:2px solid #467a73;color:#27554d;font-weight:700;box-shadow:0 3px 12px rgba(55,111,94,.18)}
+.axisRing button[data-intensity=strong],.secondaryAxes button[data-intensity=strong]{background:#f6e5db;border:2px solid #b26c70;color:#753c45;font-weight:700;box-shadow:0 3px 12px rgba(154,89,98,.18)}
+.axisRing button[aria-pressed=true],.secondaryAxes button[aria-pressed=true]{background:#46352e;color:#fffaf2;border-color:#46352e}
+@media(max-width:760px){
+  .filterStatus{align-items:start}
+  .filterStatus button{margin-left:0}
+  .filterGrid{grid-template-columns:1fr;gap:14px}
+  .databaseHeader{align-items:start;flex-wrap:wrap}
+  .visualState{padding:10px}
+}
