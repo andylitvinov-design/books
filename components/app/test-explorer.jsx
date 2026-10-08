@@ -71,6 +71,10 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [starting, setStarting] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(true)
   const entries = useMemo(() => buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience }), [locale, audience])
+  // Direct History -> Test selection must also work when the URL changes without remounting.
+  useEffect(() => {
+    if (recommendedKey && entries.some((entry) => entry.key === recommendedKey && entry.selectable)) setSelectedKeys([recommendedKey])
+  }, [recommendedKey, entries])
   const matching = useMemo(() => filterExplorerEntries(entries, { availability, focus, styles: stylesFilter, lengths, areas, freeOnly, search: query }), [entries, availability, focus, stylesFilter, lengths, areas, freeOnly, query])
   // A selected test stays visible even if new filters no longer match it.
   const filtered = useMemo(() => filterExplorerEntries(entries, { availability, focus, styles: stylesFilter, lengths, areas, freeOnly, search: query, selectedKeys }), [entries, availability, focus, stylesFilter, lengths, areas, freeOnly, query, selectedKeys])
