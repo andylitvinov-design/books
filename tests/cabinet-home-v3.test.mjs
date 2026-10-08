@@ -24,7 +24,9 @@ test('Cabinet home is the signed-in landing, practitioner tools are a separate a
   assert.match(app, /\['tools', ru \? .*'\/tools'\]/)
   assert.match(route, /'tools'/)
   assert.match(app, /appFetch\('mood'/)
-  assert.match(app, /appFetch\('runs'/)
+  assert.match(app, /if \(!fresh\?\.account \|\| !Array\.isArray\(fresh\.results\)\)/)
+  assert.match(app, /state === 'ready' && !data\?\.account/)
+    assert.match(app, /appFetch\('runs'/)
 })
 
 test('Test explorer restores Cabinet query and topic; count follows visible matching rows', async () => {
