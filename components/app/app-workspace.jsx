@@ -243,6 +243,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   const nav = [
     ['portrait', c.portrait, ''],
+    ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', '/tests'],
     ['monitoring', c.monitoring, '/monitoring'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
