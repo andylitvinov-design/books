@@ -138,7 +138,7 @@ export function CabinetHome({ data, locale = 'en', onMoodChange, onStartDefiniti
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" /> {c.private}</p>
-          <p className={styles.greeting}>{c.greeting}{data.account.displayName ? ', ' + data.account.displayName : ''}.</p>
+          <p className={styles.greeting}>{c.greeting}{data.account?.displayName ? ', ' + data.account.displayName : ''}.</p>
           <h1>{c.headline}</h1>
           <p className={styles.heroIntro}>{c.intro}</p>
           <div className={styles.heroActions}>
