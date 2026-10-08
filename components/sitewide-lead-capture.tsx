@@ -153,7 +153,7 @@ export function SitewideLeadCapture() {
               : pathname.includes("tantra-reiki") ? "/library/maya-mysteries/media/post-217-1.jpg"
               : "/academy/reiki-yggdrasil/source/basic-program.jpg"
             : kind === "reading" ? pathname.includes("homeopathy") ? "/images/holistic-house/distance-homeopathy.webp"
-              : pathname.includes("wu-xing") ? "/academy/reiki-yggdrasil/source/eastern-tradition.png"
+              : pathname.includes("wu-xing") ? "/academy/reiki-yggdrasil/source/temple-studies.png"
               : "/images/holistic-house/books-library.webp"
             : "/images/holistic-house/andy-about.png"} alt="" fill sizes="(max-width: 767px) 110px, 224px" />
         </div>
