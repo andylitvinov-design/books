@@ -14,6 +14,7 @@ import "./ia-v2.css";
 import "./academy.css";
 import "./yggdrasil-basic-description.css";
 import "./catalog-showcase.css";
+import "./temple-studies.css";
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
