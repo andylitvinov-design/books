@@ -15,22 +15,22 @@ test("home displays direct three-service choices before the introductory video",
 
 test("services display choices and a separately listed free diagnostic offering", () => {
   const s = source("app", "[locale]", "services", "page.tsx");
-  const hero = s.indexOf('<section className="services-studio-hero">');
-  const journey = s.indexOf('<PersonalWorkJourney locale={locale as Locale} />');
-  const catalogue = s.indexOf("<CatalogShowcase");
-  assert.ok(hero >= 0 && journey > hero && catalogue > journey);
-  assert.match(s, /id="free-situation-review-offer"/);
-  assert.match(s, /href=\{".*?" \+ locale \+ "\/services\/free-situation-review"\}/);
+  const hero = s.indexOf('className={styles.hero}');
+  const directions = s.indexOf('id="available-services"');
+  const free = s.indexOf('id="free-situation-review-offer"');
+  assert.ok(hero >= 0 && directions > hero && free > directions);
+  assert.match(s, /href=\{`\/\$\{locale\}\/services\/free-situation-review`\}/);
   assert.match(s, /Бесплатная диагностика ситуации/);
   assert.match(s, /Free situation & goal assessment/);
   assert.match(s, /free-wu-xing-diagnostic/);
+  assert.doesNotMatch(s, /<CatalogShowcase/);
 });
 
 test("three services are choices with direct real service links, not implied treatment stages", () => {
   const component = source("components", "personal-work-journey.tsx");
   for (const phrase of [
-    "Гомеопатия", "Образная терапия", "Расстановки и архетипическая работа",
-    "Homeopathy", "Guided imagery therapy", "Systemic & archetypal constellations",
+    "Психогомеопатия", "Образная психотерапия", "Расстановки и архетипическая поддержка",
+    "Psychohomeopathy", "Guided imagery psychotherapy", "Constellations & archetypal support",
     "andy-litvinov/homeopathy-consultation",
     "imagery-therapy",
     "andy-litvinov/personal-constellation-session",
