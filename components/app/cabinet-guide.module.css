@@ -1,0 +1,55 @@
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 254px;gap:20px;align-items:start}
+.main{min-width:0}
+.passthrough{display:contents}
+.assistant{--guide-text:#473d36;--guide-muted:#726a5d;position:sticky;top:20px;min-width:0;padding:16px;background:linear-gradient(158deg,#fffdf7,#f6efe5 75%,#f2e8dc);border:1px solid #dfd2c4;border-radius:25px;box-shadow:0 12px 30px #5d453412;color:var(--guide-text);overflow:hidden}
+.assistant :is(h2,h3){font-family:Georgia,serif;color:var(--guide-text)}
+.identity{display:flex;flex-direction:column;align-items:center;text-align:center}
+.art{display:grid;place-items:center;width:100%;max-width:210px;aspect-ratio:1.07;background:radial-gradient(circle at 50% 48%,#fdf8f0 28%,transparent 72%);margin:-4px auto -6px}
+.figure{width:100%;height:auto;max-height:202px;display:block}
+.identityText{width:100%}
+.kicker{display:flex;align-items:center;justify-content:center;gap:5px;color:#896950;font-size:10px;letter-spacing:.1em;font-weight:750;text-transform:uppercase}
+.assistant .identityText h2{font-size:28px;line-height:1.1;margin:6px 0!important}
+.assistant .identityText p{margin:0!important;color:var(--guide-muted);font-size:12px;line-height:1.5}
+.assistant .toggle{width:100%;margin-top:13px;padding:6px 10px!important;display:inline-flex;justify-content:center;align-items:center;gap:5px;min-height:35px!important;border:1px solid #d7c6b3!important;border-radius:10px!important;background:#fffcf7!important;color:#705643!important;font-size:11px!important;font-weight:650}
+.body{margin-top:16px;border-top:1px solid #e2d5c6;padding-top:16px}
+.assistant .heading{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:#977356;margin:0 0 11px!important}
+.steps{display:grid;gap:6px}
+.assistant .tipButton{width:100%;display:flex;align-items:center;justify-content:flex-start;gap:8px;min-height:43px;padding:8px 9px!important;border:1px solid #e5dacd!important;border-radius:10px!important;background:#fffdf9!important;color:#685d53!important;font-size:11px!important;line-height:1.35;text-align:left!important}
+.assistant .tipButton[aria-pressed=true]{background:#ece9dc!important;border-color:#a5b09a!important;color:#425942!important;font-weight:700}
+.number{flex:0 0 20px;color:#a38063;font-size:10px;font-variant-numeric:tabular-nums}
+.assistant .tipButton[aria-pressed=true] .number{color:#567157}
+.detail{margin-top:12px;background:#fffdf9;border-radius:15px;border:1px solid #e7dbc9;padding:14px}
+.detail>span{font-size:10px;letter-spacing:.04em;color:#967457;font-weight:700}
+.assistant .detail h3{font-size:21px;line-height:1.2;margin:5px 0 8px!important}
+.assistant .detail p{margin:0 0 12px!important;color:#716357;font-size:12px;line-height:1.55}
+.action{width:100%;display:inline-flex;min-height:43px;align-items:center;justify-content:center;gap:5px;padding:8px 11px;border-radius:11px;background:#84604b;color:white!important;font-size:12px;font-weight:720;line-height:1.3;text-decoration:none!important;text-align:center}
+.action:hover{background:#694734}
+.assistant .privacy{display:flex;align-items:flex-start;gap:5px;margin:11px 0 0!important;font-size:10px;line-height:1.45;color:#82766b}
+.privacy svg{flex:none;margin-top:1px}
+.assistant :is(button,a):focus-visible{outline:3px solid #aa7857!important;outline-offset:3px}
+@media(max-width:1150px){
+  .layout{grid-template-columns:1fr}
+  .layout>.assistant{order:-1}
+  .assistant{position:static;display:grid;grid-template-columns:minmax(180px,.32fr) minmax(0,1fr);gap:18px;padding:13px 20px}
+  .identity{justify-content:center}
+  .art{max-width:150px;margin:-14px auto -11px}
+  .assistant .identityText h2{font-size:23px}
+  .body{margin:0;padding:0 0 0 18px;border-top:0;border-left:1px solid #e2d5c6}
+  .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .detail{padding:12px 15px}
+}
+@media(max-width:680px){
+  .layout{gap:15px}
+  .assistant{display:block;padding:12px 15px;border-radius:19px}
+  .identity{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px;text-align:left}
+  .art{max-width:90px;width:90px;margin:-12px auto -9px}
+  .kicker{justify-content:flex-start}
+  .assistant .identityText h2{font-size:22px;margin:4px 0!important}
+  .assistant .toggle{width:auto;min-height:35px!important;margin-top:7px}
+  .body{border-left:0;border-top:1px solid #e2d5c6;padding:12px 0 0;margin-top:12px}
+  .steps{grid-template-columns:1fr 1fr}
+  .assistant .tipButton{min-height:45px}
+  .assistant .detail h3{font-size:20px}
+}
+@media(max-width:385px){.steps{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.assistant *{animation:none!important;transition:none!important}}
