@@ -6,15 +6,16 @@ import test from "node:test";
 const root = process.cwd();
 const read = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("Services, Academy and Library share the same showcase component", () => {
+test("Academy and Library share showcase while Services uses its own three-direction layout", () => {
   const services = read("app", "[locale]", "services", "page.tsx");
   const academy = read("components", "academy-hub.tsx");
   const library = read("components", "library-hub.tsx");
 
-  assert.match(services, /CatalogShowcase/);
+  assert.doesNotMatch(services, /CatalogShowcase/);
+  assert.match(services, /directionStack/);
   assert.match(academy, /CatalogShowcase/);
   assert.match(library, /CatalogShowcase/);
-  assert.match(services, /serviceShowcaseItems/);
+  assert.match(services, /psychohomeopathy/);
   assert.match(academy, /academy-featured-yggdrasil/);
   assert.match(academy, /academy-featured-tantra-reiki/);
   assert.match(academy, /academyDirections\.filter/);
@@ -46,10 +47,10 @@ test("shared showcase has compact contents, visual panels and a clear choice act
 test("Services keeps marketplace and published video surfaces after the redesign", () => {
   const services = read("app", "[locale]", "services", "page.tsx");
 
-  assert.match(services, /services-marketplace/);
-  assert.match(services, /featuredService/);
+  assert.match(services, /className=\{styles\.extra\}/);
+  assert.match(services, /listPublicServices\(locale\)/);
   assert.match(services, /PageVideo slot="services-intro"/);
-  assert.match(services, /slot=\{"service-" \+ id\}/);
+  assert.match(services, /classifyOffering/);
   assert.match(services, /method-hypnotherapy/);
   assert.match(services, /method-constellations/);
 });
@@ -63,11 +64,11 @@ test("mini cards navigate to direct destinations instead of in-page anchors", ()
 
   assert.match(component, /indexHref\?: string/);
   assert.match(component, /item\.indexHref \?\? item\.href/);
-  assert.match(services, /indexHref: serviceIndexHrefs\[id\]/);
-  assert.match(services, /academy\/applied\/hypnotherapy-regressions/);
+  assert.match(services, /href=\{\`#\$\{service\.id\}\`\}/);
+  assert.match(services, /\/services\/imagery-therapy/);
   assert.match(services, /academy\/reiki/);
   assert.match(services, /personal-constellation-session/);
-  assert.match(services, /business-situation-constellation/);
+  assert.match(services, /Business & decision constellations/);
   assert.match(services, /homeopathy-consultation/);
 
   assert.match(academy, /href: "\/" \+ locale \+ "\/academy\/" \+ direction\.path/);
