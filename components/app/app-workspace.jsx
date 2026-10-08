@@ -184,7 +184,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       return
     }
     const plan = await appFetch('test-plans/' + encodeURIComponent(planId))
-    const advanced = await appFetch(`test-plans/${encodeURIComponent(planId)}/advance`, {
+    await appFetch(`test-plans/${encodeURIComponent(planId)}/advance`, {
       completedRunId: result.runId,
       expectedRevision: plan.revision,
     })
