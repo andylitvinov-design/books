@@ -20,31 +20,41 @@ type BasicStep = {
   settings: Array<{ id: string; title: string }>;
 };
 
+// The five authentic PsiTrends level photos already used by the detailed Basic Course.
+// Keep the overview consistent with the full curriculum, rather than generic illustrations.
+const basicLevelPhotos: Record<number, string> = {
+  1: "https://psitrends.com/images/Screenshot_25.png",
+  2: "https://psitrends.com/images/photo_2023-07-10_08-26-39.jpg",
+  3: "https://psitrends.com/images/Screenshot_31.png",
+  4: "https://psitrends.com/images/tulumhypnotherapy.jpg",
+  5: "https://psitrends.com/images/world_magic_traditions_overview.jpg",
+};
+
 const basicStepDescriptions: Record<number, Record<PublicLocale, string>> = {
   1: {
-    en: "Health, intuition, protection and working with a chosen situation: the entry point into the Reiki Yggdrasil flow.",
-    ru: "Здоровье, интуиция, защита и работа с выбранной ситуацией — вход в поток Рейки Иггдрасиль.",
-    es: "Salud, intuición, protección y trabajo con una situación elegida: entrada al flujo Reiki Yggdrasil.",
+    en: "Start with body awareness, intuition and symbolic protection. Learn four foundational attunements and how to approach a personal situation.",
+    ru: "Начните с внимания к телу, интуиции и символической защиты. Освойте четыре базовые настройки и работу с личной ситуацией.",
+    es: "Empieza con la atención al cuerpo, la intuición y la protección simbólica. Aprende cuatro sintonizaciones básicas y a explorar una situación personal.",
   },
   2: {
-    en: "Cleansing, charging objects and money-flow activation: releasing what feels excessive and directing attention toward resource.",
-    ru: "Очищение, зарядка объектов и денежная активация: освобождение от лишнего и направление внимания на ресурс.",
-    es: "Limpieza, carga de objetos y activación del flujo del dinero: liberar lo innecesario y orientar la atención al recurso.",
+    en: "Practise symbolic cleansing, charging objects and releasing unwanted connections. Explore your relationship with resources and money.",
+    ru: "Освойте символическое очищение, зарядку предметов и освобождение от нежелательных связей. Исследуйте своё отношение к ресурсам и деньгам.",
+    es: "Practica limpieza simbólica, carga de objetos y liberación de vínculos no deseados. Explora tu relación con los recursos y el dinero.",
   },
   3: {
-    en: "Predestination, power, emotion, sexuality, intellect, karma and flight: direction and personal strength.",
-    ru: "Предопределение, сила, эмоция, сексуальность, интеллект, карма и полёт: направление и личная сила.",
-    es: "Predestinación, poder, emoción, sexualidad, intelecto, karma y vuelo: dirección y fuerza personal.",
+    en: "Explore personal direction and inner strength through practices centred on emotions, will, intellect, energy and life patterns.",
+    ru: "Исследуйте жизненное направление и внутреннюю силу через практики с эмоциями, волей, интеллектом, энергией и жизненными сценариями.",
+    es: "Explora tu rumbo personal y tu fuerza interior mediante prácticas de emociones, voluntad, intelecto, energía y patrones de vida.",
   },
   4: {
-    en: "Extrasensory vision, past-life imagery, situation creation and knowledge: the perception-focused level.",
-    ru: "Сверхчувственное видение, прошлые жизни, создание ситуации и знание — ступень восприятия.",
-    es: "Visión extrasensorial, vidas pasadas, creación de situaciones y conocimiento: nivel de percepción.",
+    en: "Develop imagination and intuitive perception through guided imagery, symbolic memories, knowledge and visualising possible situations.",
+    ru: "Развивайте воображение и интуитивное восприятие через образы, символическую память, познание и представление возможных ситуаций.",
+    es: "Desarrolla la imaginación y la percepción intuitiva con imágenes guiadas, recuerdos simbólicos, conocimiento y visualización de situaciones.",
   },
   5: {
-    en: "Connection with the World and the Gods: the Master Level integrating the Basic Course.",
-    ru: "Связь с Миром и Богами — мастерская ступень, объединяющая Базовый курс.",
-    es: "Conexión con el Mundo y los Dioses: nivel de maestro que integra el Curso Básico.",
+    en: "Bring the Basic Course together in two Master Level attunements: Connection with the World and Connection with the Gods.",
+    ru: "Объедините навыки Базового курса в двух мастерских настройках: «Связь с Миром» и «Связь с Богами».",
+    es: "Integra el Curso Básico con dos sintonizaciones de maestría: Conexión con el Mundo y Conexión con los Dioses.",
   },
 };
 
@@ -64,9 +74,9 @@ const copy = {
     mapLead: "Each module has its own landing page with all canonical steps, attunements and verified public video lectures. The older PsiTrends 10-module program wording remains preserved in the historical source archive.",
     module: "Module",
     open: "Open module",
-    basicEyebrow: "Basic Course preview",
+    basicEyebrow: "Your first five levels",
     basicTitle: "Basic Course · 5 levels",
-    basicLead: "The first five levels are shown here as a quick orientation. The dedicated Basic Course landing contains the full descriptions, attunements, videos and practice material.",
+    basicLead: "See what you will explore at each level. Each stage has its own practices and attunements; open the complete course for lessons and videos.",
     basicLevel: "Level",
     basicSettings: "attunements",
     photosEyebrow: "Source preservation",
@@ -90,9 +100,9 @@ const copy = {
     mapLead: "Каждый модуль получил отдельную страницу со всеми каноническими ступенями, настройками и проверенными публичными видеолекциями. Старая 10-модульная формулировка PsiTrends сохранена в полном историческом архиве.",
     module: "Модуль",
     open: "Открыть модуль",
-    basicEyebrow: "Кратко о Базовом курсе",
+    basicEyebrow: "Первые пять ступеней",
     basicTitle: "Базовый курс · 5 уровней",
-    basicLead: "Здесь пять уровней показаны кратко. На отдельном лендинге Базового курса находятся полные описания, настройки, видео и практические материалы.",
+    basicLead: "Коротко и понятно о каждой ступени. Полные описания, настройки, уроки и видео находятся на странице Базового курса.",
     basicLevel: "Уровень",
     basicSettings: "настроек",
     photosEyebrow: "Сохранение источника",
@@ -116,9 +126,9 @@ const copy = {
     mapLead: "Cada módulo tiene su propia página con etapas, sintonizaciones y videoclases verificadas.",
     module: "Módulo",
     open: "Abrir módulo",
-    basicEyebrow: "Vista rápida del Curso Básico",
+    basicEyebrow: "Tus cinco primeros niveles",
     basicTitle: "Curso Básico · 5 niveles",
-    basicLead: "La página específica del Curso Básico contiene las descripciones completas, sintonizaciones, videos y materiales.",
+    basicLead: "Descubre qué se aprende en cada nivel. Abre el Curso Básico para ver prácticas, sintonizaciones, lecciones y videos.",
     basicLevel: "Nivel",
     basicSettings: "sintonizaciones",
     photosEyebrow: "Preservación de la fuente",
@@ -216,11 +226,25 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         <div className="yggdrasil-basic-levels">
           {basicSteps.map((step) => (
             <article className="yggdrasil-basic-level-card" key={step.id}>
-              <div className="yggdrasil-basic-level-number">{String(step.number).padStart(2, "0")}</div>
-              <div>
+              <Link
+                className="yggdrasil-basic-level-photo-link"
+                href={`/${locale}/academy/reiki/yggdrasil/basic-course#${step.id.toLowerCase()}`}
+                aria-label={`${text.basicLevel} ${step.number}: ${step.title[locale]}`}
+              >
+                <SourceVisual
+                  url={basicLevelPhotos[step.number]}
+                  label={step.title[locale]}
+                  className="yggdrasil-basic-level-photo"
+                />
+                <span className="yggdrasil-basic-level-photo-number" aria-hidden="true">{String(step.number).padStart(2, "0")}</span>
+              </Link>
+              <div className="yggdrasil-basic-level-copy">
                 <small>{text.basicLevel} {step.number} · {step.settings.length} {text.basicSettings}</small>
                 <h3>{step.title[locale]}</h3>
                 <p>{basicStepDescriptions[step.number][locale]}</p>
+                <Link className="yggdrasil-basic-level-open" href={`/${locale}/academy/reiki/yggdrasil/basic-course#${step.id.toLowerCase()}`}>
+                  {text.open} {text.basicLevel.toLowerCase()} {step.number} <span aria-hidden="true">→</span>
+                </Link>
               </div>
             </article>
           ))}
