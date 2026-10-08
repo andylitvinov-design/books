@@ -2342,3 +2342,38 @@
   .tantra-journey__author-text p { font-size: clamp(16px, 4.1vw, 18px); line-height: 1.62; }
   .tantra-journey__level-heading h3 { text-wrap: balance; }
 }
+
+/* Original guided meditation paths: accessible, photo-led, non-deceptive
+   fallbacks when an archived YouTube meditation is not yet verified. */
+.english-meditation-section { margin: 32px 0; padding: clamp(20px, 3vw, 35px); border-radius: 20px; background: #f9f5ef; border: 1px solid #e5d9ca; }
+.english-meditation-heading { max-width: 800px; margin-bottom: 22px; }
+.english-meditation-heading h2 { margin: 6px 0 10px; font-family: var(--font-serif); font-size: clamp(27px, 3.2vw, 38px); font-weight: 500; line-height: 1.15; color: #302822; }
+.english-meditation-heading > p:last-child { font-size: 16px; color: #625b53; line-height: 1.65; }
+.english-meditation-list { display: grid; gap: 18px; }
+.english-meditation-card { display: grid; grid-template-columns: minmax(160px, 32%) minmax(0, 1fr); background: #fff; border: 1px solid #e9ddd1; border-radius: 15px; overflow: hidden; min-height: 190px; }
+.english-meditation-card__visual { min-width: 0; background: #e8e2d7; }
+.english-meditation-card__visual img { display: block; width: 100%; height: 100%; object-fit: cover; aspect-ratio: 16 / 9; }
+.english-meditation-card__visual .academy-video-frame, .english-meditation-card__visual .academy-video-poster { height: 100%; }
+.english-meditation-card__copy { padding: clamp(18px, 2.6vw, 28px); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 9px; }
+.english-meditation-card__eyebrow { font-size: 11px; color: #866b4e; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; }
+.english-meditation-card__copy h3 { font-family: var(--font-serif); font-size: clamp(22px, 2.5vw, 30px); line-height: 1.2; font-weight: 500; color: #302822; margin: 0; }
+.english-meditation-card__copy > p:not(.english-meditation-card__eyebrow) { font-size: 15px; line-height: 1.65; color: #5f574e; margin: 0; }
+.english-meditation-card__copy a { font-weight: 700; font-size: 14px; color: #765032; text-decoration: underline; text-underline-offset: 4px; margin-top: 4px; }
+.english-meditation-card__copy a:focus-visible { outline: 3px solid #8e612f; outline-offset: 4px; }
+@media (max-width: 680px) {
+  .english-meditation-section { margin: 23px 0; padding: 16px; }
+  .english-meditation-card { grid-template-columns: 1fr; }
+  .english-meditation-card__visual img { aspect-ratio: 16 / 9; }
+}
+
+
+/* Expanded historical student reviews stay accessible without a video wall. */
+.yggdrasil-more-testimonials { margin-top: 19px; border-top: 1px solid #e2d5c7; padding-top: 15px; }
+.yggdrasil-more-testimonials summary { cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 12px; color: #563c2c; font-weight: 700; font-size: 15px; background: #f3ede5; }
+.yggdrasil-more-testimonials summary:focus-visible { outline: 3px solid #906439; outline-offset: 3px; }
+.yggdrasil-more-testimonials summary span { font-variant-numeric: tabular-nums; font-size: 14px; color: #81644d; }
+.yggdrasil-more-testimonials > .yggdrasil-video-grid { margin-top: 16px; }
+.tantra-russian-review { padding: 12px 0; }
+.tantra-russian-review summary { cursor: pointer; font-size: 14px; font-weight: 700; padding: 12px 16px; border: 1px solid #ddcfbe; border-radius: 12px; background: #f4eee7; }
+.tantra-russian-review summary:focus-visible { outline: 3px solid #906439; outline-offset: 3px; }
+.tantra-russian-review .tantra-youtube-grid { margin-top: 14px; }

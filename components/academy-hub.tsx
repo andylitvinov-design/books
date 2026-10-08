@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { EnglishGuidedMeditations } from "@/components/english-guided-meditations";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -207,6 +208,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         <h1>{text.title}</h1>
         <p>{text.lead}</p>
       </header>
+      {locale === "en" && view === "videos" ? <EnglishGuidedMeditations /> : null}
       <CatalogShowcase items={items} label={view === "videos" ? text.videoCollections : text.allPrograms} />
       {view === "programs" ? (
         <p className="academy-archive-nav">

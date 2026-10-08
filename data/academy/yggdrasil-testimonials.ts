@@ -85,4 +85,76 @@ export const yggdrasilVideoTestimonials: YggdrasilVideoTestimonial[] = [
     },
     language: "en",
   },
+  {
+    youtubeId: "XvMdX5czoOc",
+    title: {
+      en: "Video testimonial · Part 1",
+      ru: "Видеоотзыв · Часть 1",
+      es: "Testimonio en video · Parte 1",
+    },
+    language: "en",
+  },
+  {
+    youtubeId: "hjmVJrgEsZ8",
+    title: {
+      en: "Video testimonial · Part 2",
+      ru: "Видеоотзыв · Часть 2",
+      es: "Testimonio en video · Parte 2",
+    },
+    language: "en",
+  },
+  {
+    youtubeId: "u275Zz78vhs",
+    title: {
+      en: "Video testimonial · Part 3",
+      ru: "Видеоотзыв · Часть 3",
+      es: "Testimonio en video · Parte 3",
+    },
+    language: "en",
+  },
+  {
+    youtubeId: "3msoUyWr6bY",
+    title: {
+      en: "Video testimonial · Part 4",
+      ru: "Видеоотзыв · Часть 4",
+      es: "Testimonio en video · Parte 4",
+    },
+    language: "en",
+  },
+  {
+    youtubeId: "0G_xvbuClII",
+    title: {
+      en: "Video testimonial · Part 5",
+      ru: "Видеоотзыв · Часть 5",
+      es: "Testimonio en video · Parte 5",
+    },
+    language: "en",
+  },
+  {
+    youtubeId: "Hk9XpeUI0BQ",
+    title: {
+      en: "Video testimonial · Part 6",
+      ru: "Видеоотзыв · Часть 6",
+      es: "Testimonio en video · Parte 6",
+    },
+    language: "en",
+  },
+  {
+    youtubeId: "Nx8DwWk27VY",
+    title: {
+      en: "Video testimonial · Part 7",
+      ru: "Видеоотзыв · Часть 7",
+      es: "Testimonio en video · Parte 7",
+    },
+    language: "en",
+  },
+  {
+    youtubeId: "p29qu8-dtZk",
+    title: {
+      en: "Video testimonial · Part 8",
+      ru: "Видеоотзыв · Часть 8",
+      es: "Testimonio en video · Parte 8",
+    },
+    language: "en",
+  },
 ];

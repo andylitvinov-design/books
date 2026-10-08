@@ -2,67 +2,78 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("legacy English Reiki Yggdrasil videos from PsiTrends are restored", async () => {
+test("historical Reiki Yggdrasil reviews are not called lessons or meditations", async () => {
   const source = await readFile("data/academy/yggdrasil-legacy-english-videos.ts", "utf8");
   for (const id of [
-    "XvMdX5czoOc",
-    "hjmVJrgEsZ8",
-    "u275Zz78vhs",
-    "wN_SNwZ1Epo",
-    "3Apc8P1Yudc",
-    "3msoUyWr6bY",
-    "0G_xvbuClII",
-    "Hk9XpeUI0BQ",
-    "p29qu8-dtZk",
-    "Nx8DwWk27VY",
+    "XvMdX5czoOc", "hjmVJrgEsZ8", "u275Zz78vhs", "wN_SNwZ1Epo",
+    "3Apc8P1Yudc", "3msoUyWr6bY", "0G_xvbuClII",
+    "Hk9XpeUI0BQ", "p29qu8-dtZk", "Nx8DwWk27VY",
   ]) {
-    assert.match(source, new RegExp(id.replace("-", "\\-")));
+    assert.ok(source.includes(id), "Preserve provenance for " + id);
   }
-  assert.match(source, /https:\/\/psitrends\.com\/studies\/master-taory/);
+  assert.match(source, /yggdrasilEnglishOverviewVideos: YggdrasilLegacyVideo\[\] = \[\]/);
+  assert.match(source, /yggdrasilEnglishStepVideos: Record<string, YggdrasilLegacyVideo\[\]> = \{\}/);
+  assert.match(source, /classification: "testimonial"/);
+  assert.doesNotMatch(source, /classification: "needs-verification"/);
+  assert.doesNotMatch(source, /title: "What really is Reiki Yggdrasil"/);
+  assert.doesNotMatch(source, /title: "About the Healing attunement"/);
 });
 
-test("English attunement videos are mapped to corresponding Reiki Yggdrasil steps", async () => {
-  const source = await readFile("data/academy/yggdrasil-legacy-english-videos.ts", "utf8");
-  assert.match(source, /"RY-L01-S01"[\s\S]*p29qu8-dtZk/);
-  assert.match(source, /"RY-L02-S01"[\s\S]*0G_xvbuClII/);
-  assert.match(source, /"RY-L02-S02"[\s\S]*3msoUyWr6bY/);
-  assert.match(source, /"RY-L02-S03"[\s\S]*Nx8DwWk27VY/);
+test("new English practice listing has three distinct source-gated entries", async () => {
+  const data = await readFile("data/academy/english-guided-meditations.ts", "utf8");
+  const ids = ["flight-to-sun", "tantra-reiki", "reiki-yggdrasil"];
+  for (const id of ids) assert.match(data, new RegExp('key: "' + id + '"'));
+  assert.equal((data.match(/youtubeId: null,/g) ?? []).length, 3, "No invented YouTube IDs");
+  assert.ok(data.includes("/en/academy/reiki/tantra-reiki"));
+  assert.ok(data.includes("/en/academy/reiki/yggdrasil"));
+  assert.ok(!data.includes("qM_nFUkYJ1k"), "Never substitute the Tantra Reiki testimonial");
 });
 
-test("English course pages label and collapse Russian archive videos by default", async () => {
-  const component = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
-  assert.match(component, /RU · Русский/);
-  assert.match(component, /Russian archive videos/);
-  assert.match(component, /These source lectures are in Russian/);
-  assert.match(component, /yggdrasilEnglishStepVideos/);
-  assert.match(component, /locale !== "ru" && russianVideos.length/);
-  assert.match(component, /<details className="yggdrasil-russian-archive">/);
-  assert.match(component, /<summary>/);
-  assert.match(component, /yggdrasil-russian-archive__count/);
-  assert.doesNotMatch(component, /<details className="yggdrasil-russian-archive" open>/);
+test("English-only Academy paths use poster-first playback only after confirmation", async () => {
+  const [page, hub, recording] = await Promise.all([
+    readFile("components/english-guided-meditations.tsx", "utf8"),
+    readFile("components/academy-hub.tsx", "utf8"),
+    readFile("components/academy-record-page.tsx", "utf8"),
+  ]);
+  assert.match(page, /item\.youtubeId \? \(/);
+  assert.match(page, /<AcademyVideoPlayer youtubeId=\{item\.youtubeId\}/);
+  assert.match(page, /<Image src=\{item\.image\}/);
+  assert.match(hub, /locale === "en" && view === "videos" \? <EnglishGuidedMeditations \/>/);
+  assert.match(recording, /locale === "en" \? <EnglishGuidedMeditations focus="tantra-reiki"/);
+  assert.match(recording, /qM_nFUkYJ1k/);
+  assert.match(recording, /participant testimonial/);
+  assert.match(recording, /tantra-russian-review/);
+  assert.match(recording, /Russian-language historical testimonial/);
 });
 
-test("English video guide is grouped by topics and placed at the bottom of program and course landings", async () => {
-  const [guide, hub, module] = await Promise.all([
+test("legacy English review videos are not injected into specific Yggdrasil teaching steps", async () => {
+  const [curriculum, guide, hub, module] = await Promise.all([
+    readFile("components/yggdrasil-curriculum.tsx", "utf8"),
     readFile("components/yggdrasil-english-video-guide.tsx", "utf8"),
     readFile("components/yggdrasil-program-landing.tsx", "utf8"),
     readFile("components/yggdrasil-module-landing.tsx", "utf8"),
   ]);
-  assert.match(guide, /Reiki Yggdrasil explained in English/);
-  assert.match(guide, /General introduction/);
-  assert.match(guide, /Basic Course · Level 1 · Healing/);
-  assert.match(guide, /Instructor Course · Healing/);
-  assert.match(guide, /Golden Calf · Business/);
-  assert.match(guide, /Man & Woman · Relationships/);
-  assert.doesNotMatch(guide, /kind === "testimonial"/);
+  assert.match(curriculum, /yggdrasilEnglishStepVideos\[step\.id\] \?\? \[\]/);
+  assert.match(guide, /locale === "en"/);
+  assert.match(guide, /<EnglishGuidedMeditations focus="reiki-yggdrasil"/);
+  assert.match(hub, /<YggdrasilTestimonials/);
+  assert.match(hub, /<YggdrasilEnglishVideoGuide/);
+  assert.match(module, /<YggdrasilEnglishVideoGuide/);
+  assert.doesNotMatch(guide, /General introduction/);
+});
 
-  const hubReviews = hub.indexOf("<YggdrasilTestimonials");
-  const hubGuide = hub.indexOf("<YggdrasilEnglishVideoGuide");
-  assert.ok(hubReviews >= 0 && hubGuide > hubReviews);
-
-  const moduleCurriculum = module.indexOf("<YggdrasilCurriculum");
-  const moduleGuide = module.indexOf("<YggdrasilEnglishVideoGuide");
-  assert.ok(moduleCurriculum >= 0 && moduleGuide > moduleCurriculum);
-  assert.match(module, /scope="basic"/);
-  assert.match(module, /scope="instructor"/);
+test("all ten verified Reiki reviews remain accessible, additional eight under disclosure", async () => {
+  const [registry, component] = await Promise.all([
+    readFile("data/academy/yggdrasil-testimonials.ts", "utf8"),
+    readFile("components/yggdrasil-testimonials.tsx", "utf8"),
+  ]);
+  for (const id of ["XvMdX5czoOc", "hjmVJrgEsZ8", "u275Zz78vhs",
+    "3msoUyWr6bY", "0G_xvbuClII", "Hk9XpeUI0BQ",
+    "Nx8DwWk27VY", "p29qu8-dtZk", "wN_SNwZ1Epo", "3Apc8P1Yudc"]) {
+    assert.ok(registry.includes(id), "Missing historical review: " + id);
+  }
+  assert.match(component, /yggdrasilVideoTestimonials.slice\(0, 2\)/);
+  assert.match(component, /yggdrasilVideoTestimonials.slice\(2\)/);
+  assert.match(component, /<details className="yggdrasil-more-testimonials">/);
+  assert.match(component, /additionalVideos.map/);
 });
