@@ -8,6 +8,7 @@ import en5 from "@/data/academy/yggdrasil-en-settings-l5.json";
 import en6 from "@/data/academy/yggdrasil-en-settings-l6.json";
 import en7 from "@/data/academy/yggdrasil-en-settings-l7.json";
 import { yggdrasilEnglishStepVideos } from "@/data/academy/yggdrasil-legacy-english-videos";
+import { yggdrasilStepSummary } from "@/data/academy/yggdrasil-step-summaries";
 import type { PublicLocale } from "@/lib/public-locales";
 
 type Localized = Record<PublicLocale, string>;
@@ -75,72 +76,6 @@ const copy: Record<PublicLocale, {
   }
 };
 
-const levelOneEnglish: Record<string, SourceText> = {
-  "RY-L01-S01": {
-    intro: "The first step introduces the basic Reiki Yggdrasil flow through health, intuition and protection. It is designed as an entry point for body awareness, subtle perception and a sense of personal safety.",
-    meaning: "The purpose is to provide a stable beginning: strengthen contact with the body, notice subtle signals and build a simple protective framework without tension or struggle.",
-    opens: ["first experience of the Reiki Yggdrasil flow","attention to bodily signals and intuition","a gentle protection practice for everyday situations","awareness of personal safety and boundaries"],
-    skills: ["attune through breathing and attention","observe the body before and after practice","create a simple protective visualisation","record observations in a practice journal"],
-    result: "The student completes the first step with an initial sense of the system, a basic feeling of support and a repeatable gentle practice."
-  },
-  "RY-L01-S02": {
-    intro: "The second step combines cleansing with money-flow activation: first releasing what feels excessive, then directing attention toward stability, opportunities and resource.",
-    meaning: "The step links material themes with inner order, clear intention and the capacity to receive without unnecessary inner resistance.",
-    opens: ["release of accumulated tension","the relationship between inner order and material resource","a clearer intention around prosperity","greater comfort with receiving support and payment"],
-    skills: ["use a short cleansing practice","formulate a material intention without pressure","notice blocks around receiving","finish practice with grounding"],
-    result: "The student gains a simple framework for cleansing and for observing how attention, resource and material goals interact."
-  },
-  "RY-L01-S03": {
-    intro: "The third step explores predestination and personal power: what already feels inherent, where the path seems to lead and how to act without forcing oneself.",
-    meaning: "The purpose is to connect personal strength with a sense of direction so that intention becomes grounded action rather than strain.",
-    opens: ["awareness of one's current direction","contact with personal power","recognition of repeating patterns","energy for choice and movement"],
-    skills: ["ask a focused question about direction in meditation","distinguish inner strength from tense control","work with the image of a path or tree of destiny","turn an insight into a small action"],
-    result: "The student develops a clearer sense of direction and a calmer way to mobilise personal power."
-  },
-  "RY-L01-S04": {
-    intro: "The fourth step is devoted to extrasensory vision: subtle perception, imagery and attentive observation of symbols and inner pictures.",
-    meaning: "The purpose is to develop sensitivity in a structured way so that impressions can be observed, questioned and compared rather than accepted automatically.",
-    opens: ["subtle perception of images and states","distinguishing intuition from imagination","attention to symbols and inner imagery","deeper engagement with practice"],
-    skills: ["observe and record imagery","ask clarifying questions of an inner image","compare impressions with bodily state","stay grounded when sensitivity increases"],
-    result: "The student becomes more confident with imagery and symbolic perception while retaining grounding and critical reflection."
-  },
-  "RY-L01-S05": {
-    intro: "The fifth step integrates the basic cycle into a master-level foundation: health, cleansing, protection, power and vision are brought together into one practice framework.",
-    meaning: "The purpose is to move from separate exercises toward a stable practitioner position with flow, boundaries and responsibility.",
-    opens: ["integration of the basic cycle","a master-level practitioner position","responsibility for one's own practice field","readiness for further training"],
-    skills: ["combine practices into a sequence","assess state before and after practice","maintain clear boundaries when helping others","formulate a personal practice code"],
-    result: "The student completes the Basic Course with a structured foundation and readiness to continue into the Instructor Course."
-  }
-};
-
-function genericEnglishSource(level: CurriculumLevel, step: CurriculumStep): SourceText {
-  const levelTitle = level.title.en;
-  const stepTitle = step.title.en;
-  return {
-    intro: `${stepTitle} is Step ${step.number} of ${levelTitle}. The current canonical knowledge base presents this as a learner-facing framework for the topic and marks the explanatory copy for continued review against the author's method materials.`,
-    meaning: `The purpose of this step is to introduce ${stepTitle}, place it in the wider Reiki Yggdrasil path and turn the theme from an abstract idea into regular practice, observation and personal experience.`,
-    opens: [
-      `a basic understanding of ${stepTitle}`,
-      "a connection between the topic and personal practice",
-      "a new layer of attention to energy, state and intention",
-      "a transition from theory into careful practical exploration"
-    ],
-    skills: [
-      "prepare before practice and finish with grounding",
-      "keep a journal of sensations, imagery and observations",
-      "distinguish stable experience from random impressions",
-      "work gradually, without overload or promises of instant results"
-    ],
-    result: `The student receives a practical map of ${stepTitle}, understands what to train next and can continue with a clearer focus.`
-  };
-}
-
-function localizedSource(locale: PublicLocale, level: CurriculumLevel, step: CurriculumStep): SourceText {
-  if (locale === "ru") return step.sourceText;
-  if (level.id === 1 && levelOneEnglish[step.id]) return levelOneEnglish[step.id];
-  return genericEnglishSource(level, step);
-}
-
 function localizedSetting(locale: PublicLocale, setting: Setting): EnglishSetting | Setting {
   if (locale === "ru") return setting;
   return englishSettings[setting.id] ?? {
@@ -186,24 +121,14 @@ const collectionsEs = {
   ],
 };
 
-function SourceList({ title, items }: { title: string; items: string[] }) {
-  return (
-    <section className="yggdrasil-key-list">
-      <h5>{title}</h5>
-      <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
-    </section>
-  );
-}
-
 function StepDetail({ locale, level, step }: { locale: PublicLocale; level: CurriculumLevel; step: CurriculumStep }) {
   const text = copy[locale];
-  const source = localizedSource(locale, level, step);
+  const sourceSummary = yggdrasilStepSummary(step.id, locale);
   const russianVideos = step.video?.videos?.filter((video) => Boolean(video.youtubeId)) ?? [];
   const englishVideos = yggdrasilEnglishStepVideos[step.id] ?? [];
   const labels = {
     en: {
-      key: "Key information",
-      outcome: "What you get",
+      about: "About this step",
       attunements: "Attunements in this step",
       full: "Full attunement descriptions",
       fullLead: "Open only if you want the detailed source wording for every attunement.",
@@ -212,8 +137,7 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
       russianNote: "These source lectures are in Russian. They are kept here because they match this step in the original Reiki Yggdrasil video archive.",
     },
     ru: {
-      key: "Главное о ступени",
-      outcome: "Результат",
+      about: "О ступени",
       attunements: "Настройки этой ступени",
       full: "Полные описания настроек",
       fullLead: "Открывайте, если нужны подробные исходные описания каждой настройки.",
@@ -222,8 +146,7 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
       russianNote: "Русские видеолекции из исходного архива, привязанные к этой ступени.",
     },
     es: {
-      key: "Información clave",
-      outcome: "Resultado",
+      about: "Sobre esta etapa",
       attunements: "Sintonizaciones de esta etapa",
       full: "Descripciones completas de las sintonizaciones",
       fullLead: "Ábrelo solo si necesitas el texto detallado de cada sintonización.",
@@ -244,21 +167,8 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
       </header>
 
       <div className="yggdrasil-step-card__body" lang={locale === "ru" ? "ru" : locale === "es" ? "es" : "en"}>
-        <p className="homeopathy-kicker">{labels.key}</p>
-        <p className="yggdrasil-step-intro">{source.intro}</p>
-
-        <div className="yggdrasil-step-key-grid">
-          <section className="yggdrasil-step-key-block">
-            <h4>{text.meaning}</h4>
-            <p>{source.meaning}</p>
-          </section>
-          <section className="yggdrasil-step-key-block yggdrasil-step-key-block--result">
-            <h4>{labels.outcome}</h4>
-            <p>{source.result}</p>
-          </section>
-          <SourceList title={text.opens} items={source.opens} />
-          <SourceList title={text.skills} items={source.skills} />
-        </div>
+        <p className="homeopathy-kicker">{labels.about}</p>
+        <p className="yggdrasil-step-source-summary">{sourceSummary}</p>
 
         <section className="yggdrasil-attunement-summary">
           <div className="yggdrasil-section-heading">
@@ -412,16 +322,13 @@ export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { l
               </span>
             </div>
             <nav className="yggdrasil-course-roadmap" aria-label={locale === "ru" ? "Структура курса" : locale === "es" ? "Estructura del curso" : "Course roadmap"}>
-              {level.steps.map((step) => {
-                const source = localizedSource(locale, level, step);
-                return (
-                  <a href={"#" + step.id.toLowerCase()} key={step.id}>
-                    <span>{String(step.number).padStart(2, "0")}</span>
-                    <strong>{step.title[locale]}</strong>
-                    <small>{source.intro}</small>
-                  </a>
-                );
-              })}
+              {level.steps.map((step) => (
+                <a href={"#" + step.id.toLowerCase()} key={step.id}>
+                  <span>{String(step.number).padStart(2, "0")}</span>
+                  <strong>{step.title[locale]}</strong>
+                  <small>{yggdrasilStepSummary(step.id, locale)}</small>
+                </a>
+              ))}
             </nav>
             <div className="yggdrasil-step-list yggdrasil-step-list--inline">
               {level.steps.map((step) => <StepDetail key={step.id} locale={locale} level={level} step={step} />)}
