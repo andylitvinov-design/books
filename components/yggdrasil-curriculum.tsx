@@ -358,7 +358,7 @@ export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { l
       <div className={visualStyles.curriculumIntro}>
         <p className="homeopathy-kicker">{selected ? (locale === "ru" ? "Курс без лишних кликов" : locale === "es" ? "Curso sin clics innecesarios" : "Course without extra clicks") : text.eyebrow}</p>
         <h2 id="yggdrasil-curriculum-title">{selected ? (locale === "ru" ? "Что входит в курс" : locale === "es" ? "Qué incluye el curso" : "What the course includes") : text.title}</h2>
-        <p>{selected ? (locale === "ru" ? "Каждая ступень — отдельный шаг практики. Смотрите фото и главное содержание, подробности открывайте по желанию." : locale === "es" ? "Cada etapa tiene una imagen y una explicación clara. Abre los detalles solo cuando los necesites." : "Five clear stages, from foundational practices to the Master Level. Explore each stage visually; open details when you need them.") : text.lead}</p>
+        <p>{selected?.id === 1 ? (locale === "ru" ? "Пять ступеней от первых практик до мастерского уровня. Фото, короткое описание и настройки — всё видно сразу." : locale === "es" ? "Cinco etapas, desde las prácticas básicas hasta el nivel de maestro. Fotos y puntos clave a primera vista." : "Five stages, from foundational practices to the Master Level. Photos and key attunements at a glance.") : selected ? selected.theme[locale] : text.lead}</p>
       </div>
 
       <div className={visualStyles.levels}>
