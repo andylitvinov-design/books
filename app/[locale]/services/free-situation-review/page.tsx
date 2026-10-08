@@ -10,10 +10,11 @@ import styles from "../offerings.module.css";
 type Props = { params: Promise<{ locale: string }> };
 const copy = {
   ru: {
-    title: "Бесплатная диагностика ситуации",
+    title: "Бесплатная личная консультация",
+    shortName: "Бесплатная диагностика ситуации",
     description: "Краткий бесплатный первичный разбор вашей цели, бизнеса или личной проблемы: найдём точку ступора, рассмотрим возможную зону роста и подходящий следующий шаг.",
-    eyebrow: "Отдельная услуга · бесплатно",
-    lead: "Иногда для начала не нужен длинный курс. Сначала полезно прояснить, что именно не движется: цель, бизнес или личная проблема. Это разговор о вашей ситуации, не медицинское обследование и не психологический диагноз.",
+    eyebrow: "Бесплатная диагностика ситуации · без обязательств",
+    lead: "Не обязательно сразу выбирать курс или метод. Расскажите о своей ситуации — на бесплатной вводной беседе обсудим, где вы чувствуете затруднение, и наметим возможные следующие шаги. Это не медицинская диагностика.",
     cards: [
       { title: "1. Запрос", text: "Расскажите, что пытаетесь изменить или к чему прийти." },
       { title: "2. Точка ступора", text: "Вместе рассмотрим, что сейчас мешает движению или ясности." },
@@ -22,10 +23,11 @@ const copy = {
     back: "Все индивидуальные услуги",
   },
   en: {
-    title: "Free situation & goal assessment",
+    title: "Free personal consultation",
+    shortName: "Free situation & goal assessment",
     description: "A free introductory review of your goal, business or personal difficulty: identify where you feel stuck, possible areas for growth and a useful next step.",
-    eyebrow: "Standalone service · free",
-    lead: "You don't need to commit to a long program. First, we can clarify what is not moving: a goal, a business question or a personal difficulty. This is a discussion about your situation, not a clinical assessment or medical diagnosis.",
+    eyebrow: "Free situation & goal assessment · no obligation",
+    lead: "You do not need to choose a program first. Tell me about your situation; in a free introductory conversation we can explore where you feel stuck and clarify a possible next step. This is not a medical diagnosis.",
     cards: [
       { title: "1. Your question", text: "Tell me what you want to change or achieve." },
       { title: "2. Where you're stuck", text: "We'll explore the point where progress or clarity feels blocked." },
@@ -61,11 +63,6 @@ export default async function FreeSituationReviewPage({ params }: Props) {
         <p>{t.lead}</p>
         <Link className={styles.breadcrumb} href={"/" + locale + "/services"}>← {t.back}</Link>
       </section>
-      <section className={styles.details} aria-label={t.title}>
-        <div className={styles.cards}>
-          {t.cards.map((card) => <article className={styles.card} key={card.title}><h3>{card.title}</h3><p>{card.text}</p></article>)}
-        </div>
-      </section>
       <div className={styles.contentGrid}>
         <FreeSituationReviewForm locale={locale} />
         <aside className={styles.article}>
@@ -79,6 +76,11 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           <p className={styles.disclaimer}>{locale === "ru" ? "Этот разбор не заменяет медицинскую диагностику, лечение или профессиональную финансовую и юридическую экспертизу." : "This review is not a substitute for medical diagnosis, treatment, or professional financial and legal advice."}</p>
         </aside>
       </div>
+      <section className={styles.details} aria-label={t.title}>
+        <div className={styles.cards}>
+          {t.cards.map((card) => <article className={styles.card} key={card.title}><h3>{card.title}</h3><p>{card.text}</p></article>)}
+        </div>
+      </section>
     </main>
   );
 }

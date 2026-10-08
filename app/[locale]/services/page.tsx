@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PageVideo } from "@/components/page-video";
 import { PersonalWorkJourney } from "@/components/personal-work-journey";
+import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -27,7 +26,7 @@ export const revalidate = 0;
 const copy = {
   ru: {
     title: "Индивидуальная работа в Торонто и онлайн — Holistic House",
-    description: "Гипнотерапия, системные и семейные расстановки, работа с решениями и Рейки в Holistic House.",
+    description: "Начните с бесплатной вводной консультации, чтобы прояснить вашу ситуацию, найти точку ступора и выбрать следующий шаг. Психогомеопатия, образная терапия и расстановки.",
     kicker: "Торонто и онлайн",
     heading: "Индивидуальная работа",
     lead: "Исследуйте повторяющиеся паттерны, отношения, важные решения и внутренние блоки в бережной индивидуальной работе.",
@@ -71,7 +70,7 @@ const copy = {
   },
   en: {
     title: "Personal work in Toronto and online — Holistic House",
-    description: "Hypnotherapy, systemic and family constellations, decision work, and Reiki at Holistic House.",
+    description: "Start with a free personal consultation to clarify what is holding you back. Explore psychohomeopathy, guided imagery and systemic constellations at Holistic House.",
     kicker: "Toronto & online",
     heading: "Personal work",
     lead: "Explore repeating patterns, relationships, important decisions and inner blocks through thoughtful one-to-one work.",
@@ -201,28 +200,7 @@ export default async function ServicesPage({ params }: PageProps) {
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
 
-      <section className="services-studio-hero">
-        <div className="services-studio-hero-copy">
-          <p className="homeopathy-kicker">{current.kicker}</p>
-          <h1>{current.heading}</h1>
-          <p>{current.lead}</p>
-          <Link className="services-studio-primary" href="#available-services">
-            {current.marketplaceCta}<span aria-hidden="true">→</span>
-          </Link>
-          <AcquisitionEventLink className="services-studio-primary" href={entry.selfCheck.href} event="self_check_start">
-            {entry.selfCheck.label}<span aria-hidden="true">→</span>
-          </AcquisitionEventLink>
-        </div>
-        <div className="services-studio-photo" aria-hidden="true">
-          <Image
-            src="/images/holistic-house/hero-olive-incense.webp"
-            alt=""
-            fill
-            priority
-            sizes="(max-width: 767px) 100vw, 44vw"
-          />
-        </div>
-      </section>
+      <ServicesConversionHero locale={locale as Locale} />
 
       <PersonalWorkJourney locale={locale as Locale} />
 

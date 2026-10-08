@@ -15,10 +15,12 @@ test("home displays direct three-service choices before the introductory video",
 
 test("services display choices and a separately listed free diagnostic offering", () => {
   const s = source("app", "[locale]", "services", "page.tsx");
-  const hero = s.indexOf('<section className="services-studio-hero">');
+  const hero = s.indexOf('<ServicesConversionHero locale={locale as Locale} />');
   const journey = s.indexOf('<PersonalWorkJourney locale={locale as Locale} />');
   const catalogue = s.indexOf("<CatalogShowcase");
   assert.ok(hero >= 0 && journey > hero && catalogue > journey);
+  assert.doesNotMatch(s, /<section className="services-studio-hero">/);
+  assert.match(s, /ServicesConversionHero/);
   assert.match(s, /id="free-situation-review-offer"/);
   assert.match(s, /href=\{".*?" \+ locale \+ "\/services\/free-situation-review"\}/);
   assert.match(s, /Бесплатная диагностика ситуации/);
@@ -74,4 +76,28 @@ test("service links retain mobile tap targets, no horizontal layout overflow fro
   assert.match(css, /:focus-visible/);
   assert.match(detailCss, /@media\(max-width:800px\)/);
   assert.match(detailCss, /grid-template-columns:1fr/);
+});
+
+test("services hero makes the free consultation the first and only primary offer", () => {
+  const hero = source("components", "services-conversion-hero.tsx");
+  const css = source("components", "services-conversion-hero.module.css");
+  for (const phrase of ["Feeling stuck?", "Чувствуете, что застряли?", "free-situation-review", "Request my free consultation", "Запросить бесплатную консультацию"]) {
+    assert.ok(hero.includes(phrase), phrase);
+  }
+  assert.doesNotMatch(hero, /selfCheck|self_check_start|#available-services/);
+  assert.match(css, /@media\(max-width:760px\)/);
+  assert.match(css, /min-height:60px/);
+});
+
+test("approach one preselects an actual free psychohomeopathy-focused intake; no false instant booking", () => {
+  const journey = source("components", "personal-work-journey.tsx");
+  const intake = source("components", "free-situation-review-form.tsx");
+  const freePage = source("app", "[locale]", "services", "free-situation-review", "page.tsx");
+  assert.match(journey, /free-situation-review\?topic=wellbeing/);
+  assert.match(journey, /Грусть, одиночество/);
+  assert.match(journey, /You have a goal but cannot see/);
+  assert.match(intake, /requestedTopic === "wellbeing"/);
+  assert.match(intake, /value: "wellbeing"/);
+  assert.ok(freePage.indexOf('className={styles.contentGrid}') < freePage.indexOf('className={styles.details}'));
+  assert.match(intake, /window\.open/);
 });

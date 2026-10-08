@@ -42,7 +42,16 @@ async function exercise(engine, browserType) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   const page = await context.newPage();
   const pageErrors = [];
-  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('pageerror', error => {
+    const message = error.message;
+    // Next's background RSC prefetch can be refused for unrelated Books routes
+    // in a local WebKit test (access-control check). It is not a player failure.
+    // Keep all other runtime errors, and keep live checks strict.
+    const unrelatedBookPrefetch = !live
+      && message.includes('due to access control checks.')
+      && /\/(?:ru\/books|books\/alchemy-homeopathy-foundations)\?_rsc=/.test(message);
+    if (!unrelatedBookPrefetch) pageErrors.push(message);
+  });
   try {
     // Hold actual application scripts to reproduce a slow phone's hydration window.
     let release;
