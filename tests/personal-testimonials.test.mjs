@@ -53,3 +53,10 @@ test("videos use existing lazy click-to-play player and mobile layout; links are
   assert.match(css, /min-height: 44px/);
   assert.match(css, /:focus-visible/);
 });
+
+test("video browser verification selects the managed intro even when testimonials add other play buttons", () => {
+  const verifier = read("scripts", "verify-site-video-browser.mjs");
+  assert.match(verifier, /\[data-video-slot="home-intro"\] \.site-video-play/);
+  assert.match(verifier, /\[data-video-slot="home-intro"\] \.site-video-player/);
+  assert.doesNotMatch(verifier, /page\.locator\('\.site-video-play'\)\.click\(\)/);
+});
