@@ -1206,7 +1206,7 @@ function Runner({ id, locale, onExit, onComplete }) {
                 onClick={() => chooseAnswer(value)}
               >
                 <strong>{value}</strong>
-                {def.responseAnchors && <span>{def.responseAnchors[value - min]}</span>}
+                {(question.responseAnchors || def.responseAnchors) && <span>{(question.responseAnchors || def.responseAnchors)[value - min]}</span>}
               </button>
             ))}
           </div>
