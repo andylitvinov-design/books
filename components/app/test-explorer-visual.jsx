@@ -51,9 +51,9 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   return <section className={styles.visual} aria-label={ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes'}>
     <header className={styles.visualHeader}>
       <div><p className={styles.eyebrow}>{portrait ? (ru ? 'Ваши измерения' : es ? 'Tus mediciones' : 'Your measurements') : (ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes')}</p><h2>{portrait ? (ru ? 'Мой психологический портрет' : es ? 'Mi retrato psicológico' : 'My psychological portrait') : mode === 'selected' ? (ru ? 'Покрытие вашей батареи' : es ? 'Cobertura de tus pruebas' : 'Coverage of your test set') : (ru ? 'Темы для исследования' : es ? 'Áreas de interés' : 'Your areas of interest')}</h2></div>
-      <div className={styles.variantToggle} role="group" aria-label={ru ? 'Вариант модели' : es ? 'Modelo' : 'Model variant'}>
+      {!portrait && <div className={styles.variantToggle} role="group" aria-label={ru ? 'Вариант модели' : es ? 'Modelo' : 'Model variant'}>
         {['female', 'male'].map((key) => <button type="button" key={key} aria-pressed={variant === key} onClick={() => setVariant(key)}>{key === 'female' ? (ru ? 'Женская' : es ? 'Femenino' : 'Female') : (ru ? 'Мужская' : es ? 'Masculino' : 'Male')}</button>)}
-      </div>
+      </div>}
     </header>
     <div className={styles.visualState} role="status" aria-live="polite">
       <strong>{portrait ? (ru ? `${portrait.measuredCount} измеренных шкал` : es ? `${portrait.measuredCount} escalas medidas` : `${portrait.measuredCount} measured scales`) : mode === 'selected'
@@ -74,7 +74,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           <path className={styles.head} d={variant === 'female' ? 'M126 105c0-57 27-87 54-87s54 30 54 87v79c0 49-24 79-54 79s-54-30-54-79v-79Z' : 'M122 105c0-57 29-87 58-87s58 30 58 87v79c0 49-26 79-58 79s-58-30-58-79v-79Z'} />
           <path className={styles.faceLine} d="M151 126c13 7 45 7 58 0M151 177c18 11 40 11 58 0M161 211c13 8 25 8 38 0" />
           <path className={styles.neural} d="M118 132 154 101l27 37 42-34m-94 79 47-30 52 28m-86 42 39-42 49 40M136 95l44 58 46-57" />
-          {PRIMARY_AXES.map((axis, index) => {
+          {!portrait && PRIMARY_AXES.map((axis, index) => {
             const angle = (-145 + index * 32) * Math.PI / 180, x = 180 + Math.cos(angle) * 94, y = 168 + Math.sin(angle) * 115
             return <circle key={axis} cx={x} cy={y} r="7" className={`${styles.node} ${styles[`node${coverage.axes[axis]?.intensity || 'inactive'}`]}`} />
           })}
@@ -105,7 +105,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       </div>
       {measuredAxes.length === 0
         ? <p>{ru ? 'Вы ещё не прошли тесты с измеряемыми показателями. После прохождения шкалы и лучи появятся автоматически.' : es ? 'Completa primero una prueba; tus resultados aparecerán aquí.' : 'No measured results yet. Complete a test to grow your personal portrait.'}</p>
-        : <div className={styles.portraitRayOptions}>{measuredAxes.map((axis) => <label key={axis} className={styles.portraitRayOption}>
+        : <div className={styles.portraitRayOptions}>{measuredAxes.map((axis) => <label key={axis} className={styles.portraitRayOption} title={`${portrait.axes[axis].source} · ${portrait.axes[axis].measuredAt || ""}`}>
           <input type="checkbox" checked={visibleRays.includes(axis)} onChange={() => toggleRay(axis)} disabled={!visibleRays.includes(axis) && visibleRays.length >= 10} />
           <span>{label(axis)}</span>
           <strong>{portrait.axes[axis].percent}%</strong>
