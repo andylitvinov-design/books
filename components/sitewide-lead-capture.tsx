@@ -107,12 +107,17 @@ const copy = {
 
 export function SitewideLeadCapture() {
   const pathname = usePathname();
+  // Resolve path-based marketing only after hydration. Rewritten public routes may
+  // differ between SSR and the browser; rendering null for both initial passes avoids #418.
+  const [clientPath, setClientPath] = useState<string | null>(null);
   const [legacyBookLocale, setLegacyBookLocale] = useState<"en" | "ru">("ru");
   useEffect(() => {
-    if (!/^\/books\/[^/]+/.test(pathname)) return;
-    setLegacyBookLocale(new URLSearchParams(window.location.search).get("lang") === "en" ? "en" : "ru");
+    setClientPath(pathname);
+    if (/^\/books\/[^/]+/.test(pathname)) {
+      setLegacyBookLocale(new URLSearchParams(window.location.search).get("lang") === "en" ? "en" : "ru");
+    }
   }, [pathname]);
-  const route = classifyPublicLead(pathname);
+  const route = clientPath ? classifyPublicLead(clientPath) : null;
   if (!route) return null;
   const locale = (/^\/books\/[^/]+/.test(pathname) ? legacyBookLocale : route.locale) as "en" | "ru" | "es";
   const kind = route.kind as "training" | "reading" | "personal" | "network";
