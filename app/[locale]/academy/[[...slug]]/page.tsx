@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 
-import { AcademyDirection, AcademyHub, AcademyPrefixDirectory } from "@/components/academy-hub";
+import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
+import { TempleStudies } from "@/components/temple-studies";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
 import { YggdrasilModuleLandingPage } from "@/components/yggdrasil-module-landing";
 import { YggdrasilBasicCourseDescription } from "@/components/yggdrasil-basic-course-description";
 import { YggdrasilSourceArchivePage } from "@/components/yggdrasil-source-archive";
-import { academyCopy, academyDirections, academyDisplayTitle, findAcademyRecord, isPublicLocale, type AcademyDirectionId, type AcademyView } from "@/data/academy/catalog";
+import { academyCopy, academyDirections, academyDisplayTitle, academyPublicBlocks, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl, type AcademyDirectionId, type AcademyView } from "@/data/academy/catalog";
 import { yggdrasilModuleBySlug } from "@/data/academy/yggdrasil-module-map";
 import { metadataBaseFor } from "@/data/site-metadata";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -38,6 +39,7 @@ function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 
 
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
+  if (routeKey(slug) === "temple-studies") return locale === "ru" ? "Temple Studies — Храмовые традиции" : locale === "es" ? "Temple Studies — Tradiciones del Templo" : "Temple Studies";
   const child = yggdrasilChild(slug);
   if (routeKey(slug) === "reiki/yggdrasil/basic-course/description") return locale === "ru" ? "Рейки Иггдрасиль — книга базового курса I–V ступени" : locale === "es" ? "Libro: Reiki Yggdrasil — Curso Básico I–V" : "Reiki Yggdrasil — Basic Course Book I–V";
   if (child === "archive") return locale === "ru" ? "Рейки Иггдрасиль — полный исторический текст" : locale === "es" ? "Reiki Yggdrasil — fuente histórica completa" : "Reiki Yggdrasil — Complete Historical Source";
@@ -63,7 +65,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
-  const description = routeKey(slug) === "reiki/yggdrasil/basic-course/description"
+  const description = routeKey(slug) === "temple-studies"
+    ? locale === "ru" ? "Единая программа храмовых искусств: греческие и египетские мистерии, руны, стихии, Таро, архетипические практики и история школы." : locale === "es" ? "Temple Studies reúne los misterios antiguos, las runas, el Tarot y las prácticas arquetípicas en cuatro capítulos." : "One Temple Studies program combining ancient mysteries, runes and symbols, archetypal practice and the Academy teaching path."
+    : routeKey(slug) === "reiki/yggdrasil/basic-course/description"
     ? locale === "ru" ? "Полная книга-методичка по базовому курсу Рейки Иггдрасиль I–V: все 38 страниц, настройки и упражнения." : locale === "es" ? "Libro completo del Curso Básico de Reiki Yggdrasil, niveles I–V, en ruso original, con índice; resumen en español." : "Complete original Russian Reiki Yggdrasil Basic Course book, Levels I–V, with all attunements and exercises; English overview."
     : courseModule
     ? courseModule.lead[locale]
@@ -90,6 +94,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
     return <AcademyHub locale={locale} view={view} />;
   }
 
+  if (key === "temple-studies") return <TempleStudies locale={locale} />;
   if (key === "reiki/yggdrasil/basic-course/description") return <YggdrasilBasicCourseDescription locale={locale} />;
   if (key === "reiki/master-shamanic-healing") redirect("/" + locale + "/academy/reiki/yggdrasil/basic-course");
   if (child === "archive") return <YggdrasilSourceArchivePage locale={locale} />;
@@ -99,11 +104,17 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   }
 
   if (slug.length === 1 && slug[0] === "videos") return <AcademyHub locale={locale} view="videos" />;
+  const legacyTempleAnchors: Record<string, string> = { mysteries: "traditions", symbolic: "symbols", applied: "practice", path: "path", traditions: "traditions", runes: "symbols", elements: "symbols" };
+  if (slug.length === 1 && legacyTempleAnchors[slug[0]]) permanentRedirect("/" + locale + "/academy/temple-studies#" + legacyTempleAnchors[slug[0]]);
   if (slug.length === 1 && directionPath[slug[0]]) return <AcademyDirection locale={locale} direction={directionPath[slug[0]]} />;
-  if (slug.length === 1 && prefixCopy[slug[0]]) { const copy = prefixCopy[slug[0]][locale]; return <AcademyPrefixDirectory locale={locale} prefix={slug[0]} title={copy.title} description={copy.description} />; }
   if (key === "history/faculties") { const history = findAcademyRecord("history", locale); if (!history) notFound(); return <AcademyRecordPage locale={locale} record={makeFacultiesRecord(history, locale)} />; }
 
   const record = findAcademyRecord(key, locale);
   if (!record) notFound();
+  const sectionForDirection: Partial<Record<typeof record.direction, string>> = { mysteries: "traditions", symbolic: "symbols", applied: "practice", school: "path" };
+  const templeAnchor = sectionForDirection[record.direction];
+  const visibleBody = academyPublicBlocks(record, locale).filter((block) => block.type === "p" || block.type === "li");
+  const hasVideo = mediaForRecord(record).some((item) => Boolean(youtubeIdFromUrl(item.mediaUrl)));
+  if (templeAnchor && visibleBody.length < 2 && !hasVideo) permanentRedirect("/" + locale + "/academy/temple-studies#" + templeAnchor);
   return <AcademyRecordPage locale={locale} record={record} />;
 }
