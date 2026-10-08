@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
+import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
 
 // Stage descriptions and attunements are editorially aligned with the captured
 // EN/RU PsiTrends source (data/academy/tantra-reiki-full.generated.json).
@@ -293,10 +293,65 @@ const stages = [
   }
 ] as const;
 
+
+/**
+ * A distinct real photograph for each level, selected from the original
+ * PsiTrends Tantra Reiki source archive. No synthetic diagrams or AI pictures.
+ * These are illustrative archive photographs, not a claim that the pictured
+ * attendees are taking the precise initiation described alongside the image.
+ */
+const levelPhotos = [
+  { src: tantraReikiArchive.images.ru[16], description: "Embodied awareness and first connection" },
+  { src: tantraReikiArchive.images.ru[13], description: "Grounded attention and the practice of energy" },
+  { src: tantraReikiArchive.images.ru[18], description: "Connection and a shared field of practice" },
+  { src: tantraReikiArchive.images.ru[19], description: "A conscious relationship with another person" },
+  { src: tantraReikiArchive.images.ru[14], description: "Creative expression and inner presence" },
+  { src: tantraReikiArchive.images.ru[20], description: "A quieter, more integrated inner state" },
+  { src: tantraReikiArchive.images.ru[15], description: "Reflection and clear attention" },
+  { src: tantraReikiArchive.images.ru[21], description: "Exploration, creation and shared practice" },
+  { src: tantraReikiArchive.images.ru[22], description: "The shared experience of an embodied practice" }
+] as const;
+
+const levelApplications: Record<PublicLocale, string[]> = {
+  en: [
+    "Recognise subtle bodily sensations, explore the flow individually and practise consent-based connection with a partner.",
+    "Experiment with gathering and directing attention, work symbolically with personal resources and begin a simple mandala.",
+    "Practise attunement with another person, notice internal barriers and record your experience in a short reflection.",
+    "Explore the archetypal qualities of love, the shared field of a relationship and the first supervised mandala for an individual intention.",
+    "Shift attention toward an inner source of energy and creativity, then learn how the tradition works with symbolic artifacts.",
+    "Practise settling into stillness, noticing balance and creating a structured session for a personal intention.",
+    "Develop steadier attention and a clearer practice method; document observations and receive consent-based feedback.",
+    "Combine attunements into a personal symbolic ritual and translate what you learn into a written reflection.",
+    "Bring together the entire nine-level journey in a personal practice; discuss evaluation and master-level attunement individually."
+  ],
+  ru: [
+    "Научитесь замечать тонкие ощущения в теле, включаться в практику самостоятельно и исследовать контакт с партнёром с уважением к границам.",
+    "Будете тренировать накопление и направление внимания, исследовать внутренний ресурс и создадите первую простую мандалу.",
+    "Освоите упражнения на сонастройку с другим человеком, исследование внутренних ограничений и фиксацию своих ощущений.",
+    "Будете изучать архетипические качества любви и общее поле пары, а также создавать мандалу под индивидуальное намерение.",
+    "Исследуете внутренний источник энергии и творчества, познакомитесь с работой с символическими артефактами.",
+    "Потренируетесь входить в состояние покоя и устойчивости и составите структуру собственной индивидуальной практики.",
+    "Разовьёте навык удержания ясного внимания, будете вести наблюдения и получать обратную связь с согласия участников.",
+    "Соедините настройки в авторский символический ритуал и оформите полученный опыт в небольшую письменную работу.",
+    "Интегрируете практики девяти ступеней и обсудите условия завершающей настройки и аттестации индивидуально."
+  ],
+  es: [
+    "Reconocer sensaciones sutiles, explorar el flujo individualmente y practicar la conexión con consentimiento.",
+    "Practicar la atención y los recursos internos; comenzar un mandala sencillo.",
+    "Explorar la sintonía con otra persona, los bloqueos internos y la reflexión.",
+    "Explorar arquetipos del amor y crear un mandala supervisado para una intención personal.",
+    "Descubrir la creatividad interior y el uso tradicional de objetos simbólicos.",
+    "Practicar la calma y diseñar una sesión de práctica personal.",
+    "Entrenar la atención consciente, documentar experiencias y pedir comentarios con consentimiento.",
+    "Combinar las sintonizaciones en un ritual simbólico y escribir una reflexión.",
+    "Integrar las nueve etapas y consultar las condiciones actuales para la evaluación final."
+  ]
+};
+
 const ui = {
-  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Each level has its own focus, settings and practice. Scroll through the full course without hidden tabs.", level: "Level", settings: "Attunements", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
-  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Для каждой ступени — собственная тема, настройки и практика. Всё сразу на странице, без скрытых вкладок.", level: "Ступень", settings: "Настройки ступени", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
-  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Cada etapa incluye tema, sintonizaciones y práctica. Todo visible sin pestañas ocultas.", level: "Etapa", settings: "Sintonizaciones", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
+  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
+  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
+  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
 } as const;
 
 export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
@@ -315,8 +370,14 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
         const n=i+1;
         const copy=stage[locale];
         const phase=Math.floor(i/3);
+    const photo = levelPhotos[i];
         return (
           <article className={"tantra-journey__level tantra-journey__level--phase-"+phase} id={"tantra-level-"+n} key={n} aria-labelledby={"tantra-heading-"+n}>
+            <figure className="tantra-journey__photo">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo.src} alt={photo.description} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+              <figcaption>{locale === "ru" ? "Фото из архива практик · иллюстрация темы" : locale === "es" ? "Foto del archivo · imagen ilustrativa" : "From our practice archive · illustrative photograph"}</figcaption>
+            </figure>
             <div className="tantra-journey__level-heading">
               <div className="tantra-journey__chapter">
                 <span>{c.level} {String(n).padStart(2,"0")} / 09</span>
@@ -325,9 +386,10 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
               <h3 id={"tantra-heading-"+n}>{copy.title}</h3>
               <p className="tantra-journey__subtitle">{copy.subtitle}</p>
             </div>
-            <div className="tantra-journey__symbol" aria-hidden="true"><span className="tantra-journey__symbol-center">{String(n).padStart(2,"0")}</span></div>
+            
             <div className="tantra-journey__details">
               <p className="tantra-journey__description">{copy.intro}</p>
+              <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
               <div className="tantra-journey__settings">
                 <h4>{c.settings}</h4>
                 <ul>{copy.att.map((att) => <li key={att}>{att}</li>)}</ul>
@@ -337,7 +399,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
                 <p>{copy.practice}</p>
               </div>
               <div className="tantra-journey__actions">
-                {n>1 ? <a href={"#tantra-level-"+(n-1)} aria-label={c.previous+" "+(n-1)}>← {c.previous}</a> : <Link href={"/"+locale+"/services"}>{c.contact} ↗</Link>}
+                {n>1 ? <a href={"#tantra-level-"+(n-1)} aria-label={c.previous+" "+(n-1)}>← {c.previous}</a> : <a href="https://t.me/AndyTherapist" target="_blank" rel="noreferrer">{c.contact} ↗</a>}
                 <a className="tantra-journey__next" href={n<9?"#tantra-level-"+(n+1):"#tantra-media"}>{n<9?c.next:c.final} →</a>
               </div>
             </div>

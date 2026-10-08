@@ -8,8 +8,9 @@ test("Tantra Reiki landing surfaces course map, media and full source in a clear
   assert.match(page, /id="tantra-levels"/);
   assert.match(page, /id="tantra-media"/);
   assert.match(page, /id="tantra-full-source"/);
-  assert.match(page, /tantraReikiPhases/);
-  assert.match(page, /full source text preserved/);
+  assert.match(page, /className="tantra-course-hero__visual"/);
+  assert.match(page, /className="tantra-course-hero__cta"/);
+  assert.match(page, /Ask for dates & format/);
 });
 
 test("Tantra Reiki keeps the full source text while moving media above it", async () => {
