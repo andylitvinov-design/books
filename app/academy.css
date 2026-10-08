@@ -2320,3 +2320,7 @@
   .tantra-journey__settings li { padding: 8px 0; font-size: 12px; }
   .tantra-journey__photo { aspect-ratio: 16 / 10; }
 }
+
+/* Preserve the explanatory stage paragraph for Spanish visitors when no
+   full author-sourced translation is yet available in that locale. */
+.tantra-journey__spanish-intro { max-width: 68ch; margin: 0; font-size: 15px; line-height: 1.7; color: #443c35; }
