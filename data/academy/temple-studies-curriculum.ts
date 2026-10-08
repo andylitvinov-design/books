@@ -302,7 +302,7 @@ export const templeStages: TempleStage[] = [
 export const templeLegacyAnchors: Record<string, string> = {
   mysteries: "greek",
   symbolic: "symbols",
-  applied: "application",
+  applied: "initiation",
   path: "application",
   traditions: "traditions",
   runes: "symbols",
