@@ -3,6 +3,7 @@ import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
 import { TempleStudies } from "@/components/temple-studies";
+import { templeLegacyAnchors } from "@/data/academy/temple-studies-curriculum";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
 import { YggdrasilModuleLandingPage } from "@/components/yggdrasil-module-landing";
 import { YggdrasilBasicCourseDescription } from "@/components/yggdrasil-basic-course-description";
@@ -66,7 +67,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
   const description = routeKey(slug) === "temple-studies"
-    ? locale === "ru" ? "Единая программа храмовых искусств: греческие и египетские мистерии, руны, стихии, Таро, архетипические практики и история школы." : locale === "es" ? "Temple Studies reúne los misterios antiguos, las runas, el Tarot y las prácticas arquetípicas en cuatro capítulos." : "One Temple Studies program combining ancient mysteries, runes and symbols, archetypal practice and the Academy teaching path."
+    ? locale === "ru" ? "Единый курс Temple Studies из семи этапов: основы мистерий, Греция, Египет, традиции мира, руны и Таро, инициации, архетипическая практика и интеграция." : locale === "es" ? "Temple Studies: siete etapas de misterios antiguos, runas, Tarot y práctica arquetípica integrada." : "Temple Studies: a seven-stage journey from ancient mysteries and runes to archetypal practice and personal integration."
     : routeKey(slug) === "reiki/yggdrasil/basic-course/description"
     ? locale === "ru" ? "Полная книга-методичка по базовому курсу Рейки Иггдрасиль I–V: все 38 страниц, настройки и упражнения." : locale === "es" ? "Libro completo del Curso Básico de Reiki Yggdrasil, niveles I–V, en ruso original, con índice; resumen en español." : "Complete original Russian Reiki Yggdrasil Basic Course book, Levels I–V, with all attunements and exercises; English overview."
     : courseModule
@@ -104,8 +105,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   }
 
   if (slug.length === 1 && slug[0] === "videos") return <AcademyHub locale={locale} view="videos" />;
-  const legacyTempleAnchors: Record<string, string> = { mysteries: "traditions", symbolic: "symbols", applied: "practice", path: "path", traditions: "traditions", runes: "symbols", elements: "symbols" };
-  if (slug.length === 1 && legacyTempleAnchors[slug[0]]) permanentRedirect("/" + locale + "/academy/temple-studies#" + legacyTempleAnchors[slug[0]]);
+  if (slug.length === 1 && templeLegacyAnchors[slug[0]]) permanentRedirect("/" + locale + "/academy/temple-studies#temple-" + templeLegacyAnchors[slug[0]]);
   if (slug.length === 1 && directionPath[slug[0]]) return <AcademyDirection locale={locale} direction={directionPath[slug[0]]} />;
   if (key === "history/faculties") { const history = findAcademyRecord("history", locale); if (!history) notFound(); return <AcademyRecordPage locale={locale} record={makeFacultiesRecord(history, locale)} />; }
 

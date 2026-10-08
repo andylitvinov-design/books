@@ -1,2 +1,457 @@
-.temple-shell{min-height:100vh;background:#f7f2eb;color:#302b27}.temple-inner{width:min(1160px,calc(100% - 40px));margin:0 auto;padding-bottom:100px}.temple-inner .library-back-link{display:inline-flex;margin:26px 0 20px}.temple-hero{display:grid;grid-template-columns:1.14fr .86fr;min-height:580px;background:#ede4d7;border:1px solid #e2d4c4;border-radius:28px;overflow:hidden}.temple-hero-copy{padding:clamp(34px,5vw,74px);align-self:center}.temple-hero-copy h1{font-family:var(--font-serif,Georgia,serif);font-size:clamp(42px,5.3vw,78px);font-weight:500;letter-spacing:-.035em;line-height:1.06;margin:16px 0 20px}.temple-hero-copy>p:not(.homeopathy-kicker){max-width:600px;font-size:17px;line-height:1.72;color:#564a42}.temple-hero-copy .temple-lead{font-size:clamp(21px,2.2vw,29px)!important;line-height:1.32!important;color:#382e28!important;font-family:var(--font-serif,Georgia,serif)}.temple-hero-image,.temple-track-media{position:relative;min-height:430px;background:#cfc2b3;overflow:hidden}.temple-hero-image img,.temple-track-media img{object-fit:cover;object-position:center}.temple-primary-cta{display:inline-flex;align-items:center;justify-content:center;gap:14px;padding:14px 22px;margin-top:22px;background:#604733;color:#fff!important;border-radius:10px;font-weight:650;text-decoration:none;transition:background .2s ease}.temple-primary-cta:hover{background:#3e3024}.temple-contents{scroll-margin-top:90px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:44px 0 52px;border-top:1px solid #cbbba9;border-bottom:1px solid #cbbba9}.temple-contents a{min-width:0;padding:24px 18px;color:#3e322a;text-decoration:none;display:flex;gap:12px;align-items:center;border-right:1px solid #dcd0c2}.temple-contents a:last-child{border-right:0}.temple-contents a>span{font-size:12px;letter-spacing:.12em;color:#a47659}.temple-contents a strong{font-family:var(--font-serif,Georgia,serif);font-weight:500;line-height:1.25}.temple-contents a svg{flex-shrink:0;margin-left:auto;color:#957458}.temple-contents a:hover{background:#f0e7da}.temple-track{scroll-margin-top:96px;display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:start;padding:68px 0;border-bottom:1px solid #d6c9b9}.temple-track:first-of-type{padding-top:20px}.temple-track:nth-of-type(2n) .temple-track-media{order:2}.temple-track-media{border-radius:20px;min-height:min(620px,64vw);position:sticky;top:90px}.temple-track-media>span{position:absolute;bottom:24px;left:24px;background:rgba(42,32,25,.72);color:white;border-radius:999px;padding:9px 16px;font-size:13px;letter-spacing:.16em}.temple-track-body{padding:12px 0 20px}.temple-track-body h2{font-family:var(--font-serif,Georgia,serif);font-weight:500;letter-spacing:-.025em;font-size:clamp(32px,3.8vw,50px);line-height:1.1;margin:15px 0 12px}.temple-track-subtitle{font-family:var(--font-serif,Georgia,serif);font-size:24px;color:#85644d!important;margin-bottom:22px!important}.temple-track-body>p:not(.homeopathy-kicker){font-size:16px;line-height:1.72;color:#5d5249}.temple-chapter-list{list-style:none;padding:0;margin:32px 0 0}.temple-chapter-list>li{display:grid;grid-template-columns:36px minmax(0,1fr);gap:14px;padding:20px 0;border-top:1px solid #d7c9ba}.temple-chapter-list>li>span{color:#956d50;font-size:13px;letter-spacing:.12em;padding-top:4px}.temple-chapter-list h3{font-size:19px;font-weight:650;line-height:1.3;margin:0 0 7px}.temple-chapter-list p{font-size:15px;line-height:1.65;color:#60554d;margin:0}.temple-sources{border-top:1px solid #d7c9ba;margin-top:4px;padding:18px 0 0}.temple-sources summary{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:650;color:#654732;line-height:1.5}.temple-sources summary:hover{text-decoration:underline}.temple-sources ul{list-style:none;padding:12px 0 0 28px;margin:0}.temple-sources li{border-bottom:1px solid #e2d8ce}.temple-sources li a{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 0;font-size:15px;line-height:1.45;color:#45372e;text-decoration:none}.temple-sources li a:hover{text-decoration:underline}.temple-sources li svg{flex-shrink:0}.temple-source-note{display:flex;align-items:flex-start;gap:8px;font-size:13px!important;color:#857367!important;margin-top:18px}.temple-source-note svg{flex-shrink:0;margin-top:3px}.temple-finish{max-width:740px;text-align:center;margin:72px auto 0;padding:60px 32px;border-radius:24px;background:#eae0d3}.temple-finish>svg{color:#986d4c}.temple-finish h2{font-size:clamp(28px,3vw,42px);font-family:var(--font-serif,Georgia,serif);font-weight:500;margin:18px 0}.temple-finish p{font-size:17px;line-height:1.65;color:#615449}.temple-finish small{display:block;font-size:12px;line-height:1.6;color:#76695e;margin:24px auto 0;max-width:470px}.temple-back{display:block;margin:23px auto 0;color:#604733;font-weight:600}.temple-primary-cta:focus-visible,.temple-contents a:focus-visible,.temple-sources a:focus-visible{outline:3px solid #82654c;outline-offset:3px}@media(max-width:950px){.temple-hero{grid-template-columns:1fr}.temple-hero-image{min-height:320px;max-height:430px;order:-1}.temple-track{gap:26px}.temple-contents{grid-template-columns:repeat(2,minmax(0,1fr))}.temple-contents a:nth-child(2){border-right:0}.temple-contents a:nth-child(-n+2){border-bottom:1px solid #dcd0c2}}@media(max-width:700px){.temple-inner{width:min(100% - 26px,560px)}.temple-hero{border-radius:20px}.temple-hero-copy{padding:28px 24px 34px}.temple-hero-copy h1{font-size:clamp(38px,10vw,52px)}.temple-hero-copy>p:not(.homeopathy-kicker){font-size:15px;line-height:1.65}.temple-hero-image{min-height:220px}.temple-contents{margin:26px 0 8px;grid-template-columns:1fr}.temple-contents a{padding:16px 12px;border-right:0!important;border-bottom:1px solid #dcd0c2}.temple-contents a:last-child{border-bottom:0}.temple-track,.temple-track:nth-of-type(2n){display:flex;flex-direction:column;gap:0;padding:38px 0}.temple-track-media,.temple-track:nth-of-type(2n) .temple-track-media{position:relative;order:0;top:auto;min-height:270px;width:100%;border-radius:16px}.temple-track-body{padding:25px 5px 0}.temple-track-body h2{font-size:34px}.temple-track-subtitle{font-size:21px}.temple-chapter-list{margin-top:22px}.temple-finish{margin-top:46px;padding:42px 22px}.temple-primary-cta{width:100%;font-size:15px}}
-.academy-archive-nav{width:min(1180px,calc(100% - 32px));margin:28px auto 16px;text-align:right}.academy-archive-nav a{color:#6c5849;text-decoration:underline;text-underline-offset:4px;font-size:14px}
+/* Temple Studies: one course, with the same left navigation contract as Reiki Yggdrasil. */
+.temple-shell {
+  min-height: 100vh;
+  background: #f7f2eb;
+  color: #332b25;
+}
+.temple-inner {
+  width: min(1500px, calc(100% - 64px));
+  margin: 0 auto;
+  padding: 0 0 110px;
+}
+.temple-inner > .library-back-link {
+  display: inline-flex;
+  margin: 20px 0 18px;
+}
+.temple-course-layout {
+  display: grid;
+  grid-template-columns: minmax(242px, 270px) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(20px, 3vw, 40px);
+}
+.temple-course-layout > .reiki-course-side-nav {
+  top: 104px;
+  border-radius: 14px;
+  max-height: min(calc(100vh - 122px), 760px);
+  box-shadow: 0 14px 34px rgba(72, 53, 38, .075);
+}
+.temple-course-layout .reiki-course-side-nav__header {
+  padding: 20px 18px 18px;
+}
+.temple-course-layout .reiki-course-side-nav__header strong {
+  font-size: 24px;
+}
+.temple-course-layout .reiki-course-side-nav__items {
+  gap: 3px;
+  padding: 10px;
+}
+.temple-course-layout .reiki-course-side-nav__item {
+  min-height: 53px;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+}
+.temple-course-layout .reiki-course-side-nav__item > em {
+  overflow: visible;
+  white-space: normal;
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+}
+.temple-course-content {
+  min-width: 0;
+}
+.temple-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(220px, .82fr);
+  min-height: 470px;
+  background: #fdfaf5;
+  border: 1px solid #e1d4c4;
+  border-radius: 22px;
+  overflow: hidden;
+}
+.temple-hero-copy {
+  padding: clamp(26px, 4vw, 54px);
+  align-self: center;
+}
+.temple-hero h1 {
+  margin: 13px 0 16px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: clamp(42px, 4.5vw, 68px);
+  font-weight: 500;
+  letter-spacing: -.035em;
+  line-height: 1.03;
+  color: #352a24;
+}
+.temple-hero-copy > p:not(.homeopathy-kicker) {
+  color: #625348;
+  font-size: 16px;
+  line-height: 1.68;
+  margin: 0 0 12px;
+}
+.temple-hero-copy .temple-lead {
+  font-family: var(--font-serif, Georgia, serif);
+  color: #3d2e26 !important;
+  font-size: clamp(21px, 2vw, 28px) !important;
+  line-height: 1.28 !important;
+  margin-bottom: 18px !important;
+}
+.temple-hero-image {
+  position: relative;
+  min-height: 100%;
+  background: #dccfc0;
+}
+.temple-hero-image img,
+.temple-stage-cover img {
+  object-fit: cover;
+}
+.temple-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-top: 22px;
+}
+.temple-hero-actions > span {
+  font-size: 13px;
+  color: #86694f;
+  letter-spacing: .02em;
+}
+.temple-primary-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 14px 21px;
+  background: #644c3b;
+  color: #fff !important;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: background .15s ease;
+}
+.temple-primary-cta:hover { background: #493529; }
+.temple-stage-flow {
+  display: grid;
+  gap: 48px;
+  margin-top: 40px;
+}
+.temple-stage {
+  position: relative;
+  min-width: 0;
+  scroll-margin-top: 105px;
+  overflow: hidden;
+  border: 1px solid #e1d3c3;
+  border-radius: 22px;
+  background: #fffcf8;
+  box-shadow: 0 12px 33px rgba(68, 50, 31, .035);
+}
+.temple-anchor-alias {
+  position: absolute;
+  top: 0;
+  scroll-margin-top: 105px;
+}
+.temple-stage-cover {
+  position: relative;
+  min-height: clamp(240px, 32vw, 390px);
+  background: #d8cbb9;
+}
+.temple-stage-cover::after {
+  content: "";
+  position: absolute;
+  inset: 45% 0 0;
+  background: linear-gradient(transparent, rgba(30, 24, 21, .35));
+  pointer-events: none;
+}
+.temple-stage-cover-label {
+  position: absolute;
+  z-index: 1;
+  left: clamp(20px, 3.2vw, 46px);
+  bottom: 22px;
+  color: #fff;
+  letter-spacing: .14em;
+  font-size: 13px;
+  font-weight: 700;
+}
+.temple-stage-reading {
+  padding: clamp(26px, 4vw, 58px);
+}
+.temple-stage-heading {
+  max-width: 830px;
+}
+.temple-stage h2 {
+  margin: 14px 0 8px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-weight: 500;
+  font-size: clamp(32px, 3.5vw, 50px);
+  line-height: 1.12;
+  letter-spacing: -.025em;
+  color: #33291f;
+}
+.temple-stage-subtitle {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: clamp(20px, 2.2vw, 26px);
+  line-height: 1.36;
+  color: #8d6a4f;
+  margin: 10px 0 20px;
+}
+.temple-stage-intro {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #5c5046;
+  margin: 0 0 26px;
+}
+.temple-small-heading {
+  margin: 0;
+  padding: 22px 0 0;
+  border-top: 1px solid #e5d8ca;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: .13em;
+  font-weight: 700;
+  color: #865b40;
+}
+.temple-lessons {
+  list-style: none;
+  margin: 12px 0 22px;
+  padding: 0;
+}
+.temple-lessons li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 14px;
+  padding: 20px 0;
+  border-bottom: 1px solid #e9ded2;
+}
+.temple-lessons li > span {
+  padding-top: 2px;
+  color: #a17e64;
+  font-size: 13px;
+  font-weight: 700;
+}
+.temple-lessons h4 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  line-height: 1.3;
+  color: #33281e;
+  font-weight: 650;
+}
+.temple-lessons p {
+  margin: 0;
+  color: #64574d;
+  line-height: 1.7;
+  font-size: 15px;
+}
+.temple-practice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 25px 0 30px;
+}
+.temple-practice > div {
+  border-radius: 14px;
+  padding: 22px 24px;
+  background: #f4ebdf;
+}
+.temple-practice > div:last-child {
+  background: #eee7db;
+}
+.temple-practice-label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #79553f;
+}
+.temple-practice p {
+  margin: 0;
+  color: #534439;
+  font-size: 15px;
+  line-height: 1.67;
+}
+.temple-sources {
+  border-top: 1px solid #e2d6c8;
+  padding: 18px 0 0;
+}
+.temple-sources summary {
+  cursor: pointer;
+  color: #74513c;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  line-height: 1.45;
+  font-size: 15px;
+  font-weight: 700;
+}
+.temple-sources summary:hover { text-decoration: underline; }
+.temple-sources ul {
+  list-style: none;
+  padding: 6px 0 0 28px;
+  margin: 0;
+}
+.temple-sources li {
+  border-bottom: 1px solid #eaded2;
+}
+.temple-sources li a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  font-size: 14px;
+  color: #584234;
+  text-decoration: none;
+}
+.temple-sources li a:hover { text-decoration: underline; }
+.temple-sources li svg { flex-shrink: 0; }
+.temple-next-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 25px;
+  padding: 18px 21px;
+  border-radius: 12px;
+  background: #e9ddcd;
+  color: #55412f;
+  text-decoration: none;
+}
+.temple-next-stage:hover { background: #e0d0ba; }
+.temple-next-stage span {
+  display: block;
+  color: #795e49;
+  font-size: 12px;
+}
+.temple-next-stage strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 17px;
+  color: #3a2a20;
+  line-height: 1.3;
+}
+.temple-next-stage svg { flex-shrink: 0; }
+.temple-finish {
+  margin: 6px 0 0;
+  padding: 55px clamp(24px, 5vw, 64px);
+  text-align: center;
+  border-radius: 22px;
+  background: #eee3d6;
+}
+.temple-finish > svg { color: #9b7455; }
+.temple-finish h2 {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: clamp(30px, 3vw, 44px);
+  font-weight: 500;
+  margin: 15px 0;
+}
+.temple-finish > p {
+  margin: 0 auto;
+  max-width: 650px;
+  line-height: 1.7;
+  color: #5a4a3e;
+}
+.temple-finish .temple-primary-cta { margin: 23px auto; }
+.temple-archive-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 8px 0 25px;
+}
+.temple-archive-footer a {
+  color: #624c3b;
+  text-underline-offset: 4px;
+}
+.temple-finish .temple-caveat {
+  margin-top: 12px;
+  color: #77695c;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.temple-shell a:focus-visible,
+.temple-shell summary:focus-visible {
+  outline: 3px solid #927459;
+  outline-offset: 4px;
+}
+.academy-archive-nav {
+  width: min(1180px, calc(100% - 32px));
+  margin: 28px auto 16px;
+  text-align: right;
+}
+.academy-archive-nav a {
+  color: #6c5849;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: 14px;
+}
+@media (max-width: 1100px) {
+  .temple-inner { width: min(100% - 36px, 1380px); }
+  .temple-course-layout { grid-template-columns: minmax(205px, 230px) minmax(0,1fr); gap: 18px; }
+  .temple-hero { grid-template-columns: minmax(0, 1fr) 32%; }
+  .temple-hero-copy { padding: 27px; }
+  .temple-stage-reading { padding: 30px; }
+}
+@media (max-width: 920px) {
+  .temple-inner { width: min(100% - 28px, 780px); }
+  .temple-course-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .temple-course-layout > .reiki-course-side-nav {
+    position: sticky;
+    top: 0;
+    z-index: 18;
+    max-height: none;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  .temple-course-layout .reiki-course-side-nav__header {
+    display: flex;
+    padding: 9px 12px 7px;
+    gap: 9px;
+  }
+  .temple-course-layout .reiki-course-side-nav__header strong { font-size: 16px; }
+  .temple-course-layout .reiki-course-side-nav__items {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 7px;
+    padding: 6px 10px 10px;
+    scroll-snap-type: x proximity;
+  }
+  .temple-course-layout .reiki-course-side-nav__item {
+    flex: 0 0 auto;
+    max-width: 210px;
+    min-height: 39px;
+    grid-template-columns: 27px auto;
+    padding: 6px 11px;
+    border: 1px solid #e0d3c4;
+    border-radius: 999px;
+    background: #fffaf4;
+    scroll-snap-align: start;
+  }
+  .temple-course-layout .reiki-course-side-nav__item.is-active {
+    background: #ecdfd1;
+    border-color: #977057;
+  }
+  .temple-course-layout .reiki-course-side-nav__item > em {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 12px;
+  }
+  .temple-stage, .temple-anchor-alias { scroll-margin-top: 125px; }
+}
+@media (max-width: 700px) {
+  .temple-hero { display: flex; flex-direction: column; min-height: 0; }
+  .temple-hero-image { min-height: 220px; order: -1; }
+  .temple-hero-copy { padding: 27px 23px 30px; }
+  .temple-hero h1 { font-size: clamp(37px, 9vw, 50px); }
+  .temple-hero-copy > p:not(.homeopathy-kicker) { font-size: 15px; }
+  .temple-stage-flow { gap: 25px; margin-top: 23px; }
+  .temple-stage { border-radius: 16px; }
+  .temple-stage-cover { min-height: 235px; }
+  .temple-stage-reading { padding: 24px 20px 26px; }
+  .temple-stage h2 { font-size: clamp(30px, 8vw, 40px); }
+  .temple-stage-intro { font-size: 15px; line-height: 1.7; }
+  .temple-lessons h4 { font-size: 18px; }
+  .temple-lessons li { grid-template-columns: 30px minmax(0, 1fr); gap: 7px; }
+  .temple-practice { grid-template-columns: 1fr; gap: 10px; }
+  .temple-practice > div { padding: 20px; }
+  .temple-hero-actions { align-items: stretch; flex-direction: column; }
+  .temple-primary-cta { width: 100%; }
+  .temple-finish { padding: 42px 22px; border-radius: 16px; }
+}
