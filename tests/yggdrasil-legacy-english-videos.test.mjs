@@ -29,13 +29,17 @@ test("English attunement videos are mapped to corresponding Reiki Yggdrasil step
   assert.match(source, /"RY-L02-S03"[\s\S]*Nx8DwWk27VY/);
 });
 
-test("English course pages visibly label Russian archive videos", async () => {
+test("English course pages label and collapse Russian archive videos by default", async () => {
   const component = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
   assert.match(component, /RU · Русский/);
   assert.match(component, /Russian archive videos/);
   assert.match(component, /These source lectures are in Russian/);
   assert.match(component, /yggdrasilEnglishStepVideos/);
-  assert.match(component, /yggdrasil-video-language-group--secondary/);
+  assert.match(component, /locale !== "ru" && russianVideos.length/);
+  assert.match(component, /<details className="yggdrasil-russian-archive">/);
+  assert.match(component, /<summary>/);
+  assert.match(component, /yggdrasil-russian-archive__count/);
+  assert.doesNotMatch(component, /<details className="yggdrasil-russian-archive" open>/);
 });
 
 test("English video guide is grouped by topics and placed at the bottom of program and course landings", async () => {
