@@ -118,7 +118,7 @@ test('public header banner links only to the free situation assessment on deskto
   assert.match(strip, /Evaluación inicial gratuita/)
   assert.match(strip, /data-monitor-action="free-situation-review"/)
   assert.match(strip, /\/en\/services\/free-situation-review/)
-  assert.match(strip, /\/${locale}\/services\/free-situation-review/)
+  assert.ok(strip.includes('${locale}/services/free-situation-review'))
   assert.equal((strip.match(/<Link\b/g) ?? []).length, 1)
   assert.doesNotMatch(strip, /\/wu-xing|\/client#cabinet-tests/)
   assert.match(styles, /\.mind-body-monitor-strip__inner\s*\{[^}]*border-radius:\s*16px/)
