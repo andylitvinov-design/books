@@ -17,3 +17,26 @@
 .axisRing button{background:rgba(255,250,243,.91);border-color:rgba(211,182,150,.83);box-shadow:0 3px 12px rgba(91,64,41,.09);backdrop-filter:blur(4px)}
 .variantToggle button{background:rgba(255,250,243,.75)}
 @media(max-width:760px){.visual{border-radius:20px}.modelStage{min-height:320px}.portraitSource{width:1386px!important;height:780px!important;left:calc(50% - 1110px)!important;top:calc(50% - 390px)!important}}
+
+/* Place the approved imagery on the first screen, beside the filters and
+   recommendations, rather than below the whole filter toolbar. */
+@media(min-width:980px){
+  .explorer{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(340px,1fr);column-gap:26px;align-items:start}
+  .workspace{display:contents}
+  .header{grid-column:1;grid-row:1}
+  .availability{grid-column:1;grid-row:2;margin:18px 0 8px}
+  .toolbar{grid-column:1;grid-row:3}
+  .database{grid-column:1;grid-row:4;min-width:0;margin-top:18px}
+  .visual{grid-column:2;grid-row:1 / span 4;position:sticky;top:20px}
+}
+@media(min-width:761px) and (max-width:979px){
+  .workspace{grid-template-columns:1fr}
+  .visual{position:static}
+}
+.relevance{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.relevance strong{display:grid;place-items:center;flex:none;width:61px;height:61px;border-radius:50%;font-size:1rem;color:var(--teal);background:radial-gradient(closest-side,#fffaf2 72%,transparent 74%),conic-gradient(var(--teal) var(--match,0%),#e3d7c8 0)}
+.relevance span{font-size:.66rem;line-height:1.2}
+@media(max-width:760px){
+  .relevance{flex-direction:row;justify-content:flex-start}
+  .relevance strong{width:43px;height:43px;font-size:.78rem}
+}
