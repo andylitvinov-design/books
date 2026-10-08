@@ -240,7 +240,9 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
         </section>
 
         {englishVideos.length || russianVideos.length ? (
-          <section className="yggdrasil-step-video-library" aria-label={text.videos}>
+          <details className={visualStyles.videoDetails}>
+            <summary>{text.videos} · {englishVideos.length + russianVideos.length}</summary>
+            <section className="yggdrasil-step-video-library" aria-label={text.videos}>
             {locale === "ru" ? (
               <>
                 {russianVideos.length ? (
@@ -305,7 +307,8 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
                 ) : null}
               </>
             )}
-          </section>
+            </section>
+          </details>
         ) : null}
 
         <details className="yggdrasil-step-more">
