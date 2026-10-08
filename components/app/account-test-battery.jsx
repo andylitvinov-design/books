@@ -226,7 +226,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
         <h2>{c.conflictTitle}</h2><p>{c.conflict}</p>
         <div>
           <button type="button" onClick={() => {
-            try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch {}
+            try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browser storage may be disabled. */ }
             setConflict(null)
             setPlan(data.activeTestPlan)
           }}>{c.keep}</button>
