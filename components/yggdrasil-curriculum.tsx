@@ -1,4 +1,5 @@
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { ChevronDown, Compass, Eye, Flame, Flower2, HeartPulse, MoonStar, Shield, Sparkles, Sun, WandSparkles } from "lucide-react";
 import visualStyles from "./yggdrasil-curriculum-visual.module.css";
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import en1 from "@/data/academy/yggdrasil-en-settings-l1.json";
@@ -169,6 +170,20 @@ const basicLevelIntroductions: Record<PublicLocale, Record<number, string>> = {
   },
 };
 
+function attunementGlyph(id: string) {
+  const key = id.split("-").at(-1) ?? "";
+  const stepId = id.replace(/-A\d+$/, "");
+  if (stepId === "RY-L01-S01") {
+    if (key === "A01") return HeartPulse;
+    if (key === "A02") return Eye;
+    if (key === "A03") return Shield;
+    if (key === "A04") return Compass;
+  }
+  const symbols = [WandSparkles, Eye, Shield, Compass, MoonStar, Flame, Flower2, Sun, Sparkles];
+  const index = [...id].reduce((total, char) => total + char.charCodeAt(0), 0) % symbols.length;
+  return symbols[index];
+}
+
 function StepDetail({ locale, level, step }: { locale: PublicLocale; level: CurriculumLevel; step: CurriculumStep }) {
   const text = copy[locale];
   const sourceSummary = yggdrasilStepSummary(step.id, locale);
@@ -179,27 +194,18 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
   const labels = {
     en: {
       about: "About this step",
-      attunements: "Attunements in this step",
-      full: "Full attunement descriptions",
-      fullLead: "Open only if you want the detailed source wording for every attunement.",
       englishVideos: "English videos for this step",
       russianVideos: "Russian archive videos",
       russianNote: "These source lectures are in Russian. They are kept here because they match this step in the original Reiki Yggdrasil video archive.",
     },
     ru: {
       about: "О ступени",
-      attunements: "Настройки этой ступени",
-      full: "Полные описания настроек",
-      fullLead: "Открывайте, если нужны подробные исходные описания каждой настройки.",
       englishVideos: "Видео на английском",
       russianVideos: "Видео на русском",
       russianNote: "Русские видеолекции из исходного архива, привязанные к этой ступени.",
     },
     es: {
       about: "Sobre esta etapa",
-      attunements: "Sintonizaciones de esta etapa",
-      full: "Descripciones completas de las sintonizaciones",
-      fullLead: "Ábrelo solo si necesitas el texto detallado de cada sintonización.",
       englishVideos: "Videos en inglés",
       russianVideos: "Videos de archivo en ruso",
       russianNote: "Estas videoclases históricas están en ruso y corresponden a esta etapa.",
@@ -225,116 +231,79 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
       <div className={visualStyles.stepBody} lang={locale === "ru" ? "ru" : locale === "es" ? "es" : "en"}>
         <p className={visualStyles.stepIntroduction}>{shortIntroduction}</p>
 
-        <section className="yggdrasil-attunement-summary">
-          <div className="yggdrasil-section-heading">
-            <h4>{labels.attunements}</h4>
+        <section className="yggdrasil-settings-section" aria-labelledby={`attunements-${step.id}`}>
+          <div className="yggdrasil-section-heading yggdrasil-settings-heading">
+            <h4 id={`attunements-${step.id}`}>{text.settings}</h4>
             <span>{step.settings.length}</span>
           </div>
-          <div className={visualStyles.attunementChips}>
-            {step.settings.slice(0, 4).map((setting) => {
+          <div className="yggdrasil-settings-list">
+            {step.settings.map((setting) => {
               const localized = localizedSetting(locale, setting);
-              return <span key={setting.id}>{localized.title}</span>;
+              const Glyph = attunementGlyph(setting.id);
+              return (
+                <article className="yggdrasil-setting-row" key={setting.id}>
+                  <span className="yggdrasil-setting-glyph" aria-hidden="true"><Glyph size={29} strokeWidth={1.55} /></span>
+                  <div className="yggdrasil-setting-row__text">
+                    <h5>{localized.title}</h5>
+                    <p>{localized.description}</p>
+                  </div>
+                </article>
+              );
             })}
-            {step.settings.length > 4 ? <span className={visualStyles.moreChips}>+{step.settings.length - 4}</span> : null}
           </div>
         </section>
 
         {englishVideos.length || russianVideos.length ? (
-          <details className={visualStyles.videoDetails}>
-            <summary>{text.videos} · {englishVideos.length + russianVideos.length}</summary>
-            <section className="yggdrasil-step-video-library" aria-label={text.videos}>
-            {locale === "ru" ? (
-              <>
-                {russianVideos.length ? (
-                  <div className="yggdrasil-video-language-group">
-                    <div className="yggdrasil-video-language-heading">
-                      <div><span className="yggdrasil-language-badge yggdrasil-language-badge--ru">RU · Русский</span><h4>{labels.russianVideos}</h4></div>
-                      <small>{russianVideos.length}</small>
-                    </div>
-                    <div className="yggdrasil-video-grid">
-                      {russianVideos.map((video) => (
-                        <AcademyVideoPlayer
-                          key={video.youtubeId}
-                          youtubeId={video.youtubeId!}
-                          title={"RU · " + video.title + (video.label ? " — " + video.label : "")}
-                        />
-                      ))}
-                    </div>
+          <section className="yggdrasil-step-video-library" aria-label={text.videos}>
+            {locale === "ru" && russianVideos.length ? (
+              <div className="yggdrasil-video-language-group">
+                <div className="yggdrasil-video-language-heading">
+                  <div><span className="yggdrasil-language-badge yggdrasil-language-badge--ru">RU · Русский</span><h4>{labels.russianVideos}</h4></div>
+                  <small>{russianVideos.length}</small>
+                </div>
+                <div className="yggdrasil-video-grid">
+                  {russianVideos.map((video) => <AcademyVideoPlayer key={video.youtubeId} youtubeId={video.youtubeId!} title={"RU · " + video.title + (video.label ? " — " + video.label : "")} />)}
+                </div>
+              </div>
+            ) : null}
+            {englishVideos.length ? (
+              <div className="yggdrasil-video-language-group">
+                <div className="yggdrasil-video-language-heading">
+                  <div><span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span><h4>{labels.englishVideos}</h4></div>
+                  <small>{englishVideos.length}</small>
+                </div>
+                <div className="yggdrasil-video-grid">
+                  {englishVideos.map((video) => <AcademyVideoPlayer key={video.youtubeId} youtubeId={video.youtubeId} title={"EN · " + video.title} />)}
+                </div>
+              </div>
+            ) : null}
+            {locale !== "ru" && russianVideos.length ? (
+              <details className="yggdrasil-russian-archive">
+                <summary>
+                  <span className="yggdrasil-language-badge yggdrasil-language-badge--ru">RU · Русский</span>
+                  <span className="yggdrasil-russian-archive__copy">
+                    <strong>{labels.russianVideos}</strong>
+                    <small>{labels.russianNote}</small>
+                  </span>
+                  <span className="yggdrasil-russian-archive__count">{russianVideos.length}</span>
+                  <ChevronDown className="yggdrasil-russian-archive__chevron" size={21} aria-hidden="true" />
+                </summary>
+                <div className="yggdrasil-russian-archive__contents">
+                  <div className="yggdrasil-video-grid">
+                    {russianVideos.map((video) => (
+                      <AcademyVideoPlayer
+                        key={video.youtubeId}
+                        youtubeId={video.youtubeId!}
+                        title={"RU · Русский — " + step.title.en + (video.label ? " — " + video.label : "")}
+                      />
+                    ))}
                   </div>
-                ) : null}
-                {englishVideos.length ? (
-                  <div className="yggdrasil-video-language-group">
-                    <div className="yggdrasil-video-language-heading">
-                      <div><span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span><h4>{labels.englishVideos}</h4></div>
-                      <small>{englishVideos.length}</small>
-                    </div>
-                    <div className="yggdrasil-video-grid">
-                      {englishVideos.map((video) => <AcademyVideoPlayer key={video.youtubeId} youtubeId={video.youtubeId} title={"EN · " + video.title} />)}
-                    </div>
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <>
-                {englishVideos.length ? (
-                  <div className="yggdrasil-video-language-group">
-                    <div className="yggdrasil-video-language-heading">
-                      <div><span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span><h4>{labels.englishVideos}</h4></div>
-                      <small>{englishVideos.length}</small>
-                    </div>
-                    <div className="yggdrasil-video-grid">
-                      {englishVideos.map((video) => <AcademyVideoPlayer key={video.youtubeId} youtubeId={video.youtubeId} title={"EN · " + video.title} />)}
-                    </div>
-                  </div>
-                ) : null}
-                {russianVideos.length ? (
-                  <div className="yggdrasil-video-language-group yggdrasil-video-language-group--secondary">
-                    <div className="yggdrasil-video-language-heading">
-                      <div><span className="yggdrasil-language-badge yggdrasil-language-badge--ru">RU · Русский</span><h4>{labels.russianVideos}</h4></div>
-                      <small>{russianVideos.length}</small>
-                    </div>
-                    <p className="yggdrasil-video-language-note">{labels.russianNote}</p>
-                    <div className="yggdrasil-video-grid">
-                      {russianVideos.map((video) => (
-                        <AcademyVideoPlayer
-                          key={video.youtubeId}
-                          youtubeId={video.youtubeId!}
-                          title={"RU · Русский — " + step.title.en + (video.label ? " — " + video.label : "")}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </>
-            )}
-            </section>
-          </details>
+                </div>
+              </details>
+            ) : null}
+          </section>
         ) : null}
 
-        <details className="yggdrasil-step-more">
-          <summary>
-            <span>{labels.full}</span>
-            <small>{labels.fullLead}</small>
-          </summary>
-          <div className="yggdrasil-step-more__body">
-            <section className="yggdrasil-settings-section">
-              <div className="yggdrasil-section-heading"><h4>{text.settings}</h4><span>{step.settings.length}</span></div>
-              <div className="yggdrasil-settings-grid">
-                {step.settings.map((setting) => {
-                  const localized = localizedSetting(locale, setting);
-                  return (
-                    <article className="yggdrasil-setting-card" key={setting.id}>
-                      <h5>{localized.title}</h5>
-                      <p>{localized.description}</p>
-                      <small>{localized.effect}</small>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
-
-          </div>
-        </details>
       </div>
       </div>
     </article>

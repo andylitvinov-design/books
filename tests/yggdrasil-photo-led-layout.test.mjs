@@ -18,7 +18,8 @@ test("every Basic Course stage has its own original PsiTrends photo", async () =
 
 test("visual curriculum retains complete source content and language-specific videos", async () => {
   const component = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
-  assert.match(component, /step\.settings\.slice\(0, 4\)/);
+  assert.match(component, /className="yggdrasil-settings-list"/);
+  assert.doesNotMatch(component, /step\.settings\.slice\(0, 4\)/);
   assert.match(component, /step\.settings\.map\(\(setting\)/);
   assert.match(component, /yggdrasilStepSummary/);
   assert.match(component, /russianVideos/);
