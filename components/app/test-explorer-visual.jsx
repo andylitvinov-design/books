@@ -21,7 +21,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const label = (axis) => (es ? spanishAxes[axis] : null) || TEST_EXPLORER_AXIS_LABELS[axis]?.[locale] || TEST_EXPLORER_AXIS_LABELS[axis]?.en || axis
   const measuredAxes = portrait ? PORTRAIT_AXES.filter((axis) => portrait.axes?.[axis] != null) : []
   const suggestedRays = portrait ? [...measuredAxes, ...PORTRAIT_AXES.filter((axis) => !measuredAxes.includes(axis))].slice(0, 8) : []
-  const visibleRays = (chosenRays === null ? suggestedRays : chosenRays.filter((axis) => PORTRAIT_AXES.includes(axis))).slice(0, 10)
+  const visibleRays = (chosenRays === null ? suggestedRays : chosenRays.filter((axis) => PORTRAIT_AXES.includes(axis))).slice(0, 10).sort((a, b) => PORTRAIT_AXES.indexOf(a) - PORTRAIT_AXES.indexOf(b))
   const rays = visibleRays.map((axis, index) => {
     // Stable positions: selecting another ray must never rotate the remaining axes.
     const angle = (-Math.PI / 2) + PORTRAIT_AXES.indexOf(axis) * (Math.PI * 2 / PORTRAIT_AXES.length)
