@@ -43,7 +43,8 @@ const copy = {
     cabinetAction: "Открыть кабинет",
     videoKicker: "Короткое знакомство",
     videoTitle: "О Holistic House за полминуты",
-    aboutKicker: "О специалисте",
+    aboutKicker: "Лично об Андрее",
+    aboutIntro: "Я работаю с индивидуальными и групповыми практиками с 2002 года. Образы, системные расстановки и архетипические подходы помогают нам внимательнее исследовать ваш запрос. Принимаю запросы онлайн и в Торонто.",
     aboutAction: "Подробнее об Андрее",
     footer: "Индивидуальная работа, осознанные практики и пространство для внутреннего развития.",
   },
@@ -74,7 +75,8 @@ const copy = {
     cabinetAction: "Open Cabinet",
     videoKicker: "A short introduction",
     videoTitle: "Holistic House in half a minute",
-    aboutKicker: "About the practitioner",
+    aboutKicker: "Meet your practitioner",
+    aboutIntro: "I have been facilitating personal and group development since 2002. My work draws on guided imagery, systemic constellations and archetypal approaches to explore your individual question. I offer sessions in Toronto and online.",
     aboutAction: "More about Andrey",
     footer: "Individual work, thoughtful practice, and a space for inner development.",
   },
@@ -207,7 +209,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <h2 id="service-home-about-title">Andrey Litvinov</h2>
         </div>
         <div>
-          <p>{entry.practitioner.text}</p>
+          <p>{text.aboutIntro}</p>
           <AcquisitionEventLink href={entry.practitioner.href} event="practitioner_view">
             {text.aboutAction}<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
