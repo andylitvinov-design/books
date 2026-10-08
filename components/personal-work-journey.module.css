@@ -51,3 +51,13 @@
 .full .note { max-width:1030px; margin:16px 0 0; font-size:12px; line-height:1.65; color:#74675c; }
 @media(max-width:980px) { .full .services {grid-template-columns:1fr;} .full .service {min-height:0; padding:27px; flex-direction:row; align-items:center;} .full .service>div:first-child {flex:1 1 auto;} .full .service>div:last-child {flex:0 0 280px;} .full .iconWrap {margin-bottom:15px;} }
 @media(max-width:767px) { .full {margin-block:38px 28px;} .full .intro h2 {font-size:clamp(34px,8.7vw,43px);} .full .intro>p:last-child {font-size:15px;} .full .services {gap:14px; margin-top:20px;} .full .service {padding:24px 21px; display:flex; flex-direction:column; align-items:stretch; gap:22px; border-radius:20px;} .full .iconWrap {width:48px;height:48px;margin-bottom:17px;} .full .focus {font-size:12px;} .full .service h3 {font-size:29px;} .full .description {font-size:15px;margin-top:13px;} .full .service>div:last-child {flex:auto;} .full .serviceLink {min-height:54px;} }
+
+/* The service directions are photographic editorial chapters, not icon-only cells. */
+.servicePhoto { position:relative; width:100%; aspect-ratio:16/9; border-radius:14px; overflow:hidden; background:#e7dfd3; }
+.servicePhoto img { object-fit:cover; object-position:center; }
+.compact .servicePhoto { aspect-ratio:16/8.5; }
+.full .servicePhoto { aspect-ratio:16/10; }
+.full .service { padding:13px 13px 22px; }
+.full .service > div:not(.servicePhoto) { padding-inline:12px; }
+@media(max-width:980px){ .full .service {display:flex;flex-direction:column;align-items:stretch;} .full .servicePhoto {aspect-ratio:16/7; } .full .service > div:last-child {flex:auto;} }
+@media(max-width:767px){ .servicePhoto,.compact .servicePhoto,.full .servicePhoto {aspect-ratio:16/9;} .full .service {padding:12px 12px 22px;} .full .service > div:not(.servicePhoto) {padding-inline:8px;} }
