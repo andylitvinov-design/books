@@ -1,412 +1,358 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUpRight, Check, ChevronDown, Compass, Flower2, HeartHandshake, Layers3, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { AcquisitionEventLink } from "@/components/acquisition-event-link";
-import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PageVideo } from "@/components/page-video";
-import { PersonalWorkJourney } from "@/components/personal-work-journey";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
-import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicService } from "@/lib/practitioners/public-types";
+import styles from "./services-landing.module.css";
 
-type PageProps = { params: Promise<{ locale: string }> };
+type Props = { params: Promise<{ locale: string }> };
+type DirectionId = "psychohomeopathy" | "imagery" | "constellations";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-// Production release marker: Wu Xing marketplace featured service.
 
-const copy = {
+const translations = {
   ru: {
-    title: "Индивидуальная работа в Торонто и онлайн — Holistic House",
-    description: "Гипнотерапия, системные и семейные расстановки, работа с решениями и Рейки в Holistic House.",
-    kicker: "Торонто и онлайн",
-    heading: "Индивидуальная работа",
-    lead: "Исследуйте повторяющиеся паттерны, отношения, важные решения и внутренние блоки в бережной индивидуальной работе.",
-    marketplaceCta: "Выбрать услугу",
-    freeReviewTitle: "Бесплатная диагностика ситуации",
-    freeReviewText: "Разбор вашей цели, бизнеса или личной проблемы: точка ступора, зона роста и возможный следующий шаг. Без обязательств продолжать работу.",
-    freeReviewAction: "Запросить бесплатный разбор",
-    cards: [
+    title: "Три направления индивидуальной работы — Holistic House",
+    meta: "Психогомеопатия, образная психотерапия, системные расстановки и архетипическая поддержка в Торонто и онлайн. Начните с бесплатной диагностики ситуации.",
+    eyebrow: "Индивидуальная работа · Торонто и онлайн",
+    heading: "Три пути к внутренней опоре и движению вперёд",
+    lead: "Когда не хватает сил, трудно понять себя или двигаться к цели, не нужно выбирать из десятка методов. Начнём с вашей ситуации и найдём подходящий формат работы.",
+    primary: "Записаться на бесплатную диагностику",
+    secondary: "Посмотреть 3 подхода",
+    free: "Бесплатно · без обязательств",
+    routeEyebrow: "Три направления · один понятный выбор",
+    routeTitle: "С чем вы приходите?",
+    routeText: "Это три самостоятельных направления, а не обязательные этапы. В каждом собраны близкие по задаче методы.",
+    freeTitle: "Начните с бесплатной диагностики ситуации",
+    freeText: "Проясним вашу проблему, цель или бизнес-вопрос, исследуем точку ступора и возможную зону роста. После разговора вы сами решите, нужна ли дальнейшая работа.",
+    freeSteps: ["Ваш запрос", "Точка ступора", "Возможный следующий шаг"],
+    freeAction: "Получить бесплатную диагностику",
+    servicesLabel: "Три направления личной работы",
+    services: [
       {
-        id: "business",
-        title: "Бизнес-расстановки",
-        subtitle: "Анализ перспектив бизнес-проектов",
-        text: "Системное исследование проекта: его перспектив, скрытых динамик, партнёрств, ролей, денег, ограничений и возможных следующих шагов. Это способ увидеть ситуацию шире и проверить решения через расстановочное поле.",
-        icon: BriefcaseBusiness,
-      },
-      {
-        id: "alchemy",
-        title: "Алхимия души / психогомеопатия",
-        subtitle: "Индивидуальная работа с внутренними состояниями",
-        text: "Авторский формат, объединяющий образную и системную работу с навигацией по поддерживающим средствам. Фокус — внутренние состояния, повторяющиеся паттерны, ресурсы и движение к более целостному состоянию.",
+        id: "psychohomeopathy" as const,
+        index: "01",
+        title: "Психогомеопатия",
+        headline: "Когда не хватает сил и тело сигнализирует о напряжении",
+        summary: "Усталость, бессилие, физические симптомы и психосоматические проявления. Исследуем эмоциональный фон, привычные реакции и то, что вы переживаете.",
+        outcome: "Фокус: личный ресурс, самочувствие и понимание связи переживаний с состоянием.",
+        specialties: ["Алхимия души / психогомеопатия", "Консультация по гомеопатии", "Внутренние состояния, ресурсы и психосоматика"],
+        action: "Подробнее о психогомеопатии",
+        target: "/services/andy-litvinov/homeopathy-consultation",
+        image: "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
+        alt: "Андрей рассказывает о личной работе и самочувствии",
         icon: Flower2,
+        note: "Гомеопатия не имеет надёжных доказательств эффективности лечения заболеваний. Не заменяет диагностику или лечение у врача.",
       },
       {
-        id: "archetypal",
-        title: "Архетипические расстановки",
-        subtitle: "Мистерии и инициации",
-        text: "Экспериментальная работа с архетипами, мифологическими образами, ритуальной структурой и трансперсональным полем — индивидуально или в группе.",
-        icon: Sparkles,
+        id: "imagery" as const,
+        index: "02",
+        title: "Образная психотерапия",
+        headline: "Когда хочется ясности, близости и внутренней устойчивости",
+        summary: "Грусть, одиночество, тревога, сложные отношения, потеря ориентиров. Через образы бессознательного и личные сессии исследуем ваши чувства, внутренние конфликты и опоры.",
+        outcome: "Фокус: лучше понимать себя, укреплять границы и находить собственное направление.",
+        specialties: ["Гипнотерапия и регрессионные техники", "Работа с внутренним ребёнком и частями личности", "Образы бессознательного и повторяющиеся сценарии"],
+        action: "Подробнее об образной терапии",
+        target: "/services/imagery-therapy",
+        image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+        alt: "Андрей рассказывает об образной работе",
+        icon: HeartHandshake,
+        note: "",
+      },
+      {
+        id: "constellations" as const,
+        index: "03",
+        title: "Расстановки и архетипическая поддержка",
+        headline: "Когда есть цель, но трудно увидеть путь к ней",
+        summary: "Личные и деловые решения, отношения, повторяющиеся сценарии и препятствия на пути к цели. Исследуем систему отношений, роли и возможные шаги через расстановки и архетипические образы.",
+        outcome: "Фокус: увидеть ситуацию шире, прояснить варианты выбора и следующие действия.",
+        specialties: ["Семейные и системные расстановки", "Бизнес-расстановки и расстановки решений", "Архетипические расстановки и поддержка"],
+        action: "Подробнее о расстановках",
+        target: "/services/andy-litvinov/personal-constellation-session",
+        image: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+        alt: "Андрей рассказывает о системных расстановках",
+        icon: Layers3,
+        note: "Расстановки не гарантируют внешнего результата и не заменяют профессиональную финансовую или юридическую консультацию.",
       },
     ],
-    approachKicker: "Как устроена работа",
-    approachTitle: "Начинаем с вашего реального вопроса",
-    approachText: "Мы обсуждаем ваш запрос, границы и подходящий формат. Системная работа, образы и другие методы используются только по взаимному согласию и в подходящем контексте.",
-    about: "Об Андрее",
-    consultationKicker: "Первый шаг",
-    consultation: "Начните с короткого разговора",
-    consultationText: "Опишите ваш запрос — вместе определим, какой из трёх форматов сейчас наиболее уместен.",
-    telegram: "Написать в Telegram",
-    whatsapp: "WhatsApp",
-    note: "Эти форматы не заменяют медицинскую диагностику или неотложную помощь. Бизнес-расстановки не заменяют финансовую, юридическую или профессиональную экспертизу и не гарантируют результат.",
+    offersTitle: "Конкретные сессии и мастера",
+    offersLead: "Подробные предложения собраны внутри соответствующих направлений. Можно посмотреть формат и отправить запрос.",
+    seeOfferings: "Показать предложения",
+    noOffers: "Подробные предложения появятся после публикации мастерами. Три направления личной работы доступны выше.",
+    details: "Подробнее",
+    request: "Отправить запрос",
+    freeService: "Бесплатно",
+    onRequest: "По запросу",
+    seeMasters: "Все мастера и практики",
+    learnTitle: "Как устроены методы",
+    learnLead: "Короткие видео о подходах, без дополнительных направлений в каталоге.",
+    videoIntro: "Общее знакомство",
+    videoImagery: "Гипнотерапия и образная работа",
+    videoConstellation: "Системные расстановки",
+    reikiTitle: "Ищете Рейки или энергетические практики?",
+    reikiText: "Обучение и энергетические практики находятся в Academy, отдельно от трёх направлений индивидуальных консультаций.",
+    reikiAction: "Перейти к программам Рейки",
+    bottomDisclaimer: "Бесплатная диагностика ситуации — первичный разговор, не медицинская диагностика. При физических симптомах обращайтесь к квалифицированному врачу. Индивидуальные методы не гарантируют результата.",
   },
   en: {
-    title: "Personal work in Toronto and online — Holistic House",
-    description: "Hypnotherapy, systemic and family constellations, decision work, and Reiki at Holistic House.",
-    kicker: "Toronto & online",
-    heading: "Personal work",
-    lead: "Explore repeating patterns, relationships, important decisions and inner blocks through thoughtful one-to-one work.",
-    marketplaceCta: "Choose a service",
-    freeReviewTitle: "Free situation & goal assessment",
-    freeReviewText: "A free review of your goal, business or personal challenge: where you feel stuck, possible growth areas and a next step. No obligation to book paid work.",
-    freeReviewAction: "Request a free review",
-    cards: [
+    title: "Three paths of personal work — Holistic House",
+    meta: "Psychohomeopathy, guided imagery psychotherapy, systemic constellations and archetypal support in Toronto and online. Begin with a free situation review.",
+    eyebrow: "Personal sessions · Toronto & online",
+    heading: "Three ways to find support, clarity and direction",
+    lead: "Low energy, emotional difficulties or a goal that feels out of reach? You don't need to choose among a dozen techniques. We start with your situation and find the format that fits.",
+    primary: "Book a free situation assessment",
+    secondary: "Explore the three approaches",
+    free: "Free · no obligation",
+    routeEyebrow: "Three directions · one clear starting point",
+    routeTitle: "What brings you here?",
+    routeText: "These are three independent approaches, not steps you must complete in sequence. Related methods are grouped under each one.",
+    freeTitle: "Start with a free situation & goal assessment",
+    freeText: "Explore a personal challenge, goal or business question. We look at where you feel stuck, possible areas for growth and a useful next step. You decide whether to continue.",
+    freeSteps: ["Your question", "Where you're stuck", "A possible next step"],
+    freeAction: "Request my free assessment",
+    servicesLabel: "Three personal-work directions",
+    services: [
       {
-        id: "business",
-        title: "Business Constellations",
-        subtitle: "Exploring the prospects of business projects",
-        text: "A systemic exploration of a project: its prospects, hidden dynamics, partnerships, roles, money, constraints, and possible next steps. The aim is to widen the view and test decisions through constellation work.",
-        icon: BriefcaseBusiness,
-      },
-      {
-        id: "alchemy",
-        title: "Alchemy of the Soul / Psychohomeopathy",
-        subtitle: "Individual work with inner states",
-        text: "An author-developed format combining imagery and systemic exploration with guidance around supportive remedies. The focus is on inner states, recurring patterns, resources, and movement toward greater wholeness.",
+        id: "psychohomeopathy" as const,
+        index: "01",
+        title: "Psychohomeopathy",
+        headline: "When you feel exhausted and your body is under strain",
+        summary: "Fatigue, low energy, physical symptoms and psychosomatic concerns. We explore your emotional experience, recurring responses and sense of personal resources.",
+        outcome: "Focus: wellbeing, personal resources and understanding how experiences relate to how you feel.",
+        specialties: ["Alchemy of the Soul / psychohomeopathy", "Individual homeopathy consultation", "Inner states, resources & psychosomatic concerns"],
+        action: "Explore psychohomeopathy",
+        target: "/services/andy-litvinov/homeopathy-consultation",
+        image: "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
+        alt: "Andrey introducing his approach to wellbeing",
         icon: Flower2,
+        note: "Homeopathy lacks reliable evidence of effectiveness for medical conditions and does not replace medical diagnosis or treatment.",
       },
       {
-        id: "archetypal",
-        title: "Archetypal Constellations",
-        subtitle: "Mysteries & Initiations",
-        text: "Experiential work with archetypes, mythic imagery, ritual structure, and the transpersonal field — individually or in groups.",
-        icon: Sparkles,
+        id: "imagery" as const,
+        index: "02",
+        title: "Guided imagery psychotherapy",
+        headline: "When you need clarity, connection and inner stability",
+        summary: "Sadness, loneliness, anxiety, difficult relationships or feeling lost. Personal sessions explore unconscious imagery, feelings, inner conflicts and ways to build your own sense of support.",
+        outcome: "Focus: understanding yourself, strengthening boundaries and finding your own direction.",
+        specialties: ["Hypnotherapy and regression-based exploration", "Inner-child and parts-oriented work", "Unconscious imagery and repeating patterns"],
+        action: "Explore guided imagery sessions",
+        target: "/services/imagery-therapy",
+        image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+        alt: "Andrey explaining imagery-based personal work",
+        icon: HeartHandshake,
+        note: "",
+      },
+      {
+        id: "constellations" as const,
+        index: "03",
+        title: "Constellations & archetypal support",
+        headline: "When you have a goal but can't see how to reach it",
+        summary: "Personal or business choices, relationship patterns and obstacles on the way to a goal. Systemic constellations and archetypal imagery help explore roles, relationships and possible next steps.",
+        outcome: "Focus: seeing the wider picture, exploring choices and clarifying your next action.",
+        specialties: ["Family & systemic constellations", "Business & decision constellations", "Archetypal constellations and support"],
+        action: "Explore constellation sessions",
+        target: "/services/andy-litvinov/personal-constellation-session",
+        image: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+        alt: "Andrey explaining systemic constellations",
+        icon: Layers3,
+        note: "Constellations do not guarantee real-world outcomes and do not replace qualified financial or legal advice.",
       },
     ],
-    approachKicker: "How the work begins",
-    approachTitle: "Start with your real question",
-    approachText: "We discuss your question, boundaries and the format that may fit. Systemic work, imagery and other methods are used only by mutual agreement and in an appropriate context.",
-    about: "About Andrey",
-    consultationKicker: "First step",
-    consultation: "Start with a short conversation",
-    consultationText: "Tell me what you would like to explore, and we can choose which of the three formats fits best right now.",
-    telegram: "Message on Telegram",
-    whatsapp: "WhatsApp",
-    note: "These formats do not replace medical diagnosis or urgent care. Business constellations do not replace financial, legal or professional advice and do not guarantee an outcome.",
+    offersTitle: "Individual sessions & practitioners",
+    offersLead: "Specific offerings are grouped under the three approaches. Open details or send a request.",
+    seeOfferings: "View available sessions",
+    noOffers: "Individual offers will appear as practitioners publish them. The three core approaches are available above.",
+    details: "Details",
+    request: "Request a session",
+    freeService: "Free",
+    onRequest: "On request",
+    seeMasters: "All practitioners",
+    learnTitle: "More about the methods",
+    learnLead: "Short explanations of the approaches, without adding more service categories.",
+    videoIntro: "An introduction",
+    videoImagery: "Hypnotherapy & imagery",
+    videoConstellation: "Systemic constellations",
+    reikiTitle: "Looking for Reiki or energy practices?",
+    reikiText: "Training and energy work belong in the Academy, separate from the three personal consultation directions.",
+    reikiAction: "Explore Reiki programs",
+    bottomDisclaimer: "A free situation assessment is an introductory conversation, not a medical diagnosis. Physical symptoms require evaluation by a qualified healthcare professional. No specific outcomes are guaranteed.",
   },
 } as const;
 
-const serviceShowcaseImages: Record<string, string> = {
-  hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
-  "systemic-constellations": "/images/holistic-house/video-posters/constellations-en-v1.webp",
-  "business-decision-constellations": "/images/holistic-house/books-library.webp",
-  "reiki-energy-work": "/images/holistic-house/hero-olive-incense.webp",
-  business: "/images/holistic-house/books-library.webp",
-  alchemy: "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
-  archetypal: "/library/maya-mysteries/media/post-244-1.jpg",
-};
+function classifyOffering(service: PublicService): DirectionId | null {
+  const value = [service.slug, service.copy.title].join(" ").toLowerCase();
+  if (/homeopath|alchemy|гомеопат|алхим/.test(value)) return "psychohomeopathy";
+  if (/imagery|hypno|psychotherap|therapy|образн|гипно|психотерап/.test(value)) return "imagery";
+  if (/constellation|archetyp|business|расстанов|архетип|бизнес|decision/.test(value)) return "constellations";
+  return null;
+}
 
 export function generateStaticParams() { return getHomeopathyLocaleParams(); }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) return { title: "Not found" };
-  const current = copy[locale];
+  const t = translations[locale];
   return {
     metadataBase: metadataBaseFor(),
-    title: current.title,
-    description: current.description,
-    alternates: {
-      canonical: "/" + locale + "/services",
-      languages: { ru: "/ru/services", en: "/en/services" },
-    },
+    title: t.title,
+    description: t.meta,
+    alternates: { canonical: `/${locale}/services`, languages: { ru: "/ru/services", en: "/en/services" } },
   };
 }
 
-export default async function ServicesPage({ params }: PageProps) {
+export default async function ServicesPage({ params }: Props) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
-  const current = copy[locale as Locale];
-  const entry = LOCAL_ACQUISITION[locale as Locale];
+  const t = translations[locale];
   let offerings: PublicService[] = [];
   try {
     offerings = await createPractitionerRepository(getAppConfig()).listPublicServices(locale);
   } catch {
-    offerings = [];
+    // The three main service directions must remain visible when the marketplace is unavailable.
   }
-  const featuredService = offerings.find((service) => service.slug === "free-wu-xing-diagnostic");
-  const marketplaceOfferings = offerings.filter((service) => service.id !== featuredService?.id);
-  const chooseFormatLabel = locale === "ru" ? "Выбрать этот формат" : "Choose this format";
-  const servicePage = (slug: string) => {
-    const service = offerings.find((item) => item.slug === slug);
-    return service ? `/${locale}/services/${service.practitionerSlug}/${service.slug}` : null;
-  };
-  const personalConstellationHref = servicePage("personal-constellation-session");
-  const businessConstellationHref = servicePage("business-situation-constellation");
-  const homeopathyHref = servicePage("homeopathy-consultation");
-  const serviceIndexHrefs: Record<string, string> = {
-    hypnotherapy: `/${locale}/academy/applied/hypnotherapy-regressions`,
-    "systemic-constellations": personalConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-    "business-decision-constellations": businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-    "reiki-energy-work": `/${locale}/academy/reiki`,
-    business: businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-    alchemy: homeopathyHref ?? `/${locale}/masters/andy-litvinov`,
-    archetypal: personalConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-  };
-  const coreShowcaseItems: CatalogShowcaseItem[] = entry.services.map(({ id, title, subtitle, text }) => ({
-    id: "service-" + id,
-    title,
-    subtitle,
-    description: text,
-    href: "#available-services",
-    indexHref: serviceIndexHrefs[id],
-    actionLabel: chooseFormatLabel,
-    image: serviceShowcaseImages[id] ?? "/images/holistic-house/hero-olive-incense.webp",
-    eyebrow: locale === "ru" ? "Формат индивидуальной работы" : "Personal work format",
-  }));
-  const additionalShowcaseItems: CatalogShowcaseItem[] = current.cards.map(({ id, title, subtitle, text }) => ({
-    id: "service-" + id,
-    title,
-    subtitle,
-    description: text,
-    href: "#available-services",
-    indexHref: serviceIndexHrefs[id],
-    actionLabel: chooseFormatLabel,
-    image: serviceShowcaseImages[id] ?? "/images/holistic-house/books-library.webp",
-    media: <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />,
-    eyebrow: locale === "ru" ? "Дополнительное направление" : "Additional direction",
-  }));
-  const serviceShowcaseItems = [...coreShowcaseItems, ...additionalShowcaseItems];
+
+  const grouped: Record<DirectionId, PublicService[]> = { psychohomeopathy: [], imagery: [], constellations: [] };
+  for (const offering of offerings) {
+    // The free Wu Xing profile is a separate client-cabinet tool, not a fourth therapy direction.
+    if (offering.slug === "free-wu-xing-diagnostic") continue;
+    const group = classifyOffering(offering);
+    if (group) grouped[group].push(offering);
+  }
+  const hasOffers = Object.values(grouped).some((items) => items.length > 0);
 
   return (
-    <main className="services-shell services-shell--studio" lang={locale}>
+    <main className={styles.page} lang={locale}>
       <PublicSiteHeader locale={locale} />
-
-      <section className="services-studio-hero">
-        <div className="services-studio-hero-copy">
-          <p className="homeopathy-kicker">{current.kicker}</p>
-          <h1>{current.heading}</h1>
-          <p>{current.lead}</p>
-          <Link className="services-studio-primary" href="#available-services">
-            {current.marketplaceCta}<span aria-hidden="true">→</span>
-          </Link>
-          <AcquisitionEventLink className="services-studio-primary" href={entry.selfCheck.href} event="self_check_start">
-            {entry.selfCheck.label}<span aria-hidden="true">→</span>
-          </AcquisitionEventLink>
+      <section className={styles.hero} aria-labelledby="services-title">
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}><Sparkles aria-hidden="true" size={16} />{t.eyebrow}</p>
+          <h1 id="services-title">{t.heading}</h1>
+          <p className={styles.heroLead}>{t.lead}</p>
+          <div className={styles.heroActions}>
+            <Link href={`/${locale}/services/free-situation-review`} className={styles.primaryButton}>
+              {t.primary}<ArrowUpRight aria-hidden="true" size={20}/>
+            </Link>
+            <Link href="#available-services" className={styles.secondaryButton}>
+              {t.secondary}<ArrowDown aria-hidden="true" size={18}/>
+            </Link>
+          </div>
+          <p className={styles.microcopy}><Check aria-hidden="true" size={16} />{t.free}</p>
         </div>
-        <div className="services-studio-photo" aria-hidden="true">
-          <Image
-            src="/images/holistic-house/hero-olive-incense.webp"
-            alt=""
-            fill
-            priority
-            sizes="(max-width: 767px) 100vw, 44vw"
-          />
+        <div className={styles.heroPhoto}>
+          <Image src="/images/holistic-house/video-posters/hypnotherapy-en-v1.webp" alt="" fill priority sizes="(max-width: 800px) 100vw, 43vw"/>
+          <div className={styles.heroPhotoTag}><Compass aria-hidden="true" size={19}/>{t.servicesLabel}</div>
         </div>
       </section>
 
-      <PersonalWorkJourney locale={locale as Locale} />
-
-      <CatalogShowcase
-        items={serviceShowcaseItems}
-        label={locale === "ru" ? "Форматы индивидуальной работы" : "Personal work formats"}
-      />
-
-      <section className="services-marketplace" id="available-services" aria-labelledby="services-marketplace-title">
-        <div className="services-marketplace-heading">
-          <p className="homeopathy-kicker">{locale === "ru" ? "Доступные услуги" : "Available services"}</p>
-          <h2 id="services-marketplace-title">{locale === "ru" ? "Выберите услугу" : "Choose a service"}</h2>
-          <p>
-            {locale === "ru"
-              ? "Можно открыть подробности или сразу отправить запрос выбранному мастеру. Публичные профили и услуги проходят модерацию."
-              : "Open the details or send a request directly to the practitioner. Public profiles and services are moderated."}
-          </p>
+      <section id="available-services" className={styles.directions} aria-labelledby="directions-title">
+        <div className={styles.sectionIntro}>
+          <p className={styles.eyebrow}>{t.routeEyebrow}</p>
+          <h2 id="directions-title">{t.routeTitle}</h2>
+          <p>{t.routeText}</p>
         </div>
-
-        <article className="services-marketplace-featured" id="free-situation-review-offer">
-          <div className="services-marketplace-featured-copy">
-            <div className="services-marketplace-featured-topline"><span className="services-marketplace-free-badge">{locale === "ru" ? "Бесплатно" : "Free"}</span><span>Andrey Litvinov</span></div>
-            <h3>{current.freeReviewTitle}</h3>
-            <p>{current.freeReviewText}</p>
-            <div className="services-marketplace-actions">
-              <Link className="services-marketplace-request services-marketplace-request--featured" href={"/" + locale + "/services/free-situation-review"}>
-                {current.freeReviewAction}<span aria-hidden="true">→</span>
-              </Link>
-            </div>
-          </div>
-        </article>
-
-        {featuredService ? (
-          <article className="services-marketplace-featured">
-            <div className="services-marketplace-featured-mark" aria-hidden="true">
-              <span></span><span></span><span></span><span></span><span></span>
-            </div>
-            <div className="services-marketplace-featured-copy">
-              <div className="services-marketplace-featured-topline">
-                <span className="services-marketplace-free-badge">
-                  {locale === "ru" ? "Бесплатно" : "Free"}
-                </span>
-                <Link href={`/${locale}/masters/${featuredService.practitionerSlug}`}>
-                  {featuredService.practitionerName}
-                </Link>
-              </div>
-              <h3>{featuredService.copy.title}</h3>
-              <p>{featuredService.copy.shortDescription}</p>
-              <div className="services-marketplace-featured-meta">
-                <span>{locale === "ru" ? "Онлайн" : "Online"}</span>
-                {featuredService.durationMinutes ? <span>{featuredService.durationMinutes} min</span> : null}
-                <span>{locale === "ru" ? "Личный профиль У-Син" : "Personal Wu Xing profile"}</span>
-              </div>
-              <div className="services-marketplace-actions">
-                <Link
-                  className="services-marketplace-request services-marketplace-request--featured"
-                  href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
-                >
-                  {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
-                </Link>
-                <Link
-                  className="services-marketplace-details"
-                  href={`/${locale}/services/${featuredService.practitionerSlug}/${featuredService.slug}`}
-                >
-                  {locale === "ru" ? "Подробнее" : "Details"}
-                </Link>
-              </div>
-            </div>
-          </article>
-        ) : null}
-
-        {marketplaceOfferings.length ? (
-          <div className="services-marketplace-grid">
-            {marketplaceOfferings.map((service) => {
-              const format =
-                service.deliveryFormat === "in_person"
-                  ? (locale === "ru" ? "Очно" : "In person")
-                  : service.deliveryFormat === "hybrid"
-                    ? (locale === "ru" ? "Онлайн / очно" : "Online / in person")
-                    : "Online";
-              const isFree = service.pricingMode === "free" || (service.pricingMode !== "contact" && service.confirmedPrice === 0);
-              const price =
-                isFree
-                  ? (locale === "ru" ? "Бесплатно" : "Free")
-                  : service.pricingMode !== "contact" && service.confirmedPrice != null
-                    ? `${service.pricingMode === "from" ? (locale === "ru" ? "от " : "from ") : ""}${service.currency || ""} ${service.confirmedPrice}`
-                    : (locale === "ru" ? "По запросу" : "On request");
-              return (
-                <article className="services-marketplace-card" key={service.id}>
-                  <div className="services-marketplace-card-top">
-                    <Link
-                      className="services-marketplace-provider"
-                      href={`/${locale}/masters/${service.practitionerSlug}`}
-                    >
-                      <span className="services-marketplace-avatar" aria-hidden="true">
-                        {(service.practitionerName || "H").slice(0, 1).toUpperCase()}
-                      </span>
-                      <span>
-                        <small>{locale === "ru" ? "Мастер" : "Practitioner"}</small>
-                        <strong>{service.practitionerName}</strong>
-                      </span>
-                    </Link>
-                    <span className={`services-marketplace-price${isFree ? " services-marketplace-price--free" : ""}`}>
-                      {price}
-                    </span>
+        <nav className={styles.jumpNav} aria-label={t.servicesLabel}>
+          {t.services.map((service) => (
+            <a href={`#${service.id}`} key={service.id}>
+              <span>{service.index}</span><strong>{service.title}</strong><ArrowDown aria-hidden="true" size={17}/>
+            </a>
+          ))}
+        </nav>
+        <div className={styles.directionStack}>
+          {t.services.map((service) => {
+            const Icon = service.icon;
+            return (
+              <article className={styles.direction} id={service.id} key={service.id}>
+                <div className={styles.directionMedia}>
+                  <Image src={service.image} alt={service.alt} fill sizes="(max-width: 840px) 100vw, 42vw"/>
+                  <span className={styles.chapterNumber}>{service.index} / 03</span>
+                </div>
+                <div className={styles.directionContent}>
+                  <p className={styles.directionName}><Icon aria-hidden="true" size={19}/>{service.title}</p>
+                  <h3>{service.headline}</h3>
+                  <p className={styles.description}>{service.summary}</p>
+                  <p className={styles.outcome}>{service.outcome}</p>
+                  <div className={styles.specialties}>
+                    <p>{locale === "ru" ? "В рамках направления" : "This approach includes"}</p>
+                    <ul>{service.specialties.map((item) => <li key={item}><Check aria-hidden="true" size={15}/>{item}</li>)}</ul>
                   </div>
-                  <h3>{service.copy.title}</h3>
-                  {service.professionalTitle ? (
-                    <p className="services-marketplace-role">{service.professionalTitle}</p>
-                  ) : null}
-                  <p className="services-marketplace-description">{service.copy.shortDescription}</p>
-                  <div className="services-marketplace-meta">
-                    <span>{format}</span>
-                    {service.locationLabel && service.locationLabel !== "Online" ? <span>{service.locationLabel}</span> : null}
-                    {service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}
+                  <div className={styles.directionActions}>
+                    <Link href={`/${locale}${service.target}`} className={styles.directionLink}>{service.action}<ArrowRight aria-hidden="true" size={19}/></Link>
+                    <Link href={`/${locale}/services/free-situation-review`} className={styles.smallLink}>{locale === "ru" ? "Начать бесплатно" : "Start free"}<ArrowUpRight aria-hidden="true" size={16}/></Link>
                   </div>
-                  <div className="services-marketplace-actions">
-                    <Link
-                      className="services-marketplace-request"
-                      href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}
-                    >
-                      {isFree ? (locale === "ru" ? "Запросить бесплатно" : "Request free service") : (locale === "ru" ? "Заказать" : "Request")}<span aria-hidden="true">→</span>
-                    </Link>
-                    <Link
-                      className="services-marketplace-details"
-                      href={`/${locale}/services/${service.practitionerSlug}/${service.slug}`}
-                    >
-                      {locale === "ru" ? "Подробнее" : "Details"}
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : !featuredService ? (
-          <p className="services-marketplace-empty">
-            {locale === "ru" ? "Каталог услуг сейчас обновляется." : "The service catalogue is being updated."}
-          </p>
-        ) : null}
-        <p className="services-marketplace-all">
-          <Link href={`/${locale}/masters`}>
-            {locale === "ru" ? "Все мастера и практики" : "View all practitioners"}<span aria-hidden="true">→</span>
-          </Link>
-        </p>
-      </section>
-
-      <PageVideo slot="services-intro" locale={locale} />
-
-      {locale === "en" ? (
-        <section className="services-method-videos" id="methods" aria-labelledby="services-method-videos-title">
-          <div className="services-method-videos-heading">
-            <p className="homeopathy-kicker">Methods in more detail</p>
-            <h2 id="services-method-videos-title">Two short explanations</h2>
-          </div>
-          <div className="services-method-videos-grid">
-            <article className="services-method-video">
-              <h3>Hypnotherapy</h3>
-              <PageVideo slot="method-hypnotherapy" locale="en" />
-            </article>
-            <article className="services-method-video">
-              <h3>Systemic Constellations</h3>
-              <PageVideo slot="method-constellations" locale="en" />
-            </article>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="services-studio-approach">
-        <div>
-          <p className="homeopathy-kicker">{current.approachKicker}</p>
-          <h2>{current.approachTitle}</h2>
-        </div>
-        <div>
-          <p>{current.approachText}</p>
-          <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true">→</span></Link>
+                  {service.note ? <p className={styles.finePrint}>{service.note}</p> : null}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
-      <PersonalTestimonials locale={locale as Locale} variant="services" />
+      <section className={styles.freeBanner} id="free-situation-review-offer" aria-labelledby="free-review-title">
+        <div className={styles.freeText}>
+          <p className={styles.eyebrow}><Sparkles aria-hidden="true" size={16}/>{t.free}</p>
+          <h2 id="free-review-title">{t.freeTitle}</h2>
+          <p>{t.freeText}</p>
+          <div className={styles.steps}>{t.freeSteps.map((step, i)=><span key={step}><b>{i+1}</b>{step}</span>)}</div>
+        </div>
+        <Link href={`/${locale}/services/free-situation-review`} className={styles.freeButton}>{t.freeAction}<ArrowUpRight aria-hidden="true" size={21}/></Link>
+      </section>
 
-      <PageVideo slot="consultation" locale={locale} />
+      <section className={styles.extra} aria-label={t.offersTitle}>
+        <details>
+          <summary><span><strong>{t.offersTitle}</strong><small>{t.offersLead}</small></span><span className={styles.detailsToggle}>{t.seeOfferings}<ChevronDown aria-hidden="true" size={18}/></span></summary>
+          <div className={styles.offerGroups}>
+            {hasOffers ? t.services.map((direction) => (
+              grouped[direction.id].length ? <div key={direction.id} className={styles.offerGroup}>
+                <h3>{direction.title}</h3>
+                <div className={styles.offerList}>{grouped[direction.id].map((offering) => (
+                  <article key={offering.id} className={styles.offer}>
+                    <div><h4>{offering.copy.title}</h4><p>{offering.copy.shortDescription}</p><small>{offering.practitionerName}</small></div>
+                    <div className={styles.offerActions}>
+                      <Link href={`/${locale}/services/${offering.practitionerSlug}/${offering.slug}`}>{t.details}<ArrowRight aria-hidden="true" size={15}/></Link>
+                      <Link href={`/${locale}/app/consultations?service=${encodeURIComponent(offering.id)}`}>{t.request}</Link>
+                    </div>
+                  </article>
+                ))}</div>
+              </div> : null
+            )) : <p>{t.noOffers}</p>}
+            <Link href={`/${locale}/masters`} className={styles.allMasters}>{t.seeMasters}<ArrowRight aria-hidden="true" size={16}/></Link>
+          </div>
+        </details>
+      </section>
 
-      <PublicConsultationCta locale={locale as Locale} id="consultation" />
-      <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
+      <section className={styles.extra} aria-label={t.learnTitle}>
+        <details>
+          <summary><span><strong>{t.learnTitle}</strong><small>{t.learnLead}</small></span><span className={styles.detailsToggle}><ChevronDown aria-hidden="true" size={19}/></span></summary>
+          <div className={styles.methodVideos}>
+            <div><h3>{t.videoIntro}</h3><PageVideo slot="services-intro" locale={locale}/></div>
+            {locale === "en" ? <>
+              <div><h3>{t.videoImagery}</h3><PageVideo slot="method-hypnotherapy" locale="en"/></div>
+              <div><h3>{t.videoConstellation}</h3><PageVideo slot="method-constellations" locale="en"/></div>
+            </> : null}
+          </div>
+        </details>
+      </section>
+
+      <PersonalTestimonials locale={locale} variant="services" />
+
+      <aside className={styles.reikiAside}>
+        <div><p className={styles.eyebrow}>{locale === "ru" ? "Обучение и практики" : "Training & practices"}</p><h2>{t.reikiTitle}</h2><p>{t.reikiText}</p></div>
+        <Link href={`/${locale}/academy/reiki`}>{t.reikiAction}<ArrowRight aria-hidden="true" size={18}/></Link>
+      </aside>
+
+      <PublicConsultationCta locale={locale} id="consultation" />
+      <p className={styles.disclaimer}>{t.bottomDisclaimer}</p>
     </main>
   );
 }
