@@ -14,6 +14,7 @@ test("historical Reiki Yggdrasil reviews are not called lessons or meditations",
   assert.match(source, /yggdrasilEnglishOverviewVideos: YggdrasilLegacyVideo\[\] = \[\]/);
   assert.match(source, /yggdrasilEnglishStepVideos: Record<string, YggdrasilLegacyVideo\[\]> = \{\}/);
   assert.match(source, /classification: "testimonial"/);
+  assert.doesNotMatch(source, /classification: "needs-verification"/);
   assert.doesNotMatch(source, /title: "What really is Reiki Yggdrasil"/);
   assert.doesNotMatch(source, /title: "About the Healing attunement"/);
 });
@@ -41,6 +42,8 @@ test("English-only Academy paths use poster-first playback only after confirmati
   assert.match(recording, /locale === "en" \? <EnglishGuidedMeditations focus="tantra-reiki"/);
   assert.match(recording, /qM_nFUkYJ1k/);
   assert.match(recording, /participant testimonial/);
+  assert.match(recording, /tantra-russian-review/);
+  assert.match(recording, /Russian-language historical testimonial/);
 });
 
 test("legacy English review videos are not injected into specific Yggdrasil teaching steps", async () => {
@@ -57,4 +60,20 @@ test("legacy English review videos are not injected into specific Yggdrasil teac
   assert.match(hub, /<YggdrasilEnglishVideoGuide/);
   assert.match(module, /<YggdrasilEnglishVideoGuide/);
   assert.doesNotMatch(guide, /General introduction/);
+});
+
+test("all ten verified Reiki reviews remain accessible, additional eight under disclosure", async () => {
+  const [registry, component] = await Promise.all([
+    readFile("data/academy/yggdrasil-testimonials.ts", "utf8"),
+    readFile("components/yggdrasil-testimonials.tsx", "utf8"),
+  ]);
+  for (const id of ["XvMdX5czoOc", "hjmVJrgEsZ8", "u275Zz78vhs",
+    "3msoUyWr6bY", "0G_xvbuClII", "Hk9XpeUI0BQ",
+    "Nx8DwWk27VY", "p29qu8-dtZk", "wN_SNwZ1Epo", "3Apc8P1Yudc"]) {
+    assert.ok(registry.includes(id), "Missing historical review: " + id);
+  }
+  assert.match(component, /yggdrasilVideoTestimonials.slice\(0, 2\)/);
+  assert.match(component, /yggdrasilVideoTestimonials.slice\(2\)/);
+  assert.match(component, /<details className="yggdrasil-more-testimonials">/);
+  assert.match(component, /additionalVideos.map/);
 });
