@@ -122,15 +122,20 @@ try {
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
  const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
  // The public Start free testing button must transfer the exact selection into an existing Google account.
- await otherPage.goto(origin+'/en/client/tests')
- await expect(otherPage.getByRole('heading',{name:'Build your test set'})).toBeVisible()
- await otherPage.locator('article').filter({has:otherPage.getByRole('heading',{name:'Personality Baseline',exact:true})})
+ // Open a fresh tab in the same authenticated cookie context: the onboarding page
+ // can still have a queued router.replace('/en/app') after its nav becomes visible.
+ // Reusing it races Playwright's navigation against that pending redirect in WebKit.
+ const selectionPage = await other.newPage()
+ await selectionPage.goto(origin+'/en/client/tests')
+ await expect(selectionPage.getByRole('heading',{name:'Build your test set'})).toBeVisible()
+ await selectionPage.locator('article').filter({has:selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})})
    .getByRole('checkbox',{name:'Personality Baseline'}).check()
- await otherPage.getByRole('button',{name:'Start free testing',exact:true}).click()
- await expect(otherPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
- await expect(otherPage.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
- await expect(otherPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
+ await selectionPage.getByRole('button',{name:'Start free testing',exact:true}).click()
+ await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
+ await expect(selectionPage.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+ await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
  assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.definitionIds.length,1)
+ await selectionPage.close()
  passed('public Start free testing preserves the selected test in authenticated personal Cabinet')
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
  const storage=await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),caches:await Promise.all((await caches.keys()).map(async k=>(await(await caches.open(k)).keys()).map(r=>new URL(r.url).pathname)))}));assert.ok(!JSON.stringify(storage).match(/hh-app-auth|profile:first|\/api\/app|\/en\/app|\/ru\/app/));passed('no private browser storage or service-worker response cache')
@@ -148,6 +153,10 @@ try {
 
  await page.getByRole('checkbox',{name:'Personality Baseline',exact:true}).check()
  await page.getByRole('button',{name:'Start free testing',exact:true}).click()
+ // An existing in-progress battery must not be discarded silently.
+ // Choose the newly requested set through the explicit replacement confirmation.
+ await expect(page.getByRole('heading',{name:'You already have an active test set'})).toBeVisible()
+ await page.getByRole('button',{name:'Use new selection'}).click()
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()

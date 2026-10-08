@@ -5,6 +5,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
+import { TestExplorerVisual } from './test-explorer-visual'
+import { coverageForFocus } from '@/lib/assessments/test-explorer'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { buildExplorerEntries } from '@/lib/assessments/test-explorer'
@@ -252,6 +255,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     }
   }
   return <>
+    <div className={styles.batteryLayout}>
     <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
       <div className={styles.header}>
         <div><p className="hh-kicker">{c.account} · Mind–Body Monitor</p><h1>{c.title}</h1>
@@ -314,6 +318,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       </div>
       <p className={styles.muted}>{c.privacy}</p>
     </section>
+    <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
+    </div>
     {(exploring || (!rows.length && !initializing && !conflict)) &&
       <TestExplorer locale={locale} audience="account" onStart={choose}
         pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}

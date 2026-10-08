@@ -12,6 +12,9 @@ import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
+import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
+import { coverageForFocus } from '@/lib/assessments/test-explorer'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import {
   TEST_LENGTH_FILTERS,
@@ -1979,7 +1982,10 @@ function Portrait({ data, locale }) {
         <p className="hh-fine">{c.private}</p>
       </div>
 
-      <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
+      <div className="hh-portrait-with-metrics">
+        <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
+        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
+      </div>
 
       <div className="hh-profile-mood">
         <MoodCheckIn

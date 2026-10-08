@@ -7,6 +7,7 @@ import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } fr
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import styles from './test-explorer.module.css'
 
 const COPY = {
@@ -34,6 +35,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [concernMessage, setConcernMessage] = useState('')
   const concernAnalysis = useMemo(() => interpretConcern(concern), [concern])
   const historyGroups = useMemo(() => assessmentHistoryGroups(pastResults, draftRuns, locale), [pastResults, draftRuns, locale])
+  const portrait = useMemo(() => audience === 'account' ? buildPsychPortrait(pastResults) : null, [audience, pastResults])
   const historyByKey = useMemo(() => new Map(historyGroups.map((group) => [group.key, group])), [historyGroups])
   const recommendedNext = useMemo(() => audience === 'account' ? nextPersonalRecommendation({ results: pastResults, snapshot: profileSnapshot, locale }) : null, [audience, pastResults, profileSnapshot, locale])
   useEffect(() => { setVoiceSupported(Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)) }, [])
@@ -167,7 +169,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
         <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{entry.description || entry.category}</p>{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
         {entry.selectable && <div className={styles.relevance} title={c.matchNote} style={{ '--match': `${Math.max(0, Math.min(100, Math.round(entry.score / 1.2)))}%` }}><strong>{Math.max(0, Math.min(100, Math.round(entry.score / 1.2)))}%</strong><span>{c.relevance}</span></div>}
       </article>)}</div></div>
-      <TestExplorerVisual locale={locale} coverage={displayedCoverage} mode={showingCoverage ? 'selected' : 'topics'} topicCount={focus.length} selectedCount={selectedKeys.length} axisFilter={axisFilter} onAxisFilter={setAxisFilter} />
+      <TestExplorerVisual portrait={portrait} locale={locale} coverage={displayedCoverage} mode={showingCoverage ? 'selected' : 'topics'} topicCount={focus.length} selectedCount={selectedKeys.length} axisFilter={axisFilter} onAxisFilter={setAxisFilter} />
     </div>
         <footer className={styles.battery}><div><strong>{selected.length ? `${selected.length} · ${questions} ${c.questions} · ~${minutes} ${c.minutes} · ${coverage.coveredCount} ${c.axes} · ${breadth}` : c.choose}</strong>{(selected.length > 8 || minutes > 30) && <p>{c.warning}</p>}<small>{c.privacy}</small>{actionError && <p role="alert">{actionError.code || actionError.message}</p>}</div><div><button type="button" onClick={() => setSelectedKeys([])}>{c.clear}</button><button className={styles.primary} type="button" disabled={!selected.length || starting} onClick={start}>{starting ? '…' : c.start}</button></div></footer>
   </section>
