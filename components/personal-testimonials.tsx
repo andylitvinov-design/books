@@ -117,7 +117,7 @@ export function PersonalTestimonials({
         <Link className={styles.more} href={"/" + locale + "/about#testimonials-title"}>
           {current.moreLink}<ArrowRight aria-hidden="true" size={17}/>
         </Link>
-        <Link className={styles.contact} href={isHome ? "/" + locale + "/services#consultation" : "#consultation"}>
+        <Link className={styles.contact} href={"/" + locale + "/services/free-situation-review"}>
           {current.ctaLink}<ArrowRight aria-hidden="true" size={17}/>
         </Link>
       </div>
