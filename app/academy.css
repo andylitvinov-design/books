@@ -2220,3 +2220,72 @@
   .yggdrasil-basic-level-photo { transition: none; }
   .yggdrasil-basic-level-photo-link:hover .yggdrasil-basic-level-photo { transform: none; }
 }
+
+
+/* Original author descriptions: featured reading passages, never hidden in an accordion. */
+.tantra-journey__details { gap: 16px; }
+.tantra-journey__author-copy {
+  min-width: 0;
+  border-left: 3px solid #b79072;
+  padding: 1px 0 2px clamp(14px, 2vw, 22px);
+}
+.tantra-journey__author-copy .tantra-journey__source-label {
+  margin: 0 0 12px;
+  color: #86644b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.tantra-journey__author-copy > p:not(.tantra-journey__source-label) {
+  max-width: 65ch;
+  margin: 0;
+  color: #3f322b;
+  font-family: var(--font-serif);
+  font-size: clamp(16px, 1.75vw, 20px);
+  line-height: 1.58;
+  overflow-wrap: anywhere;
+}
+.tantra-journey__author-copy > p + p { margin-top: 12px !important; }
+.tantra-journey__application {
+  border-left: 0;
+  border-top: 1px solid #e7d7c8;
+  padding: 12px 0 0;
+}
+.tantra-journey__settings {
+  border: 0;
+  border-top: 1px solid #e7d7c8;
+  padding: 13px 0 0;
+  border-radius: 0;
+  background: transparent;
+}
+.tantra-journey__settings ul {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+}
+.tantra-journey__settings li {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #eee3d9;
+  border-radius: 0;
+  padding: 9px 0;
+  color: #584538;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.tantra-journey__settings li:last-child { border-bottom: 0; }
+.tantra-journey__photo img { object-fit: cover; }
+@media (max-width: 700px) {
+  .tantra-journey__author-copy { padding-left: 13px; }
+  .tantra-journey__author-copy > p:not(.tantra-journey__source-label) {
+    font-size: 17px;
+    line-height: 1.55;
+  }
+  .tantra-journey__author-copy > p + p { margin-top: 10px !important; }
+  .tantra-journey__settings { padding: 11px 0 0; }
+  .tantra-journey__settings li { padding: 8px 0; font-size: 12px; }
+  .tantra-journey__photo { aspect-ratio: 16 / 10; }
+}
