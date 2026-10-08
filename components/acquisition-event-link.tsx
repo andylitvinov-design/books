@@ -14,6 +14,7 @@ type AcquisitionEventLinkProps = {
   event: AcquisitionEvent;
   href: string;
   id?: string;
+  prefetch?: boolean;
   rel?: string;
   target?: string;
 };
