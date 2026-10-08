@@ -8,7 +8,7 @@ import { PHQ9_EN_V1 } from '../data/assessments/psychic-monitoring-v1.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildExplorerEntries, coverageForSelection } from '../lib/assessments/test-explorer.js'
+import { buildExplorerEntries, buildStarterBattery, coverageForSelection } from '../lib/assessments/test-explorer.js'
 const values = (def, value) => Object.fromEntries(def.questions.map(q => [q.id, value]))
 const total = (def, answers) => scoreAssessment(def, answers).dimensions[0].value
 
@@ -84,4 +84,24 @@ test('source-backed instruments integrate into locale-aware explorer without lea
   }
   const component=await readFile(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
   assert.match(component,/question\.responseAnchors \|\| def\.responseAnchors/)
+})
+
+test('clinical scales have source attribution and appropriate automatic-battery eligibility', async () => {
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const starter = buildStarterBattery(entries, { focus: ['stress'], depth: 'balanced' })
+  assert.ok(starter.every(entry => !['cbi-work','cbi-client','phq-8'].includes(entry.key)))
+  for (const key of ['cbi-work','cbi-client','phq-8']) {
+    const item = PROFESSIONAL_BATTERY_2026_CATALOG.find(entry => entry.key === key)
+    assert.equal(item.starterEligible, false)
+  }
+  const component = await readFile(new URL('../components/app/app-workspace.jsx', import.meta.url), 'utf8')
+  assert.match(component, /Source and methodology/)
+  assert.match(component, /def\.source\.citation/)
+  assert.match(component, /Over the past two weeks/)
+  const researched = ['ders-16','wemwbs-14','swemwbs-7','bdi-ii','bai-21','maas-15','tas-20','panas-20','gse-10','spane-12']
+  for (const key of researched) {
+    const instrument = entries.find(entry => entry.key === key)
+    assert.ok(instrument && instrument.source === 'research' && !instrument.selectable, key)
+    assert.equal(instrument.definition, null, key)
+  }
 })
