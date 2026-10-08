@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
 import { getDefinitionById } from '@/lib/assessments/definitions'
+import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { buildExplorerEntries } from '@/lib/assessments/test-explorer'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
 import styles from './account-test-battery.module.css'
@@ -76,7 +77,7 @@ function formatDate(value, locale) {
   if (!value || Number.isNaN(Date.parse(value))) return ''
   return new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-CA', { dateStyle: 'medium' }).format(new Date(value))
 }
-function planRows(plan, data, locale) {
+function planRows(plan, data) {
   return (plan?.definitionIds || []).map((id) => {
     const definition = safeDefinition(id)
     if (!definition) return null
@@ -85,9 +86,12 @@ function planRows(plan, data, locale) {
     const answered = run ? definition.questions.filter((question) => Object.prototype.hasOwnProperty.call(run.answers || {}, question.id)).length : 0
     const progress = run ? Math.min(99, Math.round(100 * answered / Math.max(1, definition.questions.length))) : latest ? 100 : 0
     const item = definition.key
+    const catalog = monitoringCatalogItem(item)
     return {
       definition, run, result: latest, progress, key: item,
-      title: definition.title,
+      title: catalog?.title?.[data.account.uiLocale] || catalog?.title?.en || definition.title,
+      description: catalog?.description?.[data.account.uiLocale] || catalog?.description?.en || '',
+      minutes: catalog?.durationMinutes || Math.max(1, Math.round(definition.questions.length / 6)),
       photo: PHOTO[item] || fallbackPhoto,
     }
   }).filter(Boolean)
@@ -104,7 +108,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
   const [error, setError] = useState('')
   const entries = useMemo(() => buildExplorerEntries({ locale, audience: 'account' }), [locale])
   const currentPlan = plan || data.activeTestPlan || data.latestTestPlan || null
-  const rows = useMemo(() => planRows(currentPlan, data, locale), [currentPlan, data, locale])
+  const rows = useMemo(() => planRows(currentPlan, data), [currentPlan, data])
   const completed = rows.filter((row) => !row.run && row.result).length
   const root = '/' + locale + '/app'
 
@@ -173,7 +177,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
       if (alive) setInitializing(false)
     }
     restore()
-    return () => { alive = false }
+    return () => { alive = false; once.current = false }
   }, []) // Selection is processed once, after the account's explicit onboarding consent.
 
   async function choose(entriesToStart) {
@@ -242,9 +246,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
               <span className={styles.image}><Image src={row.photo} alt="" fill sizes="(max-width: 720px) 92px, 140px" /></span>
               <div className={styles.info}>
                 <h2>{row.title}</h2>
-                <p className={styles.description}>{row.definition.description || ''}</p>
+                <p className={styles.description}>{row.description}</p>
                 <div className={styles.meta}><span>{row.definition.questions.length} {c.questions}</span>
-                  <span>~{Math.max(1, Math.round(row.definition.questions.length / 6))} {c.mins}</span></div>
+                  <span>~{row.minutes} {c.mins}</span></div>
                 <div className={styles.status}>
                   <strong className={row.run ? styles.inProgress : row.result ? styles.completed : ''}>{status}</strong>
                   {row.result && !row.run
