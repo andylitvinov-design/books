@@ -77,7 +77,7 @@ function formatDate(value, locale) {
   if (!value || Number.isNaN(Date.parse(value))) return ''
   return new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-CA', { dateStyle: 'medium' }).format(new Date(value))
 }
-function planRows(plan, data) {
+function planRows(plan, data, locale) {
   return (plan?.definitionIds || []).map((id) => {
     const definition = safeDefinition(id)
     if (!definition) return null
@@ -89,8 +89,8 @@ function planRows(plan, data) {
     const catalog = monitoringCatalogItem(item)
     return {
       definition, run, result: latest, progress, key: item,
-      title: catalog?.title?.[data.account.uiLocale] || catalog?.title?.en || definition.title,
-      description: catalog?.description?.[data.account.uiLocale] || catalog?.description?.en || '',
+      title: catalog?.title?.[locale] || catalog?.title?.en || definition.title,
+      description: catalog?.description?.[locale] || catalog?.description?.en || '',
       minutes: catalog?.durationMinutes || Math.max(1, Math.round(definition.questions.length / 6)),
       photo: PHOTO[item] || fallbackPhoto,
     }
@@ -108,7 +108,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
   const [error, setError] = useState('')
   const entries = useMemo(() => buildExplorerEntries({ locale, audience: 'account' }), [locale])
   const currentPlan = plan || data.activeTestPlan || data.latestTestPlan || null
-  const rows = useMemo(() => planRows(currentPlan, data), [currentPlan, data])
+  const rows = useMemo(() => planRows(currentPlan, data, locale), [currentPlan, data, locale])
   const completed = rows.filter((row) => !row.run && row.result).length
   const root = '/' + locale + '/app'
 
@@ -206,7 +206,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, reload }) {
         operationId: crypto.randomUUID(),
       })
       const isPlanStep = currentPlan?.status === 'active' &&
-        currentPlan.definitionIds[currentPlan.currentIndex] === row.definition.id
+        currentPlan.definitionIds.includes(row.definition.id)
       router.push(root + '/runs/' + encodeURIComponent(run.id) +
         (isPlanStep ? '?plan=' + encodeURIComponent(currentPlan.id) : ''))
     } catch (cause) {
