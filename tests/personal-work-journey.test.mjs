@@ -63,7 +63,7 @@ test("free situation review and imagery therapy have real bilingual pages and ac
   assert.match(form, /form\.get\("situation"\)/);
   assert.match(form, /wa\.me\/14376066502/);
   assert.match(form, /window\.open/);
-  assert.match(form, /nothing is sent before you confirm/);
+  assert.match(form, /does NOT automatically submit a request/);
   assert.doesNotMatch(form, /localStorage|sessionStorage|fetch\(|sendBeacon/);
 });
 
