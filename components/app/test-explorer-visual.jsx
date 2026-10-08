@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import styles from './test-explorer.module.css'
 
@@ -118,6 +119,22 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           {portrait?.axes?.[axis]?.change != null && <small className={styles.portraitDelta} aria-label={ru ? 'Изменение относительно предыдущего совместимого замера' : 'Change from previous compatible measurement'}>{portrait.axes[axis].change > 0 ? '+' : ''}{portrait.axes[axis].change} {ru ? 'п.п.' : 'pp'}</small>}
         </label>)}</div>
       {rays.some((ray) => ray.previousEnd) && <div className={styles.portraitLegend}><span className={styles.legendCurrent}>{ru ? 'Сейчас' : es ? 'Actual' : 'Current'}</span><span className={styles.legendPrior}>{ru ? 'Предыдущий совместимый тест' : es ? 'Medición previa compatible' : 'Previous comparable test'}</span></div>}
+      {rays.some((ray) => ray.end) && <details className={styles.portraitSources}>
+        <summary>{ru ? 'Данные по лучам: источник, дата и динамика' : es ? 'Fuentes, fechas y evolución' : 'Ray details: source, date and change'}</summary>
+        <div>
+          {visibleRays.filter((axis) => portrait?.axes?.[axis]).map((axis) => {
+            const item = portrait.axes[axis]
+            return <div key={axis} className={styles.portraitSourceRow}>
+              <strong>{label(axis)} · {item.percent}%</strong>
+              <span>{item.source} · {formatDate(item.measuredAt)}</span>
+              <span>{item.change === null
+                ? (ru ? 'Первый совместимый замер' : 'First comparable measurement')
+                : (ru ? 'От предыдущего: ' : 'Since previous: ') + (item.change > 0 ? '+' : '') + item.change + (ru ? ' п.п.' : ' pp')}</span>
+              {item.resultId && <Link href={'/' + locale + '/app/results/' + encodeURIComponent(item.resultId)}>{ru ? 'Открыть результат' : 'View result'} →</Link>}
+            </div>
+          })}
+        </div>
+      </details>}
       <p>{ru ? 'Процент — положение на шкале с учётом её направления, а не процент здоровья. Личностные черты без направления «лучше/хуже» сюда не включаются.' : es ? 'El porcentaje representa la posición orientada en la escala, no un porcentaje de salud.' : 'Each percentage is a direction-adjusted scale position, not a health score. Non-normative personality traits are excluded.'}</p>
     </section>}
     {!portrait && activeAxes.length > 0 && <div className={styles.axisMeters} aria-label={ru ? 'Активные оси' : es ? 'Ejes activos' : 'Active axes'}>
