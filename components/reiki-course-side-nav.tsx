@@ -108,9 +108,9 @@ export function YggdrasilSideNavigation({
   activeSlug?: string;
 }) {
   const copy = {
-    en: { eyebrow: "Course navigation", title: "Reiki Yggdrasil", overview: "Program overview", description: "Basic Course description", module: "M" },
-    ru: { eyebrow: "Навигация по курсу", title: "Рейки Иггдрасиль", overview: "Обзор программы", description: "Описание Базового курса", module: "М" },
-    es: { eyebrow: "Navegación del curso", title: "Reiki Yggdrasil", overview: "Resumen del programa", description: "Descripción del Curso Básico", module: "M" },
+    en: { eyebrow: "Course navigation", title: "Reiki Yggdrasil", overview: "Program overview", reviews: "Student reviews", videos: "English video guide", description: "Basic Course description", module: "M" },
+    ru: { eyebrow: "Навигация по курсу", title: "Рейки Иггдрасиль", overview: "Обзор программы", reviews: "Отзывы учеников", videos: "Видео на английском", description: "Описание Базового курса", module: "М" },
+    es: { eyebrow: "Navegación del curso", title: "Reiki Yggdrasil", overview: "Resumen del programa", reviews: "Testimonios", videos: "Videos en inglés", description: "Descripción del Curso Básico", module: "M" },
   }[locale];
 
   const items: NavItem[] = [
