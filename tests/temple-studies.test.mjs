@@ -72,7 +72,8 @@ test("Old Academy directories and historical sections stay reachable", () => {
   const page = read("components/temple-studies.tsx");
   assert.match(route, /key === "temple-studies"/);
   assert.match(route, /<TempleStudies locale=\{locale\}/);
-  assert.match(route, /permanentRedirect\("\/" \+ locale \+ "\/academy\/temple-studies#"/);
+  assert.match(route, /templeLegacyAnchors\[slug\[0\]\]/);
+  assert.match(route, /temple-studies#temple-/);
   assert.match(route, /<AcademyRecordPage locale=\{locale\} record=\{record\}/);
   for (const anchor of ["mysteries", "traditions", "symbols", "practice", "path"]) {
     assert.ok(page.includes('"' + anchor + '"'), 'legacy anchor alias ' + anchor + ' is still supported');
