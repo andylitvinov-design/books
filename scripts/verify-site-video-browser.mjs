@@ -63,7 +63,7 @@ try {
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
   const page = await context.newPage()
   const pageErrors = []
-  page.on('pageerror', error => pageErrors.push(error.message))
+  page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
   async function navigate(target) {
     const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
     let response = await page.goto(new URL(target, origin).href, options)
