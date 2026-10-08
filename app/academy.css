@@ -2324,3 +2324,27 @@
 /* Preserve the explanatory stage paragraph for Spanish visitors when no
    full author-sourced translation is yet available in that locale. */
 .tantra-journey__spanish-intro { max-width: 68ch; margin: 0; font-size: 15px; line-height: 1.7; color: #443c35; }
+
+
+/* Original guided meditation paths: accessible, photo-led, non-deceptive
+   fallbacks when an archived YouTube meditation is not yet verified. */
+.english-meditation-section { margin: 32px 0; padding: clamp(20px, 3vw, 35px); border-radius: 20px; background: #f9f5ef; border: 1px solid #e5d9ca; }
+.english-meditation-heading { max-width: 800px; margin-bottom: 22px; }
+.english-meditation-heading h2 { margin: 6px 0 10px; font-family: var(--font-serif); font-size: clamp(27px, 3.2vw, 38px); font-weight: 500; line-height: 1.15; color: #302822; }
+.english-meditation-heading > p:last-child { font-size: 16px; color: #625b53; line-height: 1.65; }
+.english-meditation-list { display: grid; gap: 18px; }
+.english-meditation-card { display: grid; grid-template-columns: minmax(160px, 32%) minmax(0, 1fr); background: #fff; border: 1px solid #e9ddd1; border-radius: 15px; overflow: hidden; min-height: 190px; }
+.english-meditation-card__visual { min-width: 0; background: #e8e2d7; }
+.english-meditation-card__visual img { display: block; width: 100%; height: 100%; object-fit: cover; aspect-ratio: 16 / 9; }
+.english-meditation-card__visual .academy-video-frame, .english-meditation-card__visual .academy-video-poster { height: 100%; }
+.english-meditation-card__copy { padding: clamp(18px, 2.6vw, 28px); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 9px; }
+.english-meditation-card__eyebrow { font-size: 11px; color: #866b4e; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; }
+.english-meditation-card__copy h3 { font-family: var(--font-serif); font-size: clamp(22px, 2.5vw, 30px); line-height: 1.2; font-weight: 500; color: #302822; margin: 0; }
+.english-meditation-card__copy > p:not(.english-meditation-card__eyebrow) { font-size: 15px; line-height: 1.65; color: #5f574e; margin: 0; }
+.english-meditation-card__copy a { font-weight: 700; font-size: 14px; color: #765032; text-decoration: underline; text-underline-offset: 4px; margin-top: 4px; }
+.english-meditation-card__copy a:focus-visible { outline: 3px solid #8e612f; outline-offset: 4px; }
+@media (max-width: 680px) {
+  .english-meditation-section { margin: 23px 0; padding: 16px; }
+  .english-meditation-card { grid-template-columns: 1fr; }
+  .english-meditation-card__visual img { aspect-ratio: 16 / 9; }
+}
