@@ -15,7 +15,7 @@ const COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false }) {
   const c = COPY[locale] || COPY.en
   const [availability, setAvailability] = useState('available')
   const [focus, setFocus] = useState([])
@@ -47,7 +47,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     try { await onStart(selected) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
 
-  return <section className={styles.explorer}>
+  return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
         <header className={styles.header}><p className={styles.eyebrow}>{c.kicker}</p><h1>{c.title}</h1><p>{c.intro}</p>{activePlan?.status === 'active' && <button type="button" onClick={() => onResume?.(activePlan)}>{locale === 'ru' ? `Продолжить набор: шаг ${activePlan.currentIndex + 1}` : `Resume set: step ${activePlan.currentIndex + 1}`}</button>}</header>
     <div className={styles.availability} role="tablist" aria-label={c.title}><button type="button" role="tab" aria-selected={availability === 'available'} onClick={() => setAvailability('available')}>{c.available}</button><button type="button" role="tab" aria-selected={availability === 'full'} onClick={() => setAvailability('full')}>{c.full}</button></div>
     <section className={styles.toolbar} aria-label={c.themes}>

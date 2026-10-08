@@ -40,3 +40,18 @@
   .relevance{flex-direction:row;justify-content:flex-start}
   .relevance strong{width:43px;height:43px;font-size:.78rem}
 }
+
+/* Full Test Explorer also lives directly on the public EN/RU Client Cabinet home. */
+.embedded{max-width:1560px;width:100%;min-height:auto;margin:24px auto 42px;padding:26px 20px 24px;border:1px solid #e1d0bc;border-radius:26px;box-shadow:0 14px 42px rgba(89,63,39,.09)}
+.embedded .header h1{font-size:clamp(2rem,4vw,3.6rem);line-height:1.05}
+.embedded .header>p:last-child{max-width:74ch}
+.embedded .battery{position:sticky;grid-column:1 / -1;left:auto;right:auto;bottom:12px;margin-top:18px;border-radius:18px;padding:12px 18px;z-index:4}
+.embedded .database{min-width:0}
+@media(max-width:760px){
+ .embedded{margin:16px auto 28px;border-radius:17px;padding:18px 10px 24px}
+ .embedded .header h1{font-size:2.2rem}
+ .embedded .battery{bottom:calc(68px + env(safe-area-inset-bottom));padding:12px 10px;gap:8px;flex-wrap:wrap}
+ .embedded .battery>div:first-child{max-width:100%;width:100%}
+ .embedded .battery>div:last-child{display:flex;width:100%;justify-content:flex-end;gap:8px}
+ .embedded .battery button{margin-left:0}
+}

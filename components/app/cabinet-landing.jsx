@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
+import { PublicTestExplorer } from '@/components/app/public-test-explorer'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
@@ -673,6 +674,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         disabled={busy}
       />
 
+      {phase === "catalog" && <PublicTestExplorer locale={locale} embedded />}
+
       <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
         <header className="library-heading cabinet-tests-heading">
           <p className="about-kicker">{c.testsKicker}</p>
@@ -732,10 +735,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </button>
             </div>
 
-            <Link className="cabinet-monitor-action cabinet-monitor-action--explorer" href={`/${locale}/client/tests`}>
-              <span><strong>{locale === 'ru' ? 'Подобрать набор тестов под мой запрос' : 'Build a test set for my needs'}</strong><small>{locale === 'ru' ? 'Откройте всю базу тестов, выберите темы и глубину — список будет автоматически расставлен по полезности.' : 'Explore the full test database, choose topics and depth, and see the list re-ranked for you.'}</small></span>
-              <ChevronRight aria-hidden="true" />
-            </Link>
+
           </>
         )}
 
