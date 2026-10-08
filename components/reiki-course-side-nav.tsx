@@ -84,7 +84,7 @@ function CourseSideNavigation({
           const isActive = current === item.key;
           return (
             <Link
-              className={"reiki-course-side-nav__item" + (isActive ? " is-active" : "")}
+              className={"reiki-course-side-nav__item" + (!item.number ? " reiki-course-side-nav__item--wide" : "") + (isActive ? " is-active" : "")}
               href={item.href}
               key={item.key}
               aria-current={isActive ? "location" : undefined}
@@ -119,6 +119,10 @@ export function YggdrasilSideNavigation({
       href: `/${locale}/academy/reiki/yggdrasil`,
       label: copy.overview,
     },
+    ...(activeSlug === "overview" ? [
+      { key: "reviews", href: "#yggdrasil-testimonials", label: copy.reviews },
+      { key: "english-videos", href: "#yggdrasil-english-guide", label: copy.videos },
+    ] : []),
     { key: "basic-description", href: "/" + locale + "/academy/reiki/yggdrasil/basic-course/description", label: copy.description },
     ...yggdrasilModuleLandings.map((module) => ({
       key: module.slug,
