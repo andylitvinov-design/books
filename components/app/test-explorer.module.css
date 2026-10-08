@@ -163,3 +163,11 @@
 .legendPrior::before{background:#fff6e9;border:2px solid #915e44;box-sizing:border-box}
 .modelStage:has(.portraitRadar){cursor:default;touch-action:auto}
 .portraitRayOption:focus-within{outline:2px solid #467a73;outline-offset:2px}
+
+.portraitSources{margin:12px 0;padding:10px 12px;border:1px solid #d8cab5;border-radius:12px;background:#fcf9f3}
+.portraitSources summary{cursor:pointer;color:#365f57;font-size:.79rem;font-weight:700}
+.portraitSources>div{display:grid;gap:10px;padding-top:12px}
+.portraitSourceRow{display:flex;flex-direction:column;gap:3px;padding-bottom:9px;border-bottom:1px solid #eadfd3;min-width:0;font-size:.75rem;line-height:1.4}
+.portraitSourceRow:last-child{border-bottom:0}
+.portraitSourceRow span{color:#776557;overflow-wrap:anywhere}
+.portraitSourceRow a{color:#265d54;text-decoration:underline;font-weight:650;margin-top:3px}
