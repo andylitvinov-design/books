@@ -9,5 +9,5 @@ export const metadata: Metadata = {
  robots: { index: false, follow: false },
 };
 export default function SpanishTestExplorerPage() {
- return <main lang="es"><PublicSiteHeader locale="es" /><section className="client-entry-card"><p>Selección de cuestionarios</p><p>La navegación para elegir las pruebas está en español. Algunas preguntas y los resultados completos están disponibles únicamente en inglés o ruso; al iniciar una prueba, la aplicación continuará en inglés.</p><Link href="/es/client">← Volver al área personal</Link></section><PublicTestExplorer locale="es" /></main>;
+ return <main lang="es"><PublicSiteHeader locale="es" /><section className="client-entry-card"><p>Selección de cuestionarios</p><p>La navegación para elegir las pruebas está en español. Algunas preguntas y resultados completos se presentan en su idioma original (inglés o ruso); al iniciar una prueba, la aplicación continuará en inglés.</p><Link href="/es/client">← Volver al área personal</Link></section><PublicTestExplorer locale="es" /></main>;
 }
