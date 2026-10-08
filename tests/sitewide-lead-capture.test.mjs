@@ -79,6 +79,9 @@ test("every applicable public route has a responsive global fallback without two
   assert.match(local, /data-conversion-kind=\{mode\}/);
   assert.match(local, /trainingEnquiryUrl\(locale, pathname\)/);
   assert.match(local, /free-situation-review/);
+  assert.match(component, /AcquisitionEventLink prefetch=\{false\}/);
+  assert.match(local, /AcquisitionEventLink prefetch=\{false\}/);
+  assert.match(local, /<Link prefetch=\{false\} href=\{further\}>/);
   const services = read("app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx");
   const practitioner = read("app/[locale]/masters/[slug]/page.tsx");
   assert.match(services, /id="request-service"/);
