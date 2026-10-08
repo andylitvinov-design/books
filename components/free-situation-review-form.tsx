@@ -6,8 +6,10 @@ import styles from "@/app/[locale]/services/offerings.module.css";
 
 const copy = {
   ru: {
-    title: "Запросить бесплатную консультацию",
-    intro: "Выберите тему и, если хотите, напишите пару слов о запросе. Нажатие на кнопку подготовит сообщение в WhatsApp, которое вы отправите сами. Регистрация не нужна.",
+    title: "Начните с бесплатного личного разбора",
+    intro: "Всего один шаг: выберите тему. Я лично отвечу в переписке, чтобы согласовать вводную беседу. Описывать подробности необязательно.",
+    topicPlaceholder: "Выберите, что сейчас важнее",
+    moreDetails: "Хочу добавить пару слов (необязательно)",
     topic: "Что хотите разобрать?",
     topicOptions: [
       { value: "goal", label: "Цель или важное решение" },
@@ -21,7 +23,7 @@ const copy = {
     situationPlaceholder: "Можете оставить поле пустым и рассказать лично. Не указывайте медицинские или другие чувствительные сведения.",
     outcome: "Куда хотите прийти?",
     outcomePlaceholder: "Ваш желаемый результат (необязательно)",
-    submit: "Подготовить запрос в WhatsApp",
+    submit: "Продолжить в WhatsApp",
     pending: "После нажатия откроется WhatsApp с подготовленным сообщением. Ваша заявка НЕ отправляется автоматически: проверьте сообщение и нажмите «Отправить» в WhatsApp.",
     resumed: "Запрос подготовлен, но ещё не отправлен. Если WhatsApp не открылся, перейдите по ссылке.",
     resume: "Открыть подготовленный запрос",
@@ -31,8 +33,10 @@ const copy = {
     labels: { goal: "Цель / решение", business: "Бизнес / работа", personal: "Личная проблема", wellbeing: "Самочувствие / психогомеопатия" },
   },
   en: {
-    title: "Request your free personal consultation",
-    intro: "Choose a topic and, if you wish, add a short note. The button prepares a WhatsApp message for you to review and send yourself. No account required.",
+    title: "Start with a free personal conversation",
+    intro: "One simple step: choose what matters most right now. I will reply personally so we can agree on an introductory conversation. No need to share details yet.",
+    topicPlaceholder: "Choose what matters to you",
+    moreDetails: "Add a little context (optional)",
     topic: "What would you like to explore?",
     topicOptions: [
       { value: "goal", label: "A goal or important decision" },
@@ -46,8 +50,8 @@ const copy = {
     situationPlaceholder: "You can leave this blank and explain in person. Please avoid medical or other sensitive details.",
     outcome: "What would you like instead?",
     outcomePlaceholder: "Your desired outcome (optional)",
-    submit: "Prepare request in WhatsApp",
-    pending: "WhatsApp opens with your prepared message. This does NOT automatically submit a request; review it and tap Send in WhatsApp.",
+    submit: "Continue in WhatsApp",
+    pending: "Your message is not sent automatically. WhatsApp opens a prepared text: please review it and press Send there.",
     resumed: "Your request is prepared but not sent. If WhatsApp did not open, use the link.",
     resume: "Open prepared request",
     telegram: "Or write directly on Telegram",
@@ -56,8 +60,10 @@ const copy = {
     labels: { goal: "Goal / decision", business: "Business / work", personal: "Personal difficulty", wellbeing: "Wellbeing / psychohomeopathy" },
   },
   es: {
-    title: "Solicita una consulta inicial gratuita",
-    intro: "Cuéntame brevemente tu situación. Leeré tu mensaje y podremos acordar una conversación introductoria gratuita para explorar qué te detiene y cuál podría ser el siguiente paso.",
+    title: "Empecemos con una conversación gratuita",
+    intro: "Solo un paso: elige el tema que te interesa. Te responderé personalmente para acordar una conversación inicial. No necesitas contar los detalles todavía.",
+    topicPlaceholder: "Elige el tema más importante",
+    moreDetails: "Añadir un poco de contexto (opcional)",
     topic: "¿Qué te gustaría explorar?",
     topicOptions: [
       { value: "goal", label: "Un objetivo o una decisión importante" },
@@ -67,12 +73,12 @@ const copy = {
     ],
     name: "¿Cómo te llamas?",
     namePlaceholder: "Nombre (opcional)",
-    situation: "¿En qué punto sientes que estás bloqueado/a?",
-    situationPlaceholder: "¿Qué está ocurriendo y qué te cuesta cambiar?",
+    situation: "Unas palabras sobre tu situación (opcional)",
+    situationPlaceholder: "Puedes dejarlo en blanco y hablar directamente. Evita compartir datos médicos o privados.",
     outcome: "¿Qué te gustaría conseguir?",
     outcomePlaceholder: "Resultado deseado (opcional)",
-    submit: "Preparar solicitud en WhatsApp",
-    pending: "Se abrirá WhatsApp con tu mensaje. Revísalo y pulsa Enviar; no se envía nada sin tu confirmación.",
+    submit: "Continuar por WhatsApp",
+    pending: "Se abrirá WhatsApp con tu solicitud preparada. No se envía automáticamente: revisa el mensaje y pulsa Enviar dentro de WhatsApp.",
     resumed: "Tu mensaje está preparado, pero aún no enviado. Puedes abrirlo desde el enlace.",
     resume: "Abrir solicitud preparada",
     telegram: "O escríbeme directamente por Telegram",
@@ -86,7 +92,7 @@ export function FreeSituationReviewForm({ locale }: { locale: Locale | "es" }) {
   const t = copy[locale];
   const [readyUrl, setReadyUrl] = useState("");
   const [interactive, setInteractive] = useState(false);
-  const [topic, setTopic] = useState<keyof typeof t.labels>("goal");
+  const [topic, setTopic] = useState<keyof typeof t.labels | "">("");
   useEffect(() => {
     const requestedTopic = new URLSearchParams(window.location.search).get("topic");
     if (requestedTopic === "wellbeing" || requestedTopic === "personal" || requestedTopic === "business" || requestedTopic === "goal") setTopic(requestedTopic);
@@ -96,7 +102,8 @@ export function FreeSituationReviewForm({ locale }: { locale: Locale | "es" }) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const topic = String(form.get("topic") || "goal") as keyof typeof t.labels;
+    const topic = String(form.get("topic") || "") as keyof typeof t.labels;
+    if (!topic || !Object.prototype.hasOwnProperty.call(t.labels, topic)) return;
     const name = String(form.get("name") || "").trim().slice(0, 100);
     const situation = String(form.get("situation") || "").trim().slice(0, 900);
     const outcome = String(form.get("outcome") || "").trim().slice(0, 500);
@@ -120,6 +127,7 @@ export function FreeSituationReviewForm({ locale }: { locale: Locale | "es" }) {
       <label>
         <span>{t.topic}</span>
         <select name="topic" required value={topic} onChange={(event) => setTopic(event.target.value as keyof typeof t.labels)}>
+          <option value="" disabled>{t.topicPlaceholder}</option>
           {t.topicOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
       </label>
@@ -127,14 +135,17 @@ export function FreeSituationReviewForm({ locale }: { locale: Locale | "es" }) {
         <span>{t.name}</span>
         <input name="name" autoComplete="given-name" maxLength={100} placeholder={t.namePlaceholder}/>
       </label>
-      <label>
-        <span>{t.situation}</span>
-        <textarea name="situation" rows={3} maxLength={900} placeholder={t.situationPlaceholder}/>
-      </label>
-      <label>
-        <span>{t.outcome}</span>
-        <textarea name="outcome" rows={2} maxLength={500} placeholder={t.outcomePlaceholder}/>
-      </label>
+      <details className={styles.optionalDetails}>
+        <summary>{t.moreDetails}</summary>
+        <label>
+          <span>{t.situation}</span>
+          <textarea name="situation" rows={3} maxLength={900} placeholder={t.situationPlaceholder}/>
+        </label>
+        <label>
+          <span>{t.outcome}</span>
+          <textarea name="outcome" rows={2} maxLength={500} placeholder={t.outcomePlaceholder}/>
+        </label>
+      </details>
       <button type="submit" disabled={!interactive} aria-busy={!interactive}>{t.submit}<span aria-hidden="true">→</span></button>
       <p className={styles.formNote} role="status">{readyUrl ? t.resumed : t.pending}</p>
       {readyUrl && <a href={readyUrl} target="_blank" rel="noopener noreferrer">{t.resume}</a>}

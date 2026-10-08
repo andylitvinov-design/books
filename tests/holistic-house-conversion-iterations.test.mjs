@@ -21,7 +21,7 @@ test("iteration 2: first contact does not require sharing a sensitive written si
   assert.doesNotMatch(form, /name="situation" required/);
   assert.doesNotMatch(form, /if \(!situation\) return/);
   assert.match(form, /situation \? t\.situation/);
-  assert.match(form, /does NOT automatically submit a request/);
+  assert.match(form, /does NOT automatically submit a request|does NOT automatically send|not sent automatically/);
   assert.match(form, /НЕ отправляется автоматически/);
   assert.match(form, /https:\/\/wa\.me\/14376066502/);
 });

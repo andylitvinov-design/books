@@ -34,3 +34,10 @@
 .offer p { margin:0 0 15px; color:#66594d; font:14px/1.65 Arial,Helvetica,sans-serif; }
 .offer a { display:inline-flex; align-items:center; min-height:44px; border-radius:999px; padding:10px 16px; background:#855139; color:#fff; text-decoration:none; font:700 13px/1.5 Arial,Helvetica,sans-serif; }
 @media(max-width:800px){ .cards{grid-template-columns:1fr;} .contentGrid{grid-template-columns:1fr;} .hero h1{font-size:36px;} .article{padding:21px;} .form{padding:22px;} }
+
+/* Collapsible optional context keeps the first-contact capture form short. */
+.optionalDetails { border-top:1px solid #e6d9cb; border-bottom:1px solid #e6d9cb; padding:1px 0; }
+.optionalDetails summary { min-height:46px; display:flex; align-items:center; cursor:pointer; color:#604c3c; font:700 13px/1.5 Arial,Helvetica,sans-serif; }
+.optionalDetails[open] { padding-bottom:12px; }
+.optionalDetails label + label { margin-top:14px; }
+.optionalDetails summary:focus-visible { outline:3px solid #ae7a55; outline-offset:3px; }
