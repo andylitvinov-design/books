@@ -158,4 +158,13 @@ export const yggdrasilSourceImages: YggdrasilSourceImage[] = [
   { id: "teacher-andrii", label: { en: "Teacher · Andrii Litvinov", ru: "Преподаватель · Андрей Литвинов", es: "Profesor · Andrii Litvinov" }, sourceUrl: "https://www.psitrends.com/images/Screenshot_11.png" },
 ];
 
+export const yggdrasilAcademyStorySourcePage = "https://psitrends.com/studies/adv/reiki";
+
+export const yggdrasilAcademyStoryImages = {
+  founder: "https://psitrends.com/images/photo_2023-01-20_22-10-58.jpg",
+  history: "https://psitrends.com/images/photo_2023-01-20_22-19-43.jpg",
+  initiations: "https://psitrends.com/images/Screenshot_9.png",
+  teacher: "https://psitrends.com/images/Screenshot_11.png",
+} as const;
+
 export const yggdrasilProgramSourcePage = "https://psitrends.com/ru/cat-train-ru/shkola-rejki-iggdrasil";
