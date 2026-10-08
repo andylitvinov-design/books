@@ -14,6 +14,14 @@ type Props = { params: Promise<{ locale: string }> };
 
 const copy = {
   ru: {
+    scopeTitle: "Что входит в бесплатную диагностику ситуации?",
+    scopeIntro: "Это предварительный личный разговор о вашем вопросе — не полноценная платная сессия и не медицинская диагностика.",
+    scopeItems: [
+      "Вместе сформулируем основной запрос, который стоит прояснить.",
+      "Рассмотрим предполагаемую точку ступора и возможные ресурсы.",
+      "Обсудим следующий шаг: самостоятельные действия или один из трёх форматов работы, только если вы этого захотите.",
+    ],
+    scopeLimit: "На бесплатной встрече нет назначений гомеопатических средств, медицинского диагноза, гарантированной терапии или обязательной продажи услуг.",
     title: "Бесплатная диагностика ситуации",
     description: "Бесплатный личный разбор цели, проблемы или бизнес-ситуации: прояснить точку затруднения, увидеть зону роста и следующий шаг. Без обязательств.",
     eyebrow: "Бесплатная диагностика ситуации · личный разбор",
@@ -36,9 +44,9 @@ const copy = {
     directionsTitle: "Если захочется продолжить, есть три направления",
     directionsLead: "Метод выбирается после разговора, а не до него. Дополнительные индивидуальные встречи не обязательны.",
     directions: [
-      { title: "Психогомеопатия и личный ресурс", text: "Обсуждение состояния и самочувствия как дополнительной, не медицинской практики.", href: "andy-litvinov/homeopathy-consultation" },
+      { title: "Психогомеопатия и личный ресурс", text: "Обсуждение состояния и самочувствия как дополнительной, не медицинской практики.", href: "psychohomeopathy" },
       { title: "Работа с внутренними образами", text: "Исследование чувств, повторяющихся реакций и внутренней опоры.", href: "imagery-therapy" },
-      { title: "Системные расстановки и архетипы", text: "Исследование отношений, жизненных и деловых решений, возможностей двигаться к цели.", href: "andy-litvinov/personal-constellation-session" },
+      { title: "Системные расстановки и архетипы", text: "Исследование отношений, жизненных и деловых решений, возможностей двигаться к цели.", href: "systemic-constellations" },
     ],
     aboutHeading: "Вы обращаетесь ко мне лично",
     aboutText: "Я работаю с личными и групповыми запросами, образами и системными расстановками. На первой встрече важно не продать вам метод, а понять ваш вопрос.",
@@ -55,6 +63,14 @@ const copy = {
     back: "Все услуги",
   },
   en: {
+    scopeTitle: "What is included in the free situation review?",
+    scopeIntro: "This is a personal introductory conversation, not a full paid session or a medical assessment.",
+    scopeItems: [
+      "Put your most important question into words.",
+      "Explore a possible stuck point and resources you might be overlooking.",
+      "Discuss a next step: something you can try independently, or one of three optional personal-work approaches.",
+    ],
+    scopeLimit: "The free review does not include remedy prescriptions, medical diagnosis, a guaranteed therapeutic result or any obligation to purchase services.",
     title: "Free situation & goal assessment",
     description: "A free personal conversation to clarify your life, work or business situation, identify where you feel stuck and explore a useful next step. No obligation.",
     eyebrow: "Free Situation Review · personal introduction",
@@ -77,9 +93,9 @@ const copy = {
     directionsTitle: "Three possible directions, only if you wish to continue",
     directionsLead: "You don't have to select one before we speak. Further individual work is always optional.",
     directions: [
-      { title: "Psychohomeopathy & personal resources", text: "A complementary conversation about wellbeing and personal resources, not medical treatment.", href: "andy-litvinov/homeopathy-consultation" },
+      { title: "Psychohomeopathy & personal resources", text: "A complementary conversation about wellbeing and personal resources, not medical treatment.", href: "psychohomeopathy" },
       { title: "Guided imagery & inner stability", text: "Explore emotional patterns, recurring reactions and your sense of inner support.", href: "imagery-therapy" },
-      { title: "Systemic & archetypal constellations", text: "Explore relationships, life decisions, business questions and options for moving forward.", href: "andy-litvinov/personal-constellation-session" },
+      { title: "Systemic & archetypal constellations", text: "Explore relationships, life decisions, business questions and options for moving forward.", href: "systemic-constellations" },
     ],
     aboutHeading: "You will speak with me personally",
     aboutText: "I work with personal and group questions through imagery and systemic approaches. In our first conversation, my priority is understanding your situation — not selling you a method.",
@@ -96,6 +112,14 @@ const copy = {
     back: "All services",
   },
   es: {
+    scopeTitle: "¿Qué incluye la evaluación gratuita?",
+    scopeIntro: "Es una conversación introductoria personal, no una sesión completa de pago ni una evaluación médica.",
+    scopeItems: [
+      "Formular la pregunta más importante de tu situación.",
+      "Explorar un posible punto de bloqueo y recursos que quizá no has considerado.",
+      "Hablar del siguiente paso: algo que puedas probar o una de tres modalidades opcionales de trabajo personal.",
+    ],
+    scopeLimit: "La conversación no incluye prescripciones homeopáticas, diagnósticos médicos, resultados terapéuticos garantizados ni obligación de contratar servicios.",
     title: "Evaluación gratuita de tu situación",
     description: "Una conversación personal gratuita para aclarar tu situación, identificar dónde te sientes bloqueado y explorar un próximo paso. Sin compromiso.",
     eyebrow: "Evaluación gratuita de tu situación · conversación personal",
@@ -118,9 +142,9 @@ const copy = {
     directionsTitle: "Tres direcciones posibles, solo si quieres continuar",
     directionsLead: "No necesitas elegir ninguna antes de hablar. La continuidad siempre es opcional.",
     directions: [
-      { title: "Psicohomeopatía y recursos personales", text: "Conversación complementaria sobre bienestar y recursos, no tratamiento médico.", href: "andy-litvinov/homeopathy-consultation" },
+      { title: "Psicohomeopatía y recursos personales", text: "Conversación complementaria sobre bienestar y recursos, no tratamiento médico.", href: "psychohomeopathy" },
       { title: "Imágenes guiadas y apoyo interior", text: "Explorar emociones, reacciones y estabilidad interior.", href: "imagery-therapy" },
-      { title: "Constelaciones sistémicas y arquetipos", text: "Explorar relaciones, decisiones y posibilidades para tus metas.", href: "andy-litvinov/personal-constellation-session" },
+      { title: "Constelaciones sistémicas y arquetipos", text: "Explorar relaciones, decisiones y posibilidades para tus metas.", href: "systemic-constellations" },
     ],
     aboutHeading: "Hablarás conmigo personalmente",
     aboutText: "Trabajo con preguntas personales y grupales mediante imágenes y enfoques sistémicos. La primera conversación empieza por comprender tu situación, no por venderte una técnica.",
@@ -206,6 +230,14 @@ export default async function FreeSituationReviewPage({ params }: Props) {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section className={styles.scope} aria-labelledby="review-scope-title">
+        <p className={styles.eyebrow}>{t.stepsEyebrow}</p>
+        <h2 id="review-scope-title">{t.scopeTitle}</h2>
+        <p>{t.scopeIntro}</p>
+        <ul>{t.scopeItems.map(item => <li key={item}><CheckCircle2 size={19} aria-hidden="true"/><span>{item}</span></li>)}</ul>
+        <p className={styles.scopeLimit}>{t.scopeLimit}</p>
       </section>
 
       <section className={styles.directions} aria-labelledby="review-directions-title">

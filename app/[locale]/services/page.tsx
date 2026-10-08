@@ -159,17 +159,15 @@ export default async function ServicesPage({ params }: PageProps) {
     const service = offerings.find((item) => item.slug === slug);
     return service ? `/${locale}/services/${service.practitionerSlug}/${service.slug}` : null;
   };
-  const personalConstellationHref = servicePage("personal-constellation-session");
   const businessConstellationHref = servicePage("business-situation-constellation");
-  const homeopathyHref = servicePage("homeopathy-consultation");
   const serviceIndexHrefs: Record<string, string> = {
     hypnotherapy: `/${locale}/academy/applied/hypnotherapy-regressions`,
-    "systemic-constellations": personalConstellationHref ?? `/${locale}/masters/andy-litvinov`,
+    "systemic-constellations": `/${locale}/services/systemic-constellations`,
     "business-decision-constellations": businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
     "reiki-energy-work": `/${locale}/academy/reiki`,
     business: businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-    alchemy: homeopathyHref ?? `/${locale}/masters/andy-litvinov`,
-    archetypal: personalConstellationHref ?? `/${locale}/masters/andy-litvinov`,
+    alchemy: `/${locale}/services/psychohomeopathy`,
+    archetypal: `/${locale}/services/systemic-constellations`,
   };
   const coreShowcaseItems: CatalogShowcaseItem[] = entry.services.map(({ id, title, subtitle, text }) => ({
     id: "service-" + id,
