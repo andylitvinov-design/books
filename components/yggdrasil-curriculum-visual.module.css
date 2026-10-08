@@ -40,6 +40,11 @@
 .stepBody :global(.yggdrasil-step-more > summary span) { font-size: 13px; }
 .stepBody :global(.yggdrasil-settings-grid) { grid-template-columns: 1fr; }
 .stepBody :global(.yggdrasil-setting-card) { border-radius: 10px; padding: 13px; }
+.videoDetails { border-top: 1px solid #e3d6c9; margin: 12px 0 10px; }
+.videoDetails > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 3px; color: #71462f; font-size: 13px; font-weight: 800; cursor: pointer; }
+.videoDetails > summary::after { content: "+"; font-size: 20px; line-height: 1; }
+.videoDetails[open] > summary::after { content: "−"; }
+.videoDetails :global(.yggdrasil-video-grid) { grid-template-columns: 1fr; }
 .sourceDetails { border-top: 1px solid #ddd0c3; margin: 32px 0 0; padding: 14px 0; color: #7d6c60; font-size: 12px; }
 .sourceDetails summary { cursor: pointer; font-size: 12px; font-weight: 750; }
 .sourceDetails > div { margin: 14px 0 10px; }
