@@ -3,30 +3,59 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
-import styles from './test-explorer-consent.module.css'
+import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
 
 async function request(path, body, method = 'POST') {
-  const response = await fetch(`/api/app/${path}`, { method, credentials: 'same-origin', cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined })
+  const response = await fetch('/api/app/' + path, {
+    method, credentials: 'same-origin', cache: 'no-store',
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  })
   const value = await response.json().catch(() => ({ error: 'SERVICE_UNAVAILABLE' }))
-  if (!response.ok) { const error = new Error(value.error || 'SERVICE_UNAVAILABLE'); error.code = value.error; throw error }
+  if (!response.ok) {
+    const error = new Error(value.error || 'SERVICE_UNAVAILABLE')
+    error.code = value.error
+    error.status = response.status
+    throw error
+  }
   return value
 }
 
 export function PublicTestExplorer({ locale, embedded = false }) {
-  const [pending, setPending] = useState(null), [adult, setAdult] = useState(false), [necessary, setNecessary] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(null)
-  const router = useRouter(), ru = locale === 'ru', es = locale === 'es'
-  const submit = async (entries, createSession = false) => {
-    setBusy(true); setError(null)
+  const router = useRouter()
+  const [error, setError] = useState('')
+  const effectiveLocale = locale === 'ru' ? 'ru' : 'en'
+  const submit = async (entries) => {
+    setError('')
     try {
-      if (createSession) await request('guest/session', { adult, necessary, uiLocale: es ? 'en' : locale, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' })
-      const plan = await request('guest/test-plans', { items: entries.map((entry) => ({ definitionKey: entry.definition.key, definitionVersion: entry.definition.version, instrumentLocale: entry.definition.instrumentLocale })), operationId: crypto.randomUUID(), replaceActive: false })
-      router.push(`/${es ? 'en' : locale}/client?plan=${encodeURIComponent(plan.id)}`)
+      // Only cleared test identifiers are retained in this tab; never answers, email or tokens.
+      // The explicit Start action authorizes this short-lived handoff to the user's own account.
+      window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY,
+        makeTestSelectionIntent(entries.map((entry) => entry.key)))
+      let signedIn = false
+      try {
+        const session = await request('bootstrap', undefined, 'GET')
+        signedIn = Boolean(session.account?.id)
+      } catch (cause) {
+        if (cause.status !== 401) throw cause
+      }
+      if (signedIn) {
+        router.push('/' + effectiveLocale + '/app/tests?selection=pending')
+        return
+      }
+      const { redirectUrl } = await request('auth/start', {
+        locale: effectiveLocale, continueTo: 'tests',
+      })
+      window.location.assign(redirectUrl)
     } catch (cause) {
-      if (cause.code === 'GUEST_SESSION_REQUIRED') setPending(entries)
-      else setError(cause)
-    } finally { setBusy(false) }
+      setError(cause?.code === 'APP_UNAVAILABLE' || cause?.code === 'SIGN_IN_UNAVAILABLE'
+        ? (locale === 'ru' ? 'Вход через Google сейчас недоступен. Попробуйте позже.' : locale === 'es' ? 'El acceso con Google no está disponible ahora.' : 'Google sign-in is currently unavailable. Please try again.')
+        : (locale === 'ru' ? 'Не удалось продолжить. Проверьте соединение и повторите попытку.' : locale === 'es' ? 'No se pudo continuar. Inténtalo de nuevo.' : 'Could not continue. Please check your connection and try again.'))
+      throw cause
+    }
   }
-  return <><TestExplorer locale={locale} audience="guest" embedded={embedded} onStart={(entries) => submit(entries)} />
-    {pending && <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label={ru ? 'Перед началом' : es ? 'Antes de empezar' : 'Before you start'}><section className={styles.dialog}><h2>{ru ? 'Перед началом' : es ? 'Antes de empezar' : 'Before you start'}</h2><p>{ru ? 'Чтобы временно сохранить выбранный набор и ответы, подтвердите необходимые условия обработки.' : es ? 'Para guardar temporalmente tu selección y tus respuestas, acepta las condiciones necesarias para su tratamiento.' : 'To temporarily store your selected set and answers, confirm the necessary processing conditions.'}</p><label><input type="checkbox" checked={adult} onChange={(event) => setAdult(event.target.checked)} />{ru ? 'Мне исполнилось 18 лет.' : es ? 'Tengo 18 años o más.' : 'I am 18 or older.'}</label><label><input type="checkbox" checked={necessary} onChange={(event) => setNecessary(event.target.checked)} />{ru ? 'Я согласен(-на) на временную приватную обработку ответов и результатов.' : es ? 'Acepto el tratamiento privado y temporal de mis respuestas y resultados.' : 'I agree to temporary private processing of my answers and result.'}</label>{error && <p role="alert">{error.code || error.message}</p>}<div className={styles.actions}><button type="button" onClick={() => setPending(null)}>{ru ? 'Назад' : es ? 'Atrás' : 'Back'}</button><button type="button" disabled={busy || !adult || !necessary} onClick={() => submit(pending, true)}>{busy ? '…' : (ru ? 'Продолжить' : es ? 'Continuar' : 'Continue')}</button></div></section></div>}
+  return <>
+    <TestExplorer locale={locale} audience="account" embedded={embedded} onStart={submit} />
+    {error && <p role="alert" className="cabinet-test-error">{error}</p>}
   </>
 }

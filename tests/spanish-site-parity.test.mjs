@@ -25,11 +25,11 @@ test('Spanish practitioner paths and contact routes keep protected app separate'
  assert.match(content('app/es/client/page.tsx'),/locale="en" displayLocale="es"/);
  assert.doesNotMatch(content('app/sitemap.ts'),/['"]\/es\/client['"]/);
 });
-test('Spanish guest explorer, privacy and terms exist without creating Spanish private sessions', () => {
+test('Spanish public explorer, privacy and terms exist and authenticate via the English account', () => {
  for(const path of ['app/es/client/tests/page.tsx','app/es/privacy/page.tsx','app/es/terms/page.tsx']) assert.ok(exists(path),path);
  assert.match(content('components/app/test-explorer.jsx'),/Prepara tu selección de pruebas/);
- assert.match(content('components/app/public-test-explorer.jsx'),/uiLocale: es \? 'en' : locale/);
- assert.match(content('components/app/public-test-explorer.jsx'),/es \? 'en' : locale/);
+ assert.match(content('components/app/public-test-explorer.jsx'),/locale === 'ru' \? 'ru' : 'en'/);
+ assert.match(content('components/app/public-test-explorer.jsx'),/continueTo: 'tests'/);
  assert.match(content('app/es/client/tests/page.tsx'),/idioma original/);
  assert.match(content('app/es/privacy/page.tsx'),/Privacidad/);
  assert.match(content('app/es/terms/page.tsx'),/Condiciones de uso/);

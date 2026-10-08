@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
-import { buildExplorerEntries, buildStarterBattery, coverageForSelection, coverageForFocus, filterExplorerEntries, rankExplorerEntries } from '@/lib/assessments/test-explorer'
+import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import styles from './test-explorer.module.css'
 
@@ -15,11 +15,17 @@ const COPY = {
   es: { kicker: 'Monitor mente–cuerpo', title: 'Prepara tu selección de pruebas', intro: 'Elige los temas y el formato que más te interesen. Los cuestionarios se realizan en su idioma disponible y los resultados se muestran en la aplicación en inglés.', available: 'Disponibles ahora', full: 'Base completa', themes: 'Filtrar pruebas por temas', style: 'Tipo', length: 'Duración', depth: 'Profundidad deseada', area: 'Área', free: 'Solo gratuitas', search: 'Buscar pruebas', sort: 'Ordenar', recommended: 'Recomendadas primero', shortest: 'Más breves primero', deepest: 'Más detalladas primero', alphabetic: 'A–Z', suggested: 'Elegir una selección recomendada', clear: 'Limpiar', selected: 'seleccionadas', questions: 'preguntas', minutes: 'min', axes: 'ejes', focused: 'Enfocada', balanced: 'Equilibrada', broad: 'Amplia', start: 'Comenzar pruebas gratuitas', choose: 'Elige al menos una prueba', availableStatus: 'Disponible', metadata: 'Referencia de investigación', details: 'Detalles', warning: 'Más de 8 pruebas o 30 minutos pueden resultar difíciles de completar en una sola sesión.', privacy: 'Tus selecciones no se guardan hasta que aceptas expresamente iniciar las pruebas.', relevance: 'Coincidencia', matchNote: 'Muestra la afinidad con los temas elegidos, no una probabilidad médica.', best: 'Mejor coincidencia', complements: 'Complementa tu selección', filters: 'Más filtros', selectedThemes: 'temas elegidos', filterClear: 'Limpiar filtros', matching: 'pruebas encontradas', of: 'de', kept: 'pruebas elegidas visibles', noMatches: 'No hay pruebas para estos filtros. Cambia un tema o filtro.', topicHint: 'Los temas filtran al instante; elige las pruebas para construir tu seguimiento.', topicPreview: 'Ejes de los temas elegidos', testCoverage: 'Cobertura de pruebas elegidas', totalAvailable: 'disponibles para empezar' },
 }
 
+const ADVANCED_COPY = {
+  en: { subtitle: 'Refine your choice', hint: 'Combine filters to find questionnaires that fit your topic, time and goals. Numbers update immediately.', detail: 'Specific concerns', scales: 'Scales to monitor', time: 'Time available', language: 'Questionnaire language', tracking: 'Testing goal', any: 'Any', two: 'Up to 2 min', five: 'Up to 5 min', ten: 'Up to 10 min', bilingual: 'English + Russian', english: 'English original', repeat: 'Track changes over time', baseline: 'One-time / baseline', about: 'These are filters for choosing questionnaires, not assessment results.', filterCount: 'active criteria' },
+  ru: { subtitle: 'Уточните подбор', hint: 'Комбинируйте фильтры по запросу, времени и цели. Количество тестов меняется сразу.', detail: 'Конкретные проблемы', scales: 'Измеряемые шкалы', time: 'Время на прохождение', language: 'Язык вопросов', tracking: 'Цель тестирования', any: 'Любой', two: 'До 2 минут', five: 'До 5 минут', ten: 'До 10 минут', bilingual: 'Английский + русский', english: 'Английский оригинал', repeat: 'Отслеживать изменения', baseline: 'Разовое / базовый профиль', about: 'Это параметры подбора опросников, не результаты диагностики.', filterCount: 'активных параметров' },
+  es: { subtitle: 'Afinar tu elección', hint: 'Combina criterios por tema, tiempo y objetivo. El número se actualiza al instante.', detail: 'Temas específicos', scales: 'Escalas a seguir', time: 'Tiempo disponible', language: 'Idioma del cuestionario', tracking: 'Objetivo', any: 'Cualquiera', two: 'Hasta 2 min', five: 'Hasta 5 min', ten: 'Hasta 10 min', bilingual: 'Inglés y ruso', english: 'Original en inglés', repeat: 'Seguir la evolución', baseline: 'Una vez / perfil inicial', about: 'Filtros para elegir pruebas, no resultados clínicos.', filterCount: 'criterios activos' },
+}
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
 export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null }) {
   const c = COPY[locale] || COPY.en
+  const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const [availability, setAvailability] = useState('available')
   const [concern, setConcern] = useState('')
   const [voiceSupported, setVoiceSupported] = useState(false)
@@ -62,6 +68,11 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [lengths, setLengths] = useState([])
   const [depth, setDepth] = useState('balanced')
   const [areas, setAreas] = useState([])
+  const [details, setDetails] = useState([])
+  const [axes, setAxes] = useState([])
+  const [maxMinutes, setMaxMinutes] = useState(0)
+  const [language, setLanguage] = useState('any')
+  const [tracking, setTracking] = useState('any')
   const [freeOnly, setFreeOnly] = useState(false)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('recommended')
@@ -75,23 +86,26 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   useEffect(() => {
     if (recommendedKey && entries.some((entry) => entry.key === recommendedKey && entry.selectable)) setSelectedKeys([recommendedKey])
   }, [recommendedKey, entries])
-  const matching = useMemo(() => filterExplorerEntries(entries, { availability, focus, styles: stylesFilter, lengths, areas, freeOnly, search: query }), [entries, availability, focus, stylesFilter, lengths, areas, freeOnly, query])
+  const facets = { availability, focus, styles: stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
+  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
+  const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, stylesFilter, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
+  const detailCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_DETAIL_TOPICS.map((item) => [item.key, detailCandidates.filter((entry) => entry.topics.includes(item.key)).length])), [detailCandidates])
   // A selected test stays visible even if new filters no longer match it.
-  const filtered = useMemo(() => filterExplorerEntries(entries, { availability, focus, styles: stylesFilter, lengths, areas, freeOnly, search: query, selectedKeys }), [entries, availability, focus, stylesFilter, lengths, areas, freeOnly, query, selectedKeys])
-  const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, depth, stylesFilter, lengths, selectedKeys])
+  const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
+  const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, axes, depth, stylesFilter, lengths, selectedKeys])
   const visible = useMemo(() => ranked.filter((entry) => !axisFilter || selectedKeys.includes(entry.key) || entry.analysisAxes.some((axis) => axis.key === axisFilter)).sort((a, b) => sort === 'shortest' ? (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity) : sort === 'deepest' ? (b.durationMinutes ?? 0) - (a.durationMinutes ?? 0) : sort === 'alphabetic' ? a.title.localeCompare(b.title, locale) : 0), [ranked, sort, locale, axisFilter, selectedKeys])
   const selected = entries.filter((entry) => selectedKeys.includes(entry.key))
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
-  const topicCoverage = useMemo(() => coverageForFocus(focus), [focus])
+  const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes }), [entries, focus, details, axes])
   const showingCoverage = selectedKeys.length > 0
   const displayedCoverage = showingCoverage ? coverage : topicCoverage
   const matchCount = matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)).length
-  const appliedFilters = stylesFilter.length + lengths.length + areas.length + (freeOnly ? 1 : 0) + (query.trim() ? 1 : 0) + (axisFilter ? 1 : 0)
+  const appliedFilters = stylesFilter.length + lengths.length + areas.length + details.length + axes.length + (maxMinutes ? 1 : 0) + (language !== 'any' ? 1 : 0) + (tracking !== 'any' ? 1 : 0) + (freeOnly ? 1 : 0) + (query.trim() ? 1 : 0) + (axisFilter ? 1 : 0)
   const questions = selected.reduce((sum, entry) => sum + (entry.questionCount || 0), 0)
   const minutes = selected.reduce((sum, entry) => sum + (entry.durationMinutes || 0), 0)
   const breadth = c[coverage.breadth]
-  const chooseSuggested = () => setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)), { focus, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
-  const resetFilters = () => { setAvailability('available'); setFocus([]); setStylesFilter([]); setLengths([]); setDepth('balanced'); setAreas([]); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
+  const chooseSuggested = () => setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
+  const resetFilters = () => { setAvailability('available'); setFocus([]); setStylesFilter([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
   const toggleSelected = (key) => setSelectedKeys((current) => current.includes(key) ? current.filter((item) => item !== key) : current.length < 12 ? [...current, key] : current)
   const start = async () => {
     if (!selected.length || !onStart) return
@@ -124,13 +138,19 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     <section className={styles.toolbar} aria-label={c.themes}>
       <div className={styles.filterStatus} role="status" aria-live="polite"><strong>{matchCount} {c.matching}</strong><span>{focus.length} {c.selectedThemes} · {appliedFilters} {c.filters.toLocaleLowerCase()}</span><button type="button" onClick={resetFilters}>{c.filterClear}</button></div>
       <div className={styles.filterGroup}><span>{c.themes}</span><p className={styles.topicHint}>{c.topicHint}</p><div>{TEST_RECOMMENDATION_FOCUS.map((item) => <button key={item.key} type="button" aria-pressed={focus.includes(item.key)} onClick={() => setFocus((value) => toggle(value, item.key))}>{item.label[locale] || item.label.en}</button>)}</div></div>
-      <details className={styles.moreFilters} open={filtersOpen} onToggle={(event) => setFiltersOpen(event.currentTarget.open)}><summary>{c.filters} {appliedFilters ? `(${appliedFilters})` : ''}</summary><div className={styles.filterGrid}>
+      <details className={styles.moreFilters} open={filtersOpen} onToggle={(event) => setFiltersOpen(event.currentTarget.open)}><summary>{c.filters} · {appliedFilters} {advanced.filterCount}</summary>
+      <p className={styles.advancedIntro}><strong>{advanced.subtitle}.</strong> {advanced.hint}</p><div className={styles.filterGrid}>
         <Filter label={c.style} items={TEST_STYLE_FILTERS} selected={stylesFilter} onToggle={(key) => setStylesFilter((value) => toggle(value, key))} locale={locale} />
         <Filter label={c.length} items={TEST_LENGTH_FILTERS} selected={lengths} onToggle={(key) => setLengths((value) => toggle(value, key))} locale={locale} />
         <Filter label={c.depth} items={depthOptions.map((key) => ({ key, label: { en: key[0].toUpperCase() + key.slice(1), ru: key === 'quick' ? 'Быстро' : key === 'balanced' ? 'Сбалансированно' : 'Глубоко', es: key === 'quick' ? 'Breve' : key === 'balanced' ? 'Equilibrada' : 'Profunda' } }))} selected={[depth]} onToggle={setDepth} locale={locale} single />
         <Filter label={c.area} items={MONITOR_AREAS.map((area) => ({ key: area.key, label: { en: area.en, ru: area.ru } }))} selected={areas} onToggle={(key) => setAreas((value) => toggle(value, key))} locale={locale} />
+        <Filter label={advanced.detail} items={TEST_EXPLORER_DETAIL_TOPICS.map((item) => ({ ...item, label: { ...item.label, [locale]: `${item.label[locale] || item.label.en} · ${detailCounts[item.key] || 0}` } }))} selected={details} onToggle={(key) => setDetails((value) => toggle(value, key))} locale={locale} />
+        <Filter label={advanced.scales} items={TEST_EXPLORER_AXES.map((key) => ({ key, label: TEST_EXPLORER_AXIS_LABELS[key] }))} selected={axes} onToggle={(key) => setAxes((value) => toggle(value, key))} locale={locale} />
+        <Filter label={advanced.time} items={[{ key: '0', label: { en: advanced.any } }, { key: '2', label: { en: advanced.two } }, { key: '5', label: { en: advanced.five } }, { key: '10', label: { en: advanced.ten } }]} selected={[String(maxMinutes)]} onToggle={(key) => setMaxMinutes(Number(key))} locale={locale} single />
+        <Filter label={advanced.language} items={[{ key: 'any', label: { en: advanced.any } }, { key: 'bilingual', label: { en: advanced.bilingual } }, { key: 'english', label: { en: advanced.english } }]} selected={[language]} onToggle={setLanguage} locale={locale} single />
+        <Filter label={advanced.tracking} items={[{ key: 'any', label: { en: advanced.any } }, { key: 'repeat', label: { en: advanced.repeat } }, { key: 'baseline', label: { en: advanced.baseline } }]} selected={[tracking]} onToggle={setTracking} locale={locale} single />
         <label className={styles.check}><input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />{c.free}</label>
-      </div></details>
+      </div><p className={styles.advancedNote}>{advanced.about}</p></details>
       <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={c.search} aria-label={c.search} />
       <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option></select></label>
     </section>

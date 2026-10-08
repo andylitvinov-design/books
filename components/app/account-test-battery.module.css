@@ -1,0 +1,41 @@
+
+.shell{margin:0 auto 30px;max-width:1060px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.header h1{font-size:clamp(2.2rem,4vw,3.6rem);margin:6px 0 12px}
+.header p{max-width:66ch}
+.overview{display:flex;flex-wrap:wrap;align-items:center;gap:12px 22px;margin:24px 0}
+.counter{display:flex;align-items:baseline;gap:8px;font-weight:650}
+.counter strong{font-size:1.65rem}
+.overview progress,.status progress{height:10px;accent-color:#587d70;border-radius:20px}
+.overview progress{flex:1;min-width:170px}
+.group{display:grid;gap:15px}
+.row{display:grid;grid-template-columns:140px minmax(0,1fr) auto;align-items:center;gap:22px;padding:16px;border:1px solid #e6d9c9;background:#fffdf9;border-radius:18px}
+.image{display:block;position:relative;aspect-ratio:4/3;border-radius:13px;overflow:hidden;background:#e6dfd6}
+.image img{object-fit:cover}
+.info h2{font-size:clamp(1.14rem,2vw,1.35rem);margin:0 0 6px}
+.description{font-size:.9rem;line-height:1.5;color:#6a594e;margin:0 0 10px}
+.meta{font-size:.79rem;color:#806c5d;display:flex;flex-wrap:wrap;gap:4px 13px}
+.status{margin-top:12px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:.84rem;color:#5e534c}
+.status strong{font-size:.85rem}
+.status progress{width:100px}
+.completed{color:#306f54}
+.inProgress{color:#8b603a}
+.rowActions{display:grid;gap:8px;justify-items:stretch}
+.rowActions button{min-width:142px;max-width:195px}
+.rowActions a{text-align:center;font-size:.78rem;text-decoration:underline}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+.notice{background:#fbf2e7;border:1px solid #dbbd91;border-radius:15px;padding:16px 20px;margin:14px 0}
+.notice h2{font-size:1.3rem;margin:0 0 8px}
+.notice div{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.notice button{min-width:130px}
+.empty{padding:24px 0}
+.muted{font-size:.87rem;color:#6f6459}
+@media(max-width:720px){
+ .row{grid-template-columns:92px minmax(0,1fr);gap:12px;padding:12px}
+ .image{align-self:start;aspect-ratio:4/5}
+ .rowActions{grid-column:1/-1;display:flex}
+ .rowActions button{width:100%;max-width:none}
+ .meta{gap:3px 10px}
+ .overview progress{width:100%}
+}
+@media(max-width:410px){.row{grid-template-columns:78px minmax(0,1fr)}.status progress{width:66px}}

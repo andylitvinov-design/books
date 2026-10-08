@@ -2321,10 +2321,27 @@
   .tantra-journey__photo { aspect-ratio: 16 / 10; }
 }
 
-/* Preserve the explanatory stage paragraph for Spanish visitors when no
-   full author-sourced translation is yet available in that locale. */
-.tantra-journey__spanish-intro { max-width: 68ch; margin: 0; font-size: 15px; line-height: 1.7; color: #443c35; }
 
+/* Tantra Reiki photographic chapters — stable proportions instead of excessive crops. */
+@media (min-width: 701px) {
+  .tantra-journey__level { align-items: start; }
+  .tantra-journey__photo {
+    align-self: start;
+    width: 100%;
+    height: clamp(380px, 42vw, 555px);
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+    background-color: #e9ded2;
+  }
+}
+.tantra-journey__photo img { object-fit: cover; }
+.tantra-journey__author-text h4 { text-wrap: balance; }
+.tantra-journey__author-text p { overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .tantra-journey__level { min-height: 0; }
+  .tantra-journey__author-text p { font-size: clamp(16px, 4.1vw, 18px); line-height: 1.62; }
+  .tantra-journey__level-heading h3 { text-wrap: balance; }
+}
 
 /* Original guided meditation paths: accessible, photo-led, non-deceptive
    fallbacks when an archived YouTube meditation is not yet verified. */
