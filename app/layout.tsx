@@ -12,6 +12,7 @@ import "./site-video-admin.css";
 import "./reader-responsive.css";
 import "./ia-v2.css";
 import "./academy.css";
+import "./yggdrasil-basic-description.css";
 import "./catalog-showcase.css";
 
 export const metadata: Metadata = {
