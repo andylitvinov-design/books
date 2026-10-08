@@ -17,6 +17,7 @@ import "./yggdrasil-basic-description.css";
 import "./catalog-showcase.css";
 import "./temple-studies.css";
 import "./sitewide-capture.css";
+import "./public-wide-layout.css";
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
