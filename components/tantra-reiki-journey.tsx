@@ -303,15 +303,15 @@ const stages = [
  * attendees are taking the precise initiation described alongside the image.
  */
 const levelPhotos = [
-  { src: tantraReikiArchive.images.ru[16], description: "Embodied awareness and first connection" },
-  { src: tantraReikiArchive.images.ru[13], description: "Grounded attention and the practice of energy" },
-  { src: tantraReikiArchive.images.ru[18], description: "Connection and a shared field of practice" },
-  { src: tantraReikiArchive.images.ru[19], description: "A conscious relationship with another person" },
-  { src: tantraReikiArchive.images.ru[14], description: "Creative expression and inner presence" },
-  { src: tantraReikiArchive.images.ru[20], description: "A quieter, more integrated inner state" },
-  { src: tantraReikiArchive.images.ru[15], description: "Reflection and clear attention" },
-  { src: tantraReikiArchive.images.ru[21], description: "Exploration, creation and shared practice" },
-  { src: tantraReikiArchive.images.ru[22], description: "The shared experience of an embodied practice" }
+  { src: tantraReikiArchive.images.ru[17], description: "Gentle embodied connection during practice", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[14], description: "Quiet reflective meditation in nature", archive: false, position: "center 52%" },
+  { src: tantraReikiArchive.images.ru[18], description: "Shared mindful experience", archive: true, position: "center 44%" },
+  { src: tantraReikiArchive.images.ru[11], description: "Presence and connection during a workshop", archive: true, position: "center 46%" },
+  { src: tantraReikiArchive.images.ru[20], description: "Creative practice and mindful attention", archive: true, position: "center 45%" },
+  { src: tantraReikiArchive.images.ru[10], description: "Calm reflection and integration", archive: true, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[15], description: "Quiet attention during a shared gathering", archive: true, position: "center 42%" },
+  { src: tantraReikiArchive.images.ru[21], description: "Embodied creative expression in practice", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[22], description: "A moment from the original practice archive", archive: true, position: "center 45%" }
 ] as const;
 
 /**
@@ -399,13 +399,13 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
         const n=i+1;
         const copy=stage[locale];
         const phase=Math.floor(i/3);
-    const photo = levelPhotos[i];
+        const photo = levelPhotos[i];
         return (
           <article className={"tantra-journey__level tantra-journey__level--phase-"+phase} id={"tantra-level-"+n} key={n} aria-labelledby={"tantra-heading-"+n}>
             <figure className="tantra-journey__photo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.src} alt={photo.description} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
-              <figcaption>{locale === "ru" ? "Фото из архива практик · иллюстрация темы" : locale === "es" ? "Foto del archivo · imagen ilustrativa" : "From our practice archive · illustrative photograph"}</figcaption>
+              <img src={photo.src} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+              <figcaption>{photo.archive ? (locale === "ru" ? "Фото из архива практик · иллюстрация темы" : locale === "es" ? "Foto del archivo · imagen ilustrativa" : "From our practice archive · illustrative photograph") : (locale === "ru" ? "Тематическая фотография" : locale === "es" ? "Fotografía ilustrativa" : "Illustrative photograph")}</figcaption>
             </figure>
             <div className="tantra-journey__level-heading">
               <div className="tantra-journey__chapter">
@@ -417,7 +417,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
             </div>
             
             <div className="tantra-journey__details">
-              <p className="tantra-journey__description">{copy.intro}</p>
+              
               {locale !== "es" ? (
                 <div className="tantra-journey__author-text" lang={locale}>
                   <h4>{c.original}</h4>
@@ -425,7 +425,9 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
                     <p key={j}>{paragraph}</p>
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <p className="tantra-journey__spanish-intro">{copy.intro}</p>
+              )}
               <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
               <div className="tantra-journey__settings">
                 <h4>{c.settings}</h4>

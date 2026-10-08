@@ -150,7 +150,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               </div>
               <figure className="tantra-course-hero__visual">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={tantraReikiFullArchive.images.ru[16]} alt={locale === "ru" ? "Архивное фото участников практик" : locale === "es" ? "Fotografía del archivo de prácticas" : "Photograph from the original practice archive"} loading="eager" decoding="async" />
+                <img src={tantraReikiFullArchive.images.ru[12]} alt={locale === "ru" ? "Архивное фото участников практик" : locale === "es" ? "Fotografía del archivo de prácticas" : "Photograph from the original practice archive"} loading="eager" decoding="async" />
                 <figcaption>{locale === "ru" ? "Реальная фотография из архива практик" : locale === "es" ? "Fotografía real del archivo" : "Real photograph from the practice archive"}</figcaption>
               </figure>
             </section>
