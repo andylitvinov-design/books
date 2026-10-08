@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
-import { isSupportedLocale, getHomeopathyLocaleParams } from "@/data/remedies";
+import { getHomeopathyLocaleParams } from "@/data/remedies";
+import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "../offerings.module.css";
 
@@ -39,21 +40,36 @@ const copy = {
     request: "Request an imagery therapy session",
     back: "All my services",
   },
+  es: {
+    title: "Terapia con imágenes — sesiones individuales",
+    eyebrow: "Atención individual · Toronto y en línea",
+    description: "Trabajo individual con imágenes interiores, emociones, patrones repetitivos, límites personales y recursos de apoyo.",
+    lead: "A veces sabes lo que quieres, pero te cuesta avanzar, o una misma situación dolorosa se repite. En las sesiones exploramos tus emociones, imágenes y partes interiores para comprender el problema, fortalecer la confianza en ti y encontrar claridad para los siguientes pasos.",
+    heading: "¿Qué podemos explorar?",
+    points: [
+      "Conflictos interiores, miedo al juicio y dificultad para expresarte.",
+      "Reacciones recurrentes, vínculos y limitaciones personales.",
+      "Estabilidad, límites, apoyo interior y nuevas posibilidades de acción.",
+    ],
+    process: "Empezamos por tu situación y acordamos los límites de la sesión. El trabajo con imágenes y otros métodos vivenciales es voluntario y se utiliza de común acuerdo. No se garantiza un resultado concreto.",
+    request: "Solicitar una sesión de terapia con imágenes",
+    back: "Todos mis servicios",
+  },
 } as const;
 
-export function generateStaticParams() { return getHomeopathyLocaleParams(); }
+export function generateStaticParams() { return [...getHomeopathyLocaleParams(), { locale: "es" }]; }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) return { title: "Not found" };
+  if (!isPublicLocale(locale)) return { title: "Not found" };
   const t = copy[locale];
   return {
     metadataBase: metadataBaseFor(), title: t.title + " — Holistic House", description: t.description,
-    alternates: { canonical: "/" + locale + "/services/imagery-therapy", languages: { en: "/en/services/imagery-therapy", ru: "/ru/services/imagery-therapy" } },
+    alternates: { canonical: "/" + locale + "/services/imagery-therapy", languages: { en: "/en/services/imagery-therapy", ru: "/ru/services/imagery-therapy", es: "/es/services/imagery-therapy" } },
   };
 }
 export default async function ImageryTherapyPage({ params }: Props) {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) notFound();
+  if (!isPublicLocale(locale)) notFound();
   const t = copy[locale];
   return (
     <main className={styles.page} lang={locale}>
@@ -69,8 +85,8 @@ export default async function ImageryTherapyPage({ params }: Props) {
           <h2>{t.heading}</h2>
           <ul>{t.points.map((point) => <li key={point}>{point}</li>)}</ul>
           <p>{t.process}</p>
-          <p className={styles.disclaimer}>{locale === "ru" ? "Личная работа не заменяет медицинскую диагностику, неотложную помощь или психиатрическое лечение." : "Personal work is not a substitute for medical assessment, urgent care or psychiatric treatment."}</p>
-          <Link className={styles.breadcrumb} href={"/" + locale + "/services/free-situation-review"}>{locale === "ru" ? "Начать с бесплатной диагностики ситуации →" : "Start with a free situation assessment →"}</Link>
+          <p className={styles.disclaimer}>{locale === "ru" ? "Личная работа не заменяет медицинскую диагностику, неотложную помощь или психиатрическое лечение." : locale === "es" ? "La terapia personal no sustituye la evaluación médica, la atención urgente ni el tratamiento psiquiátrico." : "Personal work is not a substitute for medical assessment, urgent care or psychiatric treatment."}</p>
+          <Link className={styles.breadcrumb} href={"/" + locale + "/services/free-situation-review"}>{locale === "ru" ? "Начать с бесплатной диагностики ситуации →" : locale === "es" ? "Empezar con una consulta gratuita →" : "Start with a free situation assessment →"}</Link>
         </article>
         <aside className={styles.article}>
           <h2>{t.request}</h2>

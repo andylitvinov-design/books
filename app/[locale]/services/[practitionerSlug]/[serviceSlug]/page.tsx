@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
-import { isSupportedLocale } from "@/data/remedies";
-import type { Locale } from "@/data/remedies";
+import { isPublicLocale } from "@/data/academy/catalog";
+import type { PublicLocale } from "@/lib/public-locales";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
@@ -20,41 +20,41 @@ async function load(locale:string,practitionerSlug:string,serviceSlug:string):Pr
 }
 export async function generateMetadata({params}:PageProps):Promise<Metadata>{
   const {locale,practitionerSlug,serviceSlug}=await params;
-  if(!isSupportedLocale(locale))return{title:"Not found"};
+  if(!isPublicLocale(locale))return{title:"Not found"};
   const value=await load(locale,practitionerSlug,serviceSlug);
   if(!value)return{title:"Not found",robots:{index:false,follow:false}};
   const title=value.service.copy.title+" — "+value.service.practitionerName+" | Holistic House";
-  return{metadataBase:metadataBaseFor(),title,description:value.service.copy.shortDescription,alternates:{canonical:`/${locale}/services/${practitionerSlug}/${serviceSlug}`},robots:{index:true,follow:true}};
+  return{metadataBase:metadataBaseFor(),title,description:value.service.copy.shortDescription,alternates:{canonical:`/${locale}/services/${practitionerSlug}/${serviceSlug}`,languages:{en:`/en/services/${practitionerSlug}/${serviceSlug}`,ru:`/ru/services/${practitionerSlug}/${serviceSlug}`,es:`/es/services/${practitionerSlug}/${serviceSlug}`}},robots:{index:true,follow:true}};
 }
 export default async function ServiceDetail({params}:PageProps){
   const {locale,practitionerSlug,serviceSlug}=await params;
-  if(!isSupportedLocale(locale))notFound();
+  if(!isPublicLocale(locale))notFound();
   const value=await load(locale,practitionerSlug,serviceSlug);
   if(!value)notFound();
-  const {service,practitioner}=value,ru=locale==="ru";
+  const {service,practitioner}=value,ru=locale==="ru",es=locale==="es";
   const isWuXingGuide=service.slug==="free-wu-xing-diagnostic";
   const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");
   const isFree=service.pricingMode==="free"||(service.pricingMode!=="contact"&&service.confirmedPrice===0);
-  const price=isFree?(ru?"Бесплатно":"Free"):service.pricingMode!=="contact"&&service.confirmedPrice!=null?`${service.pricingMode==="from"?(ru?"от ":"from "):""}${service.currency||""} ${service.confirmedPrice}`:ru?"Стоимость согласуется до записи":"Price agreed before booking";
+  const price=isFree?(ru?"Бесплатно":es?"Gratis":"Free"):service.pricingMode!=="contact"&&service.confirmedPrice!=null?`${service.pricingMode==="from"?(ru?"от ":es?"desde ":"from "):""}${service.currency||""} ${service.confirmedPrice}`:ru?"Стоимость согласуется до записи":es?"Precio acordado antes de reservar":"Price agreed before booking";
   return <main className="services-shell services-shell--studio" lang={locale}>
     <PublicSiteHeader locale={locale}/>
     <section className="services-studio-hero">
       <div className="services-studio-hero-copy">
-        <p className="homeopathy-kicker">{ru?"Услуга":"Service"}</p>
+        <p className="homeopathy-kicker">{ru?"Услуга":es?"Servicio":"Service"}</p>
         <h1>{service.copy.title}</h1>
         <p>{service.copy.shortDescription}</p>
         <div className="hh-actions">
-          <Link className="services-studio-primary" href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Запросить бесплатно":"Request free service"):(ru?"Запросить услугу":"Request this service")}<span aria-hidden="true">→</span></Link>
-          {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методичка: уровни здоровья":"Guide: Levels of Health"}</Link>}
-          <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":"About practitioner"}</Link>
+          <Link className="services-studio-primary" href={es ? `/es/services/free-situation-review?topic=${isFree ? "wellbeing" : "goal"}` : `/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Запросить бесплатно":es?"Solicitar gratis":"Request free service"):(ru?"Запросить услугу":es?"Consultar disponibilidad":"Request this service")}<span aria-hidden="true">→</span></Link>
+          {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методичка: уровни здоровья":es?"Guía: Niveles de salud":"Guide: Levels of Health"}</Link>}
+          <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":es?"Sobre el profesional":"About practitioner"}</Link>
         </div>
       </div>
     </section>
     <section className="services-studio-approach">
-      <div><p className="homeopathy-kicker">{ru?"Практик":"Practitioner"}</p><h2>{service.practitionerName}</h2><p>{service.professionalTitle}</p>{verified&&<p className="hh-badge">{ru?"Credentials проверены":"Credentials verified"}</p>}{practitioner.isPartner&&<p className="hh-badge">Holistic House Partner</p>}</div>
-      <div><p>{service.copy.description||service.copy.shortDescription}</p><p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
+      <div><p className="homeopathy-kicker">{ru?"Практик":es?"Profesional":"Practitioner"}</p><h2>{service.practitionerName}</h2><p>{service.professionalTitle}</p>{verified&&<p className="hh-badge">{ru?"Credentials проверены":es?"Credenciales verificadas":"Credentials verified"}</p>}{practitioner.isPartner&&<p className="hh-badge">{es?"Colaborador de Holistic House":"Holistic House Partner"}</p>}</div>
+      <div><p>{service.copy.description||service.copy.shortDescription}</p>{es&&<p className="remedy-disclaimer">La descripción facilitada por el profesional puede permanecer en inglés mientras se prepara su traducción.</p>}<p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":es?"En línea / presencial":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":es?"Presencial":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
     </section>
-    <p className="remedy-disclaimer services-disclaimer">{ru?"Информация представлена для выбора формата поддержки и не является медицинской диагностикой или гарантией результата.":"This information is for choosing a support format and is not medical diagnosis or a guarantee of outcome."}</p>
-    <PublicConsultationCta locale={locale as Locale}/>
+    <p className="remedy-disclaimer services-disclaimer">{ru?"Информация представлена для выбора формата поддержки и не является медицинской диагностикой или гарантией результата.":es?"La información ayuda a elegir una modalidad de acompañamiento; no constituye diagnóstico médico ni garantía de resultados.":"This information is for choosing a support format and is not medical diagnosis or a guarantee of outcome."}</p>
+    <PublicConsultationCta locale={locale as PublicLocale}/>
   </main>
 }

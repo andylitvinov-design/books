@@ -55,9 +55,34 @@ const copy = {
     messageTitle: "Free introductory consultation request — Holistic House",
     labels: { goal: "Goal / decision", business: "Business / work", personal: "Personal difficulty", wellbeing: "Wellbeing / psychohomeopathy" },
   },
+  es: {
+    title: "Solicita una consulta inicial gratuita",
+    intro: "Cuéntame brevemente tu situación. Leeré tu mensaje y podremos acordar una conversación introductoria gratuita para explorar qué te detiene y cuál podría ser el siguiente paso.",
+    topic: "¿Qué te gustaría explorar?",
+    topicOptions: [
+      { value: "goal", label: "Un objetivo o una decisión importante" },
+      { value: "business", label: "Negocio o trabajo" },
+      { value: "personal", label: "Una dificultad personal" },
+      { value: "wellbeing", label: "Bienestar, energía o psicohomeopatía" },
+    ],
+    name: "¿Cómo te llamas?",
+    namePlaceholder: "Nombre (opcional)",
+    situation: "¿En qué punto sientes que estás bloqueado/a?",
+    situationPlaceholder: "¿Qué está ocurriendo y qué te cuesta cambiar?",
+    outcome: "¿Qué te gustaría conseguir?",
+    outcomePlaceholder: "Resultado deseado (opcional)",
+    submit: "Preparar solicitud en WhatsApp",
+    pending: "Se abrirá WhatsApp con tu mensaje. Revísalo y pulsa Enviar; no se envía nada sin tu confirmación.",
+    resumed: "Tu mensaje está preparado, pero aún no enviado. Puedes abrirlo desde el enlace.",
+    resume: "Abrir solicitud preparada",
+    telegram: "O escríbeme directamente por Telegram",
+    emailTip: "Esta conversación no es un diagnóstico médico. No existe obligación de contratar sesiones de pago.",
+    messageTitle: "Solicitud de consulta introductoria gratuita — Holistic House",
+    labels: { goal: "Objetivo o decisión", business: "Negocio o trabajo", personal: "Dificultad personal", wellbeing: "Bienestar o psicohomeopatía" },
+  },
 } as const;
 
-export function FreeSituationReviewForm({ locale }: { locale: Locale }) {
+export function FreeSituationReviewForm({ locale }: { locale: Locale | "es" }) {
   const t = copy[locale];
   const [readyUrl, setReadyUrl] = useState("");
   const [interactive, setInteractive] = useState(false);
