@@ -120,12 +120,14 @@ try {
  await page.getByRole('button',{name:'Send request',exact:true}).click();await expect(page.getByText('Received',{exact:true})).toBeVisible();data=(await api('bootstrap')).data;assert.equal(data.requests.length,1);assert.equal(data.requests[0].sharedExcerpt,null);passed('real consultation request without implicit profile sharing')
  const admin=await browser.newContext();await admin.addCookies([{name:'prescriptions_admin',value:createHmac('sha256',process.env.PRESCRIPTIONS_ADMIN_TOKEN).update('prescriptions-admin-v1').digest('base64url'),url:origin+'/admin',httpOnly:true,sameSite:'Strict'}]);const adminPage=await admin.newPage();await adminPage.goto(origin+'/admin/app-requests');await expect(adminPage.getByText('synthetic@example.invalid',{exact:true})).toBeVisible();await adminPage.getByRole('button',{name:'Contacted',exact:true}).click();await expect(adminPage.locator('.hh-badge')).toHaveText('Contacted');await adminPage.screenshot({path:output+'/practitioner-inbox.png',fullPage:true});passed('existing practitioner authorization and real request status inbox')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
- const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
+ const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();await expect(otherPage).toHaveURL(/\/en\/app$/,{timeout:15000});assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
  // The public Start free testing button must transfer the exact selection into an existing Google account.
  // Open a fresh tab in the same authenticated cookie context: the onboarding page
  // can still have a queued router.replace('/en/app') after its nav becomes visible.
  // Reusing it races Playwright's navigation against that pending redirect in WebKit.
  const selectionPage = await other.newPage()
+ const selectionWrites=[]
+ selectionPage.on('response',response=>{ if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST') selectionWrites.push(response.status()) })
  await selectionPage.goto(origin+'/en/client/tests')
  await expect(selectionPage.getByRole('heading',{name:'Build your test set'})).toBeVisible()
  await selectionPage.locator('article').filter({has:selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})})
@@ -134,7 +136,10 @@ try {
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  await expect(selectionPage.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
- assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.definitionIds.length,1)
+ const selectedPlan=(await api('bootstrap',null,other)).data.activeTestPlan
+ assert.equal(selectedPlan.definitionIds.length,1)
+ assert.equal(new URL(selectionPage.url()).searchParams.get('plan'),selectedPlan.id)
+ assert.deepEqual(selectionWrites,[201],'single selected battery creates exactly one plan, even with React StrictMode')
  await selectionPage.close()
  passed('public Start free testing preserves the selected test in authenticated personal Cabinet')
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
@@ -158,6 +163,8 @@ try {
  await expect(page.getByRole('heading',{name:'You already have an active test set'})).toBeVisible()
  await page.getByRole('button',{name:'Use new selection'}).click()
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
+ const reopenedPlan=(await api('bootstrap')).data.activeTestPlan
+ assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'after replacement URL must identify saved plan')
  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
  passed('public test selection starts Google authentication and opens account test battery')
