@@ -107,3 +107,20 @@ test("all three languages explain safe voluntary next steps and historic course 
   }
   assert.doesNotMatch(source + shared, /cure guarantee|лечит все|replace standard medical care|financial guarantee/i);
 });
+
+test("generic personal and reading fallback capture is blue, but training/network keep their original paths", () => {
+  const component = read("components/sitewide-lead-capture.tsx");
+  const css = read("components/sitewide-lead-capture.module.css");
+  const capture = read("components/consultation-choice-capture.tsx");
+  const suppress = read("app/sitewide-capture.css");
+  assert.match(component, /if \(kind === "personal" \|\| kind === "reading"\)/);
+  assert.match(component, /<ConsultationChoiceCapture locale=\{locale\} variant=\{kind\} sitewide/);
+  assert.match(component, /const portraitSrc = kind === "network"/);
+  assert.match(component, /<Image src=\{portraitSrc\}/);
+  assert.match(component, /trainingEnquiryUrl\(locale, pathname\)/);
+  assert.match(component, /networkService \? "#request-service"/);
+  assert.match(component, /data-sitewide-capture=\{kind\}/);
+  assert.match(css, /\.consultationPanel/);
+  assert.match(capture, /data-consultation-cta=\{sitewide \? undefined : "true"\}/);
+  assert.match(suppress, /body:has\(\[data-consultation-cta\]\) \[data-sitewide-capture\]/);
+});

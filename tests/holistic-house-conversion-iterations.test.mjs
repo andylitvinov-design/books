@@ -16,14 +16,14 @@ test("iteration 1: home hero leads directly to a free situation review", () => {
   assert.doesNotMatch(home, /href="#start-here"/);
 });
 
-test("iteration 2: first contact does not require sharing a sensitive written situation", () => {
-  assert.match(form, /name="situation" rows=\{3\}/);
-  assert.doesNotMatch(form, /name="situation" required/);
-  assert.doesNotMatch(form, /if \(!situation\) return/);
-  assert.match(form, /situation \? t\.situation/);
-  assert.match(form, /does NOT automatically submit a request|does NOT automatically send|not sent automatically/);
-  assert.match(form, /НЕ отправляется автоматически/);
-  assert.match(form, /https:\/\/wa\.me\/14376066502/);
+test("iteration 2: first contact is a single-click preselected topic, with no private form fields", () => {
+  const capture = readFileSync(new URL("../components/consultation-choice-capture.tsx", import.meta.url), "utf8");
+  assert.match(form, /<ConsultationChoiceCapture locale=\{locale\} variant="free"/);
+  assert.match(capture, /useState<Topic>\("personal"\)/);
+  assert.match(capture, /https:\/\/wa\.me\/14376066502/);
+  assert.match(capture, /not a medical diagnosis/i);
+  assert.match(capture, /Оно отправится только после вашего подтверждения/);
+  assert.doesNotMatch(capture, /<input|<textarea|<form|new FormData|localStorage|sessionStorage/);
 });
 
 test("iteration 3: grounded personal introduction and contextual testimonial CTA", () => {

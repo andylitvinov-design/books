@@ -41,7 +41,7 @@ async function exercise(engine, browserType, width) {
         assert.ok(state.overflow <= 2, `Horizontal overflow ${state.overflow}px`);
         assert.equal(state.iframesBeforeClick, 0, 'Video must be poster-first');
         if (path.endsWith('/about')) {
-          assert.equal(await page.locator('.personal-consultation-form').count(), 1, 'About must contain one consultation form');
+          assert.equal(await page.locator('[data-consultation-capture="personal"]').count(), 1, 'About must contain one accessible personal consultation selector');
           assert.equal(await page.locator('.public-consultation-cta').count(), 0, 'About must not repeat the generic consultation CTA');
         }
         assert.deepEqual(errors, [], 'Unexpected page JS error');
@@ -120,27 +120,29 @@ async function exercise(engine, browserType, width) {
     for (const locale of ['en', 'ru', 'es']) {
       await check('consultation-safe-handoff', { engine, width, locale }, async () => {
         await page.goto(origin + `/${locale}/about`, { waitUntil: 'networkidle' });
-        await page.evaluate(() => { window.__reauditRequests = []; window.open = url => { window.__reauditRequests.push(url); return null; }; });
-        const form = page.locator('.personal-consultation-form');
-        await expect(form).toHaveAttribute('method', 'post');
-        assert.equal(await form.evaluate(el => el.checkValidity()), false, 'Empty request must be invalid');
-        await form.locator('[name="name"]').fill('   ');
-        await form.locator('[name="request"]').fill('QA only: not sent');
-        await form.locator('button[type="submit"]').click();
-        assert.equal(await page.evaluate(() => window.__reauditRequests.length), 0, 'Whitespace-only names must not submit');
-        await form.locator('[name="name"]').fill('QA only');
-        await form.locator('button[type="submit"]').click();
-        const requests = await page.evaluate(() => window.__reauditRequests);
-        assert.equal(requests.length, 1);
-        const handoff = new URL(requests[0]);
-        assert.equal(handoff.origin, 'https://wa.me');
-        assert.equal(handoff.pathname, '/14376066502');
-        assert.ok(handoff.searchParams.get('text').includes('QA only: not sent'));
-        await expect(form.locator('.personal-consultation-form__resume')).toHaveAttribute('href', requests[0]);
-        assert.match(await form.locator('[role="status"]').innerText(), /not sent|не отправлена|no se ha enviado/);
-        await form.locator('[name="request"]').fill('Updated QA only: not sent');
-        await expect(form.locator('.personal-consultation-form__resume')).toHaveCount(0);
-        return { externalNavigationIntercepted: true, messageSent: false, blockedPopupFallback: true, editedDraftInvalidatesOldLink: true };
+        const capture = page.locator('[data-consultation-capture="personal"]');
+        await expect(capture).toHaveCount(1);
+        await expect(capture.locator('[role="group"] button')).toHaveCount(4);
+        assert.equal(await capture.locator('form, input, textarea').count(), 0, 'Personal details must not be required');
+        const action = capture.locator('[data-contact-channel="whatsapp"]');
+        const originalUrl = new URL(await action.getAttribute('href'));
+        assert.equal(originalUrl.origin, 'https://wa.me');
+        assert.equal(originalUrl.pathname, '/14376066502');
+        assert.ok(originalUrl.searchParams.get('text').trim(), 'Prepared message must not be empty');
+        const selected = capture.locator('[role="group"] button').nth(1);
+        await selected.click();
+        await expect(selected).toHaveAttribute('aria-pressed', 'true');
+        const changedUrl = new URL(await action.getAttribute('href'));
+        assert.equal(changedUrl.origin, 'https://wa.me');
+        assert.equal(changedUrl.pathname, '/14376066502');
+        assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'), 'Selecting a topic must change the prepared message');
+        assert.ok(changedUrl.searchParams.get('text').includes(await selected.innerText()), 'Prepared message must mention the chosen topic');
+        await capture.locator('[role="group"] button').nth(0).click();
+        const resetUrl = new URL(await action.getAttribute('href'));
+        assert.equal(resetUrl.searchParams.get('text'), originalUrl.searchParams.get('text'), 'Resetting topic must restore the original message');
+        assert.equal(await page.locator('[data-consultation-capture="personal"] form').count(), 0);
+        assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
+        return { externalNavigationIntercepted: false, messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true };
       });
     }
     if (width === 390) {
@@ -224,10 +226,9 @@ try {
   await check('consultation-SSR-privacy', {}, async () => {
     const response = await context.request.get(origin + '/en/about');
     const html = await response.text();
-    const form = html.match(/<form[^>]*class="personal-consultation-form"[\s\S]*?<\/form>/)?.[0] || '';
-    assert.match(form, /method="post"/);
-    assert.match(form, /<button[^>]*type="submit"[^>]*disabled/);
-    return { serverRenderedSubmitDisabled: true, noDefaultGET: true };
+    assert.doesNotMatch(html, /<form[^>]*class="personal-consultation-form"/, 'Do not SSR an intake form');
+    assert.doesNotMatch(html, /<input[^>]+name="(?:name|contact|request)"/, 'Do not request private contact details');
+    return { noDefaultGET: true, noCompulsoryPersonalFields: true };
   });
   const paths = [...media];
   for (let i = 0; i < paths.length; i += 6) {

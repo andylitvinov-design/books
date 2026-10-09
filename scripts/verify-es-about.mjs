@@ -66,28 +66,28 @@ try {
         await expect(intro.locator('.site-video-more')).toContainText('Me encantará explorar tu situación contigo');
         assert.doesNotMatch(await page.locator('main').innerText(), /[\u0400-\u04ff]/);
         await summary.press('Enter');
-        const form = page.locator('.personal-consultation-form');
-        await expect(form).toHaveAttribute('lang', 'es');
-        await expect(form.locator('button[type="submit"]')).toContainText('Continuar en WhatsApp');
+        const capture = page.locator('[data-consultation-capture="personal"]');
+        await expect(capture).toHaveAttribute('lang', 'es');
+        await expect(capture.locator('[role="group"] button')).toHaveCount(4);
+        await expect(capture.locator('[data-contact-channel="whatsapp"]')).toContainText('Solicitar conversación gratuita');
+        assert.equal(await capture.locator('form, input, textarea').count(), 0, 'No sensitive written intake required');
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'ES horizontal overflow');
         await page.evaluate(() => document.fonts.ready);
         await page.evaluate(() => window.scrollTo(0, 0));
         await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-es-about-${engine}-${width}.png`, fullPage: true });
         await intro.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-es-video-${engine}-${width}.png` });
         if (!live) {
-          await page.evaluate(() => { window.open = (url, target, features) => { window.__esFormTest = { url, target, features }; return null; }; });
-          await form.locator('input[name="name"]').fill('Prueba de interfaz');
-          await form.locator('input[name="contact"]').fill('qa@example.invalid');
-          await form.locator('textarea').fill('Comprobación local sin enviar mensajes.');
-          await form.locator('button[type="submit"]').click();
-          const opened = await page.evaluate(() => window.__esFormTest);
-          const url = new URL(opened.url);
-          assert.equal(url.origin, 'https://wa.me');
-          assert.equal(url.pathname, '/14376066502');
-          assert.match(url.searchParams.get('text'), /Solicitud de consulta personal/);
-          assert.match(url.searchParams.get('text'), /Nombre: Prueba de interfaz/);
-          assert.match(url.searchParams.get('text'), /Contacto preferido:/);
-          assert.equal(opened.features, 'noopener,noreferrer');
+          const action = capture.locator('[data-contact-channel="whatsapp"]');
+          const initial = new URL(await action.getAttribute('href'));
+          await capture.locator('[role="group"] button').nth(2).click();
+          await expect(capture.locator('[role="group"] button').nth(2)).toHaveAttribute('aria-pressed', 'true');
+          const updated = new URL(await action.getAttribute('href'));
+          assert.equal(updated.origin, 'https://wa.me');
+          assert.equal(updated.pathname, '/14376066502');
+          assert.notEqual(updated.searchParams.get('text'), initial.searchParams.get('text'));
+          assert.match(updated.searchParams.get('text'), /Trabajo y negocios/);
+          assert.match(updated.searchParams.get('text'), /conversación inicial gratuita/);
+          assert.equal(await capture.locator('form, input, textarea').count(), 0);
         }
         await intro.getByRole('button', { name: /^Ver vídeo:/ }).click();
         await expect(intro.locator('iframe')).toHaveAttribute('src', 'https://app.heygen.com/embeds/2c251709aba74fd96ae8be43257a080b');
@@ -99,7 +99,7 @@ try {
           await expect(page.locator('html')).toHaveAttribute('lang', lang);
         }
         assert.deepEqual(errors, []);
-        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only labels' : 'Spanish WhatsApp text intercepted, not sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
+        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only topic labels' : 'Spanish WhatsApp topic changed locally, not sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
         console.log(`PASS: ${live ? 'live' : 'local'} ES About ${engine} ${width}`);
         await context.close();
       }

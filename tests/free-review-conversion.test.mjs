@@ -32,19 +32,24 @@ test("client funnel: above-fold form, three real steps, optional paths, FAQs", (
   assert.ok(landing.includes("isPublicLocale"));
 });
 
-test("privacy-first multilingual intake only prepares a WhatsApp draft", () => {
-  assert.ok(form.includes('name="topic" required'));
-  assert.ok(form.includes('value="" disabled'));
-  assert.ok(form.includes('className={styles.optionalDetails}'));
-  assert.ok(form.includes('name="situation" rows={3}'));
-  assert.ok(!form.includes('name="situation" required'));
-  assert.ok(form.includes("window.open(url"));
-  assert.ok(form.includes("https://wa.me/14376066502?text="));
-  assert.ok(form.includes("t.messageTitle"));
-  assert.ok(form.includes("not sent automatically"));
-  assert.ok(form.includes("НЕ отправляется автоматически"));
-  assert.ok(form.includes("No se envía automáticamente"));
-  assert.ok(!/localStorage|sessionStorage|sendBeacon|fetch\(/.test(form));
+test("privacy-first blue consultation capture needs only one topic selection", () => {
+  const capture = read("components/consultation-choice-capture.tsx");
+  const blueCss = read("components/consultation-choice-capture.module.css");
+  assert.match(form, /<ConsultationChoiceCapture locale=\{locale\} variant="free"/);
+  assert.match(capture, /"personal", "goal", "business", "wellbeing"/);
+  assert.match(capture, /data-choice-layout=\{isService \? "service" : "topic"\}/);
+  assert.match(capture, /aria-pressed=\{topic === choice\}/);
+  assert.match(capture, /new URLSearchParams\(window.location.search\).get\("topic"\)/);
+  assert.match(capture, /https:\/\/wa\.me\/14376066502\?text=/);
+  assert.match(capture, /encodeURIComponent\(message\)/);
+  assert.match(capture, /Nothing is sent until you press Send/);
+  assert.match(capture, /Оно отправится только после вашего подтверждения/);
+  assert.match(capture, /Solo se envía cuando confirmas Enviar/);
+  assert.match(capture, /AcquisitionEventLink/);
+  assert.doesNotMatch(capture, /<form|<input|<select|<textarea|new FormData|localStorage|sessionStorage|sendBeacon|fetch\(/);
+  assert.match(blueCss, /linear-gradient\(125deg, #e9f7fe/);
+  assert.match(blueCss, /background:#e66d50/);
+  assert.match(blueCss, /@media \(max-width:640px\)/);
 });
 
 test("mobile editorial layout has no card-grid overload, usable input controls and reduced motion", () => {
@@ -53,7 +58,7 @@ test("mobile editorial layout has no card-grid overload, usable input controls a
   assert.ok(landing.includes('className={styles.mobileCta}'));
   assert.ok(css.includes(".mobileCta { display:inline-flex"));
   assert.ok(css.includes("grid-template-columns:minmax(0,1fr)"));
-  assert.ok(css.includes("min-height:58px"));
+  assert.ok(read("components/consultation-choice-capture.module.css").includes("min-height:56px"));
   assert.ok(css.includes(":focus-visible"));
   assert.ok(css.includes("prefers-reduced-motion"));
   assert.ok(!css.includes("repeat(3"));

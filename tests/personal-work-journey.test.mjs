@@ -55,16 +55,15 @@ test("free situation review and imagery therapy have real bilingual pages and ac
   const consultation = source("components", "personal-consultation-form.tsx");
   for (const phrase of ["Бесплатная диагностика ситуации", "Free situation & goal assessment", "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata"]) assert.ok(free.includes(phrase), phrase);
   for (const phrase of ["PersonalServiceLanding", "imagery-therapy", "service={service}"]) assert.ok(imagery.includes(phrase), phrase);
+  const chooser = source("components", "consultation-choice-capture.tsx");
   assert.match(consultation, /service\?: string/);
-  assert.match(consultation, /Service: \$\{service\}/);
-  assert.match(form, /"goal"/);
-  assert.match(form, /"business"/);
-  assert.match(form, /"personal"/);
-  assert.match(form, /form\.get\("situation"\)/);
-  assert.match(form, /wa\.me\/14376066502/);
-  assert.match(form, /window\.open/);
-  assert.match(form, /does NOT automatically submit a request|does NOT automatically send|not sent automatically/);
-  assert.doesNotMatch(form, /localStorage|sessionStorage|fetch\(|sendBeacon/);
+  assert.match(consultation, /service \? "service" : "personal"/);
+  assert.match(form, /variant="free"/);
+  assert.ok(chooser.includes('t.serviceField + ": " + (service'));
+  assert.ok(chooser.includes('t.topicOptions[topic]'));
+  assert.ok(chooser.includes('wa.me/14376066502'));
+  assert.ok(chooser.includes('Nothing is sent until you press Send'));
+  assert.doesNotMatch(form + chooser, /localStorage|sessionStorage|sendBeacon|<textarea|<form/);
 });
 
 test("service links retain mobile tap targets, no horizontal layout overflow from grid", () => {
@@ -96,8 +95,11 @@ test("approach one preselects an actual free psychohomeopathy-focused intake; no
   assert.match(journey, /free-situation-review\?topic=wellbeing/);
   assert.match(journey, /Грусть, одиночество/);
   assert.match(journey, /You have a goal but cannot see/);
-  assert.match(intake, /requestedTopic === "wellbeing"/);
-  assert.match(intake, /value: "wellbeing"/);
+  const chooser = source("components", "consultation-choice-capture.tsx");
+  assert.match(intake, /variant="free"/);
+  assert.ok(chooser.includes('new URLSearchParams(window.location.search).get("topic")'));
+  assert.ok(chooser.includes('if (isTopic(requestedTopic)) setTopic(requestedTopic)'));
+  assert.ok(chooser.includes('"wellbeing"'));
   assert.ok(freePage.indexOf('className={styles.contentGrid}') < freePage.indexOf('className={styles.details}'));
-  assert.match(intake, /window\.open/);
+  assert.ok(chooser.includes('encodeURIComponent(message)'));
 });

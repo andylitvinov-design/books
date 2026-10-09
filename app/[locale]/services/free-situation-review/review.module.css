@@ -18,17 +18,8 @@
 .introContact span { display:block; margin-top:4px; color:#716457; font:13px/1.5 Arial,Helvetica,sans-serif; }
 .safety { max-width:540px; color:#786d63; font:12px/1.65 Arial,Helvetica,sans-serif; margin:19px 0 0; }
 .capturePanel { min-width:0; scroll-margin-top:105px; }
-.capturePanel form { box-shadow:0 16px 50px rgba(48,37,27,.08); border:1px solid #ddc9b2; border-radius:25px; background:#fffdf8; padding:clamp(22px,3vw,38px); gap:13px; }
-.capturePanel form h2 { font:400 clamp(25px,2.7vw,35px)/1.2 Georgia,serif; }
-.capturePanel form > p { font-size:14px; }
-.capturePanel form label span { font-size:13px; }
-.capturePanel form :is(select,input,textarea) { min-height:48px; font-size:15px; }
-.capturePanel form button { min-height:58px; padding-inline:22px; font-size:15px; width:100%; background:#305544; border-color:#305544; }
-.capturePanel form button:hover { background:#254535; }
-.capturePanel form :is(button,select,input,textarea,summary,a):focus-visible { outline:3px solid #bd895d; outline-offset:3px; }
-.capturePanel form :global(details) { border-top:1px solid #e4d8ca; border-bottom:1px solid #e4d8ca; }
-.capturePanel form :global(details summary) { cursor:pointer; min-height:46px; display:flex; align-items:center; font:700 13px/1.5 Arial,Helvetica,sans-serif; color:#59483c; }
-.capturePanel form :global(details label) { margin:12px 0 15px; }
+.capturePanel :global([data-consultation-capture="free"]) { width:100%; margin:0; }
+.capturePanel :global([data-consultation-capture="free"] button:focus-visible) { outline:3px solid #bd895d; outline-offset:3px; }
 .details,.directions,.faq { width:min(1080px,calc(100% - 40px)); margin:clamp(58px,8vw,108px) auto 0; }
 .sectionIntro { max-width:760px; margin:0 0 25px; }
 .sectionIntro h2,.faq h2,.about h2,.closing h2 { font:400 clamp(31px,3.7vw,49px)/1.13 Georgia,serif; letter-spacing:-.025em; margin:0 0 14px; text-wrap:balance; }
