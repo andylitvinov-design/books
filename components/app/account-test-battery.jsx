@@ -148,6 +148,10 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const [exploring, setExploring] = useState(false)
   const [showList, setShowList] = useState(Boolean(requestedPlanId))
   const [statusFilter, setStatusFilter] = useState('all')
+  useEffect(() => {
+    // The public Google handoff can replace ?selection=pending with ?plan=... without remounting.
+    if (requestedPlanId) setShowList(true)
+  }, [requestedPlanId])
   const [conflict, setConflict] = useState(null)
   const [error, setError] = useState('')
   const entries = useMemo(() => buildExplorerEntries({ locale, audience: 'account' }), [locale])
