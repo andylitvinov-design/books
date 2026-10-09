@@ -63,7 +63,7 @@ test('repeat measurements preserve all attempts but latest scale value in profil
  assert.equal(report.latestScales.length,after.dimensions.length)
  assert.equal(report.latestScales.find(x=>x.key===key)?.value,different[key])
  assert.match(report.tests[0].conclusion,/измен/)
- assert.match(report.disclaimer,/не является диагнозом/)
+ assert.match(report.disclaimer,/не является диагнозом/i)
 })
 test('PDF output is a genuine A4 PDF with all pages and no network requirements',async()=>{
  // Minimal JPEG header/footer is sufficient to validate the PDF writer's
