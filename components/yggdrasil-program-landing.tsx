@@ -3,6 +3,8 @@ import Link from "next/link";
 
 import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
 import { YggdrasilTestimonials } from "@/components/yggdrasil-testimonials";
+import { YggdrasilMeditationFeature } from "@/components/yggdrasil-meditation-feature";
+import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
 
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
@@ -60,9 +62,11 @@ const basicStepDescriptions: Record<number, Record<PublicLocale, string>> = {
 
 const copy = {
   en: {
-    eyebrow: "Academy · Current program",
+    eyebrow: "Ancient symbols · Personal practice",
+    tagline: "Rediscover your centre. Discover a wider world within.",
+    free: "Get Level 1 for free",
     title: "DAO Reiki Yggdrasil",
-    lead: "A step-by-step programme of energy practices, symbolic attunements and work with attention and intention. Start with the five-level Basic Course, then explore teaching and specialised traditions.",
+    lead: "The World Tree is an invitation to explore yourself in a new way. Through guided imagery, mindful attention and the language of runes, find space for intuition, clarity and a more conscious connection with everyday life. Begin with the five-level Basic Course and follow the path that speaks to you.",
     start: "Open Basic Course",
     description: "Read the Basic Course book",
     instructor: "Open Instructor Course",
@@ -71,7 +75,7 @@ const copy = {
     benefits: "What you will explore",
     mapEyebrow: "Current course map",
     mapTitle: "7 Reiki Yggdrasil modules",
-    mapLead: "Each module has its own landing page with all canonical steps, attunements and verified public video lectures. The older PsiTrends 10-module program wording remains preserved in the historical source archive.",
+    mapLead: "One connected path, seven areas of exploration. Start with the foundations, then move towards runes, inner imagery, sacred traditions and the deeper symbolism of the World Tree. Each module has its own practices and study materials.",
     module: "Module",
     open: "Open module",
     basicEyebrow: "Your first five levels",
@@ -87,9 +91,11 @@ const copy = {
     sourceNote: "Current detailed curriculum: canonical Reiki Yggdrasil project. Historical program text and imagery: PsiTrends.",
   },
   ru: {
-    eyebrow: "Академия · Актуальная программа",
+    eyebrow: "Древние символы · Живая практика",
+    tagline: "Найдите внутреннюю опору. Откройте глубину своего мира.",
+    free: "Получить 1-ю ступень бесплатно",
     title: "Дао Рейки Иггдрасиль",
-    lead: "Пошаговая система энергетических практик, символических настроек и работы с вниманием и намерением. Начните с пяти ступеней Базового курса, затем переходите к инструкторскому обучению и отдельным традициям.",
+    lead: "Мировое Древо становится картой внутреннего путешествия. Через образы, руны, медитации и работу с вниманием вы можете глубже почувствовать себя, исследовать интуицию и яснее видеть свой путь. Начните с пяти ступеней Базового курса и двигайтесь в своём ритме.",
     start: "Открыть Базовый курс",
     description: "Читать книгу Базового курса",
     instructor: "Открыть Инструкторский курс",
@@ -114,9 +120,11 @@ const copy = {
     sourceNote: "Актуальная детальная программа: канонический проект Reiki Yggdrasil. Исторический текст и изображения: PsiTrends.",
   },
   es: {
-    eyebrow: "Academia · Programa actual",
+    eyebrow: "Símbolos antiguos · Práctica personal",
+    tagline: "Encuentra tu centro. Explora tu mundo interior.",
+    free: "Recibe el primer nivel gratis",
     title: "DAO Reiki Yggdrasil",
-    lead: "Un recorrido paso a paso por prácticas energéticas, sintonizaciones simbólicas y el trabajo con la atención y la intención. Empieza con el Curso Básico de cinco niveles y continúa con las tradiciones especializadas.",
+    lead: "El Árbol del Mundo es una invitación a explorar tu mundo interior. Mediante imágenes guiadas, runas y prácticas de atención, descubre nuevas formas de escuchar tu intuición y reflexionar sobre tu vida. Comienza por los cinco niveles básicos y avanza a tu propio ritmo.",
     start: "Abrir Curso Básico",
     description: "Leer el libro del Curso Básico",
     instructor: "Abrir Curso de Instructor",
@@ -144,9 +152,9 @@ const copy = {
 
 const heroHighlights: Record<PublicLocale, string[]> = {
   en: [
-    "Develop a regular practice of attention and grounding",
-    "Explore intuition through guided exercises",
-    "Progress from foundational skills into specialised studies",
+    "Find a calmer, more focused way to meet everyday challenges",
+    "Discover symbolic tools for intuition and self-reflection",
+    "Begin gently, then explore seven connected areas of practice",
   ],
   ru: [
     "Осваивать концентрацию и заземление",
@@ -184,14 +192,16 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         <div className="yggdrasil-program-hero-copy">
           <p className="homeopathy-kicker">{text.eyebrow}</p>
           <h1>{text.title}</h1>
+          <p className="yggdrasil-hero-tagline">{text.tagline}</p>
           <p className="yggdrasil-program-intro">{text.lead}</p>
           <p className="yggdrasil-program-benefits-title">{text.benefits}</p>
           <ul className="yggdrasil-program-highlights">
             {heroHighlights[locale].map((highlight) => <li key={highlight}>{highlight}</li>)}
           </ul>
           <div className="yggdrasil-program-actions">
-            <Link className="yggdrasil-primary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start} <span aria-hidden="true">→</span></Link>
-            <a className="yggdrasil-secondary-action" href="#system-modules">{text.explore}</a>
+            <a className="yggdrasil-primary-action" href="#reiki-free-level-one">{text.free} <span aria-hidden="true">→</span></a>
+            <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
+            <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
           </div>
           <Link className="yggdrasil-program-detail-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description} <span aria-hidden="true">↗</span></Link>
         </div>
@@ -255,6 +265,10 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           ))}
         </div>
       </section>
+
+      <YggdrasilMeditationFeature locale={locale} />
+
+      <YggdrasilLeadForms locale={locale} />
 
       <YggdrasilTestimonials locale={locale} />
 

@@ -6,6 +6,7 @@ import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { EnglishGuidedMeditations } from "@/components/english-guided-meditations";
 import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { ReikiConsultationForm } from "@/components/reiki-landing-forms";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraReikiSideNavigation, YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
@@ -216,6 +217,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
           </section>
         ) : null}
         {isVerbatimTantraArchive ? <TantraReikiTestimonials locale={locale} /> : null}
+        {isVerbatimTantraArchive ? <ReikiConsultationForm locale={locale} course="Tantra Reiki" /> : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
         <footer className="academy-source-footer">
           {isCanonicalYggdrasil ? (
@@ -239,7 +241,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         </footer>
         </article>
       </div>
-      <PublicConsultationCta locale={locale} />
+      {!isCanonicalYggdrasil && !isVerbatimTantraArchive ? <PublicConsultationCta locale={locale} /> : null}
     </main>
   );
 }

@@ -56,15 +56,16 @@ test("legacy English review videos are not injected into specific Yggdrasil teac
     readFile("components/yggdrasil-module-landing.tsx", "utf8"),
   ]);
   assert.match(curriculum, /yggdrasilEnglishStepVideos\[step\.id\] \?\? \[\]/);
-  assert.match(guide, /locale === "en"/);
-  assert.match(guide, /<EnglishGuidedMeditations focus="reiki-yggdrasil"/);
+  assert.match(guide, /locale !== "en"/);
+  assert.match(guide, /yggdrasil-course-video-library/);
+  assert.match(guide, /RU audio · Original class/);
   assert.match(hub, /<YggdrasilTestimonials/);
   assert.match(hub, /<YggdrasilEnglishVideoGuide/);
   assert.match(module, /<YggdrasilEnglishVideoGuide/);
   assert.doesNotMatch(guide, /General introduction/);
 });
 
-test("all ten verified Reiki reviews remain accessible, additional eight under disclosure", async () => {
+test("all ten verified Reiki reviews are visible without an accordion", async () => {
   const [registry, component] = await Promise.all([
     readFile("data/academy/yggdrasil-testimonials.ts", "utf8"),
     readFile("components/yggdrasil-testimonials.tsx", "utf8"),
@@ -74,8 +75,7 @@ test("all ten verified Reiki reviews remain accessible, additional eight under d
     "Nx8DwWk27VY", "p29qu8-dtZk", "wN_SNwZ1Epo", "3Apc8P1Yudc"]) {
     assert.ok(registry.includes(id), "Missing historical review: " + id);
   }
-  assert.match(component, /yggdrasilVideoTestimonials.slice\(0, 2\)/);
-  assert.match(component, /yggdrasilVideoTestimonials.slice\(2\)/);
-  assert.match(component, /<details className="yggdrasil-more-testimonials">/);
-  assert.match(component, /additionalVideos.map/);
+  assert.match(component, /yggdrasilVideoTestimonials.map/);
+  assert.doesNotMatch(component, /<details className="yggdrasil-more-testimonials">/);
+  assert.doesNotMatch(component, /additionalVideos.map/);
 });
