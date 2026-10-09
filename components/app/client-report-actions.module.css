@@ -11,3 +11,7 @@
 .message{font-size:.84rem!important;color:#367464!important;line-height:1.4;margin:4px 0!important}
 @media(max-width:600px){.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.actions button{font-size:.78rem;padding:8px 7px;min-width:0;min-height:47px}.actions svg{width:16px;flex:0 0 auto}}
 @media(max-width:360px){.actions{grid-template-columns:1fr}}
+
+.wrapper .download{background:#bf4f2e!important;border-color:#bf4f2e!important;color:#fff!important}
+.wrapper .download:hover:not(:disabled){background:#a84227!important}
+.wrapper .print{background:#fffdf8!important;color:#4f463f!important}
