@@ -12,7 +12,7 @@ type Topic = "goal" | "business" | "personal" | "wellbeing";
 const topics: Topic[] = ["personal", "goal", "business", "wellbeing"];
 const copy = {
   en: {
-    kicker: "Free personal introduction",
+    kicker: "Free situation assessment",
     title: "Feeling stuck? We can explore your next step together.",
     intro: "A goal, a difficult decision or something personal — start with a calm one-to-one conversation. Share only what feels comfortable.",
     choose: "What would you like to talk about?",
@@ -22,7 +22,7 @@ const copy = {
       business: "Work & business",
       wellbeing: "Wellbeing & energy",
     },
-    action: "Request a free conversation",
+    action: "Request free assessment",
     note: "The next page lets you prepare a request. Nothing is sent until you confirm it in WhatsApp.",
     trust: ["Personal reply", "No obligation", "Private conversation"],
     artOne: "Choose your topic",
@@ -30,7 +30,7 @@ const copy = {
     safety: "An introductory conversation, not a medical diagnosis.",
   },
   ru: {
-    kicker: "Личное знакомство · бесплатно",
+    kicker: "Бесплатная диагностика ситуации",
     title: "Не знаете, с чего начать? Давайте разберёмся вместе.",
     intro: "Важная цель, сложное решение или личный вопрос — начните со спокойного разговора один на один. Подробностями можно поделиться позже.",
     choose: "О чём хотите поговорить?",
@@ -40,7 +40,7 @@ const copy = {
       business: "Работа и бизнес",
       wellbeing: "Самочувствие и ресурс",
     },
-    action: "Запросить бесплатный разбор",
+    action: "Получить бесплатный разбор",
     note: "На следующей странице можно подготовить обращение. Оно отправится только после вашего подтверждения в WhatsApp.",
     trust: ["Личный ответ", "Без обязательств", "Конфиденциально"],
     artOne: "Выберите тему",
@@ -48,7 +48,7 @@ const copy = {
     safety: "Вводная беседа, а не медицинский диагноз.",
   },
   es: {
-    kicker: "Conversación personal gratuita",
+    kicker: "Evaluación inicial gratuita",
     title: "¿No sabes por dónde empezar? Podemos hablarlo juntos.",
     intro: "Una meta, una decisión o una situación personal: comienza con una conversación tranquila. Comparte solo lo que desees.",
     choose: "¿De qué te gustaría hablar?",
@@ -58,7 +58,7 @@ const copy = {
       business: "Trabajo y negocios",
       wellbeing: "Bienestar y energía",
     },
-    action: "Solicitar una conversación gratuita",
+    action: "Solicitar evaluación gratuita",
     note: "La siguiente página prepara un mensaje que solo se envía cuando lo confirmes en WhatsApp.",
     trust: ["Respuesta personal", "Sin compromiso", "Conversación privada"],
     artOne: "Elige el tema",
