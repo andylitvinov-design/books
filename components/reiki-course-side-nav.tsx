@@ -108,9 +108,9 @@ export function YggdrasilSideNavigation({
   activeSlug?: string;
 }) {
   const copy = {
-    en: { eyebrow: "Course navigation", title: "Reiki Yggdrasil", overview: "Program overview", reviews: "Student reviews", videos: "English video guide", description: "Basic Course · Book", module: "M" },
-    ru: { eyebrow: "Навигация по курсу", title: "Рейки Иггдрасиль", overview: "Обзор программы", reviews: "Отзывы учеников", videos: "Видео на английском", description: "Книга · Базовый курс", module: "М" },
-    es: { eyebrow: "Navegación del curso", title: "Reiki Yggdrasil", overview: "Resumen del programa", reviews: "Testimonios", videos: "Videos en inglés", description: "Libro · Curso Básico", module: "M" },
+    en: { eyebrow: "Course navigation", title: "Reiki Yggdrasil", overview: "Program overview", meditation: "Experience the meditation", free: "Free Level 1 & consultation", reviews: "Student reviews", videos: "Course videos", description: "Basic Course · Book", module: "M" },
+    ru: { eyebrow: "Навигация по курсу", title: "Рейки Иггдрасиль", overview: "Обзор программы", meditation: "Медитация", free: "Первая ступень бесплатно", reviews: "Отзывы учеников", videos: "Видеоуроки", description: "Книга · Базовый курс", module: "М" },
+    es: { eyebrow: "Navegación del curso", title: "Reiki Yggdrasil", overview: "Resumen del programa", meditation: "Meditación", free: "Nivel 1 gratis", reviews: "Testimonios", videos: "Videos del curso", description: "Libro · Curso Básico", module: "M" },
   }[locale];
 
   const items: NavItem[] = [
@@ -120,6 +120,8 @@ export function YggdrasilSideNavigation({
       label: copy.overview,
     },
     ...(activeSlug === "overview" ? [
+      { key: "meditation", href: "#yggdrasil-meditation", label: copy.meditation },
+      { key: "free", href: "#reiki-free-level-one", label: copy.free },
       { key: "reviews", href: "#yggdrasil-testimonials", label: copy.reviews },
       { key: "english-videos", href: "#yggdrasil-english-guide", label: copy.videos },
     ] : []),
@@ -151,9 +153,9 @@ export function TantraReikiSideNavigation({
   levels: Array<{ number: number; title: string }>;
 }) {
   const copy = {
-    en: { eyebrow: "Course navigation", title: "Tantra Reiki", level: "Level", reviews: "Reviews & videos", meditation: "Guided meditation", source: "Full system text" },
-    ru: { eyebrow: "Навигация по курсу", title: "Тантра Рейки", level: "Ступень", reviews: "Отзывы и видео", meditation: "Медитация", source: "Полный текст системы" },
-    es: { eyebrow: "Navegación del curso", title: "Tantra Reiki", level: "Etapa", reviews: "Testimonios y vídeos", meditation: "Meditación guiada", source: "Texto completo" },
+    en: { eyebrow: "Course navigation", title: "Tantra Reiki", level: "Level", reviews: "Reviews & videos", meditation: "Guided meditation", source: "Full system text", consultation: "Free personal consultation" },
+    ru: { eyebrow: "Навигация по курсу", title: "Тантра Рейки", level: "Ступень", reviews: "Отзывы и видео", meditation: "Медитация", source: "Полный текст системы", consultation: "Бесплатная консультация" },
+    es: { eyebrow: "Navegación del curso", title: "Tantra Reiki", level: "Etapa", reviews: "Testimonios y vídeos", meditation: "Meditación guiada", source: "Texto completo", consultation: "Consulta gratuita" },
   }[locale];
 
   const items: NavItem[] = [
@@ -167,6 +169,7 @@ export function TantraReikiSideNavigation({
     ...(locale === "en" ? [{ key: "meditation", href: "#english-guided-meditations-tantra-reiki", sectionId: "english-guided-meditations-tantra-reiki", label: copy.meditation }] : []),
     { key: "source", href: "#tantra-full-source", sectionId: "tantra-full-source", label: copy.source },
     { key: "reviews", href: "#tantra-testimonials", sectionId: "tantra-testimonials", label: copy.reviews },
+    { key: "consultation", href: "#reiki-free-consultation", sectionId: "reiki-free-consultation", label: copy.consultation },
   ];
 
   return (

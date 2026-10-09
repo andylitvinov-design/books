@@ -10,7 +10,7 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
     en: {
       kicker: "Student experience",
       title: "Reviews from Reiki Yggdrasil students",
-      lead: "Text excerpts and video reviews preserved from the earlier public Reiki Yggdrasil pages. Text excerpts are short quotations from the original testimonial screenshots.",
+      lead: "What was the learning journey like for others? Explore their own words and watch every original video reflection.",
       text: "Text reviews",
       video: "Video reviews",
       original: "View original review",
@@ -19,7 +19,7 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
     ru: {
       kicker: "Опыт учеников",
       title: "Отзывы о Reiki Yggdrasil",
-      lead: "Текстовые выдержки и видеоотзывы, сохранённые с предыдущих публичных страниц Reiki Yggdrasil. Текстовые отзывы показаны как короткие цитаты из исходных скриншотов.",
+      lead: "Каким оказался этот путь для учеников? Прочитайте их собственные слова и посмотрите все оригинальные видеоотзывы.",
       text: "Текстовые отзывы",
       video: "Видеоотзывы",
       original: "Открыть оригинал",
@@ -28,16 +28,13 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
     es: {
       kicker: "Experiencia de estudiantes",
       title: "Testimonios sobre Reiki Yggdrasil",
-      lead: "Extractos escritos y testimonios en video conservados de las páginas públicas anteriores de Reiki Yggdrasil.",
+      lead: "Descubre las reflexiones personales de estudiantes y mira todos sus testimonios en video.",
       text: "Testimonios escritos",
       video: "Testimonios en video",
       original: "Ver original",
       language: "Testimonio original en inglés",
     },
   }[locale];
-  const featuredVideos = yggdrasilVideoTestimonials.slice(0, 2);
-  const additionalVideos = yggdrasilVideoTestimonials.slice(2);
-
   return (
     <section className="yggdrasil-testimonials" id="yggdrasil-testimonials">
       <div className="yggdrasil-testimonials__heading">
@@ -54,11 +51,11 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
         <div className="yggdrasil-testimonial-grid">
           {yggdrasilTextTestimonials.map((item, index) => (
             <article className="yggdrasil-testimonial-card" key={item.id}>
+              <div className="yggdrasil-testimonial-card__top"><span>{locale === "ru" ? "Слова ученика" : locale === "es" ? "La voz del estudiante" : "In their own words"}</span><span>{String(index + 1).padStart(2, "0")} / {String(yggdrasilTextTestimonials.length).padStart(2, "0")}</span></div>
               <span className="yggdrasil-testimonial-card__quote" aria-hidden="true">“</span>
               <blockquote>{item.quote[locale]}</blockquote>
               <footer>
-                <span>{locale === "ru" ? "Отзыв ученика" : locale === "es" ? "Testimonio de estudiante" : "Student review"} {index + 1}</span>
-                <small>{copy.language}</small>
+                <span>{locale === "ru" ? "Участник курса" : locale === "es" ? "Participante del curso" : "Course participant"}</span>
                 <a href={item.sourceUrl} target="_blank" rel="noreferrer">{copy.original}<span aria-hidden="true">↗</span></a>
               </footer>
             </article>
@@ -72,29 +69,13 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
           <span>{yggdrasilVideoTestimonials.length}</span>
         </div>
         <div className="yggdrasil-video-grid yggdrasil-testimonial-video-grid">
-          {featuredVideos.map((video) => (
+          {yggdrasilVideoTestimonials.map((video) => (
             <div className="yggdrasil-testimonial-video" key={video.youtubeId}>
               <span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span>
               <AcademyVideoPlayer youtubeId={video.youtubeId} title={video.title[locale]} />
             </div>
           ))}
         </div>
-        {additionalVideos.length ? (
-          <details className="yggdrasil-more-testimonials">
-            <summary>
-              {locale === "ru" ? "Показать дополнительные видеоотзывы" : locale === "es" ? "Ver más testimonios en video" : "More English video reviews"}
-              <span>{additionalVideos.length}</span>
-            </summary>
-            <div className="yggdrasil-video-grid yggdrasil-testimonial-video-grid">
-              {additionalVideos.map((video) => (
-                <div className="yggdrasil-testimonial-video" key={video.youtubeId}>
-                  <span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span>
-                  <AcademyVideoPlayer youtubeId={video.youtubeId} title={video.title[locale]} />
-                </div>
-              ))}
-            </div>
-          </details>
-        ) : null}
       </section>
     </section>
   );
