@@ -4,7 +4,7 @@ import styles from "./yggdrasil-source-study-guide.module.css";
 
 type Localized = Record<PublicLocale, string>;
 type LocalizedItems = Record<PublicLocale, string[]>;
-type GuideMode = "overview" | "basic" | "instructor";
+type GuideMode = "overview" | "basic" | "instructor" | "resources";
 
 const base = "https://superskills.vip";
 const levelPath = base + "/books/reiki/runic-reiki-yggdrasil-brief-description/";
@@ -130,26 +130,28 @@ const instructorTracks: Array<{ title: Localized; description: Localized; themes
   {
     title: { en: "Man & Woman", ru: "Мужчина и женщина", es: "Hombre y mujer" },
     description: { en: "Relationship patterns, masculine and feminine imagery, attraction and the language of consent and connection.", ru: "Сценарии отношений, мужские и женские образы, притяжение, согласие и качество контакта.", es: "Patrones de relación, arquetipos, atracción, consentimiento y conexión." },
-    themes: { en: ["Relationship imagery", "Tantric flow"], ru: ["Образы отношений", "Тантрический поток"], es: ["Imágenes de relación", "Flujo tántrico"] },
+    themes: { en: ["Archetypes", "Tantra", "Co-tuning", "Easy communication"], ru: ["Архетипы", "Тантра", "Сонастройка", "Лёгкое общение"], es: ["Arquetipos", "Tantra", "Sintonización conjunta", "Comunicación fácil"] },
   },
   {
     title: { en: "Life Force", ru: "Сила жизни", es: "Fuerza vital" },
     description: { en: "A symbolic practice with nature, seasonal rhythms, bodily vitality and regeneration themes.", ru: "Символические практики с силами природы, сезонными ритмами, телесной жизненностью и темой обновления.", es: "Práctica simbólica con naturaleza, ritmos estacionales y vitalidad." },
-    themes: { en: ["Nature", "Vitality", "Seasonal cycles"], ru: ["Природа", "Жизненность", "Сезонные циклы"], es: ["Naturaleza", "Vitalidad", "Ciclos"] },
+    themes: { en: ["Activation of life flow", "Fetch", "Fountain of Life", "Love and Compassion"], ru: ["Активация потока жизни", "Фетч", "Фонтан жизни", "Любовь и сострадание"], es: ["Activación del flujo vital", "Fetch", "Fuente de la Vida", "Amor y compasión"] },
   },
   {
     title: { en: "Fireball", ru: "Огненный шар", es: "Bola de fuego" },
     description: { en: "Focused attention, visualisation and the traditional language of directing energetic intention.", ru: "Концентрация внимания, визуализация и традиционный язык направления энергетического намерения.", es: "Atención enfocada, visualización e intención energética simbólica." },
-    themes: { en: ["Attention", "Visualisation"], ru: ["Внимание", "Визуализация"], es: ["Atención", "Visualización"] },
+    themes: { en: ["Energy circle", "Fireball on chakras", "Assemblage point"], ru: ["Энергетический круг", "Огненный шар на чакрах", "Точка сборки"], es: ["Círculo de energía", "Bola de fuego en chakras", "Punto de encaje"] },
   },
   {
     title: { en: "Sexual Energy", ru: "Сексуальная энергия", es: "Energía sexual" },
     description: { en: "Exploring aliveness, pleasure, boundaries and embodied awareness within a consent-based learning setting.", ru: "Исследование живости, удовольствия, границ и телесной осознанности в безопасном формате с согласием участников.", es: "Exploración de vitalidad, placer, límites y conciencia corporal con consentimiento." },
-    themes: { en: ["Body awareness", "Boundaries", "Vitality"], ru: ["Телесная осознанность", "Границы", "Жизненность"], es: ["Conciencia corporal", "Límites", "Vitalidad"] },
+    themes: { en: ["Genital cleansing", "Activation of sexual centres", "Wheel of Immortality", "Extract", "Yoni-Lingam"], ru: ["Очищение гениталий", "Активация сексуальных центров", "Колесо бессмертия", "Экстракт", "Йони-Лингам"], es: ["Limpieza genital", "Activación de centros sexuales", "Rueda de la Inmortalidad", "Extracto", "Yoni-Lingam"] },
   },
 ];
 
 const resources: Array<{ url: string; name: Localized; category: "overview" | "level" | "practice" | "faq" | "community" | "teacher" }> = [
+  { url: base + "/reiki.html", name: { en: "Runic Reiki school and education overview", ru: "Школа Рейки Иггдрасиль и направления обучения", es: "Escuela Reiki Yggdrasil y estructura educativa" }, category: "overview" },
+  { url: base + "/shamanic-energy-healing-free-program.html", name: { en: "Combined introductory healing programme (historical)", ru: "Общая ознакомительная программа целительства (историческая)", es: "Programa introductorio combinado (histórico)" }, category: "faq" },
   { url: base + "/books/reiki/runic-reiki-yggdrasil-brief-description.html", name: { en: "Master course overview", ru: "Обзор мастерского курса", es: "Resumen del curso" }, category: "overview" },
   { url: levelPath + "gift-runic-reiki-level-1-free-initiation.html", name: { en: "Five-level introductory map", ru: "Карта пяти ступеней", es: "Mapa de cinco niveles" }, category: "overview" },
   { url: levelPath + "what-is-runic-reiki-detailed-overview.html", name: { en: "Detailed system history and philosophy", ru: "История и философия системы", es: "Historia y filosofía" }, category: "overview" },
@@ -163,6 +165,15 @@ const resources: Array<{ url: string; name: Localized; category: "overview" | "l
   { url: base + "/reiki/reiki-yggdrasil-levels-description.html", name: { en: "Instructor course: six areas", ru: "Инструкторский курс: шесть направлений", es: "Instructor: seis áreas" }, category: "teacher" },
   { url: freePath + "testimonials-1.html", name: { en: "Original student reports · volume 1", ru: "Исходные отзывы учеников · часть 1", es: "Testimonios · parte 1" }, category: "community" },
   { url: freePath + "testimonials-2.html", name: { en: "Original student reports · volume 2", ru: "Исходные отзывы учеников · часть 2", es: "Testimonios · parte 2" }, category: "community" },
+];
+
+const resourceCategories: Array<{ key: (typeof resources)[number]["category"]; label: Localized }> = [
+  { key: "overview", label: { en: "Introduction and system history", ru: "Введение и история системы", es: "Introducción e historia" } },
+  { key: "level", label: { en: "Five Basic Course levels", ru: "Пять базовых ступеней", es: "Cinco niveles básicos" } },
+  { key: "practice", label: { en: "Exercises and post-initiation study", ru: "Практикум и материалы после инициации", es: "Ejercicios y lectura posterior" } },
+  { key: "teacher", label: { en: "Instructor Course", ru: "Курс инструктора", es: "Curso de Instructor" } },
+  { key: "faq", label: { en: "Free initiation and FAQ", ru: "Бесплатная инициация и вопросы", es: "Iniciación gratuita y preguntas" } },
+  { key: "community", label: { en: "Historical student experiences", ru: "Исторические отзывы учеников", es: "Experiencias de estudiantes" } },
 ];
 
 const copy: Record<PublicLocale, {
@@ -221,10 +232,10 @@ const copy: Record<PublicLocale, {
 export function YggdrasilSourceStudyGuide({ locale, mode = "overview" }: { locale: PublicLocale; mode?: GuideMode }) {
   const text = copy[locale];
   const root = "/" + locale + "/academy/reiki/yggdrasil";
-  const showLevels = mode !== "instructor";
-  const showInstructor = mode !== "basic";
+  const showLevels = mode === "basic";
+  const showInstructor = mode === "instructor";
   const visibleResources = resources.filter((item) =>
-    mode === "overview" ||
+    mode === "resources" ||
     (mode === "basic" && item.category !== "teacher" && item.category !== "community") ||
     (mode === "instructor" && (item.category === "teacher" || item.category === "overview" || item.category === "faq"))
   );
@@ -239,6 +250,26 @@ export function YggdrasilSourceStudyGuide({ locale, mode = "overview" }: { local
           <Link href={root + "/free-initiation"}>{text.start} <span aria-hidden="true">→</span></Link>
         </div>
       </header>
+
+      {mode === "overview" ? (
+        <div className={styles.pathCards} aria-label={locale === "ru" ? "Маршруты изучения" : locale === "es" ? "Itinerarios de aprendizaje" : "Learning pathways"}>
+          <Link href={root + "/basic-course#historical-study-materials"}>
+            <strong>{locale === "ru" ? "Практика базовых ступеней" : locale === "es" ? "Prácticas de los niveles básicos" : "Basic Course practice"}</strong>
+            <span>{locale === "ru" ? "Упражнения к 1–4 ступеням и пояснения 5-й" : locale === "es" ? "Ejercicios 1–4 y notas del quinto nivel" : "Exercises for levels 1–4, plus Level 5 context"}</span>
+            <b aria-hidden="true">→</b>
+          </Link>
+          <Link href={root + "/instructor-course#historical-study-materials"}>
+            <strong>{locale === "ru" ? "Настройки инструкторского курса" : locale === "es" ? "Sintonizaciones del curso de Instructor" : "Instructor Course attunements"}</strong>
+            <span>{locale === "ru" ? "6 направлений, 23 названия из первоисточника" : locale === "es" ? "6 áreas y 23 nombres originales" : "6 fields and 23 source-listed settings"}</span>
+            <b aria-hidden="true">→</b>
+          </Link>
+          <Link href={root + "/superskills-sources"}>
+            <strong>{locale === "ru" ? "Библиотека оригиналов" : locale === "es" ? "Biblioteca de fuentes" : "Original source library"}</strong>
+            <span>{locale === "ru" ? "19 статей и разделов SuperSkills по темам" : locale === "es" ? "19 artículos y secciones organizados" : "19 organised SuperSkills articles and pages"}</span>
+            <b aria-hidden="true">→</b>
+          </Link>
+        </div>
+      ) : null}
 
       {showLevels ? (
         <div className={styles.chapter} aria-labelledby="superskills-basic-levels">
@@ -271,19 +302,24 @@ export function YggdrasilSourceStudyGuide({ locale, mode = "overview" }: { local
           <p className={styles.chapterLead}>{text.instructorIntro}</p>
           <div className={styles.tracks}>
             {instructorTracks.map((track, index) => (
-              <article className={styles.track} key={index}>
-                <small>{String(index + 1).padStart(2, "0")}</small>
-                <h4>{track.title[locale]}</h4>
-                <p>{track.description[locale]}</p>
-                <ul>{track.themes[locale].map((theme) => <li key={theme}>{theme}</li>)}</ul>
-              </article>
+              <details className={styles.track} key={index}>
+                <summary>
+                  <small>{String(index + 1).padStart(2, "0")}</small>
+                  <strong>{track.title[locale]}</strong>
+                  <span>{track.themes[locale].length} {locale === "ru" ? "настроек" : locale === "es" ? "sintonizaciones" : "attunements"} ⌄</span>
+                </summary>
+                <div className={styles.trackBody}>
+                  <p>{track.description[locale]}</p>
+                  <ul>{track.themes[locale].map((theme) => <li key={theme}>{theme}</li>)}</ul>
+                </div>
+              </details>
             ))}
           </div>
-          <Link className={styles.inlineLink} href={root + "/instructor-course"}>{text.readCurrent} →</Link>
+          <a className={styles.inlineLink} href={base + "/reiki/reiki-yggdrasil-levels-description.html"} target="_blank" rel="noopener noreferrer">{text.openOriginal} ↗</a>
         </div>
       ) : null}
 
-      <div className={styles.chapter} aria-labelledby="superskills-faq">
+      {mode === "basic" || mode === "instructor" ? <div className={styles.chapter} aria-labelledby="superskills-faq">
         <h3 id="superskills-faq">{text.faqHeading}</h3>
         <div className={styles.questions}>
           {text.faqs.map((faq) => (
@@ -293,19 +329,30 @@ export function YggdrasilSourceStudyGuide({ locale, mode = "overview" }: { local
             </details>
           ))}
         </div>
-      </div>
+      </div> : null}
 
-      <div className={styles.chapter} aria-labelledby="superskills-originals">
+      {mode !== "overview" ? <div className={styles.chapter} aria-labelledby="superskills-originals">
         <h3 id="superskills-originals">{text.sourcesHeading}</h3>
         <p className={styles.chapterLead}>{text.sourcesIntro}</p>
-        <div className={styles.sourceLinks}>
-          {visibleResources.map((item) => (
-            <a key={item.url} href={item.url} target="_blank" rel="noopener noreferrer">
-              <span>{item.name[locale]}</span><span aria-hidden="true">↗</span>
-            </a>
-          ))}
+        <div className={styles.sourceGroups}>
+          {resourceCategories.map((group) => {
+            const groupResources = visibleResources.filter((item) => item.category === group.key);
+            if (!groupResources.length) return null;
+            return (
+              <details className={styles.sourceGroup} key={group.key}>
+                <summary><strong>{group.label[locale]}</strong><small>{groupResources.length} ↴</small></summary>
+                <div className={styles.sourceLinks}>
+                  {groupResources.map((item) => (
+                    <a key={item.url} href={item.url} target="_blank" rel="noopener noreferrer">
+                      <span>{item.name[locale]}</span><span aria-hidden="true">↗</span>
+                    </a>
+                  ))}
+                </div>
+              </details>
+            );
+          })}
         </div>
-      </div>
+      </div> : null}
       <p className={styles.notice}>{text.disclaimer}</p>
     </section>
   );
