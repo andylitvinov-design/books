@@ -1,0 +1,97 @@
+/* Client-only conversion panel — harmonizes with the blue/teal testing UI
+   without changing the global Holistic House brand header or other banners. */
+.invite{
+  display:grid;
+  grid-template-columns:minmax(0,1.25fr) minmax(270px,.65fr);
+  gap:clamp(18px,3vw,52px);align-items:center;
+  width:min(100% - 28px,1380px);
+  margin:clamp(24px,4vw,50px) auto clamp(42px,6vw,78px);
+  padding:clamp(24px,4.3vw,58px);
+  border:1px solid #b7dbdd;border-radius:30px;overflow:hidden;
+  background:radial-gradient(circle at 92% 25%,rgba(210,248,227,.92) 0%,transparent 33%),
+    linear-gradient(123deg,#edf9ff 0%,#e2f3f7 53%,#e4f7ef 100%);
+  box-shadow:0 14px 45px rgba(24,80,105,.1);
+  color:#1d4a61;
+}
+.content{position:relative;z-index:1;min-width:0}
+.kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  color:#147b7d;font:800 .77rem/1.3 Arial,Helvetica,sans-serif;
+  letter-spacing:.11em;text-transform:uppercase;margin-bottom:17px;
+}
+.invite h2{
+  font:500 clamp(2rem,3.4vw,3.3rem)/1.12 Georgia,Times,serif;
+  letter-spacing:-.035em;color:#1b4561;margin:0 0 15px;
+  max-width:19ch;
+}
+.intro{font:400 clamp(.97rem,1.35vw,1.12rem)/1.56 Arial,Helvetica,sans-serif;color:#526f7a;max-width:57ch;margin:0 0 24px}
+.topics{padding:0;border:0;min-width:0;margin:0}
+.topics legend{padding:0;margin:0 0 13px;font:750 .94rem/1.4 Arial,Helvetica,sans-serif;color:#244d60}
+.options{display:flex;gap:9px;flex-wrap:wrap}
+.options button{
+  display:inline-flex;align-items:center;gap:5px;justify-content:center;
+  min-height:45px;padding:10px 15px;text-align:center;
+  border-radius:12px;border:1px solid #b8d6dd;background:#ffffffc9;
+  color:#28586e;cursor:pointer;font:700 .85rem/1.25 Arial,Helvetica,sans-serif;
+  transition:background .15s,border-color .15s;
+}
+.options button[aria-pressed=true]{background:#176f8e;color:#fff;border-color:#176f8e;box-shadow:0 4px 12px #176f8e27}
+.options button:hover:not([aria-pressed=true]){border-color:#6aaeba;background:#f5fcff}
+.actions{display:grid;justify-items:start;gap:9px;margin-top:23px}
+.action{
+  display:inline-flex;justify-content:center;align-items:center;gap:13px;
+  min-height:54px;padding:15px 22px;
+  border-radius:14px;background:#e16b4b;color:#fff;text-decoration:none;
+  font:800 .96rem/1.3 Arial,Helvetica,sans-serif;
+  box-shadow:0 7px 20px #d963453b;transition:background .15s,transform .15s;
+}
+.action:hover{background:#cb5839;transform:translateY(-1px)}
+.actions p{max-width:56ch;font:400 .75rem/1.45 Arial,Helvetica,sans-serif;margin:0;color:#607d86}
+.trust{display:flex;flex-wrap:wrap;gap:7px 15px;margin-top:21px}
+.trust span{display:inline-flex;align-items:center;gap:5px;color:#256c70;font:700 .77rem/1.3 Arial,Helvetica,sans-serif}
+.safety{display:block;color:#6c8188;margin-top:13px;font:400 .73rem/1.4 Arial,Helvetica,sans-serif}
+.art{display:grid;align-content:center;justify-items:center;gap:10px;min-width:0;isolation:isolate}
+.orbit{width:min(100%,315px);aspect-ratio:1;display:grid;place-items:center;
+  position:relative;border:1px solid #8dc3c7;
+  border-radius:50%;background:radial-gradient(circle,#fffdfaef,#d4f5f2b8 45%,#cfeaf5a5 72%,transparent 73%);
+  box-shadow:0 0 0 18px #ffffff50,0 0 0 37px #fff9;
+}
+.orbit::before,.orbit::after{content:"";position:absolute;border-radius:50%;inset:14%;border:1px dashed #8fbfcd}
+.orbit::after{inset:28%;border:1px solid #b5d9d6}
+.orbitInner{position:absolute;inset:7%;border-radius:50%;border:1px solid #c0dedf}
+.orbitMarkOne,.orbitMarkTwo{position:absolute;width:13px;height:13px;border-radius:50%;background:#e98463;box-shadow:0 0 0 7px #ffead9}
+.orbitMarkOne{top:16%;right:17%}
+.orbitMarkTwo{bottom:20%;left:12%;background:#2b9c97;box-shadow:0 0 0 7px #e4f8ee}
+.artCore{
+  position:relative;display:grid;place-items:center;z-index:1;
+  width:126px;height:126px;border-radius:50%;
+  background:linear-gradient(145deg,#f9fffe,#d8f2ec);
+  box-shadow:0 12px 28px #438a9235,inset 0 0 0 1px #fff;color:#277b84;
+}
+.artLabel{
+  width:min(100%,275px);display:flex;align-items:center;gap:11px;
+  padding:12px 15px;border:1px solid #c0dde4;background:#fffc;
+  border-radius:13px;color:#386575;
+  font:700 .87rem/1.3 Arial,Helvetica,sans-serif;box-shadow:0 5px 14px #34859313;
+}
+.artLabel>span{font:900 .8rem/1 Arial,Helvetica,sans-serif;color:#c96145;background:#fff0e9;border-radius:10px;padding:9px}
+.invite :is(button,a):focus-visible{outline:3px solid #14649c;outline-offset:3px}
+@media(max-width:980px){
+  .invite{grid-template-columns:minmax(0,1fr);gap:16px}
+  .art{display:none}
+  .invite h2{max-width:29ch}
+}
+@media(max-width:600px){
+  .invite{width:calc(100% - 20px);padding:23px 17px;margin:20px auto 43px;border-radius:21px}
+  .kicker{font-size:.67rem;letter-spacing:.065em;margin-bottom:12px}
+  .invite h2{font-size:clamp(1.8rem,7.9vw,2.3rem);line-height:1.1;margin-bottom:11px}
+  .intro{font-size:.91rem;line-height:1.48;margin-bottom:20px}
+  .topics legend{font-size:.85rem}
+  .options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .options button{min-height:48px;padding:9px 7px;font-size:.77rem;border-radius:11px}
+  .actions{margin-top:18px;justify-items:stretch}
+  .action{width:100%;padding:14px 12px;font-size:.91rem;min-height:51px}
+  .trust{gap:7px 10px}
+  .trust span{font-size:.72rem}
+}
+@media(prefers-reduced-motion:reduce){.options button,.action{transition:none}.action:hover{transform:none}}
