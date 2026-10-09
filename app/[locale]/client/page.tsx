@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { CabinetLanding } from "@/components/app/cabinet-landing";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { MindBodyMonitorStrip } from "@/components/mind-body-monitor-strip";
+import { ClientAssessmentInvite } from "@/components/client-assessment-invite";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -55,7 +55,7 @@ export default async function ClientEntryPage({ params }: PageProps) {
         appAvailable={appEnabled()}
         legacySelector={session?.selector}
       />
-      <MindBodyMonitorStrip locale={typedLocale} />
+      <ClientAssessmentInvite locale={typedLocale} />
     </main>
   );
 }
