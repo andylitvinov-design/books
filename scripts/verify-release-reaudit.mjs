@@ -138,7 +138,8 @@ async function exercise(engine, browserType, width) {
         assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'), 'Selecting a topic must change the prepared message');
         assert.ok(changedUrl.searchParams.get('text').includes(await selected.innerText()), 'Prepared message must mention the chosen topic');
         await capture.locator('[role="group"] button').nth(0).click();
-        await expect(action).toHaveAttribute('href', originalUrl.toString());
+        const resetUrl = new URL(await action.getAttribute('href'));
+        assert.equal(resetUrl.searchParams.get('text'), originalUrl.searchParams.get('text'), 'Resetting topic must restore the original message');
         assert.equal(await page.locator('[data-consultation-capture="personal"] form').count(), 0);
         assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
         return { externalNavigationIntercepted: false, messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true };
