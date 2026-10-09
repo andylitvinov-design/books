@@ -53,7 +53,7 @@ const stages = [
         "Money Magnet",
         "Burn Away Complexes"
       ],
-      "practice": "Begin creating simple Tantra Reiki mandalas. The historical English text places Attunement here, whereas Andrey’s Russian text places Burn Away Complexes here. Both originals remain in the archive."
+      "practice": "Create your first simple Tantra Reiki mandala and explore symbolic exercises for personal focus and confidence."
     },
     "ru": {
       "title": "Жар жизни",
@@ -88,7 +88,7 @@ const stages = [
         "Luck · acceleration of time",
         "Talisman"
       ],
-      "practice": "Write short reflections and create a Tantra Reiki mandala. The historical English text lists Unity, Clearance and Luck here; Andrey’s Russian text lists Attunement, Luck and Talisman."
+      "practice": "Reflect on your experiences, practise attunement with a partner, and develop a Tantra Reiki mandala."
     },
     "ru": {
       "title": "Океан единства",
@@ -303,15 +303,15 @@ const stages = [
  * attendees are taking the precise initiation described alongside the image.
  */
 const levelPhotos = [
-  { src: tantraReikiArchive.images.ru[17], description: "Gentle embodied connection during practice", archive: true, position: "center 48%" },
-  { src: tantraReikiArchive.images.ru[14], description: "Quiet reflective meditation in nature", archive: false, position: "center 52%" },
-  { src: tantraReikiArchive.images.ru[18], description: "Shared mindful experience", archive: true, position: "center 44%" },
-  { src: tantraReikiArchive.images.ru[11], description: "Presence and connection during a workshop", archive: true, position: "center 46%" },
-  { src: tantraReikiArchive.images.ru[20], description: "Creative practice and mindful attention", archive: true, position: "center 45%" },
-  { src: tantraReikiArchive.images.ru[10], description: "Calm reflection and integration", archive: true, position: "center 50%" },
-  { src: tantraReikiArchive.images.ru[15], description: "Quiet attention during a shared gathering", archive: true, position: "center 42%" },
-  { src: tantraReikiArchive.images.ru[21], description: "Embodied creative expression in practice", archive: true, position: "center 48%" },
-  { src: tantraReikiArchive.images.ru[22], description: "A moment from the original practice archive", archive: true, position: "center 45%" }
+  { src: tantraReikiArchive.images.ru[4], description: "Tantra Reiki practice and shared awareness", archive: true, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[5], description: "Quiet reflective practice", archive: false, position: "center 52%" },
+  { src: tantraReikiArchive.images.ru[6], description: "An experience of mindful connection", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[7], description: "Shared presence and connection", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[8], description: "Grounded group practice", archive: true, position: "center 46%" },
+  { src: tantraReikiArchive.images.ru[9], description: "Quiet reflection and integration", archive: true, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[12], description: "Reflective gathering from the practice archive", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[13], description: "Personal attention and contemplative practice", archive: false, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[14], description: "Meditation in nature", archive: false, position: "center 52%" }
 ] as const;
 
 /**
@@ -432,7 +432,7 @@ const levelApplications: Record<PublicLocale, string[]> = {
 };
 
 const ui = {
-  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", original: "Andrey’s original description · translated from Russian", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
+  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", original: "Andrey’s perspective", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
   ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", original: "Авторское описание Андрея · без сокращений", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
   es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", original: "Texto original de Andrey · traducción del ruso", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
 } as const;
@@ -463,7 +463,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
             </figure>
             <div className="tantra-journey__level-heading">
               <div className="tantra-journey__chapter">
-                <span>{c.level} {String(n).padStart(2,"0")} / 09</span>
+                <strong className="tantra-journey__level-number">{c.level} {String(n).padStart(2,"0")} <small>/ 09</small></strong>
                 <span>{c.phases[phase]}</span>
               </div>
               <h3 id={"tantra-heading-"+n}>{copy.title}</h3>
@@ -489,7 +489,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
               </div>
               <div className="tantra-journey__actions">
                 {n>1 ? <a href={"#tantra-level-"+(n-1)} aria-label={c.previous+" "+(n-1)}>← {c.previous}</a> : <a href="https://t.me/AndyTherapist" target="_blank" rel="noreferrer">{c.contact} ↗</a>}
-                <a className="tantra-journey__next" href={n<9?"#tantra-level-"+(n+1):"#tantra-media"}>{n<9?c.next:c.final} →</a>
+                <a className="tantra-journey__next" href={n<9?"#tantra-level-"+(n+1):"#tantra-testimonials"}>{n<9?c.next:c.final} →</a>
               </div>
             </div>
           </article>
