@@ -109,7 +109,7 @@ try {
             await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Подберите свои тесты':'Choose your tests'})).toBeVisible();
             await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Рекомендуем для вас':'Recommended for you'})).toBeVisible();
             assert.equal(await preloginPicker.locator('details').first().evaluate(element=>element.open),false,'advanced filter starts folded');
-            await expect(preloginPicker.getByRole('button',{name:language==='ru'?/Составить мой набор тестов/:/Build my test plan/})).toBeVisible();
+            await expect(preloginPicker.getByRole('button',{name:language==='ru'?/Пройти тестирование бесплатно/:/Start free testing/})).toBeVisible();
             await expect(page.getByRole('button',{name:language==='ru'?'Войти в личный кабинет через Google':'Enter personal cabinet with Google'})).toBeVisible();
             const legacy = page.locator('.cabinet-legacy-entry');
             await expect(legacy).not.toHaveAttribute('open','');
