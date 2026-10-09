@@ -15,7 +15,6 @@ import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
 import { TantraReikiTestimonials } from "@/components/tantra-reiki-testimonials";
 import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import tantraReikiFullArchive from "@/data/academy/tantra-reiki-full.generated.json";
-import tantraReikiOriginalRuEnglish from "@/data/academy/tantra-reiki-ru-en.generated.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
 function renderBlocks(blocks: AcademyBlock[]) {
