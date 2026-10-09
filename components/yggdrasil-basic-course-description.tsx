@@ -287,7 +287,7 @@ export function YggdrasilBasicCourseDescription({ locale }: { locale: PublicLoca
               <p className="homeopathy-kicker">{text.eyebrow}</p>
               <h1>{book.heading}</h1>
               <p className="yggdrasil-description-lead">{book.lead}</p>
-              <div className="yggdrasil-description-actions"><a className="yggdrasil-primary-action" href="#full-book">{book.start} ↓</a><Link className="yggdrasil-secondary-action" href={base + "/basic-course"}>{text.openCourse} →</Link><Link className="yggdrasil-secondary-action" href={base + "/basic-course#historical-study-materials"}>{locale === "ru" ? "Упражнения пяти ступеней" : locale === "es" ? "Ejercicios de los cinco niveles" : "Five-level practice guide"} →</Link></div>
+              <div className="yggdrasil-description-actions"><a className="yggdrasil-primary-action" href="#full-book">{book.start} ↓</a><Link className="yggdrasil-secondary-action" href={base + "/basic-course"}>{text.openCourse} →</Link><Link className="yggdrasil-secondary-action" href={base + "/basic-course#historical-study-materials"}>{locale === "ru" ? "Упражнения пяти ступеней" : locale === "es" ? "Ejercicios de los cinco niveles" : "Five-level practice guide"} →</Link><Link className="yggdrasil-secondary-action" href={base + "/free-initiation"}>{locale === "ru" ? "1-я ступень бесплатно · 7 вопросов" : locale === "es" ? "Nivel 1 gratis · 7 preguntas" : "Free Level 1 · 7 questions"} →</Link></div>
             </div>
             <figure>
               <Image src="/academy/reiki-yggdrasil/source/basic-program.jpg" alt="" width={640} height={520} sizes="(max-width: 780px) 100vw, 38vw" priority />
