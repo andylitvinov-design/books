@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { BarChart3, ClipboardList, House, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
@@ -362,6 +363,12 @@ export default function AppWorkspace({ locale, path = [] }) {
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>
+      {page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+        <Link href={locale === 'ru' ? '/?lang=ru' : '/?lang=en'} prefetch={false}><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
+        <Link href={root} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
+        <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
+        <Link href={root + '/settings'} prefetch={false} aria-current={page === 'settings' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Аккаунт' : 'Account'}</span></Link>
+      </nav>}
     </main>
   )
 }
