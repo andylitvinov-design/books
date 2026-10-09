@@ -18,6 +18,10 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
       seriesVideos: "Eight-part student video diary",
       original: "View original review",
       language: "Original review in English",
+      historical: "More student accounts in the original SuperSkills archive",
+      historicalNote: "Older student reports are personal experiences, not guaranteed outcomes. Read the complete sources in their original context.",
+      archiveOne: "Historical student reports · Part 1",
+      archiveTwo: "Historical student reports · Part 2",
     },
     ru: {
       kicker: "Опыт учеников",
@@ -29,6 +33,10 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
       seriesVideos: "Восемь частей личного видеоотзыва",
       original: "Открыть оригинал",
       language: "Оригинал отзыва — на английском",
+      historical: "Другие отзывы из исходного архива SuperSkills",
+      historicalNote: "Это личные свидетельства учеников, а не гарантия результата. Полные версии доступны на сайте-источнике.",
+      archiveOne: "Исторические отзывы · Часть 1",
+      archiveTwo: "Исторические отзывы · Часть 2",
     },
     es: {
       kicker: "Experiencia de estudiantes",
@@ -40,6 +48,10 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
       seriesVideos: "Diario en ocho partes de un estudiante",
       original: "Ver original",
       language: "Testimonio original en inglés",
+      historical: "Más experiencias en el archivo original SuperSkills",
+      historicalNote: "Son experiencias personales históricas, no resultados garantizados. Lee las fuentes completas.",
+      archiveOne: "Experiencias originales · Parte 1",
+      archiveTwo: "Experiencias originales · Parte 2",
     },
   }[locale];
   return (
@@ -88,6 +100,16 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
           ))}
         </div>
       </section>
+      <div className="yggdrasil-testimonials__historical-links">
+        <div>
+          <strong>{copy.historical}</strong>
+          <p>{copy.historicalNote}</p>
+        </div>
+        <div className="yggdrasil-testimonials__historical-actions">
+          <a href="https://superskills.vip/shamanic-energy-healing-free-program/free-trial-runic-reiki-energy-healing-class/testimonials-1.html" target="_blank" rel="noopener noreferrer">{copy.archiveOne} ↗</a>
+          <a href="https://superskills.vip/shamanic-energy-healing-free-program/free-trial-runic-reiki-energy-healing-class/testimonials-2.html" target="_blank" rel="noopener noreferrer">{copy.archiveTwo} ↗</a>
+        </div>
+      </div>
     </section>
   );
 }
