@@ -21,7 +21,7 @@
 .hh-portrait-with-metrics>section:last-child{position:relative;top:auto;max-width:100%}
 @media(max-width:1100px){
   .hh-portrait-with-metrics{grid-template-columns:1fr}
-  .hh-portrait-with-metrics>section:last-child{max-width:760px;width:100%;margin-inline:auto}
+  .hh-portrait-with-metrics>section:last-child{max-width:760px;width:100%;margin-inline:auto;order:-1}
 }
 
 /* Specialist recommendations are a request, never automatic disclosure of test results. */
