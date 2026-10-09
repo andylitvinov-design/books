@@ -10,9 +10,13 @@ test("Tantra Reiki review photos are relocated below curriculum only in Russian"
   ]);
   const photos = journey.slice(journey.indexOf("const levelPhotos = ["), journey.indexOf("] as const;", journey.indexOf("const levelPhotos = [")));
   const gallery = reviews.slice(reviews.indexOf("const reviewImages = "), reviews.indexOf("] as const;", reviews.indexOf("const reviewImages = ")));
-  for (const index of [17, 18, 11, 20, 10, 15, 21, 22]) {
-    assert.doesNotMatch(photos, new RegExp("images\\.ru\\[" + index + "\\]"), "review image returned to level " + index);
-    assert.match(gallery, new RegExp("\\b" + index + "\\b"), "review image missing from gallery " + index);
+  for (const index of [17, 18, 19, 20, 21, 22]) {
+    assert.match(photos, new RegExp("images\\.ru\\[" + index + "\\]"), "real event photo missing from levels " + index);
+    assert.doesNotMatch(gallery, new RegExp("\\b" + index + "\\b"), "event photo was mistakenly classified as a review " + index);
+  }
+  for (const index of [2, 3]) {
+    assert.doesNotMatch(photos, new RegExp("images\\.ru\\[" + index + "\\]"), "green review screenshot returned to a level");
+    assert.match(gallery, new RegExp("\\b" + index + "\\b"), "original review screenshot absent " + index);
   }
   assert.match(reviews, /reviewImages\.map/);
   assert.match(reviews, /locale === "ru" \? \(/);
