@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { Activity, Brain, Compass, Heart, Moon, Shield, Sparkles, Zap } from 'lucide-react'
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
@@ -66,6 +67,13 @@ const QUICK_COPY = {
 // First-screen shortcuts mirror familiar hotel-search chips, but use the
 // existing questionnaire facets instead of a parallel, disconnected filter.
 const QUICK_FOCUS = ['stress', 'anxiety', 'sleep', 'mood', 'body', 'relationships']
+const TEST_ART_ICONS = { stress: Zap, anxiety: Brain, mood: Heart, sleep: Moon, energy: Zap, clarity: Sparkles, focus: Brain, relationships: Heart, resource: Shield, self_support: Shield, functioning: Activity, meaning: Compass, body: Activity, personality: Brain }
+function TestArtwork({ entry }) {
+  const labels = [entry.area, entry.category, ...(entry.analysisAxes || []).map((axis) => axis.key)].map((value) => String(value || '').toLowerCase())
+  const theme = labels.find((key) => TEST_ART_ICONS[key]) || 'clarity'
+  const Icon = TEST_ART_ICONS[theme]
+  return <span className={styles.testArtwork} data-theme={theme} aria-hidden="true"><Icon size={25} strokeWidth={1.85} /><span className={styles.testArtworkOrb} /></span>
+}
 const QUICK_ICONS = { stress: '⚡', anxiety: '☁', sleep: '☾', mood: '♡', body: '✦', relationships: '♧' }
 
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
@@ -282,6 +290,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       {visible.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
       <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.analysisAxes.some((axis) => axis.key === axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
+        <TestArtwork entry={entry} />
         <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{entry.description || entry.category}</p>{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
 
       </article>)}</div>
