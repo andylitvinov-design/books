@@ -280,7 +280,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       activeBattery={activeBattery}
       onToggleTest={toggleSimpleSelected}
       onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
-      matchCount={matchCount}
+      matchCount={simpleRecommendations.length}
       onStart={start}
       onBrowseFull={() => {
         // Carry the three implicit selections into the full catalog editor.
