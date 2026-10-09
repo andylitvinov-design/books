@@ -44,7 +44,7 @@ test('shares all six public destinations between mobile and header navigation wi
     const items = getSiteNavigation(locale)
     assert.equal(items.length, 6)
     assert.equal(items.find((item) => item.id === 'about').href, `/${locale}/about`)
-    assert.equal(items.find((item) => item.id === 'cabinet').href, `/${locale}/client`)
+    assert.equal(items.find((item) => item.id === 'cabinet').href, `/${locale}/${locale === 'es' ? 'client' : 'app'}`)
   }
   assert.match(mobileNavigation, /getSiteNavigation/)
   assert.match(mobileNavigation, /data-nav-item/)
