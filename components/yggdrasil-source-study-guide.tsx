@@ -250,7 +250,7 @@ export function YggdrasilSourceStudyGuide({ locale, mode = "overview" }: { local
   );
   return (
     <section className={styles.root} id={mode === "overview" ? "source-study-guide" : "historical-study-materials"} aria-label={text.heading}>
-      <header className={styles.intro}>
+      {mode !== "resources" ? <header className={styles.intro}>
         <p className={styles.eyebrow}>{text.eyebrow}</p>
         <h2>{text.heading}</h2>
         <p>{text.intro}</p>
@@ -258,7 +258,7 @@ export function YggdrasilSourceStudyGuide({ locale, mode = "overview" }: { local
           <Link href={root + "/basic-course"}>{text.readCurrent} <span aria-hidden="true">→</span></Link>
           <Link href={root + "/free-initiation"}>{text.start} <span aria-hidden="true">→</span></Link>
         </div>
-      </header>
+      </header> : null}
 
       {mode === "overview" ? (
         <div className={styles.pathCards} aria-label={locale === "ru" ? "Маршруты изучения" : locale === "es" ? "Itinerarios de aprendizaje" : "Learning pathways"}>
