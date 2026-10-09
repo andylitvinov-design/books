@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Activity, Brain, Compass, Heart, Moon, Shield, Sparkles, Zap } from 'lucide-react'
+import { Activity, ArrowLeft, Brain, ChevronRight, Clock3, Compass, Heart, Languages, Layers, MessageCircle, Moon, Shield, Sparkles, Zap } from 'lucide-react'
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
@@ -76,6 +76,24 @@ function TestArtwork({ entry }) {
 }
 const QUICK_ICONS = { stress: '⚡', anxiety: '☁', sleep: '☾', mood: '♡', body: '✦', relationships: '♧' }
 
+const GUIDED_FILTER_GROUPS = [
+  { key:'topics', icon:Heart, label:{en:'Topics that matter',ru:'Что меня беспокоит',es:'Temas que importan'}, detail:{en:'Stress, sleep, mood and relationships',ru:'Стресс, сон, настроение и отношения',es:'Estrés, sueño, ánimo y relaciones'} },
+  { key:'concerns', icon:MessageCircle, label:{en:'Specific concerns',ru:'Конкретная проблема',es:'Inquietudes específicas'}, detail:{en:'Narrow down what you want to explore',ru:'Уточните ваш запрос',es:'Define lo que quieres explorar'} },
+  { key:'areas', icon:Compass, label:{en:'Area of life',ru:'Область жизни',es:'Área de la vida'}, detail:{en:'Mind, body and everyday life',ru:'Психика, тело, повседневная жизнь',es:'Mente, cuerpo y vida diaria'} },
+  { key:'scales', icon:Activity, label:{en:'What to measure',ru:'Что измерять',es:'Qué medir'}, detail:{en:'Choose the scales for your profile',ru:'Выберите шкалы для портрета',es:'Escalas para tu perfil'} },
+  { key:'timing', icon:Clock3, label:{en:'Time & depth',ru:'Время и глубина',es:'Tiempo y profundidad'}, detail:{en:'A quick check or a deeper look',ru:'Быстрый тест или подробный разбор',es:'Revisión rápida o detallada'} },
+  { key:'format', icon:Layers, label:{en:'Test type',ru:'Формат теста',es:'Tipo de prueba'}, detail:{en:'Professional, engaging or free',ru:'Профессиональный, лёгкий или бесплатный',es:'Profesional, sencillo o gratuito'} },
+  { key:'language', icon:Languages, label:{en:'Questionnaire language',ru:'Язык теста',es:'Idioma del cuestionario'}, detail:{en:'Choose the available language version',ru:'На каком языке отвечать',es:'Idioma de las preguntas'} },
+  { key:'goal', icon:Shield, label:{en:'Monitoring goal',ru:'Цель тестирования',es:'Objetivo de seguimiento'}, detail:{en:'One-time check or track changes',ru:'Разово или для наблюдения динамики',es:'Una vez o seguir cambios'} },
+  { key:'describe', icon:Sparkles, label:{en:'Describe in my own words',ru:'Описать своими словами',es:'Describir con mis palabras'}, detail:{en:'Suggest topics from your words',ru:'Поможем подобрать темы по вашему тексту',es:'Sugerir temas a partir de tu texto'} },
+]
+const GUIDED_COPY = {
+  en: { first:'Step 1 of 2', second:'Step 2 of 2', title:'What would you like to refine?', subtitle:'Choose one filter topic first. We will show only the relevant options.', back:'All filter topics', choose:'Choose', active:'selected', results:'Show matching tests', selected:'active filters', done:'The list of matching tests updates immediately.' },
+  ru: { first:'Шаг 1 из 2', second:'Шаг 2 из 2', title:'Что хотите уточнить?', subtitle:'Сначала выберите направление, затем только нужные параметры.', back:'К списку фильтров', choose:'Выбрать', active:'выбрано', results:'Показать подходящие тесты', selected:'активных фильтров', done:'Список подходящих тестов обновляется сразу.' },
+  es: { first:'Paso 1 de 2', second:'Paso 2 de 2', title:'¿Qué quieres ajustar?', subtitle:'Elige primero una categoría y después sus opciones.', back:'Todas las categorías', choose:'Elegir', active:'seleccionado', results:'Mostrar pruebas', selected:'filtros activos', done:'Los resultados cambian inmediatamente.' },
+}
+
+
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
@@ -138,8 +156,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [axisFilter, setAxisFilter] = useState(null)
   const [actionError, setActionError] = useState(null)
   const [starting, setStarting] = useState(false)
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [activeFilterGroup, setActiveFilterGroup] = useState(null)
   const [showAll, setShowAll] = useState(false)
   const entries = useMemo(() => buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience }), [locale, audience])
   // Direct History -> Test selection must also work when the URL changes without remounting.
@@ -184,6 +202,15 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const displayedCoverage = showingCoverage ? coverage : topicCoverage
   const matchCount = matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)).length
   const appliedFilters = stylesFilter.length + lengths.length + areas.length + details.length + axes.length + (maxMinutes ? 1 : 0) + (language !== 'any' ? 1 : 0) + (tracking !== 'any' ? 1 : 0) + (freeOnly ? 1 : 0) + (query.trim() ? 1 : 0) + (axisFilter ? 1 : 0)
+  const guidedCopy = GUIDED_COPY[locale] || GUIDED_COPY.en
+  const guidedCounts = {
+    topics: focus.length, concerns: details.length, areas: areas.length, scales: axes.length,
+    timing: lengths.length + (maxMinutes ? 1 : 0) + (depth !== 'balanced' ? 1 : 0),
+    format: stylesFilter.length + (freeOnly ? 1 : 0),
+    language: language !== 'any' ? 1 : 0, goal: tracking !== 'any' ? 1 : 0, describe: 0,
+  }
+  const guidedCount = Object.values(guidedCounts).reduce((sum, value) => sum + value, 0)
+  const guidedGroup = GUIDED_FILTER_GROUPS.find((group) => group.key === activeFilterGroup)
   const questions = activeBattery.reduce((sum, entry) => sum + (entry.questionCount || 0), 0)
   const minutes = activeBattery.reduce((sum, entry) => sum + (entry.durationMinutes || 0), 0)
   const breadth = c[activeCoverage.breadth]
@@ -237,15 +264,54 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
         </div>
       </div>
       <div className={styles.quickDiscoveryFooter}>
-        <button type="button" className={styles.customizeButton} aria-expanded={customizeOpen} aria-controls="hh-test-customizer" onClick={() => setCustomizeOpen((open) => !open)}>{customizeOpen ? '− ' + quick.hide : '⚙ ' + quick.customize}</button>
+        <button type="button" className={styles.customizeButton} aria-expanded={customizeOpen} aria-controls="hh-test-customizer" onClick={() => { setCustomizeOpen((open) => !open); setActiveFilterGroup(null) }}>{customizeOpen ? '− ' + quick.hide : '⚙ ' + quick.customize}</button>
         <p className={styles.quickPrivacy}>{quick.google}</p>
       </div>
     </div>
     </div>
     <div id="hh-test-customizer" className={styles.customizer} hidden={!customizeOpen}>
-      <details className={styles.problemDetails}>
-        <summary>{quick.describe}</summary>
-        <section className={styles.concernPanel} aria-labelledby="hh-concern-title">
+      <section className={styles.guidedPicker} aria-label={locale === 'ru' ? 'Пошаговый фильтр тестов' : locale === 'es' ? 'Filtros paso a paso' : 'Step-by-step test filters'}>
+        <header className={styles.guidedIntro}>
+          <span className={styles.guidedStep}>{activeFilterGroup ? guidedCopy.second : guidedCopy.first}</span>
+          <div className={styles.guidedLead}>
+            <div><h2>{activeFilterGroup ? (guidedGroup?.label[locale] || guidedGroup?.label.en) : guidedCopy.title}</h2>
+              <p>{activeFilterGroup ? (guidedGroup?.detail[locale] || guidedGroup?.detail.en) : guidedCopy.subtitle}</p></div>
+            <span className={styles.guidedMatches} role="status" aria-live="polite"><strong>{matchCount}</strong> {c.matching}</span>
+          </div>
+        </header>
+        {!activeFilterGroup ? (
+          <div className={styles.guidedCategories} role="group" aria-label={guidedCopy.title}>
+            {GUIDED_FILTER_GROUPS.map((group) => {
+              const Icon = group.icon
+              const count = guidedCounts[group.key] || 0
+              return <button key={group.key} type="button" className={styles.guidedCategory} data-active={count > 0} onClick={() => setActiveFilterGroup(group.key)}>
+                <span className={styles.guidedCategoryIcon}><Icon size={22} strokeWidth={1.7} aria-hidden="true" /></span>
+                <span className={styles.guidedCategoryText}><strong>{group.label[locale] || group.label.en}</strong><small>{group.detail[locale] || group.detail.en}</small></span>
+                <span className={styles.guidedCategoryAction}>{count ? count + ' ' + guidedCopy.active : guidedCopy.choose}</span>
+                <ChevronRight aria-hidden="true" size={19} />
+              </button>
+            })}
+          </div>
+        ) : (
+          <div className={styles.guidedDetail}>
+            <button type="button" className={styles.guidedBack} onClick={() => setActiveFilterGroup(null)}><ArrowLeft size={17} aria-hidden="true" />{guidedCopy.back}</button>
+            <div className={styles.guidedChoices}>
+              {activeFilterGroup === 'topics' && <Filter label={c.themes} items={TEST_RECOMMENDATION_FOCUS} selected={focus} onToggle={(key) => setFocus((current) => toggle(current, key))} locale={locale} />}
+              {activeFilterGroup === 'concerns' && <Filter label={advanced.detail} items={TEST_EXPLORER_DETAIL_TOPICS.map((item) => ({ ...item, label: { ...item.label, [locale]: `${item.label[locale] || item.label.en} · ${detailCounts[item.key] || 0}` } }))} selected={details} onToggle={(key) => setDetails((value) => toggle(value, key))} locale={locale} />}
+              {activeFilterGroup === 'areas' && <Filter label={c.area} items={MONITOR_AREAS.map((area) => ({ key: area.key, label: { en: `${area.en} · ${areaCounts[area.key] || 0}`, ru: `${area.ru} · ${areaCounts[area.key] || 0}`, es: `${area.en} · ${areaCounts[area.key] || 0}` } }))} selected={areas} onToggle={(key) => setAreas((value) => toggle(value, key))} locale={locale} />}
+              {activeFilterGroup === 'scales' && <Filter label={advanced.scales} items={TEST_EXPLORER_AXES.map((key) => ({ key, label: { ...TEST_EXPLORER_AXIS_LABELS[key], en: `${TEST_EXPLORER_AXIS_LABELS[key].en} · ${axisCounts[key] || 0}`, ru: `${TEST_EXPLORER_AXIS_LABELS[key].ru} · ${axisCounts[key] || 0}` } }))} selected={axes} onToggle={(key) => setAxes((value) => toggle(value, key))} locale={locale} />}
+              {activeFilterGroup === 'timing' && <div className={styles.guidedOptionStack}>
+                <Filter label={advanced.time} items={[{ key: '0', label: { en: advanced.any } }, { key: '2', label: { en: advanced.two } }, { key: '5', label: { en: advanced.five } }, { key: '10', label: { en: advanced.ten } }]} selected={[String(maxMinutes)]} onToggle={(key) => setMaxMinutes(Number(key))} locale={locale} single />
+                <Filter label={c.length} items={TEST_LENGTH_FILTERS} selected={lengths} onToggle={(key) => setLengths((value) => toggle(value, key))} locale={locale} />
+                <Filter label={c.depth} items={depthOptions.map((key) => ({ key, label: { en: key[0].toUpperCase() + key.slice(1), ru: key === 'quick' ? 'Быстро' : key === 'balanced' ? 'Сбалансированно' : 'Глубоко', es: key === 'quick' ? 'Breve' : key === 'balanced' ? 'Equilibrada' : 'Profunda' } }))} selected={[depth]} onToggle={setDepth} locale={locale} single />
+              </div>}
+              {activeFilterGroup === 'format' && <div className={styles.guidedOptionStack}>
+                <Filter label={c.style} items={TEST_STYLE_FILTERS} selected={stylesFilter} onToggle={(key) => setStylesFilter((value) => toggle(value, key))} locale={locale} />
+                <label className={styles.check}><input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />{c.free}</label>
+              </div>}
+              {activeFilterGroup === 'language' && <Filter label={advanced.language} items={[{ key: 'any', label: { en: advanced.any } }, { key: 'bilingual', label: { en: advanced.bilingual } }, { key: 'english', label: { en: advanced.english } }]} selected={[language]} onToggle={setLanguage} locale={locale} single />}
+              {activeFilterGroup === 'goal' && <Filter label={advanced.tracking} items={[{ key: 'any', label: { en: advanced.any } }, { key: 'repeat', label: { en: advanced.repeat } }, { key: 'baseline', label: { en: advanced.baseline } }]} selected={[tracking]} onToggle={setTracking} locale={locale} single />}
+              {activeFilterGroup === 'describe' && <div className={styles.guidedDescription}><section className={styles.concernPanel} aria-labelledby="hh-concern-title">
       <div><p className={styles.eyebrow}>{locale === 'ru' ? 'Подбор по вашей ситуации' : locale === 'es' ? 'Encontrar pruebas por tu situación' : 'Find tests for your situation'}</p>
         <h2 id="hh-concern-title">{locale === 'ru' ? 'Расскажите, что вас беспокоит' : locale === 'es' ? 'Describe qué te preocupa' : 'What would you like to understand?'}</h2>
         <p>{locale === 'ru' ? 'Напишите своими словами или воспользуйтесь микрофоном. Система подберёт подходящие темы, а вы сможете уточнить их фильтрами.' : locale === 'es' ? 'Escribe tu inquietud o usa el micrófono. Después puedes ajustar los filtros.' : 'Describe a concern in your own words, or use the microphone. You can refine the suggested topics with the filters.'}</p></div>
@@ -259,30 +325,19 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       {speechError && <p role="status">{speechError}</p>}
       {concernAnalysis.urgent && <p role="alert">{locale === 'ru' ? 'Если вы сейчас в опасности или думаете причинить себе вред, немедленно обратитесь в местную экстренную службу или кризисную линию. Тест не заменяет срочную помощь.' : 'If you may be in immediate danger or thinking of self-harm, contact local emergency services or a crisis line now. A self-test is not emergency support.'}</p>}
       <small>{locale === 'ru' ? 'Текст не отправляется в аккаунт и не сохраняется. При использовании микрофона распознавание может выполняться службой вашего браузера.' : 'This text is not saved to your account. If you use your microphone, your browser’s speech service may process audio.'}</small>
-        </section>
-      </details>
-    {audience === 'account' && recommendedNext && <aside className={styles.personalNext} aria-label={locale === 'ru' ? 'Личная рекомендация' : 'Personal recommendation'}>
-      <div><p className={styles.eyebrow}>{locale === 'ru' ? 'На основе ваших прошлых результатов' : 'Based on your past results'}</p><h2>{recommendedNext.title}</h2><p>{recommendedNext.reason}</p><small>{locale === 'ru' ? 'Это рекомендация по самонаблюдению, не диагноз и не назначение лечения.' : 'A self-monitoring suggestion, not a diagnosis or treatment advice.'}</small></div>
-      {recommendedNext.key ? <button type="button" onClick={() => { setAvailability('available'); setFocus([]); setSelectedKeys([recommendedNext.key]); setConcern('') }}>{locale === 'ru' ? 'Выбрать этот тест' : 'Select this test'}</button> : <Link href={`/${locale}/app/history`}>{locale === 'ru' ? 'Открыть историю' : 'View history'}</Link>}
-    </aside>}
-    <header className={styles.header}><h2>{c.title}</h2><p>{c.intro}</p></header>
-    <section className={styles.toolbar} aria-label={c.themes}>
-      <div className={styles.filterStatus} role="status" aria-live="polite"><strong>{matchCount} {c.matching}</strong><span>{focus.length} {c.selectedThemes} · {appliedFilters} {c.filters.toLocaleLowerCase()}</span><button type="button" onClick={resetFilters}>{c.filterClear}</button></div>
-      <div className={styles.filterGroup}><span>{c.themes}</span><p className={styles.topicHint}>{c.topicHint}</p><div>{TEST_RECOMMENDATION_FOCUS.map((item) => <button key={item.key} type="button" aria-pressed={focus.includes(item.key)} onClick={() => setFocus((value) => toggle(value, item.key))}>{item.label[locale] || item.label.en}</button>)}</div></div>
-      <details className={styles.moreFilters} open={filtersOpen} onToggle={(event) => setFiltersOpen(event.currentTarget.open)}><summary>{c.filters} · {appliedFilters} {advanced.filterCount}</summary>
-      <p className={styles.advancedIntro}><strong>{advanced.subtitle}.</strong> {advanced.hint}</p><div className={styles.filterGrid}>
-        <Filter label={c.style} items={TEST_STYLE_FILTERS} selected={stylesFilter} onToggle={(key) => setStylesFilter((value) => toggle(value, key))} locale={locale} />
-        <Filter label={c.length} items={TEST_LENGTH_FILTERS} selected={lengths} onToggle={(key) => setLengths((value) => toggle(value, key))} locale={locale} />
-        <Filter label={c.depth} items={depthOptions.map((key) => ({ key, label: { en: key[0].toUpperCase() + key.slice(1), ru: key === 'quick' ? 'Быстро' : key === 'balanced' ? 'Сбалансированно' : 'Глубоко', es: key === 'quick' ? 'Breve' : key === 'balanced' ? 'Equilibrada' : 'Profunda' } }))} selected={[depth]} onToggle={setDepth} locale={locale} single />
-        <Filter label={c.area} items={MONITOR_AREAS.map((area) => ({ key: area.key, label: { en: `${area.en} · ${areaCounts[area.key] || 0}`, ru: `${area.ru} · ${areaCounts[area.key] || 0}`, es: `${area.en} · ${areaCounts[area.key] || 0}` } }))} selected={areas} onToggle={(key) => setAreas((value) => toggle(value, key))} locale={locale} />
-        <Filter label={advanced.detail} items={TEST_EXPLORER_DETAIL_TOPICS.map((item) => ({ ...item, label: { ...item.label, [locale]: `${item.label[locale] || item.label.en} · ${detailCounts[item.key] || 0}` } }))} selected={details} onToggle={(key) => setDetails((value) => toggle(value, key))} locale={locale} />
-        <Filter label={advanced.scales} items={TEST_EXPLORER_AXES.map((key) => ({ key, label: { ...TEST_EXPLORER_AXIS_LABELS[key], en: `${TEST_EXPLORER_AXIS_LABELS[key].en} · ${axisCounts[key] || 0}`, ru: `${TEST_EXPLORER_AXIS_LABELS[key].ru} · ${axisCounts[key] || 0}` } }))} selected={axes} onToggle={(key) => setAxes((value) => toggle(value, key))} locale={locale} />
-        <Filter label={advanced.time} items={[{ key: '0', label: { en: advanced.any } }, { key: '2', label: { en: advanced.two } }, { key: '5', label: { en: advanced.five } }, { key: '10', label: { en: advanced.ten } }]} selected={[String(maxMinutes)]} onToggle={(key) => setMaxMinutes(Number(key))} locale={locale} single />
-        <Filter label={advanced.language} items={[{ key: 'any', label: { en: advanced.any } }, { key: 'bilingual', label: { en: advanced.bilingual } }, { key: 'english', label: { en: advanced.english } }]} selected={[language]} onToggle={setLanguage} locale={locale} single />
-        <Filter label={advanced.tracking} items={[{ key: 'any', label: { en: advanced.any } }, { key: 'repeat', label: { en: advanced.repeat } }, { key: 'baseline', label: { en: advanced.baseline } }]} selected={[tracking]} onToggle={setTracking} locale={locale} single />
-        <label className={styles.check}><input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />{c.free}</label>
-      </div><p className={styles.advancedNote}>{advanced.about}</p></details>
-    </section>
+        </section></div>}
+            </div>
+            <p className={styles.guidedTip}>{guidedCopy.done}</p>
+          </div>
+        )}
+        <footer className={styles.guidedFooter}>
+          <span className={styles.guidedSelected} role="status">{guidedCount} {guidedCopy.selected}</span>
+          <button type="button" className={styles.guidedClear} onClick={resetFilters}>{c.filterClear}</button>
+          <button type="button" className={styles.guidedResults} onClick={() => { setCustomizeOpen(false); setActiveFilterGroup(null); document.getElementById('hh-test-list')?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }}>
+            {guidedCopy.results} ({matchCount}) <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </footer>
+      </section>
     </div>
     <section id="hh-test-list" className={styles.catalogTopbar} aria-label={locale === 'ru' ? 'Каталог тестов' : locale === 'es' ? 'Catálogo de pruebas' : 'Test catalog'}>
       <div className={styles.catalogTopline}>
