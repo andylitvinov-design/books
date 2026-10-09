@@ -50,9 +50,9 @@ const levels: Array<{
       es: "La segunda etapa aborda limpieza simbólica, objetos, relación con el dinero y vínculos no deseados, junto con planes concretos.",
     },
     topics: {
-      en: ["Object charging", "Money-flow intention", "Clearing people and spaces", "Releasing unhelpful ties"],
-      ru: ["Зарядка предметов", "Работа с денежным потоком", "Очищение человека и пространства", "Освобождение от ненужных связей"],
-      es: ["Carga de objetos", "Intención financiera", "Limpieza simbólica", "Liberación de vínculos"],
+      en: ["Object charging", "Money-flow intention", "Clearing people", "Clearing spaces", "Releasing unhelpful ties"],
+      ru: ["Зарядка предметов", "Работа с денежным потоком", "Очищение человека", "Очищение пространства", "Освобождение от ненужных связей"],
+      es: ["Carga de objetos", "Intención financiera", "Limpieza personal", "Limpieza de espacios", "Liberación de vínculos"],
     },
     exercises: {
       en: ["Choose an everyday object as a reminder of your intention.", "List possible sources of income and set realistic, measurable next actions.", "Tidy your room and notice how the space feels before and after.", "Reflect on one tiring relationship or memory and choose a healthy boundary."],
@@ -99,8 +99,8 @@ const levels: Array<{
   {
     title: { en: "World Tree and Northern archetypes", ru: "Мировое Древо и северные архетипы", es: "Árbol del Mundo y arquetipos nórdicos" },
     description: {
-      en: "The final Basic Course stage connects personal practice to the Norse picture of Yggdrasil and the gods as symbolic qualities. Older texts also mention additional master settings; the current course remains the authority for the exact attunement list.",
-      ru: "Завершение Базового курса связывает индивидуальную практику с образом Иггдрасиля и архетипами скандинавских богов. В старых текстах встречаются дополнительные мастерские настройки; точный состав актуального курса определяется нынешней программой.",
+      en: "The final Basic Course stage connects personal practice to the Norse picture of Yggdrasil and the gods as symbolic qualities. The source describes two master settings; the current course remains the authority for the exact attunement list.",
+      ru: "Завершение Базового курса связывает индивидуальную практику с образом Иггдрасиля и архетипами скандинавских богов. Исторический источник описывает две мастерские настройки. Их актуальный состав определяется действующей программой.",
       es: "La etapa final une la práctica personal con Yggdrasil y las deidades nórdicas como cualidades simbólicas. El currículo actual determina las sintonizaciones.",
     },
     topics: {
