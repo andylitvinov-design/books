@@ -568,3 +568,138 @@ a.service-home-start-card:hover {
   .service-home-self-check h2 { font-size: 32px; }
   .service-home-self-check > p:not(.service-home-kicker) { font-size: 13px; }
 }
+
+
+/* Holistic House homepage · approved mobile editorial direction · 2026-10-09.
+   Scope: the home page only. Retain hero, all three services, videos,
+   testimonials, navigation and both original acquisition destinations. */
+.house-home--services { background:#faf7f0; }
+.house-home--services :is(.service-home-start__heading h2,.service-home-about h2) { color:#32271f; text-wrap:balance; }
+.house-home--services .service-home-kicker { color:#87553a; letter-spacing:.14em; }
+
+/* Soft, photo-aware "Other ways to explore" cards rather than empty beige boxes. */
+.house-home--services .service-home-start { padding-top:clamp(26px,4vw,52px); padding-bottom:30px; }
+.house-home--services .service-home-start__heading { max-width:770px; margin-bottom:20px; }
+.house-home--services .service-home-start__heading h2 { font-size:clamp(38px,4vw,56px); line-height:1.08; }
+.house-home--services .service-home-start__grid { gap:14px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.house-home--services .service-home-start-card {
+  isolation:isolate; position:relative; overflow:hidden; min-height:272px; padding:clamp(20px,2.8vw,31px);
+  border:1px solid #e6d7c5; border-radius:23px;
+  background:linear-gradient(110deg,rgba(255,254,250,.96) 0%,rgba(255,253,248,.92) 68%,rgba(243,241,229,.72) 100%);
+  box-shadow:0 12px 34px rgba(66,44,27,.05);
+}
+.house-home--services .service-home-start-card::before {
+  content:""; position:absolute; z-index:-1; inset:0 0 auto auto; width:150px; height:170px;
+  background:url("/images/holistic-house/homepage-botanical.svg") center/contain no-repeat;
+  opacity:.24; pointer-events:none;
+}
+.house-home--services .service-home-start-card:nth-child(2) {
+  background:linear-gradient(118deg,rgba(255,254,251,.97) 0%,rgba(250,250,245,.94) 62%,rgba(220,233,222,.72) 100%);
+}
+.house-home--services .service-home-start-card:nth-child(2)::before { opacity:.35; transform:scaleX(-1); }
+.house-home--services .service-home-start-card--learning {
+  grid-column:1 / -1; min-height:185px; display:grid; grid-template-columns:58px minmax(0,1fr); align-content:center;
+  gap:4px 18px; background:linear-gradient(110deg,#fffefb,#f4eee4);
+}
+.house-home--services .service-home-start-card--learning > *:not(.service-home-start-card__icon) { grid-column:2; }
+.house-home--services .service-home-start-card--learning .service-home-start-card__icon { grid-row:1 / span 4; margin:0; }
+.house-home--services .service-home-start-card__icon {
+  width:52px; height:52px; margin-bottom:15px; border:1px solid #f1e4d7; background:#f5eadf; color:#915738;
+}
+.house-home--services .service-home-start-card__eyebrow { color:#8a614b; letter-spacing:.14em; }
+.house-home--services .service-home-start-card h3 { max-width:24ch; margin-top:8px; font-size:clamp(26px,2.7vw,36px); line-height:1.13; }
+.house-home--services .service-home-start-card p { position:relative; z-index:1; max-width:45ch; margin-top:10px; }
+.house-home--services .service-home-start-card > strong { position:relative; z-index:1; padding-top:16px; min-height:44px; color:#875039; font-size:14px; }
+.house-home--services .service-home-start-card > strong span { margin-left:4px; }
+.house-home--services .service-home-start-card__actions { position:relative; z-index:1; }
+.house-home--services a.service-home-start-card:focus-visible,
+.house-home--services .service-home-start-card__actions a:focus-visible,
+.house-home--services .service-home-about a:focus-visible { outline:3px solid #a96d45; outline-offset:4px; }
+
+/* Teacher introduction: existing approved, real Andrey photograph only. */
+.house-home--services .service-home-about {
+  max-width:1188px; grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); align-items:center;
+  gap:clamp(20px,5vw,65px); margin:22px auto 28px; border-top:1px solid #e3d4c4; border-bottom:0; padding:33px 0 5px;
+}
+.house-home--services .service-home-about__copy { min-width:0; }
+.house-home--services .service-home-about__copy h2 { margin:8px 0 14px; font-size:clamp(36px,4.6vw,56px); }
+.house-home--services .service-home-about__copy > p:not(.service-home-kicker) {
+  max-width:640px; margin:0; color:#63584e; font-size:15px; line-height:1.67;
+}
+.house-home--services .service-home-about__copy a { min-height:44px; margin-top:14px; color:#8b563c; font-size:14px; font-weight:750; }
+.house-home--services .service-home-about__portrait {
+  isolation:isolate; position:relative; min-height:295px; border-radius:24px; overflow:hidden;
+  border:1px solid #e9dbce; background:#e7dfd3; box-shadow:0 10px 28px rgba(55,35,25,.06);
+}
+.house-home--services .service-home-about__portrait img { object-fit:cover; object-position:center 29%; }
+.house-home--services .service-home-about__portrait-caption {
+  position:absolute; z-index:1; inset:auto 14px 14px auto; max-width:calc(100% - 28px);
+  border:1px solid rgba(255,255,255,.54); border-radius:999px; padding:8px 13px;
+  background:rgba(43,53,39,.61); backdrop-filter:blur(5px); color:#fffdf8;
+  font:700 11px/1.35 Arial,Helvetica,sans-serif;
+}
+/* Native contact CTAs remain WhatsApp + Telegram and unchanged referral events. */
+.house-home--services .home-contact-capture { max-width:1188px; margin:12px auto 38px; }
+.house-home--services .home-contact-capture .public-consultation-cta {
+  width:100%; max-width:100%; margin:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,.68fr);
+  gap:15px 32px; align-items:center; min-height:0; border:1px solid #e5d2bc; border-radius:22px;
+  padding:clamp(20px,3vw,30px); background:linear-gradient(120deg,#fffdf9 0%,#faf6ee 60%,#f1eadf 100%);
+  box-shadow:0 12px 33px rgba(66,44,27,.055);
+}
+.house-home--services .home-contact-capture .public-consultation-cta::before {
+  content:none;
+}
+.house-home--services .home-contact-capture .public-consultation-cta__copy > p { color:#885a3f; }
+.house-home--services .home-contact-capture .public-consultation-cta__copy h2 {
+  max-width:unset; margin:6px 0 9px; color:#35291f; font-size:clamp(28px,3.5vw,41px); text-wrap:balance;
+}
+.house-home--services .home-contact-capture .public-consultation-cta__copy > span {
+  max-width:650px; color:#655b52; line-height:1.55;
+}
+.house-home--services .home-contact-capture .public-consultation-cta__actions {
+  min-width:0; display:grid; grid-template-columns:1fr; gap:8px;
+}
+.house-home--services .home-contact-capture .public-consultation-cta__actions a {
+  width:100%; min-width:0; min-height:46px; border-radius:999px; padding:10px 16px;
+  font-size:12px; justify-content:space-between;
+}
+.house-home--services .home-contact-capture .public-consultation-cta__actions a:first-child {
+  color:#fffaf3; background:#85573f; border-color:#85573f;
+}
+.house-home--services .home-contact-capture .public-consultation-cta__actions a:nth-child(2) {
+  color:#85573f; background:#fffaf6; border-color:#bba08b;
+}
+@media(max-width:900px){
+  .house-home--services .service-home-about { margin-inline:20px; }
+  .house-home--services .home-contact-capture { margin-inline:20px; }
+}
+@media(max-width:767px) {
+  .house-home--services .service-home-start { margin-inline:16px; padding:26px 0 18px; }
+  .house-home--services .service-home-start__heading h2 { font-size:clamp(33px,8vw,39px); }
+  .house-home--services .service-home-start__grid { grid-template-columns:1fr; gap:11px; }
+  .house-home--services .service-home-start-card { min-height:0; padding:22px 21px; border-radius:20px; }
+  .house-home--services .service-home-start-card h3 { max-width:25ch; font-size:clamp(26px,7.1vw,31px); }
+  .house-home--services .service-home-start-card p { font-size:13px; line-height:1.52; }
+  .house-home--services .service-home-start-card::before { width:115px; height:145px; opacity:.16; }
+  .house-home--services .service-home-start-card--learning {
+    grid-column:auto; display:flex; gap:7px; min-height:0;
+  }
+  .house-home--services .service-home-start-card--learning .service-home-start-card__icon { margin-bottom:8px; }
+  .house-home--services .service-home-start-card--learning > *:not(.service-home-start-card__icon) { grid-column:auto; }
+  .house-home--services .service-home-about {
+    display:flex; flex-direction:column; align-items:stretch; gap:16px;
+    margin:12px 16px 24px; padding:26px 0 0;
+  }
+  .house-home--services .service-home-about__copy h2 { font-size:clamp(37px,8vw,44px); }
+  .house-home--services .service-home-about__copy > p:not(.service-home-kicker) { font-size:13px; line-height:1.6; }
+  .house-home--services .service-home-about__portrait { height:215px; min-height:215px; border-radius:18px; }
+  .house-home--services .home-contact-capture { margin:12px 16px 35px; }
+  .house-home--services .home-contact-capture .public-consultation-cta {
+    grid-template-columns:1fr; gap:14px; padding:21px 19px; border-radius:20px;
+  }
+  .house-home--services .home-contact-capture .public-consultation-cta__copy h2 { font-size:clamp(28px,7vw,35px); }
+  .house-home--services .home-contact-capture .public-consultation-cta__actions a { min-height:45px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .house-home--services .service-home-start-card { transition:none; }
+}

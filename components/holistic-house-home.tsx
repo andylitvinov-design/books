@@ -204,19 +204,31 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
       <PersonalTestimonials locale={locale} variant="home" />
 
       <section className="service-home-about" aria-labelledby="service-home-about-title">
-        <div>
+        <div className="service-home-about__copy">
           <p className="service-home-kicker">{text.aboutKicker}</p>
           <h2 id="service-home-about-title">Andrey Litvinov</h2>
-        </div>
-        <div>
           <p>{text.aboutIntro}</p>
           <AcquisitionEventLink href={entry.practitioner.href} event="practitioner_view">
             {text.aboutAction}<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
         </div>
+        <div className="service-home-about__portrait">
+          <Image
+            src="/images/holistic-house/andy-about.png"
+            alt={locale === "ru" ? "Андрей Литвинов" : "Andrey Litvinov"}
+            fill
+            sizes="(max-width: 767px) 100vw, 450px"
+            loading="lazy"
+          />
+          <span className="service-home-about__portrait-caption">
+            {locale === "ru" ? "Лично · Торонто и онлайн" : "Personal guidance · Toronto & online"}
+          </span>
+        </div>
       </section>
 
-      <PublicConsultationCta locale={locale} />
+      <div className="home-contact-capture">
+        <PublicConsultationCta locale={locale} />
+      </div>
 
       <footer className="service-home-footer">
         <Link className="house-wordmark" href="/">Holistic House</Link>

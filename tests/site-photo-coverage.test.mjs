@@ -6,7 +6,7 @@ import test from "node:test";
 const root = process.cwd();
 const read = file => readFileSync(path.join(root, file), "utf8");
 const readImage = location => existsSync(path.join(root, "public", location.slice(1)));
-const extracts = (source) => [...source.matchAll(/\/(?:images|library|academy|media)\/[A-Za-z0-9_@/.%-]+\.(?:jpg|jpeg|png|webp|avif)/gi)].map(m => m[0]);
+const extracts = (source) => [...source.matchAll(/\/(?:images|library|academy|media)\/[A-Za-z0-9_@/.%-]+\.(?:jpg|jpeg|png|webp|avif|svg)/gi)].map(m => m[0]);
 const validateFiles = (file) => {
   const unique = [...new Set(extracts(read(file)))];
   assert.ok(unique.length, "No local images found in " + file);
@@ -29,12 +29,13 @@ test("critical photo-first sections use existing local image files, never placeh
   ]) validateFiles(file);
 });
 
-test("three personal services show three distinct photos on EN/RU and Spanish routes", () => {
+test("three personal services show three distinct local illustrations or photos on EN/RU and Spanish routes", () => {
   const shared = read("components/personal-work-journey.tsx");
   const es = read("app/es/services/page.tsx");
-  const photos = shared.match(/const photos = \[([\s\S]*?)\];/)?.[1]?.match(/"\/[^"]+\.(?:jpg|webp|png)"/g) || [];
+  const photos = shared.match(/const photos = \[([\s\S]*?)\];/)?.[1]?.match(/"\/[^"]+\.(?:jpg|webp|png|svg)"/g) || [];
   assert.equal(photos.length, 3);
   assert.equal(new Set(photos).size, 3);
+  for (const photo of photos) assert.ok(readImage(photo.slice(1, -1)), "Missing service image: " + photo);
   assert.match(shared, /<Image src=\{photos\[index\]\}/);
   assert.match(shared, /styles\.servicePhoto/);
   const images = [...es.matchAll(/image: "(\/[^"]+\.(?:jpg|png|webp))"/g)].map(m => m[1]);
