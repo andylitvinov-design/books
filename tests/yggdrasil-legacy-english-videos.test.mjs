@@ -23,7 +23,9 @@ test("new English practice listing has three distinct source-gated entries", asy
   const data = await readFile("data/academy/english-guided-meditations.ts", "utf8");
   const ids = ["flight-to-sun", "tantra-reiki", "reiki-yggdrasil"];
   for (const id of ids) assert.match(data, new RegExp('key: "' + id + '"'));
-  assert.equal((data.match(/youtubeId: null,/g) ?? []).length, 3, "No invented YouTube IDs");
+  assert.equal((data.match(/youtubeId: null,/g) ?? []).length, 2, "Keep the other two unverified meditations gated");
+  assert.match(data, /key: "tantra-reiki"[\s\S]*?youtubeId: "w2BN-HYmHUk"/);
+  assert.match(data, /title: "Tantra Reiki Practice"/);
   assert.ok(data.includes("/en/academy/reiki/tantra-reiki"));
   assert.ok(data.includes("/en/academy/reiki/yggdrasil"));
   assert.ok(!data.includes("qM_nFUkYJ1k"), "Never substitute the Tantra Reiki testimonial");
