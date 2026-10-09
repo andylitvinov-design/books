@@ -47,6 +47,7 @@ test("Tantra Reiki: sales hero and training contact remain visible above histori
   assert.match(page, /className="tantra-course-hero__visual"/);
   assert.match(page, /tantraReikiFullArchive.images.ru\[12\]/);
   assert.match(page, /<TantraReikiJourney locale=\{locale\} \/>/);
-  assert.match(page, /id="tantra-full-source"/);
-  assert.match(page, /academy-archive-notice/);
+  assert.match(page, /<TantraReikiProgrammeModules locale=\{locale\}/);
+  assert.match(page, /<TantraReikiFestivalMoments locale=\{locale\}/);
+  assert.match(page, /<TantraReikiTeacher locale=\{locale\}/);
 });
