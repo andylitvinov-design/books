@@ -30,7 +30,7 @@ test('My tests dashboard computes progress from saved account data rather than m
   const battery = read('components/app/account-test-battery.jsx')
   assert.match(dashboard, /rows\.length \? Math\.round\(\(completed \/ rows\.length\) \* 100\) : 0/)
   assert.match(battery, /const rows = useMemo\(\(\) => planRows\(currentPlan, data, locale\)/)
-  assert.match(battery, /const completed = rows\.filter\(\(row\) => Boolean\(row\.result\)\)\.length/)
+  assert.match(battery, /const completed = rows\.filter\(\(row\) => row\.completedInPlan\)\.length/)
   assert.match(battery, /results=\{data\.results\}/)
   assert.match(dashboard, /onClick=\{onStart\}/)
   assert.doesNotMatch(dashboard, /38%|3\s*\/\s*8/)
