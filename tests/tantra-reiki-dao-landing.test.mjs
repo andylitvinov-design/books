@@ -59,6 +59,8 @@ test("correct Level 1 meditation remains separate and immediately precedes testi
   assert.match(page, /<EnglishGuidedMeditations focus="tantra-reiki"/);
   assert.match(videos, /youtubeId: "w2BN-HYmHUk"/);
   assert.match(meditations, /isTantraVideo/);
+  assert.match(meditations, /Tantra Reiki · Level 1 Guided Meditation/);
+  assert.match(meditations, /Begin with the first level of Tantra Reiki/);
   assert.match(reviews, /englishSource\.blocks\[sourceIndex\]\.text/);
   assert.match(reviews, /qM_nFUkYJ1k/);
   assert.ok(page.indexOf('<EnglishGuidedMeditations focus="tantra-reiki"') < page.indexOf('<TantraReikiTestimonials locale='));
