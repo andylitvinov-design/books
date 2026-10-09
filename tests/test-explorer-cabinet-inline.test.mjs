@@ -18,7 +18,7 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   assert.match(styles, /\.customizer\[hidden\]\{display:none/)
   assert.match(explorer, /\[customizeOpen, setCustomizeOpen\] = useState\(false\)/)
   assert.match(explorer, /\[filtersOpen, setFiltersOpen\] = useState\(false\)/)
-  assert.match(explorer, /onStart\(activeBattery\)/)
+  assert.match(explorer, /onStart\(activeBattery, \{/)
   assert.match(explorer, /aria-expanded=\{customizeOpen\}/)
   assert.match(explorer, /showAll \? visible : visible\.slice\(0, 8\)/)
   assert.match(explorer, /if \(aSelected !== bSelected\) return aSelected \? -1 : 1/)
