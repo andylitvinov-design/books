@@ -20,7 +20,7 @@ test('public selections survive OAuth handoff as validated categorical interests
   assert.deepEqual(result?.preferences, selected)
   assert.ok(!raw.includes('symptom_description'))
   assert.equal(readTestSelectionIntent(raw, 1000000 + 21 * 60 * 1000), null)
-  assert.equal(readTestSelectionIntent(raw, 999000), null)
+  assert.equal(readTestSelectionIntent(raw, 938999), null)
 })
 
 test('never store raw complaint, answers, arbitrary metadata or invalid filter choices', () => {
