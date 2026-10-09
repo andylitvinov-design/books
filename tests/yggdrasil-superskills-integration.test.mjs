@@ -8,12 +8,15 @@ const css = read("components/yggdrasil-source-study-guide.module.css");
 const program = read("components/yggdrasil-program-landing.tsx");
 const modules = read("components/yggdrasil-module-landing.tsx");
 const book = read("components/yggdrasil-basic-course-description.tsx");
+const sideNav = read("components/reiki-course-side-nav.tsx");
 
 test("SuperSkills guide is integrated into all relevant public Reiki Yggdrasil routes", () => {
   assert.match(program, /<YggdrasilSourceStudyGuide locale=\{locale\} mode="overview"/);
   assert.match(modules, /module\.levelId === 1 \? <YggdrasilSourceStudyGuide locale=\{locale\} mode="basic"/);
   assert.match(modules, /module\.levelId === 2 \? <YggdrasilSourceStudyGuide locale=\{locale\} mode="instructor"/);
   assert.match(book, /basic-course#historical-study-materials/);
+  assert.match(sideNav, /#source-study-guide/);
+  assert.match(sideNav, /Практика и первоисточники/);
   assert.match(modules, /<YggdrasilCurriculum locale=\{locale\}/);
   assert.match(book, /<section className="yggdrasil-full-book"/);
 });
