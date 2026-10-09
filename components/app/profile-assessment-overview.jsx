@@ -139,7 +139,7 @@ export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children
      {error && <p className={styles.error} role="alert">{error}</p>}
    </section>
 
-   {children && <details className={styles.other}>
+   {children && <details className={styles.other} data-profile-extra-tools>
      <summary>{c.other}<span aria-hidden="true">⌄</span></summary>
      <div className={styles.otherContent}>
        <p>{c.otherNote}</p>
