@@ -347,10 +347,10 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         </div>
       </div>}
       {error && <p role="alert">{error} <button type="button" onClick={() => setError('')}>{c.retry}</button></p>}
-      {rows.length > 0 ? <>
-        <div className={styles.overview} aria-label={String(completed) + ' / ' + rows.length + ' ' + c.done}>
-          <span className={styles.counter}><strong>{completed}/{rows.length}</strong> {c.done}</span>
-          <progress max={rows.length} value={completed} />
+      {(rows.length > 0 || (statusFilter === 'completed' && pastRows.length > 0)) ? <>
+        <div className={styles.overview} aria-label={statusFilter === 'completed' ? String(pastRows.length) + ' ' + c.finished : String(completed) + ' / ' + rows.length + ' ' + c.done}>
+          <span className={styles.counter}><strong>{statusFilter === 'completed' ? pastRows.length : completed + '/' + rows.length}</strong> {statusFilter === 'completed' ? c.finished : c.done}</span>
+          {statusFilter !== 'completed' && <progress max={rows.length} value={completed} />}
         </div>
         <div className={styles.testFilters} role="group" aria-label={locale === 'ru' ? 'Фильтр по статусу' : 'Filter by status'}>
           {[
@@ -368,7 +368,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           {(statusFilter === 'completed' ? pastRows : rows).map((row) => {
             const done = statusFilter === 'completed' ? Boolean(row.result) : row.completedInPlan
             const state = done ? 'completed' : row.run ? 'inProgress' : 'notStarted'
-            const status = done ? c.finished : row.run ? c.underway : c.pending
+            const status = row.run ? c.underway : done ? c.finished : c.pending
             if (statusFilter === 'remaining' && done) return null
             if (!['all', 'remaining'].includes(statusFilter) && state !== statusFilter) return null
             return <article key={row.definition.id} className={styles.row}>
@@ -380,7 +380,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                   <span>~{row.minutes} {c.mins}</span></div>
                 <div className={styles.status}>
                   <strong className={state === 'inProgress' ? styles.inProgress : state === 'completed' ? styles.completed : ''}>{status}</strong>
-                  {row.run && !done
+                  {row.run
                     ? <><progress max="100" value={row.progress} aria-label={status} /><span>{row.progress}% {c.percent}</span>
                         {row.result && <span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span>}</>
                     : done
@@ -390,7 +390,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
               </div>
               <div className={styles.rowActions}>
                 <button className="hh-primary" type="button" disabled={busy} onClick={() => openTest(row)}>
-                  {row.run && !done ? c.resume : row.result ? c.repeat : c.begin} →
+                  {row.run ? c.resume : row.result ? c.repeat : c.begin} →
                 </button>
                 {row.result && <Link prefetch={false} href={root + '/results/' + encodeURIComponent(row.result.id)}>{c.see}</Link>}
               </div>
