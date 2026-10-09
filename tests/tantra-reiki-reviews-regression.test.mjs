@@ -71,6 +71,6 @@ test("English Tantra Reiki meditation has an accessible source-verified video pl
   assert.match(visual, /Watch on YouTube/);
   assert.doesNotMatch(source, /youtubeId: "qM_nFUkYJ1k"/);
   const player = await readFile("components/academy-video-player.tsx", "utf8");
-  assert.match(player, /youtube-nocookie\\.com\\/embed/);
-  assert.match(player, /onClick=\\{\\(\\) => setPlaying\\(true\\)\\}/);
+  assert.ok(player.includes("https://www.youtube-nocookie.com/embed/"));
+  assert.ok(player.includes("onClick={() => setPlaying(true)}"));
 });
