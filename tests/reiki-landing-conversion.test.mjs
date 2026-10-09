@@ -11,7 +11,7 @@ test("Reiki landing shows meditation, free first level and consultation before r
   assert.ok(meditation > 0 && meditation < leads && leads < reviews && reviews < courseVideos);
   assert.match(hub, /href="#reiki-free-level-one"/);
   assert.match(hub, /Rediscover your centre/);
-  assert.match(hub, /Find your centre/);
+  assert.match(hub, /Encuentra tu centro/);
 });
 
 test("two clear request forms work via confirmation in WhatsApp, not phantom backend", async () => {
