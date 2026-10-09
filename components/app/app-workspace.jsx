@@ -2054,7 +2054,7 @@ function Portrait({ data, locale }) {
                   instrumentLocale: def.instrumentLocale,
                   operationId: crypto.randomUUID(),
                 })
-                window.location.assign(root + '/runs/' + run.id)
+                window.location.assign('/' + locale + '/app/runs/' + run.id)
               } catch {
                 window.location.assign(root + '/monitoring/hh-current-state')
               }
