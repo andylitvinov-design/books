@@ -29,7 +29,10 @@ test('Spanish About uses its independent published Spanish audio, not an English
 test('ES About retains all sections, real translated destinations, form and SEO', () => {
   const page = source('app/es/about/page.tsx'); for (const value of ['about-biography', 'about-testimonials', 'about-review-archive', 'personal-consultation-title', 'about-client-cabinet', 'canonical:', "es: '/es/about'", '/es/books', '/es/homeopathy', '/es/services', '/es/client']) assert.ok(page.includes(value), value);
   assert.doesNotMatch(page, /Los enlaces marcados con EN|href="\/en\/client"/);
-  const form = source('components/personal-consultation-form.tsx'); for (const value of ['Continuar en WhatsApp', 'Solicitud de consulta personal', 'Nombre:', 'Contacto preferido:', 'Lo que me gustaría explorar:', 'Escribe tu nombre.', 'Cuéntame qué te gustaría trabajar.', 't.me/AndyTherapist']) assert.ok(form.includes(value), value);
+  const form = source('components/personal-consultation-form.tsx');
+  const chooser = source('components/consultation-choice-capture.tsx');
+  assert.match(form, /service \? "service" : "personal"/);
+  for (const phrase of ['Exploremos tu próximo paso', 'Situación personal', 'Conversación inicial gratuita', 'Solicitar conversación gratuita', 'Solicitud de sesión personal', 'Solo se envía cuando confirmas Enviar', 't.me/AndyTherapist']) assert.ok(chooser.includes(phrase), phrase);
   assert.match(source('app/sitemap.ts'), /\/es\/about/);
 });
 test('Public ES routing does not enable unsupported private-cabinet locales', () => {

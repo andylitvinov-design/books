@@ -11,8 +11,11 @@ test('Spanish service funnel has real pages and localized form without EN fallba
  assert.match(services,/Constelaciones y acompañamiento arquetípico/);
  assert.match(services,/\/es\/services\/free-situation-review/);
  const form=content('components/free-situation-review-form.tsx');
- assert.match(form,/Empecemos con una conversación gratuita/);
- assert.match(form,/locale: Locale \| "es"/);
+ assert.match(form,/variant="free"/);
+ const chooser=content('components/consultation-choice-capture.tsx');
+ assert.match(chooser,/Exploremos tu próximo paso/);
+ assert.match(chooser,/locale: PublicLocale/);
+ assert.match(chooser,/Situación personal/);
  const free=content('app/[locale]/services/free-situation-review/page.tsx');
  const imagery=content('app/[locale]/services/imagery-therapy/page.tsx');
  for(const page of [free,imagery]) { assert.match(page,/isPublicLocale\(locale\)/);assert.match(page,/es: "\/es\/services\//); }

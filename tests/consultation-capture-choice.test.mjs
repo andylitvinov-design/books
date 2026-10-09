@@ -58,7 +58,7 @@ test("free review and paid service stay public-only; training Reiki and the priv
   const paid = read("components/personal-consultation-form.tsx");
   const academy = read("components/reiki-choice-capture.tsx");
   assert.match(free, /variant="free"/);
-  assert.match(paid, /variant="service"/);
+  assert.match(paid, /variant=\{service \? "service" : "personal"\}/);
   assert.match(academy, /"tantra" \| "yggdrasil"/);
   assert.doesNotMatch(free + paid + component, /\/api\/app\/|client-report|patient-data|HEYGEN_API_KEY/);
 });

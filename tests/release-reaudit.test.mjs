@@ -43,15 +43,14 @@ test('optional translation never blanks the source and can be cancelled and retr
   assert.match(reader, /Retry English translation/);
   assert.match(reader, /lang=\{translated \? 'en' : 'ru'\}/);
 });
-test('consultation cannot fall back to a GET containing personal fields before hydration', () => {
+test('consultation never falls back to an accidental GET with private form fields', () => {
   const form = read('components/personal-consultation-form.tsx');
-  assert.match(form, /method="post"/);
-  assert.match(form, /disabled=\{!interactive\}/);
-  assert.match(form, /useState\(false\)/);
-  assert.match(form, /event\.preventDefault\(\)/);
-  assert.match(form, /setCustomValidity/);
-  assert.match(form, /personal-consultation-form__resume/);
-  assert.match(form, /sent automatically/);
+  const capture = read('components/consultation-choice-capture.tsx');
+  assert.match(form, /ConsultationChoiceCapture/);
+  assert.match(capture, /encodeURIComponent\(message\)/);
+  assert.match(capture, /https:\/\/wa\.me\/14376066502/);
+  assert.match(capture, /Nothing is sent until you press Send/);
+  assert.doesNotMatch(capture, /<form|<input|<textarea|FormData|sessionStorage|localStorage/);
 });
 
 // Exercise the real network-validation function without React, source rewriting or any external request.
@@ -82,8 +81,14 @@ test('unmount cancellation aborts the real in-flight translation request', async
   await assert.rejects(pending, /aborted/);
   assert.equal(requestSignal.aborted, true);
 });
-test('editing a prepared consultation invalidates the old handoff link', () => {
-  assert.match(read('components/personal-consultation-form.tsx'), /onInput=\{\(\) => \{ if \(preparedUrl\) setPreparedUrl\(""\); \}\}/);
+test('changing consultation choices always derives a fresh WhatsApp message URL', () => {
+  const capture = read('components/consultation-choice-capture.tsx');
+  assert.match(capture, /onClick=\{\(\) => setServiceChoice\(choice\)\}/);
+  assert.match(capture, /onClick=\{\(\) => setTopic\(choice\)\}/);
+  assert.match(capture, /t\.serviceMessages\[serviceChoice\]/);
+  assert.match(capture, /t\.topicOptions\[topic\]/);
+  assert.match(capture, /const whatsappUrl =/);
+  assert.doesNotMatch(capture, /preparedUrl|setPreparedUrl/);
 });
 
 test('long Maya readers wait for rendered content instead of global network idleness', () => {

@@ -131,12 +131,13 @@ test('direct protected admin pages redirect signed-out visitors to login instead
 
 
 test('About exposes a consultation request form and a Google-first Cabinet with legacy compatibility', async () => {
-  const [about, entryPage, landing, entryForm, consultationForm] = await Promise.all([
+  const [about, entryPage, landing, entryForm, consultationForm, chooser] = await Promise.all([
     readFile('app/[locale]/about/page.tsx', 'utf8'),
     readFile('app/[locale]/client/page.tsx', 'utf8'),
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('components/client-cabinet-entry.tsx', 'utf8'),
     readFile('components/personal-consultation-form.tsx', 'utf8'),
+    readFile('components/consultation-choice-capture.tsx', 'utf8'),
   ])
 
   assert.match(about, /PersonalConsultationForm/)
@@ -155,9 +156,11 @@ test('About exposes a consultation request form and a Google-first Cabinet with 
   assert.match(entryForm, /privateLink/)
   assert.match(entryForm, /selectorPattern/)
   assert.match(entryForm, /secretPattern/)
-  assert.match(consultationForm, /wa\.me\/14376066502/)
-  assert.match(consultationForm, /Continue in WhatsApp/)
-  assert.match(consultationForm, /t\.me\/AndyTherapist/)
+  assert.match(consultationForm, /ConsultationChoiceCapture/)
+  assert.match(consultationForm, /service \? "service" : "personal"/)
+  assert.match(chooser, /wa\.me\/14376066502/)
+  assert.match(chooser, /Request free consultation/)
+  assert.match(chooser, /t\.me\/AndyTherapist/)
 })
 
 test('public pages share one localized soft CTA with direct WhatsApp and Telegram handoff', async () => {

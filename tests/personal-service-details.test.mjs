@@ -64,7 +64,7 @@ test("paid individual services retain contextual handoff without a compulsory in
   const shared = read("components/consultation-choice-capture.tsx");
   const landing = read("components/personal-service-landing.tsx");
   const css = read("components/personal-service-landing.module.css");
-  assert.match(wrapper, /<ConsultationChoiceCapture locale=\{locale\} variant="service" service=\{service\}/);
+  assert.match(wrapper, /<ConsultationChoiceCapture locale=\{locale\} variant=\{service \? "service" : "personal"\} service=\{service\}/);
   assert.doesNotMatch(wrapper, /<form|<input|<select|<textarea|FormData/);
   assert.match(shared, /Request a personal session/);
   assert.match(shared, /Free introductory conversation/);
