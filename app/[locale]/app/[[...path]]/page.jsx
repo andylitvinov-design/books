@@ -6,13 +6,13 @@ import '@/components/app/refinements.css'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const metadata = {
-  title: 'Your portrait | Holistic House',
+  title: 'My tests | Holistic House',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
 }
 export default async function AppPage({ params }) {
   const { locale, path = [] } = await params
   if (!['en', 'ru'].includes(locale)) notFound()
-  if (path.length > 2 || (!['monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice'].includes(path[0]) && path.length)) notFound()
+  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice'].includes(path[0]) && path.length)) notFound()
   return <AppWorkspace locale={locale} path={path} />
 }

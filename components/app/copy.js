@@ -2,7 +2,7 @@ export const COPY = {
   en: {
     portrait: 'My profile',
     monitoring: 'Psi-Monitoring',
-    tests: 'Tests',
+    tests: 'My tests',
     history: 'History',
     reports: 'Reports from Andy',
     consultations: 'Consultations',
@@ -178,7 +178,7 @@ export const COPY = {
   ru: {
     portrait: 'Мой профиль',
     monitoring: 'Пси-мониторинг',
-    tests: 'Тесты',
+    tests: 'Мои тесты',
     history: 'История',
     reports: 'Отчёты от Andy',
     consultations: 'Консультации',

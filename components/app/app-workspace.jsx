@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { BarChart3, ClipboardList, House, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
@@ -83,7 +84,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     [error, setError] = useState(null)
   const [busy, setBusy] = useState(false),
     [deleted, setDeleted] = useState(false)
-  const page = path[0] || 'portrait',
+  const page = path[0] || 'tests',
     recordId = path[1],
     root = `/${locale}/app`
   const load = useCallback(async () => {
@@ -236,8 +237,8 @@ export default function AppWorkspace({ locale, path = [] }) {
       </main>
     )
   const nav = [
-    ['portrait', c.portrait, ''],
-    ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', '/tests'],
+    ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', ''],
+    ['portrait', c.portrait, '/portrait'],
     ['monitoring', c.monitoring, '/monitoring'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
@@ -246,7 +247,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     <main className="hh-app">
       <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
-          Holistic House<span>{c.portrait}</span>
+          Holistic House<span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span>
         </Link>
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
@@ -258,7 +259,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               {data.practice ? (locale === 'ru' ? 'Моя практика' : 'My Practice') : (locale === 'ru' ? 'Стать мастером' : 'Become a Master')}
             </Link>
             <Link
-              href={`/${locale === 'en' ? 'ru' : 'en'}/app${page === 'portrait' ? '' : `/${page}`}${recordId ? `/${recordId}` : ''}`}
+              href={`/${locale === 'en' ? 'ru' : 'en'}/app${page === 'tests' ? '' : `/${page}`}${recordId ? `/${recordId}` : ''}`}
               prefetch={false}
             >
               {locale === 'en' ? 'Русский' : 'English'}
@@ -362,6 +363,12 @@ export default function AppWorkspace({ locale, path = [] }) {
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>
+      {page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+        <Link href={locale === 'ru' ? '/?lang=ru' : '/?lang=en'} prefetch={false}><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
+        <Link href={root} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
+        <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
+        <Link href={root + '/settings'} prefetch={false} aria-current={page === 'settings' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Аккаунт' : 'Account'}</span></Link>
+      </nav>}
     </main>
   )
 }
