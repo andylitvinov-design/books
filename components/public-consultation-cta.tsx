@@ -102,6 +102,10 @@ export function PublicConsultationCta({ locale, id }: { locale: "en" | "ru" | "e
   // Match the server-rendered default on first hydration; resolve route intent after mount.
   const [clientPath, setClientPath] = useState<string | null>(null);
   useEffect(() => setClientPath(pathname), [pathname]);
+  // Delay context-dependent public CTAs until the browser pathname is stable:
+  // rewritten and locale routes can differ between SSR and hydration (#418).
+  // Both server render and the first client render now agree on null.
+  if (clientPath === null) return null;
   const route = clientPath ? classifyPublicLead(clientPath) : null;
   const mode = route?.kind === "training" ? "training" : route?.kind === "reading" ? "reading" : "personal";
   if (mode !== "training") {
