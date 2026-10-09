@@ -7,6 +7,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import { YggdrasilCurriculum } from "@/components/yggdrasil-curriculum";
 import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
+import { YggdrasilSourceStudyGuide } from "@/components/yggdrasil-source-study-guide";
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings, type YggdrasilModuleLanding } from "@/data/academy/yggdrasil-module-map";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -84,6 +85,9 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
         <p className="yggdrasil-program-source-note">{copy.source}</p>
 
         <YggdrasilCurriculum locale={locale} levelId={module.levelId} showSupport={module.levelId === 1} />
+
+        {module.levelId === 1 ? <YggdrasilSourceStudyGuide locale={locale} mode="basic" /> : null}
+        {module.levelId === 2 ? <YggdrasilSourceStudyGuide locale={locale} mode="instructor" /> : null}
 
         {module.levelId === 1 ? <YggdrasilEnglishVideoGuide locale={locale} scope="basic" /> : null}
         {module.levelId === 2 ? <YggdrasilEnglishVideoGuide locale={locale} scope="instructor" /> : null}
