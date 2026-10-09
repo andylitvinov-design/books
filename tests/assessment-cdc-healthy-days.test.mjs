@@ -27,7 +27,7 @@ test('CDC official modules are published, verified, immutable and original-Engli
     assert.equal(d.instrumentLocale,'en')
     assert.equal(d.timeframe,'past-30-days')
     assert.equal(d.source.permission,'us-federal-public-domain')
-    assert.match(d.source.url,/cdc\.gov\/hrqol\//)
+    assert.match(d.source.url,/archive\.cdc\.gov\/www_cdc_gov\/hrqol\//)
     const { contentHash,...body }=d
     assert.equal(contentHash,'sha256:'+createHash('sha256').update(canonicalJSON(body)).digest('hex'))
     for (const q of d.questions) {
