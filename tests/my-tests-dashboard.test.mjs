@@ -40,7 +40,7 @@ test('start action reveals existing test battery with filters, real runs and res
   const battery = read('components/app/account-test-battery.jsx')
   assert.match(battery, /setShowList\(true\)/)
   assert.match(battery, /\{showList && <div className=\{styles\.listArea\}/)
-  assert.match(battery, /statusFilter !== 'all'/)
+  assert.match(battery, /\['all', 'remaining'\]\.includes\(statusFilter\)/)
   assert.match(battery, /openTest\(row\)/)
   assert.match(battery, /row\.result \? c\.repeat/)
   assert.match(battery, /api\('runs'/)
