@@ -63,6 +63,10 @@ const QUICK_COPY = {
   },
 }
 
+// First-screen shortcuts mirror familiar hotel-search chips, but use the
+// existing questionnaire facets instead of a parallel, disconnected filter.
+const QUICK_FOCUS = ['stress', 'anxiety', 'sleep', 'mood', 'body', 'relationships']
+
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
@@ -187,6 +191,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   }
 
   return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
+    <div className={styles.explorerHero}>
     <header className={styles.quickStart}>
       <p className={styles.eyebrow}>{c.kicker}</p>
       <h1>{quick.title}</h1>
@@ -196,10 +201,34 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
         <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : c.start}</button>
         <span>{activeBattery.length} {quick.summary} · {questions} {c.questions} · ~{minutes} {c.minutes}</span>
       </div>
+      <div className={styles.quickFilters} aria-label={locale === 'ru' ? 'Быстрый подбор тестов' : locale === 'es' ? 'Filtros rápidos' : 'Quick test filters'}>
+        <div className={styles.quickFiltersHeader}>
+          <strong>{locale === 'ru' ? 'Что вас интересует?' : locale === 'es' ? '¿Qué te interesa?' : 'What would you like to explore?'}</strong>
+          <span role="status" aria-live="polite"><b>{matchCount}</b> {c.matching}</span>
+        </div>
+        <div className={styles.quickFilterChips} role="group" aria-label={c.themes}>
+          {QUICK_FOCUS.map((key) => {
+            const item = TEST_RECOMMENDATION_FOCUS.find((topic) => topic.key === key)
+            if (!item) return null
+            const checked = focus.includes(key)
+            return <button key={key} type="button" aria-pressed={checked} onClick={() => setFocus((current) => toggle(current, key))}>{checked ? '✓ ' : ''}{item.label[locale] || item.label.en}</button>
+          })}
+        </div>
+        <div className={styles.quickFilterExtras}>
+          <button type="button" aria-pressed={maxMinutes === 5} onClick={() => setMaxMinutes((current) => current === 5 ? 0 : 5)}>{locale === 'ru' ? 'До 5 минут' : locale === 'es' ? 'Hasta 5 min' : 'Under 5 min'}</button>
+          <button type="button" aria-pressed={stylesFilter.includes('professional')} onClick={() => setStylesFilter((current) => current.includes('professional') ? current.filter((key) => key !== 'professional') : ['professional'])}>{locale === 'ru' ? 'Профессиональные' : locale === 'es' ? 'Profesionales' : 'Professional'}</button>
+          {(focus.length > 0 || appliedFilters > 0) && <button className={styles.quickFilterReset} type="button" onClick={resetFilters}>{locale === 'ru' ? 'Сбросить всё ×' : locale === 'es' ? 'Borrar todo ×' : 'Clear all ×'}</button>}
+        </div>
+      </div>
       <button type="button" className={styles.customizeButton} aria-expanded={customizeOpen} aria-controls="hh-test-customizer" onClick={() => setCustomizeOpen((open) => !open)}>{customizeOpen ? '− ' + quick.hide : '+ ' + quick.customize}</button>
       <p className={styles.quickPrivacy}>{quick.google}</p>
       {actionError && <p role="alert" className={styles.quickError}>{actionError.code || actionError.message}</p>}
     </header>
+    <aside className={styles.heroPortrait} aria-label={locale === 'ru' ? 'Визуальная модель психического портрета' : locale === 'es' ? 'Vista previa del retrato' : 'Psychological portrait preview'}>
+      <TestExplorerVisual compact locale={locale} coverage={displayedCoverage} mode={showingCoverage ? 'selected' : 'topics'} topicCount={focus.length} selectedCount={selectedKeys.length} portrait={portrait?.measuredCount ? portrait : null} axisFilter={axisFilter} onAxisFilter={setAxisFilter} />
+      <p className={styles.heroPortraitNote}>{portrait?.measuredCount ? (locale === 'ru' ? 'Реальные показатели из ваших сохранённых тестов.' : 'Measured results from your completed tests.') : (locale === 'ru' ? 'Подсвеченные зоны показывают выбор тем. Реальные шкалы появятся после тестирования.' : locale === 'es' ? 'Las áreas resaltadas muestran temas, no resultados.' : 'Highlighted areas show topics, not test results. Your measured rays appear after testing.')}</p>
+    </aside>
+    </div>
     <div id="hh-test-customizer" className={styles.customizer} hidden={!customizeOpen}>
       <details className={styles.problemDetails}>
         <summary>{quick.describe}</summary>
@@ -248,12 +277,11 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       {visible.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
       <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.analysisAxes.some((axis) => axis.key === axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
-        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{entry.description || entry.category}</p>{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
-        {entry.selectable && <div className={styles.relevance} title={c.matchNote} style={{ '--match': `${Math.max(0, Math.min(100, Math.round(entry.score / 1.2)))}%` }}><strong>{Math.max(0, Math.min(100, Math.round(entry.score / 1.2)))}%</strong><span>{c.relevance}</span></div>}
+        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{entry.description || entry.category}</p>{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
+
       </article>)}</div>
         {visible.length > 8 && <button className={styles.showMore} type="button" onClick={() => setShowAll((value) => !value)}>{showAll ? quick.showLess : `${quick.showAll} (${visible.length})`}</button>}
       </div>
-      <details className={styles.visualDetails}><summary>{quick.preview}</summary><TestExplorerVisual portrait={portrait} locale={locale} coverage={displayedCoverage} mode={showingCoverage ? 'selected' : 'topics'} topicCount={focus.length} selectedCount={selectedKeys.length} axisFilter={axisFilter} onAxisFilter={setAxisFilter} /></details>
     </div>
       <footer className={styles.battery}>
         <div>
