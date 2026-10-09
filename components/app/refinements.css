@@ -21,5 +21,10 @@
 .hh-portrait-with-metrics>section:last-child{position:relative;top:auto;max-width:100%}
 @media(max-width:1100px){
   .hh-portrait-with-metrics{grid-template-columns:1fr}
-  .hh-portrait-with-metrics>section:last-child{max-width:760px;width:100%;margin-inline:auto}
+  .hh-portrait-with-metrics>section:last-child{max-width:760px;width:100%;margin-inline:auto;order:-1}
 }
+
+/* Specialist recommendations are a request, never automatic disclosure of test results. */
+.hh-cabinet-recommendations-intro{padding:17px 20px;margin:0 0 24px;border:1px solid #d6c4b0;border-radius:17px;background:#fcf5eb;color:#553f31}
+.hh-cabinet-recommendations-intro strong{font-size:17px}
+.hh-cabinet-recommendations-intro p{font-size:14px;margin:7px 0 0;max-width:72ch;line-height:1.5}

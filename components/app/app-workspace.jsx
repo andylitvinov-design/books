@@ -13,6 +13,7 @@ import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
+import { PortraitReportActions } from '@/components/app/portrait-report-actions'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
@@ -342,7 +343,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <SavedDocumentPage key={recordId} id={recordId} locale={locale} reload={load} />
           )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} />}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} requestRecommendations={searchParams.get('intent') === 'recommendations'} />}
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
@@ -2005,7 +2006,7 @@ function Portrait({ data, locale }) {
 
       <div className="hh-portrait-with-metrics">
         <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
-        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
+        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} compactPortrait portraitActions={<PortraitReportActions data={data} locale={locale} />} />
       </div>
 
       <div className="hh-profile-mood">
@@ -2853,10 +2854,18 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload, initialServiceId = '' }) {
+function Consultations({ data, locale, reload, initialServiceId = '', requestRecommendations = false }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
-    [error, setError] = useState(null)
+    [error, setError] = useState(null),
+    [recommendationOpened, setRecommendationOpened] = useState(false)
+  useEffect(() => {
+    if (!requestRecommendations || recommendationOpened || initialServiceId) return
+    setRecommendationOpened(true)
+    const services = data.services || []
+    const suitable = services.find((service) => /consult|consultation|diagnos|review|psych|консульт|диагност|психо/i.test([service.copy?.en?.title, service.copy?.ru?.title].filter(Boolean).join(' ')))
+    if (suitable || services.length === 1) setSelected(suitable || services[0])
+  }, [requestRecommendations, recommendationOpened, initialServiceId, data.services])
   useEffect(() => {
     if (!initialServiceId || selected) return
     const service = (data.services || []).find((item) => item.id === initialServiceId)
@@ -2876,7 +2885,11 @@ function Consultations({ data, locale, reload, initialServiceId = '' }) {
         <h1>{c.consultations}</h1>
         <p>{c.consultationsIntro}</p>
       </div>
-      <div className="hh-grid hh-services">
+      {requestRecommendations && <div className="hh-cabinet-recommendations-intro" role="status">
+        <strong>{locale === 'ru' ? 'Запрос рекомендаций специалиста' : 'Request specialist recommendations'}</strong>
+        <p>{locale === 'ru' ? 'Выберите подходящий вид консультации и отправьте запрос. Ваши результаты остаются личными: в форме можно отдельно выбрать один результат и дать согласие поделиться им.' : 'Choose the appropriate consultation and send your request. Your saved tests stay private: the form lets you select one result and explicitly consent to share it.'}</p>
+      </div>}
+      {(!requestRecommendations || !selected) && <div className="hh-grid hh-services">
         {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
         {(data.services || []).map((service) => (
           <article className="hh-panel" key={service.id}>
@@ -2889,13 +2902,14 @@ function Consultations({ data, locale, reload, initialServiceId = '' }) {
             </button>
           </article>
         ))}
-      </div>
+      </div>}
       {selected && (
         <RequestForm
           key={selected.id}
           service={selected}
           locale={locale}
           data={data}
+          requestRecommendations={requestRecommendations}
           close={() => setSelected(null)}
           onDone={async () => {
             setSelected(null)
@@ -2934,10 +2948,10 @@ function Consultations({ data, locale, reload, initialServiceId = '' }) {
     </section>
   )
 }
-function RequestForm({ service, locale, data, close, onDone }) {
+function RequestForm({ service, locale, data, close, onDone, requestRecommendations = false }) {
   const c = COPY[locale],
     [contact, setContact] = useState(data.email || ''),
-    [note, setNote] = useState(''),
+    [note, setNote] = useState(requestRecommendations ? (locale === 'ru' ? 'Здравствуйте! Хочу получить индивидуальные рекомендации специалиста по результатам моих тестов.' : 'Hello! I would like specialist recommendations informed by my completed assessments.') : ''),
     [shareId, setShareId] = useState(''),
     [confirmed, setConfirmed] = useState(false),
     [busy, setBusy] = useState(false),
