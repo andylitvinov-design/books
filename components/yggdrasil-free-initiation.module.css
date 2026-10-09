@@ -27,6 +27,9 @@
 .links a > span:first-child { color: #669ba4; font-weight: 800; font-size: 11px; }
 .links a > span:last-child { margin-left: auto; }
 .links a:hover, .heroActions a:hover { filter: brightness(.97); }
+.videoFrame { max-width: 650px; overflow: hidden; border-radius: 14px; border: 1px solid #d8e5e8; background: #173742; aspect-ratio: 16/9; }
+.videoFrame > button, .videoFrame > div { width: 100%; height: 100%; }
+.videoSource { display: inline-block; margin-top: 12px; color: #367182; font-size: 12px; text-underline-offset: 3px; }
 .checklist { scroll-margin-top: 80px; margin: 42px 0 0; border: 1px solid #b8dce5; border-radius: 18px; padding: clamp(18px, 3vw, 30px); background: linear-gradient(155deg,#e5f5f9,#fff); }
 .checklist > p:not(.eyebrow) { color: #5c7480; font-size: 14px; line-height: 1.65; }
 .questions { counter-reset: questions; margin: 23px 0 16px; padding: 0; list-style: none; display: grid; gap: 9px; }

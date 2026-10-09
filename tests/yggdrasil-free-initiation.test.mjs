@@ -17,7 +17,7 @@ const audit = read("docs/yggdrasil-superskills-audit-2026-10-09.md");
 test("dedicated, indexed Level 1 initiation article supports three real locales and SEO", () => {
   assert.match(routes, /if \(child === "free-initiation"\) return <YggdrasilFreeInitiation locale=\{locale\} \/>/);
   assert.match(routes, /if \(child === "free-initiation"\) return locale === "ru"/);
-  assert.match(routes, /const description = child === "free-initiation"/);
+  assert.match(routes, /: child === "free-initiation"/);
   assert.match(routes, /languages: \{ en:.*ru:.*es:/);
   for (const marker of ["  en: {", "  ru: {", "  es: {"]) assert.ok(page.includes(marker), marker);
   assert.match(page, /const copy: Record<PublicLocale, LocaleStrings>/);

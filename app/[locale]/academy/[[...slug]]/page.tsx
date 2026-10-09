@@ -9,6 +9,7 @@ import { YggdrasilModuleLandingPage } from "@/components/yggdrasil-module-landin
 import { YggdrasilBasicCourseDescription } from "@/components/yggdrasil-basic-course-description";
 import { YggdrasilSourceArchivePage } from "@/components/yggdrasil-source-archive";
 import { YggdrasilFreeInitiation } from "@/components/yggdrasil-free-initiation";
+import { YggdrasilSuperSkillsSourcesPage } from "@/components/yggdrasil-superskills-sources-page";
 import { academyCopy, academyDirections, academyDisplayTitle, academyPublicBlocks, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl, type AcademyDirectionId, type AcademyView } from "@/data/academy/catalog";
 import { yggdrasilModuleBySlug } from "@/data/academy/yggdrasil-module-map";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -45,6 +46,7 @@ function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   const child = yggdrasilChild(slug);
   if (routeKey(slug) === "reiki/yggdrasil/basic-course/description") return locale === "ru" ? "Рейки Иггдрасиль — книга базового курса I–V ступени" : locale === "es" ? "Libro: Reiki Yggdrasil — Curso Básico I–V" : "Reiki Yggdrasil — Basic Course Book I–V";
   if (child === "free-initiation") return locale === "ru" ? "Как получить бесплатную инициацию 1-й ступени Рейки Иггдрасиль" : locale === "es" ? "Cómo recibir la iniciación gratis de Reiki Yggdrasil Nivel 1" : "How to receive free Reiki Yggdrasil Level 1 initiation";
+  if (child === "superskills-sources") return locale === "ru" ? "Первоисточники SuperSkills — Рейки Иггдрасиль" : locale === "es" ? "Fuentes originales de SuperSkills · Reiki Yggdrasil" : "Reiki Yggdrasil · Original SuperSkills resources";
   if (child === "archive") return locale === "ru" ? "Рейки Иггдрасиль — полный исторический текст" : locale === "es" ? "Reiki Yggdrasil — fuente histórica completa" : "Reiki Yggdrasil — Complete Historical Source";
   if (child) {
     const courseModule = yggdrasilModuleBySlug(child);
@@ -68,7 +70,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
-  const description = child === "free-initiation"
+  const description = child === "superskills-sources"
+    ? locale === "ru" ? "Упорядоченная библиотека 19 исходных материалов SuperSkills: базовый и инструкторский курсы, практика, FAQ, отзывы, инициация." : locale === "es" ? "Biblioteca de 19 fuentes Reiki Yggdrasil, organizadas por cursos, ejercicios, iniciación y testimonios." : "Nineteen original SuperSkills source pages organized by Basic Course, Instructor Course, exercises, FAQ, initiation and testimonials."
+    : child === "free-initiation"
     ? locale === "ru" ? "Как бесплатно получить инициацию 1-й ступени Рейки Иггдрасиль: 3 варианта, материалы для чтения, 7 контрольных вопросов и запись к преподавателю." : locale === "es" ? "Guía de iniciación gratuita Reiki Yggdrasil Nivel 1: tres formas de empezar, lecturas y siete preguntas." : "Free Level 1 Reiki Yggdrasil initiation: three ways to study, reading materials, seven preparation questions and teacher contact."
     : routeKey(slug) === "temple-studies"
     ? locale === "ru" ? "Единый курс Temple Studies из семи этапов: основы мистерий, Греция, Египет, традиции мира, руны и Таро, инициации, архетипическая практика и интеграция." : locale === "es" ? "Temple Studies: siete etapas de misterios antiguos, runas, Tarot y práctica arquetípica integrada." : "Temple Studies: a seven-stage journey from ancient mysteries and runes to archetypal practice and personal integration."
@@ -104,6 +108,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   if (key === "reiki/master-shamanic-healing") redirect("/" + locale + "/academy/reiki/yggdrasil/basic-course");
   if (child === "archive") return <YggdrasilSourceArchivePage locale={locale} />;
   if (child === "free-initiation") return <YggdrasilFreeInitiation locale={locale} />;
+  if (child === "superskills-sources") return <YggdrasilSuperSkillsSourcesPage locale={locale} />;
   if (child) {
     const courseModule = yggdrasilModuleBySlug(child);
     if (courseModule) return <YggdrasilModuleLandingPage locale={locale} module={courseModule} />;

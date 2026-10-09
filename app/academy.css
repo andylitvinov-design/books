@@ -3059,3 +3059,14 @@
 @media (prefers-reduced-motion: reduce) {
   .tantra-journey__extras-indicator, .tantra-reading__indicator { transition: none; }
 }
+
+
+/* Original SuperSkills student reports belong beside course testimonials, not in the hero. */
+.yggdrasil-testimonials__historical-links { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin: 23px 0 0; padding: 18px 20px; border: 1px solid #dae6e7; border-radius: 14px; background: #f4fafb; }
+.yggdrasil-testimonials__historical-links > div:first-child { flex: 1 1 250px; }
+.yggdrasil-testimonials__historical-links strong { color: #315966; font-size: 14px; }
+.yggdrasil-testimonials__historical-links p { margin: 6px 0 0; color: #647980; font-size: 12px; line-height: 1.55; }
+.yggdrasil-testimonials__historical-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.yggdrasil-testimonials__historical-actions a { display: inline-flex; min-height: 43px; align-items: center; border: 1px solid #aacdd3; border-radius: 9px; padding: 9px 12px; color: #316e7d; background: #fff; font-size: 12px; font-weight: 700; text-decoration: none; }
+.yggdrasil-testimonials__historical-actions a:focus-visible { outline: 3px solid #7cb8c4; outline-offset: 3px; }
+@media (max-width: 650px) { .yggdrasil-testimonials__historical-links { padding: 14px; } .yggdrasil-testimonials__historical-actions, .yggdrasil-testimonials__historical-actions a { width: 100%; } }
