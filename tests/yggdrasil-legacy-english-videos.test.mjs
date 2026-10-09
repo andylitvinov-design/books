@@ -56,7 +56,7 @@ test("legacy English review videos are not injected into specific Yggdrasil teac
     readFile("components/yggdrasil-module-landing.tsx", "utf8"),
   ]);
   assert.match(curriculum, /yggdrasilEnglishStepVideos\[step\.id\] \?\? \[\]/);
-  assert.match(guide, /locale === "en"/);
+  assert.match(guide, /locale !== "en"/);
   assert.match(guide, /yggdrasil-course-video-library/);
   assert.match(guide, /RU audio · Original class/);
   assert.match(hub, /<YggdrasilTestimonials/);
