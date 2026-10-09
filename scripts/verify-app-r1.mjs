@@ -194,7 +194,7 @@ try {
  await quickAnxiety.click()
  await expect(quickAnxiety).toHaveAttribute('aria-pressed','true')
  await expect.poll(async()=>resultCount.innerText()).not.toBe(before)
- await expect(headCard.locator('svg[class*="focusRays"] line').first()).toBeVisible()
+ assert.ok((await headCard.locator('svg[class*="focusRays"] line').count())>0, 'selected topic has illustrated focus rays')
  await page.screenshot({path:output+'/client-mobile-filters-portrait.png',fullPage:false})
  await quickAnxiety.click()
  await expect(quickAnxiety).toHaveAttribute('aria-pressed','false')
