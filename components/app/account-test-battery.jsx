@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
+import { MyTestsDashboard } from './my-tests-dashboard'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { getDefinitionById } from '@/lib/assessments/definitions'
@@ -145,6 +146,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
   const [exploring, setExploring] = useState(false)
+  const [showList, setShowList] = useState(Boolean(requestedPlanId))
+  const [statusFilter, setStatusFilter] = useState('all')
   const [conflict, setConflict] = useState(null)
   const [error, setError] = useState('')
   const entries = useMemo(() => buildExplorerEntries({ locale, audience: 'account' }), [locale])
@@ -249,6 +252,17 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     }
     await create(keys, false, selectionPreferences)
   }
+  function openList() {
+    setShowList(true)
+    if (!rows.length) setExploring(true)
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      document.getElementById('my-tests-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }))
+  }
+  useEffect(() => {
+    if (conflict || error) setShowList(true)
+  }, [conflict, error])
+
   async function openTest(row) {
     setBusy(true)
     setError('')
@@ -271,6 +285,16 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   return <>
     <div className={styles.batteryLayout}>
     <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
+      <MyTestsDashboard
+        locale={locale}
+        rows={rows}
+        completed={completed}
+        results={data.results}
+        snapshot={data.snapshot}
+        onStart={openList}
+        onViewAll={openList}
+      />
+      {showList && <div className={styles.listArea} id="my-tests-list">
       <div className={styles.header}>
         <div><p className="hh-kicker">{c.account} · Mind–Body Monitor</p><h1>{c.title}</h1>
           <p>{c.intro}</p></div>
@@ -307,9 +331,22 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           <span className={styles.counter}><strong>{completed}/{rows.length}</strong> {c.done}</span>
           <progress max={rows.length} value={completed} />
         </div>
+        <div className={styles.testFilters} role="group" aria-label={locale === 'ru' ? 'Фильтр по статусу' : 'Filter by status'}>
+          {[
+            ['all', locale === 'ru' ? 'Все' : 'All'],
+            ['notStarted', c.pending],
+            ['inProgress', c.underway],
+            ['completed', c.finished],
+          ].map(([key, label]) => (
+            <button key={key} type="button" aria-pressed={statusFilter === key}
+              onClick={() => setStatusFilter(key)}>{label}</button>
+          ))}
+        </div>
         <div className={styles.group}>
           {rows.map((row) => {
             const status = row.run ? c.underway : row.result ? c.finished : c.pending
+            const state = row.run ? 'inProgress' : row.result ? 'completed' : 'notStarted'
+            if (statusFilter !== 'all' && state !== statusFilter) return null
             return <article key={row.definition.id} className={styles.row}>
               <span className={styles.image}><Image src={row.photo} alt="" fill sizes="(max-width: 720px) 92px, 140px" /></span>
               <div className={styles.info}>
@@ -344,8 +381,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         <Link href={root} prefetch={false}>{c.account} →</Link>
       </div>
       <p className={styles.muted}>{c.privacy}</p>
+      </div>}
     </section>
-    <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
+    <details className={styles.portraitDetails}>
+      <summary>{locale === 'ru' ? 'Мой психологический портрет · открыть подробности' : 'My psychological portrait · view details'}</summary>
+      <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
+    </details>
     </div>
     {(exploring || (!rows.length && !initializing && !conflict)) &&
       <TestExplorer key={currentPlan?.id || 'new'} locale={locale} audience="account" onStart={choose} initialPreferences={selectionPreferences}
