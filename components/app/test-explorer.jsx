@@ -227,7 +227,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
             const item = TEST_RECOMMENDATION_FOCUS.find((topic) => topic.key === key)
             if (!item) return null
             const checked = focus.includes(key)
-            return <button key={key} type="button" aria-pressed={checked} onClick={() => setFocus((current) => toggle(current, key))}><span className={styles.quickChipIcon} aria-hidden="true">{checked ? '✓' : QUICK_ICONS[key]}</span><span>{item.label[locale] || item.label.en}</span></button>
+            return <button key={key} type="button" aria-label={`${locale === 'ru' ? 'Быстрый фильтр' : locale === 'es' ? 'Filtro rápido' : 'Quick filter'}: ${item.label[locale] || item.label.en}`} aria-pressed={checked} onClick={() => setFocus((current) => toggle(current, key))}><span className={styles.quickChipIcon} aria-hidden="true">{checked ? '✓' : QUICK_ICONS[key]}</span><span>{item.label[locale] || item.label.en}</span></button>
           })}
         </div>
         <div className={styles.quickFilterExtras}>
