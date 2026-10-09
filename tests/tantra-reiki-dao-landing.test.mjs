@@ -87,26 +87,25 @@ test("detailed writings are split into compact modules without discarding origin
   assert.match(modules, /<details className="tantra-reading__module"/);
 });
 
-test("approved Andy portrait and two independent real lead paths finish the landing", async () => {
-  const [page, teacher, leads, baseForms, css] = await Promise.all([
+test("approved Andy portrait precedes a compact blue three-choice Reiki capture", async () => {
+  const [page, teacher, leads, capture, css] = await Promise.all([
     read("components/academy-record-page.tsx"),
     read("components/tantra-reiki-story.tsx"),
     read("components/tantra-reiki-lead-forms.tsx"),
-    read("components/reiki-landing-forms.tsx"),
-    read("app/academy.css"),
+    read("components/reiki-choice-capture.tsx"),
+    read("components/reiki-choice-capture.module.css"),
   ]);
   assert.match(page, /<TantraReikiTeacher locale=\{locale\}/);
   assert.match(page, /<TantraReikiLeadForms locale=\{locale\}/);
   assert.ok(page.indexOf('<TantraReikiTeacher locale=') < page.indexOf('<TantraReikiLeadForms locale='));
   assert.match(teacher, /\/images\/holistic-house\/andy-about\.png/);
-  assert.match(leads, /<ReikiConsultationForm locale=\{locale\} course="Tantra Reiki"/);
-  assert.match(leads, /data-reiki-form="master-course"/);
-  assert.match(leads, /<input name="name"/);
-  assert.match(leads, /<select name="experience"/);
-  assert.match(leads, /<textarea name="goal"/);
-  assert.match(leads, /window\.open\(url, "_blank", "noopener,noreferrer"\)/);
-  assert.match(baseForms, /wa\.me\/14376066502/);
-  assert.match(leads, /wa\.me\/14376066502/);
-  assert.match(css, /\.tantra-next-steps__grid/);
-  assert.match(css, /grid-template-columns: 1fr;/);
+  assert.match(leads, /<ReikiChoiceCapture locale=\{locale\} course="tantra"/);
+  assert.match(capture, /Book a free express initiation|Free express initiation/);
+  assert.match(capture, /Tantra Reiki Master Course/);
+  assert.match(capture, /data-reiki-choice-action=\{selected\}/);
+  assert.match(capture, /aria-pressed=\{selected === choice\}/);
+  assert.match(capture, /wa\.me\/14376066502/);
+  assert.doesNotMatch(leads, /<input|<select|<textarea|<form/);
+  assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
+  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
 });
