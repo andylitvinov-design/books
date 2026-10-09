@@ -187,6 +187,17 @@ try {
  await expect.poll(async()=>photo.evaluate(img=>img.naturalWidth),{timeout:15000}).toBeGreaterThan(0)
  const headBox=await headCard.boundingBox()
  assert.ok(headBox&&headBox.y<844, 'head preview should begin within the 390×844 initial mobile viewport')
+ // First-visit catalog and search must be visible without opening additional filters.
+ const catalog=page.locator('#hh-test-list')
+ await expect(catalog).toBeVisible()
+ await expect(page.locator('article[class*="row"]').first()).toBeVisible()
+ await expect(page.locator('#hh-test-customizer')).toBeHidden()
+ await expect(page.getByRole('searchbox',{name:'Search the database'})).toBeVisible()
+ const secondaryBanner=page.locator('[data-monitor-strip]').first()
+ const [catalogBox,bannerBox]=await Promise.all([catalog.boundingBox(),secondaryBanner.boundingBox()])
+ assert.ok(catalogBox&&bannerBox&&catalogBox.y<bannerBox.y,
+   'secondary consultation should follow test discovery, not displace it')
+ passed('first visit: full test catalog and search visible; advanced criteria collapsed')
  const quickAnxiety=page.getByRole('button',{name:'Quick filter: Anxiety & worry'})
  await expect(quickAnxiety).toHaveAttribute('aria-pressed','false')
  const resultCount=page.locator('[class*="quickFiltersHeader"] [role="status"] b')
