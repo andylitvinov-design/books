@@ -768,6 +768,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             {mode === 'guided' && <p className="hh-guided-step">{c.guidedPrompt}</p>}
             <h3>{question.text}</h3>
             {definition.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
+            {definition.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && answers['hrqol4.02'] === 0 && answers['hrqol4.03'] === 0 && (
+              <p className="cabinet-test-note">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
+            )}
             {question.inputType === 'day-count' ? (
               <label className="cabinet-day-count-select">
                 <span>{locale === 'ru' ? 'Количество дней за последние 30 дней (0–30)' : 'Number of days in the past 30 days (0–30)'}</span>
