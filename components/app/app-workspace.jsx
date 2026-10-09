@@ -1189,7 +1189,7 @@ function Runner({ id, locale, onExit, onComplete }) {
         </aside>
       )}
       <p className="hh-muted">
-        {def.timeframe === 'past-2-weeks' ? (locale === 'ru' ? 'За последние две недели' : 'Over the past two weeks') : def.timeframe === 'past-7-days' ? c.pastWeek : def.timeframe === 'right-now' ? c.rightNow : c.general}
+        {def.timeframe === 'past-2-weeks' ? (locale === 'ru' ? 'За последние две недели' : 'Over the past two weeks') : def.timeframe === 'past-30-days' ? (locale === 'ru' ? 'За последние 30 дней' : 'Over the past 30 days') : def.timeframe === 'past-7-days' ? c.pastWeek : def.timeframe === 'right-now' ? c.rightNow : c.general}
       </p>
 
       {question ? (
@@ -1198,19 +1198,36 @@ function Runner({ id, locale, onExit, onComplete }) {
           <legend>
             <h1>{question.text}</h1>
           </legend>
-          <div className={def.answerScale ? 'hh-scale hh-scale-words' : 'hh-scale'}>
-            {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((value) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={run.answers[question.id] === value}
-                onClick={() => chooseAnswer(value)}
+          {question.inputType === 'day-count' ? (
+            <label className="hh-day-count-select">
+              <span>{locale === 'ru' ? 'Количество дней за последние 30 дней (0–30)' : 'Number of days in the past 30 days (0–30)'}</span>
+              <select
+                aria-label={locale === 'ru' ? 'Количество дней' : 'Number of days'}
+                value={run.answers[question.id] ?? ''}
+                onChange={(event) => { if (event.target.value !== '') void chooseAnswer(Number(event.target.value)) }}
+                disabled={busy || Boolean(operation.current)}
               >
-                <strong>{value}</strong>
-                {(question.responseAnchors || def.responseAnchors) && <span>{(question.responseAnchors || def.responseAnchors)[value - min]}</span>}
-              </button>
-            ))}
-          </div>
+                <option value="" disabled>{locale === 'ru' ? 'Выберите число дней' : 'Select number of days'}</option>
+                {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((value) => (
+                  <option value={value} key={value}>{value}</option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <div className={def.answerScale ? 'hh-scale hh-scale-words' : 'hh-scale'}>
+              {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={run.answers[question.id] === value}
+                  onClick={() => chooseAnswer(value)}
+                >
+                  <strong>{value}</strong>
+                  {(question.responseAnchors || def.responseAnchors) && <span>{(question.responseAnchors || def.responseAnchors)[value - min]}</span>}
+                </button>
+              ))}
+            </div>
+          )}
           {question.anchors && (
             <div className="hh-anchors">
               <span>{question.anchors[0]}</span>
