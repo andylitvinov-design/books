@@ -228,6 +228,11 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
         <ArrowUpRight size={20} aria-hidden="true" />
       </a>
       <p className={styles.note}>{download ? t.common.downloadNote : t.common.messageNote}</p>
+       {course === "yggdrasil" && selected === "free" ? (
+         <a className={styles.checklistLink} href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>
+           {locale === "ru" ? "Как получить бесплатно: материалы и 7 вопросов →" : locale === "es" ? "Cómo comenzar gratis: lecturas y 7 preguntas →" : "How to begin for free: reading guide and 7 questions →"}
+         </a>
+       ) : null}
       <div className={styles.footer}>
         <div className={styles.trust}><span><Check size={15} aria-hidden="true" /> {t.common.reply}</span><span><Check size={15} aria-hidden="true" /> {t.common.obligation}</span></div>
         <div className={styles.secondary}>

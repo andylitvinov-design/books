@@ -7,6 +7,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import { YggdrasilCurriculum } from "@/components/yggdrasil-curriculum";
 import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
+import { YggdrasilSourceStudyGuide } from "@/components/yggdrasil-source-study-guide";
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings, type YggdrasilModuleLanding } from "@/data/academy/yggdrasil-module-map";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -26,6 +27,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
       source: "This page uses the current canonical Reiki Yggdrasil course map and preserves the historical PsiTrends program as source context.",
       archive: "Full historical program source",
       description: "Read the Basic Course book",
+      freeGuide: "Free Level 1 · Read the questions",
       notice: "Historical descriptions of healing, energy, clairvoyance and other esoteric effects are presented as course/source material, not as medical advice or guaranteed outcomes.",
       steps: "steps", attunements: "attunements", videos: "video lectures",
       previous: "Previous module", next: "Next module",
@@ -35,6 +37,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
       source: "Страница использует актуальную каноническую карту курса Reiki Yggdrasil и сохраняет историческую программу PsiTrends как источник.",
       archive: "Полный исторический текст программы",
       description: "Читать книгу Базового курса",
+      freeGuide: "Бесплатная 1-я ступень · Семь вопросов",
       notice: "Исторические описания целительства, энергетических, ясновидческих и других эзотерических эффектов сохранены как учебный материал системы, а не как медицинская рекомендация или гарантия результата.",
       steps: "ступеней", attunements: "настроек", videos: "видеолекций",
       previous: "Предыдущий модуль", next: "Следующий модуль",
@@ -44,6 +47,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
       source: "La página usa el mapa canónico actual de Reiki Yggdrasil y conserva el programa histórico de PsiTrends como contexto.",
       archive: "Fuente histórica completa",
       description: "Leer el libro del Curso Básico",
+      freeGuide: "Nivel 1 gratis · Siete preguntas",
       notice: "Las descripciones históricas de sanación, energía, clarividencia y otros efectos esotéricos se presentan como material del curso, no como consejo médico ni garantía.",
       steps: "etapas", attunements: "sintonizaciones", videos: "videoclases",
       previous: "Módulo anterior", next: "Módulo siguiente",
@@ -60,6 +64,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
         <nav className="yggdrasil-module-breadcrumb" aria-label="Reiki Yggdrasil">
           <Link href={`/${locale}/academy/reiki/yggdrasil`}>← {copy.back}</Link>
           {module.slug === "basic-course" ? <Link href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{copy.description} →</Link> : null}
+          {module.slug === "basic-course" ? <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}>{copy.freeGuide} →</Link> : null}
           <Link href={`/${locale}/academy/reiki/yggdrasil/archive`}>{copy.archive} →</Link>
         </nav>
 
@@ -84,6 +89,9 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
         <p className="yggdrasil-program-source-note">{copy.source}</p>
 
         <YggdrasilCurriculum locale={locale} levelId={module.levelId} showSupport={module.levelId === 1} />
+
+        {module.levelId === 1 ? <YggdrasilSourceStudyGuide locale={locale} mode="basic" /> : null}
+        {module.levelId === 2 ? <YggdrasilSourceStudyGuide locale={locale} mode="instructor" /> : null}
 
         {module.levelId === 1 ? <YggdrasilEnglishVideoGuide locale={locale} scope="basic" /> : null}
         {module.levelId === 2 ? <YggdrasilEnglishVideoGuide locale={locale} scope="instructor" /> : null}

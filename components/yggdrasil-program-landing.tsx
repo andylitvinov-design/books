@@ -5,6 +5,7 @@ import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video
 import { YggdrasilTestimonials } from "@/components/yggdrasil-testimonials";
 import { YggdrasilMeditationFeature } from "@/components/yggdrasil-meditation-feature";
 import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
+import { YggdrasilSourceStudyGuide } from "@/components/yggdrasil-source-study-guide";
 
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import englishAttunements from "@/data/academy/yggdrasil-en-settings-l1.json";
@@ -215,7 +216,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
             {heroHighlights[locale].map((highlight) => <li key={highlight}>{highlight}</li>)}
           </ul>
           <div className="yggdrasil-program-actions">
-            <a className="yggdrasil-primary-action" href="#reiki-free-level-one">{text.free} <span aria-hidden="true">→</span></a>
+            <Link className="yggdrasil-primary-action" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{text.free} <span aria-hidden="true">→</span></Link>
             <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
             <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
           </div>
@@ -252,6 +253,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           <div className="yggdrasil-basic-course-actions">
             <Link className="yggdrasil-source-link yggdrasil-basic-course-start" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}<span aria-hidden="true">→</span></Link>
             <Link className="yggdrasil-source-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description}<span aria-hidden="true">↗</span></Link>
+            <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{text.free}<span aria-hidden="true">→</span></Link>
           </div>
         </div>
         <div className="yggdrasil-basic-levels">
@@ -285,6 +287,8 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           ))}
         </div>
       </section>
+
+      <YggdrasilSourceStudyGuide locale={locale} mode="overview" />
 
       <YggdrasilMeditationFeature locale={locale} />
 
