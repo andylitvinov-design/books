@@ -303,15 +303,15 @@ const stages = [
  * attendees are taking the precise initiation described alongside the image.
  */
 const levelPhotos = [
-  { src: tantraReikiArchive.images.ru[4], description: "Tantra Reiki practice and shared awareness", archive: true, position: "center 50%" },
-  { src: tantraReikiArchive.images.ru[5], description: "Quiet reflective practice", archive: false, position: "center 52%" },
-  { src: tantraReikiArchive.images.ru[6], description: "An experience of mindful connection", archive: true, position: "center 48%" },
-  { src: tantraReikiArchive.images.ru[7], description: "Shared presence and connection", archive: true, position: "center 48%" },
-  { src: tantraReikiArchive.images.ru[8], description: "Grounded group practice", archive: true, position: "center 46%" },
-  { src: tantraReikiArchive.images.ru[9], description: "Quiet reflection and integration", archive: true, position: "center 50%" },
-  { src: tantraReikiArchive.images.ru[12], description: "Reflective gathering from the practice archive", archive: true, position: "center 48%" },
-  { src: tantraReikiArchive.images.ru[13], description: "Personal attention and contemplative practice", archive: false, position: "center 50%" },
-  { src: tantraReikiArchive.images.ru[14], description: "Meditation in nature", archive: false, position: "center 52%" }
+  { src: tantraReikiArchive.images.ru[17], description: "People sharing a Tantra Reiki gathering", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[18], description: "A real moment of connection at a Tantra event", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[19], description: "A group exploring embodied practice", archive: true, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[20], description: "Tantra workshop participants together", archive: true, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[21], description: "Mindful connection in a group practice", archive: true, position: "center 47%" },
+  { src: tantraReikiArchive.images.ru[22], description: "Personal experience shared at a gathering", archive: true, position: "center 52%" },
+  { src: tantraReikiArchive.images.ru[4], description: "Participants of an original Tantra event", archive: true, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[6], description: "An original Tantra gathering and its participants", archive: true, position: "center 48%" },
+  { src: tantraReikiArchive.images.ru[8], description: "Tantra practice in a real group setting", archive: true, position: "center 50%" }
 ] as const;
 
 /**
@@ -432,9 +432,9 @@ const levelApplications: Record<PublicLocale, string[]> = {
 };
 
 const ui = {
-  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", original: "Andrey’s perspective", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
-  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", original: "Авторское описание Андрея · без сокращений", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
-  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", original: "Texto original de Andrey · traducción del ruso", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
+  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", details: "Explore attunements & practical exercises", original: "Andrey’s perspective", practice: "Practical assignment", previous: "Previous level", next: "Next level", contact: "Ask about training", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
+  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", details: "Раскрыть настройки и задания", original: "Авторское описание Андрея · без сокращений", practice: "Практическое задание", previous: "Предыдущая ступень", next: "Следующая ступень", contact: "Узнать об обучении", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
+  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", details: "Ver sintonizaciones y ejercicios", original: "Texto original de Andrey · traducción del ruso", practice: "Práctica", previous: "Etapa anterior", next: "Siguiente etapa", contact: "Consultar formación", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
 } as const;
 
 export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
@@ -478,18 +478,23 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
                   <p key={j}>{paragraph}</p>
                 ))}
               </div>
-              <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
-              <div className="tantra-journey__settings">
-                <h4>{c.settings}</h4>
-                <ul>{copy.att.map((att) => <li key={att}>{att}</li>)}</ul>
-              </div>
-              <div className="tantra-journey__practice">
-                <strong>{c.practice}</strong>
-                <p>{copy.practice}</p>
-              </div>
+              <details className="tantra-journey__extras">
+                <summary><span>{c.details}</span><span className="tantra-journey__extras-indicator" aria-hidden="true">+</span></summary>
+                <div className="tantra-journey__extras-body">
+                  <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
+                  <div className="tantra-journey__settings">
+                    <h4>{c.settings}</h4>
+                    <ul>{copy.att.map((att) => <li key={att}>{att}</li>)}</ul>
+                  </div>
+                  <div className="tantra-journey__practice">
+                    <strong>{c.practice}</strong>
+                    <p>{copy.practice}</p>
+                  </div>
+                </div>
+              </details>
               <div className="tantra-journey__actions">
                 {n>1 ? <a href={"#tantra-level-"+(n-1)} aria-label={c.previous+" "+(n-1)}>← {c.previous}</a> : <a href="https://t.me/AndyTherapist" target="_blank" rel="noreferrer">{c.contact} ↗</a>}
-                <a className="tantra-journey__next" href={n<9?"#tantra-level-"+(n+1):"#tantra-testimonials"}>{n<9?c.next:c.final} →</a>
+                <a className="tantra-journey__next" href={n<9?"#tantra-level-"+(n+1):"#english-guided-meditations-tantra-reiki"}>{n<9?c.next:c.final} →</a>
               </div>
             </div>
           </article>
