@@ -88,8 +88,13 @@ async function openCompletedPlanResult(){
  await expect(page).toHaveURL(/\/(?:tests\?plan=|results\/)/,{timeout:15000})
  if(/\/results\//.test(page.url()))return
  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
- await page.getByRole('link',{name:'View result'}).first().click()
- await expect(page).toHaveURL(/\/results\//)
+ const resultLink=page.getByRole('link',{name:'View result'}).first()
+ await expect(resultLink).toHaveAttribute('href',/\/results\//)
+ // WebKit can hydrate a newly completed test overview more slowly in CI.
+ // Wait for route readiness before exercising client-side navigation.
+ await page.waitForLoadState('networkidle')
+ await resultLink.click()
+ await expect(page).toHaveURL(/\/results\//,{timeout:20000})
 }
 try {
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
@@ -177,6 +182,39 @@ try {
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 
  await page.goto(origin+'/en/client')
+ await expect(page.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
+ // Mobile UX guard: the existing photographic head is no longer hidden behind
+ // an advanced-filter or visualization disclosure on first visit.
+ const headCard=page.locator('aside[class*="heroPortrait"]').first()
+ await expect(headCard).toBeVisible()
+ const photo=headCard.locator('img[src*="holistic-house-test-brain-concept"]').first()
+ await expect(photo).toBeVisible()
+ await expect.poll(async()=>photo.evaluate(img=>img.naturalWidth),{timeout:15000}).toBeGreaterThan(0)
+ const headBox=await headCard.boundingBox()
+ assert.ok(headBox&&headBox.y<844, 'head preview should begin within the 390×844 initial mobile viewport')
+ // First-visit catalog and search must be visible without opening additional filters.
+ const catalog=page.locator('#hh-test-list')
+ await expect(catalog).toBeVisible()
+ await expect(page.locator('article[class*="row"]').first()).toBeVisible()
+ await expect(page.locator('#hh-test-customizer')).toBeHidden()
+ await expect(page.getByRole('searchbox',{name:'Search the database'})).toBeVisible()
+ const secondaryBanner=page.locator('[data-monitor-strip]').first()
+ const [catalogBox,bannerBox]=await Promise.all([catalog.boundingBox(),secondaryBanner.boundingBox()])
+ assert.ok(catalogBox&&bannerBox&&catalogBox.y<bannerBox.y,
+   'secondary consultation should follow test discovery, not displace it')
+ passed('first visit: full test catalog and search visible; advanced criteria collapsed')
+ const quickAnxiety=page.getByRole('button',{name:'Quick filter: Anxiety & worry'})
+ await expect(quickAnxiety).toHaveAttribute('aria-pressed','false')
+ const resultCount=page.locator('[class*="quickFiltersHeader"] [role="status"] b')
+ const before=await resultCount.innerText()
+ await quickAnxiety.click()
+ await expect(quickAnxiety).toHaveAttribute('aria-pressed','true')
+ await expect.poll(async()=>resultCount.innerText()).not.toBe(before)
+ assert.ok((await headCard.locator('svg[class*="focusRays"] line').count())>0, 'selected topic has illustrated focus rays')
+ await page.screenshot({path:output+'/client-mobile-filters-portrait.png',fullPage:false})
+ await quickAnxiety.click()
+ await expect(quickAnxiety).toHaveAttribute('aria-pressed','false')
+ passed('390px mobile: head asset loads, instant chips reduce test count and highlight real coverage axes')
  await expect(page.getByRole('heading',{name:'Enter your personal cabinet'})).toBeVisible()
  await expect(page.getByRole('button',{name:'Enter personal cabinet with Google'})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()

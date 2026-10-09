@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { CabinetLanding } from "@/components/app/cabinet-landing";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { MindBodyMonitorStrip } from "@/components/mind-body-monitor-strip";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -48,12 +49,13 @@ export default async function ClientEntryPage({ params }: PageProps) {
   const typedLocale = locale as Locale;
   return (
     <main className="client-entry-shell cabinet-landing-shell" lang={typedLocale}>
-      <PublicSiteHeader locale={typedLocale} />
+      <PublicSiteHeader locale={typedLocale} showAssessmentStrip={false} />
       <CabinetLanding
         locale={typedLocale}
         appAvailable={appEnabled()}
         legacySelector={session?.selector}
       />
+      <MindBodyMonitorStrip locale={typedLocale} />
     </main>
   );
 }

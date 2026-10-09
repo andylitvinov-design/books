@@ -11,7 +11,7 @@ const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
 // A personality trait is descriptive and must never be presented as an ideal-to-reach ray.
 const PORTRAIT_AXES = TEST_EXPLORER_AXES.filter((axis) => axis !== 'personality')
 
-export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null }) {
+export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, compact = false }) {
   const [variant, setVariant] = useState('male')
   // Null means the latest measured axes; [] is an intentional empty selection.
   const [chosenRays, setChosenRays] = useState(null)
@@ -46,7 +46,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     update({ x: rotation.x + (step.x || 0), y: rotation.y + (step.y || 0) })
   }
   const start = (event) => {
-    if (portrait || event.target.closest?.('button')) return
+    if (portrait || compact || event.target.closest?.('button')) return
     drag.current = { x: event.clientX, y: event.clientY, rotation }
     event.currentTarget.setPointerCapture?.(event.pointerId)
   }
@@ -55,22 +55,22 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     update({ x: drag.current.rotation.x + (event.clientY - drag.current.y) / 14, y: drag.current.rotation.y + (event.clientX - drag.current.x) / 6 })
   }
 
-  return <section className={styles.visual} aria-label={ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes'}>
+  return <section className={`${styles.visual} ${compact ? styles.visualCompact : ''}`} aria-label={ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes'}>
     <header className={styles.visualHeader}>
       <div><p className={styles.eyebrow}>{portrait ? (ru ? 'Ваши измерения' : es ? 'Tus mediciones' : 'Your measurements') : (ru ? 'Оси анализа' : es ? 'Ejes de análisis' : 'Analysis axes')}</p><h2>{portrait ? (ru ? 'Мой психологический портрет' : es ? 'Mi retrato psicológico' : 'My psychological portrait') : mode === 'selected' ? (ru ? 'Покрытие вашей батареи' : es ? 'Cobertura de tus pruebas' : 'Coverage of your test set') : (ru ? 'Темы для исследования' : es ? 'Áreas de interés' : 'Your areas of interest')}</h2></div>
-      {!portrait && <div className={styles.variantToggle} role="group" aria-label={ru ? 'Вариант модели' : es ? 'Modelo' : 'Model variant'}>
+      {!portrait && !compact && <div className={styles.variantToggle} role="group" aria-label={ru ? 'Вариант модели' : es ? 'Modelo' : 'Model variant'}>
         {['female', 'male'].map((key) => <button type="button" key={key} aria-pressed={variant === key} onClick={() => setVariant(key)}>{key === 'female' ? (ru ? 'Женская' : es ? 'Femenino' : 'Female') : (ru ? 'Мужская' : es ? 'Masculino' : 'Male')}</button>)}
       </div>}
     </header>
-    <div className={styles.visualState} role="status" aria-live="polite">
+    {!compact && <div className={styles.visualState} role="status" aria-live="polite">
       <strong>{portrait ? (ru ? `${portrait.measuredCount} измеренных шкал` : es ? `${portrait.measuredCount} escalas medidas` : `${portrait.measuredCount} measured scales`) : mode === 'selected'
         ? (ru ? `${selectedCount} тестов · ${coverage.coveredCount} осей покрыто` : es ? `${selectedCount} pruebas · ${coverage.coveredCount} ejes cubiertos` : `${selectedCount} tests · ${coverage.coveredCount} axes covered`)
         : (ru ? `${topicCount} тем · ${coverage.coveredCount} связанных осей` : es ? `${topicCount} temas · ${coverage.coveredCount} ejes relacionados` : `${topicCount} topics · ${coverage.coveredCount} related axes`)}</strong>
       <span>{portrait ? (ru ? 'Лучи строятся только по сохранённым результатам. Более длинный луч — ближе к благоприятному концу соответствующей шкалы; это не диагноз и не норма личности.' : es ? 'Los rayos usan solo resultados guardados. Más largo indica el extremo favorable de la escala, no una norma clínica.' : 'Rays use your saved test results only. Longer means closer to the favorable end of that scale, not a diagnosis or personality norm.') : mode === 'selected'
         ? (ru ? 'Цветные точки показывают оси, которые охватывают отмеченные тесты.' : es ? 'Los puntos muestran los ejes cubiertos por las pruebas elegidas.' : 'Highlighted points show axes covered by the tests you selected.')
         : (ru ? 'Выберите темы слева: соответствующие оси подсветятся. Это предварительный просмотр, не результат.' : es ? 'Elige temas a la izquierda para destacar ejes; es una vista previa, no un resultado.' : 'Choose topics on the left to highlight axes. This is a preview, not a test result.')}</span>
-    </div>
-    <div className={styles.modelStage} tabIndex={portrait ? -1 : 0} role={portrait ? 'presentation' : 'application'} aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
+    </div>}
+    <div className={styles.modelStage} tabIndex={portrait || compact ? -1 : 0} role={portrait || compact ? 'presentation' : 'application'} aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
       <div className={styles.portraitArt} data-visible={variant === 'male' ? 'true' : 'false'} aria-hidden="true" style={{ transform: `translate3d(${rotation.y * .3}px, ${rotation.x * .3}px, 0)` }}>
         <Image src="/images/holistic-house-test-brain-concept.png" width={1672} height={941} unoptimized alt="" draggable={false} className={styles.portraitSource} />
       </div>
@@ -87,6 +87,20 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           })}
         </g>
       </svg>
+      {compact && !portrait && <svg viewBox="0 0 360 390" className={styles.focusRays} aria-hidden="true">
+        <circle cx="180" cy="182" r="125" className={styles.focusRing} />
+        {activeAxes.length > 0 && (topicCount > 0 || selectedCount > 0) && activeAxes.slice(0, 13).map((axis) => {
+          const position = TEST_EXPLORER_AXES.indexOf(axis)
+          const angle = -Math.PI / 2 + (position * 2 * Math.PI) / TEST_EXPLORER_AXES.length
+          const point = (radius) => ({ x: 180 + Math.cos(angle) * radius, y: 182 + Math.sin(angle) * radius })
+          const end = point(125)
+          const origin = point(31)
+          return <g key={axis} className={coverage.axes[axis]?.intensity === 'strong' ? styles.focusRayStrong : styles.focusRay}>
+            <line x1={origin.x} y1={origin.y} x2={end.x} y2={end.y} />
+            <circle cx={end.x} cy={end.y} r="6" />
+          </g>
+        })}
+      </svg>}
       {portrait && <svg viewBox="0 0 360 390" className={styles.portraitRadar} role="img" aria-label={ru ? 'Измеренные шкалы психологического портрета' : 'Measured psychological portrait axes'}>
         <title>{ru ? 'Лучи психологического портрета по пройденным тестам' : 'Your tested psychological portrait rays'}</title>
         <circle cx="180" cy="182" r="131" className={styles.radarReference} />
@@ -101,12 +115,18 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         {rays.length >= 3 && rays.every((ray) => ray.end) && <polygon points={polygon('end')} className={styles.radarOutline} />}
         <circle cx="180" cy="182" r="7" className={styles.radarCenter} />
       </svg>}
-      {!portrait && <div className={styles.axisRing}>
+      {!portrait && !compact && <div className={styles.axisRing}>
         {PRIMARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}
       </div>}
     </div>
-    {!portrait && <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>}
-    {portrait && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
+    {compact && !portrait && <div className={styles.compactAxes} role="status" aria-live="polite">
+      <strong>{ru ? 'В фокусе' : es ? 'En foco' : 'Areas in focus'}</strong>
+      <div>{activeAxes.length
+        ? activeAxes.slice(0, 4).map((axis) => <span key={axis}>{label(axis)}</span>)
+        : <span>{ru ? 'Выберите тему слева' : es ? 'Elige un tema' : 'Choose a topic to highlight'}</span>}</div>
+    </div>}
+    {!portrait && !compact && <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>}
+    {portrait && !compact && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
       <div className={styles.portraitControlsHeading}>
         <strong>{ru ? 'Лучи моего портрета' : es ? 'Escalas de mi retrato' : 'Choose my portrait rays'}</strong>
         <span>{visibleRays.length} / {PORTRAIT_AXES.length}</span>
@@ -137,7 +157,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       </details>}
       <p>{ru ? 'Процент — положение на шкале с учётом её направления, а не процент здоровья. Личностные черты без направления «лучше/хуже» сюда не включаются.' : es ? 'El porcentaje representa la posición orientada en la escala, no un porcentaje de salud.' : 'Each percentage is a direction-adjusted scale position, not a health score. Non-normative personality traits are excluded.'}</p>
     </section>}
-    {!portrait && activeAxes.length > 0 && <div className={styles.axisMeters} aria-label={ru ? 'Активные оси' : es ? 'Ejes activos' : 'Active axes'}>
+    {!portrait && !compact && activeAxes.length > 0 && <div className={styles.axisMeters} aria-label={ru ? 'Активные оси' : es ? 'Ejes activos' : 'Active axes'}>
       {activeAxes.map((axis) => <div key={axis} className={styles.axisMeter}>
         <span>{label(axis)}</span>
         {mode === 'selected'
@@ -145,6 +165,6 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           : <span className={styles.axisInterest}>{ru ? 'В фокусе' : es ? 'Enfoque' : 'In focus'}</span>}
       </div>)}
     </div>}
-    <div className={styles.visualFooter}><button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button><p>{portrait ? (ru ? 'Внешний круг — конец шкалы, а не универсальный идеал. Данные остаются в вашем личном кабинете.' : es ? 'El círculo exterior es el final de la escala, no un ideal universal.' : 'Outer ring shows the end of the scale, not a universal ideal. Results stay in your private account.') : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>
+    {!compact && <div className={styles.visualFooter}><button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button><p>{portrait ? (ru ? 'Внешний круг — конец шкалы, а не универсальный идеал. Данные остаются в вашем личном кабинете.' : es ? 'El círculo exterior es el final de la escala, no un ideal universal.' : 'Outer ring shows the end of the scale, not a universal ideal. Results stay in your private account.') : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>}
   </section>
 }
