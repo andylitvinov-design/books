@@ -343,3 +343,114 @@
 @media(prefers-reduced-motion:reduce){
   .explorer .quickPrimary,.quickFilterChips button,.quickFilterExtras button{transition:none}
 }
+
+
+/* Mobile graphic design v2: source-order hero, portrait, quick chips.
+   Breakpoints intentionally follow common 360–430px phones and compact tablets. */
+.explorerHero{grid-template-areas:"start portrait" "discovery portrait";grid-template-rows:auto 1fr}
+.explorerHero>.quickStart{grid-area:start}
+.explorerHero>.heroPortrait{grid-area:portrait}
+.explorerHero>.quickDiscovery{grid-area:discovery;min-width:0;align-self:start}
+.explorer .quickDiscovery{display:grid;gap:10px}
+.explorer .quickDiscovery .quickFilters{margin:0}
+.quickChipIcon{display:inline-flex;align-items:center;justify-content:center;margin-right:6px;width:20px;height:20px;flex:none;font-size:1.08rem;line-height:1;color:#26817b}
+.quickFilterChips button{display:inline-flex;align-items:center;white-space:nowrap;gap:0}
+.quickFilterChips button[aria-pressed=true] .quickChipIcon{color:#fff}
+.quickDiscoveryFooter{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px}
+.explorer .quickDiscoveryFooter .customizeButton{margin:0;min-height:44px}
+.quickDiscoveryFooter .quickPrivacy{margin:0;max-width:32ch}
+.explorer .heroPortrait{height:100%}
+.explorer .heroPortrait .visualCompact{align-self:stretch}
+.explorer .row{grid-template-columns:24px 62px minmax(0,1fr)}
+.testArtwork{height:58px;width:58px;max-width:100%;flex:none;display:grid;place-items:center;position:relative;isolation:isolate;overflow:hidden;border-radius:15px;background:linear-gradient(140deg,#d7eafa,#a7cee8);color:#285c83}
+.testArtwork>svg{position:relative;z-index:2}
+.testArtworkOrb{position:absolute;z-index:1;width:66px;height:66px;border-radius:50%;right:-32px;bottom:-30px;filter:blur(1px);background:#fff9}
+.testArtwork[data-theme=stress],.testArtwork[data-theme=anxiety]{background:linear-gradient(140deg,#e6dbff,#a8b9ef);color:#5b55a1}
+.testArtwork[data-theme=mood],.testArtwork[data-theme=relationships]{background:linear-gradient(140deg,#ffe0dc,#efb0ba);color:#a54f66}
+.testArtwork[data-theme=sleep]{background:linear-gradient(140deg,#d7e8fc,#a8bde5);color:#375c9b}
+.testArtwork[data-theme=energy],.testArtwork[data-theme=body],.testArtwork[data-theme=functioning]{background:linear-gradient(140deg,#ffe9c5,#e9bd85);color:#92581e}
+.testArtwork[data-theme=resource],.testArtwork[data-theme=self_support]{background:linear-gradient(140deg,#d9f1e3,#a8d9c3);color:#276f61}
+.testArtwork[data-theme=meaning],.testArtwork[data-theme=clarity],.testArtwork[data-theme=focus]{background:linear-gradient(140deg,#d1eaf5,#a8dcd8);color:#2c667b}
+.explorer .quickFilters .quickFilterChips button{box-shadow:0 2px 3px rgba(37,81,119,.025)}
+@media (min-width:961px) and (max-width:1160px) {
+  .explorerHero{grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr)}
+  .explorer .quickStart{padding:24px}
+  .explorer .quickStart h1{font-size:clamp(2rem,3vw,2.65rem)}
+}
+@media (max-width:960px) {
+  .explorerHero{grid-template-columns:minmax(0,1fr);grid-template-areas:"start" "portrait" "discovery";grid-template-rows:auto}
+  .explorer .quickStart{padding:22px}
+  .explorer .quickDiscovery{background:#fff;border:1px solid #dce7f0;border-radius:19px;padding:15px}
+  .explorer .quickDiscovery .quickFilters{margin:0}
+  .explorer .quickDiscoveryFooter{padding:4px}
+  .explorer .heroPortrait{height:auto;max-width:none}
+  .explorer .heroPortrait .modelStage{height:310px;min-height:310px}
+  .explorer .heroPortrait .modelStage .model{height:310px}
+}
+@media (max-width:600px) {
+  .explorer,.explorer.embedded{padding:10px 10px calc(104px + env(safe-area-inset-bottom));border:0;border-radius:0;background:linear-gradient(180deg,#eaf5ff 0%,#f7fbff 260px,#f6f9fc 650px,#fff 100%);box-shadow:none;overflow:visible}
+  .explorerHero{gap:10px;margin:0 auto 16px}
+  .explorer .quickStart{padding:20px 18px 17px;border:1px solid #d0e4f4;background:linear-gradient(135deg,#fff 0%,#f5fbff 100%);box-shadow:0 6px 20px rgba(22,83,126,.05);border-radius:19px}
+  .explorer .quickStart h1{font-size:clamp(1.84rem,8.3vw,2.5rem);line-height:1.08;letter-spacing:-.036em;max-width:16ch;margin:5px 0 9px;color:#143e60}
+  .explorer .quickStart .eyebrow{letter-spacing:.11em;color:#137b80;font-size:.7rem}
+  .explorer .quickIntro{font-size:.91rem;line-height:1.43;color:#526775;margin-bottom:14px}
+  .explorer .quickActions{display:grid;gap:8px}
+  .explorer .quickPrimary{border-radius:13px;min-height:53px;font-size:1.04rem;font-weight:760}
+  .explorer .quickActions span{text-align:center;font-size:.76rem;color:#597587}
+  .explorer .heroPortrait{padding:8px 10px 9px;background:linear-gradient(133deg,#e2f8f3 0%,#e2f2ff 55%,#fff6e9 100%);border-color:#c6e2e4;border-radius:18px;box-shadow:0 6px 18px rgba(31,110,121,.05)}
+  .explorer .visualCompact{padding:0 5px 1px}
+  .visualCompact .visualHeader{padding:6px 7px 0}
+  .visualCompact .visualHeader h2{font-size:1.1rem;font-weight:650;letter-spacing:-.02em;white-space:normal}
+  .visualCompact .visualHeader .eyebrow{font-size:.65rem;letter-spacing:.11em;margin-bottom:4px}
+  .explorer .heroPortrait .modelStage{margin-top:0;height:235px;min-height:235px;border-radius:14px;background:radial-gradient(ellipse at 50% 50%,#ffffffd9 0%,#f2f9ff8a 65%,#eaf7f2aa 100%)}
+  .explorer .heroPortrait .modelStage .model{height:235px}
+  .visualCompact .portraitSource{width:1019px!important;height:574px!important;left:calc(50% - 816px)!important;top:calc(50% - 286px)!important}
+  .explorer .heroPortrait .compactAxes{padding:7px 6px}
+  .compactAxes>strong{font-size:.7rem}
+  .compactAxes span{font-size:.69rem;padding:5px 8px}
+  .heroPortraitNote{font-size:.71rem;line-height:1.4;margin:5px 10px 4px;padding-top:0}
+  .explorer .quickDiscovery{padding:13px;border-radius:18px;gap:9px}
+  .quickFilters{padding:12px;border-radius:14px;gap:9px}
+  .quickFiltersHeader{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .quickFiltersHeader strong{font-size:.89rem}
+  .quickFiltersHeader span{font-size:.75rem;display:inline-flex;align-items:center;gap:4px;border-radius:99px;background:#dff0ff;padding:6px 9px;white-space:nowrap}
+  .quickFiltersHeader b{font-size:.96rem}
+  .quickFilterChips{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#b4cee2 transparent;margin-inline:-1px;padding:2px 2px 8px;gap:7px}
+  .quickFilterChips button{flex:0 0 auto;scroll-snap-align:start;min-height:43px;font-size:.8rem;padding:10px 13px;border-radius:13px;background:#fff}
+  .quickChipIcon{font-size:1rem;margin-right:5px;width:17px}
+  .quickFilterExtras{padding-top:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:7px}
+  .quickFilterExtras::-webkit-scrollbar{display:none}
+  .quickFilterExtras button{min-height:39px;flex:0 0 auto;font-size:.77rem;padding:8px 10px}
+  .quickFilterExtras .quickFilterReset{margin-left:3px}
+  .quickDiscoveryFooter{display:grid;gap:5px;justify-items:start}
+  .explorer .quickDiscoveryFooter .customizeButton{margin:0;width:100%;display:flex;justify-content:center;background:#e9f4ff;border-color:#b7d5ee;color:#195b8b;min-height:47px;border-radius:12px;text-decoration:none}
+  .explorer .quickDiscoveryFooter .quickPrivacy{margin:5px 1px 0;max-width:none;font-size:.69rem;line-height:1.42}
+  .explorer .customizer{margin:16px auto 0}
+  .explorer .toolbar{padding:12px}
+  .explorer .filterGroup>div{gap:6px}
+  .explorer .filterGroup button{font-size:.77rem;min-height:40px}
+  .explorer .list{display:grid;gap:10px}
+  .explorer .row{padding:14px 11px;gap:10px;grid-template-columns:22px 52px minmax(0,1fr);border-radius:15px;min-height:0}
+  .testArtwork{width:52px;height:52px;border-radius:13px}
+  .explorer .rowBody{min-width:0}
+  .explorer .rowTitle{display:block}
+  .explorer .rowTitle h2{font-size:.96rem;line-height:1.26;margin:3px 0 4px}
+  .explorer .rowTitle .area{font-size:.66rem}
+  .explorer .rowTitle b{display:inline-block;font-size:.64rem;margin:0 0 5px}
+  .explorer .rowBody>p{font-size:.76rem;line-height:1.4;margin:5px 0 7px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .explorer .meta{gap:5px}
+  .explorer .meta span{display:inline-flex;padding:3px 5px;border-radius:7px;background:#f2f6f9;font-size:.65rem}
+  .explorer .databaseHeader{align-items:center}
+  .explorer .databaseHeader .countBlock strong{font-size:1.1rem}
+  .explorer .databaseHeader button{font-size:.73rem;padding:9px 10px;min-height:38px}
+  .explorer .battery{margin-top:15px;border-radius:14px}
+}
+@media(max-width:370px){
+  .explorer .quickStart h1{font-size:1.78rem}
+  .explorer .heroPortrait .modelStage{height:220px;min-height:220px}
+  .explorer .heroPortrait .modelStage .model{height:220px}
+  .explorer .row{grid-template-columns:21px 44px minmax(0,1fr);gap:8px;padding:12px 9px}
+  .testArtwork{width:44px;height:44px}
+  .explorer .rowTitle h2{font-size:.9rem}
+  .quickFiltersHeader strong{font-size:.8rem}
+}
