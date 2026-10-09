@@ -2678,3 +2678,19 @@
   .yggdrasil-meditation-feature__pending p { font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .yggdrasil-program-actions a { transition: none; } }
+
+/* Owner-supplied Reiki Yggdrasil meditation and accurately grouped original testimonials. */
+.yggdrasil-meditation-feature__source { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 18px; max-width: 940px; margin: 14px auto 0; color: #6c5949; font-size: 12px; }
+.yggdrasil-meditation-feature__source a { min-height: 42px; display: inline-flex; align-items: center; color: #75492e; font-size: 13px; font-weight: 800; text-decoration: underline; text-underline-offset: 4px; }
+.yggdrasil-meditation-feature__source a:focus-visible { outline: 3px solid #946e49; outline-offset: 3px; }
+.yggdrasil-review-series-heading { grid-column: 1 / -1; margin: 16px 0 0; padding: 13px 0 10px; border-bottom: 1px solid #d9cabc; color: #554031; font-family: var(--font-serif); font-size: clamp(21px, 2.6vw, 28px); font-weight: 500; }
+.yggdrasil-review-series-heading:first-child { margin-top: 0; }
+.yggdrasil-basic-level-attunements { margin-top: 14px; }
+.yggdrasil-basic-level-attunements strong { display: block; margin-bottom: 9px; color: #8c5d3b; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.yggdrasil-basic-level-attunements ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.yggdrasil-basic-level-attunements li { padding: 6px 9px; border: 1px solid #decab5; border-radius: 999px; background: rgba(255,255,255,.72); color: #624c3c; font-size: 11px; font-weight: 600; line-height: 1.3; }
+@media (max-width: 550px) {
+  .yggdrasil-meditation-feature__source { align-items: flex-start; gap: 4px; }
+  .yggdrasil-review-series-heading { margin-top: 12px; }
+  .yggdrasil-basic-level-attunements li { font-size: 10px; }
+}

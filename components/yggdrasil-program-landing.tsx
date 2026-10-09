@@ -7,6 +7,7 @@ import { YggdrasilMeditationFeature } from "@/components/yggdrasil-meditation-fe
 import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
 
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
+import englishAttunements from "@/data/academy/yggdrasil-en-settings-l1.json";
 import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
 import {
   yggdrasilProgramSourcePage,
@@ -150,6 +151,21 @@ const copy = {
   },
 } satisfies Record<PublicLocale, Record<string, string>>;
 
+const basicSpanishAttunements: Record<number, string[]> = {
+  1: ["Sanación", "Intuición", "Protección", "Trabajo con una situación"],
+  2: ["Cargar un objeto", "Activar el flujo del dinero", "Limpieza personal", "Limpieza de espacios y objetos", "Romper vínculos"],
+  3: ["Destino", "Emoción", "Activación", "Poder", "Sexualidad", "Vuelo", "Intelecto", "Karma"],
+  4: ["Clarividencia", "Vidas pasadas", "Crear una situación", "Conocimiento"],
+  5: ["Conexión con el Mundo", "Conexión con los Dioses"],
+};
+
+function basicAttunementName(locale: PublicLocale, step: BasicStep, setting: { id: string; title: string }, index: number) {
+  if (locale === "ru") return setting.title;
+  if (locale === "es") return basicSpanishAttunements[step.number]?.[index] ?? setting.title;
+  const translated = englishAttunements as Record<string, { title: string }>;
+  return translated[setting.id]?.title ?? setting.title;
+}
+
 const heroHighlights: Record<PublicLocale, string[]> = {
   en: [
     "Find a calmer, more focused way to meet everyday challenges",
@@ -257,6 +273,10 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
                 <small>{text.basicLevel} {step.number} · {step.settings.length} {text.basicSettings}</small>
                 <h3>{step.title[locale]}</h3>
                 <p>{basicStepDescriptions[step.number][locale]}</p>
+                <div className="yggdrasil-basic-level-attunements" aria-label={text.basicSettings}>
+                  <strong>{locale === "ru" ? "Настройки ступени" : locale === "es" ? "Sintonizaciones del nivel" : "Attunements included"}</strong>
+                  <ul>{step.settings.map((setting, index) => <li key={setting.id}>{basicAttunementName(locale, step, setting, index)}</li>)}</ul>
+                </div>
                 <Link className="yggdrasil-basic-level-open" href={`/${locale}/academy/reiki/yggdrasil/basic-course#${step.id.toLowerCase()}`}>
                   {text.basicStepOpen} {step.number} <span aria-hidden="true">→</span>
                 </Link>

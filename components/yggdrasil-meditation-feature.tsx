@@ -10,19 +10,22 @@ const copy = {
     eyebrow: "EXPLORE THE PRACTICE",
     title: "Reiki Yggdrasil Meditation",
     description: "Before choosing a course, discover the feeling of the practice. Make room for stillness, follow the image of the World Tree, and explore how attention and imagination can work together.",
-    pending: "The original English meditation recording is being verified. It will appear here as a playable video once its exact source is confirmed.",
+    pending: "The original recording is temporarily unavailable. You can also view Andrey’s meditation on YouTube.",
+    watch: "Watch the original on YouTube", language: "Original recording · English",
   },
   ru: {
     eyebrow: "ПОЗНАКОМЬТЕСЬ С ПРАКТИКОЙ",
     title: "Медитация Рейки Иггдрасиль",
     description: "Познакомьтесь с практикой через образ Мирового Древа, спокойное внимание и исследование внутреннего пространства.",
-    pending: "Исходное видео медитации проверяется. Когда точная запись будет подтверждена, здесь появится проигрыватель.",
+    pending: "Оригинальная запись временно недоступна. Медитацию также можно посмотреть на YouTube.",
+    watch: "Смотреть оригинал на YouTube", language: "Оригинальная запись · английский",
   },
   es: {
     eyebrow: "EXPLORA LA PRÁCTICA",
     title: "Meditación Reiki Yggdrasil",
     description: "Conoce la práctica mediante el Árbol del Mundo, la atención serena y las imágenes del mundo interior.",
-    pending: "Se está verificando la grabación original en inglés. El reproductor aparecerá aquí cuando se confirme la fuente.",
+    pending: "La grabación original no está disponible temporalmente. También puedes verla en YouTube.",
+    watch: "Ver el original en YouTube", language: "Grabación original · inglés",
   },
 } as const;
 
@@ -45,6 +48,10 @@ export function YggdrasilMeditationFeature({ locale }: { locale: PublicLocale })
           </div>
         )}
       </div>
+      {recording.youtubeId ? <div className="yggdrasil-meditation-feature__source">
+        <span>{c.language}</span>
+        <a href={"https://www.youtube.com/watch?v=" + recording.youtubeId} target="_blank" rel="noopener noreferrer">{c.watch} ↗</a>
+      </div> : null}
     </section>
   );
 }
