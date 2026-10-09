@@ -78,3 +78,25 @@ test('mobile design keeps head and one-click CTA above horizontally scrollable c
   // Styles hide the advanced panel by default but never the portrait.
   assert.match(css, /\.customizer\[hidden\]\{display:none!important\}/)
 })
+
+
+test('matching test cards and search remain visible while expert filters are collapsed', () => {
+  const explorer = read('components/app/test-explorer.jsx')
+  const css = read('components/app/test-explorer.module.css')
+  const client = read('app/[locale]/client/page.tsx')
+  const header = read('components/public-site-header.tsx')
+  const closedCustomizer = explorer.indexOf('    </section>\n    </div>\n    <section id="hh-test-list"')
+  assert.ok(closedCustomizer > explorer.indexOf('id="hh-test-customizer"'),
+    'optional advanced disclosure should end before the public test catalog')
+  assert.ok(explorer.indexOf('className={styles.workspace}') > closedCustomizer,
+    'test cards must not be inside the hidden advanced disclosure')
+  assert.ok(explorer.indexOf('className={styles.catalogControls}') > closedCustomizer,
+    'search and sort should be reachable without revealing advanced filters')
+  assert.match(explorer, /id="hh-test-list"/)
+  assert.match(explorer, /<TestArtwork entry=\{entry\} \/>/)
+  assert.match(css, /\.catalogTopbar\{/)
+  assert.match(css, /\.catalogControls\{/)
+  assert.match(client, /showAssessmentStrip=\{false\}/)
+  assert.match(client, /<MindBodyMonitorStrip locale=\{typedLocale\} \/>/)
+  assert.match(header, /showAssessmentStrip = true/)
+})
