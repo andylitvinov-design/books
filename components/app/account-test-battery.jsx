@@ -26,7 +26,7 @@ const COPY = {
     empty: 'Choose tests from the explorer below to build your personal battery.',
     conflictTitle: 'You already have an active test set', conflict: 'Keep that set, or replace it with your newly selected tests. Your completed results will remain in your history.',
     keep: 'Keep existing set', replace: 'Use new selection', error: 'Could not save your test selection. Please try again.',
-    retry: 'Try again', account: 'My Cabinet', history: 'Results history', privacy: 'Your responses and results stay private in your personal Cabinet. These self-checks are not a diagnosis.',
+    retry: 'Try again', account: 'My tests', history: 'Results history', privacy: 'Your responses and results stay private in your personal Cabinet. These self-checks are not a diagnosis.',
     signInFailed: 'Google sign-in was not completed. You can retry when you are ready.',
   },
   ru: {
@@ -38,7 +38,7 @@ const COPY = {
     empty: 'Выберите тесты ниже, чтобы создать свой личный набор.',
     conflictTitle: 'У вас уже есть активный набор тестов', conflict: 'Можно оставить его или заменить новым набором. Результаты уже пройденных тестов сохранятся в истории.',
     keep: 'Оставить текущий', replace: 'Использовать новый', error: 'Не удалось сохранить подборку. Повторите попытку.',
-    retry: 'Повторить', account: 'Мой кабинет', history: 'История результатов', privacy: 'Ваши ответы и результаты приватны и хранятся в личном кабинете. Эти тесты не являются диагнозом.',
+    retry: 'Повторить', account: 'Мои тесты', history: 'История результатов', privacy: 'Ваши ответы и результаты приватны и хранятся в личном кабинете. Эти тесты не являются диагнозом.',
     signInFailed: 'Вход через Google не завершён. При необходимости повторите вход.',
   },
 }
@@ -378,7 +378,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         <button type="button" disabled={busy} onClick={() => setExploring((value) => !value)}>
           {exploring ? c.hide : c.choose}
         </button>
-        <Link href={root} prefetch={false}>{c.account} →</Link>
+        <Link href={root} prefetch={false}>{locale === 'ru' ? 'К обзору' : 'Back to overview'} →</Link>
       </div>
       <p className={styles.muted}>{c.privacy}</p>
       </div>}
