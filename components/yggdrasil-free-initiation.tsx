@@ -21,6 +21,8 @@ const levelOneSource =
 const exerciseSource =
   source + "/books/reiki/runic-reiki-yggdrasil-brief-description/runic-reiki-practice.html";
 const originalFreeListing = source + "/free-trial-runic-reiki-initiation-level-1.html";
+// Public group linked from the historical SuperSkills post-initiation reading page.
+const originalStudentGroup = "https://www.facebook.com/groups/538515487068141/";
 
 type LocaleStrings = {
   eyebrow: string; title: string; lead: string;
@@ -282,6 +284,7 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
             <div className={styles.links}>
               <a href={readingSource} target="_blank" rel="noopener noreferrer">{c.sourceReading} ↗</a>
               <a href={exerciseSource} target="_blank" rel="noopener noreferrer">{c.exercises} ↗</a>
+              <a href={originalStudentGroup} target="_blank" rel="noopener noreferrer">{locale === "ru" ? "Историческая группа учеников в Facebook (доступность не проверена)" : locale === "es" ? "Grupo histórico de estudiantes en Facebook (disponibilidad no verificada)" : "Historical student Facebook group (availability unverified)"} ↗</a>
               <Link href={root + "/basic-course"}>{c.back} →</Link>
             </div>
           </section>
