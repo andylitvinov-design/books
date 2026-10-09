@@ -51,7 +51,7 @@ test("nineteen original Reiki/entry links are grouped on a standalone source arc
   }
   const resourcesBlock = guide.split("const resources:")[1].split("const resourceCategories:")[0];
   // 5 levelSource members + 14 single source objects = 19 independently linked URLs.
-  assert.equal((resourcesBlock.match(/\{ url:/g) ?? []).length, 14);
+  assert.equal((resourcesBlock.match(/^  \{ url:/gm) ?? []).length, 14);
   assert.match(resourcesBlock, /\.\.\.levelSources\.map/);
 });
 
