@@ -87,6 +87,20 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           })}
         </g>
       </svg>
+      {compact && !portrait && <svg viewBox="0 0 360 390" className={styles.focusRays} aria-hidden="true">
+        <circle cx="180" cy="182" r="125" className={styles.focusRing} />
+        {activeAxes.length > 0 && (topicCount > 0 || selectedCount > 0) && activeAxes.slice(0, 13).map((axis) => {
+          const position = TEST_EXPLORER_AXES.indexOf(axis)
+          const angle = -Math.PI / 2 + (position * 2 * Math.PI) / TEST_EXPLORER_AXES.length
+          const point = (radius) => ({ x: 180 + Math.cos(angle) * radius, y: 182 + Math.sin(angle) * radius })
+          const end = point(125)
+          const origin = point(31)
+          return <g key={axis} className={coverage.axes[axis]?.intensity === 'strong' ? styles.focusRayStrong : styles.focusRay}>
+            <line x1={origin.x} y1={origin.y} x2={end.x} y2={end.y} />
+            <circle cx={end.x} cy={end.y} r="6" />
+          </g>
+        })}
+      </svg>}
       {portrait && <svg viewBox="0 0 360 390" className={styles.portraitRadar} role="img" aria-label={ru ? 'Измеренные шкалы психологического портрета' : 'Measured psychological portrait axes'}>
         <title>{ru ? 'Лучи психологического портрета по пройденным тестам' : 'Your tested psychological portrait rays'}</title>
         <circle cx="180" cy="182" r="131" className={styles.radarReference} />
