@@ -15,7 +15,7 @@ export function EnglishGuidedMeditations({ focus = "all" }: { focus?: Focus }) {
       <div className="english-meditation-heading">
         <p className="homeopathy-kicker">Original practices · English</p>
         <h2 id={"english-guided-meditations-" + focus}>Guided meditation paths</h2>
-        <p>Watch the original English-language guided practice when the recording is available. Only Andrey’s own verified video will be shown here.</p>
+        <p>{isTantraVideo ? "Explore the Tantra Reiki practice with Andrey. Select Play to watch the original video below." : "Explore Andrey’s original English-language guided practices. Videos appear when their YouTube sources are confirmed."}</p>
       </div>
       <div className="english-meditation-list">
         {entries.map((item) => (
@@ -34,10 +34,12 @@ export function EnglishGuidedMeditations({ focus = "all" }: { focus?: Focus }) {
               )}
             </div>
             <div className="english-meditation-card__copy">
-              <p className="english-meditation-card__eyebrow">{item.youtubeId ? "Watch the original meditation" : isTantraVideo ? "Video meditation · English" : "Explore the practice"}</p>
+              <p className="english-meditation-card__eyebrow">{item.youtubeId ? "Watch the original video" : isTantraVideo ? "Video practice · English" : "Explore the practice"}</p>
               <h3>{item.title}</h3>
               <p>{item.description}</p>
-              {!item.youtubeId && isTantraVideo ? (
+              {item.youtubeId && isTantraVideo ? (
+                <a href={"https://www.youtube.com/watch?v=" + item.youtubeId} target="_blank" rel="noreferrer">Watch on YouTube ↗</a>
+              ) : !item.youtubeId && isTantraVideo ? (
                 <a href="https://www.youtube.com/@aatapro/videos" target="_blank" rel="noreferrer">Andrey’s original English video channel ↗</a>
               ) : (
                 <Link href={item.courseHref}>Learn about this practice <span aria-hidden="true">→</span></Link>
