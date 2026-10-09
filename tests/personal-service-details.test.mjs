@@ -58,3 +58,20 @@ test("all personal services have source-backed educational language and no inven
   assert.match(css, /:focus-visible/);
   assert.match(css, /min-height:56px/);
 });
+
+test("paid individual services retain contextual handoff without a compulsory intake form", () => {
+  const wrapper = read("components/personal-consultation-form.tsx");
+  const shared = read("components/consultation-choice-capture.tsx");
+  const landing = read("components/personal-service-landing.tsx");
+  const css = read("components/personal-service-landing.module.css");
+  assert.match(wrapper, /<ConsultationChoiceCapture locale=\{locale\} variant="service" service=\{service\}/);
+  assert.doesNotMatch(wrapper, /<form|<input|<select|<textarea|FormData/);
+  assert.match(shared, /Request a personal session/);
+  assert.match(shared, /Free introductory conversation/);
+  assert.match(shared, /Ask about format & fees/);
+  assert.match(shared, /t\.serviceField \+ ": " \+ \(service/);
+  assert.match(shared, /This is an enquiry, not a confirmed appointment or payment/);
+  assert.match(landing, /id="request-session"/);
+  assert.match(landing, /<PersonalConsultationForm locale=\{locale\} service=\{t.orderLabel\}/);
+  assert.match(css, /\.order :global\(\[data-consultation-capture="service"\]\)/);
+});

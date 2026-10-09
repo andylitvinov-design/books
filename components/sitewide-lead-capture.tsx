@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-capture";
+import { ConsultationChoiceCapture } from "@/components/consultation-choice-capture";
 import styles from "./sitewide-lead-capture.module.css";
 
 const copy = {
@@ -133,6 +134,21 @@ export function SitewideLeadCapture() {
     : "/" + locale + "/about";
   const primaryLabel = networkService ? copy[locale].network.service : c.primary;
   const external = kind === "training";
+  const portraitSrc = kind === "network" ? "/images/holistic-house/hero-olive-incense.webp"
+            : kind === "training" ? pathname.includes("temple") ? "/academy/reiki-yggdrasil/source/temple-studies.png"
+              : pathname.includes("tantra-reiki") ? "/library/maya-mysteries/media/post-217-1.jpg"
+              : "/academy/reiki-yggdrasil/source/basic-program.jpg"
+            : kind === "reading" ? pathname.includes("homeopathy") ? "/images/holistic-house/distance-homeopathy.webp"
+              : pathname.includes("wu-xing") ? "/academy/reiki-yggdrasil/source/temple-studies.png"
+              : "/images/holistic-house/books-library.webp"
+            : "/images/holistic-house/andy-about.png";
+  if (kind === "personal" || kind === "reading") {
+    return (
+      <aside className={styles.consultationPanel} data-sitewide-capture={kind} lang={locale}>
+        <ConsultationChoiceCapture locale={locale} variant={kind} sitewide />
+      </aside>
+    );
+  }
   return (
     <aside className={styles.section} aria-labelledby="sitewide-capture-title" data-sitewide-capture={kind} lang={locale}>
       <div className={styles.inner}>
@@ -148,14 +164,7 @@ export function SitewideLeadCapture() {
           </div>
         </div>
         <div className={styles.portrait}>
-          <Image src={kind === "network" ? "/images/holistic-house/hero-olive-incense.webp"
-            : kind === "training" ? pathname.includes("temple") ? "/academy/reiki-yggdrasil/source/temple-studies.png"
-              : pathname.includes("tantra-reiki") ? "/library/maya-mysteries/media/post-217-1.jpg"
-              : "/academy/reiki-yggdrasil/source/basic-program.jpg"
-            : kind === "reading" ? pathname.includes("homeopathy") ? "/images/holistic-house/distance-homeopathy.webp"
-              : pathname.includes("wu-xing") ? "/academy/reiki-yggdrasil/source/temple-studies.png"
-              : "/images/holistic-house/books-library.webp"
-            : "/images/holistic-house/andy-about.png"} alt="" fill sizes="(max-width: 767px) 110px, 224px" />
+          <Image src={portraitSrc} alt="" fill sizes="(max-width: 767px) 110px, 224px" />
         </div>
       </div>
     </aside>

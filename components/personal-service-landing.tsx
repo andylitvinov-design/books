@@ -71,12 +71,8 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
           </div>
           <aside className={styles.order} id="request-session" aria-label={ui.request}>
             <div className={styles.orderCard}>
-              <p className={styles.smallEyebrow}>{ui.remote}</p>
-              <h2>{ui.request}</h2>
-              <p>{ui.requestIntro}</p>
-              <p className={styles.price}>{ui.price}</p>
               <PersonalConsultationForm locale={locale} service={t.orderLabel} />
-              <p className={styles.orderNote}>{ui.requestNote}</p>
+              <p className={styles.orderNote}>{ui.price} {ui.requestNote}</p>
             </div>
           </aside>
         </div>

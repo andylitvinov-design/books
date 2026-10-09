@@ -21,7 +21,7 @@
 .mainColumns{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(330px,.88fr);align-items:start;gap:clamp(25px,5vw,64px);margin-top:53px}
 .reading{min-width:0}
 .section{margin-bottom:50px}
-.section h2,.faq h2,.order h2,.closing h2{font:400 clamp(29px,3vw,40px)/1.17 Georgia,serif;letter-spacing:-.025em;margin:0 0 21px;text-wrap:balance}
+.section h2,.faq h2,.closing h2{font:400 clamp(29px,3vw,40px)/1.17 Georgia,serif;letter-spacing:-.025em;margin:0 0 21px;text-wrap:balance}
 .questions,.takeaways{padding:0;list-style:none;margin:0}
 .questions li{display:flex;gap:12px;padding:15px 0;border-bottom:1px solid #e1d6c8;color:#51483e;font:15px/1.65 Arial,Helvetica,sans-serif}
 .questions li:first-child{border-top:1px solid #e1d6c8}
@@ -38,12 +38,12 @@
 .safety h3{display:flex;align-items:center;gap:8px;font:700 15px/1.5 Arial,Helvetica,sans-serif;margin:0 0 10px;color:#685441}
 .safety p{font:13px/1.76 Arial,Helvetica,sans-serif;color:#695d51;margin:0}
 .order{scroll-margin-top:85px}
-.orderCard{position:sticky;top:20px;padding:clamp(20px,3vw,34px);border:1px solid #dbc9b5;border-radius:23px;background:#fffdfa;box-shadow:0 18px 50px rgba(46,34,22,.07)}
+.orderCard{position:sticky;top:20px;min-width:0;padding:0;border:0;background:transparent;box-shadow:none}
 .orderCard>p:not(.smallEyebrow){color:#655c53;font:14px/1.65 Arial,Helvetica,sans-serif}
 .order h2{margin-bottom:12px}
 .price{padding:12px 14px;border-radius:12px;background:#edf2e9;font:700 13px/1.6 Arial,Helvetica,sans-serif!important;color:#3c5944!important}
-.order .orderNote{font-size:12px!important;color:#766c62!important;margin-bottom:0}
-.order :global(.personal-consultation-form){margin-top:20px}
+.order .orderNote{margin:5px 4px 0;font-size:11px!important;line-height:1.5;color:#64727a!important}
+.order :global([data-consultation-capture="service"]){margin:0;width:100%}
 .faq{max-width:900px;margin:76px auto 0}
 .faq details{border-top:1px solid #d6c8b9}
 .faq details:last-child{border-bottom:1px solid #d6c8b9}

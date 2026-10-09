@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-capture";
+import { ConsultationChoiceCapture } from "@/components/consultation-choice-capture";
 
 const copy = {
   en: {
@@ -103,6 +104,9 @@ export function PublicConsultationCta({ locale, id }: { locale: "en" | "ru" | "e
   useEffect(() => setClientPath(pathname), [pathname]);
   const route = clientPath ? classifyPublicLead(clientPath) : null;
   const mode = route?.kind === "training" ? "training" : route?.kind === "reading" ? "reading" : "personal";
+  if (mode !== "training") {
+    return <ConsultationChoiceCapture locale={locale} variant={mode === "reading" ? "reading" : "personal"} id={id} />;
+  }
   const text = copy[locale][mode];
   const whatsappUrl = mode === "training"
     ? trainingEnquiryUrl(locale, pathname)
