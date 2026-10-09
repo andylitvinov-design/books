@@ -454,3 +454,19 @@
   .explorer .rowTitle h2{font-size:.9rem}
   .quickFiltersHeader strong{font-size:.8rem}
 }
+
+
+/* Topic rays are an illustrative map of chosen questionnaire coverage.
+   They never imply measured mental-health outcomes or a clinical score. */
+.visualCompact .focusRays{position:absolute;z-index:3;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;filter:drop-shadow(0 1px 6px rgba(20,110,110,.2))}
+.focusRing{fill:none;stroke:#65a59a;stroke-width:2;stroke-dasharray:3 9;opacity:.53}
+.focusRay line{stroke:#2a9c95;stroke-width:3.5;stroke-linecap:round;opacity:.78}
+.focusRay circle{fill:#fff;stroke:#2a9c95;stroke-width:3}
+.focusRayStrong line{stroke:#eb7d51;stroke-width:5;stroke-linecap:round;opacity:.91}
+.focusRayStrong circle{fill:#fff;stroke:#db734b;stroke-width:3.5}
+.visualCompact .portraitRadar{width:100%;height:100%}
+@media(max-width:600px){
+  .visualCompact .focusRays{opacity:.88}
+  .focusRay line{stroke-width:4}
+  .focusRayStrong line{stroke-width:5.5}
+}
