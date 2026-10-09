@@ -17,6 +17,6 @@ test("Tantra Reiki starts with a concise nine-level overview before the full arc
   assert.match(page, /9, title: "Полнота Единства"/);
 
   const summaryPosition = page.indexOf('className="tantra-level-summary"');
-  const archivePosition = page.indexOf('className="academy-archive-notice"');
-  assert.ok(summaryPosition >= 0 && archivePosition >= 0 && summaryPosition < archivePosition);
+  const readingPosition = page.indexOf('<TantraReikiProgrammeModules locale=');
+  assert.ok(summaryPosition >= 0 && readingPosition >= 0 && summaryPosition < readingPosition);
 });

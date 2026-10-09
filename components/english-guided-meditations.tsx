@@ -14,15 +14,15 @@ export function EnglishGuidedMeditations({ focus = "all" }: { focus?: Focus }) {
     <section className={"english-meditation-section" + (isTantraVideo ? " english-meditation-section--video" : "")} aria-labelledby={"english-guided-meditations-" + focus} id={"english-guided-meditations-" + focus}>
       <div className="english-meditation-heading">
         <p className="homeopathy-kicker">Original practices · English</p>
-        <h2 id={"english-guided-meditations-" + focus}>Guided meditation paths</h2>
-        <p>{isTantraVideo ? "Explore the Tantra Reiki practice with Andrey. Select Play to watch the original video below." : "Explore Andrey’s original English-language guided practices. Videos appear when their YouTube sources are confirmed."}</p>
+        <h2 id={"english-guided-meditations-" + focus}>{isTantraVideo ? "Tantra Reiki · Level 1 Guided Meditation" : "Guided meditation paths"}</h2>
+        <p>{isTantraVideo ? "Begin with the first level of Tantra Reiki. This is Andrey’s guided video practice: settle into the body, notice the flow and explore your own experience at a comfortable pace. Press Play to begin." : "Explore Andrey’s original English-language guided practices. Videos appear when their YouTube sources are confirmed."}</p>
       </div>
       <div className="english-meditation-list">
         {entries.map((item) => (
           <article className="english-meditation-card" key={item.key}>
             <div className="english-meditation-card__visual">
               {item.youtubeId ? (
-                <AcademyVideoPlayer youtubeId={item.youtubeId} title={item.title} />
+                <AcademyVideoPlayer youtubeId={item.youtubeId} title={isTantraVideo ? "Tantra Reiki — Level 1 Guided Meditation" : item.title} />
               ) : isTantraVideo ? (
                 <div className="english-meditation-unavailable" role="status">
                   <span className="english-meditation-unavailable__play" aria-hidden="true">▶</span>
@@ -35,7 +35,7 @@ export function EnglishGuidedMeditations({ focus = "all" }: { focus?: Focus }) {
             </div>
             <div className="english-meditation-card__copy">
               <p className="english-meditation-card__eyebrow">{item.youtubeId ? "Watch the original video" : isTantraVideo ? "Video practice · English" : "Explore the practice"}</p>
-              <h3>{item.title}</h3>
+              <h3>{isTantraVideo ? "Level 1 · An introduction to the Tantra Reiki flow" : item.title}</h3>
               <p>{item.description}</p>
               {item.youtubeId && (isTantraVideo || item.key === "reiki-yggdrasil") ? (
                 <a href={"https://www.youtube.com/watch?v=" + item.youtubeId} target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>

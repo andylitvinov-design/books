@@ -3,9 +3,9 @@ import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
 import englishSource from "@/data/academy/tantra-reiki-ru-en.generated.json";
 
-// Original Russian visitor screenshots and the archive images formerly
-// presented alongside individual levels. Keep them out of the curriculum.
-const reviewImages = [2, 3, 17, 18, 11, 20, 10, 15, 21, 22] as const;
+// Only the two original green text-review screenshots belong to the RU review gallery.
+// Real festival photographs have been restored to the teaching/experience sections.
+const reviewImages = [2, 3] as const;
 
 const sourceReviewGroups = [
   [56, 57],
@@ -27,11 +27,11 @@ const spanishReviewText = [
 
 const labels = {
   en: {
-    eyebrow: "Participant experiences",
-    heading: "Tantra Reiki reviews",
+    eyebrow: "Words from our students",
+    heading: "Tantra Reiki testimonials",
     intro: "Personal experiences shared by participants. Your experience may be different; these accounts are not promised outcomes.",
-    quote: "What participants shared",
-    photo: "Original photo testimonials",
+    quote: "In their own words",
+    photo: "Original messages from participants",
     video: "Video testimonials",
     language: "Original video · Russian audio",
     native: "Participant video",
@@ -39,7 +39,7 @@ const labels = {
   },
   ru: {
     eyebrow: "Впечатления участников",
-    heading: "Отзывы о Тантра Рейки",
+    heading: "Отзывы участников Тантра Рейки",
     intro: "Личные впечатления участников. Опыт может отличаться, отзывы не являются гарантией результата.",
     quote: "Отзывы участников",
     photo: "Фотографии отзывов из архива",
@@ -50,7 +50,7 @@ const labels = {
   },
   es: {
     eyebrow: "Experiencias de participantes",
-    heading: "Testimonios de Tantra Reiki",
+    heading: "Experiencias con Tantra Reiki",
     intro: "Experiencias personales compartidas por participantes. Los resultados individuales pueden variar.",
     quote: "Lo que compartieron",
     photo: "Testimonios en imágenes",

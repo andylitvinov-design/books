@@ -22,9 +22,10 @@ test("Tantra Reiki retains a complete 1:1 English translation of every Russian s
 });
 
 test("Original author descriptions are displayed in all 9 level chapters with EN translation", async () => {
-  const [journey, page] = await Promise.all([
+  const [journey, page, modules] = await Promise.all([
     readFile("components/tantra-reiki-journey.tsx", "utf8"),
     readFile("components/academy-record-page.tsx", "utf8"),
+    readFile("components/tantra-reiki-programme-modules.tsx", "utf8"),
   ]);
   assert.match(journey, /originalAuthorDescription\(locale, i\)\.map/);
   assert.match(journey, /tantra-journey__author-text/);
@@ -36,17 +37,17 @@ test("Original author descriptions are displayed in all 9 level chapters with EN
     .map((match) => match[1].split(",").map((part) => Number(part.trim())));
   assert.equal(levelIndices.length, 9);
   assert.ok(levelIndices.every((level) => level.length >= 2));
-  assert.match(page, /The Tantra Reiki practice in depth/);
-  assert.match(page, /tantraReikiOriginalRuEnglish\.blocks\.map/);
-  assert.match(page, /Programme structure and teacher’s notes/);
-  assert.match(page, /renderBlocks\(publicBlocks\)/);
+  assert.match(page, /<TantraReikiProgrammeModules locale=\{locale\} publicBlocks=\{publicBlocks\}/);
+  assert.match(modules, /originalRussianEnglishTranslation\.blocks\.map/);
+  assert.match(modules, /const detailedRanges/);
+  assert.match(modules, /blocks\.slice\(from, to\)/);
+  assert.match(modules, /Go deeper into the practice/);
 });
 
 test("Archived medical and certification wording stays attributed rather than becoming a current promise", async () => {
-  const page = await readFile("components/academy-record-page.tsx", "utf8");
+  const modules = await readFile("components/tantra-reiki-programme-modules.tsx", "utf8");
   const archive = JSON.parse(await readFile("data/academy/tantra-reiki-ru-en.generated.json", "utf8"));
-  assert.match(page, /Historical health or certification statements/);
-  assert.match(page, /academy-archive-notice/);
+  assert.match(modules, /Historical statements about healing or certification/);
   assert.match(archive.blocks[179].text, /The original text states/);
   assert.match(archive.blocks[180].text, /Traditional applications claimed/);
 });

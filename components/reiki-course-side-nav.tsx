@@ -153,9 +153,9 @@ export function TantraReikiSideNavigation({
   levels: Array<{ number: number; title: string }>;
 }) {
   const copy = {
-    en: { eyebrow: "Course navigation", title: "Tantra Reiki", level: "Level", reviews: "Reviews & videos", meditation: "Guided meditation", source: "Full system text", consultation: "Free personal consultation" },
-    ru: { eyebrow: "Навигация по курсу", title: "Тантра Рейки", level: "Ступень", reviews: "Отзывы и видео", meditation: "Медитация", source: "Полный текст системы", consultation: "Бесплатная консультация" },
-    es: { eyebrow: "Navegación del curso", title: "Tantra Reiki", level: "Etapa", reviews: "Testimonios y vídeos", meditation: "Meditación guiada", source: "Texto completo", consultation: "Consulta gratuita" },
+    en: { eyebrow: "Course navigation", title: "Tantra Reiki", level: "Level", reviews: "Reviews & videos", meditation: "Guided meditation", source: "Teachings & course materials", teacher: "Meet Andy", consultation: "Free personal consultation", master: "Master Course application" },
+    ru: { eyebrow: "Навигация по курсу", title: "Тантра Рейки", level: "Ступень", reviews: "Отзывы и видео", meditation: "Медитация", source: "Учение и материалы", teacher: "Обо мне", consultation: "Бесплатная консультация", master: "Заявка на мастер-курс" },
+    es: { eyebrow: "Navegación del curso", title: "Tantra Reiki", level: "Etapa", reviews: "Testimonios y vídeos", meditation: "Meditación guiada", source: "Enseñanzas y materiales", teacher: "Conoce a Andy", consultation: "Consulta gratuita", master: "Curso de maestría" },
   }[locale];
 
   const items: NavItem[] = [
@@ -169,7 +169,9 @@ export function TantraReikiSideNavigation({
     ...(locale === "en" ? [{ key: "meditation", href: "#english-guided-meditations-tantra-reiki", sectionId: "english-guided-meditations-tantra-reiki", label: copy.meditation }] : []),
     { key: "source", href: "#tantra-full-source", sectionId: "tantra-full-source", label: copy.source },
     { key: "reviews", href: "#tantra-testimonials", sectionId: "tantra-testimonials", label: copy.reviews },
+    { key: "teacher", href: "#tantra-teacher", sectionId: "tantra-teacher", label: copy.teacher },
     { key: "consultation", href: "#reiki-free-consultation", sectionId: "reiki-free-consultation", label: copy.consultation },
+    { key: "master", href: "#tantra-master-course", sectionId: "tantra-master-course", label: copy.master },
   ];
 
   return (
