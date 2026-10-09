@@ -6,7 +6,9 @@ import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { EnglishGuidedMeditations } from "@/components/english-guided-meditations";
 import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
-import { ReikiConsultationForm } from "@/components/reiki-landing-forms";
+import { TantraReikiLeadForms } from "@/components/tantra-reiki-lead-forms";
+import { TantraReikiFestivalMoments, TantraReikiTeacher } from "@/components/tantra-reiki-story";
+import { TantraReikiProgrammeModules } from "@/components/tantra-reiki-programme-modules";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraReikiSideNavigation, YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
@@ -120,7 +122,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   const hasBody = publicBlocks.some((block) => block.type !== "h1");
   const outline = publicBlocks.map((block, index) => ({ block, index })).filter(({ block }) => block.type === "h2" || block.type === "h3").slice(0, 32);
   return (
-    <main className={"academy-reading-shell" + (isCanonicalYggdrasil || isVerbatimTantraArchive ? " academy-reading-shell--wide" : "") + (isCanonicalYggdrasil ? " academy-reading-shell--yggdrasil" : "")} lang={locale}>
+    <main className={"academy-reading-shell" + (isCanonicalYggdrasil || isVerbatimTantraArchive ? " academy-reading-shell--wide" : "") + (isCanonicalYggdrasil ? " academy-reading-shell--yggdrasil" : "") + (isVerbatimTantraArchive ? " academy-reading-shell--tantra" : "")} lang={locale}>
       <PublicSiteHeader locale={locale} /><AcademyBackLink locale={locale} />
       <div className={isCanonicalYggdrasil || isVerbatimTantraArchive ? "academy-course-layout" : undefined}>
         {isCanonicalYggdrasil ? <YggdrasilSideNavigation locale={locale} /> : null}
@@ -136,72 +138,46 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
           <>
             <section className="tantra-course-hero" aria-labelledby="tantra-course-hero-title">
               <div className="tantra-course-hero__copy">
+                <span className="tantra-course-hero__tao-seal" aria-hidden="true">
+                  <svg viewBox="0 0 100 100" focusable="false">
+                    <circle cx="50" cy="50" r="47" fill="#f2d3a0" stroke="#ba864d" strokeWidth="2" />
+                    <path d="M50 4 A46 46 0 0 1 50 96 A23 23 0 0 1 50 50 A23 23 0 0 0 50 4 Z" fill="#153f38" />
+                    <circle cx="50" cy="27" r="7" fill="#153f38" />
+                    <circle cx="50" cy="73" r="7" fill="#f2d3a0" />
+                  </svg>
+                </span>
                 <p className="homeopathy-kicker">{locale === "ru" ? "Tantra Reiki · обучение · 9 ступеней" : locale === "es" ? "Tantra Reiki · formación · 9 etapas" : "Tantra Reiki · training · 9 levels"}</p>
                 <h2 id="tantra-course-hero-title">{locale === "ru" ? "Почувствуйте поток. Углубите контакт. Научитесь с ним работать." : locale === "es" ? "Siente el flujo. Profundiza la conexión. Aprende a trabajar con él." : "Feel the flow. Deepen connection. Learn to work with it."}</h2>
-                <p>{locale === "ru" ? "Практический путь из девяти ступеней: телесная чувствительность, энергетические практики с партнёром, работа с намерением, мандалы и архетипические образы. Можно начать с первой ступени и постепенно углублять навыки." : locale === "es" ? "Un recorrido práctico de nueve etapas: consciencia corporal, conexión con otra persona, intención, mandalas y trabajo arquetípico. Comienza por la primera etapa." : "A practical nine-level journey through embodied sensitivity, partner connection, personal intention, mandalas and archetypal work. Begin with Level 1 and progress at your own pace."}</p>
+                <p>{locale === "ru" ? "Девять ступеней — от пробуждения чувствительности и внутренней энергии до контакта, архетипов и творческого потока. Начните с первого шага." : locale === "es" ? "Un recorrido de nueve etapas, desde la sensibilidad corporal hasta la conexión, los arquetipos y la creatividad. Comienza por la primera etapa." : "Nine levels, from awakening sensitivity and inner vitality to connection, archetypes and creative flow. Begin with Level 1."}</p>
                 <div className="tantra-course-stats">
                   <span>{locale === "ru" ? "9 последовательных ступеней" : locale === "es" ? "9 etapas progresivas" : "9 progressive levels"}</span>
                   <span>{locale === "ru" ? "Практика с партнёром" : locale === "es" ? "Prácticas en pareja" : "Partner practices"}</span>
                   <span>{locale === "ru" ? "Мандалы и ритуалы" : locale === "es" ? "Mandalas y rituales" : "Mandalas & rituals"}</span>
                 </div>
                 <div className="tantra-course-hero__actions">
-                  <a className="tantra-course-hero__cta" href="https://t.me/AndyTherapist" target="_blank" rel="noreferrer">{locale === "ru" ? "Узнать о ближайшем обучении ↗" : locale === "es" ? "Consultar la próxima formación ↗" : "Enquire about training ↗"}</a>
-                  <a href="#tantra-levels">{locale === "ru" ? "Посмотреть ступени ↓" : locale === "es" ? "Explorar las etapas ↓" : "Explore the 9 levels ↓"}</a>
+                  <a className="tantra-course-hero__cta" href="#tantra-master-course">{locale === "ru" ? "Узнать о ближайшем обучении ↗" : locale === "es" ? "Consultar la próxima formación ↗" : "Enquire about training ↗"}</a>
+                  <a href="#tantra-levels">{locale === "ru" ? "Посмотреть 9 ступеней ↓" : locale === "es" ? "Explorar las 9 etapas ↓" : "Explore the 9 levels ↓"}</a>
                 </div>
                 <p className="tantra-course-hero__note">{locale === "ru" ? "Даты, стоимость и формат участия уточняются лично. Все практики — по выбору и взаимному согласию." : locale === "es" ? "Consulta fechas, tarifas y formato. Todas las prácticas son voluntarias y consensuadas." : "Dates, fees and format are confirmed individually. All partner practices are optional and consent-based."}</p>
               </div>
               <figure className="tantra-course-hero__visual">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={tantraReikiFullArchive.images.ru[12]} alt={locale === "ru" ? "Архивное фото участников практик" : locale === "es" ? "Fotografía del archivo de prácticas" : "Photograph from the original practice archive"} loading="eager" decoding="async" />
+                <img src={tantraReikiFullArchive.images.ru[12]} alt={locale === "ru" ? "Люди на настоящей тантрической встрече" : locale === "es" ? "Personas en un encuentro auténtico de Tantra" : "People together at an original Tantra gathering"} loading="eager" decoding="async" />
                 <figcaption>{locale === "ru" ? "Реальная фотография из архива практик" : locale === "es" ? "Fotografía real del archivo" : "Real photograph from the practice archive"}</figcaption>
               </figure>
             </section>
+            <TantraReikiFestivalMoments locale={locale} />
             <section className="tantra-level-summary" id="tantra-levels" aria-labelledby="tantra-level-summary-title"><TantraReikiJourney locale={locale} /></section>
             {locale === "en" ? <EnglishGuidedMeditations focus="tantra-reiki" /> : null}
+            <TantraReikiTestimonials locale={locale} />
           </>
         ) : null}
         {!isVerbatimTantraArchive && outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
         {record.routeKey === "history" ? <section className="academy-history-links" aria-label="Academy history"><Link href={"/" + locale + "/academy/history/faculties"}>{locale === "ru" ? "Исторические факультеты и традиции" : locale === "es" ? "Facultades y tradiciones históricas" : "Historical faculties & traditions"}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/academy/history/student-experiences"}>{locale === "ru" ? "Исторические отзывы студентов" : locale === "es" ? "Experiencias históricas de estudiantes" : "Historical student experiences"}<span aria-hidden="true">→</span></Link></section> : null}
-        {isVerbatimTantraArchive ? (
-          <aside className="academy-archive-notice">
-            {locale === "ru"
-              ? "Архивный материал перенесён без пересказа. Формулировки исходной страницы сохранены как исторический источник; старые заявления о здоровье, исцелении, эффективности, сертификации и условиях участия не являются текущей медицинской рекомендацией или гарантией результата."
-              : locale === "es"
-                ? "Este material de archivo se ha trasladado sin resumir. Las afirmaciones históricas sobre salud, curación, eficacia, certificación o condiciones de participación se conservan como parte de la fuente y no constituyen consejo médico actual ni garantía de resultados."
-                : "This archival material is reproduced without summarizing. Historical claims about health, healing, effectiveness, certification or participation terms are preserved as part of the source and are not current medical advice or a guarantee of results."}
-          </aside>
-        ) : null}
         {isCanonicalYggdrasil ? (
           <YggdrasilProgramLanding locale={locale} />
-        ) : isVerbatimTantraArchive && hasBody ? (
-          <section className="tantra-full-source" id="tantra-full-source">
-            <div className="tantra-section-heading">
-              <div>
-                <p className="homeopathy-kicker">{locale === "ru" ? "Полный архив" : locale === "es" ? "Archivo completo" : "Complete archive"}</p>
-                <h2>{locale === "ru" ? "Полный текст системы Тантра Рейки" : locale === "es" ? "Texto completo del sistema Tantra Reiki" : "Complete Tantra Reiki system text"}</h2>
-                <p>{locale === "ru" ? "Ниже сохранён полный исторический текст без пересказа. Ключевая структура курса уже вынесена выше." : locale === "es" ? "El texto histórico completo se conserva a continuación sin resumir." : "The complete historical source text is preserved below without summarising; the key course structure is already surfaced above."}</p>
-              </div>
-            </div>
-            {locale === "en" ? (
-              <>
-                <section className="tantra-translation-intro" aria-labelledby="tantra-original-ru-english-heading">
-                  <h3 id="tantra-original-ru-english-heading">The Tantra Reiki practice in depth</h3>
-                  <p>Explore the nine levels, traditional attunements, personal practices, and reflections from participants. Historical health or certification statements are not current medical advice or a guarantee of results.</p>
-                </section>
-                <div className="academy-source-content tantra-translation-text" lang="en">
-                  {renderBlocks(tantraReikiOriginalRuEnglish.blocks.map((block) => ({
-                    type: block.type as AcademyBlock["type"],
-                    text: block.text,
-                  })))}
-                </div>
-                <div className="tantra-translation-intro">
-                  <h3>Programme structure and teacher’s notes</h3>
-                  <p>Explore the full training structure, practice assignments, and information on the nine levels. Please enquire directly for current course dates and terms.</p>
-                </div>
-              </>
-            ) : null}
-            <div className="academy-source-content">{renderBlocks(publicBlocks)}</div>
-          </section>
+        ) : isVerbatimTantraArchive ? (
+          <TantraReikiProgrammeModules locale={locale} publicBlocks={publicBlocks} />
         ) : hasBody ? <div className="academy-source-content">{renderBlocks(publicBlocks)}</div> : <p className="academy-empty-source">{text.noContent}</p>}
         {!isVerbatimTantraArchive && (sourceVideos.length || videos.length) ? (
           <section className="academy-media-section" aria-label={text.videos}>
@@ -216,8 +192,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             <div className="academy-source-gallery">{sourceImages.map((src, index) => <a href={src} target="_blank" rel="noreferrer" key={src} aria-label={(locale === "ru" ? "Открыть исходное изображение " : locale === "es" ? "Abrir imagen de origen " : "Open source image ") + (index + 1)}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={src} alt={academyDisplayTitle(record, locale) + " — " + (locale === "ru" ? "материал " : locale === "es" ? "material " : "source material ") + (index + 1)} loading="lazy" decoding="async" /></a>)}</div>
           </section>
         ) : null}
-        {isVerbatimTantraArchive ? <TantraReikiTestimonials locale={locale} /> : null}
-        {isVerbatimTantraArchive ? <ReikiConsultationForm locale={locale} course="Tantra Reiki" /> : null}
+        {isVerbatimTantraArchive ? <TantraReikiTeacher locale={locale} /> : null}
+        {isVerbatimTantraArchive ? <TantraReikiLeadForms locale={locale} /> : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
         <footer className="academy-source-footer">
           {isCanonicalYggdrasil ? (
