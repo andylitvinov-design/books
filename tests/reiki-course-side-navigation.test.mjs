@@ -25,7 +25,8 @@ test("Tantra Reiki side navigation links all nine levels plus media and source",
 
   assert.match(nav, /TantraReikiSideNavigation/);
   assert.match(nav, /#tantra-level-/);
-  assert.match(nav, /#tantra-media/);
+  assert.match(nav, /#tantra-testimonials/);
+  assert.match(nav, /#english-guided-meditations-tantra-reiki/);
   assert.match(nav, /#tantra-full-source/);
   assert.match(journey, /id=\{"tantra-level-"\+n\}/);
   assert.match(record, /levels=\{tantraReikiLevelSummary\[locale\]\.levels\}/);
