@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { EXPANDED_BATTERY_V3_KEYS } from '../data/assessments/expanded-battery-v3.js'
 import { EXPANDED_BATTERY_V4_KEYS } from '../data/assessments/expanded-battery-v4.js'
+import { PROFESSIONAL_BATTERY_2026_CATALOG } from '../data/assessments/professional-battery-2026.js'
+import { CDC_HEALTHY_DAYS_CATALOG } from '../data/assessments/cdc-healthy-days-2026.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { safetySignal } from '../lib/assessments/safety.js'
@@ -13,7 +15,7 @@ const answers = (definition, value) =>
 
 test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 42 + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length)
+  assert.equal(items.length, 42 + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length)
   assert.deepEqual(
     items.map((item) => item.key).sort(),
     [
@@ -61,6 +63,8 @@ test('all active published monitoring tests resolve to executable definitions', 
     'phq-9',
     ...EXPANDED_BATTERY_V3_KEYS,
     ...EXPANDED_BATTERY_V4_KEYS,
+    ...PROFESSIONAL_BATTERY_2026_CATALOG.map((item) => item.key),
+    ...CDC_HEALTHY_DAYS_CATALOG.map((item) => item.key),
   ].sort(),
   )
   for (const item of items) {

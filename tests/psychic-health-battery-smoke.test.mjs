@@ -6,7 +6,7 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 
 test('published Psychic Health battery resolves all active executable definitions and score shapes', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 66)
+  assert.equal(active.length, 72)
 
   for (const item of active) {
     const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
