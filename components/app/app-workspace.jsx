@@ -2868,7 +2868,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', requestRec
         <strong>{locale === 'ru' ? 'Запрос рекомендаций специалиста' : 'Request specialist recommendations'}</strong>
         <p>{locale === 'ru' ? 'Выберите подходящий вид консультации и отправьте запрос. Ваши результаты остаются личными: в форме можно отдельно выбрать один результат и дать согласие поделиться им.' : 'Choose the appropriate consultation and send your request. Your saved tests stay private: the form lets you select one result and explicitly consent to share it.'}</p>
       </div>}
-      <div className="hh-grid hh-services">
+      {(!requestRecommendations || !selected) && <div className="hh-grid hh-services">
         {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
         {(data.services || []).map((service) => (
           <article className="hh-panel" key={service.id}>
@@ -2881,7 +2881,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', requestRec
             </button>
           </article>
         ))}
-      </div>
+      </div>}
       {selected && (
         <RequestForm
           key={selected.id}
