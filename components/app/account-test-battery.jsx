@@ -295,6 +295,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         completed={completed}
         results={data.results}
         snapshot={data.snapshot}
+        data={data}
         onStart={openList}
         onViewAll={openList}
       />
