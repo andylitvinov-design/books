@@ -2066,6 +2066,7 @@ function Portrait({ data, locale }) {
       </ProfileAssessmentOverview>
     </section>
   )
+}
 function OwnerTools({ locale }) {
   const ru = locale === 'ru'
   const [busy, setBusy] = useState('')
