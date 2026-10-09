@@ -108,9 +108,9 @@ export function YggdrasilSideNavigation({
   activeSlug?: string;
 }) {
   const copy = {
-    en: { eyebrow: "Course navigation", title: "Reiki Yggdrasil", overview: "Program overview", freeGuide: "Free Level 1 · How to begin", sources: "Practice & original sources", meditation: "Experience the meditation", free: "Free Level 1 & consultation", reviews: "Student reviews", videos: "Course videos", description: "Basic Course · Book", module: "M" },
-    ru: { eyebrow: "Навигация по курсу", title: "Рейки Иггдрасиль", overview: "Обзор программы", freeGuide: "1-я ступень бесплатно · Вопросы", sources: "Практика и первоисточники", meditation: "Медитация", free: "Первая ступень бесплатно", reviews: "Отзывы учеников", videos: "Видеоуроки", description: "Книга · Базовый курс", module: "М" },
-    es: { eyebrow: "Navegación del curso", title: "Reiki Yggdrasil", overview: "Resumen del programa", freeGuide: "Nivel 1 gratis · Preparación", sources: "Prácticas y fuentes", meditation: "Meditación", free: "Nivel 1 gratis", reviews: "Testimonios", videos: "Videos del curso", description: "Libro · Curso Básico", module: "M" },
+    en: { eyebrow: "Course navigation", title: "Reiki Yggdrasil", overview: "Program overview", freeGuide: "Free Level 1 · How to begin", sources: "Additional study paths", library: "19 original SuperSkills sources", meditation: "Experience the meditation", free: "Free Level 1 & consultation", reviews: "Student reviews", videos: "Course videos", description: "Basic Course · Book", module: "M" },
+    ru: { eyebrow: "Навигация по курсу", title: "Рейки Иггдрасиль", overview: "Обзор программы", freeGuide: "1-я ступень бесплатно · Вопросы", sources: "Дополнительные практики", library: "19 первоисточников SuperSkills", meditation: "Медитация", free: "Первая ступень бесплатно", reviews: "Отзывы учеников", videos: "Видеоуроки", description: "Книга · Базовый курс", module: "М" },
+    es: { eyebrow: "Navegación del curso", title: "Reiki Yggdrasil", overview: "Resumen del programa", freeGuide: "Nivel 1 gratis · Preparación", sources: "Prácticas adicionales", library: "19 fuentes de SuperSkills", meditation: "Meditación", free: "Nivel 1 gratis", reviews: "Testimonios", videos: "Videos del curso", description: "Libro · Curso Básico", module: "M" },
   }[locale];
 
   const items: NavItem[] = [
@@ -121,6 +121,7 @@ export function YggdrasilSideNavigation({
     },
     { key: "free-initiation", href: "/" + locale + "/academy/reiki/yggdrasil/free-initiation", label: copy.freeGuide },
     { key: "sources", href: activeSlug === "overview" ? "#source-study-guide" : "/" + locale + "/academy/reiki/yggdrasil#source-study-guide", label: copy.sources },
+    { key: "superskills-sources", href: "/" + locale + "/academy/reiki/yggdrasil/superskills-sources", label: copy.library },
     ...(activeSlug === "overview" ? [
       { key: "meditation", href: "#yggdrasil-meditation", label: copy.meditation },
       { key: "free", href: "#reiki-free-level-one", label: copy.free },
