@@ -14,6 +14,7 @@ import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
+import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
@@ -314,6 +315,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               : <AccountTestBattery data={data} locale={locale}
                   requestedPlanId={searchParams.get('plan')}
                   recommendedKey={searchParams.get('suggest')}
+                  initialStatusFilter={searchParams.get('filter')}
                   reload={load} />
           )}
           {page === 'runs' && (
@@ -344,7 +346,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <SavedDocumentPage key={recordId} id={recordId} locale={locale} reload={load} />
           )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} />}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} />}
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
@@ -1987,6 +1989,8 @@ function MetricCard({ dimension, locale, onSelect }) {
 }
 function Portrait({ data, locale }) {
   const c = COPY[locale]
+  const router = useRouter()
+  const root = '/' + locale + '/app'
   const dimensions = data.snapshot?.dimensions || []
   const nextStep = getPortraitNextStep({
     ...data,
@@ -1999,63 +2003,67 @@ function Portrait({ data, locale }) {
   })
   const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
 
+  async function beginSelectedTest(item) {
+    const run = item.runId ? { id: item.runId } : await appFetch('runs', {
+      definitionKey: item.definitionKey,
+      definitionVersion: item.definitionVersion,
+      instrumentLocale: item.instrumentLocale,
+      operationId: crypto.randomUUID(),
+    })
+    const active = data.activeTestPlan
+    const planSuffix = active?.definitionIds?.includes(item.id)
+      ? '?plan=' + encodeURIComponent(active.id) : ''
+    router.push(root + '/runs/' + encodeURIComponent(run.id) + planSuffix)
+  }
+
   return (
-    <section>
+    <section data-profile-page>
       <div className="hh-heading hh-profile-heading">
         <p className="hh-kicker">
           {data.account.displayName
-            ? `${locale === 'ru' ? 'Здравствуйте' : 'Hello'}, ${data.account.displayName}`
+            ? (locale === 'ru' ? 'Здравствуйте, ' : 'Hello, ') + data.account.displayName
             : 'Holistic House'}
         </p>
         <h1>{c.portrait}</h1>
-        <p>
-          {locale === 'ru'
-            ? 'Здесь не нужно разбираться в таблицах. Выберите следующий шаг: проверить состояние, посмотреть результаты, получить рекомендации или дополнить профиль.'
-            : 'You do not need to interpret a dashboard full of tables. Choose your next step: check in, review results, get recommendations or build your profile.'}
-        </p>
+        <p>{locale === 'ru'
+          ? 'Ваш психологический портрет: измеренные шкалы, ожидающие тесты и понятные следующие шаги.'
+          : 'Your psychological portrait: measured scales, selected tests still to complete and clear next steps.'}</p>
         <p className="hh-fine">{c.private}</p>
       </div>
 
-      <div className="hh-portrait-with-metrics">
+      <ProfileAssessmentOverview data={data} locale={locale} onBeginTest={beginSelectedTest}>
         <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
-        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
-      </div>
-
-      <div className="hh-profile-mood">
-        <MoodCheckIn
-          locale={locale}
-          compact
-          latestMood={data.moodCheckins?.[0] || null}
-          onMoodChange={(payload) =>
-            appFetch('mood', {
-              ...payload,
-              timezone: localZone(),
-              sourceSurface: 'portrait',
-            })
-          }
-          onQuickCheckin={async () => {
-            try {
-              const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
-              const run = await appFetch('runs', {
-                definitionKey: def.key,
-                definitionVersion: def.version,
-                instrumentLocale: def.instrumentLocale,
-                operationId: crypto.randomUUID(),
+        <div className="hh-profile-mood">
+          <MoodCheckIn
+            locale={locale}
+            compact
+            latestMood={data.moodCheckins?.[0] || null}
+            onMoodChange={(payload) =>
+              appFetch('mood', {
+                ...payload,
+                timezone: localZone(),
+                sourceSurface: 'portrait',
               })
-              window.location.assign('/' + locale + '/app/runs/' + run.id)
-            } catch {
-              window.location.assign('/' + locale + '/app/monitoring/hh-current-state')
             }
-          }}
-        />
-      </div>
-
-      {data.practitioner && <OwnerTools locale={locale} />}
-      <ReportsFromAndy data={data} locale={locale} />
-      {(data.results || []).length > 0 && <section className="hh-panel hh-complete-pdf-export">
-        <h2>{locale === 'ru' ? 'Скачать все результаты' : 'Download all results'}</h2>
-        <ClientReportActions data={data} locale={locale} />
-      </section>}
+            onQuickCheckin={async () => {
+              try {
+                const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
+                const run = await appFetch('runs', {
+                  definitionKey: def.key,
+                  definitionVersion: def.version,
+                  instrumentLocale: def.instrumentLocale,
+                  operationId: crypto.randomUUID(),
+                })
+                window.location.assign('/' + locale + '/app/runs/' + run.id)
+              } catch {
+                window.location.assign(root + '/monitoring/hh-current-state')
+              }
+            }}
+          />
+        </div>
+        {data.practitioner && <OwnerTools locale={locale} />}
+        <ReportsFromAndy data={data} locale={locale} />
+      </ProfileAssessmentOverview>
     </section>
   )
 }
@@ -2870,7 +2878,7 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload, initialServiceId = '' }) {
+function Consultations({ data, locale, reload, initialServiceId = '', source = '' }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
     [error, setError] = useState(null)
@@ -2892,6 +2900,15 @@ function Consultations({ data, locale, reload, initialServiceId = '' }) {
       <div className="hh-heading">
         <h1>{c.consultations}</h1>
         <p>{c.consultationsIntro}</p>
+        {source === 'test-results' && <aside className="hh-panel hh-consult-test-source">
+          <h2>{locale === 'ru' ? 'Личные рекомендации по вашим тестам' : 'Personal recommendations about your test results'}</h2>
+          <p>{locale === 'ru'
+            ? 'Выберите специалиста и отправьте запрос на обсуждение результатов. Данные тестов не передаются автоматически — вы сами решаете, чем поделиться.'
+            : 'Choose a specialist and request a personal review. Your private test scores are not shared automatically; you decide what to share.'}</p>
+          <Link className="hh-primary" href={'/' + locale + '/services/free-situation-review?topic=test-results'} prefetch={false}>
+            {locale === 'ru' ? 'Запросить личную консультацию' : 'Request a personal consultation'} →
+          </Link>
+        </aside>}
       </div>
       <div className="hh-grid hh-services">
         {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}

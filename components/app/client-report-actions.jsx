@@ -9,7 +9,7 @@ const LABELS={
  en:{download:'Download complete PDF',print:'Print all results',generating:'Preparing your PDF…',empty:'Complete a test before generating your report.',failed:'Could not prepare the report. Please try again.',ready:'Your PDF has been prepared. Use your browser’s print button in the preview.',private:'Only your signed-in account data is included. Nothing is sent to an external PDF service.'},
  ru:{download:'Скачать полный PDF',print:'Распечатать все результаты',generating:'Создаём PDF-отчёт…',empty:'Для отчёта нужно завершить хотя бы один тест.',failed:'Не удалось сформировать отчёт. Попробуйте снова.',ready:'PDF готов. В открытом просмотре нажмите «Печать».',private:'Используются только ваши данные из аккаунта. Внешние сервисы PDF не получают результат.'},
 }
-export function ClientReportActions({ data, locale='en', compact=false }) {
+export function ClientReportActions({ data, locale='en', compact=false, singleAction=false }) {
  const c=LABELS[locale] || LABELS.en;
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
@@ -55,13 +55,13 @@ export function ClientReportActions({ data, locale='en', compact=false }) {
  return <div className={styles.wrapper} data-client-complete-report>
    <div className={styles.actions}>
      <button type="button" className={styles.download} disabled={!canExport||busy} onClick={()=>create(false)}>
-       <Download size={20} aria-hidden="true" />{busy?c.generating:c.download}
+       <Download size={20} aria-hidden="true" />{busy?c.generating:singleAction?(locale==='ru'?'Скачать отчёт':'Download report'):c.download}
      </button>
-     <button type="button" className={styles.print} disabled={!canExport||busy} onClick={()=>create(true)}>
+     {!singleAction && <button type="button" className={styles.print} disabled={!canExport||busy} onClick={()=>create(true)}>
        <Printer size={19} aria-hidden="true" />{c.print}
-     </button>
+     </button>}
    </div>
-   <p className={styles.privacy}>{canExport?c.private:c.empty}</p>
+   {!singleAction && <p className={styles.privacy}>{canExport?c.private:c.empty}</p>}
    {message && <p role="status" aria-live="polite" className={styles.message}>{message}</p>}
  </div>
 }
