@@ -88,8 +88,13 @@ async function openCompletedPlanResult(){
  await expect(page).toHaveURL(/\/(?:tests\?plan=|results\/)/,{timeout:15000})
  if(/\/results\//.test(page.url()))return
  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
- await page.getByRole('link',{name:'View result'}).first().click()
- await expect(page).toHaveURL(/\/results\//)
+ const resultLink=page.getByRole('link',{name:'View result'}).first()
+ await expect(resultLink).toHaveAttribute('href',/\/results\//)
+ // WebKit can hydrate a newly completed test overview more slowly in CI.
+ // Wait for route readiness before exercising client-side navigation.
+ await page.waitForLoadState('networkidle')
+ await resultLink.click()
+ await expect(page).toHaveURL(/\/results\//,{timeout:20000})
 }
 try {
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
