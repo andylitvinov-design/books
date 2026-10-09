@@ -25,13 +25,13 @@ export function PublicTestExplorer({ locale, embedded = false }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const effectiveLocale = locale === 'ru' ? 'ru' : 'en'
-  const submit = async (entries) => {
+  const submit = async (entries, selectionPreferences) => {
     setError('')
     try {
       // Only cleared test identifiers are retained in this tab; never answers, email or tokens.
       // The explicit Start action authorizes this short-lived handoff to the user's own account.
       window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY,
-        makeTestSelectionIntent(entries.map((entry) => entry.key)))
+        makeTestSelectionIntent(entries.map((entry) => entry.key), Date.now(), selectionPreferences))
       let signedIn = false
       try {
         const session = await request('bootstrap', undefined, 'GET')
