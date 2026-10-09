@@ -266,7 +266,6 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       {recommendedNext.key ? <button type="button" onClick={() => { setAvailability('available'); setFocus([]); setSelectedKeys([recommendedNext.key]); setConcern('') }}>{locale === 'ru' ? 'Выбрать этот тест' : 'Select this test'}</button> : <Link href={`/${locale}/app/history`}>{locale === 'ru' ? 'Открыть историю' : 'View history'}</Link>}
     </aside>}
     <header className={styles.header}><h2>{c.title}</h2><p>{c.intro}</p></header>
-    <div className={styles.availability} role="tablist" aria-label={c.title}><button type="button" role="tab" aria-selected={availability === 'available'} onClick={() => setAvailability('available')}>{c.available}</button><button type="button" role="tab" aria-selected={availability === 'full'} onClick={() => setAvailability('full')}>{c.full}</button></div>
     <section className={styles.toolbar} aria-label={c.themes}>
       <div className={styles.filterStatus} role="status" aria-live="polite"><strong>{matchCount} {c.matching}</strong><span>{focus.length} {c.selectedThemes} · {appliedFilters} {c.filters.toLocaleLowerCase()}</span><button type="button" onClick={resetFilters}>{c.filterClear}</button></div>
       <div className={styles.filterGroup}><span>{c.themes}</span><p className={styles.topicHint}>{c.topicHint}</p><div>{TEST_RECOMMENDATION_FOCUS.map((item) => <button key={item.key} type="button" aria-pressed={focus.includes(item.key)} onClick={() => setFocus((value) => toggle(value, item.key))}>{item.label[locale] || item.label.en}</button>)}</div></div>
@@ -283,8 +282,24 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
         <Filter label={advanced.tracking} items={[{ key: 'any', label: { en: advanced.any } }, { key: 'repeat', label: { en: advanced.repeat } }, { key: 'baseline', label: { en: advanced.baseline } }]} selected={[tracking]} onToggle={setTracking} locale={locale} single />
         <label className={styles.check}><input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />{c.free}</label>
       </div><p className={styles.advancedNote}>{advanced.about}</p></details>
+    </section>
+    </div>
+    <section id="hh-test-list" className={styles.catalogTopbar} aria-label={locale === 'ru' ? 'Каталог тестов' : locale === 'es' ? 'Catálogo de pruebas' : 'Test catalog'}>
+      <div className={styles.catalogTopline}>
+        <div className={styles.catalogHeading}>
+          <p className={styles.eyebrow}>{locale === 'ru' ? 'Ваш выбор' : locale === 'es' ? 'Tu selección' : 'Make it personal'}</p>
+          <h2>{locale === 'ru' ? 'Выберите подходящие тесты' : locale === 'es' ? 'Elige tus pruebas' : 'Find the tests that fit you'}</h2>
+          <p>{locale === 'ru' ? 'Отмечайте тесты в каталоге. Счётчик, подборка и зоны на портрете обновятся автоматически.' : locale === 'es' ? 'Selecciona pruebas. El contador y las áreas destacadas se actualizan automáticamente.' : 'Browse and tick the tests you want. Your selected set and highlighted focus areas update immediately.'}</p>
+        </div>
+    <div className={styles.availability} role="tablist" aria-label={c.title}><button type="button" role="tab" aria-selected={availability === 'available'} onClick={() => setAvailability('available')}>{c.available}</button><button type="button" role="tab" aria-selected={availability === 'full'} onClick={() => setAvailability('full')}>{c.full}</button></div>
+      </div>
+      <div className={styles.catalogControls}>
+        <label className={styles.catalogSearchLabel}>
+          <span>{locale === 'ru' ? 'Найти тест' : locale === 'es' ? 'Buscar pruebas' : 'Search tests'}</span>
       <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={c.search} aria-label={c.search} />
+        </label>
       <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option></select></label>
+      </div>
     </section>
     <div className={styles.workspace}><div className={styles.database}><div className={styles.databaseHeader}><div className={styles.countBlock}><strong role="status" aria-live="polite">{matchCount} {c.matching}</strong><small>{c.of} {availability === 'available' ? entries.filter((entry) => entry.selectable).length : entries.length} · {c.totalAvailable}{selectedKeys.length > 0 && ` · ${selectedKeys.length} ${c.kept}`}</small></div><button type="button" onClick={chooseSuggested}>{c.suggested}</button></div>
       {visible.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
@@ -308,7 +323,6 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
           <button className={styles.primary} type="button" disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : c.start}</button>
         </div>
       </footer>
-    </div>
   </section>
 }
 
