@@ -151,9 +151,9 @@ export function TantraReikiSideNavigation({
   levels: Array<{ number: number; title: string }>;
 }) {
   const copy = {
-    en: { eyebrow: "Course navigation", title: "Tantra Reiki", level: "Level", media: "Videos & materials", source: "Full system text" },
-    ru: { eyebrow: "Навигация по курсу", title: "Тантра Рейки", level: "Ступень", media: "Видео и материалы", source: "Полный текст системы" },
-    es: { eyebrow: "Navegación del curso", title: "Tantra Reiki", level: "Etapa", media: "Videos y materiales", source: "Texto completo" },
+    en: { eyebrow: "Course navigation", title: "Tantra Reiki", level: "Level", reviews: "Reviews & videos", meditation: "Guided meditation", source: "Full system text" },
+    ru: { eyebrow: "Навигация по курсу", title: "Тантра Рейки", level: "Ступень", reviews: "Отзывы и видео", meditation: "Медитация", source: "Полный текст системы" },
+    es: { eyebrow: "Navegación del curso", title: "Tantra Reiki", level: "Etapa", reviews: "Testimonios y vídeos", meditation: "Meditación guiada", source: "Texto completo" },
   }[locale];
 
   const items: NavItem[] = [
@@ -164,8 +164,9 @@ export function TantraReikiSideNavigation({
       number: String(level.number).padStart(2, "0"),
       label: level.title,
     })),
-    { key: "media", href: "#tantra-media", sectionId: "tantra-media", label: copy.media },
+    ...(locale === "en" ? [{ key: "meditation", href: "#english-guided-meditations-tantra-reiki", sectionId: "english-guided-meditations-tantra-reiki", label: copy.meditation }] : []),
     { key: "source", href: "#tantra-full-source", sectionId: "tantra-full-source", label: copy.source },
+    { key: "reviews", href: "#tantra-testimonials", sectionId: "tantra-testimonials", label: copy.reviews },
   ];
 
   return (
