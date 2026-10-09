@@ -1,7 +1,7 @@
 # SuperSkills → Holistic House: Reiki Yggdrasil source-completeness audit
 
 Date: 2026-10-09
-Scope: **17 distinct Reiki Yggdrasil / first-level initiation sources** from the navigation and connected product page at https://superskills.vip, not unrelated Tantra, Temple, generic book, or constellation site sections.
+Scope: **17 direct Reiki Yggdrasil / first-level initiation resources plus 2 parent programme pages = 19 verified connected sources** on https://superskills.vip. Distinct Tantra, Temple and unrelated programmes are excluded.
 Target production source: `andylitvinov-design/books@codex/public-book-library`
 Implementation PR: #285.
 
@@ -66,3 +66,34 @@ All 7 are present as distinct numbered questions on the new first-level article 
 - Run repository unit, lint, typecheck, Next build, browser/mobile route checks on **exact PR head**.
 - Verify Vercel Preview when the super10 build-rate-limit gate clears, merge to `codex/public-book-library`, then independently verify `https://holistichouse.vercel.app/{en,ru,es}/academy/reiki/yggdrasil/free-initiation` and main landing.
 - Do not claim merged/live merely because a GitHub commit or PR was created.
+
+## 2026-10-09 — Detailed integration and UX re-audit
+
+### Two additional verified parent pages
+- `https://superskills.vip/reiki.html` — historical Runic Reiki school/programme introduction.
+- `https://superskills.vip/shamanic-energy-healing-free-program.html` — broader free introductory school programme that includes (but is not identical with) Reiki Yggdrasil.
+
+This brings the verified Reiki-related source index to **19 URLs**. The previous numbered table of 17 remains the exact direct-article inventory.
+
+### Content-level completeness corrections
+- Full historical **Instructor Course** six-track attunement inventory restored: **4 + 3 + 4 + 4 + 3 + 5 = 23 names**, with EN/RU/ES labels. This corrects the previous thematic-only chips, which omitted several original names.
+- Original SuperSkills first-level introductory video iframe id `DYo-fG-SyKw` preserved on the standalone free initiation article. It uses the existing click-to-play video component (poster/lazy player, English-audio notice in each locale).
+- FAQ coverage expanded to include the difference between rune visualization and teacher-led initiation, compatibility with other Reiki schools and historical Level 4 clairvoyance claims. Traditional/esoteric claims remain identified as such.
+- Two historical SuperSkills testimonial volumes are now directly accessible beside the existing student reviews, rather than buried only in the source index.
+
+### UX hierarchy correction
+- **Programme overview:** 3 compact links to detailed Basic Course practice, source-backed Instructor settings, and the dedicated full source library. No second five-level catalogue or six large Instructor cards duplicating the canonical programme.
+- **Basic Course:** supplementary practices remain in collapsed five-stage readers, after the canonical course. Level 5 exercises are clearly labelled original editorial reflections rather than source excerpts.
+- **Instructor Course:** the full original 23 attunement names are in six **collapsed** stage readers following the canonical curriculum, not in a long always-open block.
+- **Standalone source library:** `/en|ru|es/academy/reiki/yggdrasil/superskills-sources` groups all 19 source URLs by overview, five levels, practice, Instructor Course, free initiation/FAQ and historical testimonials; groups are folded by default.
+- **Free Level 1:** three entry paths, original seven questions, required readings, original video, post-initiation study and explicit WhatsApp/Telegram actions.
+- **Reviews:** source volumes alongside the already existing text and ten video testimonials; no replacement or deletion of the original student content.
+
+### Important meaning of “all”
+- All **19 identified topical pages** are linked and their programme concepts are mapped to the correct section. The whole third-party website has **not** been mirrored, and full articles and every dated testimonial have **not** been reproduced as local text. These remain available through credited original-source links. This is source coverage, not verbatim migration or clinical validation.
+- Source pages frequently make unverified paranormal/medical/commercial claims; adapted content is distinguished from empirical evidence, not converted into guarantees. Historical price and course promises are not treated as current offers.
+- React source and responsive CSS can be verified from GitHub CI; a claim of actual mobile visual quality requires an accessible browser-rendered latest deployment, which remains a separate gate.
+
+### QA on new branch
+- Test `tests/yggdrasil-superskills-completeness-ux.test.mjs` added for overview density, all 23 names across 3 languages, 19 organised URLs, original video/links and student-testimonial provenance.
+- Regenerate preview / browser QA after Vercel quota clears; do not equate merging with deploying.
