@@ -9,7 +9,8 @@ test("Reiki landing shows meditation, free first level and consultation before r
   const reviews = hub.indexOf("<YggdrasilTestimonials");
   const courseVideos = hub.indexOf("<YggdrasilEnglishVideoGuide");
   assert.ok(meditation > 0 && meditation < leads && leads < reviews && reviews < courseVideos);
-  assert.match(hub, /href="#reiki-free-level-one"/);
+  assert.match(hub, /\/academy\/reiki\/yggdrasil\/free-initiation/);
+  assert.match(hub, /<YggdrasilLeadForms locale=\{locale\}/);
   assert.match(hub, /Rediscover your centre/);
   assert.match(hub, /Encuentra tu centro/);
 });
