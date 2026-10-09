@@ -83,7 +83,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     [error, setError] = useState(null)
   const [busy, setBusy] = useState(false),
     [deleted, setDeleted] = useState(false)
-  const page = path[0] || 'portrait',
+  const page = path[0] || 'tests',
     recordId = path[1],
     root = `/${locale}/app`
   const load = useCallback(async () => {
@@ -236,8 +236,8 @@ export default function AppWorkspace({ locale, path = [] }) {
       </main>
     )
   const nav = [
-    ['portrait', c.portrait, ''],
-    ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', '/tests'],
+    ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', ''],
+    ['portrait', c.portrait, '/portrait'],
     ['monitoring', c.monitoring, '/monitoring'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
@@ -246,7 +246,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     <main className="hh-app">
       <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
-          Holistic House<span>{c.portrait}</span>
+          Holistic House<span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span>
         </Link>
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
@@ -258,7 +258,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               {data.practice ? (locale === 'ru' ? 'Моя практика' : 'My Practice') : (locale === 'ru' ? 'Стать мастером' : 'Become a Master')}
             </Link>
             <Link
-              href={`/${locale === 'en' ? 'ru' : 'en'}/app${page === 'portrait' ? '' : `/${page}`}${recordId ? `/${recordId}` : ''}`}
+              href={`/${locale === 'en' ? 'ru' : 'en'}/app${page === 'tests' ? '' : `/${page}`}${recordId ? `/${recordId}` : ''}`}
               prefetch={false}
             >
               {locale === 'en' ? 'Русский' : 'English'}
