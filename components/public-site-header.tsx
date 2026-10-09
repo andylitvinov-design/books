@@ -7,7 +7,7 @@ const copy = {
   en: { home: "Holistic House — home", subtitle: "healing · practice · guidance" },
   es: { home: "Holistic House — inicio", subtitle: "sanación · práctica · acompañamiento" },
 } as const;
-export function PublicSiteHeader({ locale }: { locale: PublicLocale }) {
+export function PublicSiteHeader({ locale, showAssessmentStrip = true }: { locale: PublicLocale; showAssessmentStrip?: boolean }) {
   const text = copy[locale];
-  return <><header className="house-header house-header--services section-site-header"><Link className="house-wordmark" href={locale === "es" ? "/es" : "/"} aria-label={text.home}>Holistic House<span>{text.subtitle}</span></Link><SiteNavigation locale={locale} /></header><MindBodyMonitorStrip locale={locale} /></>;
+  return <><header className="house-header house-header--services section-site-header"><Link className="house-wordmark" href={locale === "es" ? "/es" : "/"} aria-label={text.home}>Holistic House<span>{text.subtitle}</span></Link><SiteNavigation locale={locale} /></header>{showAssessmentStrip && <MindBodyMonitorStrip locale={locale} />}</>;
 }
