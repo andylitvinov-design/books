@@ -157,6 +157,7 @@ const resources: Array<{ url: string; name: Localized; category: "overview" | "l
   { url: levelPath + "runic-reiki-practice.html", name: { en: "Practical exercises for levels 1–4", ru: "Практикум для ступеней 1–4", es: "Ejercicios de niveles 1–4" }, category: "practice" },
   { url: levelPath + "questions-to-get-the-free-class-of-runic-reiki.html", name: { en: "After Level 1 · original study questions and reading guide", ru: "После 1-й ступени · вопросы и материалы для чтения", es: "Después del Nivel 1 · preguntas y lecturas" }, category: "practice" },
   { url: base + "/shamanic-energy-healing-free-program/free-trial-runic-reiki-energy-healing-class.html", name: { en: "Free trial programme · historical overview", ru: "Бесплатная пробная программа · исторический обзор", es: "Prueba gratuita · programa histórico" }, category: "faq" },
+  { url: base + "/free-trial-runic-reiki-initiation-level-1.html", name: { en: "Original free Level 1 product listing · historical $0 page", ru: "Исходная карточка бесплатной 1-й ступени · историческая страница $0", es: "Ficha original del Nivel 1 gratis · oferta histórica" }, category: "faq" },
   { url: freePath + "faq-how-to-study-runic-reiki-yggdrasil.html", name: { en: "Learning and initiation FAQ", ru: "FAQ об обучении и инициации", es: "Preguntas sobre formación" }, category: "faq" },
   { url: freePath + "step-0-how-to-get-runic-reiki-initiation-free.html", name: { en: "Historical free Level 1 offer", ru: "Исторические условия бесплатной 1-й ступени", es: "Oferta histórica del nivel gratuito" }, category: "faq" },
   { url: base + "/reiki/reiki-yggdrasil-levels-description.html", name: { en: "Instructor course: six areas", ru: "Инструкторский курс: шесть направлений", es: "Instructor: seis áreas" }, category: "teacher" },
@@ -254,7 +255,7 @@ export function YggdrasilSourceStudyGuide({ locale, mode = "overview" }: { local
                   <p>{level.description[locale]}</p>
                   <h4>{text.historicalLabel}</h4>
                   <ul className={styles.tags}>{level.topics[locale].map((topic) => <li key={topic}>{topic}</li>)}</ul>
-                  <h4>{text.practiceLabel}</h4>
+                  <h4>{index === 4 ? (locale === "ru" ? "Дополнительные упражнения на интеграцию (не из источника)" : locale === "es" ? "Reflexiones complementarias (no son del texto original)" : "Supplementary reflection exercises (not from the source)") : text.practiceLabel}</h4>
                   <ol>{level.exercises[locale].map((exercise) => <li key={exercise}>{exercise}</li>)}</ol>
                   <a href={levelSources[index]} target="_blank" rel="noopener noreferrer">{text.openOriginal} ↗</a>
                 </div>
