@@ -1118,6 +1118,15 @@ test('durable guest and account assessment plans enforce ordered private sequent
     timezone: 'UTC',
   })))
 
+  await assert.rejects(
+    guestRepo.startRun(credential, {
+      definitionKey: 'phq-8',
+      definitionVersion: 'v1',
+      instrumentLocale: 'en',
+      operationId: randomUUID(),
+    }),
+    (error) => error.code === 'GUEST_TEST_UNAVAILABLE',
+  )
   const guestPlanInput = {
     items: [enV2, weekly].map((definition) => ({ definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: definition.instrumentLocale })),
     operationId: randomUUID(),
