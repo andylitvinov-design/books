@@ -470,3 +470,52 @@
   .focusRay line{stroke-width:4}
   .focusRayStrong line{stroke-width:5.5}
 }
+
+
+/* Always-visible test catalog: hotel-style discoverability, with only
+   specialist facets hidden behind the optional advanced disclosure. */
+.catalogTopbar{
+  display:grid;
+  gap:16px;
+  width:100%;
+  max-width:1440px;
+  margin:20px auto 0;
+  padding:22px 24px;
+  border:1px solid #d8e5ee;
+  border-radius:20px;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(36,84,115,.055);
+  scroll-margin-top:24px;
+}
+.catalogTopline{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:14px;
+}
+.catalogHeading{min-width:0;flex:1 1 300px}
+.catalogHeading .eyebrow{margin:0 0 4px;color:#1c797d;font-size:.72rem}
+.catalogHeading h2{font-size:clamp(1.3rem,2.3vw,1.95rem);line-height:1.17;color:#183f5e;margin:0 0 6px}
+.catalogHeading p:not(.eyebrow){max-width:68ch;font-size:.91rem;line-height:1.48;color:#5b6c79;margin:0}
+.catalogTopbar .availability{display:flex;gap:4px;flex:0 0 auto;align-self:flex-start;margin:0;padding:5px;background:#eff6fc;border:1px solid #d4e2ee;border-radius:13px}
+.catalogTopbar .availability button{min-height:40px;border-radius:9px;padding:8px 14px;font-size:.86rem}
+.catalogControls{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,230px);align-items:end;gap:12px}
+.catalogSearchLabel{display:grid;gap:6px;min-width:0}
+.catalogSearchLabel>span{color:#315267;font-size:.77rem;font-weight:700}
+.catalogTopbar .search{width:100%;margin:0;padding:12px 14px;min-height:48px;border:1px solid #b8d0e1;border-radius:12px;background:#f9fcff;color:#183e59;font-size:.91rem}
+.catalogTopbar .sort{min-width:0;display:grid;gap:6px;font-size:.77rem;font-weight:700;color:#315267}
+.catalogTopbar .sort select{width:100%;margin:0;min-height:48px;padding:11px 32px 11px 11px;border:1px solid #b8d0e1;border-radius:12px;background:#f9fcff;color:#183e59;font-size:.86rem}
+.catalogTopbar :is(button,input,select):focus-visible{outline:3px solid #1768a9;outline-offset:3px}
+@media(max-width:600px){
+  .catalogTopbar{margin:14px auto 0;padding:16px 13px;border-radius:17px;gap:13px}
+  .catalogHeading{flex-basis:100%}
+  .catalogHeading h2{font-size:1.34rem}
+  .catalogHeading p:not(.eyebrow){font-size:.79rem}
+  .catalogTopline{gap:12px}
+  .catalogTopbar .availability{width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .catalogTopbar .availability button{font-size:.79rem;padding:9px 8px}
+  .catalogControls{grid-template-columns:minmax(0,1fr);gap:9px}
+  .catalogTopbar .search,.catalogTopbar .sort select{min-height:46px}
+  .catalogTopbar .sort{font-size:.75rem}
+}
