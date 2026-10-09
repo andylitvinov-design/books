@@ -1,0 +1,72 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import test from 'node:test'
+
+const read = (file) => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
+
+test('the approved simple picker replaces the intimidating embedded explorer only before sign-in', () => {
+  const page = read('app/[locale]/client/page.tsx')
+  const cabinet = read('components/app/cabinet-landing.jsx')
+  const wrapper = read('components/app/public-test-explorer.jsx')
+  const explorer = read('components/app/test-explorer.jsx')
+
+  assert.match(page, /<CabinetLanding/)
+  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded\s*\/>/)
+  assert.match(wrapper, /simpleMode=\{embedded\}/)
+  assert.match(explorer, /if \(simpleMode && !browseFull\)/)
+  assert.match(explorer, /return <SimpleTestPicker/)
+  assert.match(explorer, /onBrowseFull=\{\(\) => \{ setBrowseFull\(true\)/)
+  assert.match(explorer, /simpleMode && browseFull/)
+  assert.match(explorer, /className=\{styles\.simpleBack\}/)
+  assert.match(explorer, /onStart\(activeBattery, \{/)
+  assert.match(wrapper, /PENDING_TEST_SELECTION_KEY/)
+  assert.match(wrapper, /continueTo: 'tests'/)
+})
+
+test('topics immediately update the existing catalog while detailed selection stays closed', () => {
+  const picker = read('components/app/simple-test-picker.jsx')
+  const explorer = read('components/app/test-explorer.jsx')
+  const css = read('components/app/simple-test-picker.module.css')
+  assert.match(picker, /<details className=\{styles\.advanced\}>/)
+  assert.doesNotMatch(picker, /open=\{true\}|open=\{advanced/)
+  assert.match(picker, /focus\.includes\(key\)/)
+  assert.match(picker, /onToggleFocus\(key\)/)
+  assert.match(picker, /matchCount/)
+  assert.match(explorer, /setFocus\(\(current\) => toggle\(current, key\)\)/)
+  assert.match(explorer, /filterExplorerEntries\(entries, facets\)/)
+  assert.match(explorer, /rankExplorerEntries\(filtered,/)
+  assert.match(explorer, /depth=\{depth\}/)
+  assert.match(explorer, /maxMinutes=\{maxMinutes\}/)
+  assert.match(explorer, /professionalOnly=\{stylesFilter\.length === 1/)
+  assert.match(css, /\.advanced\[open\] \.chevron/)
+  for (const key of ['stress','anxiety','mood','sleep','body','relationships','resources','attention'])
+    assert.match(picker, new RegExp("key:'" + key + "'"))
+})
+
+test('preview and selected time are derived from live executable test definitions', () => {
+  const picker = read('components/app/simple-test-picker.jsx')
+  const explorer = read('components/app/test-explorer.jsx')
+  assert.match(explorer, /const autoBattery = useMemo\(\(\) => buildStarterBattery\(/)
+  assert.match(explorer, /simpleMode && simpleSelectionChanged \? selected/)
+  assert.match(explorer, /const recommendedRows = \[/)
+  assert.match(explorer, /\.filter\(\(entry\) => entry\.selectable/)
+  assert.match(explorer, /onToggleTest=\{toggleSimpleSelected\}/)
+  assert.match(explorer, /onResetSuggested=\{\(\) => \{ setSelectedKeys\(\[\]\); setSimpleSelectionChanged\(false\) \}\}/)
+  assert.match(picker, /activeBattery\.reduce\(\(total, item\) => total \+ \(item\.durationMinutes \|\| 0\), 0\)/)
+  assert.match(picker, /type="checkbox" checked=\{checked\}/)
+  assert.match(picker, /<button type="button" className=\{styles\.cta\} disabled=\{!activeBattery\.length \|\| starting\} onClick=\{onStart\}>/)
+  assert.match(picker, /entry\.description \|\| entry\.category/)
+  assert.doesNotMatch(picker, /\b4 tests selected\b|\b30 min total\b|\b38%\b/)
+})
+
+test('localized public page has genuine selection/Google handoff, no premature client result upload', () => {
+  const page = read('app/[locale]/client/page.tsx')
+  const explorer = read('components/app/test-explorer.jsx')
+  const wrapper = read('components/app/public-test-explorer.jsx')
+  assert.match(page, /title: "Choose your tests \| Holistic House"/)
+  assert.match(page, /title: "Подбор тестов \| Holistic House"/)
+  assert.match(explorer, /simpleSelectionChanged/)
+  assert.match(wrapper, /auth\/start/)
+  assert.match(wrapper, /window\.sessionStorage\.setItem/)
+  assert.doesNotMatch(wrapper, /guest\/test-plans|results\/import/)
+})

@@ -631,3 +631,8 @@
   .guidedResults{grid-column:1 / -1;width:100%;min-height:48px}
 }
 @media(prefers-reduced-motion:reduce){.guidedCategory{transition:none}}
+
+/* Optional return from the approved public easy-selection view to full research catalog. */
+.simpleBack{grid-column:1/-1;display:inline-flex;justify-content:center;align-items:center;gap:8px;width:max-content;min-height:43px;border-radius:99px;padding:8px 15px;border:1px solid #bed6cb;background:#eef6f1;color:#286b5e;font-weight:650;margin:0 0 10px;cursor:pointer}
+.simpleBack:focus-visible{outline:3px solid #286b5e;outline-offset:3px}
+@media(max-width:760px){.simpleBack{margin:0 0 10px}}

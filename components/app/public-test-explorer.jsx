@@ -55,7 +55,7 @@ export function PublicTestExplorer({ locale, embedded = false }) {
     }
   }
   return <>
-    <TestExplorer locale={locale} audience="account" embedded={embedded} onStart={submit} />
+    <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded} onStart={submit} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
   </>
 }

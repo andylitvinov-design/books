@@ -8,6 +8,7 @@ import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } fr
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
+import { SimpleTestPicker } from './simple-test-picker'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import styles from './test-explorer.module.css'
 
@@ -97,7 +98,7 @@ const GUIDED_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false }) {
   const c = COPY[locale] || COPY.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const quick = QUICK_COPY[locale] || QUICK_COPY.en
@@ -159,6 +160,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [activeFilterGroup, setActiveFilterGroup] = useState(null)
   const [showAll, setShowAll] = useState(false)
+  const [browseFull, setBrowseFull] = useState(false)
+  const [simpleSelectionChanged, setSimpleSelectionChanged] = useState(false)
   const entries = useMemo(() => buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience }), [locale, audience])
   // Direct History -> Test selection must also work when the URL changes without remounting.
   useEffect(() => {
@@ -195,7 +198,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)),
     { focus, details, axes, depth, styles: stylesFilter, lengths },
   ), [matching, axisFilter, focus, details, axes, depth, stylesFilter, lengths])
-  const activeBattery = selected.length ? selected : autoBattery
+  const activeBattery = simpleMode && simpleSelectionChanged ? selected : (selected.length ? selected : autoBattery)
   const activeCoverage = selected.length ? coverage : coverageForSelection(entries, autoBattery.map((entry) => entry.key))
   const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes }), [entries, focus, details, axes])
   const showingCoverage = selectedKeys.length > 0
@@ -216,7 +219,22 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const breadth = c[activeCoverage.breadth]
   const chooseSuggested = () => setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
   const resetFilters = () => { setAvailability('available'); setFocus([]); setStylesFilter([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
-  const toggleSelected = (key) => setSelectedKeys((current) => current.includes(key) ? current.filter((item) => item !== key) : current.length < 12 ? [...current, key] : current)
+  const toggleSelected = (key) => {
+    if (simpleMode) setSimpleSelectionChanged(true)
+    setSelectedKeys((current) => current.includes(key) ? current.filter((item) => item !== key) : current.length < 12 ? [...current, key] : current)
+  }
+  const toggleSimpleSelected = (key) => {
+    // In the uncomplicated initial view, the automatically recommended plan is
+    // already selected. The first manual click edits the full suggested set.
+    setSelectedKeys((current) => {
+      const baseline = !simpleSelectionChanged && !current.length
+        ? autoBattery.map((entry) => entry.key) : current
+      return baseline.includes(key)
+        ? baseline.filter((item) => item !== key)
+        : baseline.length < 12 ? [...baseline, key] : baseline
+    })
+    setSimpleSelectionChanged(true)
+  }
   const start = async () => {
     if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
@@ -226,7 +244,40 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     }) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
 
+  if (simpleMode && !browseFull) {
+    const chosen = new Set(activeBattery.map((entry) => entry.key))
+    // Keep the recommended tests in front, then fill the visible rows from the
+    // existing matching, ranked, rights-cleared questionnaire catalog.
+    const recommendedRows = [
+      ...activeBattery,
+      ...visible.filter((entry) => entry.selectable && !chosen.has(entry.key)),
+    ].filter((entry, index, all) => all.findIndex((row) => row.key === entry.key) === index).slice(0, 4)
+    return <SimpleTestPicker
+      locale={locale}
+      focus={focus}
+      onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
+      depth={depth}
+      onDepth={setDepth}
+      maxMinutes={maxMinutes}
+      onMaxMinutes={setMaxMinutes}
+      professionalOnly={stylesFilter.length === 1 && stylesFilter[0] === 'professional'}
+      onProfessional={() => setStylesFilter((current) => current.length === 1 && current[0] === 'professional' ? [] : ['professional'])}
+      recommendations={recommendedRows}
+      activeBattery={activeBattery}
+      onToggleTest={toggleSimpleSelected}
+      onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
+      matchCount={matchCount}
+      onStart={start}
+      onBrowseFull={() => { setBrowseFull(true); setAvailability('available') }}
+      starting={starting}
+      actionError={actionError}
+    />
+  }
+
   return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
+    {simpleMode && browseFull && <button type="button" className={styles.simpleBack} onClick={() => { setBrowseFull(false); setCustomizeOpen(false) }}>
+      ← {locale === 'ru' ? 'Назад к простому подбору' : locale === 'es' ? 'Volver al selector sencillo' : 'Back to easy selection'}
+    </button>}
     <div className={styles.explorerHero}>
     <header className={styles.quickStart}>
       <p className={styles.eyebrow}>{c.kicker}</p>

@@ -5,11 +5,11 @@ import { getSiteNavigation, activeNavigationId } from '../lib/site-navigation-mo
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('main navigation calls the authenticated experience My tests, not Cabinet', () => {
+test('public navigation calls the pre-login test picker My tests, not Cabinet', () => {
   assert.equal(getSiteNavigation('en').find((item) => item.id === 'cabinet').label, 'My tests')
   assert.equal(getSiteNavigation('ru').find((item) => item.id === 'cabinet').label, 'Мои тесты')
-  assert.equal(getSiteNavigation('en').find((item) => item.id === 'cabinet').href, '/en/app')
-  assert.equal(getSiteNavigation('ru').find((item) => item.id === 'cabinet').href, '/ru/app')
+  assert.equal(getSiteNavigation('en').find((item) => item.id === 'cabinet').href, '/en/client')
+  assert.equal(getSiteNavigation('ru').find((item) => item.id === 'cabinet').href, '/ru/client')
   assert.equal(getSiteNavigation('es').find((item) => item.id === 'cabinet').href, '/es/client')
   assert.equal(activeNavigationId('/en/app'), 'cabinet')
   assert.equal(activeNavigationId('/ru/app/portrait'), 'cabinet')
