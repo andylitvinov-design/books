@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
@@ -27,7 +28,7 @@ type LocaleStrings = {
   choiceTitle: string; choices: Array<{ title: string; description: string }>;
   stepsTitle: string; steps: string[];
   readingTitle: string; readingIntro: string;
-  readingLinks: string[]; checklistTitle: string; checklistIntro: string;
+  readingLinks: string[]; videoTitle: string; videoLead: string; checklistTitle: string; checklistIntro: string;
   questions: string[]; statement: string;
   afterTitle: string; after: string[];
   ctaTitle: string; ctaText: string; whatsapp: string; telegram: string;
@@ -57,6 +58,8 @@ const copy: Record<PublicLocale, LocaleStrings> = {
     readingTitle: "Materials to read before the session",
     readingIntro: "Two readings are specifically requested in the original free-initiation article. The Level 1 description and practical exercises help you prepare more thoroughly.",
     readingLinks: ["Study FAQ · Required reading", "Detailed explanation · Required reading", "Level 1 · Healing, Intuition, Protection, Situation balancing", "Practice examples · First four levels"],
+    videoTitle: "Original Level 1 introduction · English audio",
+    videoLead: "An introductory video preserved in the SuperSkills study materials. Watch in place, then continue to the seven preparation questions.",
     checklistTitle: "Seven questions for Reiki Yggdrasil Level 1",
     checklistIntro: "The original SuperSkills list, accurately restated in English. These are self-study questions, not an online exam or a condition that this website evaluates automatically.",
     questions: [
@@ -108,6 +111,8 @@ const copy: Record<PublicLocale, LocaleStrings> = {
     readingTitle: "Что необходимо прочитать",
     readingIntro: "В исходной статье обязательными для самостоятельного изучения названы FAQ и подробное описание системы. Описание первой ступени и практикум полезны для углубления.",
     readingLinks: ["FAQ по обучению · Обязательное чтение", "Подробное описание системы · Обязательное чтение", "Первая ступень · Целительство, Интуиция, Защита, Гармонизация ситуации", "Практикум · Упражнения первых четырёх ступеней"],
+    videoTitle: "Оригинальное вводное видео · речь на английском",
+    videoLead: "Видеозапись из исходных учебных материалов SuperSkills. Просмотр — по нажатию, звук не включается автоматически.",
     checklistTitle: "Семь контрольных вопросов для 1-й ступени",
     checklistIntro: "Все семь тем из оригинального списка SuperSkills, переформулированные по-русски без изменения содержания. Ответы можно записать самостоятельно или обсудить с преподавателем.",
     questions: [
@@ -159,6 +164,8 @@ const copy: Record<PublicLocale, LocaleStrings> = {
     readingTitle: "Lecturas recomendadas",
     readingIntro: "La fuente solicita leer las preguntas frecuentes y la descripción detallada. El material del primer nivel y los ejercicios amplían la preparación.",
     readingLinks: ["Preguntas frecuentes · Lectura requerida", "Descripción del sistema · Lectura requerida", "Primer nivel · Cuatro prácticas", "Ejercicios prácticos · Niveles 1–4"],
+    videoTitle: "Introducción original al Nivel 1 · Audio en inglés",
+    videoLead: "Video introductorio enlazado desde SuperSkills. Haz clic para reproducirlo y continúa con las siete preguntas.",
     checklistTitle: "Siete preguntas para el Nivel 1",
     checklistIntro: "Los siete temas originales de SuperSkills, reformulados en español para el estudio.",
     questions: [
@@ -249,6 +256,15 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
                 </a>
               ))}
             </div>
+          </section>
+
+          <section className={styles.section} id="intro-video" aria-labelledby="yggdrasil-original-video">
+            <h2 id="yggdrasil-original-video">{c.videoTitle}</h2>
+            <p>{c.videoLead}</p>
+            <div className={styles.videoFrame}>
+              <AcademyVideoPlayer youtubeId="DYo-fG-SyKw" title={c.videoTitle} />
+            </div>
+            <a className={styles.videoSource} href={readingSource} target="_blank" rel="noopener noreferrer">{c.sourceReading} ↗</a>
           </section>
 
           <section className={styles.checklist} id="checklist" aria-labelledby="yggdrasil-free-checklist">
