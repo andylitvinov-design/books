@@ -35,15 +35,17 @@ test("English-only Academy paths use poster-first playback only after confirmati
     readFile("components/academy-hub.tsx", "utf8"),
     readFile("components/academy-record-page.tsx", "utf8"),
   ]);
+  const reviews = await readFile("components/tantra-reiki-testimonials.tsx", "utf8");
   assert.match(page, /item\.youtubeId \? \(/);
   assert.match(page, /<AcademyVideoPlayer youtubeId=\{item\.youtubeId\}/);
   assert.match(page, /<Image src=\{item\.image\}/);
   assert.match(hub, /locale === "en" && view === "videos" \? <EnglishGuidedMeditations \/>/);
   assert.match(recording, /locale === "en" \? <EnglishGuidedMeditations focus="tantra-reiki"/);
-  assert.match(recording, /qM_nFUkYJ1k/);
-  assert.match(recording, /participant testimonial/);
-  assert.match(recording, /tantra-russian-review/);
-  assert.match(recording, /Russian-language historical testimonial/);
+  assert.doesNotMatch(recording, /tantra-russian-review/);
+  assert.match(recording, /<TantraReikiTestimonials locale=\{locale\} \/>/);
+  assert.match(reviews, /qM_nFUkYJ1k/);
+  assert.match(reviews, /Video testimonials/);
+  assert.match(reviews, /Russian audio/);
 });
 
 test("legacy English review videos are not injected into specific Yggdrasil teaching steps", async () => {

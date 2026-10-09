@@ -12,7 +12,7 @@ test("Tantra Reiki renders one self-contained section per level, not a nine-card
   assert.match(journey, /copy\.att\.map/);
   assert.match(journey, /copy\.practice/);
   assert.ok(journey.includes('"#tantra-level-"+(n+1)'));
-  assert.match(journey, /#tantra-media/);
+  assert.match(journey, /#tantra-testimonials/);
   assert.match(journey, /href="https:\/\/t.me\/AndyTherapist"/);
   assert.match(journey, /className="tantra-journey__photo"/);
   assert.match(journey, /levelApplications\[locale\]\[i\]/);
@@ -30,8 +30,8 @@ test("Tantra Reiki contains nine grounded level names and preserves EN/RU attune
   assert.match(journey, /"Attunement"/);
   assert.match(journey, /"Luck · acceleration of time"/);
   assert.match(journey, /"Talisman"/);
-  assert.match(journey, /The historical English text places Attunement here/);
-  assert.match(journey, /The historical English text lists Unity, Clearance and Luck here/);
+  assert.doesNotMatch(journey, /The historical English text places Attunement here/);
+  assert.doesNotMatch(journey, /The historical English text lists Unity, Clearance and Luck here/);
   const source = JSON.parse(await readFile("data/academy/tantra-reiki-full.generated.json", "utf8"));
   assert.ok(source.blocks.en.some((block) => block.text.includes("Attunement (attunement of a person")));
   assert.ok(source.blocks.en.some((block) => block.text.includes("Clearance")));

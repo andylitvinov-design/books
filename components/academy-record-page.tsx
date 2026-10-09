@@ -9,6 +9,7 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraReikiSideNavigation, YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
+import { TantraReikiTestimonials } from "@/components/tantra-reiki-testimonials";
 import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import tantraReikiFullArchive from "@/data/academy/tantra-reiki-full.generated.json";
 import tantraReikiOriginalRuEnglish from "@/data/academy/tantra-reiki-ru-en.generated.json";
@@ -117,16 +118,6 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record, locale);
   const hasBody = publicBlocks.some((block) => block.type !== "h1");
   const outline = publicBlocks.map((block, index) => ({ block, index })).filter(({ block }) => block.type === "h2" || block.type === "h3").slice(0, 32);
-  const tantraArchiveVideoGrid = isVerbatimTantraArchive && videos.length ? (
-    <div className="academy-video-grid tantra-youtube-grid">
-      {videos.map((video, index) => <AcademyVideoPlayer
-        key={video.id}
-        youtubeId={video.id}
-        title={video.id === "qM_nFUkYJ1k" ? (locale === "ru" ? "RU · Отзыв о Тантра Рейки — Алёна" : "RU · Tantra Reiki participant testimonial — Alena") : (video.lessonTitle ?? academyDisplayTitle(record, locale) + " — video " + (index + 1))}
-      />)}
-    </div>
-  ) : null;
-
   return (
     <main className={"academy-reading-shell" + (isCanonicalYggdrasil || isVerbatimTantraArchive ? " academy-reading-shell--wide" : "") + (isCanonicalYggdrasil ? " academy-reading-shell--yggdrasil" : "")} lang={locale}>
       <PublicSiteHeader locale={locale} /><AcademyBackLink locale={locale} />
@@ -170,26 +161,6 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         ) : null}
         {!isVerbatimTantraArchive && outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
         {record.routeKey === "history" ? <section className="academy-history-links" aria-label="Academy history"><Link href={"/" + locale + "/academy/history/faculties"}>{locale === "ru" ? "Исторические факультеты и традиции" : locale === "es" ? "Facultades y tradiciones históricas" : "Historical faculties & traditions"}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/academy/history/student-experiences"}>{locale === "ru" ? "Исторические отзывы студентов" : locale === "es" ? "Experiencias históricas de estudiantes" : "Historical student experiences"}<span aria-hidden="true">→</span></Link></section> : null}
-        {isVerbatimTantraArchive && (sourceVideos.length || videos.length || sourceImages.length) ? (
-          <section className="tantra-media-library" id="tantra-media">
-            <div className="tantra-section-heading">
-              <div>
-                <p className="homeopathy-kicker">{locale === "ru" ? "Медиаархив" : locale === "es" ? "Archivo multimedia" : "Media archive"}</p>
-                <h2>{locale === "ru" ? "Видео и визуальные материалы системы" : locale === "es" ? "Videos y materiales visuales del sistema" : "Videos and visual materials from the system"}</h2>
-                <p>{locale === "ru" ? "Материалы вынесены выше полного текста, чтобы их было легко найти. Исходные формулировки курса остаются ниже без потерь." : locale === "es" ? "Los materiales aparecen antes del texto completo para que sean fáciles de encontrar." : "Media is surfaced before the long historical text so it is easy to find. The complete source wording remains preserved below."}</p>
-              </div>
-            </div>
-            {sourceVideos.length ? <div className="academy-native-video-grid">{sourceVideos.map((video, index) => <figure className="academy-native-video" key={video.src}><video controls playsInline preload="metadata" poster={video.poster ?? undefined}><source src={video.src} type={video.type} /></video><figcaption>{locale === "ru" ? "Видео из исходной страницы" : locale === "es" ? "Video de la página fuente" : "Video from the source page"} {index + 1}</figcaption></figure>)}</div> : null}
-            {tantraArchiveVideoGrid ? (
-              locale !== "ru" && videos.every((video) => video.id === "qM_nFUkYJ1k") ? (
-                <details className="tantra-russian-review">
-                  <summary>{locale === "es" ? "RU · Testimonio histórico en ruso — mostrar" : "RU · Russian-language historical testimonial — show video"}</summary>
-                  {tantraArchiveVideoGrid}
-                </details>
-              ) : tantraArchiveVideoGrid
-            ) : null}
-          </section>
-        ) : null}
         {isVerbatimTantraArchive ? (
           <aside className="academy-archive-notice">
             {locale === "ru"
@@ -213,9 +184,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             {locale === "en" ? (
               <>
                 <section className="tantra-translation-intro" aria-labelledby="tantra-original-ru-english-heading">
-                  <h3 id="tantra-original-ru-english-heading">Full English translation of Andrey’s original Russian text</h3>
-                  <p>The original Russian page is preserved in full. Below is its complete English translation — including the nine attunements, Andrey’s research and descriptions, historical testimonials and original course information. Historical health, money and certification claims are reproduced as archival claims, not independently verified outcomes or current offers.</p>
-                  <a href="https://psitrends.com/ru/cat-train-ru/advanced-ru/tantra-ru" target="_blank" rel="noreferrer">Original Russian source ↗</a>
+                  <h3 id="tantra-original-ru-english-heading">The Tantra Reiki practice in depth</h3>
+                  <p>Explore the nine levels, traditional attunements, personal practices, and reflections from participants. Historical health or certification statements are not current medical advice or a guarantee of results.</p>
                 </section>
                 <div className="academy-source-content tantra-translation-text" lang="en">
                   {renderBlocks(tantraReikiOriginalRuEnglish.blocks.map((block) => ({
@@ -224,8 +194,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                   })))}
                 </div>
                 <div className="tantra-translation-intro">
-                  <h3>Original English course text · preserved without omissions</h3>
-                  <p>This is the separate historical English PsiTrends course text, including its Master Teacher syllabus and original English attunement assignments. Where the historic English and Russian level 2–3 settings differ, both records are retained.</p>
+                  <h3>Programme structure and teacher’s notes</h3>
+                  <p>Explore the full training structure, practice assignments, and information on the nine levels. Please enquire directly for current course dates and terms.</p>
                 </div>
               </>
             ) : null}
@@ -245,6 +215,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             <div className="academy-source-gallery">{sourceImages.map((src, index) => <a href={src} target="_blank" rel="noreferrer" key={src} aria-label={(locale === "ru" ? "Открыть исходное изображение " : locale === "es" ? "Abrir imagen de origen " : "Open source image ") + (index + 1)}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={src} alt={academyDisplayTitle(record, locale) + " — " + (locale === "ru" ? "материал " : locale === "es" ? "material " : "source material ") + (index + 1)} loading="lazy" decoding="async" /></a>)}</div>
           </section>
         ) : null}
+        {isVerbatimTantraArchive ? <TantraReikiTestimonials locale={locale} /> : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
         <footer className="academy-source-footer">
           {isCanonicalYggdrasil ? (

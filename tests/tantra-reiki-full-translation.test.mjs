@@ -36,16 +36,16 @@ test("Original author descriptions are displayed in all 9 level chapters with EN
     .map((match) => match[1].split(",").map((part) => Number(part.trim())));
   assert.equal(levelIndices.length, 9);
   assert.ok(levelIndices.every((level) => level.length >= 2));
-  assert.match(page, /Full English translation of Andrey’s original Russian text/);
+  assert.match(page, /The Tantra Reiki practice in depth/);
   assert.match(page, /tantraReikiOriginalRuEnglish\.blocks\.map/);
-  assert.match(page, /Original English course text · preserved without omissions/);
+  assert.match(page, /Programme structure and teacher’s notes/);
   assert.match(page, /renderBlocks\(publicBlocks\)/);
 });
 
 test("Archived medical and certification wording stays attributed rather than becoming a current promise", async () => {
   const page = await readFile("components/academy-record-page.tsx", "utf8");
   const archive = JSON.parse(await readFile("data/academy/tantra-reiki-ru-en.generated.json", "utf8"));
-  assert.match(page, /Historical health, money and certification claims/);
+  assert.match(page, /Historical health or certification statements/);
   assert.match(page, /academy-archive-notice/);
   assert.match(archive.blocks[179].text, /The original text states/);
   assert.match(archive.blocks[180].text, /Traditional applications claimed/);
