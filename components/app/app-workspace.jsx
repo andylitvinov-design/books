@@ -1198,6 +1198,9 @@ function Runner({ id, locale, onExit, onComplete }) {
           <legend>
             <h1>{question.text}</h1>
           </legend>
+          {def.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
+            <p className="hh-muted">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
+          )}
           {question.inputType === 'day-count' ? (
             <label className="hh-day-count-select">
               <span>{locale === 'ru' ? 'Количество дней за последние 30 дней (0–30)' : 'Number of days in the past 30 days (0–30)'}</span>
