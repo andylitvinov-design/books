@@ -155,7 +155,8 @@ const resources: Array<{ url: string; name: Localized; category: "overview" | "l
   { url: levelPath + "what-is-runic-reiki-detailed-overview.html", name: { en: "Detailed system history and philosophy", ru: "История и философия системы", es: "Historia y filosofía" }, category: "overview" },
   ...levelSources.map((url, index) => ({ url, name: { en: "Historical level " + (index + 1), ru: "Историческое описание ступени " + (index + 1), es: "Nivel histórico " + (index + 1) }, category: "level" as const })),
   { url: levelPath + "runic-reiki-practice.html", name: { en: "Practical exercises for levels 1–4", ru: "Практикум для ступеней 1–4", es: "Ejercicios de niveles 1–4" }, category: "practice" },
-  { url: levelPath + "questions-to-get-the-free-class-of-runic-reiki.html", name: { en: "Reading list and self-study checklist", ru: "Материалы для чтения и вопросы", es: "Lecturas y preguntas" }, category: "practice" },
+  { url: levelPath + "questions-to-get-the-free-class-of-runic-reiki.html", name: { en: "After Level 1 · original study questions and reading guide", ru: "После 1-й ступени · вопросы и материалы для чтения", es: "Después del Nivel 1 · preguntas y lecturas" }, category: "practice" },
+  { url: base + "/shamanic-energy-healing-free-program/free-trial-runic-reiki-energy-healing-class.html", name: { en: "Free trial programme · historical overview", ru: "Бесплатная пробная программа · исторический обзор", es: "Prueba gratuita · programa histórico" }, category: "faq" },
   { url: freePath + "faq-how-to-study-runic-reiki-yggdrasil.html", name: { en: "Learning and initiation FAQ", ru: "FAQ об обучении и инициации", es: "Preguntas sobre formación" }, category: "faq" },
   { url: freePath + "step-0-how-to-get-runic-reiki-initiation-free.html", name: { en: "Historical free Level 1 offer", ru: "Исторические условия бесплатной 1-й ступени", es: "Oferta histórica del nivel gratuito" }, category: "faq" },
   { url: base + "/reiki/reiki-yggdrasil-levels-description.html", name: { en: "Instructor course: six areas", ru: "Инструкторский курс: шесть направлений", es: "Instructor: seis áreas" }, category: "teacher" },
@@ -182,7 +183,7 @@ const copy: Record<PublicLocale, {
       { q: "Where can I begin?", a: "Read the introduction and the first-level exercises, then use the current free Level 1 contact option on this site to ask about an introductory initiation." },
     ],
     sourcesHeading: "Original SuperSkills reading library", sourcesIntro: "Open full historical articles, exercises and student reports on the source website. Reports are personal accounts, not evidence of guaranteed results.",
-    openOriginal: "Read original", readCurrent: "Open current course", start: "Ask about free Level 1", disclaimer: "These are adapted summaries of historical spiritual and esoteric teachings. Practices are optional reflection and education, not clinical diagnoses, medical treatment, proof of paranormal effects or a promise of financial or personal outcomes.", show: "Read the stage and exercises",
+    openOriginal: "Read original", readCurrent: "Open current course", start: "Free Level 1 · Steps & 7 questions", disclaimer: "These are adapted summaries of historical spiritual and esoteric teachings. Practices are optional reflection and education, not clinical diagnoses, medical treatment, proof of paranormal effects or a promise of financial or personal outcomes.", show: "Read the stage and exercises",
   },
   ru: {
     eyebrow: "Авторские источники · Углублённая программа", heading: "Рейки Иггдрасиль: больше описаний и практики",
@@ -197,7 +198,7 @@ const copy: Record<PublicLocale, {
       { q: "Как начать бесплатно?", a: "Познакомьтесь с описанием и заданиями первой ступени, затем используйте действующую форму запроса бесплатной первой инициации на нашем сайте." },
     ],
     sourcesHeading: "Оригинальная библиотека SuperSkills", sourcesIntro: "Здесь собраны ссылки на полные исходные статьи, практикум и отзывы. Отзывы передают личный опыт учеников, но не подтверждают гарантированных эффектов.",
-    openOriginal: "Читать оригинал", readCurrent: "Открыть действующий курс", start: "Запросить бесплатную 1-ю ступень", disclaimer: "Это адаптированный обзор исторической духовно-эзотерической программы. Практики предназначены для самонаблюдения и обучения, не заменяют медицинскую помощь, не служат диагностикой и не гарантируют паранормальных, финансовых или иных результатов.", show: "Описание ступени и упражнения",
+    openOriginal: "Читать оригинал", readCurrent: "Открыть действующий курс", start: "Бесплатная 1-я ступень · 7 вопросов", disclaimer: "Это адаптированный обзор исторической духовно-эзотерической программы. Практики предназначены для самонаблюдения и обучения, не заменяют медицинскую помощь, не служат диагностикой и не гарантируют паранормальных, финансовых или иных результатов.", show: "Описание ступени и упражнения",
   },
   es: {
     eyebrow: "Fuentes originales · Estudio ampliado", heading: "Explora Reiki Yggdrasil en profundidad",
@@ -212,7 +213,7 @@ const copy: Record<PublicLocale, {
       { q: "¿Cómo comenzar?", a: "Lee el primer nivel y solicita información sobre la iniciación introductoria gratuita." },
     ],
     sourcesHeading: "Biblioteca original SuperSkills", sourcesIntro: "Artículos y testimonios históricos. Los relatos personales no demuestran resultados garantizados.",
-    openOriginal: "Leer fuente", readCurrent: "Abrir curso actual", start: "Preguntar por el nivel gratuito", disclaimer: "Contenido histórico y esotérico para educación y reflexión, no consejo médico ni promesa de resultados.", show: "Abrir nivel y ejercicios",
+    openOriginal: "Leer fuente", readCurrent: "Abrir curso actual", start: "Nivel 1 gratis · 7 preguntas", disclaimer: "Contenido histórico y esotérico para educación y reflexión, no consejo médico ni promesa de resultados.", show: "Abrir nivel y ejercicios",
   },
 };
 
@@ -234,7 +235,7 @@ export function YggdrasilSourceStudyGuide({ locale, mode = "overview" }: { local
         <p>{text.intro}</p>
         <div className={styles.actions}>
           <Link href={root + "/basic-course"}>{text.readCurrent} <span aria-hidden="true">→</span></Link>
-          <Link href={root + "#reiki-free-level-one"}>{text.start} <span aria-hidden="true">→</span></Link>
+          <Link href={root + "/free-initiation"}>{text.start} <span aria-hidden="true">→</span></Link>
         </div>
       </header>
 
