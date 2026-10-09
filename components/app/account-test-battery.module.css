@@ -45,3 +45,15 @@
 .batteryLayout>*{min-width:0}
 .batteryLayout .shell{max-width:none;width:100%;margin:0}
 @media(max-width:1100px){.batteryLayout{grid-template-columns:1fr}.batteryLayout>section:last-child{max-width:760px;width:100%;margin-inline:auto}}
+
+/* Account-owned preferences from public selection: compact, readable, optional. */
+.savedPriorities{border:1px solid #d9c9b5;border-radius:15px;background:#f8f4eb;padding:13px 16px;margin:15px 0 20px;min-width:0}
+.savedPriorities>strong{display:block;font-size:.92rem;color:#4b3b32;margin-bottom:9px}
+.savedPriorities>div:first-of-type{display:flex;flex-wrap:wrap;gap:6px}
+.savedPriorities>div:first-of-type span{font-size:.77rem;border-radius:99px;padding:5px 10px;background:#e2ebe5;color:#285950;border:1px solid #bdd0c3}
+.savedPriorities>p{font-size:.78rem;line-height:1.45;color:#75675b;margin:10px 0 0}
+.nextSuggestions{border-top:1px solid #e3d7c8;margin-top:11px;padding-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.nextSuggestions small{font-size:.77rem;width:100%;color:#6a594d}
+.nextSuggestions span{background:#fffdf8;border:1px solid #e0d2c1;border-radius:8px;padding:6px 9px;font-size:.77rem}
+.nextSuggestions button{border-radius:99px;background:#5c4134;color:#fffaf3;border:0;padding:8px 13px;font-size:.77rem;cursor:pointer;min-height:38px}
+.nextSuggestions button:focus-visible{outline:3px solid #467a73;outline-offset:2px}

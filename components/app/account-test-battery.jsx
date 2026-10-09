@@ -10,7 +10,8 @@ import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
-import { buildExplorerEntries } from '@/lib/assessments/test-explorer'
+import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
+import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
 import styles from './account-test-battery.module.css'
 
@@ -151,8 +152,19 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const rows = useMemo(() => planRows(currentPlan, data, locale), [currentPlan, data, locale])
   const completed = rows.filter((row) => Boolean(row.result)).length
   const root = '/' + locale + '/app'
+  const selectionPreferences = currentPlan?.selectionPreferences || data.latestTestPlan?.selectionPreferences || {}
+  const priorityLabels = (selectionPreferences.focus || []).map((key) => TEST_RECOMMENDATION_FOCUS.find((item) => item.key === key)?.label?.[locale] || key)
+  const axisLabels = (selectionPreferences.axes || []).map((key) => TEST_EXPLORER_AXIS_LABELS[key]?.[locale] || TEST_EXPLORER_AXIS_LABELS[key]?.en || key)
+  const savedPriorities = [...priorityLabels, ...axisLabels]
+  const suggestions = useMemo(() => {
+    if (!savedPriorities.length && !(selectionPreferences.details || []).length) return []
+    const filtered = filterExplorerEntries(entries, { availability: 'available', ...selectionPreferences })
+      .filter((item) => item.selectable && !rows.some((row) => row.key === item.key) &&
+        !(data.results || []).some((result) => result.definitionKey === item.key))
+    return rankExplorerEntries(filtered, selectionPreferences).slice(0, 3)
+  }, [entries, currentPlan, data.latestTestPlan, data.results, rows, locale])
 
-  async function create(keys, replaceActive = false) {
+  async function create(keys, replaceActive = false, selectionPreferences = undefined) {
     const valid = validTestKeys(keys)
     const selected = valid?.map((key) => entries.find((entry) => entry.key === key && entry.selectable))
     if (!selected || selected.some((entry) => !entry?.definition)) {
@@ -170,6 +182,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         })),
         operationId: crypto.randomUUID(),
         replaceActive,
+        ...(selectionPreferences === undefined ? {} : { selectionPreferences }),
       })
       try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Storage may be blocked. */ }
       setConflict(null)
@@ -210,35 +223,31 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       if (data.activeTestPlan) {
         const ids = pending.keys.map((key) => entries.find((entry) => entry.key === key)?.definition?.id)
         if (JSON.stringify(ids) === JSON.stringify(data.activeTestPlan.definitionIds)) {
-          setPlan(data.activeTestPlan)
-          try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Private session. */ }
-          // A matching existing battery also resolves the one-time OAuth handoff.
-          // Leaving ?selection=pending causes an apparently unfinished sign-in.
-          router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
-        } else setConflict(pending.keys)
+          // Same tests, new priorities: persist preferences without discarding progress.
+          await create(pending.keys, false, pending.preferences)
+        } else setConflict({ keys: pending.keys, preferences: pending.preferences })
         return
       }
-      await create(pending.keys)
+      await create(pending.keys, false, pending.preferences)
     }
     // Do not reset the guard in cleanup: a StrictMode replay is not a new
     // selection, and the first in-flight request must have a single owner.
     void restore().catch(() => setError(c.error)).finally(() => setInitializing(false))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps -- one handoff per mounted selection, including StrictMode.
 
-  async function choose(entriesToStart) {
+  async function choose(entriesToStart, selectionPreferences) {
     const keys = entriesToStart.map((entry) => entry.key)
     if (data.activeTestPlan) {
       const ids = entriesToStart.map((entry) => entry.definition?.id)
       if (JSON.stringify(ids) !== JSON.stringify(data.activeTestPlan.definitionIds)) {
-        setConflict(keys)
+        setConflict({ keys, preferences: selectionPreferences })
         setExploring(false)
         return
       }
-      setPlan(data.activeTestPlan)
-      setExploring(false)
+      await create(keys, false, selectionPreferences)
       return
     }
-    await create(keys)
+    await create(keys, false, selectionPreferences)
   }
   async function openTest(row) {
     setBusy(true)
@@ -268,6 +277,18 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         <Link href={root + '/history'} prefetch={false}>{c.history} →</Link>
       </div>
       {initializing && <p role="status">{c.preparing}</p>}
+      {!!savedPriorities.length && <section className={styles.savedPriorities} aria-label={locale === 'ru' ? 'Мои сохранённые приоритеты' : 'My saved test priorities'}>
+        <strong>{locale === 'ru' ? 'Мои сохранённые темы и шкалы' : 'Your saved areas and scales'}</strong>
+        <div>{savedPriorities.map((label, index) => <span key={index}>{label}</span>)}</div>
+        <p>{locale === 'ru'
+          ? 'Они перенесены из публичного подбора и учитываются при поиске следующих тестов.'
+          : 'These came from your public selection and refine your next test recommendations.'}</p>
+        {suggestions.length > 0 && <div className={styles.nextSuggestions}>
+          <small>{locale === 'ru' ? 'По вашим темам также подходят:' : 'Also matching your interests:'}</small>
+          {suggestions.map((entry) => <span key={entry.key}>{entry.title}</span>)}
+          <button type="button" onClick={() => setExploring(true)}>{locale === 'ru' ? 'Изменить или дополнить подбор' : 'Refine my test selection'} →</button>
+        </div>}
+      </section>}
       {conflict && <div className={styles.notice} role="group" aria-label={c.conflictTitle}>
         <h2>{c.conflictTitle}</h2><p>{c.conflict}</p>
         <div>
@@ -277,7 +298,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             setPlan(data.activeTestPlan)
             if (data.activeTestPlan?.id) router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
           }}>{c.keep}</button>
-          <button type="button" className="hh-primary" disabled={busy} onClick={() => create(conflict, true)}>{c.replace}</button>
+          <button type="button" className="hh-primary" disabled={busy} onClick={() => create(conflict.keys, true, conflict.preferences)}>{c.replace}</button>
         </div>
       </div>}
       {error && <p role="alert">{error} <button type="button" onClick={() => setError('')}>{c.retry}</button></p>}
@@ -327,7 +348,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
     </div>
     {(exploring || (!rows.length && !initializing && !conflict)) &&
-      <TestExplorer locale={locale} audience="account" onStart={choose}
+      <TestExplorer key={currentPlan?.id || 'new'} locale={locale} audience="account" onStart={choose} initialPreferences={selectionPreferences}
         pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
         recommendedKey={recommendedKey}
         onResumeRun={(run) => router.push(root + '/runs/' + encodeURIComponent(run.id))} />}
