@@ -315,6 +315,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               : <AccountTestBattery data={data} locale={locale}
                   requestedPlanId={searchParams.get('plan')}
                   recommendedKey={searchParams.get('suggest')}
+                  initialStatusFilter={searchParams.get('filter')}
                   reload={load} />
           )}
           {page === 'runs' && (
@@ -345,7 +346,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <SavedDocumentPage key={recordId} id={recordId} locale={locale} reload={load} />
           )}
           {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} />}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} />}
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
@@ -2876,7 +2877,7 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload, initialServiceId = '' }) {
+function Consultations({ data, locale, reload, initialServiceId = '', source = '' }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
     [error, setError] = useState(null)
@@ -2898,6 +2899,12 @@ function Consultations({ data, locale, reload, initialServiceId = '' }) {
       <div className="hh-heading">
         <h1>{c.consultations}</h1>
         <p>{c.consultationsIntro}</p>
+        {source === 'test-results' && <aside className="hh-panel hh-consult-test-source">
+          <h2>{locale === 'ru' ? 'Личные рекомендации по вашим тестам' : 'Personal recommendations about your test results'}</h2>
+          <p>{locale === 'ru'
+            ? 'Выберите специалиста и отправьте запрос на обсуждение результатов. Данные тестов не передаются автоматически — вы сами решаете, чем поделиться.'
+            : 'Choose a specialist and request a personal review. Your private test scores are not shared automatically; you decide what to share.'}</p>
+        </aside>}
       </div>
       <div className="hh-grid hh-services">
         {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
