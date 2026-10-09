@@ -777,17 +777,27 @@
     grid-template-columns: 1fr;
   }
   .hh-nav {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 3px;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    gap: 6px;
     padding: 5px;
+    margin-bottom: 16px;
   }
+  .hh-nav::-webkit-scrollbar { display: none; }
   .hh-nav a {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    scroll-snap-align: start;
     font-size: 13px;
-    padding: 10px 4px;
-    min-width: 0;
+    padding: 10px 14px;
+    min-width: max-content;
     min-height: 46px;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
   }
   .hh-entry {
     margin: 24px auto;
