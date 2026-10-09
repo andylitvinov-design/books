@@ -51,9 +51,13 @@ test("course step videos are shown at bottom without relabeling Russian audio as
   assert.doesNotMatch(meditation, /wN_SNwZ1Epo|qM_nFUkYJ1k/);
 });
 
-test("Tantra Reiki has an embedded personal consultation form after content", async () => {
+test("Tantra Reiki has distinct free consultation and Master Course lead forms after content", async () => {
   const page = await readFile("components/academy-record-page.tsx", "utf8");
-  assert.match(page, /isVerbatimTantraArchive \? <ReikiConsultationForm locale=\{locale\} course="Tantra Reiki"/);
+  assert.match(page, /isVerbatimTantraArchive \? <TantraReikiLeadForms locale=\{locale\}/);
+  const tantraForms = await readFile("components/tantra-reiki-lead-forms.tsx", "utf8");
+  assert.match(tantraForms, /<ReikiConsultationForm locale=\{locale\} course="Tantra Reiki"/);
+  assert.match(tantraForms, /data-reiki-form="master-course"/);
+  assert.match(tantraForms, /wa\.me\/14376066502/);
   assert.match(page, /!isCanonicalYggdrasil && !isVerbatimTantraArchive \? <PublicConsultationCta/);
 });
 
