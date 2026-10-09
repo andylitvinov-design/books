@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ArrowRight, CheckCircle2, ClipboardList, Download, Play, Sparkles } from 'lucide-react'
 import { nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
+import { ClientReportActions } from './client-report-actions'
 import styles from './my-tests-dashboard.module.css'
 
 const COPY = {
@@ -70,71 +71,18 @@ const COPY = {
   },
 }
 
-function escaped(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[char])
-}
-
-function reportHtml(rows, locale) {
-  const c = COPY[locale] || COPY.en
-  const completed = rows.filter((row) => row.result)
-  const sections = completed.map((row) => {
-    const recorded = row.result
-    const date = recorded.measurementAt && Number.isFinite(Date.parse(recorded.measurementAt))
-      ? new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-CA', { dateStyle: 'long' }).format(new Date(recorded.measurementAt))
-      : ''
-    const measures = (recorded.dimensions || []).map((axis) =>
-      '<tr><th scope="row">' + escaped(axis.sourceConstruct || axis.key) + '</th><td>' + escaped(axis.value) + ' ' + escaped(axis.unit || '') + '</td></tr>'
-    ).join('')
-    return '<section><h2>' + escaped(row.title) + '</h2><p>' + escaped(c.recorded) + ': ' + escaped(date) + '</p>' +
-      (measures ? '<table><tbody>' + measures + '</tbody></table>' : '') + '</section>'
-  }).join('')
-  return '<!doctype html><html lang="' + escaped(locale) + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>' + escaped(c.reportTitle) + ' — Holistic House</title>' +
-    '<style>body{font:16px/1.6 system-ui,sans-serif;max-width:780px;margin:0 auto;padding:30px;color:#3e342e;background:#fffdf8}' +
-    'h1,h2{font-family:Georgia,serif}h1{font-size:36px}h2{font-size:22px}section{margin-top:25px;padding-top:18px;border-top:1px solid #e3d8cb}' +
-    'table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #e5ddd3;text-align:left}td{text-align:right}' +
-    '.note{color:#675e53;font-size:14px}.print{border:0;border-radius:12px;padding:12px 20px;background:#236e61;color:white;cursor:pointer}' +
-    '@media print{body{padding:0}.print{display:none}}</style></head><body>' +
-    '<p>HOLISTIC HOUSE</p><h1>' + escaped(c.reportTitle) + '</h1><p>' + escaped(c.summary) + '</p>' +
-    '<button class="print" type="button" onclick="window.print()">' + escaped(c.print) + '</button>' +
-    sections + '<p class="note">' + escaped(c.interpretation) + '</p><p class="note">' + escaped(c.notMedical) + '</p></body></html>'
-}
-
-function downloadReport(rows, locale) {
-  const html = reportHtml(rows, locale)
-  const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'holistic-house-test-report.html'
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), 2000)
-}
-
 function status(row, c) {
   if (row.run) return { name: c.underway, kind: 'underway', percent: row.progress }
   if (row.result) return { name: c.finished, kind: 'finished', percent: 100 }
   return { name: c.pending, kind: 'pending', percent: 0 }
 }
 
-export function MyTestsDashboard({ locale, rows, completed, results, snapshot, onStart, onViewAll }) {
+export function MyTestsDashboard({ locale, rows, completed, results, snapshot, data, onStart, onViewAll }) {
   const c = COPY[locale] || COPY.en
   const [showGuidance, setShowGuidance] = useState(false)
-  const [message, setMessage] = useState('')
   const progress = rows.length ? Math.round((completed / rows.length) * 100) : 0
   const recommendation = nextPersonalRecommendation({ results: results || [], snapshot, locale })
 
-  function exportReport() {
-    if (completed < 1) {
-      setMessage(c.noReport)
-      return
-    }
-    downloadReport(rows, locale)
-    setMessage('')
-  }
 
   return (
     <div className={styles.dashboard} aria-label={c.title}>
@@ -164,16 +112,15 @@ export function MyTestsDashboard({ locale, rows, completed, results, snapshot, o
       </div>
 
       <div className={styles.quickActions}>
-        <button type="button" onClick={exportReport} title={completed ? c.reportHint : c.noReport}>
-          <Download aria-hidden="true" size={24} />
-          <span><strong>{c.report}</strong><small>{c.reportHint}</small></span>
-        </button>
         <button type="button" onClick={() => setShowGuidance((value) => !value)} aria-expanded={showGuidance}>
           <Sparkles aria-hidden="true" size={24} />
           <span><strong>{c.guidance}</strong><small>{c.guidanceHint}</small></span>
         </button>
       </div>
-      {message && <p className={styles.notice} role="status">{message}</p>}
+      <section className={styles.reportPanel} aria-label={c.report}>
+        <div className={styles.reportHeading}><Download size={20} aria-hidden="true" /><strong>{c.report}</strong><small>{c.reportHint}</small></div>
+        <ClientReportActions data={data} locale={locale} compact />
+      </section>
       {showGuidance && (
         <aside className={styles.guidance} aria-label={c.recommendationTitle}>
           <p className={styles.kicker}>{c.recommendationTitle}</p>

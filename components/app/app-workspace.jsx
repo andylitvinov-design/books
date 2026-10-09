@@ -13,6 +13,7 @@ import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
+import { ClientReportActions } from '@/components/app/client-report-actions'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
@@ -1686,6 +1687,11 @@ function PortfolioPage({ data, locale }) {
         </p>
       </div>
 
+      <section className="hh-panel hh-complete-pdf-export" aria-label={locale === 'ru' ? 'Печать всех результатов' : 'Print all results'}>
+        <h2>{locale === 'ru' ? 'Мой полный отчёт' : 'My complete report'}</h2>
+        <p>{locale === 'ru' ? 'Все завершённые тесты, их шкалы, краткие выводы и общие рекомендации одним PDF.' : 'All completed assessments, original scores, concise conclusions and next steps in one PDF.'}</p>
+        <ClientReportActions data={data} locale={locale} />
+      </section>
       <ProfileOverview profile={profile} locale={locale} />
 
       {dimensions.length > 0 && (
@@ -2046,6 +2052,10 @@ function Portrait({ data, locale }) {
 
       {data.practitioner && <OwnerTools locale={locale} />}
       <ReportsFromAndy data={data} locale={locale} />
+      {(data.results || []).length > 0 && <section className="hh-panel hh-complete-pdf-export">
+        <h2>{locale === 'ru' ? 'Скачать все результаты' : 'Download all results'}</h2>
+        <ClientReportActions data={data} locale={locale} />
+      </section>}
     </section>
   )
 }

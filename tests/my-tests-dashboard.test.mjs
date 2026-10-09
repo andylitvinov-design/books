@@ -49,9 +49,14 @@ test('start action reveals existing test battery with filters, real runs and res
 
 test('report uses completed saved measurements and recommendations use established deterministic guidance', () => {
   const dashboard = read('components/app/my-tests-dashboard.jsx')
-  assert.match(dashboard, /const completed = rows\.filter\(\(row\) => row\.result\)/)
-  assert.match(dashboard, /recorded\.dimensions \|\| \[\]/)
-  assert.match(dashboard, /new Blob\(\[html\]/)
+  const reportActions = read('components/app/client-report-actions.jsx')
+  const reportModel = read('lib/profile/client-report.js')
+  const pdf = read('lib/profile/client-report-pdf.js')
+  assert.match(dashboard, /<ClientReportActions data=\{data\} locale=\{locale\}/)
+  assert.match(reportActions, /generateClientPdf/)
+  assert.match(reportModel, /latest\.dimensions\.map/)
+  assert.match(reportModel, /snapshot/)
+  assert.match(pdf, /application\/pdf/)
   assert.match(dashboard, /nextPersonalRecommendation\(\{ results: results \|\| \[\], snapshot, locale \}\)/)
   assert.match(dashboard, /not a diagnosis or treatment recommendation/)
 })

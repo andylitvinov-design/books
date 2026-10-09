@@ -1,6 +1,6 @@
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
-import {mkdir,writeFile} from 'node:fs/promises'
+import {mkdir,writeFile,readFile} from 'node:fs/promises'
 import {createHmac} from 'node:crypto'
 import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
@@ -145,6 +145,16 @@ try {
  await page.getByText('Add optional context',{exact:true}).click();await page.getByLabel('Anything else you want to note?').fill('Synthetic private context, not a real person.');await page.getByLabel('What changed or seems to trigger this?').fill('Synthetic trigger.');await page.getByLabel('What would you like to change?').fill('Synthetic desired change.')
  await saveAndExit();await enterTest();await page.getByText('Add optional context',{exact:true}).click();await expect(page.getByLabel('Anything else you want to note?')).toHaveValue('Synthetic private context, not a real person.');await expect(page.getByLabel('What changed or seems to trigger this?')).toHaveValue('Synthetic trigger.');await expect(page.getByLabel('What would you like to change?')).toHaveValue('Synthetic desired change.');passed('Save and exit flushes versioned optional context without touching scores')
  await page.getByRole('button',{name:'Save my result'}).click();await openCompletedPlanResult();await expect(page.getByRole('heading',{name:'Context at this check-in'})).toBeVisible();await expect(page.getByText('Synthetic trigger.',{exact:true})).toBeVisible();const first=(await api('bootstrap')).data.results[0];assert.equal(first.dimensions.length,5);passed('first result, owner-only optional context and snapshot persist in actual PostgreSQL')
+ await page.goto(origin+'/en/app');await ready()
+ const pdfDownloadPromise=page.waitForEvent('download',{timeout:60000})
+ await page.getByRole('button',{name:'Download complete PDF'}).click()
+ const pdfDownload=await pdfDownloadPromise
+ assert.match(pdfDownload.suggestedFilename(),/\.pdf$/)
+ const pdfBytes=await readFile(await pdfDownload.path())
+ assert.ok(pdfBytes.length>12000,'personal report must contain rendered text pages')
+ assert.equal(pdfBytes.subarray(0,8).toString(),'%PDF-1.4')
+ assert.ok(pdfBytes.toString('latin1').includes('/Type /Pages'))
+ passed('real printable PDF downloads with all latest personal results and scale data')
  await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Add your baseline profile',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:/Results portfolio/})).toBeVisible()
  for(const width of[320,360,390,430,768,1280]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${output}/portrait-en-${width}.png`,fullPage:true})}
  assert.equal(await page.locator('.mobile-bottom-navigation').count(),0);passed('action-first profile dashboard and responsive no-overflow screenshots 320–1280')

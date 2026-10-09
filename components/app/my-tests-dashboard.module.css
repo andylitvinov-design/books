@@ -41,3 +41,12 @@
 .notice{font-size:.85rem;color:#85623a;margin:5px 0!important}
 @media(max-width:540px){.dashboard{padding:15px;border-radius:20px}.statistics{gap:6px}.stat{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 7px}.stat svg,.miniRing{width:20px;height:20px}.stat>span:not(.miniRing){font-size:.66rem}.stat strong{font-size:1.15rem}.quickActions{gap:7px}.quickActions button{padding:9px!important;gap:7px!important;min-height:64px}.quickActions button svg{width:20px}.quickActions strong{font-size:.76rem}.quickActions small{font-size:.65rem}.previewTitle{font-size:.77rem}.state{font-size:.64rem}}
 @media(max-width:360px){.stat strong{font-size:1rem}.previewList li{display:grid}.state{justify-self:start}}
+
+/* The primary testing action uses the original warm brick-red visual language. */
+.primary{background:#bf4f2e!important;box-shadow:0 10px 24px #92371d25!important}
+.primary:hover{background:#a84227!important}
+.reportPanel{display:grid;gap:8px;border-radius:15px;border:1px solid #e6dacf;background:#fffdf9;padding:12px 14px;margin:0 0 12px}
+.reportHeading{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:.86rem;color:#544238}
+.reportHeading svg{color:#bf4f2e}
+.reportHeading small{margin-left:auto;color:#786b5e;font-size:.74rem}
+.quickActions>button{width:100%;margin-bottom:11px}
