@@ -1,2 +1,4 @@
 /* A page with its own localized lead-capture block should not receive a second sales panel. */
 body:has([data-consultation-cta]) [data-sitewide-capture] { display: none; }
+/* Reiki courses have their own compact, intent-aware capture; do not repeat the generic Academy banner. */
+body:has([data-reiki-choice-capture]) [data-sitewide-capture] { display: none; }
