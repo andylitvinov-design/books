@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import {
   yggdrasilTextTestimonials,
@@ -13,6 +14,8 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
       lead: "What was the learning journey like for others? Explore their own words and watch every original video reflection.",
       text: "Text reviews",
       video: "Video reviews",
+      courseVideos: "Original course reviews",
+      seriesVideos: "Eight-part student video diary",
       original: "View original review",
       language: "Original review in English",
     },
@@ -22,6 +25,8 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
       lead: "Каким оказался этот путь для учеников? Прочитайте их собственные слова и посмотрите все оригинальные видеоотзывы.",
       text: "Текстовые отзывы",
       video: "Видеоотзывы",
+      courseVideos: "Отзывы о курсе",
+      seriesVideos: "Восемь частей личного видеоотзыва",
       original: "Открыть оригинал",
       language: "Оригинал отзыва — на английском",
     },
@@ -31,6 +36,8 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
       lead: "Descubre las reflexiones personales de estudiantes y mira todos sus testimonios en video.",
       text: "Testimonios escritos",
       video: "Testimonios en video",
+      courseVideos: "Testimonios del curso",
+      seriesVideos: "Diario en ocho partes de un estudiante",
       original: "Ver original",
       language: "Testimonio original en inglés",
     },
@@ -69,11 +76,15 @@ export function YggdrasilTestimonials({ locale }: { locale: PublicLocale }) {
           <span>{yggdrasilVideoTestimonials.length}</span>
         </div>
         <div className="yggdrasil-video-grid yggdrasil-testimonial-video-grid">
-          {yggdrasilVideoTestimonials.map((video) => (
-            <div className="yggdrasil-testimonial-video" key={video.youtubeId}>
-              <span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span>
-              <AcademyVideoPlayer youtubeId={video.youtubeId} title={video.title[locale]} />
-            </div>
+          {yggdrasilVideoTestimonials.map((video, index) => (
+            <Fragment key={video.youtubeId}>
+              {index === 0 ? <h4 className="yggdrasil-review-series-heading">{copy.courseVideos}</h4> : null}
+              {index === 2 ? <h4 className="yggdrasil-review-series-heading">{copy.seriesVideos}</h4> : null}
+              <div className="yggdrasil-testimonial-video">
+                <span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span>
+                <AcademyVideoPlayer youtubeId={video.youtubeId} title={video.title[locale]} />
+              </div>
+            </Fragment>
           ))}
         </div>
       </section>

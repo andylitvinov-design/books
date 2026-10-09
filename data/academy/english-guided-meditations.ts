@@ -1,7 +1,8 @@
 // Only publish a video as a guided practice after its exact title, language,
 // creator/channel and YouTube ID have been independently checked.
-// Tantra Reiki practice was supplied by the owner on 2026-10-09 (YouTube title: “Tantra reiki practice”).
-// The two other English meditation video IDs remain unverified.
+// The owner supplied two source recordings on 2026-10-09:
+// Tantra Reiki Practice (w2BN-HYmHUk) and Meditation - Reiki Yggdrasil Class. (80xZ7jN6o2Y).
+// Titles were cross-checked against original YouTube page metadata; Flight to the Sun remains unverified.
 export type EnglishGuidedMeditation = {
   key: "flight-to-sun" | "tantra-reiki" | "reiki-yggdrasil";
   title: string;
@@ -30,9 +31,9 @@ export const englishGuidedMeditations: readonly EnglishGuidedMeditation[] = [
   {
     key: "reiki-yggdrasil",
     title: "Reiki Yggdrasil Meditation",
-    description: "An introductory practice related to the Reiki Yggdrasil learning path and its symbolic work with attention and imagery.",
+    description: "Watch the original Meditation - Reiki Yggdrasil Class recording shared by Andrey, a guided introduction to Reiki Yggdrasil practice.",
     image: "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
     courseHref: "/en/academy/reiki/yggdrasil",
-    youtubeId: null,
+    youtubeId: "80xZ7jN6o2Y",
   },
 ];

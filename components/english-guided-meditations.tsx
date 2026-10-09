@@ -37,8 +37,8 @@ export function EnglishGuidedMeditations({ focus = "all" }: { focus?: Focus }) {
               <p className="english-meditation-card__eyebrow">{item.youtubeId ? "Watch the original video" : isTantraVideo ? "Video practice · English" : "Explore the practice"}</p>
               <h3>{item.title}</h3>
               <p>{item.description}</p>
-              {item.youtubeId && isTantraVideo ? (
-                <a href={"https://www.youtube.com/watch?v=" + item.youtubeId} target="_blank" rel="noreferrer">Watch on YouTube ↗</a>
+              {item.youtubeId && (isTantraVideo || item.key === "reiki-yggdrasil") ? (
+                <a href={"https://www.youtube.com/watch?v=" + item.youtubeId} target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
               ) : !item.youtubeId && isTantraVideo ? (
                 <a href="https://www.youtube.com/@aatapro/videos" target="_blank" rel="noreferrer">Andrey’s original English video channel ↗</a>
               ) : (
