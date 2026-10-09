@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 
@@ -17,12 +18,13 @@ const TEXT = {
     time:'Time per test', anyTime:'Any duration', shortTime:'Up to 5 min', mediumTime:'Up to 10 min',
     professional:'Professional tests only', clear:'Clear optional filters',
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
-    why:'Why these tests?', whyText:'Results are ranked by the topics you select, available questionnaires and your optional preferences. This is a guide to choosing tests, not a diagnosis.',
+    why:'Why these tests?', whyText:'The match percentage is an approximate recommendation score calculated from your selected topics, questionnaire coverage and optional test depth. With no topics selected, it represents general starter relevance. It is not a clinical probability, diagnostic accuracy or health percentage.',
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free testing', buildHelp:'Save your selection and get started',
     browse:'Browse full database', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
     noTests:'Choose a test to continue.', reset:'Use suggested set', back:'Back to easy selection', saved:'Already have a plan? Open my saved tests',
+    more:'Show {count} more tests', showing:'Showing {shown} of {total} matching tests', fit:'match', fitInfo:'Estimated relevance — not a clinical score or diagnosis.',
   },
   ru: {
     kicker:'ПОДБОР ТЕСТОВ', title:'Подберите свои тесты',
@@ -36,12 +38,13 @@ const TEXT = {
     time:'Время на один тест', anyTime:'Любое', shortTime:'До 5 мин', mediumTime:'До 10 мин',
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
-    why:'Почему эти тесты?', whyText:'Тесты упорядочены по выбранным темам, доступности и необязательным настройкам. Это помощь при выборе, а не постановка диагноза.',
+    why:'Почему эти тесты?', whyText:'Процент соответствия — ориентировочная оценка по выбранным темам, охвату параметров и глубине теста. Если темы не указаны, он отражает пригодность для общего знакомства. Это не клиническая вероятность, не точность диагностики и не процент здоровья.',
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Пройти тестирование бесплатно', buildHelp:'Сохранить подборку и начать',
     browse:'Открыть всю базу тестов', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
     noTests:'Выберите тест для продолжения.', reset:'Вернуть рекомендованный набор', back:'Назад к простому подбору', saved:'Уже есть подборка? Открыть мои тесты',
+    more:'Показать ещё {count} тестов', showing:'Показано {shown} из {total} подходящих тестов', fit:'соответствие', fitInfo:'Ориентировочная релевантность — не диагноз и не показатель здоровья.',
   },
   es: {
     kicker:'SELECCIÓN DE PRUEBAS', title:'Elige tus pruebas',
@@ -55,12 +58,13 @@ const TEXT = {
     time:'Tiempo por prueba', anyTime:'Sin límite', shortTime:'Hasta 5 min', mediumTime:'Hasta 10 min',
     professional:'Solo pruebas profesionales', clear:'Borrar filtros opcionales',
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
-    why:'¿Por qué estas pruebas?', whyText:'Las pruebas se ordenan por temas, disponibilidad y preferencias opcionales. No representan un diagnóstico.',
+    why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Comenzar pruebas gratuitas', buildHelp:'Guardar selección y empezar',
     browse:'Explorar base completa', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
     noTests:'Elige una prueba para continuar.', reset:'Usar selección sugerida', back:'Volver al selector sencillo', saved:'¿Ya tienes pruebas? Abrir mis pruebas',
+    more:'Mostrar {count} pruebas más', showing:'Mostrando {shown} de {total} pruebas', fit:'coincidencia', fitInfo:'Relevancia estimada, no una puntuación médica ni un diagnóstico.',
   },
 }
 
@@ -98,6 +102,16 @@ export function SimpleTestPicker({
   starting = false, actionError = null,
 }) {
   const c = TEXT[locale] || TEXT.en
+  const [visibleCount, setVisibleCount] = useState(5)
+  const focusKey = [...focus].sort().join('|')
+  useEffect(() => {
+    // The first screen starts from the five closest matches after any filter change.
+    setVisibleCount(5)
+  }, [focusKey, depth, maxMinutes, professionalOnly])
+  const visibleRecommendations = recommendations.slice(0, visibleCount)
+  const remainingCount = Math.max(0, recommendations.length - visibleCount)
+  const nextBatch = Math.min(5, remainingCount)
+  const format = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''))
   const selectedKeys = new Set(activeBattery.map((item) => item.key))
   const minutes = activeBattery.reduce((total, item) => total + (item.durationMinutes || 0), 0)
   const hasExtraFilters = maxMinutes > 0 || professionalOnly || depth !== 'balanced'
@@ -173,11 +187,11 @@ export function SimpleTestPicker({
         <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
         <p>{c.whyText}</p>
       </details>
-      {recommendations.length > 0 ? <div className={styles.testList}>
-        {recommendations.map((entry,index) => {
+      {recommendations.length > 0 ? <div className={styles.testList} id="hh-public-recommended-tests" data-visible-test-count={visibleRecommendations.length}>
+        {visibleRecommendations.map((entry,index) => {
           const Icon = iconFor(entry)
           const checked = selectedKeys.has(entry.key)
-          return <label key={entry.key} className={styles.testRow} data-selected={checked}>
+          return <label key={entry.key} className={styles.testRow} data-selected={checked} data-test-match={entry.key} data-relevance={entry.matchPercent}>
             <input type="checkbox" checked={checked} onChange={() => onToggleTest(entry.key)}
               aria-label={entry.title} />
             <span className={styles.testArt} aria-hidden="true"><Icon size={24} strokeWidth={1.7}/></span>
@@ -186,12 +200,26 @@ export function SimpleTestPicker({
               <small>{entry.description || entry.category}</small>
             </span>
             <span className={styles.testMeta}>
+              <strong className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
+                {entry.matchPercent}% <span>{c.fit}</span>
+              </strong>
               <em>{checked ? c.viewSelection : index === 0 ? c.suggested : c.available}</em>
               <small><Clock3 size={14} aria-hidden="true"/> ~{entry.durationMinutes ?? '—'} min</small>
             </span>
           </label>
         })}
       </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
+      {recommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
+        <span role="status" aria-live="polite">
+          {format(c.showing, { shown: visibleRecommendations.length, total: recommendations.length })}
+        </span>
+        {remainingCount > 0 && <button type="button" className={styles.showFiveMore}
+          aria-controls="hh-public-recommended-tests" aria-expanded={visibleCount > 5}
+          onClick={() => setVisibleCount((current) => Math.min(recommendations.length, current + 5))}>
+          {format(c.more, { count: nextBatch })} <ArrowRight size={18} aria-hidden="true" />
+        </button>}
+      </div>}
+      <p className={styles.fitNote}>{c.fitInfo}</p>
 
       <div className={styles.selectedSummary} role="status" aria-live="polite">
         <Check size={19} aria-hidden="true"/>
