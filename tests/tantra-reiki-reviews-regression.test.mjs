@@ -40,7 +40,7 @@ test("English reviews use authored English copy and display no untranslated Russ
   const archive = JSON.parse(translated);
   for (const index of [56, 57, 61, 62, 63, 64]) assert.ok(archive.blocks[index].text.length > 15);
   assert.match(reviews, /englishSource\.blocks\[sourceIndex\]\.text/);
-  assert.match(reviews, /locale === "ru" \? tantraReikiArchive/);
+  assert.match(reviews, /tantraReikiArchive\.blocks\.ru\[sourceIndex\]\.text/);
   assert.match(reviews, /locale === "en"/);
 });
 
