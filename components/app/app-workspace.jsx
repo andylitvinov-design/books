@@ -2904,6 +2904,9 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
           <p>{locale === 'ru'
             ? 'Выберите специалиста и отправьте запрос на обсуждение результатов. Данные тестов не передаются автоматически — вы сами решаете, чем поделиться.'
             : 'Choose a specialist and request a personal review. Your private test scores are not shared automatically; you decide what to share.'}</p>
+          <Link className="hh-primary" href={'/' + locale + '/services/free-situation-review?topic=test-results'} prefetch={false}>
+            {locale === 'ru' ? 'Запросить личную консультацию' : 'Request a personal consultation'} →
+          </Link>
         </aside>}
       </div>
       <div className="hh-grid hh-services">
