@@ -66,7 +66,7 @@ const QUICK_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null }) {
   const c = COPY[locale] || COPY.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const quick = QUICK_COPY[locale] || QUICK_COPY.en
@@ -108,17 +108,17 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       recognizer.start()
     } catch { setListening(false); setSpeechError(locale === 'ru' ? 'Микрофон недоступен. Введите запрос текстом.' : 'Microphone unavailable. Please type instead.') }
   }
-  const [focus, setFocus] = useState([])
-  const [stylesFilter, setStylesFilter] = useState([])
-  const [lengths, setLengths] = useState([])
-  const [depth, setDepth] = useState('balanced')
-  const [areas, setAreas] = useState([])
-  const [details, setDetails] = useState([])
-  const [axes, setAxes] = useState([])
-  const [maxMinutes, setMaxMinutes] = useState(0)
-  const [language, setLanguage] = useState('any')
-  const [tracking, setTracking] = useState('any')
-  const [freeOnly, setFreeOnly] = useState(false)
+  const [focus, setFocus] = useState(() => initialPreferences?.focus ?? [])
+  const [stylesFilter, setStylesFilter] = useState(() => initialPreferences?.styles ?? [])
+  const [lengths, setLengths] = useState(() => initialPreferences?.lengths ?? [])
+  const [depth, setDepth] = useState(() => initialPreferences?.depth ?? 'balanced')
+  const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
+  const [details, setDetails] = useState(() => initialPreferences?.details ?? [])
+  const [axes, setAxes] = useState(() => initialPreferences?.axes ?? [])
+  const [maxMinutes, setMaxMinutes] = useState(() => initialPreferences?.maxMinutes ?? 0)
+  const [language, setLanguage] = useState(() => initialPreferences?.language ?? 'any')
+  const [tracking, setTracking] = useState(() => initialPreferences?.tracking ?? 'any')
+  const [freeOnly, setFreeOnly] = useState(() => initialPreferences?.freeOnly ?? false)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('recommended')
   const [selectedKeys, setSelectedKeys] = useState(() => recommendedKey ? [recommendedKey] : [])
@@ -180,7 +180,10 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const start = async () => {
     if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
-    try { await onStart(activeBattery) } catch (error) { setActionError(error) } finally { setStarting(false) }
+    try { await onStart(activeBattery, {
+      focus, details, axes, areas, styles: stylesFilter, lengths,
+      depth, maxMinutes, language, tracking, freeOnly,
+    }) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
 
   return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
