@@ -14,14 +14,18 @@ test("Reiki landing shows meditation, free first level and consultation before r
   assert.match(hub, /Encuentra tu centro/);
 });
 
-test("two clear request forms work via confirmation in WhatsApp, not phantom backend", async () => {
-  const forms = await readFile("components/reiki-landing-forms.tsx", "utf8");
-  for (const term of ["first-level", "consultation", "motivation", "experience", "situation", "required", "wa.me/14376066502", "window.open", "preparedUrl", "reiki-free-consultation"]) {
-    assert.ok(forms.includes(term), "Missing form element: " + term);
+test("two concise messenger contact cards contain no forms or mandatory questions", async () => {
+  const cards = await readFile("components/reiki-landing-forms.tsx", "utf8");
+  for (const term of ["first-level", "consultation", "wa.me/14376066502", "t.me/AndyTherapist", "encodeURIComponent", "reiki-free-consultation", "data-reiki-contact"]) {
+    assert.ok(cards.includes(term), "Missing link or anchor: " + term);
   }
-  assert.match(forms, /No request is sent automatically/);
-  assert.match(forms, /Tu primer nivel de Reiki Yggdrasil/);
-  assert.match(forms, /Первая ступень Рейки Иггдрасиль/);
+  for (const forbidden of ["<form", "<input", "<select", "<textarea", "required", "new FormData", "window.open", "useState"]) {
+    assert.ok(!cards.includes(forbidden), "Registration still requires fields: " + forbidden);
+  }
+  assert.match(cards, /Free Reiki Yggdrasil Level 1/);
+  assert.match(cards, /1-я ступень Рейки Иггдрасиль/);
+  assert.match(cards, /Consulta personal gratuita/);
+  assert.match(cards, /kind="consultation" course=\{course\}/);
 });
 
 test("all ten YouTube testimonials are immediately accessible, with accurate classification", async () => {
@@ -37,13 +41,18 @@ test("all ten YouTube testimonials are immediately accessible, with accurate cla
   }
 });
 
-test("course step videos are shown at bottom without relabeling Russian audio as English", async () => {
+test("Russian lesson videos are preserved but collapsed by default at bottom", async () => {
   const [guide, meditation] = await Promise.all([
     readFile("components/yggdrasil-english-video-guide.tsx", "utf8"),
     readFile("components/yggdrasil-meditation-feature.tsx", "utf8"),
   ]);
   assert.match(guide, /level.steps.map/);
   assert.match(guide, /RU audio · Original class/);
+  assert.match(guide, /<details className="yggdrasil-russian-video-archive">/);
+  assert.match(guide, /Collapsed · \{recordingCount\} Russian-language videos hidden · Tap to expand/);
+  assert.doesNotMatch(guide, /<details[^>]+open=/);
+  assert.match(guide, /Show videos/);
+  assert.match(guide, /Hide videos/);
   assert.match(guide, /<AcademyVideoPlayer youtubeId=\{recording.youtubeId\}/);
   assert.match(guide, /id=\{scope === "all" \? "yggdrasil-english-guide"/);
   assert.match(meditation, /recording.youtubeId \? \(/);
@@ -64,6 +73,9 @@ test("Tantra Reiki has distinct free consultation and Master Course lead forms a
 test("mobile testimonial cards and two-stage forms have responsive spacing", async () => {
   const css = await readFile("app/academy.css", "utf8");
   assert.match(css, /\.reiki-landing-forms \{ scroll-margin-top/);
+  assert.match(css, /Both contact cards fit one mobile screen/);
+  assert.match(css, /\.reiki-offer-card__actions \{ display: grid/);
+  assert.match(css, /\.yggdrasil-russian-video-archive\[open\]/);
   assert.match(css, /\.yggdrasil-testimonial-card__top/);
   assert.match(css, /@media \(max-width: 550px\)/);
 });

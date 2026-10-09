@@ -2598,28 +2598,26 @@
 .yggdrasil-meditation-feature__pending::before { content: ""; z-index: -1; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(20,16,13,.9), transparent 70%); }
 .yggdrasil-meditation-feature__pending p { max-width: 560px; color: #fffaf5; font-size: 15px; line-height: 1.6; }
 
-/* Two transparent, low-friction applications placed immediately after the meditation. */
-.reiki-landing-forms { scroll-margin-top: 88px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; align-items: stretch; }
+/* Two concise direct-messenger cards; no registration fields. */
+.reiki-landing-forms { scroll-margin-top: 88px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; align-items: stretch; }
 .reiki-landing-forms > div { min-width: 0; display: flex; }
-.reiki-offer-card { width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 18px; padding: clamp(22px, 3vw, 32px); border: 1px solid #decdbc; border-radius: 20px; background: #fffaf5; box-shadow: 0 7px 26px rgba(62,43,28,.06); }
-.reiki-offer-card--gift { border-color: #a47f60; background: linear-gradient(155deg, #faeee1, #fffaf4 65%); }
-.reiki-offer-card--consult { background: linear-gradient(155deg, #f1f2e9, #fffdf8 65%); }
-.reiki-offer-card__eyebrow { display: block; margin-bottom: 10px; color: #90613d; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-.reiki-offer-card h3 { margin: 0; font-family: var(--font-serif); font-size: clamp(26px, 2.8vw, 36px); font-weight: 500; line-height: 1.16; color: #32251d; }
-.reiki-offer-card header p { color: #6a594e; font-size: 14px; line-height: 1.65; margin: 11px 0 0; }
-.reiki-offer-card__fields { display: grid; gap: 13px; }
-.reiki-offer-card__fields label { min-width: 0; display: grid; gap: 6px; color: #594537; font-size: 13px; font-weight: 650; }
-.reiki-offer-card__fields input, .reiki-offer-card__fields select, .reiki-offer-card__fields textarea { width: 100%; min-width: 0; min-height: 47px; padding: 11px 12px; border: 1px solid #cdb9a6; border-radius: 10px; background: #fff; color: #352820; font-family: inherit; font-size: 16px; line-height: 1.4; }
-.reiki-offer-card__fields textarea { resize: vertical; min-height: 90px; }
-.reiki-offer-card__fields input:focus, .reiki-offer-card__fields select:focus, .reiki-offer-card__fields textarea:focus { outline: 3px solid rgba(157,111,68,.25); border-color: #99633f; }
-.reiki-offer-card__submit { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 52px; width: 100%; margin-top: auto; padding: 12px 18px; border: 0; border-radius: 12px; background: #73472f; color: #fff; font-size: 15px; font-weight: 800; line-height: 1.3; text-align: left; cursor: pointer; }
-.reiki-offer-card--consult .reiki-offer-card__submit { background: #465244; }
-.reiki-offer-card__submit:hover { filter: brightness(.9); }
-.reiki-offer-card__submit:focus-visible { outline: 3px solid #a9794e; outline-offset: 3px; }
-.reiki-offer-card__note { margin: -7px 0 0; color: #7b6a5c; font-size: 11px; line-height: 1.5; }
-.reiki-offer-card__resume { font-size: 13px; font-weight: 700; color: #68422c; text-decoration: underline; text-underline-offset: 3px; }
-.reiki-standalone-consultation { scroll-margin-top: 92px; max-width: 850px; margin: 36px auto; }
-.reiki-standalone-consultation .reiki-offer-card { padding: clamp(25px,4vw,46px); }
+.reiki-offer-card { width: 100%; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 13px; padding: clamp(18px,2.5vw,24px); border: 1px solid #decdbc; border-radius: 17px; background: #fffaf5; box-shadow: 0 6px 20px rgba(62,43,28,.055); }
+.reiki-offer-card--gift { border-color: #bc9a7e; background: linear-gradient(150deg,#f8ecdf,#fffaf4 80%); }
+.reiki-offer-card--consult { background: linear-gradient(150deg,#f1f2e9,#fffdf8 85%); }
+.reiki-offer-card__intro { min-width: 0; }
+.reiki-offer-card__eyebrow { display: block; margin-bottom: 5px; color: #86583d; font-size: 10px; font-weight: 800; letter-spacing: .10em; line-height: 1.2; text-transform: uppercase; }
+.reiki-offer-card h3 { margin: 0; color: #372920; font-family: var(--font-serif); font-size: clamp(22px,2.4vw,29px); font-weight: 500; line-height: 1.13; text-wrap: balance; }
+.reiki-offer-card__intro p { margin: 7px 0 0; color: #6b5849; font-size: 13px; line-height: 1.45; }
+.reiki-offer-card__actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.reiki-offer-card__actions a { min-width: 0; min-height: 44px; display: inline-flex; justify-content: center; align-items: center; gap: 7px; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 800; line-height: 1.2; text-decoration: none; transition: filter .15s ease; }
+.reiki-offer-card__actions a:hover { filter: brightness(.91); }
+.reiki-offer-card__actions a:focus-visible { outline: 3px solid #ad774b; outline-offset: 3px; }
+.reiki-offer-card__whatsapp { background: #704730; color: #fff; }
+.reiki-offer-card--consult .reiki-offer-card__whatsapp { background: #475648; }
+.reiki-offer-card__telegram { border: 1px solid #c7b7a5; background: #fffdfa; color: #674d3a; }
+.reiki-standalone-consultation { scroll-margin-top: 92px; max-width: 740px; margin: 25px auto; }
+.reiki-standalone-consultation .reiki-offer-card { padding: clamp(18px,3vw,26px); }
+.reiki-standalone-consultation .reiki-offer-card__actions { max-width: 390px; }
 
 /* Readable student voices rather than dense archival quotations. */
 .yggdrasil-testimonials { margin: 0; padding-top: 12px; border-top: 0; }
@@ -2672,8 +2670,15 @@
   .academy-reading-shell--yggdrasil .yggdrasil-program-hero-copy .yggdrasil-hero-tagline { font-size: 25px; }
   .yggdrasil-program-actions { display: grid; grid-template-columns: minmax(0,1fr); }
   .yggdrasil-program-actions a { width: 100%; }
-  .reiki-offer-card { padding: 21px 18px; }
-  .reiki-offer-card h3 { font-size: 29px; }
+  /* Both contact cards fit one mobile screen, with two wide messenger links each. */
+  .reiki-landing-forms { gap: 10px; }
+  .reiki-offer-card { padding: 14px 15px; gap: 10px; border-radius: 14px; }
+  .reiki-offer-card__eyebrow { font-size: 9px; margin-bottom: 4px; }
+  .reiki-offer-card h3 { font-size: clamp(19px, 5vw, 22px); line-height: 1.11; }
+  .reiki-offer-card__intro p { font-size: 12px; line-height: 1.38; margin-top: 5px; }
+  .reiki-offer-card__actions { gap: 7px; }
+  .reiki-offer-card__actions a { padding: 7px; min-height: 40px; font-size: 12px; }
+  .reiki-standalone-consultation .reiki-offer-card { padding: 15px 17px; }
   .yggdrasil-testimonial-card footer { align-items: flex-start; }
   .yggdrasil-meditation-feature__pending p { font-size: 13px; }
 }
@@ -2695,6 +2700,33 @@
   .yggdrasil-basic-level-attunements li { font-size: 10px; }
 }
 
+/* RU-audio course library starts folded below the open English testimonials. */
+.yggdrasil-russian-video-archive { overflow: hidden; border: 1px solid #d9c7b5; border-radius: 16px; background: #fffaf5; }
+.yggdrasil-russian-video-archive__summary { display: flex; align-items: center; justify-content: space-between; gap: 13px; min-height: 104px; padding: 20px clamp(16px,3vw,25px); cursor: pointer; list-style: none; }
+.yggdrasil-russian-video-archive__summary::-webkit-details-marker { display: none; }
+.yggdrasil-russian-video-archive__summary::marker { content: ""; }
+.yggdrasil-russian-video-archive__copy { min-width: 0; display: grid; gap: 6px; }
+.yggdrasil-russian-video-archive__copy .homeopathy-kicker { margin: 0; font-size: 10px; line-height: 1.4; }
+.yggdrasil-russian-video-archive__copy strong { color: #352920; font-family: var(--font-serif); font-size: clamp(22px,3vw,30px); font-weight: 500; line-height: 1.18; }
+.yggdrasil-russian-video-archive__copy small { color: #7f6958; font-size: 12px; line-height: 1.4; }
+.yggdrasil-russian-video-archive__toggle { flex: none; display: inline-flex; align-items: center; gap: 7px; border: 1px solid #bfa38d; border-radius: 999px; padding: 8px 12px; color: #744b33; font-size: 12px; font-weight: 800; }
+.yggdrasil-russian-video-archive__summary:focus-visible { outline: 3px solid #a57348; outline-offset: -4px; }
+.yggdrasil-russian-video-archive__toggle svg { transition: transform .16s ease; }
+.yggdrasil-russian-video-archive[open] .yggdrasil-russian-video-archive__toggle svg { transform: rotate(180deg); }
+.yggdrasil-russian-video-archive__body { border-top: 1px solid #e3d6c7; padding: 21px clamp(14px,3vw,24px) 25px; }
+.yggdrasil-russian-video-archive__collapsed,.yggdrasil-russian-video-archive__show { display: inline; }
+.yggdrasil-russian-video-archive__expanded,.yggdrasil-russian-video-archive__hide { display: none; }
+.yggdrasil-russian-video-archive[open] .yggdrasil-russian-video-archive__collapsed,.yggdrasil-russian-video-archive[open] .yggdrasil-russian-video-archive__show { display: none; }
+.yggdrasil-russian-video-archive[open] .yggdrasil-russian-video-archive__expanded,.yggdrasil-russian-video-archive[open] .yggdrasil-russian-video-archive__hide { display: inline; }
+@media (max-width:550px) {
+  .yggdrasil-russian-video-archive__summary { min-height: 96px; padding: 15px 12px; align-items: flex-start; }
+  .yggdrasil-russian-video-archive__copy strong { font-size: 21px; }
+  .yggdrasil-russian-video-archive__copy small { font-size: 11px; }
+  .yggdrasil-russian-video-archive__toggle { margin-top: 12px; padding: 7px 9px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .yggdrasil-russian-video-archive__toggle svg,.reiki-offer-card__actions a { transition: none; }
+}
 
 /* Tantra Reiki — Taoist, photographic conversion landing. Scoped to this course. */
 .academy-reading-shell--tantra .tantra-course-hero {
