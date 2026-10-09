@@ -1428,3 +1428,20 @@
 .hh-result-guidance small,.hh-assessment-history-next small{color:#67675b}
 @media(max-width:800px){.hh-assessment-history-list{grid-template-columns:1fr}.hh-assessment-history-heading,.hh-assessment-history-next{display:grid;grid-template-columns:1fr}}
 @media(max-width:450px){.hh-assessment-history-item-head{display:block}.hh-assessment-history-item{padding:14px}.hh-assessment-history-dimensions>div{min-width:90px}}
+
+
+/* Authenticated mobile quick navigation; distinct from public site tabs. */
+.hh-mobile-app-nav{display:none}
+@media(max-width:760px){
+  .hh-app{padding-bottom:calc(116px + env(safe-area-inset-bottom))}
+  .hh-mobile-app-nav{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:fixed;
+    z-index:45;inset:auto 0 0;gap:4px;align-items:stretch;
+    padding:8px max(10px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right));
+    border-top:1px solid #e0d9ce;background:rgba(255,252,247,.97);
+    box-shadow:0 -7px 24px #443c3212;backdrop-filter:blur(12px)
+  }
+  .hh-mobile-app-nav a{display:grid;justify-items:center;align-content:center;gap:3px;text-decoration:none;border-radius:12px;padding:5px 2px;min-height:53px;color:#6b615a;font-size:11px;line-height:1.2;text-align:center}
+  .hh-mobile-app-nav a[aria-current='page']{color:#246b5d;background:#e7f1e9;font-weight:700}
+  .hh-mobile-app-nav a:focus-visible{outline:3px solid #236e61;outline-offset:-1px}
+}
