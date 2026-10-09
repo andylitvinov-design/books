@@ -43,8 +43,9 @@ test('account plans accept legitimate interests, guests cannot submit private in
 
 test('stored user interests narrow and prioritize the next test suggestions', () => {
   const entries = buildExplorerEntries({ locale: 'en', audience: 'account' })
-  const narrowed = filterExplorerEntries(entries, { availability: 'available', ...selected })
-  const ranked = rankExplorerEntries(narrowed, selected)
+  const relevant = { focus: ['anxiety'], axes: ['anxiety'], styles: ['professional'], depth: 'balanced' }
+  const narrowed = filterExplorerEntries(entries, { availability: 'available', ...relevant })
+  const ranked = rankExplorerEntries(narrowed, relevant)
   assert.ok(ranked.length > 0)
   assert.ok(ranked.every((x) => x.selectable && x.testStyle === 'professional'))
   assert.ok(!ranked.some((x) => x.key === 'mini-ipip-20'))
