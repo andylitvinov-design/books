@@ -52,3 +52,28 @@
 .cta{background:#bf4f2e;border-color:#bf4f2e;box-shadow:0 10px 25px #92371d25}
 .cta:hover:not(:disabled){background:#a84227}
 .cta:focus-visible{outline-color:#7f391f}
+
+
+/* A small, transparent heuristic relevance label, never a health score. */
+.matchBadge{display:inline-flex;align-items:center;gap:4px;justify-content:center;max-width:100%;
+  padding:6px 9px;border-radius:10px;background:#e2f0e9;border:1px solid #c4dbd0;color:#22685b;
+  font:750 .93rem/1.15 system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.matchBadge span{font-size:.67rem;font-weight:650;letter-spacing:.005em}
+.moreTests{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;
+  border:1px solid #e7ded4;background:#fbf8f1;border-radius:14px;padding:9px 12px;margin:4px 0 10px}
+.moreTests>span{color:#776c62;font-size:.78rem;font-weight:650;line-height:1.45;font-variant-numeric:tabular-nums}
+.showFiveMore{display:inline-flex;justify-content:center;align-items:center;gap:7px;
+  border:0;background:transparent;color:#276f61;border-radius:10px;min-height:43px;
+  padding:7px 10px;font-size:.86rem!important;font-weight:750!important;text-decoration:underline;text-underline-offset:3px}
+.showFiveMore:hover{background:#ebf4ee}
+.showFiveMore:focus-visible{outline:3px solid #277668;outline-offset:2px}
+.fitNote{font-size:.72rem!important;line-height:1.4!important;color:#81756c;margin:2px 0 12px!important}
+@media(max-width:600px){
+ .testMeta{flex-wrap:wrap;justify-content:flex-start;justify-items:start;gap:5px 8px}
+ .testMeta .matchBadge{font-size:.8rem;padding:5px 7px;min-height:28px}
+ .testMeta .matchBadge span{font-size:.64rem}
+ .moreTests{align-items:flex-start;padding:8px 9px}
+ .moreTests>span{flex:1 1 auto}
+ .showFiveMore{min-height:42px;padding:7px 5px;font-size:.78rem!important}
+}
+@media(max-width:350px){.moreTests{display:grid}.testMeta em{font-size:.64rem}}
