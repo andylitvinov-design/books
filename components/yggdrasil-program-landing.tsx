@@ -5,6 +5,7 @@ import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video
 import { YggdrasilTestimonials } from "@/components/yggdrasil-testimonials";
 import { YggdrasilMeditationFeature } from "@/components/yggdrasil-meditation-feature";
 import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
+import { YggdrasilSourceStudyGuide } from "@/components/yggdrasil-source-study-guide";
 
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import englishAttunements from "@/data/academy/yggdrasil-en-settings-l1.json";
@@ -285,6 +286,8 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           ))}
         </div>
       </section>
+
+      <YggdrasilSourceStudyGuide locale={locale} mode="overview" />
 
       <YggdrasilMeditationFeature locale={locale} />
 
