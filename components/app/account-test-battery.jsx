@@ -120,17 +120,19 @@ function formatDate(value, locale) {
   return new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-CA', { dateStyle: 'medium' }).format(new Date(value))
 }
 function planRows(plan, data, locale) {
+  const completedRuns = new Set(plan?.completedRunIds || [])
   return (plan?.definitionIds || []).map((id) => {
     const definition = safeDefinition(id)
     if (!definition) return null
     const latest = latestFor(data.results, id)
+    const completedInPlan = (data.results || []).some((result) => result.definitionId === id && completedRuns.has(result.runId))
     const run = (data.runs || []).find((candidate) => candidate.definitionId === id && ['draft', 'in_progress'].includes(candidate.status))
     const answered = run ? definition.questions.filter((question) => Object.prototype.hasOwnProperty.call(run.answers || {}, question.id)).length : 0
-    const progress = run ? Math.min(99, Math.round(100 * answered / Math.max(1, definition.questions.length))) : latest ? 100 : 0
+    const progress = run ? Math.min(99, Math.round(100 * answered / Math.max(1, definition.questions.length))) : completedInPlan ? 100 : 0
     const item = definition.key
     const catalog = monitoringCatalogItem(item)
     return {
-      definition, run, result: latest, progress, key: item,
+      definition, run, result: latest, completedInPlan, progress, key: item,
       title: catalog?.title?.[locale] || catalog?.title?.en || definition.title,
       description: catalog?.description?.[locale] || catalog?.description?.en || '',
       minutes: catalog?.durationMinutes || Math.max(1, Math.round(definition.questions.length / 6)),
@@ -138,7 +140,7 @@ function planRows(plan, data, locale) {
     }
   }).filter(Boolean)
 }
-export function AccountTestBattery({ data, locale, requestedPlanId, recommendedKey = null, reload }) {
+export function AccountTestBattery({ data, locale, requestedPlanId, recommendedKey = null, initialStatusFilter = null, reload }) {
   const c = COPY[locale] || COPY.en
   const router = useRouter()
   const once = useRef(false)
@@ -146,18 +148,32 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
   const [exploring, setExploring] = useState(false)
-  const [showList, setShowList] = useState(Boolean(requestedPlanId))
-  const [statusFilter, setStatusFilter] = useState('all')
+  const allowedFilters = ['all', 'notStarted', 'inProgress', 'completed', 'remaining']
+  const requestedFilter = allowedFilters.includes(initialStatusFilter) ? initialStatusFilter : null
+  const [showList, setShowList] = useState(Boolean(requestedPlanId || requestedFilter))
+  const [statusFilter, setStatusFilter] = useState(requestedFilter || 'all')
   useEffect(() => {
     // The public Google handoff can replace ?selection=pending with ?plan=... without remounting.
     if (requestedPlanId) setShowList(true)
   }, [requestedPlanId])
+  useEffect(() => {
+    if (!requestedFilter) return
+    setStatusFilter(requestedFilter)
+    setShowList(true)
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      document.getElementById('my-tests-list')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    }))
+  }, [requestedFilter])
   const [conflict, setConflict] = useState(null)
   const [error, setError] = useState('')
   const entries = useMemo(() => buildExplorerEntries({ locale, audience: 'account' }), [locale])
   const currentPlan = plan || data.activeTestPlan || data.latestTestPlan || null
   const rows = useMemo(() => planRows(currentPlan, data, locale), [currentPlan, data, locale])
-  const completed = rows.filter((row) => Boolean(row.result)).length
+  const completed = rows.filter((row) => row.completedInPlan).length
+  const pastRows = useMemo(() => {
+    const ids = [...new Set((data.results || []).map((result) => result.definitionId).filter(Boolean))]
+    return planRows({ definitionIds: ids, completedRunIds: [] }, data, locale)
+  }, [data, locale])
   const root = '/' + locale + '/app'
   const selectionPreferences = currentPlan?.selectionPreferences || data.latestTestPlan?.selectionPreferences || {}
   const priorityLabels = (selectionPreferences.focus || []).map((key) => TEST_RECOMMENDATION_FOCUS.find((item) => item.key === key)?.label?.[locale] || key)
@@ -301,7 +317,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       />
       {showList && <div className={styles.listArea} id="my-tests-list">
       <div className={styles.header}>
-        <div><p className="hh-kicker">{c.account} · Mind–Body Monitor</p><h1>{c.title}</h1>
+        <div><p className="hh-kicker">{c.account} · Mind–Body Monitor</p><h1>{statusFilter === 'completed' ? (locale === 'ru' ? 'Пройденные тесты · повторить' : 'Completed tests · retake') : statusFilter === 'remaining' ? (locale === 'ru' ? 'Оставшиеся тесты' : 'Tests still to complete') : c.title}</h1>
           <p>{c.intro}</p></div>
         <Link href={root + '/history'} prefetch={false}>{c.history} →</Link>
       </div>
@@ -342,16 +358,19 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             ['notStarted', c.pending],
             ['inProgress', c.underway],
             ['completed', c.finished],
+            ['remaining', locale === 'ru' ? 'Оставшиеся' : 'Remaining'],
           ].map(([key, label]) => (
             <button key={key} type="button" aria-pressed={statusFilter === key}
               onClick={() => setStatusFilter(key)}>{label}</button>
           ))}
         </div>
         <div className={styles.group}>
-          {rows.map((row) => {
-            const status = row.run ? c.underway : row.result ? c.finished : c.pending
-            const state = row.run ? 'inProgress' : row.result ? 'completed' : 'notStarted'
-            if (statusFilter !== 'all' && state !== statusFilter) return null
+          {(statusFilter === 'completed' ? pastRows : rows).map((row) => {
+            const done = statusFilter === 'completed' ? Boolean(row.result) : row.completedInPlan
+            const state = done ? 'completed' : row.run ? 'inProgress' : 'notStarted'
+            const status = done ? c.finished : row.run ? c.underway : c.pending
+            if (statusFilter === 'remaining' && done) return null
+            if (!['all', 'remaining'].includes(statusFilter) && state !== statusFilter) return null
             return <article key={row.definition.id} className={styles.row}>
               <span className={styles.image}><Image src={row.photo} alt="" fill sizes="(max-width: 720px) 92px, 140px" /></span>
               <div className={styles.info}>
@@ -360,18 +379,18 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                 <div className={styles.meta}><span>{row.definition.questions.length} {c.questions}</span>
                   <span>~{row.minutes} {c.mins}</span></div>
                 <div className={styles.status}>
-                  <strong className={row.run ? styles.inProgress : row.result ? styles.completed : ''}>{status}</strong>
-                  {row.run
+                  <strong className={state === 'inProgress' ? styles.inProgress : state === 'completed' ? styles.completed : ''}>{status}</strong>
+                  {row.run && !done
                     ? <><progress max="100" value={row.progress} aria-label={status} /><span>{row.progress}% {c.percent}</span>
                         {row.result && <span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span>}</>
-                    : row.result
+                    : done
                       ? <><span>100% {c.percent}</span><span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span></>
                       : <><progress max="100" value="0" aria-label={status} /><span>0% {c.percent}</span></>}
                 </div>
               </div>
               <div className={styles.rowActions}>
                 <button className="hh-primary" type="button" disabled={busy} onClick={() => openTest(row)}>
-                  {row.run ? c.resume : row.result ? c.repeat : c.begin} →
+                  {row.run && !done ? c.resume : row.result ? c.repeat : c.begin} →
                 </button>
                 {row.result && <Link prefetch={false} href={root + '/results/' + encodeURIComponent(row.result.id)}>{c.see}</Link>}
               </div>
