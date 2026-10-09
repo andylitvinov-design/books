@@ -494,7 +494,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
               </details>
               <div className="tantra-journey__actions">
                 {n>1 ? <a href={"#tantra-level-"+(n-1)} aria-label={c.previous+" "+(n-1)}>← {c.previous}</a> : <a href="https://t.me/AndyTherapist" target="_blank" rel="noreferrer">{c.contact} ↗</a>}
-                <a className="tantra-journey__next" href={n<9?"#tantra-level-"+(n+1):"#english-guided-meditations-tantra-reiki"}>{n<9?c.next:c.final} →</a>
+                <a className="tantra-journey__next" href={n<9?"#tantra-level-"+(n+1):(locale === "en" ? "#english-guided-meditations-tantra-reiki" : "#tantra-testimonials")}>{n<9?c.next:c.final} →</a>
               </div>
             </div>
           </article>
