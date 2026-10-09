@@ -11,7 +11,7 @@ const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
 // A personality trait is descriptive and must never be presented as an ideal-to-reach ray.
 const PORTRAIT_AXES = TEST_EXPLORER_AXES.filter((axis) => axis !== 'personality')
 
-export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null }) {
+export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, portraitActions = null, compactPortrait = false }) {
   const [variant, setVariant] = useState('male')
   // Null means the latest measured axes; [] is an intentional empty selection.
   const [chosenRays, setChosenRays] = useState(null)
@@ -106,7 +106,10 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       </div>}
     </div>
     {!portrait && <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>}
-    {portrait && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
+    {portrait && portraitActions}
+    {portrait && <details className={styles.portraitDisclosure} open={!compactPortrait}>
+      <summary>{ru ? 'Настроить лучи и шкалы портрета' : es ? 'Elegir escalas' : 'Customize portrait rays and scales'}</summary>
+      <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
       <div className={styles.portraitControlsHeading}>
         <strong>{ru ? 'Лучи моего портрета' : es ? 'Escalas de mi retrato' : 'Choose my portrait rays'}</strong>
         <span>{visibleRays.length} / {PORTRAIT_AXES.length}</span>
@@ -136,7 +139,8 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         </div>
       </details>}
       <p>{ru ? 'Процент — положение на шкале с учётом её направления, а не процент здоровья. Личностные черты без направления «лучше/хуже» сюда не включаются.' : es ? 'El porcentaje representa la posición orientada en la escala, no un porcentaje de salud.' : 'Each percentage is a direction-adjusted scale position, not a health score. Non-normative personality traits are excluded.'}</p>
-    </section>}
+      </section>
+    </details>}
     {!portrait && activeAxes.length > 0 && <div className={styles.axisMeters} aria-label={ru ? 'Активные оси' : es ? 'Ejes activos' : 'Active axes'}>
       {activeAxes.map((axis) => <div key={axis} className={styles.axisMeter}>
         <span>{label(axis)}</span>
