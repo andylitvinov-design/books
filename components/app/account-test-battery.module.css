@@ -57,3 +57,43 @@
 .nextSuggestions span{background:#fffdf8;border:1px solid #e0d2c1;border-radius:8px;padding:6px 9px;font-size:.77rem}
 .nextSuggestions button{border-radius:99px;background:#5c4134;color:#fffaf3;border:0;padding:8px 13px;font-size:.77rem;cursor:pointer;min-height:38px}
 .nextSuggestions button:focus-visible{outline:3px solid #467a73;outline-offset:2px}
+
+
+/* 2026-10-09 mobile-first My Tests workflow: overview before test list. */
+.batteryLayout{display:block!important;max-width:1180px;margin:8px auto 22px}
+.batteryLayout .shell{width:100%;max-width:none;margin:0;padding:clamp(10px,2.5vw,24px);background:#fffdf8}
+.listArea{padding-top:22px;margin-top:14px;border-top:1px solid #e6ddd1;scroll-margin-top:16px}
+.listArea .header{align-items:center;gap:10px;margin-bottom:14px}
+.listArea .header h1{font-size:clamp(1.5rem,3vw,2.15rem);margin:4px 0 7px}
+.listArea .header p{font-size:.92rem;line-height:1.4;margin:5px 0}
+.listArea .header>a{white-space:nowrap;font-size:.82rem;color:#2b7164}
+.listArea .overview{background:#edf4ee;padding:12px;border-radius:12px;margin:12px 0;gap:9px}
+.listArea .counter strong{font-size:1.24rem}
+.testFilters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:15px}
+.testFilters button{min-height:39px;padding:6px 12px;border:1px solid #d8d0c5;border-radius:99px;background:#f8f5ee;color:#443b33;font-size:.83rem;cursor:pointer}
+.testFilters button[aria-pressed='true']{background:#286f62;border-color:#286f62;color:#fff}
+.testFilters button:focus-visible{outline:3px solid #286f62;outline-offset:2px}
+.portraitDetails{margin:14px auto 0;border:1px solid #ddd3c5;border-radius:16px;background:#f9f5ed;overflow:hidden}
+.portraitDetails summary{cursor:pointer;list-style:revert;padding:14px 18px;min-height:48px;font-weight:650;color:#2e6e62;font-size:.9rem}
+.portraitDetails summary:focus-visible{outline:3px solid #2e6e62;outline-offset:-4px}
+.portraitDetails>section{border:0;box-shadow:none;margin:0 auto!important}
+.portraitDetails:not([open])>section{display:none}
+@media(max-width:720px){
+  .batteryLayout .shell{padding:8px!important;background:transparent;border:0;box-shadow:none}
+  .listArea{background:#fffdf8;border:1px solid #e5d9cc;padding:14px;border-radius:18px}
+  .listArea .header{display:block}
+  .listArea .header h1{font-size:1.55rem}
+  .listArea .header>a{display:inline-block;margin-top:8px}
+  .testFilters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:3px}
+  .testFilters::-webkit-scrollbar{display:none}
+  .testFilters button{flex:0 0 auto;white-space:nowrap;font-size:.77rem;min-height:42px}
+  .group{gap:9px}
+  .group .row{grid-template-columns:64px minmax(0,1fr);gap:10px;padding:10px}
+  .group .image{aspect-ratio:1/1}
+  .group .info h2{font-size:1rem;line-height:1.25}
+  .group .description{font-size:.8rem;margin-bottom:5px}
+  .rowActions{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;align-items:center}
+  .rowActions button{max-width:none;width:100%;min-height:45px}
+  .rowActions a{font-size:.79rem}
+}
+@media(max-width:420px){.listArea{padding:10px}.group .row{grid-template-columns:56px minmax(0,1fr)}.rowActions{grid-template-columns:1fr}.rowActions a{text-align:center}}
