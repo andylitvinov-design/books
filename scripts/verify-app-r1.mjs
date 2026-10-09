@@ -157,7 +157,7 @@ try {
  await expect(selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true})).toHaveAttribute('aria-pressed','true')
  await selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
- await expect(selectionPage.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+ await expect(selectionPage.locator('#my-tests-list').getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
  const selectedPlan=(await api('bootstrap',null,other)).data.activeTestPlan
  assert.equal(selectedPlan.definitionIds.length,1)
