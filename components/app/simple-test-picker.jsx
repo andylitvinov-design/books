@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 
@@ -21,7 +22,7 @@ const TEXT = {
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Build my test plan', buildHelp:'Save your selection and get started',
     browse:'Browse full database', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
-    noTests:'Choose a test to continue.', reset:'Use suggested set', back:'Back to easy selection',
+    noTests:'Choose a test to continue.', reset:'Use suggested set', back:'Back to easy selection', saved:'Already have a plan? Open my saved tests',
   },
   ru: {
     kicker:'ПОДБОР ТЕСТОВ', title:'Подберите свои тесты',
@@ -40,7 +41,7 @@ const TEXT = {
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Составить мой набор тестов', buildHelp:'Сохранить подборку и начать',
     browse:'Открыть всю базу тестов', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
-    noTests:'Выберите тест для продолжения.', reset:'Вернуть рекомендованный набор', back:'Назад к простому подбору',
+    noTests:'Выберите тест для продолжения.', reset:'Вернуть рекомендованный набор', back:'Назад к простому подбору', saved:'Уже есть подборка? Открыть мои тесты',
   },
   es: {
     kicker:'SELECCIÓN DE PRUEBAS', title:'Elige tus pruebas',
@@ -59,7 +60,7 @@ const TEXT = {
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Crear mi selección', buildHelp:'Guardar selección y empezar',
     browse:'Explorar base completa', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
-    noTests:'Elige una prueba para continuar.', reset:'Usar selección sugerida', back:'Volver al selector sencillo',
+    noTests:'Elige una prueba para continuar.', reset:'Usar selección sugerida', back:'Volver al selector sencillo', saved:'¿Ya tienes pruebas? Abrir mis pruebas',
   },
 }
 
@@ -208,6 +209,6 @@ export function SimpleTestPicker({
         <Compass size={20} aria-hidden="true"/>{c.browse}<ChevronDown size={17} aria-hidden="true" className={styles.browseArrow}/>
       </button>
     </section>
-    <p className={styles.privacy}>{c.privacy}</p>
+    <p className={styles.privacy}>{c.privacy} <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/app`} prefetch={false}>{c.saved} →</Link></p>
   </section>
 }
