@@ -1,4 +1,5 @@
 import { MessageCircle, Send } from "lucide-react";
+import { ReikiChoiceCapture } from "@/components/reiki-choice-capture";
 import type { PublicLocale } from "@/lib/public-locales";
 
 type Kind = "first-level" | "consultation";
@@ -74,13 +75,9 @@ function ReikiContactCard({ locale, kind, course }: { locale: PublicLocale; kind
 }
 
 // Keep existing exported names and anchor IDs so all site links continue to work.
+// Retain the historical export and the #reiki-free-level-one deep link.
 export function YggdrasilLeadForms({ locale }: { locale: PublicLocale }) {
-  return (
-    <section className="reiki-landing-forms" id="reiki-free-level-one" aria-label={locale === "ru" ? "Бесплатная первая ступень и консультация" : locale === "es" ? "Primer nivel gratis y consulta" : "Free Reiki Level 1 and personal consultation"}>
-      <ReikiContactCard locale={locale} kind="first-level" course="Reiki Yggdrasil" />
-      <div id="reiki-free-consultation"><ReikiContactCard locale={locale} kind="consultation" course="Reiki Yggdrasil" /></div>
-    </section>
-  );
+  return <ReikiChoiceCapture locale={locale} course="yggdrasil" />;
 }
 
 export function ReikiConsultationForm({ locale, course }: { locale: PublicLocale; course: string }) {
