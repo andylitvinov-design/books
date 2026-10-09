@@ -768,21 +768,38 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             {mode === 'guided' && <p className="hh-guided-step">{c.guidedPrompt}</p>}
             <h3>{question.text}</h3>
             {definition.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
-            <div className={Array.isArray(definition.responseAnchors) ? 'cabinet-answer-list' : 'cabinet-answer-scale'}>
-              {answerLabels(definition, question).map((option) => (
-                <button
-                  type="button"
-                  key={option.value}
-                  aria-pressed={selected === option.value}
+            {question.inputType === 'day-count' ? (
+              <label className="cabinet-day-count-select">
+                <span>{locale === 'ru' ? 'Количество дней за последние 30 дней (0–30)' : 'Number of days in the past 30 days (0–30)'}</span>
+                <select
+                  aria-label={locale === 'ru' ? 'Количество дней' : 'Number of days'}
+                  value={selected ?? ''}
                   disabled={busy}
-                  onClick={() => choose(option.value)}
+                  onChange={(event) => { if (event.target.value !== '') void choose(Number(event.target.value)) }}
                 >
-                  {Array.isArray(definition.responseAnchors)
-                    ? <><strong>{option.value}</strong><span>{option.label}</span></>
-                    : option.label}
-                </button>
-              ))}
-            </div>
+                  <option value="" disabled>{locale === 'ru' ? 'Выберите число дней' : 'Select number of days'}</option>
+                  {Array.from({ length: question.max - question.min + 1 }, (_, i) => question.min + i).map(value => (
+                    <option key={value} value={value}>{value}</option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <div className={Array.isArray(question.responseAnchors || definition.responseAnchors) ? 'cabinet-answer-list' : 'cabinet-answer-scale'}>
+                {answerLabels(definition, question).map((option) => (
+                  <button
+                    type="button"
+                    key={option.value}
+                    aria-pressed={selected === option.value}
+                    disabled={busy}
+                    onClick={() => choose(option.value)}
+                  >
+                    {Array.isArray(question.responseAnchors || definition.responseAnchors)
+                      ? <><strong>{option.value}</strong><span>{option.label}</span></>
+                      : option.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {!Array.isArray(definition.responseAnchors) && question.anchors && (
               <div className="cabinet-answer-anchors">
                 <span>{question.anchors[0]}</span><span>{question.anchors[1]}</span>
