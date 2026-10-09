@@ -19,6 +19,7 @@ const levelOneSource =
   source + "/books/reiki/runic-reiki-yggdrasil-brief-description/retreat-1-details-basic-5-levels-of-initiation-into-runic-reiki.html";
 const exerciseSource =
   source + "/books/reiki/runic-reiki-yggdrasil-brief-description/runic-reiki-practice.html";
+const originalFreeListing = source + "/free-trial-runic-reiki-initiation-level-1.html";
 
 type LocaleStrings = {
   eyebrow: string; title: string; lead: string;
@@ -281,6 +282,7 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
             <p>{c.footer}</p>
             <a href={freeInitiationSource} target="_blank" rel="noopener noreferrer">{c.source} ↗</a>
             <a href={readingSource} target="_blank" rel="noopener noreferrer">{c.sourceReading} ↗</a>
+            <a href={originalFreeListing} target="_blank" rel="noopener noreferrer">{locale === "ru" ? "Исходная карточка бесплатного курса SuperSkills (историческая)" : locale === "es" ? "Oferta original de nivel gratuito (histórica)" : "Original $0 introductory course listing (historical)"} ↗</a>
           </footer>
         </article>
       </div>
