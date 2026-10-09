@@ -636,3 +636,7 @@
 .simpleBack{grid-column:1/-1;display:inline-flex;justify-content:center;align-items:center;gap:8px;width:max-content;min-height:43px;border-radius:99px;padding:8px 15px;border:1px solid #bed6cb;background:#eef6f1;color:#286b5e;font-weight:650;margin:0 0 10px;cursor:pointer}
 .simpleBack:focus-visible{outline:3px solid #286b5e;outline-offset:3px}
 @media(max-width:760px){.simpleBack{margin:0 0 10px}}
+
+/* Canonical warm terracotta for all Test Explorer primary start actions. */
+.explorer .quickPrimary,.explorer .battery .primary,.explorer .primary{background:#bf4f2e!important;border-color:#bf4f2e!important;color:#fff!important;box-shadow:0 9px 23px #92371d20}
+.explorer .quickPrimary:hover:not(:disabled),.explorer .battery .primary:hover:not(:disabled),.explorer .primary:hover:not(:disabled){background:#a84227!important;border-color:#a84227!important}
