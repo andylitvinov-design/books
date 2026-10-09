@@ -6,7 +6,7 @@ import { Activity, ArrowLeft, Brain, ChevronRight, Clock3, Compass, Heart, Langu
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
-import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries } from '@/lib/assessments/test-explorer'
+import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries, rankPublicTestMatches } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import { SimpleTestPicker } from './simple-test-picker'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
@@ -191,6 +191,12 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     return 0
   }), [ranked, sort, locale, axisFilter, selectedKeys])
   const selected = entries.filter((entry) => selectedKeys.includes(entry.key) && entry.selectable)
+  // Public browsing uses its own match-based order, unaffected by checkbox toggles.
+  const simpleRecommendations = useMemo(() => rankPublicTestMatches(
+    matching.filter((entry) => entry.selectable),
+    { focus, details, axes, depth, styles: stylesFilter, lengths },
+  ), [matching, focus, details, axes, depth, stylesFilter, lengths])
+  const simpleAuto = useMemo(() => simpleRecommendations.slice(0, 3), [simpleRecommendations])
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
   // Use only existing, rights-cleared, startable questionnaires.
@@ -198,8 +204,10 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)),
     { focus, details, axes, depth, styles: stylesFilter, lengths },
   ), [matching, axisFilter, focus, details, axes, depth, stylesFilter, lengths])
-  const activeBattery = simpleMode && simpleSelectionChanged ? selected : (selected.length ? selected : autoBattery)
-  const activeCoverage = selected.length ? coverage : coverageForSelection(entries, autoBattery.map((entry) => entry.key))
+  const activeBattery = simpleMode
+    ? (simpleSelectionChanged ? selected : simpleAuto)
+    : (selected.length ? selected : autoBattery)
+  const activeCoverage = selected.length ? coverage : coverageForSelection(entries, activeBattery.map((entry) => entry.key))
   const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes }), [entries, focus, details, axes])
   const showingCoverage = selectedKeys.length > 0
   const displayedCoverage = showingCoverage ? coverage : topicCoverage
@@ -217,18 +225,31 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const questions = activeBattery.reduce((sum, entry) => sum + (entry.questionCount || 0), 0)
   const minutes = activeBattery.reduce((sum, entry) => sum + (entry.durationMinutes || 0), 0)
   const breadth = c[activeCoverage.breadth]
-  const chooseSuggested = () => setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
+  const chooseSuggested = () => {
+    if (simpleMode) {
+      setSelectedKeys(simpleAuto.map((entry) => entry.key))
+      setSimpleSelectionChanged(true)
+      return
+    }
+    setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
+  }
   const resetFilters = () => { setAvailability('available'); setFocus([]); setStylesFilter([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
-    setSelectedKeys((current) => current.includes(key) ? current.filter((item) => item !== key) : current.length < 12 ? [...current, key] : current)
+    setSelectedKeys((current) => {
+      const baseline = simpleMode && !simpleSelectionChanged && !current.length
+        ? simpleAuto.map((entry) => entry.key) : current
+      return baseline.includes(key)
+        ? baseline.filter((item) => item !== key)
+        : baseline.length < 12 ? [...baseline, key] : baseline
+    })
   }
   const toggleSimpleSelected = (key) => {
     // In the uncomplicated initial view, the automatically recommended plan is
     // already selected. The first manual click edits the full suggested set.
     setSelectedKeys((current) => {
       const baseline = !simpleSelectionChanged && !current.length
-        ? autoBattery.map((entry) => entry.key) : current
+        ? simpleAuto.map((entry) => entry.key) : current
       return baseline.includes(key)
         ? baseline.filter((item) => item !== key)
         : baseline.length < 12 ? [...baseline, key] : baseline
@@ -245,13 +266,6 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   }
 
   if (simpleMode && !browseFull) {
-    const chosen = new Set(activeBattery.map((entry) => entry.key))
-    // Keep the recommended tests in front, then fill the visible rows from the
-    // existing matching, ranked, rights-cleared questionnaire catalog.
-    const recommendedRows = [
-      ...activeBattery,
-      ...visible.filter((entry) => entry.selectable && !chosen.has(entry.key)),
-    ].filter((entry, index, all) => all.findIndex((row) => row.key === entry.key) === index).slice(0, 4)
     return <SimpleTestPicker
       locale={locale}
       focus={focus}
@@ -262,13 +276,21 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       onMaxMinutes={setMaxMinutes}
       professionalOnly={stylesFilter.length === 1 && stylesFilter[0] === 'professional'}
       onProfessional={() => setStylesFilter((current) => current.length === 1 && current[0] === 'professional' ? [] : ['professional'])}
-      recommendations={recommendedRows}
+      recommendations={simpleRecommendations}
       activeBattery={activeBattery}
       onToggleTest={toggleSimpleSelected}
       onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
       matchCount={matchCount}
       onStart={start}
-      onBrowseFull={() => { setBrowseFull(true); setAvailability('available') }}
+      onBrowseFull={() => {
+        // Carry the three implicit selections into the full catalog editor.
+        if (!simpleSelectionChanged) {
+          setSelectedKeys(simpleAuto.map((entry) => entry.key))
+          setSimpleSelectionChanged(true)
+        }
+        setBrowseFull(true)
+        setAvailability('available')
+      }}
       starting={starting}
       actionError={actionError}
     />
