@@ -2055,7 +2055,7 @@ function Portrait({ data, locale }) {
       {(data.results || []).length > 0 && <section className="hh-panel hh-complete-pdf-export">
         <h2>{locale === 'ru' ? 'Скачать все результаты' : 'Download all results'}</h2>
         <ClientReportActions data={data} locale={locale} />
-      </section>
+      </section>}
     </section>
   )
 }
