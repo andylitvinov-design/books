@@ -66,6 +66,7 @@ const QUICK_COPY = {
 // First-screen shortcuts mirror familiar hotel-search chips, but use the
 // existing questionnaire facets instead of a parallel, disconnected filter.
 const QUICK_FOCUS = ['stress', 'anxiety', 'sleep', 'mood', 'body', 'relationships']
+const QUICK_ICONS = { stress: '⚡', anxiety: '☁', sleep: '☾', mood: '♡', body: '✦', relationships: '♧' }
 
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
@@ -201,6 +202,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
         <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : c.start}</button>
         <span>{activeBattery.length} {quick.summary} · {questions} {c.questions} · ~{minutes} {c.minutes}</span>
       </div>
+      {actionError && <p role="alert" className={styles.quickError}>{actionError.code || actionError.message}</p>}
+    </header>
+    <aside className={styles.heroPortrait} aria-label={locale === 'ru' ? 'Визуальная модель психического портрета' : locale === 'es' ? 'Vista previa del retrato' : 'Psychological portrait preview'}>
+      <TestExplorerVisual compact locale={locale} coverage={displayedCoverage} mode={showingCoverage ? 'selected' : 'topics'} topicCount={focus.length} selectedCount={selectedKeys.length} portrait={portrait?.measuredCount ? portrait : null} axisFilter={axisFilter} onAxisFilter={setAxisFilter} />
+      <p className={styles.heroPortraitNote}>{portrait?.measuredCount ? (locale === 'ru' ? 'Реальные показатели из ваших сохранённых тестов.' : 'Measured results from your completed tests.') : (locale === 'ru' ? 'Подсвеченные зоны показывают выбор тем. Реальные шкалы появятся после тестирования.' : locale === 'es' ? 'Las áreas resaltadas muestran temas, no resultados.' : 'Highlighted areas show topics, not test results. Your measured rays appear after testing.')}</p>
+    </aside>
+    <div className={styles.quickDiscovery}>
       <div className={styles.quickFilters} aria-label={locale === 'ru' ? 'Быстрый подбор тестов' : locale === 'es' ? 'Filtros rápidos' : 'Quick test filters'}>
         <div className={styles.quickFiltersHeader}>
           <strong>{locale === 'ru' ? 'Что вас интересует?' : locale === 'es' ? '¿Qué te interesa?' : 'What would you like to explore?'}</strong>
@@ -211,7 +219,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
             const item = TEST_RECOMMENDATION_FOCUS.find((topic) => topic.key === key)
             if (!item) return null
             const checked = focus.includes(key)
-            return <button key={key} type="button" aria-pressed={checked} onClick={() => setFocus((current) => toggle(current, key))}>{checked ? '✓ ' : ''}{item.label[locale] || item.label.en}</button>
+            return <button key={key} type="button" aria-pressed={checked} onClick={() => setFocus((current) => toggle(current, key))}><span className={styles.quickChipIcon} aria-hidden="true">{checked ? '✓' : QUICK_ICONS[key]}</span><span>{item.label[locale] || item.label.en}</span></button>
           })}
         </div>
         <div className={styles.quickFilterExtras}>
@@ -220,14 +228,11 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
           {(focus.length > 0 || appliedFilters > 0) && <button className={styles.quickFilterReset} type="button" onClick={resetFilters}>{locale === 'ru' ? 'Сбросить всё ×' : locale === 'es' ? 'Borrar todo ×' : 'Clear all ×'}</button>}
         </div>
       </div>
-      <button type="button" className={styles.customizeButton} aria-expanded={customizeOpen} aria-controls="hh-test-customizer" onClick={() => setCustomizeOpen((open) => !open)}>{customizeOpen ? '− ' + quick.hide : '+ ' + quick.customize}</button>
-      <p className={styles.quickPrivacy}>{quick.google}</p>
-      {actionError && <p role="alert" className={styles.quickError}>{actionError.code || actionError.message}</p>}
-    </header>
-    <aside className={styles.heroPortrait} aria-label={locale === 'ru' ? 'Визуальная модель психического портрета' : locale === 'es' ? 'Vista previa del retrato' : 'Psychological portrait preview'}>
-      <TestExplorerVisual compact locale={locale} coverage={displayedCoverage} mode={showingCoverage ? 'selected' : 'topics'} topicCount={focus.length} selectedCount={selectedKeys.length} portrait={portrait?.measuredCount ? portrait : null} axisFilter={axisFilter} onAxisFilter={setAxisFilter} />
-      <p className={styles.heroPortraitNote}>{portrait?.measuredCount ? (locale === 'ru' ? 'Реальные показатели из ваших сохранённых тестов.' : 'Measured results from your completed tests.') : (locale === 'ru' ? 'Подсвеченные зоны показывают выбор тем. Реальные шкалы появятся после тестирования.' : locale === 'es' ? 'Las áreas resaltadas muestran temas, no resultados.' : 'Highlighted areas show topics, not test results. Your measured rays appear after testing.')}</p>
-    </aside>
+      <div className={styles.quickDiscoveryFooter}>
+        <button type="button" className={styles.customizeButton} aria-expanded={customizeOpen} aria-controls="hh-test-customizer" onClick={() => setCustomizeOpen((open) => !open)}>{customizeOpen ? '− ' + quick.hide : '⚙ ' + quick.customize}</button>
+        <p className={styles.quickPrivacy}>{quick.google}</p>
+      </div>
+    </div>
     </div>
     <div id="hh-test-customizer" className={styles.customizer} hidden={!customizeOpen}>
       <details className={styles.problemDetails}>
