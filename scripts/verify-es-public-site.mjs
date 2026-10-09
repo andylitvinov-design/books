@@ -102,7 +102,11 @@ try {
           if (language === 'es') {
             await expect(page.locator('.client-entry-form')).toBeVisible();
           } else {
-            await expect(page.getByRole('button',{name:language==='ru'?'Продолжить с Google':'Continue with Google'})).toBeVisible();
+            // The redesigned Client entry starts with a test battery; Google is the
+            // explicit continuation action and remains available below it.
+            await expect(page.getByRole('button',{name:language==='ru'?'Пройти тестирование бесплатно':'Start free testing'}).first()).toBeVisible();
+            await expect(page.getByRole('button',{name:language==='ru'?'Войти в личный кабинет через Google':'Enter personal cabinet with Google'})).toBeVisible();
+            await expect(page.locator('aside[class*="heroPortrait"] img[src*="holistic-house-test-brain-concept"]').first()).toBeVisible();
             const legacy = page.locator('.cabinet-legacy-entry');
             await expect(legacy).not.toHaveAttribute('open','');
             await legacy.locator('summary').click();
