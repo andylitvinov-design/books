@@ -99,7 +99,7 @@ export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children
          <div className={styles.measuredBar} role="progressbar" aria-label={row.label} aria-valuemin={row.min} aria-valuemax={row.max} aria-valuenow={row.value}>
            <span style={{width:(row.ratio*100)+'%'}}/>
          </div>
-         <small className={styles.scaleSource}>{formatValue(row.min)}–{formatValue(row.max)} · {dateString(row.date,locale)}</small>
+         <small className={styles.scaleSource}>{row.testTitle ? row.testTitle + ' · ' : ''}{formatValue(row.min)}–{formatValue(row.max)} · {dateString(row.date,locale)}</small>
        </article>)}
      </div> : <p className={styles.noData}>{c.noMeasures}</p>}
      {view.measured.length>6 && <button type="button" className={styles.moreScales} onClick={()=>setShowAll((previous)=>!previous)} aria-expanded={showAll}>
