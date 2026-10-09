@@ -2485,3 +2485,67 @@
   .tantra-review-videos { grid-template-columns: 1fr; }
   .tantra-review-video figcaption { min-height: 0; }
 }
+
+
+/* Tantra Reiki guided meditation: a source-verified video slot, not a photo teaser. */
+.english-meditation-section--video {
+  margin: 34px 0;
+  padding: clamp(22px, 3vw, 36px);
+  background: #f2e8dc;
+}
+.english-meditation-section--video .english-meditation-card {
+  grid-template-columns: minmax(0, 55%) minmax(0, 1fr);
+  min-height: 270px;
+}
+.english-meditation-section--video .english-meditation-card__visual {
+  background: #302923;
+  align-self: stretch;
+}
+.english-meditation-section--video .academy-video-frame,
+.english-meditation-section--video .academy-video-poster {
+  width: 100%;
+  height: 100%;
+  min-height: 270px;
+  aspect-ratio: 16 / 9;
+}
+.english-meditation-unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 270px;
+  height: 100%;
+  aspect-ratio: 16 / 9;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  color: #f8ecdb;
+  background: radial-gradient(circle at 50% 45%, #655348, #27221f 72%);
+}
+.english-meditation-unavailable__play {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border: 2px solid #c9a98b;
+  border-radius: 50%;
+  font-size: 27px;
+  color: #f3d9bc;
+  opacity: .75;
+}
+.english-meditation-unavailable > strong {
+  font-family: var(--font-serif);
+  font-size: clamp(18px, 2.1vw, 26px);
+  font-weight: 500;
+}
+.english-meditation-unavailable > span:last-child {
+  color: #d9c6b5;
+  font-size: 14px;
+}
+@media (max-width: 770px) {
+  .english-meditation-section--video .english-meditation-card { grid-template-columns: 1fr; }
+  .english-meditation-unavailable { min-height: 215px; }
+  .english-meditation-section--video .academy-video-frame,
+  .english-meditation-section--video .academy-video-poster { min-height: 215px; }
+}
