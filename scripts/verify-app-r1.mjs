@@ -64,7 +64,7 @@ async function enterTest(name='Current State Check',mode='Guided'){
   await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
   if(await page.getByRole('heading',{name:'You already have an active test set'}).count())
    await page.getByRole('button',{name:'Use new selection'}).click()
-  await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+  await expect(page.locator('#my-tests-list').getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  }
  await expect(candidate()).toBeVisible({timeout:15000})
  await candidate().getByRole('button',{name:/^(Start testing|Continue test|Retake test)/}).click()
@@ -89,7 +89,7 @@ async function openCompletedPlanResult(){
  // A completed battery returns to the overview; a retake may navigate to its result directly.
  await expect(page).toHaveURL(/\/(?:tests\?plan=|results\/)/,{timeout:15000})
  if(/\/results\//.test(page.url()))return
- await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+ await expect(page.locator('#my-tests-list').getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  const resultLink=page.getByRole('link',{name:'View result'}).first()
  await expect(resultLink).toHaveAttribute('href',/\/results\//)
  // WebKit can hydrate a newly completed test overview more slowly in CI.
@@ -264,7 +264,7 @@ try {
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  const reopenedPlan=(await api('bootstrap')).data.activeTestPlan
  assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'after replacement URL must identify saved plan')
- await expect(page.getByRole('heading',{name:'Your selected tests'})).toBeVisible()
+ await expect(page.locator('#my-tests-list').getByRole('heading',{name:'Your selected tests'})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
  passed('public test selection starts Google authentication and opens account test battery')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
