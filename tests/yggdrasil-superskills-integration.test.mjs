@@ -16,7 +16,8 @@ test("SuperSkills guide is integrated into all relevant public Reiki Yggdrasil r
   assert.match(modules, /module\.levelId === 2 \? <YggdrasilSourceStudyGuide locale=\{locale\} mode="instructor"/);
   assert.match(book, /basic-course#historical-study-materials/);
   assert.match(sideNav, /#source-study-guide/);
-  assert.match(sideNav, /Практика и первоисточники/);
+  assert.match(sideNav, /Дополнительные практики/);
+  assert.match(sideNav, /superskills-sources/);
   assert.match(modules, /<YggdrasilCurriculum locale=\{locale\}/);
   assert.match(book, /<section className="yggdrasil-full-book"/);
 });
