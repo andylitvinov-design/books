@@ -45,3 +45,25 @@ Other existing catalogue candidates such as WHO-5, PROMIS, PSS-10, PSQI, ISI, WE
 - Run regression on all prior 66 instruments and on the new four, verifying account/guest access, encrypted result persistence, repeat/history, browser UI and no cross-account data leakage.
 - Apply the append-only `20261008231100_hh_professional_phq8_cbi.sql` migration before production release; verify four new `app.assessment_versions` records and that all existing result rows remain intact.
 - Do not claim Live before the exact merged version is deployed to the correct Vercel project and production links are checked.
+
+## Second expansion — CDC Healthy Days professional population measures
+
+Two **source-backed original English** modules from CDC's validated HRQOL–14 suite are now fully runnable: [Healthy Days Core HRQOL–4](https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm) and [Healthy Days Symptoms Module (five items)](https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm). Their U.S.-government source and methodology are [published as public domain by CDC](https://stacks.cdc.gov/view/cdc/154521). Public-domain reuse is distinct from claimed clinical suitability: these are population-level self-reports, not diagnosis, treatment planning or an "ideal psychic health" percentage.
+
+**Core four** has a five-category general health ordinal rating (1 excellent to 5 poor), counts of physically/mentally unhealthy days (each 0–30), activity-limitation days (0–30), and **two derived CDC summary measures only**: unhealthy days `min(30, physicalDays + mentalDays)`, and healthy days `30 - unhealthyDays`. The CDC default skip rule when both physical and mental unhealthy days are zero is enforced by accepting activity days of zero only. No fake overall clinical score exists.
+
+**Symptoms five** has independent 0–30-day measures for days with pain-limited activity, depressed/sad mood, worry/anxiety, insufficient rest/sleep, and healthy/full-of-energy days. Do not sum symptoms into one invented psychometric score. The vitality item is positively oriented; the other four record difficulty.
+
+The original 0–30 response range is rendered as an accessible compact numeric dropdown, **not thirty-one adjacent buttons**, in both guest and authenticated questionnaires. The catalogue has new topic/axis metadata so `cdc-hrqol-4` and `cdc-healthy-days-symptoms` remain discoverable and report real coverage.
+
+### Further rights-gated reference methods
+
+The research-only registry now includes `cdc-healthy-days-activity` and complete `cdc-hrqol-14` as **non-runnable** references, because they require different response formats or would duplicate completed core/symptom questions. It also indexes [COPSOQ III](https://www.copsoq-network.org/licence-guidelines-and-questionnaire) (conditional commercial use under country/language-specific guidelines), PROMIS Pain Interference, Emotional Support, Sleep-Related Impairment, Companionship, and Neuro-QoL Cognitive Function. These HealthMeasures tools **must not be inserted into the proprietary site without electronic administration permissions**. The official [HealthMeasures electronic-administration instructions](https://www.healthmeasures.net/explore-measurement-systems/promis/obtain-administer-measures) and [September 2026 licensing guide](https://healthmeasures.net/implement/steps-to-license/) govern.
+
+WHO-5 remains **non-runnable** for commercial Holistic House use: the [WHO 2024 official PDF](https://cdn.who.int/media/docs/default-source/mental-health/five-well-being-index-%28who-5%29/who-5_english-original.pdf) is CC BY-NC-SA 3.0 IGO, and [WHO commercial licensing policy](https://www.who.int/about/policies/publishing/copyright) requires permission. Do not silently convert a noncommercial license into a free commercial one.
+
+### Updated rollout gate
+
+- Before production release, the append-only `20261008234000_hh_cdc_healthy_days.sql` migration must register the two new immutable definition records with their exact semantic hashes, in addition to PHQ-8/CBI from the preceding PR branch.
+- Unit QA must confirm 72 unique runnable questionnaires including all 6 new professional additions; database test must complete a synthetic run for every one, and browser QA must validate both selectable 0–30-day input and sources.
+- Never turn commercial-rights-gated metadata into a runnable item until permission is actually obtained.
