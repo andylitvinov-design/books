@@ -168,15 +168,21 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
   const t = copy[locale];
   const c = t[course];
 
-  // Preserve historical deep links to the Master Course application.
+  // Deep-linked course CTAs also switch the selected action, including after hydration.
   useEffect(() => {
-    if (course === "tantra" && window.location.hash === "#tantra-master-course") setSelected("master");
+    const syncHash = () => {
+      if (course === "tantra" && window.location.hash === "#tantra-master-course") setSelected("master");
+      if (course === "yggdrasil" && window.location.hash === "#reiki-free-level-one") setSelected("free");
+    };
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
   }, [course]);
 
   const download = selected === "guide";
   const actionUrl = download
     ? "/academy/course-guides/" + course + "." + locale + ".txt"
-    : whatsapp + encodeURIComponent(c.messages[selected]);
+    : whatsapp + encodeURIComponent(selected === "free" ? c.messages.free : c.messages.master);
   const consultationUrl = whatsapp + encodeURIComponent(c.messages.consultation);
   const sectionId = course === "tantra" ? "tantra-next-steps" : "reiki-free-level-one";
 
