@@ -1,0 +1,12 @@
+.actions{display:grid;gap:10px;margin:0 18px 15px;padding:14px;border-radius:17px;background:linear-gradient(135deg,#fffdf9,#f7efe4);border:1px solid #e6d9ca}
+.download,.advice{display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:12px 14px;border-radius:12px;font-size:13px;font-weight:750;text-decoration:none!important;text-align:center;line-height:1.35}
+.download{background:#835843!important;border:1px solid #835843!important;color:white!important;cursor:pointer}
+.download:disabled{background:#e5ddd2!important;color:#857970!important;border-color:#e5ddd2!important;cursor:not-allowed}
+.advice{background:#fefbf6;color:#684c3b!important;border:1px solid #ccb9a4}
+.advice:hover{background:#f5ebdc}
+.privacy,.empty{margin:0!important;font-size:11px;line-height:1.5;color:#76695b}
+.privacy{display:flex;align-items:flex-start;gap:6px}
+.privacy svg{margin-top:1px;flex:none}
+.error{margin:0;color:#ad4339;font-size:12px}
+.actions :is(button,a):focus-visible{outline:3px solid #a77759;outline-offset:3px}
+@media(max-width:550px){.actions{margin:0 10px 12px;padding:12px}.download,.advice{min-height:48px;font-size:12px}}
