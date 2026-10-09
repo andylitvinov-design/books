@@ -207,7 +207,7 @@ try {
  assert.ok(catalogBox&&bannerBox&&catalogBox.y<bannerBox.y,
    'secondary consultation should follow test discovery, not displace it')
  await secondaryBanner.getByRole('button',{name:'Wellbeing & energy'}).click()
- await expect(secondaryBanner.getByRole('link',{name:/Request a free conversation/})).toHaveAttribute('href',/topic=wellbeing/)
+ await expect(secondaryBanner.getByRole('link',{name:/Request free assessment/})).toHaveAttribute('href',/topic=wellbeing/)
  passed('Client invitation selects an enquiry topic without private answers')
  passed('first visit: full test catalog and search visible; advanced criteria collapsed')
  const customize=page.getByRole('button',{name:/Choose my own tests and filters/})
