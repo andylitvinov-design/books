@@ -165,7 +165,7 @@ test("Tantra Reiki publishes the full bilingual source archive instead of a summ
   assert.equal(archive.html5Videos.ru.length, 2);
   assert.ok(archive.youtubeIds.includes("qM_nFUkYJ1k"));
 
-  assert.match(recordPage, /academy-archive-notice/);
+  assert.match(recordPage, /<TantraReikiProgrammeModules locale=\{locale\} publicBlocks=\{publicBlocks\}/);
   assert.match(recordPage, /academy-native-video/);
   assert.match(recordPage, /academy-source-gallery/);
 });
