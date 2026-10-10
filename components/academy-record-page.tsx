@@ -191,8 +191,6 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             <div className="academy-source-gallery">{sourceImages.map((src, index) => <a href={src} target="_blank" rel="noreferrer" key={src} aria-label={(locale === "ru" ? "Открыть исходное изображение " : locale === "es" ? "Abrir imagen de origen " : "Open source image ") + (index + 1)}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={src} alt={academyDisplayTitle(record, locale) + " — " + (locale === "ru" ? "материал " : locale === "es" ? "material " : "source material ") + (index + 1)} loading="lazy" decoding="async" /></a>)}</div>
           </section>
         ) : null}
-        {isVerbatimTantraArchive ? <TantraReikiTeacher locale={locale} /> : null}
-        {isVerbatimTantraArchive ? <TantraReikiLeadForms locale={locale} /> : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
         <footer className="academy-source-footer">
           {isCanonicalYggdrasil ? (
@@ -214,6 +212,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
           )}
           {isCanonicalYggdrasil ? <code>reiki-yggdrasil@3fd7960aa77862c38f8a5754b64c3a79f5e0c96a</code> : record.contentHash ? <code>{record.hashAlgorithm ?? "hash"} {record.contentHash}</code> : null}
         </footer>
+        {isVerbatimTantraArchive ? <TantraReikiTeacher locale={locale} /> : null}
+        {isVerbatimTantraArchive ? <TantraReikiLeadForms locale={locale} /> : null}
         </article>
       </div>
       {!isCanonicalYggdrasil && !isVerbatimTantraArchive ? <PublicConsultationCta locale={locale} /> : null}
