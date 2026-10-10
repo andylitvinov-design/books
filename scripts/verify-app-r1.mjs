@@ -77,8 +77,9 @@ async function enterTest(name='Current State Check',mode='Guided'){
  await expect(page.locator('.hh-runner')).toBeVisible()
  // My Tests opens the first question immediately; the optional guided mode stays inside the runner.
  await expect(page.locator('.hh-test-mode-picker')).toHaveCount(0)
- await expect(page.locator('.hh-runner-question')).toBeVisible()
- if(mode==='Guided')await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
+ // A saved draft may already be on its final optional-context screen.
+ await expect(page.locator('.hh-runner-question, .hh-runner-complete').first()).toBeVisible()
+ if(mode==='Guided' && await page.locator('.hh-runner-question').count())await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
 }
 async function savedClick(button){
  const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/save')&&r.request().method()==='POST'),button.click()])
