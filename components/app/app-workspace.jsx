@@ -323,6 +323,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               key={recordId}
               id={recordId}
               locale={locale}
+              initialMode={searchParams.get('mode') === 'quick' ? 'quick' : null}
               onExit={async () => {
                 await load()
                 router.push(root + '/tests')
@@ -931,7 +932,7 @@ function TestPlanSummary({ locale, planId, results, onBack }) {
   return <section className="hh-panel hh-test-plan-summary"><p className="hh-kicker">{locale === 'ru' ? 'Набор завершён' : 'Set complete'}</p><h1>{locale === 'ru' ? 'Ваш общий обзор' : 'Your combined overview'}</h1><p>{locale === 'ru' ? 'Каждый инструмент остаётся отдельным результатом: здесь нет синтетического медицинского балла или диагноза.' : 'Each instrument remains a separate result: this page does not create a synthetic medical score or diagnosis.'}</p><div className="hh-history-list">{completed.map((result) => <Link key={result.id} href={`/${locale}/app/results/${result.id}`} prefetch={false}>{getDefinitionById(result.definitionId).title} · {new Date(result.measurementAt).toLocaleDateString(locale)}</Link>)}</div><button type="button" onClick={onBack}>{locale === 'ru' ? 'К базе тестов' : 'Back to test explorer'}</button></section>
 }
 
-function Runner({ id, locale, onExit, onComplete }) {
+function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
   const c = COPY[locale],
     [run, setRun] = useState(null),
     [error, setError] = useState(null),
@@ -939,7 +940,7 @@ function Runner({ id, locale, onExit, onComplete }) {
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
     [showDiscard, setShowDiscard] = useState(false),
-    [mode, setMode] = useState(null),
+    [mode, setMode] = useState(initialMode === 'quick' ? 'quick' : null),
     [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
     inflight = useRef(false)
