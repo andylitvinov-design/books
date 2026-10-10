@@ -83,7 +83,7 @@ async function exercise(engine, browserType) {
           // disclosure to prioritize free situation review on mobile.
           const disclosure = page.locator('#method-videos');
           if (await disclosure.count()) {
-            await disclosure.locator('summary').click();
+            await page.locator('#method-videos > summary').click();
             await expect(disclosure).toHaveAttribute('open', '');
           }
         }
