@@ -97,3 +97,54 @@
   .rowActions a{font-size:.79rem}
 }
 @media(max-width:420px){.listArea{padding:10px}.group .row{grid-template-columns:56px minmax(0,1fr)}.rowActions{grid-template-columns:1fr}.rowActions a{text-align:center}}
+
+
+/* Two-click test journey: a compact, focused second step instead of a second dashboard. */
+.listArea{margin-top:12px;padding:18px 0 4px;border-top:1px solid #d9e2d9;scroll-margin-top:12px}
+.listHeading{display:flex;align-items:start;justify-content:space-between;gap:14px;margin-bottom:13px}
+.listHeading h2{font:400 clamp(1.5rem,3vw,2rem)/1.12 Georgia,serif!important;margin:2px 0 5px!important;color:#392f2a}
+.listHeading h2:focus{outline:none}
+.listHeading p{margin:0!important;line-height:1.4;font-size:.84rem;color:#6d6259}
+.step{font:750 .65rem/1.4 system-ui,sans-serif!important;letter-spacing:.13em;text-transform:uppercase;color:#30786a!important}
+.collapseList{flex:none;min-height:38px!important;padding:7px 11px!important;font-size:.78rem!important;background:#fbf7ef!important}
+.filterDetails{margin:0 0 12px}
+.filterDetails>summary,.preferencesDetails>summary{cursor:pointer;font-size:.82rem;font-weight:650;color:#376b60;list-style-position:inside;min-height:41px;padding:8px 0}
+.filterDetails>summary:focus-visible,.preferencesDetails>summary:focus-visible{outline:3px solid #30786a;outline-offset:3px}
+.filterDetails .testFilters{margin:5px 0 10px}
+.preferencesDetails{margin-top:14px;border-top:1px solid #e4ddd2}
+.preferencesDetails .savedPriorities{margin:7px 0 0}
+.group{gap:10px}
+.group .row{background:#fffefa;border-radius:15px;border-color:#e1d7cc;padding:13px}
+.group .description{font-size:.83rem;line-height:1.37;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.group .info h2{font-size:1.1rem;line-height:1.2;margin-bottom:3px}
+.group .status{margin-top:5px;font-size:.76rem;gap:5px}
+.group .status strong{display:inline-block;border-radius:99px;padding:3px 8px;background:#eee9df;font-size:.72rem;color:#66584d}
+.group .status strong.inProgress{background:#e2eef0;color:#245f76}
+.group .status strong.completed{background:#e3efe6;color:#296c4d}
+.group .rowActions button{min-height:47px!important;border-radius:12px!important;font-size:.91rem;font-weight:750;background:#bf4f2e!important;color:white!important;border-color:#bf4f2e!important}
+.group .rowActions button:hover{background:#a94124!important}
+.group .rowActions button:focus-visible{outline:3px solid #30786a;outline-offset:3px}
+.group .rowActions a{font-size:.78rem}
+.explorerSection{scroll-margin-top:15px;padding-top:8px}
+.actions{display:flex;gap:12px;align-items:center;margin-top:15px}
+.actions button,.actions a{font-size:.83rem}
+@media(max-width:720px){
+ .batteryLayout{margin-top:0}
+ .listArea{margin-top:10px;padding:13px 12px 5px!important}
+ .listHeading{gap:8px;margin-bottom:8px}
+ .listHeading h2{font-size:1.55rem!important}
+ .listHeading p{font-size:.78rem}
+ .collapseList{min-height:35px!important;padding:6px 9px!important}
+ .group{gap:9px}
+ .group .row{grid-template-columns:62px minmax(0,1fr);padding:10px;gap:9px;border-radius:13px}
+ .group .info h2{font-size:1rem}
+ .group .description{font-size:.76rem;line-height:1.35}
+ .group .meta{font-size:.72rem}
+ .group .status{margin-top:4px}
+ .group .rowActions{grid-column:1/-1;display:flex;align-items:center;gap:8px}
+ .group .rowActions button{width:100%;max-width:none;min-height:46px!important}
+ .group .rowActions a{min-width:fit-content;text-align:center}
+ .listArea .filterDetails{margin-bottom:9px}
+ .actions{flex-wrap:wrap}
+}
+@media(max-width:420px){.group .row{grid-template-columns:56px minmax(0,1fr)}.group .rowActions{display:grid;grid-template-columns:1fr}.group .rowActions a{text-align:center}}
