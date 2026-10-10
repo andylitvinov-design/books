@@ -12,7 +12,10 @@ test("home and services render the same first-party testimonial component", () =
   assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
   assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
   assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<PublicConsultationCta locale='));
-  assert.ok(services.indexOf('<PageVideo slot="consultation"') < services.indexOf('</details>'));
+  const methodDisclosure = services.indexOf('id="method-videos"');
+  assert.ok(methodDisclosure > 0);
+  assert.ok(services.indexOf('<PageVideo slot="consultation"') > methodDisclosure);
+  assert.ok(services.indexOf('<PageVideo slot="consultation"') < services.indexOf('</details>', methodDisclosure));
   assert.match(services, /id="method-videos"/);
 });
 
