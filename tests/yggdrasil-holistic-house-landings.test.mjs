@@ -122,3 +122,13 @@ test("historical source-photo set stays in the archive while the program hub no 
   assert.match(sourceArchive, /preserved\?\.label\[locale\]/);
   assert.match(sourceArchive, /preserved\?\.localUrl \?\? src/);
 });
+
+test("the canonical Reiki Yggdrasil landing has no obsolete site/archive footer links", async () => {
+  const recordPage = await readFile("components/academy-record-page.tsx", "utf8");
+  const program = await readFile("components/yggdrasil-program-landing.tsx", "utf8");
+  assert.ok(recordPage.includes('!isCanonicalYggdrasil ? (\n          <footer className="academy-source-footer">'));
+  assert.ok(!recordPage.includes('href="https://reiki-yggdrasil.vercel.app/"'));
+  assert.ok(!recordPage.includes('className="academy-secondary-source" href={record.sourceUrl}'));
+  assert.ok(!recordPage.includes('reiki-yggdrasil@3fd7960aa77862c38f8a5754b64c3a79f5e0c96a'));
+  assert.ok(!program.includes("yggdrasil-source-footer-panel"));
+});
