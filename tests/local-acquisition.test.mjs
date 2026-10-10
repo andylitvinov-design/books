@@ -47,10 +47,10 @@ test('the public home keeps local acquisition; Services now leads with client qu
   const styles = readFileSync(new URL('../app/holistic-house-home.css', import.meta.url), 'utf8')
 
   assert.match(home, /LOCAL_ACQUISITION/)
-  assert.match(styles, /\\.service-home-self-check/)
+  assert.match(styles, /\.service-home-self-check/)
   assert.match(services, /<ServicesSolutions locale=/)
   assert.doesNotMatch(services, /<CatalogShowcase/)
-  assert.match(solutions, /free-situation-review\\?topic=/)
+  assert.match(solutions, /free-situation-review\?topic=/)
   for (const topic of ['personal', 'goal', 'business', 'wellbeing']) {
     assert.ok(solutions.includes('topic: "' + topic + '"'), topic)
   }
