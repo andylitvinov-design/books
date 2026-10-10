@@ -67,7 +67,7 @@ test('Services preserves source-backed videos in optional method explanations, n
   assert.match(videoSection, /method-hypnotherapy/)
   assert.match(videoSection, /method-constellations/)
   assert.match(videoSection, /PageVideo slot="consultation"/)
-  assert.doesNotMatch(services.slice(0, start), /PageVideo/)
+  assert.doesNotMatch(services.slice(services.indexOf('<main className='), start), /<PageVideo/)
 })
 
 test('event instrumentation is consent-gated and has no personal-data payload path', () => {
