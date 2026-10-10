@@ -35,13 +35,13 @@ export function ServicesConversionHero({ locale }: { locale: Locale }) {
         <p className={styles.eyebrow}><span className={styles.spark} aria-hidden="true">✦</span>{t.eyebrow}</p>
         <h1 id="services-conversion-title">{t.heading}</h1>
         <p className={styles.lead}>{t.lead}</p>
-        <ul className={styles.benefits}>
-          {t.benefits.map((benefit) => <li key={benefit}><Check size={17} strokeWidth={2.3} aria-hidden="true" />{benefit}</li>)}
-        </ul>
-        <Link className={styles.cta} href={`/${locale}/services/free-situation-review`}>
+        <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
           {t.cta}<ArrowUpRight size={21} aria-hidden="true" />
         </Link>
         <p className={styles.small}>{t.small}</p>
+        <ul className={styles.benefits}>
+          {t.benefits.map((benefit) => <li key={benefit}><Check size={17} strokeWidth={2.3} aria-hidden="true" />{benefit}</li>)}
+        </ul>
       </div>
       <div className={styles.visual}>
         <Image
