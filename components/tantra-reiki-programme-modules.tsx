@@ -29,12 +29,12 @@ const copy = {
   en: {
     eyebrow: "Go deeper into the practice",
     heading: "Original teaching notes",
-    lead: "The complete author descriptions of all nine levels are already presented above. Here are the distinct teaching ideas and historical attunement names, without repeated reviews or registration text.",
+    lead: "Explore the traditional attunements, essential ideas and historical context alongside the nine levels described above.",
     chapters: [
       ["The living flow", "Sensitivity, connection and the central idea of the practice"],
       ["Attunements across nine levels", "The original sequence, with each setting listed once"],
       ["The teaching philosophy", "Creativity, love and the symbolism of transformation"],
-      ["The later levels", "The symbolic relationship between consciousness and unity"],
+      ["Everyday practice", "Sensitivity, communication and inner presence"],
       ["Tradition and course context", "Origins, traditional applications and the nine-level path"],
     ],
     historicalTitle: "Earlier English source: alternative names",
@@ -46,12 +46,12 @@ const copy = {
   ru: {
     eyebrow: "Углубиться в практику",
     heading: "Дополнительные авторские материалы",
-    lead: "Полные авторские описания всех девяти ступеней уже приведены выше. Здесь собраны остальные самостоятельные идеи и исходные названия настроек — без повторных отзывов и форм записи.",
+    lead: "Дополнительно к описаниям девяти ступеней здесь собраны традиционные настройки, основные идеи и исторический контекст практики.",
     chapters: [
       ["Живой поток", "Чувствительность, контакт и основная идея практики"],
       ["Настройки девяти ступеней", "Исходная последовательность без повторяющихся пунктов"],
       ["Философия практики", "Творчество, любовь и символика трансформации"],
-      ["Старшие ступени", "Образы сознания, архетипов и единства"],
+      ["Практика в жизни", "Чувствительность, общение и внутреннее присутствие"],
       ["Традиция и контекст", "Происхождение, применение и историческая структура обучения"],
     ],
     historicalTitle: "",
@@ -63,12 +63,12 @@ const copy = {
   es: {
     eyebrow: "Profundiza en la práctica",
     heading: "Notas originales de la enseñanza",
-    lead: "Los textos completos de las nueve etapas ya aparecen arriba. Estos extractos históricos adicionales están disponibles en inglés, sin testimonios ni solicitudes de inscripción repetidas.",
+    lead: "Además de las nueve etapas, descubre las sintonizaciones tradicionales, las ideas centrales y el contexto histórico de la práctica.",
     chapters: [
       ["El flujo vivo", "Sensibilidad y conexión"],
       ["Sintonizaciones de las nueve etapas", "La secuencia original, sin elementos duplicados"],
       ["Filosofía", "Creatividad, amor y transformación"],
-      ["Las últimas etapas", "Conciencia y unión"],
+      ["Práctica cotidiana", "Sensibilidad, comunicación y presencia"],
       ["Tradición y formación", "Orígenes y estructura histórica"],
     ],
     historicalTitle: "",
@@ -90,7 +90,7 @@ const detailedRanges: readonly (readonly [number, number])[] = [
   [131, 136], // Final reflections not repeated in the nine full stage accounts
   [179, 183], // Tradition and historical learning context
 ];
-const excludedSourceIndices = new Set([5, 6, 7, 8, 15, 16, 25, 26, 31, 32, 133]);
+const excludedSourceIndices = new Set([5, 6, 7, 8, 15, 16, 25, 26, 31, 32, 131, 132, 133]);
 
 function Modules({ locale, blocks }: { locale: PublicLocale; blocks: AcademyBlock[] }) {
   const captions = copy[locale].chapters;
