@@ -47,7 +47,7 @@ test("Tantra Reiki on-page teaching source is unique in EN and RU and excludes r
     const text = translation.blocks[index].text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
     assert.ok(!stageText.has(text), "source paragraph repeats a nine-level author description: " + index);
   }
-  assert.equal(visibleIndices.filter((index) => translation.blocks[index].type === "h2" && /^LEVEL \\d$/.test(translation.blocks[index].text)).length, 0);
+  assert.equal(visibleIndices.filter((index) => translation.blocks[index].type === "h2" && /^LEVEL \d$/.test(translation.blocks[index].text)).length, 0);
   assert.ok(visibleIndices.every((index) => index < 11 || index >= 48), "full attunements must only appear in their stage chapters");
   assert.equal(original.blocks.ru.length, 190, "complete archival source must remain intact");
   assert.equal(translation.blocks.length, 190, "the full English source remains recoverable");
