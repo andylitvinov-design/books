@@ -15,7 +15,8 @@ test("Reiki Yggdrasil program shows text reviews and video reviews instead of a 
   assert.match(testimonials, /Video reviews/);
   assert.ok(!testimonials.includes('href={item.sourceUrl}'));
   assert.ok(!testimonials.includes('superskills.vip'));
-  assert.match(testimonials, /yggdrasilVideoTestimonials\\.map/);
+  assert.ok(testimonials.includes("yggdrasilVideoTestimonials.map"));
+
 
   for (const id of ["testimonial-1", "testimonial-2", "testimonial-3", "testimonial-4", "testimonial-5"]) {
     assert.match(data, new RegExp(`id: "${id}"`));
