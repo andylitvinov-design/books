@@ -20,7 +20,7 @@ const COPY = {
   en: {
     title: 'Your selected tests', intro: 'Your personal test battery is ready. Start any test, save your progress and return whenever you need.',
     done: 'completed', pending: 'Not started', underway: 'In progress', finished: 'Completed',
-    begin: 'Start testing', resume: 'Continue test', repeat: 'Retake test', see: 'View result',
+    begin: 'Start test', resume: 'Continue test', repeat: 'Retake test', see: 'View result',
     choose: 'Choose or change tests', hide: 'Hide test explorer', questions: 'questions', mins: 'min',
     percent: 'complete', date: 'Completed on', preparing: 'Preparing your personal selection…',
     empty: 'Choose tests from the explorer below to build your personal battery.',
@@ -32,7 +32,7 @@ const COPY = {
   ru: {
     title: 'Мои выбранные тесты', intro: 'Ваш личный набор тестов готов. Можно начать любой тест, сохранить прогресс и вернуться к нему позже.',
     done: 'пройдено', pending: 'Не начат', underway: 'В процессе', finished: 'Пройден',
-    begin: 'Пройти тест', resume: 'Продолжить', repeat: 'Пройти повторно', see: 'Посмотреть результат',
+    begin: 'Начать тестирование', resume: 'Продолжить тест', repeat: 'Пройти повторно', see: 'Посмотреть результат',
     choose: 'Изменить подборку тестов', hide: 'Скрыть подбор тестов', questions: 'вопросов', mins: 'мин',
     percent: 'пройдено', date: 'Пройден', preparing: 'Подготавливаем вашу подборку…',
     empty: 'Выберите тесты ниже, чтобы создать свой личный набор.',
@@ -276,7 +276,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     setShowList(true)
     if (!rows.length) setExploring(true)
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      document.getElementById('my-tests-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const target = document.getElementById(rows.length ? 'my-tests-list' : 'my-test-explorer')
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      target?.querySelector('[data-test-list-heading]')?.focus({ preventScroll: true })
     }))
   }
   useEffect(() => {
@@ -313,27 +315,17 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         snapshot={data.snapshot}
         data={data}
         onStart={openList}
-        onViewAll={openList}
       />
       {showList && <div className={styles.listArea} id="my-tests-list">
-      <div className={styles.header}>
-        <div><p className="hh-kicker">{c.account} · Mind–Body Monitor</p><h1>{statusFilter === 'completed' ? (locale === 'ru' ? 'Пройденные тесты · повторить' : 'Completed tests · retake') : statusFilter === 'remaining' ? (locale === 'ru' ? 'Оставшиеся тесты' : 'Tests still to complete') : c.title}</h1>
-          <p>{c.intro}</p></div>
-        <Link href={root + '/history'} prefetch={false}>{c.history} →</Link>
+      <div className={styles.listHeading}>
+        <div>
+          <p className={styles.step}>{locale === 'ru' ? 'ШАГ 2 ИЗ 2' : 'STEP 2 OF 2'}</p>
+          <h2 data-test-list-heading tabIndex={-1}>{locale === 'ru' ? 'Выберите тест' : 'Choose a test'}</h2>
+          <p>{locale === 'ru' ? 'Нажмите «Начать тестирование» у нужного теста.' : 'Press Start test next to the test you want.'}</p>
+        </div>
+        <button type="button" className={styles.collapseList} onClick={() => setShowList(false)}>{locale === 'ru' ? 'Свернуть' : 'Close'}</button>
       </div>
       {initializing && <p role="status">{c.preparing}</p>}
-      {!!savedPriorities.length && <section className={styles.savedPriorities} aria-label={locale === 'ru' ? 'Мои сохранённые приоритеты' : 'My saved test priorities'}>
-        <strong>{locale === 'ru' ? 'Мои сохранённые темы и шкалы' : 'Your saved areas and scales'}</strong>
-        <div>{savedPriorities.map((label, index) => <span key={index}>{label}</span>)}</div>
-        <p>{locale === 'ru'
-          ? 'Они перенесены из публичного подбора и учитываются при поиске следующих тестов.'
-          : 'These came from your public selection and refine your next test recommendations.'}</p>
-        {suggestions.length > 0 && <div className={styles.nextSuggestions}>
-          <small>{locale === 'ru' ? 'По вашим темам также подходят:' : 'Also matching your interests:'}</small>
-          {suggestions.map((entry) => <span key={entry.key}>{entry.title}</span>)}
-          <button type="button" onClick={() => setExploring(true)}>{locale === 'ru' ? 'Изменить или дополнить подбор' : 'Refine my test selection'} →</button>
-        </div>}
-      </section>}
       {conflict && <div className={styles.notice} role="group" aria-label={c.conflictTitle}>
         <h2>{c.conflictTitle}</h2><p>{c.conflict}</p>
         <div>
@@ -348,11 +340,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       </div>}
       {error && <p role="alert">{error} <button type="button" onClick={() => setError('')}>{c.retry}</button></p>}
       {(rows.length > 0 || (statusFilter === 'completed' && pastRows.length > 0)) ? <>
-        <div className={styles.overview} aria-label={statusFilter === 'completed' ? String(pastRows.length) + ' ' + c.finished : String(completed) + ' / ' + rows.length + ' ' + c.done}>
-          <span className={styles.counter}><strong>{statusFilter === 'completed' ? pastRows.length : completed + '/' + rows.length}</strong> {statusFilter === 'completed' ? c.finished : c.done}</span>
-          {statusFilter !== 'completed' && <progress max={rows.length} value={completed} />}
-        </div>
-        <div className={styles.testFilters} role="group" aria-label={locale === 'ru' ? 'Фильтр по статусу' : 'Filter by status'}>
+        <details className={styles.filterDetails} defaultOpen={Boolean(requestedFilter)}>
+          <summary>{locale === 'ru' ? 'Фильтр по статусу' : 'Filter by status'}</summary>
+          <div className={styles.testFilters} role="group" aria-label={locale === 'ru' ? 'Фильтр по статусу' : 'Filter by status'}>
           {[
             ['all', locale === 'ru' ? 'Все' : 'All'],
             ['notStarted', c.pending],
@@ -364,6 +354,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
               onClick={() => setStatusFilter(key)}>{label}</button>
           ))}
         </div>
+        </details>
         <div className={styles.group}>
           {(statusFilter === 'completed' ? pastRows : rows).map((row) => {
             const done = statusFilter === 'completed' ? Boolean(row.result) : row.completedInPlan
@@ -385,7 +376,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                         {row.result && <span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span>}</>
                     : done
                       ? <><span>100% {c.percent}</span><span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span></>
-                      : <><progress max="100" value="0" aria-label={status} /><span>0% {c.percent}</span></>}
+                      : null}
                 </div>
               </div>
               <div className={styles.rowActions}>
@@ -397,12 +388,27 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             </article>
           })}
         </div>
+        {!!savedPriorities.length && <details className={styles.preferencesDetails}>
+          <summary>{locale === 'ru' ? 'Мои темы и дополнительные рекомендации' : 'My interests & additional recommendations'}</summary>
+          {!!savedPriorities.length && <section className={styles.savedPriorities} aria-label={locale === 'ru' ? 'Мои сохранённые приоритеты' : 'My saved test priorities'}>
+        <strong>{locale === 'ru' ? 'Мои сохранённые темы и шкалы' : 'Your saved areas and scales'}</strong>
+        <div>{savedPriorities.map((label, index) => <span key={index}>{label}</span>)}</div>
+        <p>{locale === 'ru'
+          ? 'Они перенесены из публичного подбора и учитываются при поиске следующих тестов.'
+          : 'These came from your public selection and refine your next test recommendations.'}</p>
+        {suggestions.length > 0 && <div className={styles.nextSuggestions}>
+          <small>{locale === 'ru' ? 'По вашим темам также подходят:' : 'Also matching your interests:'}</small>
+          {suggestions.map((entry) => <span key={entry.key}>{entry.title}</span>)}
+          <button type="button" onClick={() => setExploring(true)}>{locale === 'ru' ? 'Изменить или дополнить подбор' : 'Refine my test selection'} →</button>
+        </div>}
+      </section>}
+        </details>}
       </> : !initializing && <p className={styles.empty}>{c.empty}</p>}
       <div className={styles.actions}>
         <button type="button" disabled={busy} onClick={() => setExploring((value) => !value)}>
           {exploring ? c.hide : c.choose}
         </button>
-        <Link href={root} prefetch={false}>{locale === 'ru' ? 'К обзору' : 'Back to overview'} →</Link>
+        <Link href={root + '/history'} prefetch={false}>{c.history} →</Link>
       </div>
       <p className={styles.muted}>{c.privacy}</p>
       </div>}
@@ -413,9 +419,11 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     </details>
     </div>
     {(exploring || (!rows.length && !initializing && !conflict)) &&
-      <TestExplorer key={currentPlan?.id || 'new'} locale={locale} audience="account" onStart={choose} initialPreferences={selectionPreferences}
+      <div id="my-test-explorer" className={styles.explorerSection}>
+        <TestExplorer key={currentPlan?.id || 'new'} locale={locale} audience="account" onStart={choose} initialPreferences={selectionPreferences}
         pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
         recommendedKey={recommendedKey}
-        onResumeRun={(run) => router.push(root + '/runs/' + encodeURIComponent(run.id))} />}
+        onResumeRun={(run) => router.push(root + '/runs/' + encodeURIComponent(run.id))} />
+      </div>}
   </>
 }
