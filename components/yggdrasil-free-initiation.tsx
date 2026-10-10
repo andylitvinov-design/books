@@ -7,23 +7,6 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./yggdrasil-free-initiation.module.css";
 
-const source = "https://superskills.vip";
-const freeInitiationSource =
-  source + "/shamanic-energy-healing-free-program/free-trial-runic-reiki-energy-healing-class/step-0-how-to-get-runic-reiki-initiation-free.html";
-const readingSource =
-  source + "/books/reiki/runic-reiki-yggdrasil-brief-description/questions-to-get-the-free-class-of-runic-reiki.html";
-const faqSource =
-  source + "/shamanic-energy-healing-free-program/free-trial-runic-reiki-energy-healing-class/faq-how-to-study-runic-reiki-yggdrasil.html";
-const fullDescriptionSource =
-  source + "/books/reiki/runic-reiki-yggdrasil-brief-description/what-is-runic-reiki-detailed-overview.html";
-const levelOneSource =
-  source + "/books/reiki/runic-reiki-yggdrasil-brief-description/retreat-1-details-basic-5-levels-of-initiation-into-runic-reiki.html";
-const exerciseSource =
-  source + "/books/reiki/runic-reiki-yggdrasil-brief-description/runic-reiki-practice.html";
-const originalFreeListing = source + "/free-trial-runic-reiki-initiation-level-1.html";
-// Public group linked from the historical SuperSkills post-initiation reading page.
-const originalStudentGroup = "https://www.facebook.com/groups/538515487068141/";
-
 type LocaleStrings = {
   eyebrow: string; title: string; lead: string;
   sourceNote: string; freeLabel: string;
@@ -34,36 +17,36 @@ type LocaleStrings = {
   questions: string[]; statement: string;
   afterTitle: string; after: string[];
   ctaTitle: string; ctaText: string; whatsapp: string; telegram: string;
-  footer: string; back: string; source: string; sourceReading: string; exercises: string;
+  back: string;
 };
 
 const copy: Record<PublicLocale, LocaleStrings> = {
   en: {
     eyebrow: "A gift for new students · Basic Course / Level 1",
     title: "How to receive Reiki Yggdrasil Level 1 for free",
-    lead: "Begin with a personal introduction to the World Tree, the four first-level streams and the traditional teacher-led initiation. This guide follows the original SuperSkills materials and makes the seven preparation questions easy to find.",
-    sourceNote: "The original article describes a historical offer. Free participation, schedules and personal availability must be confirmed with Andrey before any initiation; completing this page does not automatically grant an attunement.",
-    freeLabel: "7 original preparation topics · 3 ways to begin",
+    lead: "Begin with a personal introduction to the World Tree, the four first-level streams and the traditional teacher-led initiation. All first-level study materials and the seven preparation questions are collected on this page.",
+    sourceNote: "Free introductory initiation, timing and personal availability must be confirmed with Andrey; this page does not automatically book or grant an attunement.",
+    freeLabel: "7 preparation questions · 3 ways to begin",
     choiceTitle: "Three ways to study",
     choices: [
       { title: "Free group introduction", description: "Join an online or in-person introductory group class when one is scheduled. Ask about availability before planning to attend." },
       { title: "Free individual trial", description: "Read the study materials independently, prepare answers to the seven questions and request a teacher-guided introductory Level 1 session." },
-      { title: "Personal paid class", description: "The old source also describes a paid one-to-one class and initiation. Its historic listed price is not a current quote; ask about the present format and terms." },
+      { title: "Personal paid class", description: "Individual paid study with Andrey may be available. Ask about current format and pricing." },
     ],
     stepsTitle: "How to prepare for the free introductory initiation",
     steps: [
       "Send Andrey a request specifying that you are interested in the free Reiki Yggdrasil Level 1 initiation.",
-      "Read the system FAQ, detailed overview and Level 1 stream descriptions linked below.",
+      "Read the FAQ, the Basic Course book and Level 1 lessons linked below.",
       "Study the seven original checklist topics and write answers in your own words. The questions are about the teaching system, not a medical assessment.",
       "Send your answers or discuss them with Andrey, then agree on the available teacher-led format and time. Do not assume an initiation is booked before confirmation.",
     ],
     readingTitle: "Materials to read before the session",
-    readingIntro: "Two readings are specifically requested in the original free-initiation article. The Level 1 description and practical exercises help you prepare more thoroughly.",
-    readingLinks: ["Study FAQ · Required reading", "Detailed explanation · Required reading", "Level 1 · Healing, Intuition, Protection, Situation balancing", "Practice examples · First four levels"],
-    videoTitle: "Original Level 1 introduction · English audio",
-    videoLead: "An introductory video preserved in the SuperSkills study materials. Watch in place, then continue to the seven preparation questions.",
+    readingIntro: "All materials for preparing are now on Holistic House: learning FAQ, the Basic Course book, Level 1 attunements and practical exercises.",
+    readingLinks: ["FAQ about learning · Read here", "Basic Course book · Full introduction", "Level 1 · Four attunements and practices", "Exercises · All five basic levels"],
+    videoTitle: "Level 1 introduction · English video",
+    videoLead: "Watch the first-level introductory recording here before working through the seven questions.",
     checklistTitle: "Seven questions for Reiki Yggdrasil Level 1",
-    checklistIntro: "The original SuperSkills list, accurately restated in English. These are self-study questions, not an online exam or a condition that this website evaluates automatically.",
+    checklistIntro: "Seven preparation questions to study and discuss with the teacher, not an online exam.",
     questions: [
       "Which is more fundamental to the Runic Reiki system: Reiki, runes, or their combination?",
       "What differences does the author claim between Runic Reiki and classical Usui Reiki, and how are these claims explained within the tradition?",
@@ -85,23 +68,19 @@ const copy: Record<PublicLocale, LocaleStrings> = {
     ctaText: "Write directly to Andrey. Your message is prepared but will not be sent until you approve it in WhatsApp or Telegram.",
     whatsapp: "Request free Level 1 via WhatsApp",
     telegram: "Contact Andrey in Telegram",
-    footer: "Historical source references · The details above are adapted, not verbatim reproductions of SuperSkills articles.",
     back: "Reiki Yggdrasil course",
-    source: "Read how to get the free initiation on SuperSkills",
-    sourceReading: "Read the post-initiation guide and original checklist",
-    exercises: "See the practical exercises",
   },
   ru: {
     eyebrow: "Подарок для новых учеников · Базовый курс / ступень 1",
     title: "Как бесплатно получить инициацию в 1-ю ступень Рейки Иггдрасиль",
-    lead: "Начните знакомство с Мировым Древом, четырьмя настройками первой ступени и традицией передачи инициации от преподавателя. Эта страница объединяет правила SuperSkills и все семь вопросов для самостоятельной подготовки.",
-    sourceNote: "В исходной статье описаны исторические условия предложения. Возможность бесплатной инициации, расписание и формат необходимо подтвердить у Андрея; прочтение этой страницы само по себе не означает запись или передачу настройки.",
+    lead: "Начните знакомство с Мировым Древом, четырьмя настройками первой ступени и традицией передачи инициации от преподавателя. На этой странице собраны учебные материалы и семь вопросов для самостоятельной подготовки.",
+    sourceNote: "Возможность бесплатной вводной инициации, дату и формат нужно подтвердить у Андрея лично; чтение страницы не означает автоматическую запись или настройку.",
     freeLabel: "7 вопросов для подготовки · 3 способа начать",
     choiceTitle: "Три варианта обучения",
     choices: [
       { title: "Бесплатный групповой урок", description: "Присоединиться к ознакомительному занятию онлайн или очно, если открыт набор. Дату и формат нужно уточнить заранее." },
       { title: "Бесплатная индивидуальная инициация", description: "Самостоятельно прочесть материалы, подготовить ответы на семь вопросов и запросить вводную сессию с преподавателем." },
-      { title: "Платное индивидуальное занятие", description: "В старой статье упоминается также платный персональный урок с инициацией. Историческая цена не является актуальным предложением — уточните условия." },
+      { title: "Платное индивидуальное занятие", description: "Индивидуальные платные занятия тоже могут быть доступны. Уточните действующий формат и стоимость." },
     ],
     stepsTitle: "Как подготовиться к бесплатной первой ступени",
     steps: [
@@ -111,12 +90,12 @@ const copy: Record<PublicLocale, LocaleStrings> = {
       "Отправьте ответы или обсудите их с Андреем, после чего согласуйте время и подходящий формат передачи настройки. Запись подтверждается только личным ответом.",
     ],
     readingTitle: "Что необходимо прочитать",
-    readingIntro: "В исходной статье обязательными для самостоятельного изучения названы FAQ и подробное описание системы. Описание первой ступени и практикум полезны для углубления.",
-    readingLinks: ["FAQ по обучению · Обязательное чтение", "Подробное описание системы · Обязательное чтение", "Первая ступень · Целительство, Интуиция, Защита, Гармонизация ситуации", "Практикум · Упражнения первых четырёх ступеней"],
-    videoTitle: "Оригинальное вводное видео · речь на английском",
-    videoLead: "Видеозапись из исходных учебных материалов SuperSkills. Просмотр — по нажатию, звук не включается автоматически.",
+    readingIntro: "Всё необходимое собрано на Holistic House: вопросы об обучении, книга Базового курса, настройки и практические упражнения.",
+    readingLinks: ["Вопросы об обучении · Читать здесь", "Книга Базового курса · Полное описание", "Первая ступень · Целительство, Интуиция, Защита, Гармонизация ситуации", "Практикум · Упражнения пяти ступеней"],
+    videoTitle: "Вводное видео первой ступени · английская речь",
+    videoLead: "Вводная запись на английском. Просмотр по нажатию, без автоматического звука.",
     checklistTitle: "Семь контрольных вопросов для 1-й ступени",
-    checklistIntro: "Все семь тем из оригинального списка SuperSkills, переформулированные по-русски без изменения содержания. Ответы можно записать самостоятельно или обсудить с преподавателем.",
+    checklistIntro: "Семь вопросов для самостоятельной подготовки и обсуждения с преподавателем. Ответы можно записать самостоятельно или обсудить с преподавателем.",
     questions: [
       "Что лежит в основе системы Рейки Иггдрасиль — Рейки, руны или их сочетание?",
       "Чем автор системы объясняет заявленные отличия Рейки Иггдрасиль от классического Усуи Рейки?",
@@ -138,23 +117,19 @@ const copy: Record<PublicLocale, LocaleStrings> = {
     ctaText: "Напишите Андрею напрямую. В WhatsApp откроется готовое сообщение, которое вы отправите только после подтверждения.",
     whatsapp: "Запросить бесплатную 1-ю ступень в WhatsApp",
     telegram: "Написать Андрею в Telegram",
-    footer: "Исторические первоисточники · Материалы адаптированы на основе SuperSkills и не воспроизводят статьи дословно.",
     back: "К программе Рейки Иггдрасиль",
-    source: "Исходная статья SuperSkills: как получить бесплатно",
-    sourceReading: "Исходный список вопросов и инструкция после инициации",
-    exercises: "Открыть практические задания",
   },
   es: {
     eyebrow: "Regalo para estudiantes · Curso básico / Nivel 1",
     title: "Cómo recibir gratis la iniciación de Reiki Yggdrasil Nivel 1",
-    lead: "Conoce el Árbol del Mundo, las cuatro prácticas iniciales y la iniciación guiada por un profesor. Esta guía reúne las condiciones históricas y siete preguntas de preparación.",
-    sourceNote: "La oferta original es histórica. Confirma disponibilidad, calendario y condiciones actuales con Andrey. Leer esta página no reserva ni realiza una iniciación.",
+    lead: "Conoce el Árbol del Mundo, las cuatro prácticas iniciales y la iniciación guiada por un profesor. Aquí encontrarás los materiales de estudio y siete preguntas de preparación.",
+    sourceNote: "Andrey confirmará personalmente la disponibilidad y fecha de la iniciación gratuita; leer la página no reserva una sesión.",
     freeLabel: "7 preguntas · 3 maneras de comenzar",
     choiceTitle: "Tres formas de aprender",
     choices: [
       { title: "Clase grupal gratuita", description: "Participa presencialmente o en línea cuando haya una sesión disponible." },
       { title: "Iniciación individual gratuita", description: "Lee los materiales, prepara siete respuestas y solicita una sesión introductoria guiada." },
-      { title: "Clase individual de pago", description: "La fuente histórica también menciona esta opción. Consulta las condiciones y precios actuales." },
+      { title: "Clase individual de pago", description: "También puede haber clases individuales de pago. Consulta el formato y precio actuales." },
     ],
     stepsTitle: "Pasos para prepararte",
     steps: [
@@ -164,12 +139,12 @@ const copy: Record<PublicLocale, LocaleStrings> = {
       "Comparte tus respuestas con el profesor y acuerda la modalidad y la fecha disponibles.",
     ],
     readingTitle: "Lecturas recomendadas",
-    readingIntro: "La fuente solicita leer las preguntas frecuentes y la descripción detallada. El material del primer nivel y los ejercicios amplían la preparación.",
-    readingLinks: ["Preguntas frecuentes · Lectura requerida", "Descripción del sistema · Lectura requerida", "Primer nivel · Cuatro prácticas", "Ejercicios prácticos · Niveles 1–4"],
-    videoTitle: "Introducción original al Nivel 1 · Audio en inglés",
-    videoLead: "Video introductorio enlazado desde SuperSkills. Haz clic para reproducirlo y continúa con las siete preguntas.",
+    readingIntro: "Todos los materiales están aquí: preguntas frecuentes, libro, primera etapa y ejercicios prácticos.",
+    readingLinks: ["Preguntas frecuentes · Leer aquí", "Libro del Curso Básico · Guía completa", "Primer nivel · Cuatro prácticas", "Ejercicios prácticos · Cinco niveles"],
+    videoTitle: "Introducción al Nivel 1 · Video en inglés",
+    videoLead: "Mira el video introductorio aquí y continúa con las siete preguntas.",
     checklistTitle: "Siete preguntas para el Nivel 1",
-    checklistIntro: "Los siete temas originales de SuperSkills, reformulados en español para el estudio.",
+    checklistIntro: "Siete preguntas para preparar y conversar con el profesor.",
     questions: [
       "¿Reiki, runas o su combinación: qué fundamenta Reiki Yggdrasil?",
       "¿Cómo explica el autor las diferencias que afirma entre Reiki Yggdrasil y Usui Reiki?",
@@ -191,12 +166,29 @@ const copy: Record<PublicLocale, LocaleStrings> = {
     ctaText: "Contacta directamente con Andrey. WhatsApp prepara el mensaje, pero tú decides si lo envías.",
     whatsapp: "Solicitar Nivel 1 gratis por WhatsApp",
     telegram: "Escribir a Andrey por Telegram",
-    footer: "Materiales históricos adaptados de SuperSkills. Enlaces a las fuentes originales.",
     back: "Programa Reiki Yggdrasil",
-    source: "Condiciones históricas de la iniciación gratuita",
-    sourceReading: "Lista de preguntas y guía para después",
-    exercises: "Ver ejercicios prácticos",
   },
+};
+
+const learningFaqs: Record<PublicLocale, Array<{ q: string; a: string }>> = {
+  en: [
+    { q: "Do I need previous Reiki experience?", a: "No previous training is needed for the introductory level. Begin with the first-level course materials." },
+    { q: "Can I receive initiation simply by reading?", a: "No. The course describes a teacher-led attunement. Reading and the seven questions are preparation." },
+    { q: "How should I practise?", a: "Use the exercises inside each level, keep a journal and practise with another person only by mutual consent." },
+    { q: "When is the next free session?", a: "Andrey confirms the current availability, date and online or in-person format personally." },
+  ],
+  ru: [
+    { q: "Нужен ли опыт других систем Рейки?", a: "Для вводной первой ступени предварительная подготовка в других традициях не требуется." },
+    { q: "Можно ли пройти инициацию самостоятельно по тексту?", a: "Нет. В рамках курса настройка передаётся преподавателем; чтение и семь вопросов — подготовка." },
+    { q: "Как выполнять упражнения?", a: "Все задания находятся внутри ступеней. Ведите дневник и практикуйте с партнёром только по взаимному согласию." },
+    { q: "Когда ближайшее бесплатное занятие?", a: "Дату, доступность и онлайн- или очный формат подтверждает Андрей лично." },
+  ],
+  es: [
+    { q: "¿Necesito experiencia previa en Reiki?", a: "No necesitas experiencia anterior para comenzar el nivel introductorio." },
+    { q: "¿Puedo iniciarme solo leyendo?", a: "No. El curso describe una iniciación guiada por un profesor; la lectura es preparación." },
+    { q: "¿Cómo debo practicar?", a: "Abre cada nivel, sigue los ejercicios y lleva un diario. La práctica con otra persona exige consentimiento." },
+    { q: "¿Cuándo es la próxima sesión gratuita?", a: "Andrey confirma personalmente la fecha, disponibilidad y modalidad." },
+  ],
 };
 
 export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
@@ -208,7 +200,7 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
     es: "Hola Andrey. Quisiera solicitar la iniciación gratuita de Reiki Yggdrasil Nivel 1. He visto las siete preguntas de preparación. ¿Cómo comparto mis respuestas y coordinamos la sesión?",
   }[locale];
   const whatsAppHref = "https://wa.me/14376066502?text=" + encodeURIComponent(msg);
-  const reading = [faqSource, fullDescriptionSource, levelOneSource, exerciseSource];
+  const reading = ["#learning-faq", root + "/basic-course/description", root + "/basic-course#ry-l01-s01", root + "/basic-course#yggdrasil-basic-course-learning"];
   return (
     <main className="academy-reading-shell academy-reading-shell--wide" lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -252,12 +244,23 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
             <p>{c.readingIntro}</p>
             <div className={styles.links}>
               {reading.map((url, index) => (
-                <a href={url} target="_blank" rel="noopener noreferrer" key={url}>
+                <Link href={url} key={url}>
                   <span>{String(index + 1).padStart(2, "0")}</span>
-                  {c.readingLinks[index]} <span aria-hidden="true">↗</span>
-                </a>
+                  {c.readingLinks[index]} <span aria-hidden="true">→</span>
+                </Link>
               ))}
             </div>
+            <details className={styles.faqDisclosure} id="learning-faq">
+              <summary>{locale === "ru" ? "Вопросы об обучении и инициации" : locale === "es" ? "Preguntas sobre formación e iniciación" : "Questions about learning and initiation"} ↓</summary>
+              <div className={styles.faqAnswers}>
+                {learningFaqs[locale].map((item) => (
+                  <details key={item.q}>
+                    <summary>{item.q}</summary>
+                    <p>{item.a}</p>
+                  </details>
+                ))}
+              </div>
+            </details>
           </section>
 
           <section className={styles.section} id="intro-video" aria-labelledby="yggdrasil-original-video">
@@ -266,25 +269,22 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
             <div className={styles.videoFrame}>
               <AcademyVideoPlayer youtubeId="DYo-fG-SyKw" title={c.videoTitle} />
             </div>
-            <a className={styles.videoSource} href={readingSource} target="_blank" rel="noopener noreferrer">{c.sourceReading} ↗</a>
           </section>
 
           <section className={styles.checklist} id="checklist" aria-labelledby="yggdrasil-free-checklist">
-            <p className={styles.eyebrow}>SuperSkills · Level 1 · 7 questions</p>
+            <p className={styles.eyebrow}>{locale === "ru" ? "Базовый курс · Ступень 1" : locale === "es" ? "Curso básico · Nivel 1" : "Basic Course · Level 1"}</p>
             <h2 id="yggdrasil-free-checklist">{c.checklistTitle}</h2>
             <p>{c.checklistIntro}</p>
             <ol className={styles.questions}>{c.questions.map((question) => <li key={question}>{question}</li>)}</ol>
             <p className={styles.claimNote}>{c.statement}</p>
-            <a href={freeInitiationSource} target="_blank" rel="noopener noreferrer">{c.source} ↗</a>
           </section>
 
           <section className={styles.section} id="after-first-level" aria-labelledby="yggdrasil-free-after">
             <h2 id="yggdrasil-free-after">{c.afterTitle}</h2>
             <ol className={styles.steps}>{c.after.map((step) => <li key={step}>{step}</li>)}</ol>
             <div className={styles.links}>
-              <a href={readingSource} target="_blank" rel="noopener noreferrer">{c.sourceReading} ↗</a>
-              <a href={exerciseSource} target="_blank" rel="noopener noreferrer">{c.exercises} ↗</a>
-              <a href={originalStudentGroup} target="_blank" rel="noopener noreferrer">{locale === "ru" ? "Историческая группа учеников в Facebook (доступность не проверена)" : locale === "es" ? "Grupo histórico de estudiantes en Facebook (disponibilidad no verificada)" : "Historical student Facebook group (availability unverified)"} ↗</a>
+              <Link href={root + "/basic-course#ry-l01-s01"}>{locale === "ru" ? "Задания первой ступени" : locale === "es" ? "Ejercicios del Nivel 1" : "Level 1 practice"} →</Link>
+              <Link href={root + "/basic-course/description"}>{locale === "ru" ? "Книга Базового курса" : locale === "es" ? "Libro del Curso Básico" : "Basic Course book"} →</Link>
               <Link href={root + "/basic-course"}>{c.back} →</Link>
             </div>
           </section>
@@ -297,12 +297,7 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
               <a className={styles.secondary} target="_blank" rel="noopener noreferrer" href="https://t.me/AndyTherapist">{c.telegram} ↗</a>
             </div>
           </section>
-          <footer className={styles.footer}>
-            <p>{c.footer}</p>
-            <a href={freeInitiationSource} target="_blank" rel="noopener noreferrer">{c.source} ↗</a>
-            <a href={readingSource} target="_blank" rel="noopener noreferrer">{c.sourceReading} ↗</a>
-            <a href={originalFreeListing} target="_blank" rel="noopener noreferrer">{locale === "ru" ? "Исходная карточка бесплатного курса SuperSkills (историческая)" : locale === "es" ? "Oferta original de nivel gratuito (histórica)" : "Original $0 introductory course listing (historical)"} ↗</a>
-          </footer>
+
         </article>
       </div>
       <PublicConsultationCta locale={locale} />

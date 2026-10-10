@@ -31,9 +31,9 @@ test("all seven original preparation questions are visible, numbered, localized 
     const items = match[1].split("\n").filter((x) => /^\s*"/.test(x));
     assert.equal(items.length, 7, "locale " + index + " needs exactly seven original questions");
   }
-  assert.match(page, /const freeInitiationSource =/);
-  assert.match(page, /step-0-how-to-get-runic-reiki-initiation-free\.html/);
-  assert.match(page, /questions-to-get-the-free-class-of-runic-reiki\.html/);
+  assert.ok(!page.includes('superskills.vip'));
+  assert.ok(page.includes('<Link href={url} key={url}>'));
+  assert.match(page, /id="learning-faq"/);
   assert.match(page, /<ol className=\{styles\.questions\}>/);
   assert.match(page, /What differences does the author claim/);
   assert.match(page, /Чем автор системы объясняет/);
@@ -48,16 +48,16 @@ test("entry includes three honest study options, required readings and post-init
   for (const block of choiceBlocks) assert.equal([...block[1].matchAll(/\{ title:/g)].length, 3);
   assert.match(page, /afterTitle:/);
   assert.match(page, /after-first-level/);
-  assert.match(page, /sourceReading/);
-  assert.match(page, /faq-how-to-study-runic-reiki-yggdrasil\.html/);
-  assert.match(page, /what-is-runic-reiki-detailed-overview\.html/);
-  assert.match(page, /runic-reiki-practice\.html/);
+  assert.ok(page.includes('root + "/basic-course/description"'));
+  assert.ok(page.includes('root + "/basic-course#ry-l01-s01"'));
+  assert.ok(page.includes('root + "/basic-course#yggdrasil-basic-course-learning"'));
+  assert.ok(page.includes('const learningFaqs: Record<PublicLocale'));
   assert.match(page, /const whatsAppHref =/);
   assert.match(page, /encodeURIComponent\(msg\)/);
   assert.match(page, /https:\/\/t.me\/AndyTherapist/);
   assert.doesNotMatch(page, /<form[\s>]/);
   assert.match(page, /not established medical facts|не доказанными медицинскими фактами/);
-  assert.match(page, /historical offer|исторические условия/);
+  assert.match(page, /availability|доступность|disponibilidad/);
 });
 
 test("the new article is discoverable from the programme, basic course, book, source guide, sidebar and lead capture", () => {
@@ -65,11 +65,10 @@ test("the new article is discoverable from the programme, basic course, book, so
     ["overview CTA", hub],
     ["Basic Course breadcrumb", modulePage],
     ["38-page book", book],
-    ["SuperSkills source guide", sourceGuide],
     ["sticky sidebar", sidebar],
     ["free capture", capture],
   ]) assert.ok(value.includes("/free-initiation"), name);
-  assert.match(hub, /<YggdrasilSourceStudyGuide locale=\{locale\} mode="overview"/);
+  assert.doesNotMatch(hub, /<YggdrasilSourceStudyGuide/);
   assert.match(capture, /selected === "free"/);
   assert.match(capture, /data-reiki-choice-action=\{selected\}/);
   assert.match(sidebar, /key: "free-initiation"/);
@@ -98,7 +97,7 @@ test("source audit covers all 17 distinct verified Reiki articles and the histor
     "testimonials-1.html",
     "testimonials-2.html",
   ];
-  const allContent = audit + sourceGuide + page;
+  const allContent = audit + sourceGuide;
   for (const path of paths) assert.ok(allContent.includes(path), "source missing: " + path);
   assert.match(sourceGuide, /Supplementary reflection exercises \(not from the source\)/);
   assert.match(audit, /seven.*questions/i);
