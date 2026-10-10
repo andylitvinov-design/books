@@ -366,3 +366,8 @@ export function YggdrasilSourceStudyGuide({ locale, mode = "overview" }: { local
     </section>
   );
 }
+
+// Retain the source audit and original provenance in this compatibility module.
+// Current courses show unique exercises inside their actual level cards.
+export const yggdrasilBasicLearning = levels;
+export const yggdrasilInstructorLearning = instructorTracks;
