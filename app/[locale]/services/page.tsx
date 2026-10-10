@@ -268,6 +268,11 @@ export default async function ServicesPage({ params }: PageProps) {
               </div>
             </section>
           ) : null}
+          <div className={solutionStyles.archivedClips}>
+            {(["business", "alchemy", "archetypal"] as const).map((id) => (
+              <PageVideo key={id} slot={"service-" + id} locale={locale} />
+            ))}
+          </div>
           <PageVideo slot="consultation" locale={locale} />
           <p className={solutionStyles.extraAbout}>
             <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true"> →</span></Link>
