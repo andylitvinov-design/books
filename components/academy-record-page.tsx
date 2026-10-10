@@ -192,26 +192,13 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
           </section>
         ) : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
-        <footer className="academy-source-footer">
-          {isCanonicalYggdrasil ? (
-            <>
-              <a href="https://reiki-yggdrasil.vercel.app/" rel="noreferrer" target="_blank">
-                {locale === "ru" ? "Актуальный сайт Reiki Yggdrasil" : locale === "es" ? "Sitio actual de Reiki Yggdrasil" : "Current Reiki Yggdrasil site"}
-                <span aria-hidden="true">↗</span>
-              </a>
-              <a className="academy-secondary-source" href={record.sourceUrl} rel="noreferrer" target="_blank">
-                {locale === "ru" ? "Исторический источник PsiTrends" : locale === "es" ? "Fuente histórica de PsiTrends" : "Historical PsiTrends source"}
-                <span aria-hidden="true">↗</span>
-              </a>
-            </>
-          ) : (
-            <>
-              {!isVerbatimTantraArchive && (record.skippedRiskyBlocks || publicOmittedCount) ? <p>{text.filtered}</p> : null}
-              <a href={record.sourceUrl} rel="noreferrer" target="_blank">{text.source}<span aria-hidden="true">↗</span></a>
-            </>
-          )}
-          {isCanonicalYggdrasil ? <code>reiki-yggdrasil@3fd7960aa77862c38f8a5754b64c3a79f5e0c96a</code> : record.contentHash ? <code>{record.hashAlgorithm ?? "hash"} {record.contentHash}</code> : null}
-        </footer>
+        {!isCanonicalYggdrasil ? (
+          <footer className="academy-source-footer">
+            {!isVerbatimTantraArchive && (record.skippedRiskyBlocks || publicOmittedCount) ? <p>{text.filtered}</p> : null}
+            <a href={record.sourceUrl} rel="noreferrer" target="_blank">{text.source}<span aria-hidden="true">↗</span></a>
+            {record.contentHash ? <code>{record.hashAlgorithm ?? "hash"} {record.contentHash}</code> : null}
+          </footer>
+        ) : null}
         {isVerbatimTantraArchive ? <TantraReikiTeacher locale={locale} /> : null}
         {isVerbatimTantraArchive ? <TantraReikiLeadForms locale={locale} /> : null}
         </article>
