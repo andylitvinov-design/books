@@ -36,7 +36,8 @@ test("Tantra Reiki: nine concrete learning outcomes in all three supported local
   assert.match(journey, /c\.application/);
   assert.match(journey, /c\.settings/);
   assert.match(journey, /copy\.practice/);
-  assert.match(journey, /AndyTherapist/);
+  assert.match(journey, /href="#tantra-course-hero-title"/);
+  assert.doesNotMatch(journey, /href="https:\/\/t\.me\/AndyTherapist"/);
 });
 
 test("Tantra Reiki: sales hero and training contact remain visible above historical source", async () => {
