@@ -5,13 +5,11 @@ import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video
 import { YggdrasilTestimonials } from "@/components/yggdrasil-testimonials";
 import { YggdrasilMeditationFeature } from "@/components/yggdrasil-meditation-feature";
 import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
-import { YggdrasilSourceStudyGuide } from "@/components/yggdrasil-source-study-guide";
 
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import englishAttunements from "@/data/academy/yggdrasil-en-settings-l1.json";
 import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
 import {
-  yggdrasilProgramSourcePage,
   yggdrasilSourceImages,
 } from "@/data/academy/yggdrasil-program-map";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -71,13 +69,11 @@ const copy = {
     lead: "The World Tree is an invitation to explore yourself in a new way. Through guided imagery, mindful attention and the language of runes, find space for intuition, clarity and a more conscious connection with everyday life. Begin with the five-level Basic Course and follow the path that speaks to you.",
     start: "Open Basic Course",
     description: "Read the Basic Course book",
-    instructor: "Open Instructor Course",
-    archive: "Full historical program text",
     explore: "Explore 7 modules",
     benefits: "What you will explore",
     mapEyebrow: "Current course map",
     mapTitle: "7 Reiki Yggdrasil modules",
-    mapLead: "One connected path, seven areas of exploration. Start with the foundations, then move towards runes, inner imagery, sacred traditions and the deeper symbolism of the World Tree. Each module has its own practices and study materials.",
+    mapLead: "One learning path, seven modules. Begin with the foundations and continue through the World Tree traditions. Each step combines attunements, practical exercises and available video lessons, all here in Holistic House.",
     module: "Module",
     open: "Open module",
     basicEyebrow: "Your first five levels",
@@ -86,11 +82,6 @@ const copy = {
     basicLevel: "Level",
     basicSettings: "attunements",
     basicStepOpen: "Explore level",
-    photosEyebrow: "Source preservation",
-    photosTitle: "Historical program imagery",
-    photosLead: "All content images from the public PsiTrends Reiki Yggdrasil source page are preserved here: 19 on the English source page. Analytics pixels and interface icons are intentionally excluded.",
-    source: "Open original PsiTrends source",
-    sourceNote: "Current detailed curriculum: canonical Reiki Yggdrasil project. Historical program text and imagery: PsiTrends.",
   },
   ru: {
     eyebrow: "Древние символы · Живая практика",
@@ -100,13 +91,11 @@ const copy = {
     lead: "Мировое Древо становится картой внутреннего путешествия. Через образы, руны, медитации и работу с вниманием вы можете глубже почувствовать себя, исследовать интуицию и яснее видеть свой путь. Начните с пяти ступеней Базового курса и двигайтесь в своём ритме.",
     start: "Открыть Базовый курс",
     description: "Читать книгу Базового курса",
-    instructor: "Открыть Инструкторский курс",
-    archive: "Полный исторический текст программы",
     explore: "Посмотреть 7 модулей",
     benefits: "Что вы будете осваивать",
     mapEyebrow: "Актуальная карта обучения",
     mapTitle: "7 модулей Рейки Иггдрасиль",
-    mapLead: "Каждый модуль получил отдельную страницу со всеми каноническими ступенями, настройками и проверенными публичными видеолекциями. Старая 10-модульная формулировка PsiTrends сохранена в полном историческом архиве.",
+    mapLead: "Одна программа из семи модулей: каждая ступень включает описание настроек, практические упражнения и доступные видеолекции. Все учебные материалы открываются внутри Holistic House.",
     module: "Модуль",
     open: "Открыть модуль",
     basicEyebrow: "Первые пять ступеней",
@@ -115,11 +104,6 @@ const copy = {
     basicLevel: "Уровень",
     basicSettings: "настроек",
     basicStepOpen: "Подробнее о ступени",
-    photosEyebrow: "Сохранение источника",
-    photosTitle: "Исторические изображения программы",
-    photosLead: "Здесь сохранены все содержательные изображения публичной страницы Reiki Yggdrasil на PsiTrends: 14 фотографий и иллюстраций русской версии. Служебные иконки и аналитические пиксели намеренно не считаются материалами курса.",
-    source: "Открыть исходную страницу PsiTrends",
-    sourceNote: "Актуальная детальная программа: канонический проект Reiki Yggdrasil. Исторический текст и изображения: PsiTrends.",
   },
   es: {
     eyebrow: "Símbolos antiguos · Práctica personal",
@@ -129,13 +113,11 @@ const copy = {
     lead: "El Árbol del Mundo es una invitación a explorar tu mundo interior. Mediante imágenes guiadas, runas y prácticas de atención, descubre nuevas formas de escuchar tu intuición y reflexionar sobre tu vida. Comienza por los cinco niveles básicos y avanza a tu propio ritmo.",
     start: "Abrir Curso Básico",
     description: "Leer el libro del Curso Básico",
-    instructor: "Abrir Curso de Instructor",
-    archive: "Texto histórico completo",
     explore: "Ver los 7 módulos",
     benefits: "Qué vas a explorar",
     mapEyebrow: "Mapa formativo actual",
     mapTitle: "7 módulos Reiki Yggdrasil",
-    mapLead: "Cada módulo tiene su propia página con etapas, sintonizaciones y videoclases verificadas.",
+    mapLead: "Un programa de siete módulos. Cada etapa reúne sintonizaciones, ejercicios y videoclases disponibles, todo dentro de Holistic House.",
     module: "Módulo",
     open: "Abrir módulo",
     basicEyebrow: "Tus cinco primeros niveles",
@@ -144,11 +126,6 @@ const copy = {
     basicLevel: "Nivel",
     basicSettings: "sintonizaciones",
     basicStepOpen: "Explorar nivel",
-    photosEyebrow: "Preservación de la fuente",
-    photosTitle: "Imágenes históricas",
-    photosLead: "Se conservan todas las imágenes de contenido de la fuente pública; los iconos de interfaz y píxeles analíticos no se cuentan como material del curso.",
-    source: "Abrir fuente original de PsiTrends",
-    sourceNote: "Currículo actual: proyecto canónico Reiki Yggdrasil. Fuente histórica: PsiTrends.",
   },
 } satisfies Record<PublicLocale, Record<string, string>>;
 
@@ -288,8 +265,6 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         </div>
       </section>
 
-      <YggdrasilSourceStudyGuide locale={locale} mode="overview" />
-
       <YggdrasilMeditationFeature locale={locale} />
 
       <YggdrasilLeadForms locale={locale} />
@@ -298,13 +273,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
 
       <YggdrasilEnglishVideoGuide locale={locale} scope="all" />
 
-      <section className="yggdrasil-source-footer-panel" aria-label={locale === "ru" ? "Источники программы" : locale === "es" ? "Fuentes del programa" : "Program sources"}>
-        <p className="yggdrasil-program-source-note">{text.sourceNote}</p>
-        <div>
-          <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/archive`}>{text.archive}<span aria-hidden="true">→</span></Link>
-          <Link className="yggdrasil-source-link" href={yggdrasilProgramSourcePage} target="_blank" rel="noreferrer">{text.source}<span aria-hidden="true">↗</span></Link>
-        </div>
-      </section>
+
     </div>
   );
 }
