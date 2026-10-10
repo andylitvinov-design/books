@@ -6,15 +6,17 @@ import test from "node:test";
 const root = process.cwd();
 const read = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("Services, Academy and Library share the same showcase component", () => {
+test("Services leads with client solutions; Academy and Library retain shared showcase", () => {
   const services = read("app", "[locale]", "services", "page.tsx");
+  const solutions = read("components", "services-solutions.tsx");
   const academy = read("components", "academy-hub.tsx");
   const library = read("components", "library-hub.tsx");
-
-  assert.match(services, /CatalogShowcase/);
+  assert.match(services, /ServicesSolutions/);
+  assert.doesNotMatch(services, /<CatalogShowcase/);
+  assert.match(solutions, /t.solutions.map/);
+  assert.match(solutions, /href=.*free-situation-review\?topic=/);
   assert.match(academy, /CatalogShowcase/);
   assert.match(library, /CatalogShowcase/);
-  assert.match(services, /serviceShowcaseItems/);
   assert.match(academy, /academy-featured-yggdrasil/);
   assert.match(academy, /academy-featured-tantra-reiki/);
   assert.match(academy, /academy-featured-temple-studies/);
@@ -43,36 +45,33 @@ test("shared showcase has compact contents, visual panels and a clear choice act
   assert.match(styles, /grid-template-rows: minmax\(250px, 42svh\) auto/);
 });
 
-test("Services keeps marketplace and published video surfaces after the redesign", () => {
+test("Services preserves published video and marketplace content in optional disclosures", () => {
   const services = read("app", "[locale]", "services", "page.tsx");
-
   assert.match(services, /services-marketplace/);
   assert.match(services, /featuredService/);
+  assert.match(services, /id="available-services"/);
+  assert.match(services, /id="method-videos"/);
   assert.match(services, /PageVideo slot="services-intro"/);
-  assert.match(services, /slot=\{"service-" \+ id\}/);
   assert.match(services, /method-hypnotherapy/);
   assert.match(services, /method-constellations/);
+  assert.match(services, /PageVideo slot="consultation"/);
+  assert.match(services, /PersonalTestimonials/);
 });
 
-
-test("mini cards navigate to direct destinations instead of in-page anchors", () => {
-  const component = read("components", "catalog-showcase.tsx");
-  const services = read("app", "[locale]", "services", "page.tsx");
+test("Services goal cards go to preselected free intake; method details have real routes", () => {
+  const solutions = read("components", "services-solutions.tsx");
+  const capture = read("components", "consultation-choice-capture.tsx");
   const academy = read("components", "academy-hub.tsx");
   const library = read("components", "library-hub.tsx");
 
-  assert.match(component, /indexHref\?: string/);
-  assert.match(component, /item\.indexHref \?\? item\.href/);
-  assert.match(services, /indexHref: serviceIndexHrefs\[id\]/);
-  assert.match(services, /academy\/applied\/hypnotherapy-regressions/);
-  assert.match(services, /academy\/reiki/);
-  assert.match(services, /systemic-constellations/);
-  assert.match(services, /business-situation-constellation/);
-  assert.match(services, /psychohomeopathy/);
-
+  assert.match(solutions, /free-situation-review\?topic=/);
+  for (const topic of ["wellbeing","personal","goal","business"]) {
+    assert.ok(solutions.includes('topic: "' + topic + '"'), topic);
+  }
+  for (const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"]) {
+    assert.ok(solutions.includes('href: "' + slug + '"'), slug);
+  }
+  assert.match(capture, /isTopic\(requestedTopic\)/);
   assert.match(academy, /academy\/temple-studies/);
-  assert.match(library, /href: `\/\$\{locale\}\/books`/);
-  assert.match(library, /href: `\/\$\{locale\}\/homeopathy\/remedies`/);
-  assert.match(library, /href: `\/\$\{locale\}\/wu-xing`/);
   assert.doesNotMatch(library, /books\?section=/);
 });

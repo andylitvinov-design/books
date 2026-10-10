@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PageVideo } from "@/components/page-video";
-import { PersonalWorkJourney } from "@/components/personal-work-journey";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { ServicesSolutions } from "@/components/services-solutions";
+import solutionStyles from "@/components/services-solutions.module.css";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -34,29 +32,6 @@ const copy = {
     freeReviewTitle: "Бесплатная диагностика ситуации",
     freeReviewText: "Разбор вашей цели, бизнеса или личной проблемы: точка ступора, зона роста и возможный следующий шаг. Без обязательств продолжать работу.",
     freeReviewAction: "Запросить бесплатный разбор",
-    cards: [
-      {
-        id: "business",
-        title: "Бизнес-расстановки",
-        subtitle: "Анализ перспектив бизнес-проектов",
-        text: "Системное исследование проекта: его перспектив, скрытых динамик, партнёрств, ролей, денег, ограничений и возможных следующих шагов. Это способ увидеть ситуацию шире и проверить решения через расстановочное поле.",
-        icon: BriefcaseBusiness,
-      },
-      {
-        id: "alchemy",
-        title: "Алхимия души / психогомеопатия",
-        subtitle: "Индивидуальная работа с внутренними состояниями",
-        text: "Авторский формат, объединяющий образную и системную работу с навигацией по поддерживающим средствам. Фокус — внутренние состояния, повторяющиеся паттерны, ресурсы и движение к более целостному состоянию.",
-        icon: Flower2,
-      },
-      {
-        id: "archetypal",
-        title: "Архетипические расстановки",
-        subtitle: "Мистерии и инициации",
-        text: "Экспериментальная работа с архетипами, мифологическими образами, ритуальной структурой и трансперсональным полем — индивидуально или в группе.",
-        icon: Sparkles,
-      },
-    ],
     approachKicker: "Как устроена работа",
     approachTitle: "Начинаем с вашего реального вопроса",
     approachText: "Мы обсуждаем ваш запрос, границы и подходящий формат. Системная работа, образы и другие методы используются только по взаимному согласию и в подходящем контексте.",
@@ -78,29 +53,6 @@ const copy = {
     freeReviewTitle: "Free situation & goal assessment",
     freeReviewText: "A free review of your goal, business or personal challenge: where you feel stuck, possible growth areas and a next step. No obligation to book paid work.",
     freeReviewAction: "Request a free review",
-    cards: [
-      {
-        id: "business",
-        title: "Business Constellations",
-        subtitle: "Exploring the prospects of business projects",
-        text: "A systemic exploration of a project: its prospects, hidden dynamics, partnerships, roles, money, constraints, and possible next steps. The aim is to widen the view and test decisions through constellation work.",
-        icon: BriefcaseBusiness,
-      },
-      {
-        id: "alchemy",
-        title: "Alchemy of the Soul / Psychohomeopathy",
-        subtitle: "Individual work with inner states",
-        text: "An author-developed format combining imagery and systemic exploration with guidance around supportive remedies. The focus is on inner states, recurring patterns, resources, and movement toward greater wholeness.",
-        icon: Flower2,
-      },
-      {
-        id: "archetypal",
-        title: "Archetypal Constellations",
-        subtitle: "Mysteries & Initiations",
-        text: "Experiential work with archetypes, mythic imagery, ritual structure, and the transpersonal field — individually or in groups.",
-        icon: Sparkles,
-      },
-    ],
     approachKicker: "How the work begins",
     approachTitle: "Start with your real question",
     approachText: "We discuss your question, boundaries and the format that may fit. Systemic work, imagery and other methods are used only by mutual agreement and in an appropriate context.",
@@ -113,16 +65,6 @@ const copy = {
     note: "These formats do not replace medical diagnosis or urgent care. Business constellations do not replace financial, legal or professional advice and do not guarantee an outcome.",
   },
 } as const;
-
-const serviceShowcaseImages: Record<string, string> = {
-  hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
-  "systemic-constellations": "/images/holistic-house/video-posters/constellations-en-v1.webp",
-  "business-decision-constellations": "/images/holistic-house/video-posters/services-en-v2.webp",
-  "reiki-energy-work": "/academy/reiki-yggdrasil/source/basic-program.jpg",
-  business: "/academy/reiki-yggdrasil/source/program-overview.jpg",
-  alchemy: "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
-  archetypal: "/library/maya-mysteries/media/post-244-1.jpg",
-};
 
 export function generateStaticParams() { return getHomeopathyLocaleParams(); }
 
@@ -145,7 +87,6 @@ export default async function ServicesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const current = copy[locale as Locale];
-  const entry = LOCAL_ACQUISITION[locale as Locale];
   let offerings: PublicService[] = [];
   try {
     offerings = await createPractitionerRepository(getAppConfig()).listPublicServices(locale);
@@ -154,45 +95,6 @@ export default async function ServicesPage({ params }: PageProps) {
   }
   const featuredService = offerings.find((service) => service.slug === "free-wu-xing-diagnostic");
   const marketplaceOfferings = offerings.filter((service) => service.id !== featuredService?.id);
-  const chooseFormatLabel = locale === "ru" ? "Выбрать этот формат" : "Choose this format";
-  const servicePage = (slug: string) => {
-    const service = offerings.find((item) => item.slug === slug);
-    return service ? `/${locale}/services/${service.practitionerSlug}/${service.slug}` : null;
-  };
-  const businessConstellationHref = servicePage("business-situation-constellation");
-  const serviceIndexHrefs: Record<string, string> = {
-    hypnotherapy: `/${locale}/academy/applied/hypnotherapy-regressions`,
-    "systemic-constellations": `/${locale}/services/systemic-constellations`,
-    "business-decision-constellations": businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-    "reiki-energy-work": `/${locale}/academy/reiki`,
-    business: businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-    alchemy: `/${locale}/services/psychohomeopathy`,
-    archetypal: `/${locale}/services/systemic-constellations`,
-  };
-  const coreShowcaseItems: CatalogShowcaseItem[] = entry.services.map(({ id, title, subtitle, text }) => ({
-    id: "service-" + id,
-    title,
-    subtitle,
-    description: text,
-    href: "#available-services",
-    indexHref: serviceIndexHrefs[id],
-    actionLabel: chooseFormatLabel,
-    image: serviceShowcaseImages[id] ?? "/academy/reiki-yggdrasil/source/school-introduction.jpg",
-    eyebrow: locale === "ru" ? "Формат индивидуальной работы" : "Personal work format",
-  }));
-  const additionalShowcaseItems: CatalogShowcaseItem[] = current.cards.map(({ id, title, subtitle, text }) => ({
-    id: "service-" + id,
-    title,
-    subtitle,
-    description: text,
-    href: "#available-services",
-    indexHref: serviceIndexHrefs[id],
-    actionLabel: chooseFormatLabel,
-    image: serviceShowcaseImages[id] ?? "/academy/reiki-yggdrasil/source/school-introduction.jpg",
-    media: <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />,
-    eyebrow: locale === "ru" ? "Дополнительное направление" : "Additional direction",
-  }));
-  const serviceShowcaseItems = [...coreShowcaseItems, ...additionalShowcaseItems];
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
@@ -200,14 +102,17 @@ export default async function ServicesPage({ params }: PageProps) {
 
       <ServicesConversionHero locale={locale as Locale} />
 
-      <PersonalWorkJourney locale={locale as Locale} />
+      <ServicesSolutions locale={locale as Locale} />
 
-      <CatalogShowcase
-        items={serviceShowcaseItems}
-        label={locale === "ru" ? "Форматы индивидуальной работы" : "Personal work formats"}
-      />
-
-      <section className="services-marketplace" id="available-services" aria-labelledby="services-marketplace-title">
+      <details className={solutionStyles.extra} id="available-services">
+        <summary className={solutionStyles.extraSummary}>
+          <span>
+            <strong>{locale === "ru" ? "Ищете конкретную услугу?" : "Already know which service you need?"}</strong>
+            <small>{locale === "ru" ? "Разверните каталог отдельных предложений и мастеров" : "Expand the separate practitioner offers and formats"}</small>
+          </span>
+          <span className={solutionStyles.expandSymbol} aria-hidden="true">+</span>
+        </summary>
+      <section className="services-marketplace" id="service-listings" aria-labelledby="services-marketplace-title">
         <div className="services-marketplace-heading">
           <p className="homeopathy-kicker">{locale === "ru" ? "Доступные услуги" : "Available services"}</p>
           <h2 id="services-marketplace-title">{locale === "ru" ? "Выберите услугу" : "Choose a service"}</h2>
@@ -218,18 +123,6 @@ export default async function ServicesPage({ params }: PageProps) {
           </p>
         </div>
 
-        <article className="services-marketplace-featured" id="free-situation-review-offer">
-          <div className="services-marketplace-featured-copy">
-            <div className="services-marketplace-featured-topline"><span className="services-marketplace-free-badge">{locale === "ru" ? "Бесплатно" : "Free"}</span><span>Andrey Litvinov</span></div>
-            <h3>{current.freeReviewTitle}</h3>
-            <p>{current.freeReviewText}</p>
-            <div className="services-marketplace-actions">
-              <Link className="services-marketplace-request services-marketplace-request--featured" href={"/" + locale + "/services/free-situation-review"}>
-                {current.freeReviewAction}<span aria-hidden="true">→</span>
-              </Link>
-            </div>
-          </div>
-        </article>
 
         {featuredService ? (
           <article className="services-marketplace-featured">
@@ -344,42 +237,52 @@ export default async function ServicesPage({ params }: PageProps) {
           </Link>
         </p>
       </section>
+      </details>
 
-      <PageVideo slot="services-intro" locale={locale} />
+      <details className={solutionStyles.extra} id="method-videos">
+        <summary className={solutionStyles.extraSummary}>
+          <span>
+            <strong>{locale === "ru" ? "Видео: как я работаю" : "Watch how I work"}</strong>
+            <small>{locale === "ru" ? "Короткие объяснения методов — по желанию" : "Short explanations of methods, if you'd like more detail"}</small>
+          </span>
+          <span className={solutionStyles.expandSymbol} aria-hidden="true">+</span>
+        </summary>
+        <div className={solutionStyles.extraVideos}>
+          <PageVideo slot="services-intro" locale={locale} />
 
-      {locale === "en" ? (
-        <section className="services-method-videos" id="methods" aria-labelledby="services-method-videos-title">
-          <div className="services-method-videos-heading">
-            <p className="homeopathy-kicker">Methods in more detail</p>
-            <h2 id="services-method-videos-title">Two short explanations</h2>
+          {locale === "en" ? (
+            <section className="services-method-videos" id="methods-video-explainers" aria-labelledby="services-method-videos-title">
+              <div className="services-method-videos-heading">
+                <p className="homeopathy-kicker">More about the approaches</p>
+                <h2 id="services-method-videos-title">Two short explanations</h2>
+              </div>
+              <div className="services-method-videos-grid">
+                <article className="services-method-video">
+                  <h3>Hypnotherapy</h3>
+                  <PageVideo slot="method-hypnotherapy" locale="en" />
+                </article>
+                <article className="services-method-video">
+                  <h3>Systemic constellations</h3>
+                  <PageVideo slot="method-constellations" locale="en" />
+                </article>
+              </div>
+            </section>
+          ) : null}
+          <div className={solutionStyles.archivedClips}>
+            {(["business", "alchemy", "archetypal"] as const).map((id) => (
+              <PageVideo key={id} slot={"service-" + id} locale={locale} />
+            ))}
           </div>
-          <div className="services-method-videos-grid">
-            <article className="services-method-video">
-              <h3>Hypnotherapy</h3>
-              <PageVideo slot="method-hypnotherapy" locale="en" />
-            </article>
-            <article className="services-method-video">
-              <h3>Systemic Constellations</h3>
-              <PageVideo slot="method-constellations" locale="en" />
-            </article>
-          </div>
-        </section>
-      ) : null}
+          <PageVideo slot="consultation" locale={locale} />
+          <p className={solutionStyles.extraAbout}>
+            <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true"> →</span></Link>
+          </p>
+        </div>
+      </details>
 
-      <section className="services-studio-approach">
-        <div>
-          <p className="homeopathy-kicker">{current.approachKicker}</p>
-          <h2>{current.approachTitle}</h2>
-        </div>
-        <div>
-          <p>{current.approachText}</p>
-          <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true">→</span></Link>
-        </div>
-      </section>
+
 
       <PersonalTestimonials locale={locale as Locale} variant="services" />
-
-      <PageVideo slot="consultation" locale={locale} />
 
       <PublicConsultationCta locale={locale as Locale} id="consultation" />
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>

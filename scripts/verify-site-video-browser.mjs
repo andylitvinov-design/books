@@ -94,6 +94,12 @@ try {
     ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9'],
   ]) {
     await navigate(target)
+    if (slot === 'services-intro' && await page.locator('#method-videos').count()) {
+      // The Services page prioritizes the free intake; videos now live in an
+      // optional native disclosure. Open it to verify the real published player.
+      await page.locator('#method-videos > summary').click()
+      await expect(page.locator('#method-videos')).toHaveAttribute('open', '')
+    }
     const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`)
     await expect(block).toHaveCount(1)
     assert.equal(await block.locator('iframe').count(), 0)

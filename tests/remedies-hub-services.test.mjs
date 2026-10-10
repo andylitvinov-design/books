@@ -44,20 +44,25 @@ test('public navigation groups existing remedies inside Library and keeps biling
   }
 })
 
-test('Services page is bilingual and grounds Alchemy of the Soul in the published services book', async () => {
-  const page = await readFile('app/[locale]/services/page.tsx', 'utf8')
-  assert.match(page, /Алхимия души/)
-  assert.match(page, /Alchemy of the Soul/)
-  assert.match(page, /id: "alchemy"/)
-  assert.match(page, /PageVideo slot=\{"service-" \+ id\}/)
+test('Services explains methods in both languages while prioritizing concrete client solutions', async () => {
+  const [page, solutions] = await Promise.all([
+    readFile('app/[locale]/services/page.tsx', 'utf8'),
+    readFile('components/services-solutions.tsx', 'utf8'),
+  ])
+  assert.match(page, /<ServicesSolutions locale=/)
+  assert.match(solutions, /Что вы хотели бы изменить/)
+  assert.match(solutions, /What would you like to change/)
+  assert.match(solutions, /Психогомеопатия и личные ресурсы/)
+  assert.match(solutions, /Psychohomeopathy & personal resources/)
+  assert.match(solutions, /imagery-therapy/)
+  assert.match(solutions, /systemic-constellations/)
+  assert.match(solutions, /free-situation-review\?topic=/)
   assert.match(page, /services-marketplace-featured/)
   assert.match(page, /free-wu-xing-diagnostic/)
   assert.match(page, /Пройти бесплатно/)
   assert.match(page, /Start free/)
   assert.match(page, /app\/consultations\?service=/)
   assert.match(page, /\/masters\//)
-  assert.match(page, /Начните с короткого разговора/)
-  assert.match(page, /Start with a short conversation/)
   assert.match(page, /не заменяют медицинскую диагностику/)
   assert.match(page, /do not replace medical diagnosis/)
 })
