@@ -1,0 +1,78 @@
+.solutions, .process, .methods {box-sizing:border-box;width:min(1240px,calc(100% - 38px));margin:76px auto 0;color:#352e29;}
+.header, .processHead {max-width:790px;}
+.eyebrow {margin:0 0 13px;color:#a56a48;font:700 11px/1.5 Arial,Helvetica,sans-serif;letter-spacing:.15em;text-transform:uppercase;}
+.header h2, .process h2, .methods h2 {margin:0;font:400 clamp(34px,3.5vw,51px)/1.13 Georgia,"Times New Roman",serif;letter-spacing:-.031em;color:#382d27;text-wrap:balance;}
+.intro {max-width:760px;margin:15px 0 0;color:#625b54;font:16px/1.65 Arial,Helvetica,sans-serif;}
+.grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:30px;}
+.card {box-sizing:border-box;min-width:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid #e6dacc;border-radius:25px;background:#fffdfa;box-shadow:0 12px 34px rgba(69,53,42,.055);}
+.cardTop {display:grid;grid-template-columns:136px minmax(0,1fr);gap:19px;padding:20px 21px 9px;align-items:start;}
+.photo {position:relative;overflow:hidden;min-height:144px;border-radius:17px;background:#e3e5d9;}
+.photo img {object-fit:cover;}
+.cardIntro {min-width:0;}
+.icon {display:inline-flex;padding:7px;border-radius:50%;background:#e8f1ea;color:#2e5b4c;}
+.card h3 {margin:10px 0 8px;font:400 clamp(22px,2.1vw,28px)/1.17 Georgia,"Times New Roman",serif;letter-spacing:-.026em;color:#372c27;}
+.cardIntro>p {margin:0;color:#5b5650;font:14px/1.55 Arial,Helvetica,sans-serif;}
+.cardBody {padding:7px 22px 0;flex:1;}
+.label {margin:12px 0 11px;color:#6b775b;font:700 11px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.09em;text-transform:uppercase;}
+.cardBody ul {list-style:none;margin:0;padding:0;display:grid;gap:10px;}
+.cardBody li {display:flex;align-items:flex-start;gap:9px;font:14px/1.5 Arial,Helvetica,sans-serif;color:#383a32;}
+.cardBody li svg {flex:none;margin-top:2px;color:#40715f;}
+.method {margin:18px 0 21px;padding-top:14px;border-top:1px solid #eee6db;color:#77726a;font:12px/1.55 Arial,Helvetica,sans-serif;}
+.method strong {color:#5a5d51;}
+.cardCta {display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 20px 20px;min-height:51px;padding:11px 19px;border-radius:14px;background:#2a5647;color:#fff!important;text-decoration:none;font:700 14px/1.4 Arial,Helvetica,sans-serif;transition:background .2s ease,transform .2s ease;}
+.cardCta:hover {background:#1e4438;transform:translateY(-1px);}
+.cardCta svg {flex:none;}
+.bridge {box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;gap:38px;width:min(1240px,calc(100% - 38px));margin:32px auto 0;padding:36px clamp(25px,3.8vw,54px);border:1px solid #cadecf;border-radius:25px;background:linear-gradient(115deg,#e5f0e6 0%,#f1f5e7 68%,#f7e9d4 100%);color:#263e33;}
+.bridge>div {max-width:740px;}
+.bridgeEyebrow {margin:0 0 9px;font:700 11px/1.5 Arial,Helvetica,sans-serif;letter-spacing:.15em;color:#446755;}
+.bridge h2 {margin:0;color:#294034;font:400 clamp(26px,2.5vw,37px)/1.19 Georgia,"Times New Roman",serif;letter-spacing:-.027em;}
+.bridge p:not(.bridgeEyebrow) {margin:10px 0 0;color:#465d50;font:14px/1.6 Arial,Helvetica,sans-serif;}
+.bridge>a {display:inline-flex;align-items:center;justify-content:center;gap:18px;min-height:56px;min-width:260px;padding:15px 24px;border-radius:50px;background:#2b5848;color:#fff!important;text-decoration:none;font:700 14px/1.35 Arial,Helvetica,sans-serif;flex-shrink:0;}
+.bridge>a:hover {background:#1d4337;}
+.bridge>a svg {flex:none;}
+.process {margin-top:64px;padding:0 0 13px;}
+.steps {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:27px;}
+.step {min-width:0;padding:25px 25px 23px;border:1px solid #e9e0d4;border-radius:20px;background:#fcf8f2;}
+.step h3 {margin:0;color:#2c493d;font:400 23px/1.22 Georgia,"Times New Roman",serif;}
+.step p {margin:11px 0 0;color:#5f5a53;font:14px/1.55 Arial,Helvetica,sans-serif;}
+.scope {margin:19px 0 0;color:#77716a;font:12px/1.6 Arial,Helvetica,sans-serif;}
+.methods {margin-top:52px;padding:37px clamp(22px,3vw,38px);border:1px solid #e5dfd6;border-radius:26px;background:#faf7f2;}
+.methods h2 {font-size:clamp(28px,2.9vw,40px);}
+.methods .intro {font-size:14px;margin-top:12px;}
+.methodGrid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:23px;}
+.methodCard {display:flex;flex-direction:column;padding:24px 21px;border:1px solid #eae3d9;border-radius:19px;background:#fffdfa;}
+.methodCard h3 {margin:0;font:400 23px/1.2 Georgia,"Times New Roman",serif;color:#3d3932;}
+.methodCard p {flex:1;margin:11px 0 18px;color:#646057;font:13px/1.6 Arial,Helvetica,sans-serif;}
+.methodCard a {display:inline-flex;gap:9px;align-items:center;color:#295743;font:700 13px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:4px;}
+.cardCta:focus-visible,.bridge>a:focus-visible,.methodCard a:focus-visible {outline:3px solid #a46d46;outline-offset:4px;}
+@media(max-width:970px){.cardTop{grid-template-columns:106px minmax(0,1fr);gap:13px}.photo{min-height:120px}.card h3{font-size:23px}.bridge{gap:20px}.bridge>a{min-width:225px}.methodCard h3{font-size:21px}}
+@media(max-width:760px){
+ .solutions,.process,.methods{width:calc(100% - 24px);margin-top:45px;}
+ .header{padding:0 8px;}
+ .header h2,.process h2{font-size:clamp(32px,8.5vw,42px);}
+ .intro{font-size:14px;margin-top:11px;}
+ .grid{grid-template-columns:1fr;gap:13px;margin-top:22px;}
+ .card{border-radius:20px;}
+ .cardTop{grid-template-columns:98px minmax(0,1fr);gap:14px;padding:16px 16px 8px;}
+ .photo{min-height:113px;border-radius:14px;}
+ .icon{padding:5px;}
+ .card h3{font-size:clamp(20px,5.8vw,25px);margin:8px 0 6px;}
+ .cardIntro>p{font-size:12px;line-height:1.5;}
+ .cardBody{padding:0 17px;}
+ .cardBody li{font-size:13px;}
+ .method{margin:14px 0 14px;padding-top:12px;}
+ .cardCta{min-height:52px;margin:0 16px 16px;}
+ .bridge{width:calc(100% - 24px);margin-top:20px;padding:25px 21px;border-radius:19px;display:grid;gap:19px;}
+ .bridge h2{font-size:29px;}
+ .bridge>a{width:100%;min-width:0;min-height:52px;box-sizing:border-box;}
+ .process{padding:0 7px;}
+ .steps{grid-template-columns:1fr;gap:10px;margin-top:19px;}
+ .step{padding:19px 20px;}
+ .step h3{font-size:21px;}
+ .step p{margin-top:6px;}
+ .methods{padding:25px 19px;border-radius:21px;}
+ .methodGrid{grid-template-columns:1fr;gap:9px;margin-top:17px;}
+ .methodCard{padding:20px;}
+ .methodCard p{margin-bottom:14px;}
+}
+@media(prefers-reduced-motion:reduce){.cardCta{transition:none}.cardCta:hover{transform:none}}
