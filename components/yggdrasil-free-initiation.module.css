@@ -50,3 +50,14 @@
   .questions li { padding: 11px; gap: 8px; grid-template-columns: 33px minmax(0,1fr); font-size: 14px; }
   .checklist { margin-top: 32px; border-radius: 14px; padding: 15px; }
 }
+
+
+/* Existing preparation materials now stay within the school, with one optional FAQ. */
+.faqDisclosure { margin-top: 17px; border: 1px solid #d3e4e0; border-radius: 12px; overflow: hidden; background: #f6fbf8; scroll-margin-top: 22px; }
+.faqDisclosure > summary { padding: 13px 15px; min-height: 49px; list-style: none; cursor: pointer; color: #2f6767; font-size: 14px; font-weight: 750; }
+.faqDisclosure > summary::-webkit-details-marker, .faqAnswers summary::-webkit-details-marker { display: none; }
+.faqDisclosure summary:focus-visible { outline: 3px solid #248d89; outline-offset: -3px; }
+.faqAnswers { padding: 0 12px 12px; }
+.faqAnswers details { border-top: 1px solid #d9e7e1; }
+.faqAnswers summary { padding: 12px 6px; cursor: pointer; color: #305f66; font-size: 13px; font-weight: 700; }
+.faqAnswers p { padding: 0 6px 13px; margin: 0; font-size: 13px; color: #5d716f; line-height: 1.6; }
