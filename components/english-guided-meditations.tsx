@@ -15,7 +15,7 @@ export function EnglishGuidedMeditations({ focus = "all" }: { focus?: Focus }) {
       <div className="english-meditation-heading">
         <p className="homeopathy-kicker">Original practices · English</p>
         <h2 id={"english-guided-meditations-" + focus}>{isTantraVideo ? "Tantra Reiki · Level 1 Guided Meditation" : "Guided meditation paths"}</h2>
-        <p>{isTantraVideo ? "Begin with the first level of Tantra Reiki. This is Andrey’s guided video practice: settle into the body, notice the flow and explore your own experience at a comfortable pace. Press Play to begin." : "Explore Andrey’s original English-language guided practices. Videos appear when their YouTube sources are confirmed."}</p>
+        <p>{isTantraVideo ? "Follow Andrey’s Level 1 video practice at your own pace, noticing sensations and the rhythm of your breath." : "Explore Andrey’s original English-language guided practices. Videos appear when their YouTube sources are confirmed."}</p>
       </div>
       <div className="english-meditation-list">
         {entries.map((item) => (
@@ -34,9 +34,9 @@ export function EnglishGuidedMeditations({ focus = "all" }: { focus?: Focus }) {
               )}
             </div>
             <div className="english-meditation-card__copy">
-              <p className="english-meditation-card__eyebrow">{item.youtubeId ? "Watch the original video" : isTantraVideo ? "Video practice · English" : "Explore the practice"}</p>
-              <h3>{isTantraVideo ? "Level 1 · An introduction to the Tantra Reiki flow" : item.title}</h3>
-              <p>{item.description}</p>
+              {!isTantraVideo ? <p className="english-meditation-card__eyebrow">{item.youtubeId ? "Watch the original video" : "Explore the practice"}</p> : null}
+              <h3>{isTantraVideo ? "Follow the practice when ready" : item.title}</h3>
+              {!isTantraVideo ? <p>{item.description}</p> : null}
               {item.youtubeId && (isTantraVideo || item.key === "reiki-yggdrasil") ? (
                 <a href={"https://www.youtube.com/watch?v=" + item.youtubeId} target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
               ) : !item.youtubeId && isTantraVideo ? (

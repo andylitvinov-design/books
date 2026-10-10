@@ -21,7 +21,7 @@ test("Tantra Reiki on-page teaching source is unique in EN and RU and excludes r
   const visibleIndices = ranges.flatMap(([from, to]) =>
     Array.from({ length: to - from }, (_, offset) => from + offset).filter((index) => !excluded.has(index))
   );
-  assert.equal(ranges.length, 5);
+  assert.equal(ranges.length, 3);
   assert.equal(new Set(visibleIndices).size, visibleIndices.length);
   for (const index of [15, 16, 25, 26, 31, 32, 131, 132, 48, 52, 56, 64, 75, 86, 89, 91, 99, 104, 121, 136, 140, 143, 150, 157, 167, 183, 184, 189]) {
     assert.ok(!visibleIndices.includes(index), "recycled or already-displayed item remains: " + index);
@@ -47,7 +47,8 @@ test("Tantra Reiki on-page teaching source is unique in EN and RU and excludes r
     const text = translation.blocks[index].text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
     assert.ok(!stageText.has(text), "source paragraph repeats a nine-level author description: " + index);
   }
-  assert.equal(visibleIndices.filter((index) => translation.blocks[index].type === "h2" && /^LEVEL \d$/.test(translation.blocks[index].text)).length, 9);
+  assert.equal(visibleIndices.filter((index) => translation.blocks[index].type === "h2" && /^LEVEL \d$/.test(translation.blocks[index].text)).length, 0);
+  assert.ok(visibleIndices.every((index) => index < 11 || index >= 48), "full attunements must only appear in their stage chapters");
   assert.equal(original.blocks.ru.length, 190, "complete archival source must remain intact");
   assert.equal(translation.blocks.length, 190, "the full English source remains recoverable");
 });

@@ -3,10 +3,8 @@ import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
 import englishSource from "@/data/academy/tantra-reiki-ru-en.generated.json";
 
-// Only the two original green text-review screenshots belong to the RU review gallery.
-// Real festival photographs have been restored to the teaching/experience sections.
-const reviewImages = [2, 3] as const;
-
+// Text testimonials are shown once; archived screenshots of the same messages
+// stay in the source JSON, while real festival photos appear in the level stories.
 const sourceReviewGroups = [
   [56, 57],
   [61, 62, 63, 64],
@@ -30,8 +28,7 @@ const labels = {
     eyebrow: "Words from our students",
     heading: "Tantra Reiki testimonials",
     intro: "Personal experiences shared by participants. Your experience may be different; these accounts are not promised outcomes.",
-    quote: "In their own words",
-    photo: "Original messages from participants",
+    quote: "Level 1 · participant reflections",
     video: "Video testimonials",
     language: "Original video · Russian audio",
     native: "Participant video",
@@ -41,8 +38,7 @@ const labels = {
     eyebrow: "Впечатления участников",
     heading: "Отзывы участников Тантра Рейки",
     intro: "Личные впечатления участников. Опыт может отличаться, отзывы не являются гарантией результата.",
-    quote: "Отзывы участников",
-    photo: "Фотографии отзывов из архива",
+    quote: "1 ступень · личные впечатления",
     video: "Видеоотзывы",
     language: "Видео из архива · русский язык",
     native: "Видеоотзыв участника",
@@ -52,8 +48,7 @@ const labels = {
     eyebrow: "Experiencias de participantes",
     heading: "Experiencias con Tantra Reiki",
     intro: "Experiencias personales compartidas por participantes. Los resultados individuales pueden variar.",
-    quote: "Lo que compartieron",
-    photo: "Testimonios en imágenes",
+    quote: "Etapa 1 · testimonios escritos",
     video: "Testimonios en vídeo",
     language: "Vídeo original · audio en ruso",
     native: "Vídeo de un participante",
@@ -75,10 +70,7 @@ export function TantraReikiTestimonials({ locale }: { locale: PublicLocale }) {
       <div className="tantra-review-quotes">
         {sourceReviewGroups.map((indices, i) => (
           <blockquote className="tantra-review-quote" key={i}>
-            <p className="tantra-review-quote__label">
-              {locale === "ru" ? "Тантра Рейки · 1 ступень" : locale === "es" ? "Tantra Reiki · etapa 1" : "Tantra Reiki · Level 1"}
-            </p>
-            {indices.map((sourceIndex, j) => (
+             {indices.map((sourceIndex, j) => (
               <p key={sourceIndex}>
                 {locale === "ru"
                   ? tantraReikiArchive.blocks.ru[sourceIndex].text
@@ -90,20 +82,6 @@ export function TantraReikiTestimonials({ locale }: { locale: PublicLocale }) {
           </blockquote>
         ))}
       </div>
-
-      {locale === "ru" ? (
-        <div className="tantra-review-archive">
-          <h3 className="tantra-testimonials__subheading">{l.photo}</h3>
-          <div className="tantra-review-gallery">
-            {reviewImages.map((index) => (
-              <a href={tantraReikiArchive.images.ru[index]} key={index} target="_blank" rel="noreferrer" aria-label={"Открыть архивное изображение " + index}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={tantraReikiArchive.images.ru[index]} alt={"Изображение из архива отзывов и практик Тантра Рейки"} loading="lazy" decoding="async" />
-              </a>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <div className="tantra-review-video-section">
         <h3 className="tantra-testimonials__subheading">{l.video}</h3>

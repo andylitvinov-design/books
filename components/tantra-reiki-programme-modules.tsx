@@ -29,12 +29,10 @@ const copy = {
   en: {
     eyebrow: "Go deeper into the practice",
     heading: "Original teaching notes",
-    lead: "Explore the traditional attunements, essential ideas and historical context alongside the nine levels described above.",
+    lead: "Each level above contains its attunements. These three chapters add original reflections on the flow, the teaching philosophy and historical context.",
     chapters: [
       ["The living flow", "Sensitivity, connection and the central idea of the practice"],
-      ["Attunements across nine levels", "The original sequence, with each setting listed once"],
       ["The teaching philosophy", "Creativity, love and the symbolism of transformation"],
-      ["Everyday practice", "Sensitivity, communication and inner presence"],
       ["Tradition and course context", "Origins, traditional applications and the nine-level path"],
     ],
     historicalTitle: "Earlier English source: alternative names",
@@ -46,12 +44,10 @@ const copy = {
   ru: {
     eyebrow: "Углубиться в практику",
     heading: "Дополнительные авторские материалы",
-    lead: "Дополнительно к описаниям девяти ступеней здесь собраны традиционные настройки, основные идеи и исторический контекст практики.",
+    lead: "Настройки приведены в каждой ступени выше. Здесь — дополнительные авторские размышления о потоке, философии и истории практики.",
     chapters: [
       ["Живой поток", "Чувствительность, контакт и основная идея практики"],
-      ["Настройки девяти ступеней", "Исходная последовательность без повторяющихся пунктов"],
       ["Философия практики", "Творчество, любовь и символика трансформации"],
-      ["Практика в жизни", "Чувствительность, общение и внутреннее присутствие"],
       ["Традиция и контекст", "Происхождение, применение и историческая структура обучения"],
     ],
     historicalTitle: "",
@@ -63,12 +59,10 @@ const copy = {
   es: {
     eyebrow: "Profundiza en la práctica",
     heading: "Notas originales de la enseñanza",
-    lead: "Además de las nueve etapas, descubre las sintonizaciones tradicionales, las ideas centrales y el contexto histórico de la práctica.",
+    lead: "Las sintonizaciones están en cada etapa más arriba. Aquí se reúnen reflexiones adicionales sobre el flujo, la filosofía y el contexto histórico.",
     chapters: [
       ["El flujo vivo", "Sensibilidad y conexión"],
-      ["Sintonizaciones de las nueve etapas", "La secuencia original, sin elementos duplicados"],
       ["Filosofía", "Creatividad, amor y transformación"],
-      ["Práctica cotidiana", "Sensibilidad, comunicación y presencia"],
       ["Tradición y formación", "Orígenes y estructura histórica"],
     ],
     historicalTitle: "",
@@ -85,12 +79,10 @@ const copy = {
 // Do not mutate the original archival JSON: it remains the provenance record.
 const detailedRanges: readonly (readonly [number, number])[] = [
   [4, 10],    // Introductory ideas, excluding split duplicates
-  [11, 48],   // Attunements for Levels 1–9
   [70, 74],   // Author's overall philosophy, not the repeated stage paragraphs
-  [131, 136], // Final reflections not repeated in the nine full stage accounts
   [179, 183], // Tradition and historical learning context
 ];
-const excludedSourceIndices = new Set([5, 6, 7, 8, 15, 16, 25, 26, 31, 32, 131, 132, 133]);
+const excludedSourceIndices = new Set([5, 6, 7, 8]);
 
 function Modules({ locale, blocks }: { locale: PublicLocale; blocks: AcademyBlock[] }) {
   const captions = copy[locale].chapters;
@@ -137,12 +129,11 @@ export function TantraReikiProgrammeModules({locale, publicBlocks}: {locale:Publ
         <div className="tantra-reading__supplement">
           <details className="tantra-reading__module">
             <summary>
-              <span className="tantra-reading__number">06</span>
+              <span className="tantra-reading__number">04</span>
               <span className="tantra-reading__module-heading"><strong>{c.historicalTitle}</strong><small>{c.historicalDescription}</small></span>
               <span className="tantra-reading__indicator" aria-hidden="true">+</span>
             </summary>
             <div className="tantra-reading__content">
-              <p>{c.historicalDescription}</p>
               <ul>
                 <li>{c.historicalLevel2} {originalEnglishArchive.blocks.en[29].text}</li>
                 <li>{c.historicalLevel3} {originalEnglishArchive.blocks.en[31].text}; {originalEnglishArchive.blocks.en[32].text}</li>

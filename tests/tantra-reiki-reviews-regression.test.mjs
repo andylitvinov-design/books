@@ -2,25 +2,21 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("Tantra Reiki review photos are relocated below curriculum only in Russian", async () => {
-  const [journey, reviews, page] = await Promise.all([
+test("Genuine Tantra festival photos remain and duplicated review screenshots are absent", async () => {
+  const [journey, reviews, page, festival] = await Promise.all([
     readFile("components/tantra-reiki-journey.tsx", "utf8"),
     readFile("components/tantra-reiki-testimonials.tsx", "utf8"),
     readFile("components/academy-record-page.tsx", "utf8"),
+    readFile("components/tantra-reiki-story.tsx", "utf8"),
   ]);
   const photos = journey.slice(journey.indexOf("const levelPhotos = ["), journey.indexOf("] as const;", journey.indexOf("const levelPhotos = [")));
-  const gallery = reviews.slice(reviews.indexOf("const reviewImages = "), reviews.indexOf("] as const;", reviews.indexOf("const reviewImages = ")));
   for (const index of [17, 18, 19, 20, 21, 22]) {
-    assert.match(photos, new RegExp("images\\.ru\\[" + index + "\\]"), "real event photo missing from levels " + index);
-    assert.doesNotMatch(gallery, new RegExp("\\b" + index + "\\b"), "event photo was mistakenly classified as a review " + index);
+    assert.match(photos, new RegExp("images\\.ru\\[" + index + "\\]"));
   }
-  for (const index of [2, 3]) {
-    assert.doesNotMatch(photos, new RegExp("images\\.ru\\[" + index + "\\]"), "green review screenshot returned to a level");
-    assert.match(gallery, new RegExp("\\b" + index + "\\b"), "original review screenshot absent " + index);
-  }
-  assert.match(reviews, /reviewImages\.map/);
-  assert.match(reviews, /locale === "ru" \? \(/);
-  assert.match(page, /<TantraReikiTestimonials locale=\{locale\} \/>/);
+  assert.match(festival, /TantraReikiFestivalMoments/);
+  assert.match(page, /<TantraReikiFestivalMoments locale=\{locale\} \/>/);
+  assert.doesNotMatch(reviews, /reviewImages|tantra-review-gallery|tantra-review-archive|images\.ru\[2\]|images\.ru\[3\]/);
+  assert.match(reviews, /sourceReviewGroups\.map/);
 });
 
 test("Testimonials restore original 2 MP4 videos and the correctly identified Alena YouTube review", async () => {

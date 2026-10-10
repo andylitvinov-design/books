@@ -43,7 +43,8 @@ test("Nine distinct stage images exclude old portrait and second-level image", a
   assert.ok(!indices.includes(16), "old portrait must be gone");
   assert.notEqual(indices[1], 13, "level 2 photo must be replaced");
   assert.match(page, /tantraReikiFullArchive\.images\.ru\[12\]/);
-  assert.match(code, /photo\.archive \?/);
+  assert.match(code, /photoContext/);
+  assert.doesNotMatch(code, /<figcaption>/);
   assert.match(code, /objectPosition: photo\.position/);
 });
 

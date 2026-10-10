@@ -30,7 +30,7 @@ test("real festival photos are restored to levels and visual gallery, not mislab
   assert.deepEqual(stageIds.slice(0, 6), [17,18,19,20,21,22]);
   for (const index of stageIds) assert.doesNotMatch(images[index], /Screenshot_/);
   for (const index of [0,10,11]) assert.match(festival, new RegExp("images\\.ru\\[" + index + "\\]"));
-  assert.match(reviews, /const reviewImages = \[2, 3\] as const/);
+  assert.doesNotMatch(reviews, /reviewImages|tantra-review-archive|tantra-review-gallery/);
   assert.match(festival, /className="tantra-festival-moments__gallery"/);
 });
 
@@ -60,7 +60,8 @@ test("correct Level 1 meditation remains separate and immediately precedes testi
   assert.match(videos, /youtubeId: "w2BN-HYmHUk"/);
   assert.match(meditations, /isTantraVideo/);
   assert.match(meditations, /Tantra Reiki · Level 1 Guided Meditation/);
-  assert.match(meditations, /Begin with the first level of Tantra Reiki/);
+  assert.match(meditations, /Follow Andrey’s Level 1 video practice/);
+  assert.match(meditations, /!isTantraVideo \? <p>\{item\.description\}<\/p> : null/);
   assert.match(reviews, /englishSource\.blocks\[sourceIndex\]\.text/);
   assert.match(reviews, /qM_nFUkYJ1k/);
   assert.ok(page.indexOf('<EnglishGuidedMeditations focus="tantra-reiki"') < page.indexOf('<TantraReikiTestimonials locale='));
