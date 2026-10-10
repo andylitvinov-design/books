@@ -175,7 +175,7 @@ export function ServicesSolutions({ locale }: { locale: Locale }) {
           {t.solutions.map((solution, index) => {
             const Icon = solutionIcons[index];
             return (
-              <article className={styles.card} key={solution.topic}>
+              <article className={styles.card} key={solution.topic} id={solution.topic}>
                 <div className={styles.cardTop}>
                   <div className={styles.photo}>
                     <Image src={solution.image} alt="" fill sizes="(max-width: 760px) 105px, 155px" loading="lazy" />
@@ -236,7 +236,7 @@ export function ServicesSolutions({ locale }: { locale: Locale }) {
         <p className={styles.intro}>{t.methodLead}</p>
         <div className={styles.methodGrid}>
           {t.methods.map((method) => (
-            <article className={styles.methodCard} key={method.href}>
+            <article className={styles.methodCard} key={method.href} id={method.href === "psychohomeopathy" ? "alchemy" : method.href === "systemic-constellations" ? "archetypal" : undefined}>
               <h3>{method.title}</h3>
               <p>{method.desc}</p>
               <Link href={"/" + locale + "/services/" + method.href}>{t.detailAction}<ArrowRight size={16} aria-hidden="true" /></Link>
