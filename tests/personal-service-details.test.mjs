@@ -31,8 +31,12 @@ test("services and free diagnostic link to canonical order pages, not DB-only ro
     assert.ok(journey.includes('slug: "' + slug + '"'), slug + " missing in journey");
     assert.ok(free.includes('href: "' + slug + '"'), slug + " missing in free");
   }
-  assert.match(services, /alchemy: `\/\$\{locale\}\/services\/psychohomeopathy`/);
-  assert.match(services, /archetypal: `\/\$\{locale\}\/services\/systemic-constellations`/);
+  assert.match(services, /<ServicesSolutions locale=/);
+  const solutions = read("components/services-solutions.tsx");
+  for (const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"]) {
+    assert.ok(solutions.includes('href: "' + slug + '"'), "missing canonical service: " + slug);
+  }
+  assert.match(solutions, /free-situation-review\?topic=/);
 });
 
 test("free diagnostic explains its scope and explicitly excludes diagnoses, prescriptions and obligation", () => {
