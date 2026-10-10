@@ -38,13 +38,13 @@ test("Tantra Reiki on-page teaching source is unique in EN and RU and excludes r
     }
   }
   const journey = await read("components/tantra-reiki-journey.tsx");
-  const mapped = journey.match(/const authorStageBlockIndices = \\[([\\s\\S]*?)\\] as const;/);
+  const mapped = journey.match(/const authorStageBlockIndices = \[([\s\S]*?)\] as const;/);
   assert.ok(mapped, "original level paragraphs are missing");
-  const stageIndices = [...mapped[1].matchAll(/^\\s+\\[([^\\]]+)\\]/gm)]
+  const stageIndices = [...mapped[1].matchAll(/^\s+\[([^\]]+)\]/gm)]
     .flatMap((match) => match[1].split(",").map((part) => Number(part.trim())));
-  const stageText = new Set(stageIndices.map((index) => translation.blocks[index].text.toLowerCase().replace(/[^\\p{L}\\p{N}]/gu, "")));
+  const stageText = new Set(stageIndices.map((index) => translation.blocks[index].text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "")));
   for (const index of visibleIndices) {
-    const text = translation.blocks[index].text.toLowerCase().replace(/[^\\p{L}\\p{N}]/gu, "");
+    const text = translation.blocks[index].text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
     assert.ok(!stageText.has(text), "source paragraph repeats a nine-level author description: " + index);
   }
   assert.equal(visibleIndices.filter((index) => translation.blocks[index].type === "h2" && /^LEVEL \d$/.test(translation.blocks[index].text)).length, 9);
