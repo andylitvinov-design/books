@@ -35,7 +35,7 @@ const copy = {
         outcomes: ["Clarify the goal and the obstacles you perceive", "Explore realistic next steps and new perspectives"],
         method: "Personal imagery, systemic and archetypal constellation work.",
         topic: "goal",
-        image: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+        image: "/images/holistic-house/hero-olive-incense.webp",
       },
       {
         title: "I face a business, career or major life decision",
@@ -111,7 +111,7 @@ const copy = {
         outcomes: ["Уточнить цель и предполагаемые препятствия", "Найти варианты следующих реалистичных шагов"],
         method: "Образная работа, системные и архетипические расстановки.",
         topic: "goal",
-        image: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+        image: "/images/holistic-house/hero-olive-incense.webp",
       },
       {
         title: "Сложное решение в бизнесе, карьере или жизни",
