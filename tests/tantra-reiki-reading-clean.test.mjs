@@ -23,7 +23,7 @@ test("Tantra Reiki on-page teaching source is unique in EN and RU and excludes r
   );
   assert.equal(ranges.length, 5);
   assert.equal(new Set(visibleIndices).size, visibleIndices.length);
-  for (const index of [15, 16, 25, 26, 31, 32, 48, 52, 56, 64, 75, 86, 89, 91, 99, 104, 121, 136, 140, 143, 150, 157, 167, 183, 184, 189]) {
+  for (const index of [15, 16, 25, 26, 31, 32, 131, 132, 48, 52, 56, 64, 75, 86, 89, 91, 99, 104, 121, 136, 140, 143, 150, 157, 167, 183, 184, 189]) {
     assert.ok(!visibleIndices.includes(index), "recycled or already-displayed item remains: " + index);
   }
   for (const blocks of [original.blocks.ru, translation.blocks]) {
@@ -36,6 +36,16 @@ test("Tantra Reiki on-page teaching source is unique in EN and RU and excludes r
       seen.add(fingerprint);
       assert.doesNotMatch(block.text, /book a session|забронировать сеанс|write to us|напишите нам|about me|обо мне|testimonials|отзывы|registration|регистрац|telegram|whatsapp/i);
     }
+  }
+  const journey = await read("components/tantra-reiki-journey.tsx");
+  const mapped = journey.match(/const authorStageBlockIndices = \\[([\\s\\S]*?)\\] as const;/);
+  assert.ok(mapped, "original level paragraphs are missing");
+  const stageIndices = [...mapped[1].matchAll(/^\\s+\\[([^\\]]+)\\]/gm)]
+    .flatMap((match) => match[1].split(",").map((part) => Number(part.trim())));
+  const stageText = new Set(stageIndices.map((index) => translation.blocks[index].text.toLowerCase().replace(/[^\\p{L}\\p{N}]/gu, "")));
+  for (const index of visibleIndices) {
+    const text = translation.blocks[index].text.toLowerCase().replace(/[^\\p{L}\\p{N}]/gu, "");
+    assert.ok(!stageText.has(text), "source paragraph repeats a nine-level author description: " + index);
   }
   assert.equal(visibleIndices.filter((index) => translation.blocks[index].type === "h2" && /^LEVEL \d$/.test(translation.blocks[index].text)).length, 9);
   assert.equal(original.blocks.ru.length, 190, "complete archival source must remain intact");
