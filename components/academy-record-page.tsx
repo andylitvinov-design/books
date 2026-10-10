@@ -206,7 +206,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             </>
           ) : (
             <>
-              {record.skippedRiskyBlocks || publicOmittedCount ? <p>{text.filtered}</p> : null}
+              {!isVerbatimTantraArchive && (record.skippedRiskyBlocks || publicOmittedCount) ? <p>{text.filtered}</p> : null}
               <a href={record.sourceUrl} rel="noreferrer" target="_blank">{text.source}<span aria-hidden="true">↗</span></a>
             </>
           )}

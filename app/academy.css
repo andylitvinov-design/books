@@ -3070,3 +3070,12 @@
 .yggdrasil-testimonials__historical-actions a { display: inline-flex; min-height: 43px; align-items: center; border: 1px solid #aacdd3; border-radius: 9px; padding: 9px 12px; color: #316e7d; background: #fff; font-size: 12px; font-weight: 700; text-decoration: none; }
 .yggdrasil-testimonials__historical-actions a:focus-visible { outline: 3px solid #7cb8c4; outline-offset: 3px; }
 @media (max-width: 650px) { .yggdrasil-testimonials__historical-links { padding: 14px; } .yggdrasil-testimonials__historical-actions, .yggdrasil-testimonials__historical-actions a { width: 100%; } }
+
+/* Tantra Reiki: one photo-context note instead of nine identical captions. */
+.academy-reading-shell--tantra .tantra-journey__photo-context {
+  max-width: 70ch;
+  margin: 11px 0 0;
+  color: #755d4e;
+  font-size: 14px;
+  line-height: 1.55;
+}
