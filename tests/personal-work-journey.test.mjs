@@ -13,19 +13,23 @@ test("home displays direct three-service choices before the introductory video",
   assert.ok(cards > 0 && video > cards);
 });
 
-test("services display choices and a separately listed free diagnostic offering", () => {
+test("services prioritizes concrete client solutions and a free conversation over method catalogues", () => {
   const s = source("app", "[locale]", "services", "page.tsx");
-  const hero = s.indexOf('<ServicesConversionHero locale={locale as Locale} />');
-  const journey = s.indexOf('<PersonalWorkJourney locale={locale as Locale} />');
-  const catalogue = s.indexOf("<CatalogShowcase");
-  assert.ok(hero >= 0 && journey > hero && catalogue > journey);
-  assert.doesNotMatch(s, /<section className="services-studio-hero">/);
-  assert.match(s, /ServicesConversionHero/);
-  assert.match(s, /id="free-situation-review-offer"/);
-  assert.match(s, /href=\{".*?" \+ locale \+ "\/services\/free-situation-review"\}/);
-  assert.match(s, /Бесплатная диагностика ситуации/);
-  assert.match(s, /Free situation & goal assessment/);
+  const solutions = source("components", "services-solutions.tsx");
+  const hero = s.indexOf("<ServicesConversionHero");
+  const choices = s.indexOf("<ServicesSolutions");
+  const marketplace = s.indexOf('<details className={solutionStyles.extra} id="available-services">');
+  assert.ok(hero >= 0 && choices > hero && marketplace > choices);
+  assert.doesNotMatch(s, /<CatalogShowcase|<PersonalWorkJourney locale/);
+  assert.match(s, /services-marketplace/);
   assert.match(s, /free-wu-xing-diagnostic/);
+  assert.match(s, /<PersonalTestimonials/);
+  assert.match(solutions, /What would you like to change/);
+  assert.match(solutions, /Что вы хотели бы изменить/);
+  for (const topic of ["wellbeing", "personal", "goal", "business"]) {
+    assert.match(solutions, new RegExp('topic: "' + topic + '"'));
+  }
+  assert.match(solutions, /free-situation-review\?topic=/);
 });
 
 test("three services are choices with direct real service links, not implied treatment stages", () => {
@@ -80,7 +84,7 @@ test("service links retain mobile tap targets, no horizontal layout overflow fro
 test("services hero makes the free consultation the first and only primary offer", () => {
   const hero = source("components", "services-conversion-hero.tsx");
   const css = source("components", "services-conversion-hero.module.css");
-  for (const phrase of ["Feeling stuck?", "Чувствуете, что застряли?", "free-situation-review", "Request my free consultation", "Запросить бесплатную консультацию"]) {
+  for (const phrase of ["Feeling stuck?", "Не знаете, как двигаться дальше?", "free-situation-review", "Request my free situation review", "Записаться на бесплатную диагностику"]) {
     assert.ok(hero.includes(phrase), phrase);
   }
   assert.doesNotMatch(hero, /selfCheck|self_check_start|#available-services/);
