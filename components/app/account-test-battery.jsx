@@ -298,7 +298,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       const isPlanStep = currentPlan?.status === 'active' &&
         currentPlan.definitionIds.includes(row.definition.id)
       router.push(root + '/runs/' + encodeURIComponent(run.id) +
-        (isPlanStep ? '?plan=' + encodeURIComponent(currentPlan.id) : ''))
+        '?mode=quick' + (isPlanStep ? '&plan=' + encodeURIComponent(currentPlan.id) : ''))
     } catch (cause) {
       setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
       setBusy(false)
