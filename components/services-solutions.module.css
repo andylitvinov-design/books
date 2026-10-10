@@ -103,3 +103,8 @@
  .extraVideos {padding:0 12px 19px;}
 }
 @media(prefers-reduced-motion:reduce){.expandSymbol{transition:none}}
+
+
+.archivedClips {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0;}
+.archivedClips :global(.site-video-block) {min-width:0;}
+@media(max-width:760px){.archivedClips{grid-template-columns:1fr;gap:13px;}}
