@@ -5,5 +5,5 @@ import type { PublicLocale } from "@/lib/public-locales";
 // The audited external-source URLs remain in internal curriculum provenance,
 // not a second public programme competing with the current seven modules.
 export function YggdrasilSuperSkillsSourcesPage({ locale }: { locale: PublicLocale }) {
-  redirect("/" + locale + "/academy/reiki/yggdrasil#system-modules");
+  return redirect("/" + locale + "/academy/reiki/yggdrasil#system-modules") as never;
 }
