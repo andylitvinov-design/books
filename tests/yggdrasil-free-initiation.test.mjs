@@ -31,8 +31,8 @@ test("all seven original preparation questions are visible, numbered, localized 
     const items = match[1].split("\n").filter((x) => /^\s*"/.test(x));
     assert.equal(items.length, 7, "locale " + index + " needs exactly seven original questions");
   }
-  assert.doesNotMatch(page, /superskills\\.vip/);
-  assert.match(page, /<Link href=\\{url\\} key=\\{url\\}>/);
+  assert.ok(!page.includes('superskills.vip'));
+  assert.ok(page.includes('<Link href={url} key={url}>'));
   assert.match(page, /id="learning-faq"/);
   assert.match(page, /<ol className=\{styles\.questions\}>/);
   assert.match(page, /What differences does the author claim/);
