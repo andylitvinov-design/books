@@ -78,6 +78,15 @@ async function exercise(engine, browserType) {
         const response = await page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 60000 });
         assert.equal(response.status(), 200);
         await page.evaluate(() => document.fonts.ready);
+        if (path.endsWith('/services')) {
+          // The Services page keeps method videos in a closed, optional
+          // disclosure to prioritize free situation review on mobile.
+          const disclosure = page.locator('#method-videos');
+          if (await disclosure.count()) {
+            await disclosure.locator('summary').click();
+            await expect(disclosure).toHaveAttribute('open', '');
+          }
+        }
         const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`);
         await expect(block).toHaveCount(1);
         await expect(block.locator('.site-video-player')).toHaveClass(/site-video-player--minimal/);
