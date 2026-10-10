@@ -93,3 +93,14 @@ test('first click reveals selection and the second directly opens the chosen run
   const filter = battery.indexOf('<details className={styles.filterDetails}')
   assert.ok(filter > 0 && filter < group, 'advanced filtering is collapsed by default')
 })
+
+test('two clicks open the first question without an extra mode picker', () => {
+  const battery = read('components/app/account-test-battery.jsx')
+  const workspace = read('components/app/app-workspace.jsx')
+  assert.match(battery, /\?mode=quick/)
+  assert.match(battery, /&plan=/)
+  assert.match(workspace, /initialMode=\{searchParams\.get\('mode'\) === 'quick'/)
+  assert.match(workspace, /\[mode, setMode\] = useState\(initialMode === 'quick' \? 'quick' : null\)/)
+  assert.match(workspace, /if \(run\.safetySignal && !safetyAcknowledged\)/)
+  assert.match(workspace, /<div className="hh-test-mode-toggle"/)
+})
