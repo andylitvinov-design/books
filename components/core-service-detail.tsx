@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Check, ShieldCheck } from "lucide-react";
 import type { Locale } from "@/data/remedies";
@@ -143,7 +144,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
           <h1>{t.title}</h1>
           <p className={styles.lead}>{t.lead}</p>
           <p className={styles.benefit}><Check size={17} aria-hidden="true"/>{t.benefit}</p>
-          <a className={styles.primary} href={whatsappUrl} target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp" data-service-request={kind}>{t.action}<ArrowUpRight size={20} aria-hidden="true"/></a>
+          <AcquisitionEventLink className={styles.primary} href={whatsappUrl} target="_blank" rel="noopener noreferrer" prefetch={false} event="service_request_start" attributes={{ "data-contact-channel":"whatsapp", "data-service-request":kind }}>{t.action}<ArrowUpRight size={20} aria-hidden="true"/></AcquisitionEventLink>
           <p className={styles.note}>{t.note}</p>
         </div>
         <div className={styles.photo}><Image src={t.image} alt="" fill priority sizes="(max-width: 760px) 100vw, 38vw" /></div>
