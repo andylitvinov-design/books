@@ -80,7 +80,7 @@ test("original public intro player retains HeyGen while exposing a visible YouTu
     assert.ok(player.includes(id), "published mirror not accessible: " + id);
   }
   assert.match(player, /existingYouTubeMirrors/);
-  assert.match(player, /<div className=\{styles\.quickWatch\}>\{mirrorLink \?\? externalLink\}<\/div>/);
+  assert.ok(player.includes("{mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}"));
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
   assert.match(minimal, /\.quickWatch/);
