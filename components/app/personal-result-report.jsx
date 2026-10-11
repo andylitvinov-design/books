@@ -20,7 +20,7 @@ export function PersonalResultReport({ result, locale = 'en' }) {
             {report.personalityType.alternatives?.map((alternative) => <p key={alternative} className={styles.typeAlternative}>{alternative}</p>)}
             <small>{report.personalityType.warning}</small>
           </div>
-        )>
+        )}
       </header>
       <div className={styles.grid}>
         {report.sections.map((section, index) => (
