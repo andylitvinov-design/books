@@ -159,7 +159,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [depth, setDepth] = useState(() => initialPreferences?.depth ?? 'balanced')
   const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
   const [details, setDetails] = useState(() => initialPreferences?.details ?? [])
-  const [axes, setAxes] = useState(() => initialPreferences?.axes ?? [])
+  const [axes, setAxes] = useState(() => simpleMode ? [] : (initialPreferences?.axes ?? []))
   const [maxMinutes, setMaxMinutes] = useState(() => initialPreferences?.maxMinutes ?? 0)
   const [language, setLanguage] = useState(() => initialPreferences?.language ?? 'any')
   const [tracking, setTracking] = useState(() => initialPreferences?.tracking ?? 'any')
@@ -282,8 +282,6 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     return <SimpleTestPicker
       locale={locale}
       focus={focus}
-      axes={axes}
-      onToggleAxis={(key) => setAxes((current) => toggle(current, key))}
       onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
       problems={problems}
       onToggleProblem={(key) => {
@@ -321,7 +319,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   }
 
   return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
-    {simpleMode && browseFull && <button type="button" className={styles.simpleBack} onClick={() => { setBrowseFull(false); setCustomizeOpen(false) }}>
+    {simpleMode && browseFull && <button type="button" className={styles.simpleBack} onClick={() => { setAxes([]); setBrowseFull(false); setCustomizeOpen(false) }}>
       ← {locale === 'ru' ? 'Назад к простому подбору' : locale === 'es' ? 'Volver al selector sencillo' : 'Back to easy selection'}
     </button>}
     <div className={styles.explorerHero}>
