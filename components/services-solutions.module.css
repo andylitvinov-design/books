@@ -164,3 +164,91 @@
   .methodCard {padding:16px;}
 }
 @media(prefers-reduced-motion:reduce){.cardMore summary svg{transition:none;}}
+
+
+/* Holistic House homepage, approved editorial visual v2. Scoped to .home; full Services unchanged. */
+.home {
+  width:min(1188px,calc(100% - 32px));
+  margin:24px auto 32px;
+  padding:clamp(18px,2.9vw,31px);
+  border:1px solid #e5d5c3;
+  border-radius:25px;
+  background:linear-gradient(125deg,#faf6ed,#f4ebde 68%,#faf8f2);
+  box-shadow:0 12px 36px rgba(70,45,27,.055);
+}
+.home .header{max-width:770px;margin-bottom:21px}
+.home .header h2{color:#382b22;font:400 clamp(35px,4.2vw,54px)/1.09 Georgia,"Times New Roman",serif;letter-spacing:-.035em}
+.home .eyebrow{color:#895a42;letter-spacing:.13em}
+.home .intro{color:#695d53;max-width:640px;font-size:14px;line-height:1.5}
+.home .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:0}
+.home .card {
+  display:grid; grid-template-columns:minmax(0,2fr) minmax(0,3fr);
+  align-items:stretch; min-width:0; min-height:235px; gap:16px;
+  padding:12px; border:1px solid #e5d8c9; border-radius:20px;
+  background:#fffdfa; box-shadow:0 9px 25px rgba(75,52,39,.05);
+}
+.home .card:first-child{border-color:#dfcbb6;background:linear-gradient(125deg,#fffdf9,#faf5ec)}
+.home .card:nth-child(2){background:linear-gradient(125deg,#fffefa,#f1f4ed)}
+.home .photo{
+  display:block;position:relative;min-width:0;width:100%;height:100%;min-height:210px;
+  aspect-ratio:auto;border-radius:15px;overflow:hidden;background:#e8e0d3;
+}
+.home .photo img{object-fit:cover;object-position:center}
+.home .cardContent{
+  display:flex;flex-direction:column;align-items:flex-start;min-width:0;
+  gap:0;padding:10px 3px 5px 0;
+}
+.home .cardLabel{color:#8b593e;font-size:10px;letter-spacing:.05em;line-height:1.4}
+.home .card h3{
+  margin:8px 0 9px;max-width:26ch;
+  color:#392d24;font:400 clamp(24px,2.7vw,33px)/1.12 Georgia,"Times New Roman",serif;
+  letter-spacing:-.025em;text-wrap:balance;
+}
+.home .cardSummary{max-width:40ch;margin:0;color:#655b52;font-size:13px;line-height:1.5}
+.home .cardBenefit{display:none}
+.home .cardCta{
+  display:flex;min-width:0;min-height:45px;align-items:center;justify-content:space-between;
+  width:100%;gap:8px;margin-top:auto;padding:11px 13px;border-radius:999px;
+  background:#85563f;color:#fff!important;
+  font:800 12px/1.3 Arial,Helvetica,sans-serif;box-sizing:border-box;
+}
+.home .cardCta:hover{background:#70442f}
+.home .card:first-child .cardCta{background:#a06143}
+.home .card:first-child .cardCta:hover{background:#86482d}
+.home :is(.cardCta,.card h3 a,.photo):focus-visible{outline:3px solid #b78760;outline-offset:3px}
+@media(max-width:950px){
+  .home .grid{grid-template-columns:1fr}
+  .home .card{grid-template-columns:minmax(150px,2fr) minmax(0,3fr);min-height:204px}
+  .home .photo{min-height:179px}
+}
+@media(max-width:760px){
+  .home{
+    width:calc(100% - 24px);margin:14px auto 24px;padding:20px 13px 16px;
+    border-radius:21px;
+  }
+  .home .header{margin-bottom:17px;padding:0 2px}
+  .home .header h2{font-size:clamp(31px,8.1vw,39px)}
+  .home .intro{font-size:12px;line-height:1.45}
+  .home .grid{grid-template-columns:1fr;gap:10px}
+  .home .card{
+    grid-template-columns:minmax(113px,2fr) minmax(0,3fr);
+    gap:10px;min-height:186px;padding:10px;border-radius:17px;
+  }
+  .home .card:first-child{min-height:199px}
+  .home .photo{
+    align-self:stretch;width:100%;height:100%;min-height:164px;aspect-ratio:auto;
+    border-radius:12px;
+  }
+  .home .cardContent{padding:3px 1px 2px 0}
+  .home .cardLabel{font-size:9px;line-height:1.3}
+  .home .card h3{font-size:clamp(20px,5.6vw,25px);line-height:1.11;margin:6px 0 6px}
+  .home .cardSummary{font-size:11.5px;line-height:1.39;margin:0}
+  .home .cardCta{min-height:37px;margin-top:8px;border-radius:11px;padding:8px 9px;font-size:10.8px;line-height:1.25}
+}
+@media(max-width:355px){
+  .home .card{grid-template-columns:100px minmax(0,1fr);gap:8px}
+  .home .card h3{font-size:20px}
+  .home .cardSummary{font-size:10.5px}
+  .home .cardCta{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.home .card,.home .cardCta{transition:none}}

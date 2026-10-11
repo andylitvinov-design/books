@@ -111,5 +111,6 @@ test("approved Andy portrait precedes a compact blue three-choice Reiki capture"
   assert.match(capture, /whatsappEnquiryUrl\(\{/);
   assert.doesNotMatch(leads, /<input|<select|<textarea|<form/);
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
-  assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.choice:nth-child\(3\) \{ grid-column: 1 \/ -1; min-height: 66px; \}/);
 });

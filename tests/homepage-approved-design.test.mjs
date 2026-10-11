@@ -8,6 +8,13 @@ test("approved 2026-10-09 home design keeps all three service directions and ori
   const home = read("components/holistic-house-home.tsx");
   const journey = read("components/personal-work-journey.tsx");
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  assert.match(home, /data-home-design="approved-v2"/);
+  const solutions = read("components/services-solutions.tsx");
+  assert.match(solutions, /data-core-service-id=\{offer.id\}/);
+  assert.match(solutions, /isHome \? homepageMedia\[offer.id\] : offer.image/);
+  const offersStyle = read("components/services-solutions.module.css");
+  assert.match(offersStyle, /\.home \.card/);
+  assert.match(offersStyle, /\.home \.photo/);
   assert.match(journey, /text\.services\.map/);
   const offers = read("data/core-service-offers.ts");
   for (const slug of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"]) assert.ok(offers.includes(slug));
@@ -44,6 +51,9 @@ test("approved design uses actual teacher portrait, not the synthetic mockup per
   assert.ok(existsSync(new URL("../public/images/holistic-house/andy-about.png", import.meta.url)));
   assert.match(home, /className="service-home-about__portrait"/);
   assert.match(home, /src="\/images\/holistic-house\/andy-about\.png"/);
+  assert.match(home, /className="service-home-about__image"/);
+  assert.match(home, /width=\{900\}/);
+  assert.match(home, /height=\{720\}/);
   assert.match(home, /alt=\{locale === "ru" \? "Андрей Литвинов" : "Andrey Litvinov"\}/);
   assert.match(home, /<p>\{text\.aboutIntro\}<\/p>/);
   assert.match(home, /event="practitioner_view"/);
@@ -69,12 +79,14 @@ test("premium botanical cards are responsive, keyboard-accessible and do not alt
 
 test("homepage contact remains consent-gated WhatsApp, Telegram and free-review path", () => {
   const home = read("components/holistic-house-home.tsx");
-  const cta = read("components/public-consultation-cta.tsx");
-  assert.match(home, /<PublicConsultationCta locale=\{locale\} \/>/);
-  assert.match(home, /className="home-contact-capture"/);
-  assert.match(cta, /trainingEnquiryUrl\(locale, pathname\)/);
+  const cta = read("components/homepage-contact-cta.tsx");
+  assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
+  assert.match(cta, /data-home-contact-capture/);
+  assert.match(cta, /wa\.me\/14376066502\?text=/);
   assert.match(cta, /t\.me\/AndyTherapist/);
-  assert.match(cta, /AcquisitionEventLink/);
+  assert.match(cta, /data-contact-channel/);
   assert.match(cta, /services\/free-situation-review/);
+  assert.match(cta, /AcquisitionEventLink/);
+  assert.match(cta, /home-contact-capture__text-link/);
   assert.doesNotMatch(home, /fake-testimonial|stock-avatar/);
 });
