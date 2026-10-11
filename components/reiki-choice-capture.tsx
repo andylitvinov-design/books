@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowUpRight, Check, Download, HeartHandshake, Send } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { formatReikiLevelPrice } from "@/lib/academy/reiki-level-pricing";
 import styles from "./reiki-choice-capture.module.css";
 
 type Course = "tantra" | "yggdrasil";
@@ -24,6 +25,7 @@ const copy = {
     common: {
       eyebrow: "YOUR NEXT STEP · DIRECTLY WITH ANDREY",
       choose: "What interests you most?",
+      personalPrice: "Personal initiation (per level)",
       options: {
         guide: "Download study material and prices",
         express: "Request free express Level 1 initiation",
@@ -47,7 +49,7 @@ const copy = {
       lead: "Choose your guide, a free first experience, or a full personal Level 1 initiation.",
       messages: {
         express: "I would like to request the free express Level 1 initiation in Tantra Reiki. Please tell me how to arrange it.",
-        personal: "I would like to request the full personal Level 1 initiation in Tantra Reiki. Please tell me the format, availability and price.",
+        personal: "I would like to request the full personal Level 1 initiation in Tantra Reiki. Please confirm the format, availability and how to prepare.",
         consultation: "I'd like to request a free personal consultation about Tantra Reiki.",
       },
     },
@@ -57,7 +59,7 @@ const copy = {
       lead: "Choose your guide, a free first experience, or a full personal Level 1 initiation.",
       messages: {
         express: "I would like to request the free express Level 1 initiation in Reiki Yggdrasil. Please tell me how to begin.",
-        personal: "I would like to request the full personal Level 1 initiation in Reiki Yggdrasil. Please tell me the format, availability and price.",
+        personal: "I would like to request the full personal Level 1 initiation in Reiki Yggdrasil. Please confirm the format, availability and how to prepare.",
         consultation: "I'd like to request a free personal consultation about Reiki Yggdrasil.",
       },
     },
@@ -66,6 +68,7 @@ const copy = {
     common: {
       eyebrow: "ВАШ СЛЕДУЮЩИЙ ШАГ · ЛИЧНО С АНДРЕЕМ",
       choose: "Что вас интересует?",
+      personalPrice: "Личная инициация (за ступень)",
       options: {
         guide: "Скачать учебные материалы и цены",
         express: "Бесплатная экспресс-инициация 1-й ступени",
@@ -89,7 +92,7 @@ const copy = {
       lead: "Скачайте описание или выберите бесплатную экспресс-инициацию либо полную личную инициацию.",
       messages: {
         express: "Хочу запросить бесплатную экспресс-инициацию 1-й ступени Тантра Рейки. Подскажите, как её пройти.",
-        personal: "Хочу пройти полную личную инициацию 1-й ступени Тантра Рейки. Подскажите формат, доступные даты и стоимость.",
+        personal: "Хочу пройти полную личную инициацию 1-й ступени Тантра Рейки. Подскажите формат, доступные даты и как подготовиться.",
         consultation: "Хочу договориться о бесплатной консультации по Тантра Рейки.",
       },
     },
@@ -99,7 +102,7 @@ const copy = {
       lead: "Скачайте описание или выберите бесплатную экспресс-инициацию либо полную личную инициацию.",
       messages: {
         express: "Хочу запросить бесплатную экспресс-инициацию 1-й ступени Рейки Иггдрасиль. Подскажите, как начать.",
-        personal: "Хочу пройти полную личную инициацию 1-й ступени Рейки Иггдрасиль. Подскажите формат, доступные даты и стоимость.",
+        personal: "Хочу пройти полную личную инициацию 1-й ступени Рейки Иггдрасиль. Подскажите формат, доступные даты и как подготовиться.",
         consultation: "Хочу договориться о бесплатной консультации по Рейки Иггдрасиль.",
       },
     },
@@ -108,6 +111,7 @@ const copy = {
     common: {
       eyebrow: "TU PRÓXIMO PASO · DIRECTAMENTE CON ANDREY",
       choose: "¿Qué te interesa?",
+      personalPrice: "Iniciación personal (por nivel)",
       options: {
         guide: "Descargar material de estudio y precios",
         express: "Solicitar iniciación exprés gratuita de nivel 1",
@@ -131,7 +135,7 @@ const copy = {
       lead: "Descarga la guía o elige una iniciación exprés gratuita o una iniciación personal completa.",
       messages: {
         express: "Quisiera solicitar la iniciación exprés gratuita de nivel 1 en Tantra Reiki. ¿Cómo puedo comenzar?",
-        personal: "Quisiera solicitar la iniciación personal completa de nivel 1 en Tantra Reiki. ¿Cuál es el formato, la disponibilidad y el precio?",
+        personal: "Quisiera solicitar la iniciación personal completa de nivel 1 en Tantra Reiki. ¿Cuál es el formato, la disponibilidad y cómo prepararme?",
         consultation: "Quisiera solicitar una consulta introductoria gratuita sobre Tantra Reiki.",
       },
     },
@@ -141,7 +145,7 @@ const copy = {
       lead: "Descarga la guía o elige una iniciación exprés gratuita o una iniciación personal completa.",
       messages: {
         express: "Quisiera solicitar la iniciación exprés gratuita de nivel 1 en Reiki Yggdrasil. ¿Cómo puedo comenzar?",
-        personal: "Quisiera solicitar la iniciación personal completa de nivel 1 en Reiki Yggdrasil. ¿Cuál es el formato, la disponibilidad y el precio?",
+        personal: "Quisiera solicitar la iniciación personal completa de nivel 1 en Reiki Yggdrasil. ¿Cuál es el formato, la disponibilidad y cómo prepararme?",
         consultation: "Quisiera solicitar una consulta introductoria gratuita sobre Reiki Yggdrasil.",
       },
     },
@@ -152,6 +156,7 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
   const [selected, setSelected] = useState<Choice>("express");
   const t = copy[locale];
   const c = t[course];
+  const personalPrice = formatReikiLevelPrice(course, locale);
 
   useEffect(() => {
     const syncHash = () => {
@@ -173,6 +178,7 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
         service: c.courseName,
         request: selected === "express" ? c.messages.express : c.messages.personal,
         option: t.common.options[selected],
+        context: selected === "personal" ? personalPrice : undefined,
         pagePath,
       });
   const consultationUrl = whatsappEnquiryUrl({
@@ -195,6 +201,7 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
       <div className={styles.eyebrow}><HeartHandshake size={20} aria-hidden="true" /><span>{t.common.eyebrow}</span></div>
       <h2 className={styles.title} id={course + "-capture-title"}>{c.title}</h2>
       <p className={styles.lead}>{c.lead}</p>
+      <p className={styles.priceLine} data-reiki-initiation-price={course}>{t.common.personalPrice}: <strong>{personalPrice}</strong></p>
       <p className={styles.question}>{t.common.choose}</p>
 
       <div className={styles.choices} role="group" aria-label={t.common.choose}>

@@ -34,6 +34,8 @@ test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () 
   assert.match(capture, /WhatsAppMark/);
   assert.match(capture, /option: t\.common\.options\[selected\]/);
   assert.match(capture, /reiki-guide/);
+  assert.match(capture, /formatReikiLevelPrice\(course, locale\)/);
+  assert.match(capture, /data-reiki-initiation-price=\{course\}/);
   assert.match(capture, /t\.me\/AndyTherapist/);
   assert.match(capture, /download=\{download \? true : undefined\}/);
   for (const tag of ["<form", "<input", "<textarea", "<select", "new FormData"]) {
