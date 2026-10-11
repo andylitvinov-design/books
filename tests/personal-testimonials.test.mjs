@@ -87,15 +87,31 @@ test("the real practitioner photo stays full-width on mobile", () => {
   assert.match(css, /aspect-ratio:16\/9/);
 });
 
-test("every review has a same-origin illustration underneath its real thumbnail", () => {
-  const testimonials = read("components", "personal-testimonials.tsx");
+test("the testimonial gallery uses real ID-matched archived frames instead of decorative SVGs", () => {
+  const component = read("components", "personal-testimonials.tsx");
   const player = read("components", "site-video-player.tsx");
-  const style = read("components", "personal-testimonials.module.css");
+  const en = ["Dk0LBmOivQo", "aUJde6A-9p0", "fE6sD1zr1Js", "itjo2_z2NGk", "4NrryHcEF1A", "hYwRNMxIMjc"];
+  const ru = ["MIVLm1GUTtM", "ttQxUHopaUM", "VABgpmn4ZYA", "muOnIHllI7E"];
+  for (const id of [...en, ...ru]) {
+    assert.ok(component.includes(`"${id}"`), `Video ${id} lost its source entry`);
+    const file = path.join(process.cwd(), "public/images/holistic-house/testimonial-posters", `${id}.webp`);
+    assert.ok(existsSync(file), `Actual archived video still missing for ${id}`);
+    const header = readFileSync(file).subarray(0, 12);
+    assert.equal(header.toString("ascii", 0, 4), "RIFF");
+    assert.equal(header.toString("ascii", 8, 12), "WEBP");
+  }
+  assert.match(component, /locallyArchivedVideoPosterIds\.has\(item\.id\)/);
+  assert.match(component, /testimonial-posters\/\$\{item\.id\}\.webp/);
+  assert.doesNotMatch(component, /fallbackPoster=\{index % 2 === 0/);
+  assert.doesNotMatch(component, /homepage-constellations\.svg|homepage-guided-imagery\.svg/);
+  assert.match(component, /data-testimonial-video-id=\{item\.id\}/);
   assert.match(player, /fallbackPoster\?: string/);
-  assert.match(player, /site-video-fallback-poster/);
-  assert.match(testimonials, /fallbackPoster=\{index % 2 === 0/);
-  assert.match(style, /\.videoItem :global\(\.site-video-poster-title\) \{ display: none;/);
-  for (const poster of ["homepage-constellations.svg", "homepage-guided-imagery.svg"]) {
-    assert.ok(existsSync(path.join(process.cwd(), "public/images/holistic-house", poster)));
+  assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
+  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
+  assert.match(player, /href=\{watchUrl\}/);
+  // Two older RU About clips remain in the catalog without a wrong-person thumbnail.
+  for (const id of ["m9RfDgK76PU", "5oj0BIbLT4w"]) {
+    assert.ok(component.includes(`id: "${id}"`));
+    assert.ok(!existsSync(path.join(process.cwd(), "public/images/holistic-house/testimonial-posters", `${id}.webp`)));
   }
 });
