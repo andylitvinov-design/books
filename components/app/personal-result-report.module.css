@@ -20,3 +20,11 @@
 @media(max-width:560px){.report{padding:18px 13px;border-radius:18px}.card{padding:17px}.grid{grid-template-columns:minmax(0,1fr)}.heading h2{font-size:27px}}
 
 .purpose{margin-top:16px;background:#faf8f4;border-left:3px solid #a88066;border-radius:0 12px 12px 0;padding:12px 15px;font-size:13px;line-height:1.55}.purpose strong{font-weight:750;color:#4f4339}.purpose p{margin:4px 0 0!important;color:#685c51}.score{font-size:13px;font-weight:750;color:#356b5b;margin:5px 0 0!important}
+
+/* Compact and opt-in display for the 38 Bach theme interpretations. */
+.profileLead{margin:0 0 14px;color:#47665e;font-size:13px;line-height:1.55}
+.groupLabel{margin:0 0 5px;color:#87624c;font-size:10px;font-weight:800;letter-spacing:.075em;text-transform:uppercase}
+.more{margin-top:16px;padding:15px;border:1px solid #d8dfd6;border-radius:17px;background:#fafbf8}
+.more summary{display:flex;justify-content:space-between;gap:12px;align-items:center;cursor:pointer;color:#456c60;font-size:13px;font-weight:750;list-style-position:inside}
+.moreDescription{font-size:12px;line-height:1.5;color:#656b64;padding:0 2px;margin:13px 0}
+.more[open] .grid{margin-top:13px}
