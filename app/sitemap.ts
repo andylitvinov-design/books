@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { academyPublicBlocks, mediaForRecord, preferredAcademyRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 import { getSitemapEntries } from '@/data/seo';
+import { getPrioritySitemapEntries } from '@/data/seo-priority-paths';
 import { metadataBaseFor } from '@/data/site-metadata';
 import { getSpanishRemedySlugs } from '@/data/remedies-es';
 import { getAppConfig } from '@/lib/app/config';
@@ -37,5 +38,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   } catch {
     // Keep the static sitemap healthy during a temporary app-database outage.
   }
-  return [...new Map([...existing, ...entries, ...network].map(entry => [entry.url, entry])).values()];
+  const priorityEntries = getPrioritySitemapEntries(base);
+  return [...new Map([...existing, ...entries, ...priorityEntries, ...network].map(entry => [entry.url, entry])).values()];
 }

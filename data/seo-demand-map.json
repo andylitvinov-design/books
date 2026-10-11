@@ -1,0 +1,834 @@
+{
+  "version": "2026-10-11-seed-v1",
+  "site": "https://holistichouse.vercel.app",
+  "status": "editorial_seeds_only_not_google_metrics",
+  "measurement_sources": {
+    "google_search_console": "not_connected_2026-10-11",
+    "google_ads_keyword_planner": "not_connected_2026-10-11",
+    "google_trends": "explore_data_not_extracted_2026-10-11"
+  },
+  "warning": "A proposed keyword is not a Google volume, trend, rank, or bid. Never populate numeric fields without provider data and geo/date.",
+  "keywords": [
+    {
+      "cluster_id": "S01",
+      "locale": "en",
+      "market": "Toronto, Ontario, Canada",
+      "topic": "Services / personal constellations",
+      "primary_keyword": "family constellations toronto",
+      "supporting_keywords": [
+        "systemic constellations toronto",
+        "personal constellation session"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/services/andy-litvinov/personal-constellation-session",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "service_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Explain individual process, non-clinical limits, format and CTA; review legal positioning"
+    },
+    {
+      "cluster_id": "S02",
+      "locale": "en",
+      "market": "Toronto, Ontario, Canada",
+      "topic": "Services / business constellations",
+      "primary_keyword": "business constellations toronto",
+      "supporting_keywords": [
+        "business situation constellation",
+        "systemic business session"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/services/andy-litvinov/business-situation-constellation",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "service_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Add original example, deliverables, pricing and no financial guarantee"
+    },
+    {
+      "cluster_id": "S03",
+      "locale": "en",
+      "market": "Toronto, Ontario, Canada",
+      "topic": "Services / group constellations",
+      "primary_keyword": "family constellations workshop toronto",
+      "supporting_keywords": [
+        "systemic constellations group toronto"
+      ],
+      "search_intent": "transactional",
+      "primary_path": null,
+      "page_status": "planned",
+      "seo_priority": "P1",
+      "ads_gate": "hold",
+      "conversion_goal": "service_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Do not advertise an archived event; require a real public future event"
+    },
+    {
+      "cluster_id": "S04",
+      "locale": "en",
+      "market": "Toronto, Ontario, Canada",
+      "topic": "Services / guided imagery",
+      "primary_keyword": "guided imagery toronto",
+      "supporting_keywords": [
+        "guided imagery session",
+        "imagery based personal work"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/services",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "research_only",
+      "conversion_goal": "service_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Audit whether a unique service page is warranted, not an Academy training page"
+    },
+    {
+      "cluster_id": "S05",
+      "locale": "en",
+      "market": "Toronto, Ontario, Canada",
+      "topic": "Services / hypnotherapy",
+      "primary_keyword": "hypnotherapy toronto",
+      "supporting_keywords": [
+        "hypnotherapy online toronto"
+      ],
+      "search_intent": "transactional",
+      "primary_path": null,
+      "page_status": "planned",
+      "seo_priority": "P1",
+      "ads_gate": "hold",
+      "conversion_goal": "service_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Select owner site with sales#2; verify professional titles and claims first"
+    },
+    {
+      "cluster_id": "S06",
+      "locale": "en",
+      "market": "Toronto, Ontario, Canada",
+      "topic": "Services / personal consultations",
+      "primary_keyword": "personal consultation toronto",
+      "supporting_keywords": [
+        "personal guidance toronto",
+        "goal clarity online"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/services",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "service_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Link to real free drawing assessment; avoid promising a free call"
+    },
+    {
+      "cluster_id": "S07",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Free drawing assessment",
+      "primary_keyword": "free personal situation assessment",
+      "supporting_keywords": [
+        "drawing based situation assessment",
+        "free coaching questionnaire"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/services/free-situation-review",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "free_assessment_request",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Keep form + hand drawing + personal written report; private answers not analytics"
+    },
+    {
+      "cluster_id": "S08",
+      "locale": "en",
+      "market": "Toronto, Ontario, Canada",
+      "topic": "Services / complementary homeopathy",
+      "primary_keyword": "homeopathy consultation toronto",
+      "supporting_keywords": [
+        "complementary homeopathy consultation"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/services/andy-litvinov/homeopathy-consultation",
+      "page_status": "public_route_checked",
+      "seo_priority": "P1",
+      "ads_gate": "hold",
+      "conversion_goal": "service_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Check Ontario title/claims and Ads healthcare policies first"
+    },
+    {
+      "cluster_id": "R01",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Academy / Reiki program chooser",
+      "primary_keyword": "reiki course toronto",
+      "supporting_keywords": [
+        "reiki training online",
+        "reiki level 1 course"
+      ],
+      "search_intent": "mixed",
+      "primary_path": "/en/academy/reiki",
+      "page_status": "source_route_known",
+      "seo_priority": "P0",
+      "ads_gate": "research_only",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Explain Yggdrasil vs Tantra vs Kundalini, avoid claiming Usui accreditation"
+    },
+    {
+      "cluster_id": "R02",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Academy / Yggdrasil Reiki",
+      "primary_keyword": "reiki yggdrasil training",
+      "supporting_keywords": [
+        "reiki yggdrasil",
+        "runic reiki training"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/academy/reiki/yggdrasil",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Clarify 7 modules/5 Basic Course stages, learning outcomes and enquiries"
+    },
+    {
+      "cluster_id": "R03",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Academy / Yggdrasil first level",
+      "primary_keyword": "free reiki yggdrasil initiation",
+      "supporting_keywords": [
+        "reiki level 1 attunement online"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/academy/reiki/yggdrasil/free-initiation",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Differentiate approved free express L1 vs paid personal L1 and course PDF"
+    },
+    {
+      "cluster_id": "R04",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Academy / Tantra Reiki",
+      "primary_keyword": "tantra reiki training",
+      "supporting_keywords": [
+        "tantra reiki initiation",
+        "nine level tantra reiki"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/academy/reiki/tantra-reiki",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Explain author's specific 9-level curriculum; sexual content policy review"
+    },
+    {
+      "cluster_id": "R05",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Academy / Kundalini Reiki",
+      "primary_keyword": "kundalini reiki course",
+      "supporting_keywords": [
+        "kundalini reiki attunement",
+        "kundalini reiki level 1"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/academy/reiki/kundalini-reiki",
+      "page_status": "public_route_checked",
+      "seo_priority": "P1",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Preserve concurrent Kundalini PR; link to 3-level programme and PDF"
+    },
+    {
+      "cluster_id": "R06",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Academy / Yggdrasil Basic Course",
+      "primary_keyword": "reiki yggdrasil basic course",
+      "supporting_keywords": [
+        "reiki yggdrasil five levels"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/academy/reiki/yggdrasil/basic-course",
+      "page_status": "public_route_checked",
+      "seo_priority": "P1",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Five-level Basic Course; distinguish from full 7-module system"
+    },
+    {
+      "cluster_id": "T01",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Academy / Temple Studies",
+      "primary_keyword": "temple studies course",
+      "supporting_keywords": [
+        "archetypal initiation",
+        "greek mystery school education"
+      ],
+      "search_intent": "mixed",
+      "primary_path": "/en/academy/temple-studies",
+      "page_status": "public_route_checked",
+      "seo_priority": "P1",
+      "ads_gate": "research_only",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Tradition > deity channel > meditation initiation or mystery constellation"
+    },
+    {
+      "cluster_id": "T02",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Academy / runes and symbols",
+      "primary_keyword": "norse rune study",
+      "supporting_keywords": [
+        "rune meanings course",
+        "scandinavian myths archetypes"
+      ],
+      "search_intent": "informational",
+      "primary_path": "/en/academy/runes/northern-runes",
+      "page_status": "source_route_known",
+      "seo_priority": "P2",
+      "ads_gate": "research_only",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Editorial original source context; course only if truly offered"
+    },
+    {
+      "cluster_id": "T03",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Academy / imagery teacher training",
+      "primary_keyword": "symboldrama training",
+      "supporting_keywords": [
+        "jungian imagery course"
+      ],
+      "search_intent": "mixed",
+      "primary_path": "/en/academy/applied/imagery-therapy-symboldrama",
+      "page_status": "source_route_known",
+      "seo_priority": "P2",
+      "ads_gate": "hold",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Verify training status/regulated titles, no invented accreditation"
+    },
+    {
+      "cluster_id": "H01",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Library / Materia Medica",
+      "primary_keyword": "homeopathy materia medica",
+      "supporting_keywords": [
+        "homeopathic remedies",
+        "remedy reference library"
+      ],
+      "search_intent": "informational",
+      "primary_path": "/en/homeopathy",
+      "page_status": "public_route_checked",
+      "seo_priority": "P1",
+      "ads_gate": "hold",
+      "conversion_goal": "organic_engagement",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Educational source-based content only, no disease-cure keywords"
+    },
+    {
+      "cluster_id": "H02",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Library / remedy profiles",
+      "primary_keyword": "ambra grisea materia medica",
+      "supporting_keywords": [
+        "nux vomica materia medica",
+        "ignatia amara materia medica"
+      ],
+      "search_intent": "informational",
+      "primary_path": "/en/homeopathy/remedies",
+      "page_status": "source_route_known",
+      "seo_priority": "P2",
+      "ads_gate": "hold",
+      "conversion_goal": "organic_engagement",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Use individual existing Latin-name pages; medical claims safety review"
+    },
+    {
+      "cluster_id": "K01",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Tests / public self-check entry",
+      "primary_keyword": "psychological self assessment",
+      "supporting_keywords": [
+        "wellbeing self check",
+        "self reflection questionnaire"
+      ],
+      "search_intent": "informational",
+      "primary_path": null,
+      "page_status": "planned",
+      "seo_priority": "P1",
+      "ads_gate": "hold",
+      "conversion_goal": "public_test_start",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Choose an approved public entry, NEVER index cabinet or personal results"
+    },
+    {
+      "cluster_id": "K02",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Tests / Wu Xing reflection",
+      "primary_keyword": "wu xing five elements",
+      "supporting_keywords": [
+        "wu xing personal profile"
+      ],
+      "search_intent": "mixed",
+      "primary_path": "/en/wu-xing",
+      "page_status": "source_route_known",
+      "seo_priority": "P1",
+      "ads_gate": "research_only",
+      "conversion_goal": "public_test_start",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Educational symbolic assessment, not medical diagnosis"
+    },
+    {
+      "cluster_id": "K03",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Library / books",
+      "primary_keyword": "books on personal development",
+      "supporting_keywords": [
+        "daoist alchemy book",
+        "archetypes and symbols book"
+      ],
+      "search_intent": "informational",
+      "primary_path": "/en/library",
+      "page_status": "public_route_checked",
+      "seo_priority": "P2",
+      "ads_gate": "research_only",
+      "conversion_goal": "organic_engagement",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Refresh existing flat book catalog with original summaries and clear links"
+    },
+    {
+      "cluster_id": "B01",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Brand / Holistic House",
+      "primary_keyword": "holistic house",
+      "supporting_keywords": [
+        "andrey litvinov holistic house"
+      ],
+      "search_intent": "navigational",
+      "primary_path": "/",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "research_only",
+      "conversion_goal": "organic_engagement",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Verify branded impressions in GSC before buying branded ads"
+    },
+    {
+      "cluster_id": "B02",
+      "locale": "en",
+      "market": "Canada",
+      "topic": "Brand / founder biography",
+      "primary_keyword": "andrey litvinov",
+      "supporting_keywords": [
+        "andy litvinov personal guidance"
+      ],
+      "search_intent": "navigational",
+      "primary_path": "/en/about",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "research_only",
+      "conversion_goal": "organic_engagement",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Verified qualifications only and original biography / trust information"
+    },
+    {
+      "cluster_id": "S01",
+      "locale": "ru",
+      "market": "Toronto, Ontario, Canada",
+      "topic": "Services / personal constellations",
+      "primary_keyword": "семейные расстановки Торонто",
+      "supporting_keywords": [
+        "системные расстановки онлайн"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/ru/services/andy-litvinov/personal-constellation-session",
+      "page_status": "source_route_known",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "service_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Validate RU phrasing in Canadian SERP and exact service intent"
+    },
+    {
+      "cluster_id": "S07",
+      "locale": "ru",
+      "market": "Canada",
+      "topic": "Free drawing assessment",
+      "primary_keyword": "бесплатный разбор ситуации по рисунку",
+      "supporting_keywords": [
+        "рисунок я цель проблема"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/ru/services/free-situation-review",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "free_assessment_request",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Protect private drawing and questionnaire; written report not a free call"
+    },
+    {
+      "cluster_id": "R02",
+      "locale": "ru",
+      "market": "Canada",
+      "topic": "Academy / Yggdrasil Reiki",
+      "primary_keyword": "рейки иггдрасиль",
+      "supporting_keywords": [
+        "обучение рейки иггдрасиль"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/ru/academy/reiki/yggdrasil",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Confirm phrasing and RU course CTA"
+    },
+    {
+      "cluster_id": "R04",
+      "locale": "ru",
+      "market": "Canada",
+      "topic": "Academy / Tantra Reiki",
+      "primary_keyword": "тантра рейки",
+      "supporting_keywords": [
+        "инициация тантра рейки"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/ru/academy/reiki/tantra-reiki",
+      "page_status": "source_route_known",
+      "seo_priority": "P0",
+      "ads_gate": "candidate_after_review",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Nine-stage localised training, Ads content review"
+    },
+    {
+      "cluster_id": "S07",
+      "locale": "es",
+      "market": "Canada",
+      "topic": "Free drawing assessment",
+      "primary_keyword": "evaluación de situación mediante dibujo",
+      "supporting_keywords": [
+        "formulario de coaching gratis"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/es/services/free-situation-review",
+      "page_status": "public_route_checked",
+      "seo_priority": "P1",
+      "ads_gate": "hold",
+      "conversion_goal": "free_assessment_request",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Language and form E2E check before any Ads"
+    },
+    {
+      "cluster_id": "R05",
+      "locale": "es",
+      "market": "Canada",
+      "topic": "Academy / Kundalini Reiki",
+      "primary_keyword": "curso reiki kundalini",
+      "supporting_keywords": [
+        "iniciación kundalini reiki"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/es/academy/reiki/kundalini-reiki",
+      "page_status": "public_route_checked",
+      "seo_priority": "P1",
+      "ads_gate": "hold",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Wait for ES quality review in books #230"
+    },
+    {
+      "cluster_id": "T01",
+      "locale": "es",
+      "market": "Canada",
+      "topic": "Academy / Temple Studies",
+      "primary_keyword": "curso de misterios griegos",
+      "supporting_keywords": [
+        "arquetipos de dioses"
+      ],
+      "search_intent": "mixed",
+      "primary_path": "/es/academy/temple-studies",
+      "page_status": "public_route_checked",
+      "seo_priority": "P2",
+      "ads_gate": "hold",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Check content parity and translated enquiry before index promotion"
+    }
+  ]
+}
