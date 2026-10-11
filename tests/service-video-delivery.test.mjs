@@ -85,3 +85,14 @@ test("original public intro player retains HeyGen while exposing a visible YouTu
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
   assert.match(minimal, /\.quickWatch/);
 });
+
+test("method showcases expose direct original HeyGen fallback and release tests handle open galleries", () => {
+  const showcase = read("components/service-video-showcase.tsx");
+  const css = read("components/service-video-showcase.module.css");
+  const verifier = read("scripts/verify-page-video-release.mjs");
+  assert.match(showcase, /siteVideoWatchUrl\\(video\\.video\\)/);
+  assert.match(showcase, /className=\\{styles\\.original\\}/);
+  assert.match(showcase, /target="_blank" rel="noopener noreferrer"/);
+  assert.match(css, /\\.original:focus-visible/);
+  assert.match(verifier, /disclosure.getAttribute\\('open'\\) === null/);
+});

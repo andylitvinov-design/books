@@ -30,3 +30,8 @@
   .intro p:last-child { font-size: 12px; }
   .player :global(.site-video-title) { font-size: 19px; }
 }
+
+/* Method videos use compact posters; visible source link when embeds are blocked. */
+.original{display:inline-flex;align-items:center;min-height:44px;margin:5px 3px 0;color:#79503c;font:700 12px/1.5 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.original:hover{color:#305e4a}
+.original:focus-visible{outline:3px solid #a47751;outline-offset:3px;border-radius:3px}

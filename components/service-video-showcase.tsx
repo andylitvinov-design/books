@@ -1,5 +1,6 @@
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia, type ServiceVideoLocale, type ServiceVideoTopic } from "@/data/service-video-library";
+import { siteVideoWatchUrl } from "@/lib/site-videos/model";
 import styles from "./service-video-showcase.module.css";
 
 const copy = {
@@ -95,6 +96,12 @@ export function ServiceVideoShowcase({
       <div className={styles.player}>
         <SiteVideoPlayer video={video.video} locale={locale}
           textLanguage={video.video.language} compact fallbackPoster={video.poster} />
+        {video.video.heygenId && (
+          <a className={styles.original} href={siteVideoWatchUrl(video.video)}
+            target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "Открыть оригинальное видео в HeyGen" : locale === "es" ? "Ver el vídeo original en HeyGen" : "Watch the original on HeyGen"}
+          </a>
+        )}
       </div>
     </section>
   );
