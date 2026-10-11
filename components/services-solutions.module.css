@@ -4,9 +4,10 @@
 .header h2{margin:0;color:#352922;font:400 clamp(30px,3.25vw,45px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.03em;text-wrap:balance}
 .intro{margin:10px 0 0;max-width:700px;color:#655d55;font:14px/1.52 Arial,Helvetica,sans-serif}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;}
-.card{min-width:0;display:grid;grid-template-columns:clamp(122px,14vw,175px) minmax(0,1fr);gap:17px;padding:12px;overflow:hidden;border:1px solid #e5d9cc;border-radius:21px;background:#fffdfa;box-shadow:0 9px 30px rgba(75,52,39,.045);}
+.card{position:relative;min-width:0;display:grid;grid-template-columns:clamp(122px,14vw,175px) minmax(0,1fr);gap:17px;padding:12px;overflow:hidden;border:1px solid #e5d9cc;border-radius:21px;background:#fffdfa;box-shadow:0 9px 30px rgba(75,52,39,.045);}
 .photo{position:relative;min-height:205px;display:block;overflow:hidden;border-radius:14px;background:#e7e0d8}
 .photo img{object-fit:cover;object-position:center}
+.anchor{position:absolute;top:0;left:0;width:0;height:0;overflow:hidden}
 .cardContent{min-width:0;display:flex;flex-direction:column;align-items:flex-start;padding:7px 9px 5px 0}
 .cardLabel{color:#557461;font:750 10px/1.35 Arial,Helvetica,sans-serif;letter-spacing:.055em;text-transform:uppercase}
 .card h3{margin:8px 0 8px;font:400 clamp(21px,2.15vw,29px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.02em;color:#382d27;text-wrap:balance}
