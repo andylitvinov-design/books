@@ -196,9 +196,9 @@ export function TempleStudiesSideNavigation({
   stages: Array<{ id: string; title: string }>;
 }) {
   const navigation = {
-    en: { eyebrow: "Optional learning chapters", title: "Temple Studies" },
-    ru: { eyebrow: "Учебные главы · по желанию", title: "Temple Studies" },
-    es: { eyebrow: "Capítulos de consulta", title: "Temple Studies" },
+    en: { eyebrow: "Your Temple Studies path", title: "Temple Studies", choose: "Choose your mystery" },
+    ru: { eyebrow: "Мистерия и учебные главы", title: "Temple Studies", choose: "Выбрать мистерию" },
+    es: { eyebrow: "Tu camino Temple Studies", title: "Temple Studies", choose: "Elegir mi misterio" },
   }[locale];
 
   return (
@@ -206,14 +206,17 @@ export function TempleStudiesSideNavigation({
       eyebrow={navigation.eyebrow}
       title={navigation.title}
       ariaLabel={navigation.eyebrow}
-      items={stages.map((stage, index) => ({
-        key: stage.id,
-        sectionId: "temple-" + stage.id,
-        href: "#temple-" + stage.id,
-        number: String(index + 1).padStart(2, "0"),
-        label: stage.title,
-      }))}
-      activeKey={stages[0]?.id}
+      items={[
+        { key: "choose", sectionId: "temple-choose", href: "#temple-choose", label: navigation.choose },
+        ...stages.map((stage, index) => ({
+          key: stage.id,
+          sectionId: "temple-" + stage.id,
+          href: "#temple-" + stage.id,
+          number: String(index + 1).padStart(2, "0"),
+          label: stage.title,
+        })),
+      ]}
+      activeKey="choose"
       observeSections
     />
   );

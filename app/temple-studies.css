@@ -703,3 +703,61 @@
   .temple-finish { padding: 28px 19px; }
 }
 @media (prefers-reduced-motion: reduce) { .temple-stage-details > summary svg, .temple-video-index-summary > svg { transition: none; } }
+
+/* Deep UX pass: photo stays in the compact preview; expanded reading uses the full card width. */
+.temple-stage { align-items: stretch; }
+.temple-stage-cover { grid-column: 1; grid-row: 1; height: auto; min-height: 139px; align-self: stretch; }
+.temple-stage-reading { grid-column: 2; grid-row: 1; align-self: center; }
+.temple-stage-details { grid-column: 1 / -1; grid-row: 2; margin: 0; border-top: 1px solid #e7d9cd; }
+.temple-stage-details > summary {
+  min-height: 43px; padding: 11px 22px; background: #f9f3eb;
+  font-size: 13px; border-radius: 0 0 16px 16px;
+}
+.temple-stage-details[open] > summary { background: #eee5d9; border-radius: 0; }
+.temple-stage-expanded { padding: 19px clamp(17px, 3vw, 34px) 28px; }
+.temple-stage-expanded > .temple-small-heading { margin-top: 0; }
+.temple-stage-expanded .temple-video-archive { scroll-margin-top: 170px; }
+.temple-language-badge {
+  display: inline-block; vertical-align: middle; margin: 3px 0 0 8px;
+  border: 1px solid #bcd9db; border-radius: 999px; padding: 5px 9px;
+  background: #ecf8f7; color: #237687; font: 750 11px/1.25 Arial, sans-serif;
+  letter-spacing: 0;
+}
+.temple-video-index-summary { scroll-margin-top: 165px; }
+.temple-video-series-summary-text strong[lang="ru"] { overflow-wrap: anywhere; }
+.temple-video-index-links a { scroll-margin-top: 160px; }
+@media (max-width: 920px) {
+  .temple-course-layout > .reiki-course-side-nav { top: 72px; }
+  .temple-stage { scroll-margin-top: 166px; }
+  .temple-stage-expanded .temple-video-archive { scroll-margin-top: 165px; }
+}
+@media (max-width: 700px) {
+  .temple-stage-cover { height: auto; min-height: 123px; grid-row: 1; align-self: stretch; }
+  .temple-stage-reading { grid-row: 1; padding: 13px 12px; }
+  .temple-stage-details { grid-column: 1 / -1; grid-row: 2; }
+  .temple-stage-details > summary { padding: 11px 13px; font-size: 12px; border-radius: 0 0 12px 12px; }
+  .temple-stage-expanded { padding: 17px 15px 23px; }
+  .temple-stage-expanded .temple-lessons li { grid-template-columns: 25px minmax(0,1fr); }
+  .temple-stage-expanded .temple-practice { grid-template-columns: minmax(0,1fr); }
+  .temple-stage-expanded .temple-practice > div { padding: 15px; }
+  .temple-video-series-summary-text strong { font-size: 14px; }
+  .temple-language-badge { display: inline-flex; margin: 7px 0 0; }
+}
+
+/* First sidebar action opens the three-step choice instead of another archive chapter. */
+.temple-course-layout .reiki-course-side-nav__item--wide {
+  grid-template-columns: minmax(0, 1fr);
+  padding-left: 16px;
+  border: 1px solid #bfd6d4;
+  background: #eaf6f4;
+  color: #235d65;
+}
+.temple-course-layout .reiki-course-side-nav__item--wide.is-active {
+  border-color: #39878c; background: #d9eeea;
+}
+@media (max-width: 920px) {
+  .temple-course-layout .reiki-course-side-nav__item--wide {
+    padding: 7px 12px;
+    background: #e0f1ed;
+  }
+}

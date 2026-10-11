@@ -7,6 +7,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { TempleStudiesSideNavigation } from "@/components/reiki-course-side-nav";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { TempleInitiationChooser } from "@/components/temple-initiation-chooser";
+import { TempleCourseHashSync } from "@/components/temple-course-hash-sync";
 import {
   academyDisplayTitle,
   academyPublicBlocks,
@@ -81,6 +82,54 @@ const copy: Record<PublicLocale, {
   },
 };
 
+
+const videoCopy: Record<PublicLocale, {
+  eyebrow: string; title: string; audio: string; navigate: string; stageCount: (n: number) => string;
+  summary: (lessons: number, courses: number) => string;
+  archiveTitle: string; archiveIntro: string; lesson: (n: number) => string;
+  repeated: (n: number) => string; original: string;
+}> = {
+  en: {
+    eyebrow: "Original Academy archive · Russian audio",
+    title: "Original video courses & meditations",
+    audio: "Audio: Russian",
+    navigate: "Choose a video course",
+    stageCount: (n) => `${n} videos`,
+    summary: (lessons, courses) => `${lessons} unique recordings · ${courses} course groups · open to explore`,
+    archiveTitle: "Original PsiMaster lessons",
+    archiveIntro: "These historic videos are in Russian. Lesson titles are translated where available. Open a course to choose a recording.",
+    lesson: (n) => `Lesson ${n}`,
+    repeated: (n) => `${n} recordings also belong to an earlier group and are linked there rather than duplicated.`,
+    original: "Original source on PsiMaster",
+  },
+  ru: {
+    eyebrow: "Оригинальный архив Академии · на русском",
+    title: "Видеокурсы и медитации",
+    audio: "Язык видео: русский",
+    navigate: "Выберите видеокурс",
+    stageCount: (n) => `${n} видео`,
+    summary: (lessons, courses) => `${lessons} уникальная видеозапись · ${courses} подборок · нажмите, чтобы раскрыть`,
+    archiveTitle: "Видеоуроки из архива PsiMaster",
+    archiveIntro: "Откройте подборку и выберите видеоурок. Порядок оригинальных уроков сохранён; повторяющиеся записи не дублируются.",
+    lesson: (n) => `Урок ${n}`,
+    repeated: (n) => `Ещё ${n} записи из этой подборки представлены в другой группе выше. Повторы не дублируются.`,
+    original: "Оригинальная программа на PsiMaster",
+  },
+  es: {
+    eyebrow: "Archivo original · audio en ruso",
+    title: "Videocursos y meditaciones originales",
+    audio: "Audio: ruso",
+    navigate: "Elegir un videocurso",
+    stageCount: (n) => `${n} vídeos`,
+    summary: (lessons, courses) => `${lessons} grabaciones únicas · ${courses} colecciones · abrir para explorar`,
+    archiveTitle: "Lecciones originales de PsiMaster",
+    archiveIntro: "Estos vídeos históricos están en ruso. Los títulos de las lecciones están traducidos cuando existe traducción.",
+    lesson: (n) => `Lección ${n}`,
+    repeated: (n) => `${n} grabaciones ya aparecen en otro grupo y no se duplican.`,
+    original: "Fuente original en PsiMaster",
+  },
+};
+
 function hasSubstantialSource(record: AcademySourceRecord, locale: PublicLocale) {
   const prose = academyPublicBlocks(record, locale).filter((block) => block.type === "p" || block.type === "li");
   const hasVideo = mediaForRecord(record).some((item) => Boolean(youtubeIdFromUrl(item.mediaUrl)));
@@ -90,6 +139,7 @@ function hasSubstantialSource(record: AcademySourceRecord, locale: PublicLocale)
 /** A single course, not four independent catalogs. All stage source IDs are unique. */
 export function TempleStudies({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const vt = videoCopy[locale];
   const courseRecords = templeStages.map((stage) => ({
     stage,
     sources: stage.sourceIds.map((id) => findAcademyRecord(id, locale))
@@ -97,17 +147,15 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
       .filter((record) => hasSubstantialSource(record, locale)),
   }));
 
-  const videoIndex = locale === "ru"
-    ? templeStages.map((stage) => {
-        const groups = templeVideoCollections(stage.id, locale);
-        return {
-          id: stage.id,
-          title: stage.copy.ru.title,
-          collectionCount: groups.length,
-          videoCount: groups.reduce((sum, group) => sum + group.videos.length, 0),
-        };
-      }).filter((stage) => stage.videoCount > 0)
-    : [];
+  const videoIndex = templeStages.map((stage) => {
+    const groups = templeVideoCollections(stage.id, locale);
+    return {
+      id: stage.id,
+      title: stage.copy[locale].title,
+      collectionCount: groups.length,
+      videoCount: groups.reduce((sum, group) => sum + group.videos.length, 0),
+    };
+  }).filter((stage) => stage.videoCount > 0);
   const totalVideoLessons = videoIndex.reduce((sum, stage) => sum + stage.videoCount, 0);
   const totalVideoCollections = videoIndex.reduce((sum, stage) => sum + stage.collectionCount, 0);
 
@@ -123,6 +171,7 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
           />
 
           <div className="temple-course-content">
+            <TempleCourseHashSync />
             <header className="temple-hero">
               <div className="temple-hero-copy">
                 <p className="homeopathy-kicker">{t.eyebrow}</p>
@@ -147,17 +196,17 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
               <details className="temple-video-index" aria-labelledby="temple-video-index-heading">
                 <summary className="temple-video-index-summary">
                   <span className="temple-video-index-summary-text">
-                    <span className="homeopathy-kicker">Оригинальные записи · Бесплатно</span>
-                    <strong id="temple-video-index-heading">Видеокурсы и медитации</strong>
-                    <small>{totalVideoLessons} уникальная видеозапись · {totalVideoCollections} подборок · нажмите, чтобы раскрыть</small>
+                    <span className="homeopathy-kicker">{vt.eyebrow}</span>
+                    <strong id="temple-video-index-heading">{vt.title}</strong>
+                    <small>{vt.summary(totalVideoLessons, totalVideoCollections)}</small>
                   </span>
                   <ChevronDown size={22} aria-hidden="true" />
                 </summary>
-                <nav className="temple-video-index-links" aria-label="Перейти к видеокурсам">
+                <nav className="temple-video-index-links" aria-label={vt.navigate}>
                   {videoIndex.map((stage) => (
-                    <a href={"#temple-" + stage.id} key={stage.id}>
+                    <a href={"#temple-video-" + stage.id} key={stage.id}>
                       <span>{stage.title}</span>
-                      <strong>{stage.videoCount} видео <ArrowRight size={15} aria-hidden="true" /></strong>
+                      <strong>{vt.stageCount(stage.videoCount)} <ArrowRight size={15} aria-hidden="true" /></strong>
                     </a>
                   ))}
                 </nav>
@@ -174,7 +223,7 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
               {courseRecords.map(({ stage, sources }, index) => {
                 const data = stage.copy[locale];
                 const nextStage = templeStages[index + 1];
-                const videoCollections = locale === "ru" ? templeVideoCollections(stage.id, locale) : [];
+                const videoCollections = templeVideoCollections(stage.id, locale);
                 const legacyAliases: Record<string, string[]> = {
                   greek: ["mysteries"], traditions: ["traditions"], symbols: ["symbols"],
                   initiation: ["practice"], application: ["path"],
@@ -192,85 +241,83 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                         <h2 id={"temple-title-" + stage.id}>{data.title}</h2>
                         <p className="temple-stage-subtitle">{data.subtitle}</p>
                       </div>
-                      <details className="temple-stage-details">
+                    </div>
+                    <details className="temple-stage-details">
                         <summary>{t.more}<ChevronDown size={19} aria-hidden="true" /></summary>
                         <div className="temple-stage-expanded">
                           <p className="temple-stage-intro">{data.introduction}</p>
                           <h3 className="temple-small-heading">{t.lesson}</h3>
-                      <ol className="temple-lessons">
-                        {data.lessons.map((lesson, lessonIndex) => (
-                          <li key={lesson.title}>
-                            <span>{String(lessonIndex + 1).padStart(2, "0")}</span>
-                            <div><h4>{lesson.title}</h4><p>{lesson.description}</p></div>
-                          </li>
-                        ))}
-                      </ol>
-                      <div className="temple-practice">
-                        <div><span className="temple-practice-label">{t.exercise}</span><p>{data.exercise}</p></div>
-                        <div><span className="temple-practice-label">{t.outcome}</span><p>{data.outcome}</p></div>
-                      </div>
-                      {videoCollections.length ? (
-                        <section className="temple-video-archive" aria-label="Русские видеозаписи курса">
-                          <div className="temple-video-archive-heading">
-                            <h3>Видеоуроки из архива PsiMaster</h3>
-                            <p>Откройте интересующую подборку и выберите видеоурок. Все названия и порядок занятий сохранены из PsiMaster; повторяющиеся записи показаны один раз.</p>
-                          </div>
-                          {videoCollections.map((collection) => (
-                            <details className="temple-video-series" key={collection.key}>
-                              <summary>
-                                <span className="temple-video-series-summary-text">
-                                  <strong>{collection.title}</strong>
-                                  <small>{collection.description}</small>
-                                </span>
-                                <span className="temple-video-series-count">{collection.videos.length} видео</span>
-                              </summary>
-                              <div className="temple-video-series-content">
-                                <ol className="temple-video-grid">
-                                  {collection.videos.map((video) => (
-                                    <li className="temple-video-lesson" key={video.id}>
-                                      <AcademyVideoPlayer youtubeId={video.id} title={video.title} />
-                                      <p className="temple-video-lesson-title"><span>Урок {video.order}</span>{video.title}</p>
-                                    </li>
-                                  ))}
-                                </ol>
-                                {collection.repeatedCount > 0 ? (
-                                  <p className="temple-video-repeats">
-                                    Ещё {collection.repeatedCount} записи из этой подборки уже представлены выше в курсе «Сила Планет», поэтому видео не дублируются. Полный исходный список доступен на PsiMaster.
-                                  </p>
-                                ) : null}
-                                {collection.sourceUrl ? (
-                                  <a className="temple-video-provenance" href={collection.sourceUrl} target="_blank" rel="noopener noreferrer">
-                                    Оригинальная программа на PsiMaster <ArrowRight size={15} aria-hidden="true" />
-                                  </a>
-                                ) : null}
-                              </div>
-                            </details>
+                        <ol className="temple-lessons">
+                          {data.lessons.map((lesson, lessonIndex) => (
+                            <li key={lesson.title}>
+                              <span>{String(lessonIndex + 1).padStart(2, "0")}</span>
+                              <div><h4>{lesson.title}</h4><p>{lesson.description}</p></div>
+                            </li>
                           ))}
-                        </section>
-                      ) : null}
-                      {sources.length ? (
-                        <details className="temple-sources">
-                          <summary><BookOpen size={18} aria-hidden="true" /> {t.original} ({sources.length})</summary>
-                          <ul>
-                            {sources.map((record) => (
-                              <li key={record.logicalId}>
-                                <Link href={"/" + locale + "/academy/" + record.routeKey}>
-                                  {academyDisplayTitle(record, locale)} <ArrowRight size={15} aria-hidden="true" />
-                                </Link>
-                              </li>
+                        </ol>
+                        <div className="temple-practice">
+                          <div><span className="temple-practice-label">{t.exercise}</span><p>{data.exercise}</p></div>
+                          <div><span className="temple-practice-label">{t.outcome}</span><p>{data.outcome}</p></div>
+                        </div>
+                        {videoCollections.length ? (
+                          <section className="temple-video-archive" id={"temple-video-" + stage.id} aria-label={vt.title}>
+                            <div className="temple-video-archive-heading">
+                              <h3>{vt.archiveTitle} <span className="temple-language-badge">{vt.audio}</span></h3>
+                              <p>{vt.archiveIntro}</p>
+                            </div>
+                            {videoCollections.map((collection) => (
+                              <details className="temple-video-series" key={collection.key}>
+                                <summary>
+                                  <span className="temple-video-series-summary-text">
+                                    <strong lang="ru">{collection.title}</strong>
+                                    <small lang="ru">{collection.description}</small>
+                                  </span>
+                                  <span className="temple-video-series-count">{vt.stageCount(collection.videos.length)}</span>
+                                </summary>
+                                <div className="temple-video-series-content">
+                                  <ol className="temple-video-grid">
+                                    {collection.videos.map((video) => (
+                                      <li className="temple-video-lesson" key={video.id}>
+                                        <AcademyVideoPlayer youtubeId={video.id} title={video.title} />
+                                        <p className="temple-video-lesson-title"><span>{vt.lesson(video.order)} · {vt.audio}</span>{video.title}</p>
+                                      </li>
+                                    ))}
+                                  </ol>
+                                  {collection.repeatedCount > 0 ? (
+                                    <p className="temple-video-repeats">{vt.repeated(collection.repeatedCount)}</p>
+                                  ) : null}
+                                  {collection.sourceUrl ? (
+                                    <a className="temple-video-provenance" href={collection.sourceUrl} target="_blank" rel="noopener noreferrer">
+                                      {vt.original} <ArrowRight size={15} aria-hidden="true" />
+                                    </a>
+                                  ) : null}
+                                </div>
+                              </details>
                             ))}
-                          </ul>
-                        </details>
-                      ) : null}
-                      {nextStage ? (
-                        <a className="temple-next-stage" href={"#temple-" + nextStage.id}>
-                          <span>{t.next}<strong>{nextStage.copy[locale].title}</strong></span>
-                          <ArrowRight size={20} aria-hidden="true" />
-                        </a>
-                      ) : null}
+                          </section>
+                        ) : null}
+                        {sources.length ? (
+                          <details className="temple-sources">
+                            <summary><BookOpen size={18} aria-hidden="true" /> {t.original} ({sources.length})</summary>
+                            <ul>
+                              {sources.map((record) => (
+                                <li key={record.logicalId}>
+                                  <Link href={"/" + locale + "/academy/" + record.routeKey}>
+                                    {academyDisplayTitle(record, locale)} <ArrowRight size={15} aria-hidden="true" />
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : null}
+                        {nextStage ? (
+                          <a className="temple-next-stage" href={"#temple-" + nextStage.id}>
+                            <span>{t.next}<strong>{nextStage.copy[locale].title}</strong></span>
+                            <ArrowRight size={20} aria-hidden="true" />
+                          </a>
+                        ) : null}
                         </div>
                       </details>
-                    </div>
                   </section>
                 );
               })}
