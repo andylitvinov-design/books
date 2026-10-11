@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { AssessmentReading } from '@/components/assessment-reading'
+import { DownloadPractitionerReport } from '@/components/app/personal-analysis-panel'
+import Link from 'next/link'
 
 const COPY = {
   en: {
@@ -113,6 +115,7 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
     <section className="shared-report-card">
       <p className="about-kicker">{c.guest}</p>
       <AssessmentReading record={report} locale={locale} />
+      <div className="hh-analysis-detail-download"><DownloadPractitionerReport report={report} locale={locale} /></div>
       {grant?.expiresAt && <p className="cabinet-test-note">{c.expires}: {new Date(grant.expiresAt).toLocaleString(locale)}</p>}
       <div className="shared-report-save">
         <p>{c.note}</p>
