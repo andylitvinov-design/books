@@ -20,23 +20,23 @@ const copy = {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
     heroTitle: "Нет сил, ясности или движения к цели?",
-    heroIntro: "Бесплатно обсудим ваш запрос и возможный следующий шаг. Без обязательств."
+    heroIntro: "Бесплатно обсудим ваш запрос и возможный следующий шаг. Без обязательств.",
     heroPrimary: "Записаться на бесплатный разбор",
     heroSecondary: "Все услуги",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте Holistic House",
-    startIntro: "Тесты, обучение и материалы — в дополнение к личным консультациям."
+    startIntro: "Тесты, обучение и материалы — в дополнение к личным консультациям.",
     personalEyebrow: "1 · Личная работа",
     personalTitle: "Личная консультация",
-    personalText: "Обсудить свой запрос и варианты работы."
+    personalText: "Обсудить свой запрос и варианты работы.",
     personalAction: "Посмотреть форматы",
     checkEyebrow: "2 · Бесплатно",
     checkTitle: "Пройти тесты",
-    checkText: "Подобрать тесты по вашему запросу."
+    checkText: "Подобрать тесты по вашему запросу.",
     checkAction: "Начать self-check",
     learnEyebrow: "3 · Учиться и исследовать",
     learnTitle: "Курсы и библиотека",
-    learnText: "Курсы, книги и практические материалы."
+    learnText: "Курсы, книги и практические материалы.",
     academyAction: "Academy",
     libraryAction: "Library",
     returning: "Уже есть профиль или результаты?",
@@ -52,23 +52,23 @@ const copy = {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
     heroTitle: "Feeling stuck, exhausted, or unsure what comes next?",
-    heroIntro: "Let’s clarify your question and a possible next step in a free conversation. No obligation."
+    heroIntro: "Let’s clarify your question and a possible next step in a free conversation. No obligation.",
     heroPrimary: "Request a free situation review",
     heroSecondary: "Explore services",
     startKicker: "Other ways to explore",
     startTitle: "Explore Holistic House",
-    startIntro: "Tests, courses and books complement personal sessions."
+    startIntro: "Tests, courses and books complement personal sessions.",
     personalEyebrow: "1 · Personal work",
     personalTitle: "Personal sessions",
-    personalText: "Explore your question and ways to move forward."
+    personalText: "Explore your question and ways to move forward.",
     personalAction: "Explore personal work",
     checkEyebrow: "2 · Free",
     checkTitle: "Take a test",
-    checkText: "Find tests relevant to your question."
+    checkText: "Find tests relevant to your question.",
     checkAction: "Start the self-check",
     learnEyebrow: "3 · Learn & explore",
     learnTitle: "Courses & Library",
-    learnText: "Courses, books and practical guides."
+    learnText: "Courses, books and practical guides.",
     academyAction: "Academy",
     libraryAction: "Library",
     returning: "Already have a profile or previous results?",
