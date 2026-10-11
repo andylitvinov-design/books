@@ -179,12 +179,14 @@ export function ProfileDomains({
     }).catch(() => { if (mounted.current) setFetchState('partial') })
   }, [active, external, fetchState, locale, savedDocuments, savedReports])
 
-  const entries = [
-    { key: 'psychology', summary: external ? psychologicalReports.length || null : recentResults.length || null },
-    { key: 'homeopathy', summary: updates.length || homeopathicReports.length || null },
-    { key: 'wu_xing', summary: wuReports.length || null },
-    { key: 'hypnotherapy', summary: hypnoReports.length || null },
-  ]
+  const entries = DOMAINS.map(key => ({
+    key,
+    summary: key === 'psychology'
+      ? (external ? psychologicalReports.length : recentResults.length)
+      : key === 'homeopathy'
+        ? (updates.length || homeopathicReports.length)
+        : key === 'wu_xing' ? wuReports.length : hypnoReports.length,
+  }))
   const panelTitle = { psychology: t.psyDetail, homeopathy: t.homeoDetail, wu_xing: t.wuDetail, hypnotherapy: t.hypnoDetail }
   const enquiry = whatsappEnquiryUrl({
     locale, service: ru ? 'Консультация: ' + panelTitle[active] : 'Consultation: ' + panelTitle[active],
