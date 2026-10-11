@@ -18,7 +18,7 @@ const WORDS = {
     concernPlaceholder: 'For example: I would like to feel calmer in difficult conversations and have more inner support.',
     themes: 'What would you like to explore?', suggestions: 'Tests that may help explore your topics',
     explore: 'Open the full test finder', testHint: 'Use the existing My Tests filters to choose and save the tests that suit you. You may change your selection.',
-    saveContinue: 'Save and go to testing', selected: 'Your saved test set', done: 'Completed', results: 'Saved results',
+    saveContinue: 'Save and go to testing', selected: 'Selected tests', done: 'Completed', results: 'Saved results',
     testTitle: 'Explore yourself through testing', testText: 'Continue any saved test, or select new questionnaires. Your responses and detailed reports remain in your private account.',
     runTests: 'Go to My Tests', review: 'Review my results and growth options', noTests: 'Complete at least one test to proceed. You can always return here.',
     approveTitle: 'Choose the resources you want to develop', approveText: 'These suggestions are optional. Only you decide which skills to practise.',
@@ -48,7 +48,7 @@ const WORDS = {
     concernPlaceholder: 'Например: хочу спокойнее чувствовать себя в общении и больше опираться на себя.',
     themes: 'Какие темы вам близки?', suggestions: 'Тесты, которые помогут изучить эти темы',
     explore: 'Открыть полный подбор тестов', testHint: 'В существующем разделе My Tests выберите тесты по темам и проблемам, сохраните набор; его всегда можно изменить.',
-    saveContinue: 'Сохранить и перейти к тестам', selected: 'Мой выбранный набор тестов', done: 'Пройдено', results: 'Сохранённые результаты',
+    saveContinue: 'Сохранить и перейти к тестам', selected: 'Выбрано тестов', done: 'Пройдено', results: 'Сохранённые результаты',
     testTitle: 'Изучите себя с помощью тестов', testText: 'Продолжите сохранённые тесты или подберите новые. Ответы и подробные отчёты остаются в вашем кабинете.',
     runTests: 'Перейти к моим тестам', review: 'Посмотреть результаты и направления развития', noTests: 'Чтобы продолжить, пройдите хотя бы один тест. Вы сможете вернуться сюда.',
     approveTitle: 'Выберите ресурсы, которые хотите развивать', approveText: 'Предложения необязательны. Только вы решаете, какие навыки практиковать.',
@@ -145,6 +145,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const today = stateCourse?.today || 1
   const completions = stateCourse?.dayCompletions || {}
   const todayComplete = Boolean(completions[String(today)])
+  const testsReady = assessment.resultsCount > 0 && (assessment.planStatus !== 'active' ||
+    (assessment.plannedInSet > 0 && assessment.completedInSet >= assessment.plannedInSet))
   const activeGoal = stateCourse?.goals?.[(today - 1) % Math.max(stateCourse?.goals?.length || 1, 1)] || 'calm_regulation'
   const lesson = courseLesson(activeGoal, today, locale)
   const completed = Object.keys(completions).length
@@ -208,7 +210,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <div className={styles.stats}><div><strong>{assessment.plannedInSet || 0}</strong><span>{t.selected}</span></div><div><strong>{assessment.completedInSet || 0}</strong><span>{t.done}</span></div><div><strong>{assessment.resultsCount || 0}</strong><span>{t.results}</span></div></div>
       <Link href={root + '/tests'} className="hh-primary" prefetch={false}>{t.runTests}<ArrowRight size={17}/></Link>
       <p className={styles.small}>{t.noTests}</p>
-      <button type="button" disabled={busy || !(assessment.resultsCount > 0)} onClick={() => act('review')}>{t.review}<ArrowRight size={17}/></button>
+      <button type="button" disabled={busy || !testsReady} onClick={() => act('review')}>{t.review}<ArrowRight size={17}/></button>
     </section>}
 
     {stage === 3 && <section className={'hh-panel ' + styles.chapter}>
