@@ -101,3 +101,12 @@
   .dayGrid{gap:3px}
 }
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto;animation:none;transition:none}}
+
+.suggestButton{display:inline-flex;align-items:center;gap:8px;justify-self:start!important;max-width:100%;font-size:13px!important;min-height:39px!important;background:#f2f6eb!important;border-color:#c9d9c0!important;color:#35695b!important}
+.weeklyChanges{display:grid;gap:8px;margin:10px 0}
+.weeklyChanges>small{font-size:12px;color:#766c61}
+.scoreGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.scoreGrid span{display:grid;gap:3px;border:1px solid #e6ded1;background:#fffdf8;border-radius:11px;padding:10px;min-width:0}
+.scoreGrid span strong{font-size:12px;color:#655649}
+.scoreGrid span small{font-size:14px;color:#446b57;font-weight:700}
+@media(max-width:530px){.scoreGrid{grid-template-columns:1fr 1fr}.scoreGrid span{padding:8px}}
