@@ -848,6 +848,7 @@ function TestCatalog({ data, locale, onStarted }) {
           <h2>{title}</h2>
           <p>{description}</p>
           <p className="hh-fine">{methodology}</p>
+          {/^https:\/\//.test(def.source?.url || '') && <a className="hh-fine" href={def.source.url} rel="noopener noreferrer" target="_blank">{ru ? 'Источник методики' : 'Instrument source'}</a>}
           {def.source?.copyright && <p className="hh-fine">{def.source.copyright}</p>}
           {completed && <p className="hh-fine">{c.latest}: {dateLabel(completed.measurementAt, locale)}</p>}
           <div className="hh-actions">
