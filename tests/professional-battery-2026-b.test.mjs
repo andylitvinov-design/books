@@ -11,7 +11,7 @@ import {MIND_BODY_MONITOR_REGISTRY} from '../data/assessments/mind-body-monitor-
 
 test('six new source-backed measures have intact definitions',()=>{
  assert.equal(definitions.length,2)
- assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length, 76)
+ assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length, 84)
  for(const d of definitions){
   const {contentHash,...body}=d
   assert.equal(contentHash,'sha256:'+createHash('sha256').update(canonicalJSON(body)).digest('hex'))
