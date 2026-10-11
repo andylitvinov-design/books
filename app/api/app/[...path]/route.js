@@ -32,6 +32,7 @@ import {
   commitReportSaveIntent,
   exchangeReportViewer,
   parseReportViewerCookie,
+  listPersonalAnalysisReports,
   readSavedReport,
   removeSavedReport,
   setReportViewerCookie,
@@ -342,6 +343,8 @@ async function handle(request, { params }) {
       )
     }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if (joined === 'personal-analysis-reports' && method === 'GET')
+      return json(await listPersonalAnalysisReports(config, getPrescriptionStore(), actor))
     if (joined === 'shared-materials' && method === 'GET') {
       const clientIds = await listLegacyClientIdsForAccount(config, actor)
       const store = getPrescriptionStore()
