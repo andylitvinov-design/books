@@ -6,15 +6,16 @@ import test from "node:test";
 const root = process.cwd();
 const source = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("home presents the same four core offers as Services before videos", () => {
+test("home presents three free paths and two optional personal services before videos", () => {
   const home = source("components", "holistic-house-home.tsx");
   const cards = home.indexOf('<ServicesSolutions locale={locale} variant="home" />');
   const video = home.indexOf("{introVideo ? (");
   assert.ok(cards > 0 && video > cards);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
+  assert.match(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
 });
 
-test("Services leads with four benefits, not step-by-step drawing instructions or prices", () => {
+test("Services leads with three free entrances plus two personal services, without prices in the overview", () => {
   const page = source("app", "[locale]", "services", "page.tsx");
   const offers = source("data", "core-service-offers.ts");
   const ui = source("components", "services-solutions.tsx");
@@ -23,7 +24,8 @@ test("Services leads with four benefits, not step-by-step drawing instructions o
   const testimonials = page.indexOf("<PersonalTestimonials");
   const extra = page.indexOf('id="available-services"');
   assert.ok(choiceIndex > 0 && testimonials > choiceIndex && extra > testimonials);
-  assert.match(ui, /coreServiceOffers\(locale\)\.map/);
+  assert.match(ui, /coreServiceOffers\(locale\)\.filter/);
+  assert.match(page, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   for(const id of ["situation","dao","alchemy","hypnotherapy"])
     assert.ok(offers.includes('id: "' + id + '"'), id);
   for(const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
@@ -85,11 +87,11 @@ test("service links remain tappable, mobile-safe and keyboard accessible", () =>
 test("Services hero sells the options and points to free review without diagnostic steps", () => {
   const hero = source("components", "services-conversion-hero.tsx");
   const css = source("components", "services-conversion-hero.module.css");
-  assert.match(hero, /Four ways to explore your question/);
+  assert.match(hero, /Three free ways to begin/);
   assert.match(hero, /Больше ясности, опоры и вариантов движения/);
   assert.match(hero, /free-situation-review/);
-  assert.match(hero, /Explore all four services/);
-  assert.match(hero, /href="#solutions"/);
+  assert.match(hero, /See all three free options/);
+  assert.match(hero, /href="#free-insights"/);
   assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper|€50/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /min-height:60px/);

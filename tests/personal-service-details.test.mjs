@@ -23,7 +23,7 @@ test("all three canonical service pages exist in EN/RU/ES with SEO and actual en
   assert.match(component, /t\.disclaimer/);
 });
 
-test("four core service links lead to real detail pages while legacy method references remain available", () => {
+test("three free paths and two personal cards retain all core service detail pages and legacy method links", () => {
   const services = read("app/[locale]/services/page.tsx");
   const offers = read("data/core-service-offers.ts");
   const ui = read("components/services-solutions.tsx");
@@ -33,7 +33,10 @@ test("four core service links lead to real detail pages while legacy method refe
     assert.ok(offers.includes('route: "' + slug + '"'));
   for(const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"])
     assert.ok(ui.includes('href:"' + slug + '"') || ui.includes('href: "' + slug + '"'));
-  assert.match(ui, /href=.*free-situation-review/);
+  const freePaths = read("components/free-insights-paths.tsx");
+  assert.match(freePaths, /free-situation-review/);
+  assert.match(freePaths, /dao-health-profile/);
+  assert.match(ui, /personalOffers.map/);
   assert.match(free, /FreeSituationReviewForm/);
 });
 
