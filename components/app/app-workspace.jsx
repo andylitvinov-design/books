@@ -2347,6 +2347,9 @@ function ResultPage({ id, locale, data }) {
 
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
+      <PersonalResultReport result={result} locale={locale} />
+      <details className="hh-result-raw-details">
+        <summary>{locale === 'ru' ? 'Посмотреть все исходные баллы и шкалы' : 'View all recorded scores and scales'}</summary>
       <section className="hh-result-section" aria-labelledby="result-values-title">
         <div className="hh-result-section-heading">
           <div>
@@ -2389,7 +2392,7 @@ function ResultPage({ id, locale, data }) {
         </div>
       </section>
 
-      <PersonalResultReport result={result} locale={locale} />
+      </details>
       <section className="hh-result-comparison" aria-label={locale === 'ru' ? 'История и повторные измерения' : 'Progress and previous assessments'}>
         <div>
           <h2>{locale === 'ru' ? 'Динамика результата' : 'Your result over time'}</h2>
