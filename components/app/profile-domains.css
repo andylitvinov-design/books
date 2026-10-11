@@ -1,0 +1,80 @@
+/* Holistic House: profile choice belongs to the existing calm cream / russet system. */
+.hh-profile-domains { --domain-ink:#382c24; --domain-muted:#74665a; --domain-line:#e5d7c7; --domain-clay:#84523a; color:var(--domain-ink); max-width:1220px; margin:0 auto 28px; }
+.hh-profile-domains * { box-sizing:border-box; }
+.hh-domain-hero { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:clamp(21px,3.6vw,36px); background:linear-gradient(125deg,#f7ede1 0%,#faf5ed 68%,#e8efe4 100%); border:1px solid #e4d6c7; border-radius:24px; margin-bottom:16px; }
+.hh-domain-eyebrow { color:#926449; text-transform:uppercase; letter-spacing:.13em; font:700 10px/1.5 system-ui,sans-serif; margin:0 0 8px; }
+.hh-domain-hero h1 { font:400 clamp(32px,4.1vw,50px)/1.12 Georgia,serif; letter-spacing:-.035em; margin:0 0 10px; color:#382b23; }
+.hh-domain-hero h1 span { display:block; font:500 clamp(14px,1.7vw,19px)/1.5 system-ui,sans-serif; letter-spacing:0; color:#926e54; }
+.hh-domain-hero p:last-child { color:#6f5e51; font:400 13px/1.65 system-ui,sans-serif; max-width:680px; margin:0; }
+.hh-domain-hero-symbol { display:grid; place-items:center; background:#e7d6c3; border:1px solid #dcc6af; color:#815840; width:58px; height:58px; flex:0 0 58px; border-radius:50%; }
+.hh-domain-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+.hh-domain-tabs button { appearance:none; display:flex; min-width:0; flex-direction:column; align-items:flex-start; justify-content:space-between; gap:9px; text-align:left; min-height:122px; padding:18px 17px; border-radius:18px; border:1px solid var(--domain-line); background:#fffcf8; color:#795c49; cursor:pointer; transition:border-color .16s ease,background-color .16s ease,transform .16s ease; }
+.hh-domain-tabs button svg { color:#9f7354; }
+.hh-domain-tabs button strong { color:#47362c; font:650 15px/1.3 system-ui,sans-serif; letter-spacing:-.012em; overflow-wrap:anywhere; }
+.hh-domain-tabs button small { color:#877a70; font:500 11px/1.35 system-ui,sans-serif; }
+.hh-domain-tabs button:hover { background:#f8f0e7; border-color:#d2bba8; transform:translateY(-1px); }
+.hh-domain-tabs button.is-current { border-color:#9a6e52; background:#f3e6d9; box-shadow:inset 0 -3px 0 #8b593f; }
+.hh-domain-tabs button.is-current svg,.hh-domain-tabs button.is-current strong { color:#704530; }
+.hh-domain-tabs button:focus-visible,.hh-domain-panel a:focus-visible { outline:3px solid #986f49; outline-offset:3px; }
+.hh-domain-panel { border:1px solid var(--domain-line); background:#fffdf9; border-radius:22px; padding:clamp(20px,3vw,30px); overflow-wrap:anywhere; }
+.hh-domain-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:21px; }
+.hh-domain-heading h2 { margin:0 0 8px; font:400 clamp(25px,3vw,35px)/1.19 Georgia,serif; color:#382b23; }
+.hh-domain-heading p:last-child { max-width:740px; font:400 13px/1.6 system-ui,sans-serif; color:#716359; margin:0; }
+.hh-domain-psy-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-bottom:12px; }
+.hh-domain-psy-summary > span { background:#f7f0e7; border-radius:12px; padding:13px 17px; color:#77665a; font:500 12px/1.45 system-ui,sans-serif; }
+.hh-domain-psy-summary strong { display:block; font:400 24px/1.22 Georgia,serif; color:#4f3829; margin-bottom:4px; }
+.hh-domain-link-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:18px; }
+.hh-domain-link-row a,.hh-domain-latest > a,.hh-domain-secondary-link { display:inline-flex; align-items:center; justify-content:center; gap:7px; border:1px solid #d8c5b4; background:#fffdf8; border-radius:12px; padding:10px 14px; min-height:43px; color:#754a35; font:650 12px/1.3 system-ui,sans-serif; text-decoration:none; }
+.hh-domain-link-row a:hover,.hh-domain-latest > a:hover,.hh-domain-secondary-link:hover { background:#f5ebe1; }
+.hh-domain-latest { padding:clamp(18px,2.7vw,26px); background:#f2f6ef; border:1px solid #d2dfd1; border-radius:17px; margin:0 0 15px; }
+.hh-domain-latest-top { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:8px; font:650 12px/1.5 system-ui,sans-serif; color:#496346; }
+.hh-domain-latest-top time { color:#72836f; font-size:11px; }
+.hh-domain-latest p { font-size:12px; line-height:1.55; color:#607260; }
+.hh-domain-remedy-chips { display:flex; flex-wrap:wrap; gap:8px; padding:0; margin:14px 0 17px; list-style:none; }
+.hh-domain-remedy-chips li { background:#fff; border:1px solid #d9e1d4; color:#3e573c; border-radius:999px; padding:8px 12px; font:600 12px/1.4 system-ui,sans-serif; overflow-wrap:anywhere; }
+.hh-domain-latest > a { background:#4d704c; border-color:#4d704c; color:white; }
+.hh-domain-history { margin:19px 0; }
+.hh-domain-history h3 { font:400 clamp(20px,2.3vw,26px)/1.3 Georgia,serif; color:#4a372b; margin:0 0 12px; }
+.hh-domain-history-row { display:flex; justify-content:space-between; align-items:center; gap:14px; text-decoration:none; border:1px solid #e8ded3; border-radius:12px; background:white; color:#624936; min-height:60px; padding:12px 15px; margin-bottom:8px; }
+.hh-domain-history-row:hover { background:#faf5ee; border-color:#d8bfa9; }
+.hh-domain-history-row span { display:block; min-width:0; }
+.hh-domain-history-row strong,.hh-domain-history-row time { display:block; font:600 13px/1.4 system-ui,sans-serif; color:#513f34; }
+.hh-domain-history-row small { display:block; color:#897b6e; font-size:11px; line-height:1.5; margin-top:3px; }
+.hh-domain-history-row svg { flex:0 0 auto; }
+.hh-domain-empty { padding:19px; background:#f8f2ea; border:1px dashed #decfbe; border-radius:13px; color:#776759; font:400 13px/1.6 system-ui,sans-serif; }
+.hh-domain-next { display:flex; flex-wrap:wrap; justify-content:space-between; gap:15px; align-items:center; padding:clamp(18px,3vw,25px); background:#f7eee4; border-radius:17px; margin:22px 0 16px; }
+.hh-domain-next > div:first-child { max-width:530px; }
+.hh-domain-next > div:first-child svg { color:#9b634a; vertical-align:middle; margin-right:7px; }
+.hh-domain-next strong { color:#523b2c; font:650 16px/1.5 system-ui,sans-serif; }
+.hh-domain-next p { font:400 12px/1.6 system-ui,sans-serif; color:#77665a; margin:7px 0 0; }
+.hh-domain-next-actions { display:flex; flex-wrap:wrap; gap:9px; }
+.hh-domain-next-actions a { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:43px; padding:10px 15px; border-radius:11px; background:#89543b; color:white; font:650 12px/1.35 system-ui,sans-serif; text-align:center; }
+.hh-domain-next-actions a + a { color:#78503e; background:#fffaf4; border:1px solid #d7c3b1; }
+.hh-domain-secondary-link { width:fit-content; max-width:100%; }
+.hh-domain-loading,.hh-domain-caution { font:400 12px/1.65 system-ui,sans-serif; color:#866b50; }
+.hh-domain-private { display:flex; gap:8px; align-items:flex-start; margin:13px 3px 0; font:400 11px/1.6 system-ui,sans-serif; color:#8a796a; }
+.hh-domain-private svg { flex-shrink:0; }
+.hh-app .hh-profile-domains .hh-domain-panel .hh-heading.hh-profile-heading { display:none; }
+.hh-app .hh-profile-domains .hh-domain-panel [data-profile-assessment-overview] { margin-top:15px; }
+@media (max-width:840px) {
+  .hh-domain-tabs { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .hh-domain-tabs button { min-height:104px; padding:14px; }
+  .hh-domain-hero-symbol { width:45px; height:45px; flex-basis:45px; }
+}
+@media (max-width:420px) {
+  .hh-domain-hero { padding:19px; border-radius:18px; }
+  .hh-domain-hero h1 { font-size:31px; }
+  .hh-domain-hero-symbol { display:none; }
+  .hh-domain-tabs { gap:7px; }
+  .hh-domain-tabs button { min-height:104px; padding:12px 10px; border-radius:14px; gap:8px; }
+  .hh-domain-tabs button strong { font-size:13px; }
+  .hh-domain-tabs button small { font-size:10px; }
+  .hh-domain-panel { padding:16px; border-radius:17px; }
+  .hh-domain-psy-summary { gap:7px; }
+  .hh-domain-psy-summary > span { padding:11px 9px; font-size:11px; }
+  .hh-domain-next-actions,.hh-domain-next-actions a { width:100%; }
+  .hh-domain-link-row a { flex:1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hh-domain-tabs button { transition:none; }
+}
