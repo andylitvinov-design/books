@@ -42,6 +42,7 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
     'erq',
     'gad-2',
     'gad-7',
+    'hh-bach-flower',
     'hh-body-signals',
     'hh-boundary-radar',
     'hh-change-readiness',
