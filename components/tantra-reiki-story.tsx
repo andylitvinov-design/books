@@ -83,7 +83,7 @@ const translatedEventThemes: Record<"ru" | "es", string[]> = {
   ],
 };
 
-const historicalSchoolIndices = [75, 76, 77, 78, 81, 82] as const;
+const historicalSchoolIndices = [4, 75, 76, 77, 78, 81, 82] as const;
 const historicalBiographyIndices = [158, 159, 160, 161, 162, 163, 164, 165, 166, 167] as const;
 
 export function TantraReikiFestivalMoments({locale}:{locale:PublicLocale}) {
