@@ -64,6 +64,8 @@ test("Tantra Reiki registration and practitioner biography appear exactly once a
   assert.equal((page.match(/<TantraReikiTeacher locale=/g) ?? []).length, 1);
   assert.equal((page.match(/<TantraReikiLeadForms locale=/g) ?? []).length, 1);
   assert.match(reading, /originalRussianEnglishTranslation\.blocks\.map/);
-  assert.match(reading, /originalEnglishArchive\.blocks\.en\[29\]\.text/);
+  assert.match(reading, /originalEnglishArchive\.blocks\.en\.slice\(6, 69\)/);
+  assert.match(reading, /const originalResearchIndices/);
+  assert.match(reading, /<FullOriginalMaterials locale=\{locale\} \/>/);
   assert.doesNotMatch(reading, /More about the training programme|The first experiences|BOOK A SESSION|BOOK YOUR SESSION/i);
 });

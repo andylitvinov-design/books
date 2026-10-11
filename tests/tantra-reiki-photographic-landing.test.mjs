@@ -35,7 +35,7 @@ test("Tantra Reiki: nine concrete learning outcomes in all three supported local
   assert.match(journey, /levelApplications\[locale\]\[i\]/);
   assert.match(journey, /c\.application/);
   assert.match(journey, /c\.settings/);
-  assert.match(journey, /copy\.practice/);
+  assert.match(journey, /originalProgrammeStudyStep\(locale, i\)/);
   assert.match(journey, /href="#tantra-course-hero-title"/);
   assert.doesNotMatch(journey, /href="https:\/\/t\.me\/AndyTherapist"/);
 });
