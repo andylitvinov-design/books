@@ -16,7 +16,7 @@ test("Kundalini Reiki has its own trilingual Academy route and metadata", async 
   assert.match(component, /<details className=\{styles\.levelDetail\}>/);
   assert.match(component, /kundaliniEveryday\.map/);
   assert.doesNotMatch(component, /kundaliniSources|source\.url|Original teaching sources|https:\/\/(?:psimaster|superskills|psitrends)/);
-  assert.match(component, /<Image[\s\S]*?heroPhoto/);
+  assert.match(component, /heroPhoto[\s\S]*?<Image/);
 });
 
 test("Kundalini Reiki is a featured standalone program with no confused Yggdrasil routing", async () => {
