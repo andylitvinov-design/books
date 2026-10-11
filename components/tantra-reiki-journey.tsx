@@ -435,6 +435,27 @@ function originalProgrammeStudyStep(locale: PublicLocale, levelIndex: number): s
   ).join(" ");
 }
 
+// Original Russian level-setting explanations from the same PsiTrends source.
+// These five distinct descriptions were accidentally removed when the shorter
+// nine-level attunement list replaced the original lesson text.
+const originalSettingDescriptionIndices = [null, null, null, null, 35, 38, 41, 44, 47] as const;
+const spanishSettingDescriptions: Array<string | null> = [
+  null, null, null, null,
+  "(Activación de la energía interior y del potencial creativo; apertura de los centros energéticos.)",
+  "(Calma, limpieza profunda, apoyo, nutrición, estabilidad, equilibrio y unión espiritual.)",
+  "(Ampliación del poder de la conciencia, claridad mental y nutrición energética.)",
+  "(Creación de un acontecimiento, impulso creativo e impulso de creación; la notación «1ба» del original no está clara.)",
+  "(Armonía interior, fuerza, plenitud y equilibrio.)",
+];
+
+function originalSettingDescription(locale: PublicLocale, index: number): string | null {
+  const sourceIndex = originalSettingDescriptionIndices[index];
+  if (sourceIndex === null || sourceIndex === undefined) return null;
+  if (locale === "ru") return tantraReikiArchive.blocks.ru[sourceIndex].text;
+  if (locale === "en") return originalRussianEnglishTranslation.blocks[sourceIndex].text;
+  return spanishSettingDescriptions[index];
+}
+
 const levelApplications: Record<PublicLocale, string[]> = {
   en: [
     "Recognise how bodily awareness, intention and consent shape the three first-level attunements.",
@@ -530,6 +551,9 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
                   <div className="tantra-journey__settings">
                     <h4>{c.settings}</h4>
                     <ul>{copy.att.map((att) => <li key={att}>{att}</li>)}</ul>
+                    {originalSettingDescription(locale, i) ? (
+                      <p className="tantra-journey__setting-description">{originalSettingDescription(locale, i)}</p>
+                    ) : null}
                   </div>
                 </div>
               </details>

@@ -3121,3 +3121,64 @@
   .academy-reading-shell--tantra .tantra-journey__practice--restored { padding: 11px 13px; }
   .academy-reading-shell--tantra .tantra-journey__practice--restored p { font-size: 16px; }
 }
+
+
+/* Preservation of source-verified, unique historical Tantra Reiki passages. */
+.academy-reading-shell--tantra .tantra-source-disclosure {
+  margin-top: 22px;
+  border: 1px solid #dfc9b3;
+  border-radius: 12px;
+  background: #fffcf7;
+  overflow: hidden;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure > summary {
+  cursor: pointer;
+  padding: 15px 18px;
+  color: #5b3f2d;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure > summary:focus-visible {
+  outline: 3px solid #af8059;
+  outline-offset: -3px;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure[open] > summary {
+  border-bottom: 1px solid #e8dacc;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure > p,
+.academy-reading-shell--tantra .tantra-source-disclosure > div,
+.academy-reading-shell--tantra .tantra-source-disclosure > ul {
+  margin: 12px 18px 16px;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure__note {
+  color: #7b6250;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure li,
+.academy-reading-shell--tantra .tantra-teacher__history div p {
+  margin: 7px 0;
+  color: #533c2d;
+  font-size: 15px;
+  line-height: 1.64;
+}
+.academy-reading-shell--tantra .tantra-teacher__history { width: 100%; }
+.academy-reading-shell--tantra .tantra-testimonials__archival-quotes .tantra-review-quotes {
+  margin-top: 15px;
+}
+.academy-reading-shell--tantra .tantra-journey__setting-description {
+  margin: 12px 0 2px;
+  max-width: 60ch;
+  color: #604d40;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(15px, 1.45vw, 17px);
+  line-height: 1.6;
+}
+@media (max-width: 700px) {
+  .academy-reading-shell--tantra .tantra-source-disclosure > summary { padding: 14px 13px; }
+  .academy-reading-shell--tantra .tantra-source-disclosure > p,
+  .academy-reading-shell--tantra .tantra-source-disclosure > div,
+  .academy-reading-shell--tantra .tantra-source-disclosure > ul { margin: 11px 13px 15px; }
+  .academy-reading-shell--tantra .tantra-journey__setting-description { font-size: 16px; }
+}
