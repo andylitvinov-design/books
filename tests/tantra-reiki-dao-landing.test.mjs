@@ -105,7 +105,7 @@ test("approved Andy portrait precedes a compact blue three-choice Reiki capture"
   assert.match(capture, /Request full personal Level 1 initiation/);
   assert.match(capture, /data-reiki-choice-action=\{selected\}/);
   assert.match(capture, /aria-pressed=\{selected === choice\}/);
-  assert.match(capture, /wa\.me\/14376066502/);
+  assert.match(capture, /whatsappEnquiryUrl\(\{/);
   assert.doesNotMatch(leads, /<input|<select|<textarea|<form/);
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
   assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
