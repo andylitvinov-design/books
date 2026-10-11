@@ -285,7 +285,7 @@ try {
  await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
  await enterTest('Personality Baseline');await expect(page.getByText('In general, not only today',{exact:false})).toBeVisible()
  await page.screenshot({path:output+'/personality-runner.png',fullPage:true})
- for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
+ for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));if(i<19)await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
  await page.getByRole('button',{name:'Save results and get recommendations'}).click();await openCompletedPlanResult();data=(await api('bootstrap')).data;const trait=data.results.find(r=>r.definitionKey==='mini-ipip-20');assert.deepEqual(trait.dimensions.map(d=>d.value),[12,12,12,12,12]);assert.equal(data.snapshot.dimensions.length,10);passed('Mini-IPIP scoring is preserved alongside completed plan summaries')
  await enterTest('Weekly Psychic Health','Quick')
  await expect(page.getByText('Over the past 7 days',{exact:false})).toBeVisible()
