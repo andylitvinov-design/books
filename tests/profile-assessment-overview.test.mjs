@@ -45,6 +45,15 @@ test('grey pending selection is current plan-based, not confused with results fr
  assert.ok(vm.pending[0].progress>0&&vm.pending[0].progress<100)
  assert.deepEqual(buildProfileAssessmentView({...sample,activeTestPlan:{...sample.activeTestPlan,completedRunIds:[id1,id2]}}).pending,[])
 })
+test('cancelled last selection does not reappear as grey unmeasured tests in My Profile',()=>{
+ const cancelled={...sample,activeTestPlan:null,
+   latestTestPlan:{...sample.activeTestPlan,status:'cancelled'}}
+ const vm=buildProfileAssessmentView(cancelled,'en')
+ assert.equal(vm.selectedCount,0)
+ assert.deepEqual(vm.pending,[])
+ assert.equal(vm.measured.length,2,'historical measured scales must be retained')
+})
+
 test('no plan and no results show neither invented rays nor fake zero measurements',()=>{
  const vm=buildProfileAssessmentView({results:[],runs:[],snapshot:null},'ru')
  assert.deepEqual(vm.measured,[])
