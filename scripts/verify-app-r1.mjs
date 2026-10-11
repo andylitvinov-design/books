@@ -72,7 +72,8 @@ async function enterTest(name='Current State Check',mode='Guided'){
   await chooseVisibleTest(page,name)
   await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
   if(await page.getByRole('button',{name:/Review test filters/}).count()){
-   await page.getByRole('button',{name:/Review test filters/}).click()
+   if(!(await page.locator('[data-pending-selection]').isVisible().catch(()=>false)))
+     await page.getByRole('button',{name:/Review test filters/}).click()
    await expect(page.locator('[data-pending-selection]')).toBeVisible()
    await page.locator('[data-pending-selection]').getByRole('button',{name:'Use new selection'}).click()
   }
