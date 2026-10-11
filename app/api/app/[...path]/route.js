@@ -410,6 +410,7 @@ async function handle(request, { params }) {
       }
       exported.savedReports = savedReports
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
+      exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
       const response = json(exported)
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
       return response
