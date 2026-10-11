@@ -33,8 +33,16 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const pageLocale = (await headers()).get("x-public-page-locale");
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   const lang = pageLocale === "es" || pageLocale === "en" ? pageLocale : "ru";
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Holistic House",
+    url: metadataBaseFor().toString(),
+    inLanguage: ["en", "ru", "es"],
+  };
   return (
     <html lang={lang}>
+      <head><script nonce={nonce} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} /></head>
       <body className="font-sans"><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><Ga4Analytics nonce={nonce} />{children}<SitewideLeadCapture /><AnalyticsConsent /><MobileBottomNavigation initialLocale={lang} /></body>
     </html>
   );

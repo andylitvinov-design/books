@@ -65,6 +65,7 @@ export function videoKey(slot: string, locale: VideoLocale, entityId?: string): 
 export function videoPagePath(slot: string, locale: VideoLocale, entityId?: string): string;
 export function parseYouTubeId(source: unknown): string | null;
 export function parseSiteVideoSource(source: unknown): { youtubeId: string; heygenId?: string } | null;
+export function siteVideoTitleId(video: Pick<PublishedSiteVideo, 'youtubeId' | 'heygenId'>, locale: VideoLocale): string;
 export function siteVideoWatchUrl(video: Pick<PublishedSiteVideo, 'youtubeId' | 'heygenId'>): string;
 export function prepareVideoChange(previous: SiteVideoRecord | null | undefined, input: SiteVideoChange, now?: Date | string): SiteVideoRecord;
 export function toPublishedSiteVideo(record: unknown): PublishedSiteVideo | undefined;
