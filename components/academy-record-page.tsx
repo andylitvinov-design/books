@@ -15,6 +15,7 @@ import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
 import { TantraReikiTestimonials } from "@/components/tantra-reiki-testimonials";
 import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import tantraReikiFullArchive from "@/data/academy/tantra-reiki-full.generated.json";
+import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import type { PublicLocale } from "@/lib/public-locales";
 
 function renderBlocks(blocks: AcademyBlock[]) {
@@ -161,7 +162,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               </div>
               <figure className="tantra-course-hero__visual">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={tantraReikiFullArchive.images.ru[12]} alt={locale === "ru" ? "Люди на настоящей тантрической встрече" : locale === "es" ? "Personas en un encuentro auténtico de Tantra" : "People together at an original Tantra gathering"} loading="eager" decoding="async" />
+                <img src={reikiPhotoUrl(tantraReikiFullArchive.images.ru[12], 1200)} alt={locale === "ru" ? "Люди на настоящей тантрической встрече" : locale === "es" ? "Personas en un encuentro auténtico de Tantra" : "People together at an original Tantra gathering"} loading="eager" decoding="async" />
                 <figcaption>{locale === "ru" ? "Реальная фотография из архива практик" : locale === "es" ? "Fotografía real del archivo" : "Real photograph from the practice archive"}</figcaption>
               </figure>
             </section>
@@ -188,7 +189,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         {!isVerbatimTantraArchive && sourceImages.length ? (
           <section className="academy-source-gallery-section" aria-label={locale === "ru" ? "Фото и материалы" : locale === "es" ? "Fotos y materiales" : "Photos and materials"}>
             <h2>{locale === "ru" ? "Фото и материалы из исходной страницы" : locale === "es" ? "Fotos y materiales de la página fuente" : "Source photos and materials"}</h2>
-            <div className="academy-source-gallery">{sourceImages.map((src, index) => <a href={src} target="_blank" rel="noreferrer" key={src} aria-label={(locale === "ru" ? "Открыть исходное изображение " : locale === "es" ? "Abrir imagen de origen " : "Open source image ") + (index + 1)}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={src} alt={academyDisplayTitle(record, locale) + " — " + (locale === "ru" ? "материал " : locale === "es" ? "material " : "source material ") + (index + 1)} loading="lazy" decoding="async" /></a>)}</div>
+            <div className="academy-source-gallery">{sourceImages.map((src, index) => <a href={src} target="_blank" rel="noreferrer" key={src} aria-label={(locale === "ru" ? "Открыть исходное изображение " : locale === "es" ? "Abrir imagen de origen " : "Open source image ") + (index + 1)}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={reikiPhotoUrl(src, 640)} alt={academyDisplayTitle(record, locale) + " — " + (locale === "ru" ? "материал " : locale === "es" ? "material " : "source material ") + (index + 1)} loading="lazy" decoding="async" /></a>)}</div>
           </section>
         ) : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
