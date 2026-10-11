@@ -193,6 +193,32 @@ try {
  await expect(page.locator('.hh-nav')).toBeHidden();
  await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
  await page.screenshot({path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'My profile',exact:true})).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await expect(page.getByRole('heading',{name:'Your measured scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
+ const profileOfferCases=[
+   ['psychology','alchemy-of-soul','Alchemy of the Soul'],
+   ['homeopathy','psychohomeopathy','homeopathy'],
+   ['wu_xing','dao-health-profile','Wu Xing'],
+   ['hypnotherapy','hypnotherapy-course','Hypnotherapy'],
+ ]
+ async function verifyProfileServiceOffers(target, locale='en') {
+   for (const [area, slug, service] of profileOfferCases) {
+     await target.locator('#hh-domain-tab-'+area).click()
+     const promo=target.locator('[data-profile-service-cta="'+area+'"]')
+     await expect(promo).toBeVisible()
+     const order=promo.locator('a[data-contact-channel="whatsapp"]')
+     await expect(order).toBeVisible()
+     const href=await order.getAttribute('href')
+     const url=new URL(href)
+     assert.equal(url.origin,'https://wa.me')
+     assert.equal(url.pathname,'/14376066502')
+     assert.ok(url.searchParams.get('text')?.includes(service))
+     assert.ok(!url.searchParams.get('text')?.includes('/client/'))
+     await expect(promo.locator('a[href="/'+locale+'/services/'+slug+'"]')).toBeVisible()
+     assert.equal(await target.locator('[data-profile-service-cta]').count(),1)
+   }
+   await target.locator('#hh-domain-tab-psychology').click()
+ }
+ await verifyProfileServiceOffers(page)
+ passed('every Google Cabinet profile has one working service-specific WhatsApp enquiry and matching landing link')
  await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-initial.png',fullPage:true});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
  await page.getByRole('button',{name:'Happy',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect.poll(async()=>((await api('bootstrap')).data.moodCheckins||[]).length).toBe(1);await page.getByRole('button',{name:'Not now',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);passed('signed-in mood tap persists even when the user chooses Not now')
  const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
@@ -338,6 +364,11 @@ try {
   await clientPage.goto(clientLink)
   await expect(clientPage.getByRole('heading',{name:'Study materials from Andy'})).toBeVisible({timeout:20000})
   await expect(clientPage.getByRole('link',{name:/Reiki study guide/})).toHaveAttribute('href','https://holistichouse.vercel.app/en/academy/reiki')
+  await clientPage.getByRole('link',{name:'My profile (Reports)'}).click()
+  await expect(clientPage.getByRole('heading',{name:'My profile',exact:true})).toBeVisible()
+  await verifyProfileServiceOffers(clientPage)
+  await clientPage.screenshot({path:output+'/private-client-profile-cta.png',fullPage:false})
+  passed('all four legacy private-client profile CTAs open a precise, privacy-safe order request')
   await clientPage.getByRole('link',{name:'Personal analysis'}).click()
   await expect(clientPage.getByRole('heading',{name:'Personal analysis',exact:true})).toBeVisible()
   await expect(clientPage.getByRole('link',{name:'Start free analysis'})).toHaveAttribute('href','/en/services/free-situation-review')
