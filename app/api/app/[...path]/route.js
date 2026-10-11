@@ -24,6 +24,7 @@ import {
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { reportInvitationPreview } from '@/lib/clients/assessment-share'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
 import { listLegacyClientIdsForAccount } from '@/lib/app/client-account-binding'
 import { authorizePrescription, prescriptionSessionCookieName } from '@/lib/prescriptions/session'
@@ -84,6 +85,7 @@ async function handle(request, { params }) {
         options: {
           scopes: 'openid email profile',
           redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo === 'tests' ? '&continue=tests' : ''}`,
+          ...(intentId ? { queryParams: { prompt: 'select_account' } } : {}),
           skipBrowserRedirect: true,
         },
       })
@@ -162,7 +164,7 @@ async function handle(request, { params }) {
       )
       const opened = await exchangeReportViewer(config, store, body)
       const response = json({
-        report: opened.report,
+        report: opened.grant.saveAllowed ? reportInvitationPreview(opened.report) : opened.report,
         grant: {
           selector: opened.grant.selector,
           saveAllowed: opened.grant.saveAllowed,
@@ -183,7 +185,11 @@ async function handle(request, { params }) {
       const viewer = parseReportViewerCookie(request, selector)
       const store = getPrescriptionStore()
       if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
-      return json(await authorizeReportViewer(config, store, selector, viewer))
+      const opened = await authorizeReportViewer(config, store, selector, viewer)
+      return json({
+        ...opened,
+        report: opened.grant.saveAllowed ? reportInvitationPreview(opened.report) : opened.report,
+      })
     }
 
     if (joined === 'save-intents' && method === 'POST') {
