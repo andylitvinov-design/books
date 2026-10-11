@@ -5,6 +5,7 @@ import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import type { PublicLocale } from "@/lib/public-locales";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./yggdrasil-free-initiation.module.css";
 
 type LocaleStrings = {
@@ -194,12 +195,19 @@ const learningFaqs: Record<PublicLocale, Array<{ q: string; a: string }>> = {
 export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
   const c = copy[locale];
   const root = "/" + locale + "/academy/reiki/yggdrasil";
-  const msg = {
-    en: "Hello Andrey! I would like to request the free Level 1 Reiki Yggdrasil initiation. I found your seven-question preparation guide on Holistic House. Please let me know about the available format and what to do with my answers.",
-    ru: "Здравствуйте, Андрей! Хочу запросить бесплатную инициацию 1-й ступени Рейки Иггдрасиль. Прочитал(а) семь вопросов на Holistic House. Подскажите, как передать ответы и договориться о вводной сессии.",
-    es: "Hola Andrey. Quisiera solicitar la iniciación gratuita de Reiki Yggdrasil Nivel 1. He visto las siete preguntas de preparación. ¿Cómo comparto mis respuestas y coordinamos la sesión?",
+  const request = {
+    en: "I would like to request the free express Level 1 Reiki Yggdrasil initiation. I read the seven preparation questions. Please tell me how to submit my answers and arrange the introductory session.",
+    ru: "Хочу запросить бесплатную экспресс-инициацию 1-й ступени Рейки Иггдрасиль. Ознакомился(-ась) с семью подготовительными вопросами. Подскажите, как передать ответы и договориться о вводной сессии.",
+    es: "Quisiera solicitar la iniciación exprés gratuita de nivel 1 en Reiki Yggdrasil. He leído las siete preguntas de preparación. ¿Cómo comparto mis respuestas y coordinamos la sesión?",
   }[locale];
-  const whatsAppHref = "https://wa.me/14376066502?text=" + encodeURIComponent(msg);
+  const whatsAppHref = whatsappEnquiryUrl({
+    locale,
+    service: "Reiki Yggdrasil",
+    request,
+    option: locale === "ru" ? "Бесплатная экспресс-инициация 1-й ступени" : locale === "es" ? "Iniciación exprés gratuita del nivel 1" : "Free express Level 1 initiation",
+    context: locale === "ru" ? "Подготовка: 7 вопросов" : locale === "es" ? "Preparación: 7 preguntas" : "Preparation: 7 questions",
+    pagePath: root + "/free-initiation",
+  });
   const reading = ["#learning-faq", root + "/basic-course/description", root + "/basic-course#ry-l01-s01", root + "/basic-course#yggdrasil-basic-course-learning"];
   return (
     <main className="academy-reading-shell academy-reading-shell--wide" lang={locale}>
