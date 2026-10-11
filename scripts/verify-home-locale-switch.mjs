@@ -77,6 +77,11 @@ async function exercise(engine, browserType, width) {
     await expect(videoPosters).toHaveCount(6);
     await videoPosters.first().scrollIntoViewIfNeeded();
     await expect.poll(() => videoPosters.first().evaluate(image => image.complete && image.naturalWidth > 100), { timeout: 15000 }).toBe(true);
+    // The first review image must be a frame from that exact review, not the botanical placeholder.
+    await expect(videoPosters.first()).toHaveAttribute('src', /Dk0LBmOivQo\.webp/);
+    const firstReview = page.locator('[data-personal-testimonials="home"] [data-testimonial-video-id="Dk0LBmOivQo"]');
+    await expect(firstReview.locator('.site-video-play')).toHaveCount(1);
+    await expect(firstReview.locator('.site-video-watch-link')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=Dk0LBmOivQo');
     const portrait = page.locator('.service-home-about__image');
     await portrait.scrollIntoViewIfNeeded();
     await expect.poll(() => portrait.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
@@ -114,6 +119,11 @@ async function exercise(engine, browserType, width) {
     assert.ok(measurements.contactBackground?.includes('linear-gradient'), 'Blue capture gradient must render');
     results.push({ engine, width, homeVisual: true, ...measurements });
     await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-${engine}-${width}.png`, fullPage: true });
+    // One tap must replace the poster with a working YouTube embed URL.
+    await firstReview.locator('.site-video-play').click();
+    await expect(firstReview.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
+    await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0);
+
   } catch (error) {
     results.push({ engine, width, failure: error.message, pageErrors: errors });
     await page.screenshot({ path: `${evidence}/failed-${engine}-${width}.png`, fullPage: true }).catch(() => {});
