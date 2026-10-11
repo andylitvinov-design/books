@@ -305,6 +305,14 @@ try {
   await adminPage.locator('.client-detail-material-form button[type="submit"]').click()
   await expect(adminPage.getByRole('link',{name:/Reiki study guide/})).toBeVisible()
   await expect(adminPage.getByRole('button',{name:'Copy material link'})).toBeVisible()
+  // Stub only the OS clipboard; the real client-link and authorization API remain live.
+  await adminPage.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: async value => { window.__syntheticCopiedLink = value } },
+  }))
+  await adminPage.getByRole('button',{name:'Copy material link'}).click()
+  await expect(adminPage.locator('.master-material-copy [role="status"]')).toContainText('Link copied')
+  assert.equal(await adminPage.evaluate(() => window.__syntheticCopiedLink), 'https://holistichouse.vercel.app/en/academy/reiki')
   const clientLink=await adminPage.evaluate(async () => {
     const id=location.pathname.split('/').at(-1)
     const response=await fetch('/admin/api/clients/'+id+'/access',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'})
@@ -312,6 +320,9 @@ try {
     const {selector,secret}=await response.json()
     return location.origin+'/en/client/'+selector+'#'+secret
   })
+  await adminPage.locator('.consultation-cabinet-primary').click()
+  await expect(adminPage.locator('.consultation-cabinet-status')).toContainText('Link copied')
+  assert.equal(await adminPage.evaluate(() => window.__syntheticCopiedLink), clientLink)
   const clientContext=await browser.newContext({viewport:{width:390,height:844}})
   const clientPage=await clientContext.newPage()
   await clientPage.goto(clientLink)
