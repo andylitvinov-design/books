@@ -164,7 +164,7 @@ export function MyCourse({ data, locale = 'en' }) {
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
 
   return <div className={styles.root} data-my-course>
-    <header className={styles.hero}>
+    {stage !== 4 && <header className={styles.hero}>
       <div>
         <p className="hh-kicker">{t.eyebrow}</p>
         <h1>{stage ? t.personal : t.title}</h1>
@@ -172,8 +172,8 @@ export function MyCourse({ data, locale = 'en' }) {
         <div className={styles.meta}><span><Sparkles size={15} aria-hidden="true"/>{t.free}</span><span><BookOpen size={15} aria-hidden="true"/>{t.time}</span></div>
       </div>
       <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
-    </header>
-    <Journey stage={stage} locale={locale}/>
+    </header>}
+    {stage !== 4 && <Journey stage={stage} locale={locale}/>}
     {error && <p className={styles.error} role="alert">{t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
 
     {stage === 0 && <section className={'hh-panel ' + styles.chapter}>
