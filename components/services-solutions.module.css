@@ -34,7 +34,7 @@
 .home{margin-block:28px 34px}
 .home .header{max-width:620px;margin-bottom:17px}
 .home .header h2{font-size:clamp(31px,3.7vw,45px)}
-.home .card{grid-template-columns:clamp(112px,13vw,160px)}
+.home .card{grid-template-columns:clamp(112px,13vw,160px) minmax(0,1fr)}
 .home .photo{min-height:185px}
 :is(.photo,.cardCta,.bridge>a,.card h3 a,.methodDisclosure summary,.methodDisclosure nav a):focus-visible{outline:3px solid #a47751;outline-offset:3px}
 @media(max-width:900px){.grid{grid-template-columns:1fr}.card{grid-template-columns:160px minmax(0,1fr)}.home .card{grid-template-columns:160px minmax(0,1fr)}.cardContent{padding-right:6px}.photo,.home .photo{min-height:172px}}
