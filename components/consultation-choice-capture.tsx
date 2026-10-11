@@ -269,7 +269,8 @@ export function ConsultationChoiceCapture({
         href={ctaHref}
         target={isPaidRequest ? "_blank" : undefined}
         rel={isPaidRequest ? "noopener noreferrer" : undefined}
-        event={isPaidRequest ? "whatsapp_handoff_click" : "free_situation_assessment_click"}
+        event="service_request_start"
+        analyticsEvent={isPaidRequest ? "whatsapp_handoff_click" : "free_situation_assessment_click"}
         attributes={{ ...(isPaidRequest ? { "data-contact-channel": "whatsapp" } : {}), "data-consultation-action": isService ? serviceChoice : topic }}
       >
         {isPaidRequest ? <MessageCircle size={19} aria-hidden="true" /> : <FileText size={19} aria-hidden="true" />}
