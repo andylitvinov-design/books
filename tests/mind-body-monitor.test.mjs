@@ -59,7 +59,7 @@ test('public monitor discovery is wired without adding a seventh main navigation
   ])
   assert.match(header, /MindBodyMonitorStrip/)
   assert.match(home, /entry\.selfCheck\.href/)
-  assert.match(home, /<FreeInsightsPaths locale=\{locale\} \/>/)
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/)
   assert.match(home, /Test library & reports/)
   assert.match(home, /Каталог тестов и отчёты/)
   assert.doesNotMatch(home, /<MindBodyMonitorHome/)

@@ -96,3 +96,16 @@ test("homepage uses the real blue enquiry chooser instead of the old beige direc
   assert.doesNotMatch(cta, /home-contact-capture__primary|You can simply write to me/);
   assert.doesNotMatch(home, /fake-testimonial|stock-avatar/);
 });
+
+test("home restores four approved image-left service cards and their titles", () => {
+  const home = read("components/holistic-house-home.tsx");
+  const cards = read("components/services-solutions.tsx");
+  const css = read("components/services-solutions.module.css");
+  assert.match(cards, /homeTitle: "How I can help"/);
+  assert.match(cards, /homeTitle: "Чем я могу помочь"/);
+  assert.match(cards, /const visibleOffers = isHome \? allOffers : personalOffers/);
+  assert.match(cards, /visibleOffers.map/);
+  assert.match(css, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
+  assert.match(home, /href="#core-services"/);
+  assert.doesNotMatch(home, /<FreeInsightsPaths locale=/);
+});
