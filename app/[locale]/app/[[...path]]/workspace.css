@@ -1605,3 +1605,20 @@
   .hh-app .hh-header:has(.hh-master-header-link) .hh-brand { font-size: 19px; }
   .hh-master-clinical-tools .hh-owner-tools-grid { grid-template-columns: 1fr; }
 }
+
+
+/* Five equal touch targets including Personal Analysis; never wrap onto a second row. */
+@media(max-width:760px){
+  .hh-app .hh-mobile-app-nav {
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:2px;
+  }
+  .hh-app .hh-mobile-app-nav a {
+    min-width:0;
+    min-height:50px;
+    padding:4px 1px;
+    font-size:10.5px;
+    line-height:1.1;
+  }
+  .hh-app .hh-mobile-app-nav a svg { width:20px; height:20px; }
+}
