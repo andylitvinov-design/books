@@ -6,6 +6,7 @@ import { EXPANDED_BATTERY_V4_KEYS } from '../data/assessments/expanded-battery-v
 import { PROFESSIONAL_BATTERY_2026_CATALOG } from '../data/assessments/professional-battery-2026.js'
 import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from '../data/assessments/professional-battery-2026-b.js'
 import { CDC_HEALTHY_DAYS_CATALOG } from '../data/assessments/cdc-healthy-days-2026.js'
+import { IPIP_BIG_FIVE_50_CATALOG } from '../data/assessments/ipip-big-five-50-en-v1.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { safetySignal } from '../lib/assessments/safety.js'
@@ -16,7 +17,7 @@ const answers = (definition, value) =>
 
 test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 42 + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length)
+  assert.equal(items.length, 42 + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length)
   assert.deepEqual(
     items.map((item) => item.key).sort(),
     [
@@ -67,6 +68,7 @@ test('all active published monitoring tests resolve to executable definitions', 
     ...PROFESSIONAL_BATTERY_2026_CATALOG.map((item) => item.key),
     ...PROFESSIONAL_BATTERY_2026_B_CATALOG.map((item) => item.key),
     ...CDC_HEALTHY_DAYS_CATALOG.map((item) => item.key),
+    ...IPIP_BIG_FIVE_50_CATALOG.map((item) => item.key),
   ].sort(),
   )
   for (const item of items) {
