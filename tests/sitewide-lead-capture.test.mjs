@@ -100,7 +100,7 @@ test("all three languages explain safe voluntary next steps and historic course 
   const source = read("components/sitewide-lead-capture.tsx");
   const shared = read("components/public-consultation-cta.tsx");
   for (const text of [
-    "No obligation", "Бесплатный разбор", "No hay obligación",
+    "written report", "письменный", "informe escrito",
     "historical archive materials are not necessarily open", "архивные программы", "del archivo",
   ]) {
     assert.ok((source + shared).toLowerCase().includes(text.toLowerCase()), text);

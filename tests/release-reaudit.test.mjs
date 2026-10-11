@@ -81,13 +81,15 @@ test('unmount cancellation aborts the real in-flight translation request', async
   await assert.rejects(pending, /aborted/);
   assert.equal(requestSignal.aborted, true);
 });
-test('changing consultation choices always derives a fresh WhatsApp message URL', () => {
+test('changing paid service choices derives a fresh WhatsApp URL; free choices open assessment', () => {
   const capture = read('components/consultation-choice-capture.tsx');
   assert.match(capture, /onClick=\{\(\) => setServiceChoice\(choice\)\}/);
   assert.match(capture, /onClick=\{\(\) => setTopic\(choice\)\}/);
   assert.match(capture, /t\.serviceMessages\[serviceChoice\]/);
-  assert.match(capture, /t\.topicOptions\[topic\]/);
+  assert.match(capture, /t\.topicOptions\[choice\]/);
   assert.match(capture, /const whatsappUrl =/);
+  assert.match(capture, /isPaidRequest \? whatsappUrl/);
+  assert.match(capture, /services\/free-situation-review/);
   assert.doesNotMatch(capture, /preparedUrl|setPreparedUrl/);
 });
 

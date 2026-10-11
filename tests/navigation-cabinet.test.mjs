@@ -159,7 +159,7 @@ test('About exposes a consultation request form and a Google-first Cabinet with 
   assert.match(consultationForm, /ConsultationChoiceCapture/)
   assert.match(consultationForm, /service \? "service" : "personal"/)
   assert.match(chooser, /wa\.me\/14376066502/)
-  assert.match(chooser, /Request free consultation/)
+  assert.match(chooser, /Start free drawing assessment/)
   assert.match(chooser, /t\.me\/AndyTherapist/)
 })
 
@@ -184,7 +184,7 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
   assert.match(cta, /t\.me\/AndyTherapist/)
   assert.match(cta, /data-contact-channel="whatsapp"/)
   assert.match(cta, /data-contact-channel="telegram"/)
-  assert.match(cta, /Ask about working together/)
+  assert.match(cta, /Start with a free coaching form and handwritten drawing/)
   assert.match(cta, /Interested in training or the next level/)
   assert.match(cta, /data-conversion-kind=\{mode\}/)
   assert.match(styles, /\.public-consultation-cta__actions/)
