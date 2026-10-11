@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout, Target } from 'lucide-react'
+import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import styles from './course-today.module.css'
 
@@ -37,6 +37,10 @@ const UI={
   retry:'Try again',quickTip:'Any section can be skipped. Finishing does not require a special feeling.',
   lessonDone:'Already completed',count:'practices',outOf:'out of',rating:'rating',zero:'0',none:'Not answered',
   reviewSaved:'Your weekly reflection was saved.',private:'Private to your account',
+  checkinSchedule:'How often to offer a problem check-in',dailyFrequency:'Every day',alternateFrequency:'Every other day',weeklyFrequency:'Once a week',
+  softerSuggestion:'The last practice felt uncomfortable. You can choose the short or no-imagery version today.',
+  retestDue:'Your optional weekly self-report is due',retestLater:'Next eligible weekly self-report',startRetest:'Open this test',
+  urgentHelp:'For immediate danger or thoughts of self-harm, contact local emergency or crisis services. This course is not monitored.',
   learn:'Read this thought',prompt:'Review the practice',dayReview:'Your week in perspective',
   action:'Try in ordinary life',markDone:'Finish today’s lesson',date:'Local course day',
  },
@@ -71,6 +75,10 @@ const UI={
   retry:'Повторить',quickTip:'Любой этап можно пропустить. Не требуется специально менять самочувствие.',
   lessonDone:'Уже выполнено',count:'практик',outOf:'из',rating:'оценка',zero:'0',none:'Нет оценки',
   reviewSaved:'Недельный обзор сохранён.',private:'Приватно в кабинете',
+  checkinSchedule:'Как часто предлагать оценивать проблему',dailyFrequency:'Каждый день',alternateFrequency:'Через день',weeklyFrequency:'Раз в неделю',
+  softerSuggestion:'Предыдущее упражнение было некомфортным. Сегодня можно выбрать короткую практику или вариант без визуализаций.',
+  retestDue:'Подошёл срок дополнительного недельного замера',retestLater:'Следующий допустимый недельный замер',startRetest:'Открыть этот тест',
+  urgentHelp:'При непосредственной опасности или мыслях о причинении себе вреда обратитесь в местную экстренную или кризисную службу. За курсом никто не следит в реальном времени.',
   learn:'Прочитать мысль',prompt:'Посмотреть упражнение',dayReview:'Неделя в перспективе',
   action:'Применить в обычной жизни',markDone:'Завершить сегодняшний урок',date:'Местный день курса',
  }
@@ -108,7 +116,7 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
  </section>
 }
 
-export default function CourseToday({locale='en',onBack}){
+export default function CourseToday({locale='en'}){
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0)
@@ -119,6 +127,11 @@ export default function CourseToday({locale='en',onBack}){
  const [targetLabel,setTargetLabel]=useState(''),[intention,setIntention]=useState(''),[newGoal,setNewGoal]=useState('calm_regulation')
  const hydrate=useCallback((response)=>{
   setData(response)
+  if(response?.currentSession){
+    setBeforeNow(response.currentSession.beforeNow)
+    setAfterNow(response.currentSession.afterNow)
+    setFeedback(response.currentSession.feedback||'skip')
+  }
   if(response?.currentCheckin){
     setSeverity(response.currentCheckin.severity)
     setInterference(response.currentCheckin.interference)
@@ -172,13 +185,23 @@ export default function CourseToday({locale='en',onBack}){
     <div className={styles.counter}><strong>{progress.practiceCount||0}<span>/{cycle.durationDays}</span></strong><small>{t.count}</small></div>
   </header>
   <progress className={styles.progress} max={cycle.durationDays} value={progress.practiceCount||0} aria-label={t.engagement}/>
-  {error&&<p className={styles.error} role="alert">{t.error} ({error}) <button type="button" onClick={reload}>{t.retry}</button></p>}
+  {error&&<p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error}) <button type="button" onClick={reload}>{t.retry}</button></p>}
   {paused&&<p className={styles.note}>{t.paused}</p>}
   {isFinished&&<p className={styles.notice}><CheckCircle2 size={20}/>{t.completed}</p>}
   {!isFinished&&<>
    <DailyCard number="checkin" title={'01 · '+t.daily} subtitle="~30 sec" icon={ClipboardList}
     expanded={expanded==='checkin'} onToggle={()=>setExpanded(x=>x==='checkin'?'':'checkin')} completed={Boolean(today)}>
     <p className={styles.hint}>{t.consent}</p>
+    <label className={styles.field}>{t.checkinSchedule}
+      <select disabled={busy||paused} value={cycle.preferences?.checkinFrequency||'daily'}
+        onChange={e=>submit('preferences',{expectedRevision:cycle.revision,
+          checkinFrequency:e.target.value,length:cycle.preferences?.length||'standard',
+          imagery:cycle.preferences?.imagery||'optional'})}>
+        <option value="daily">{t.dailyFrequency}</option>
+        <option value="every_other_day">{t.alternateFrequency}</option>
+        <option value="weekly">{t.weeklyFrequency}</option>
+      </select>
+    </label>
     <p><strong>{problem}</strong> — {t.dailyText}</p>
     <div className={styles.scale}><span>{t.low}</span><span>{t.high}</span></div>
     <Rating value={severity} onChange={setSeverity} label={t.dailyText}/>
@@ -203,6 +226,7 @@ export default function CourseToday({locale='en',onBack}){
    <DailyCard number="meditation" title={'03 · '+t.meditation} subtitle={lesson?Math.ceil(lesson.durationSeconds/60)+' '+t.mins:''} icon={Leaf}
     expanded={expanded==='meditation'} onToggle={()=>setExpanded(x=>x==='meditation'?'':'meditation')}>
      <p className={styles.hint}>{t.eyes}</p>
+     {data.gentleSuggested&&<p className={styles.note}>{t.softerSuggestion}</p>}
      <div className={styles.prefs}><button type="button" disabled={busy||paused} aria-pressed={cycle.preferences?.length==='quick'}
        onClick={()=>submit('preferences',{expectedRevision:cycle.revision,length:'quick',
          imagery:cycle.preferences?.imagery||'optional',checkinFrequency:cycle.preferences?.checkinFrequency||'daily'})}>{t.short}</button>
@@ -295,6 +319,12 @@ export default function CourseToday({locale='en',onBack}){
       onClick={()=>submit('new-cycle',{problemLabel:targetLabel,intention,timeZone:timezone(),goal:newGoal},
         ()=>{setExpanded('checkin');setStage(0)})}>{t.nextCycle}<ArrowRight size={16}/></button>
    </section>}
+  {data.recommendedTest&&<aside className={styles.retest}>
+    <div><strong>{data.recommendedTest.due?t.retestDue:t.retestLater}</strong>
+      <small>{data.recommendedTest.nextDueAt?.slice(0,10)} · {data.recommendedTest.explanation}</small></div>
+    {data.recommendedTest.due&&<Link href={root+'/monitoring/hh-weekly-pulse'} prefetch={false}>
+      {t.startRetest}<ChevronRight size={16}/></Link>}
+  </aside>}
   <div className={styles.footer}>
     {!isFinished&&<button type="button" disabled={busy} onClick={()=>submit(paused?'resume':'pause',{expectedRevision:cycle.revision})}>
       {paused?<RotateCcw size={16}/>:<CirclePause size={16}/>}
