@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, BarChart3, CheckCircle2, Clock3, RotateCcw, Sparkles } from 'lucide-react'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
-import { buildProfileAssessmentView } from '@/lib/profile/profile-assessment-view'
+import { buildProfileAssessmentView, isProfessionalProfileTest } from '@/lib/profile/profile-assessment-view'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import { ClientReportActions } from './client-report-actions'
@@ -13,15 +13,15 @@ import styles from './profile-assessment-overview.module.css'
 const COPY = {
  en: {
    kicker:'MY PSYCHOLOGICAL PORTRAIT', heading:'Your measured profile',
-   intro:'Your portrait reflects completed questionnaires only. Below it are your latest recorded scales, followed by tests you selected but have not finished.',
-   noMeasures:'Complete a test to see your first measured scales here.',
-   measures:'Your measured scales', scales:'scales measured', all:'Show all measured scales', fewer:'Show fewer scales',
-   positions:'Bars show a position within each test’s own scale, not a health score or comparison with other people.',
+   intro:'Your psychological profile is based on completed professional questionnaires. Everyday mood and state check-ins remain in your history, separate from these test scores.',
+   noMeasures:'No professional test results yet. Complete a psychological assessment to see its scales and recommendations here.',
+   measures:'Professional test scales', scales:'test scales', all:'Show all measured scales', fewer:'Show fewer scales',
+   positions:'Only completed professional test scores appear above. Bars show positions within each test’s own scale, not a health score or comparison with other people.',
    pending:'Selected tests still to complete', pendingIntro:'Grey bars represent areas these questionnaires can explore, not scores. They become measured only after you finish a test.',
    noPending:'Your selected testing set has no unfinished tests.',
    noPlan:'You have not selected a personal test set yet.',
    select:'Choose tests', inProgress:'In progress', notStarted:'Not started', continue:'Continue test', start:'Start test',
-   min:'min', measured:'Measured', empty:'Not measured yet', last:'Latest result', prep:'Opening your test…',
+   openReport:'Open analysis & recommendations', min:'min', measured:'Measured', empty:'Not measured yet', last:'Latest result', prep:'Opening your test…',
    error:'Could not open the test. Please try again.', other:'Other profile tools and mood check-in', otherNote:'Earlier profile tools and practitioner materials remain available here.',
    portraitOptions:'Customize the portrait rays', portraitCaption:'Only measured rays are colored; unfinished tests never receive a made-up value.',
    actionsTitle:'What would you like to do next?', actionHint:'Your results stay private. Requesting a specialist review never automatically shares any of your results.',
@@ -32,15 +32,15 @@ const COPY = {
  },
  ru: {
    kicker:'МОЙ ПСИХОЛОГИЧЕСКИЙ ПОРТРЕТ', heading:'Мои измеренные показатели',
-   intro:'Портрет отражает только пройденные тесты. Под головой — последние значения шкал, затем выбранные, но ещё не завершённые тесты.',
-   noMeasures:'После завершения первого теста здесь появятся измеренные показатели.',
-   measures:'Мои измеренные шкалы', scales:'измеренных шкал', all:'Показать все измеренные шкалы', fewer:'Свернуть список',
-   positions:'Полосы показывают положение на шкале конкретного теста, а не процент здоровья и не сравнение с другими людьми.',
+   intro:'Психологический профиль строится по пройденным профессиональным тестам. Повседневные самозамеры состояния остаются в истории, отдельно от результатов тестов.',
+   noMeasures:'Пока нет результатов профессиональных тестов. Пройдите психологический тест, чтобы увидеть шкалы и рекомендации.',
+   measures:'Шкалы профессиональных тестов', scales:'шкал тестов', all:'Показать все измеренные шкалы', fewer:'Свернуть список',
+   positions:'Выше показаны только шкалы пройденных профессиональных тестов. Полосы не означают процент здоровья и не сравнивают вас с другими людьми.',
    pending:'Выбранные, но ещё не пройденные тесты', pendingIntro:'Серые полосы — это темы будущих измерений, а не значения. Шкалы появятся после завершения тестов.',
    noPending:'В выбранном наборе больше нет непройденных тестов.',
    noPlan:'Личный набор тестов ещё не выбран.',
    select:'Подобрать тесты', inProgress:'В процессе', notStarted:'Не начат', continue:'Продолжить тест', start:'Пройти тест',
-   min:'мин', measured:'Измерено', empty:'Ещё не измерено', last:'Последний замер', prep:'Открываем тест…',
+   openReport:'Открыть анализ и рекомендации', min:'мин', measured:'Измерено', empty:'Ещё не измерено', last:'Последний замер', prep:'Открываем тест…',
    error:'Не удалось открыть тест. Попробуйте ещё раз.', other:'Другие функции профиля и самонаблюдение', otherNote:'Предыдущие инструменты профиля и материалы специалиста доступны здесь.',
    portraitOptions:'Настроить лучи психопортрета', portraitCaption:'Цветными показаны только реально измеренные шкалы.',
    actionsTitle:'Что хотите сделать дальше?', actionHint:'Ваши результаты приватны. Обращение к специалисту не передаёт автоматически данные тестов.',
@@ -60,7 +60,7 @@ export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children
  const c=COPY[locale]||COPY.en
  const root='/'+locale+'/app'
  const view=buildProfileAssessmentView(data,locale)
- const portrait=buildPsychPortrait(data.results)
+ const portrait=buildPsychPortrait((data.results || []).filter(isProfessionalProfileTest))
  const [showAll,setShowAll]=useState(false)
  const [working,setWorking]=useState('')
  const [error,setError]=useState('')
@@ -91,7 +91,7 @@ export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children
        <span className={styles.count}>{view.measured.length} {c.scales}</span>
      </div>
      {measured.length ? <div className={styles.measuredGrid}>
-       {measured.map((row)=> <article className={styles.measureCard} key={row.key} data-measured-scale>
+       {measured.map((row)=> <Link className={styles.measureCard} href={`${root}/results/${encodeURIComponent(row.sourceResultId)}`} prefetch={false} key={row.key} data-measured-scale aria-label={`${c.openReport}: ${row.testTitle} — ${row.label}`}>
          <div className={styles.measureTop}>
            <span>{row.label}</span>
            <strong>{formatValue(row.value)} <small>/ {formatValue(row.max)}</small></strong>
@@ -99,8 +99,11 @@ export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children
          <div className={styles.measuredBar} role="progressbar" aria-label={row.label} aria-valuemin={row.min} aria-valuemax={row.max} aria-valuenow={row.value}>
            <span style={{width:(row.ratio*100)+'%'}}/>
          </div>
-         <small className={styles.scaleSource}>{row.testTitle ? row.testTitle + ' · ' : ''}{formatValue(row.min)}–{formatValue(row.max)} · {dateString(row.date,locale)}</small>
-       </article>)}
+         <div className={styles.measureFooter}>
+           <small className={styles.scaleSource}>{row.testTitle ? row.testTitle + ' · ' : ''}{formatValue(row.min)}–{formatValue(row.max)} · {dateString(row.date,locale)}</small>
+           <span className={styles.openReport}>{c.openReport} <ArrowRight size={15} aria-hidden="true" /></span>
+         </div>
+       </Link>)}
      </div> : <p className={styles.noData}>{c.noMeasures}</p>}
      {view.measured.length>6 && <button type="button" className={styles.moreScales} onClick={()=>setShowAll((previous)=>!previous)} aria-expanded={showAll}>
        {showAll?c.fewer:c.all} ({view.measured.length}) <ArrowRight size={17} aria-hidden="true" />
