@@ -29,7 +29,7 @@ test('Books stay one flat searchable catalog without mandatory series folders', 
   assert.match(hub, /CatalogShowcase/);
 
   assert.match(home, /\$\{locale\}\/library/);
-  assert.match(home, /Open the Academy and Library/);
-  assert.match(home, /Открыть Academy и Library/);
+  assert.match(home, /Courses & Library/);
+  assert.match(home, /Курсы и библиотека/);
   assert.match(spanish, /featuredBookUrls\.en/);
 });
