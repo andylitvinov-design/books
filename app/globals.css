@@ -5736,3 +5736,9 @@
   .client-cabinet-google-bridge a { justify-content: center; }
   .client-document-save-callout .prescription-save-to-cabinet button { width: 100%; }
 }
+
+.master-material-copy { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; }
+.master-material-copy button { min-height: 40px; border: 1px solid #b7987f; border-radius: 8px; background: #fffaf3; color: #694630; padding: 0 11px; white-space: nowrap; font-size: 12px; font-weight: 700; cursor: pointer; }
+.master-material-copy small { font-size: 11px; color: #52735f; }
+.client-detail-material-row > a { flex: 1; min-width: 0; }
+@media (max-width: 440px) { .client-detail-material-row { flex-wrap: wrap; } .client-detail-material-row > a { flex-basis: 100%; } .master-material-copy { flex: 1; } }
