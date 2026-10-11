@@ -10,6 +10,7 @@ export function AssessmentEditor({ action, record, requestId, documents, locale 
     {record && <input type="hidden" name="expectedRevision" value={record.revision} />}
     <label>{t.recordTitle}<input name="title" required maxLength={200} defaultValue={record?.title ?? ''} /></label>
     <label>{t.kind}<select name="kind" defaultValue={record?.kind ?? kind}><option value="test">{t.testOption}</option><option value="research_result">{t.resultOption}</option></select></label>
+    <label>{t.area}<select name="profileArea" defaultValue={record?.profileArea ?? 'general'}><option value="general">{t.areaGeneral}</option><option value="psychology">{t.areaPsychology}</option><option value="homeopathy">{t.areaHomeopathy}</option><option value="wu_xing">{t.areaWuXing}</option><option value="hypnotherapy">{t.areaHypnotherapy}</option></select></label>
     <label>{t.date}<input name="occurredOn" type="date" required defaultValue={record?.occurredOn ?? ''} /></label>
     <label>{t.language}<select name="language" defaultValue={record?.language ?? locale}><option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option><option value="other">{t.other}</option></select></label>
     <label>{t.source}<input name="sourceName" maxLength={200} defaultValue={record?.sourceName ?? ''} /></label>

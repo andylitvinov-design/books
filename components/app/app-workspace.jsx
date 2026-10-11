@@ -15,6 +15,7 @@ import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
+import { ProfileDomains } from '@/components/app/profile-domains'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
@@ -308,7 +309,9 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portrait' && (
             <>
-              <Portrait data={data} locale={locale} />
+              <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}>
+                <Portrait data={data} locale={locale} />
+              </ProfileDomains>
               <PracticeEntry data={data} locale={locale} />
             </>
           )}

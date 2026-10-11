@@ -24,7 +24,8 @@ test('both authorized cabinets expose Personal Analysis and the two existing fir
   assert.match(legacy, /<PersonalAnalysisPanel locale=\{locale\} reports=\{personalReports\} legacyReports=\{legacyReports\} selector=\{selector\}/)
   assert.match(legacy, /personalReports = assessments\.filter\(item => item\.kind === 'research_result'\)/)
   assert.match(legacy, /legacyReports = documents\.filter\(document => document\.type === 'report'\)/)
-  assert.match(legacyRoute, /view = \(await searchParams\)\?\.view === 'analysis'/)
+  assert.match(legacyRoute, /const requestedView = \(await searchParams\)\?\.view/)
+  assert.match(legacyRoute, /\['analysis', 'profile'\]\.includes\(requestedView\)/)
   assert.match(panel, /services\/free-situation-review/)
   assert.match(panel, /services\/dao-health-profile/)
   assert.match(panel, /Я — Цель — Проблема/)
@@ -43,7 +44,7 @@ test('Google Cabinet lists only explicitly saved practitioner reports and downlo
     src('components/app/shared-report-view.jsx'),
   ])
   assert.match(workspace, /reports=\{reportTimeline\(data\.savedReports\)\}/)
-  assert.match(workspace, /PersonalAnalysisPanel key=\{data\.account\.id\}/) // reset metadata on account change
+  assert.match(workspace, /PersonalAnalysisPanel key=\{data\.account\.id\}/)
   assert.match(panel, /\/api\/app\/reports\//)
   assert.match(panel, /credentials: 'same-origin'/)
   assert.match(panel, /response\.ok/)
