@@ -21,7 +21,9 @@ test('both authorized cabinets expose Personal Analysis and the two existing fir
   assert.match(google, /aria-current=\{page === 'analysis' \? 'page'/)
   assert.match(legacy, /client-cabinet-sections/)
   assert.match(legacy, /\?view=analysis/)
-  assert.match(legacy, /<PersonalAnalysisPanel locale=\{locale\} reports=\{assessments\} selector=\{selector\}/)
+  assert.match(legacy, /<PersonalAnalysisPanel locale=\{locale\} reports=\{personalReports\} legacyReports=\{legacyReports\} selector=\{selector\}/)
+  assert.match(legacy, /personalReports = assessments\.filter\(item => item\.kind === 'research_result'\)/)
+  assert.match(legacy, /legacyReports = documents\.filter\(document => document\.type === 'report'\)/)
   assert.match(legacyRoute, /view = \(await searchParams\)\?\.view === 'analysis'/)
   assert.match(panel, /services\/free-situation-review/)
   assert.match(panel, /services\/dao-health-profile/)
@@ -129,4 +131,36 @@ test('client-side PDF preserves bilingual private report fields without any thir
     globalThis.document = originalDocument
     globalThis.atob = originalAtob
   }
+})
+
+test('Personal Analysis titles use verified current report sources without marking them read', async () => {
+  const [api, flow, panel, oldCabinet, pdf] = await Promise.all([
+    src('app/api/app/[...path]/route.js'),
+    src('lib/app/report-flow.js'),
+    src('components/app/personal-analysis-panel.jsx'),
+    src('components/client-cabinet.jsx'),
+    src('app/api/client/[selector]/documents/[id]/pdf/route.js'),
+  ])
+  assert.match(api, /joined === 'personal-analysis-reports'/)
+  assert.match(api, /listPersonalAnalysisReports\(config, getPrescriptionStore\(\), actor\)/)
+  assert.match(flow, /export async function listPersonalAnalysisReports/)
+  const start = flow.indexOf('export async function listPersonalAnalysisReports')
+  const end = flow.indexOf('export async function readSavedReport', start)
+  const section = flow.slice(start, end)
+  assert.ok(start >= 0 && end > start)
+  assert.match(section, /where s\.account_id=\$1 and s\.removed_at is null/)
+  assert.match(section, /\[actor\.id\]/)
+  assert.match(section, /await liveSource\(store, row\)/)
+  assert.match(section, /available: true, title: report\.title, kind: report\.kind/)
+  assert.doesNotMatch(section, /update app\.saved_reports set opened_at/i)
+  assert.doesNotMatch(section, /originalResult|practitionerComment|relatedDocumentIds/)
+  assert.match(panel, /fetch\('\/api\/app\/personal-analysis-reports'/)
+  assert.match(panel, /credentials: 'same-origin'/)
+  assert.match(panel, /verified \?\? reports/)
+  assert.match(panel, /item\.legacy \? t\.legacy/)
+  // The old document store cannot render kind=report: never show 404 view/PDF links.
+  assert.match(pdf, /access\.record\.kind === 'report'/)
+  assert.match(oldCabinet, /document\.type === 'report' \? <span/)
+  assert.match(oldCabinet, /Старый отчёт · попросите новую ссылку/)
+  assert.match(panel, /https:\/\/t\.me\/AndyTherapist/)
 })
