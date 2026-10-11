@@ -8,7 +8,7 @@ const copy = {
   ru: {
     eyebrow: "Три типа моих услуг",
     title: "Три направления работы",
-    compactIntro: "Три формата на выбор. Не уверены? Начните с бесплатного разбора."
+    compactIntro: "Три формата на выбор. Не уверены? Начните с бесплатного разбора.",
     fullIntro: "Для разных жизненных ситуаций — разные способы работы. Посмотрите, какой запрос вам сейчас близок.",
     services: [
       {
@@ -19,7 +19,7 @@ const copy = {
         fullAction: "Бесплатная сессия по психогомеопатии",
         freeSlug: "free-situation-review?topic=wellbeing",
         focus: "Личный ресурс и самочувствие",
-        short: "Самочувствие, напряжение и ресурсы."
+        short: "Самочувствие, напряжение и ресурсы.",
         detail: "Индивидуальная дополнительная консультация о самочувствии, текущем состоянии и симптомах. Гомеопатия не имеет надёжных доказательств эффективности лечения заболеваний и не заменяет медицинскую помощь.",
         action: "Консультация по гомеопатии",
         slug: "psychohomeopathy",
@@ -32,7 +32,7 @@ const copy = {
         fullAction: "Записаться на личные сеансы",
         freeSlug: null,
         focus: "Разобрать проблему и укрепить устойчивость",
-        short: "Чувства, реакции и внутренние границы."
+        short: "Чувства, реакции и внутренние границы.",
         detail: "Психотерапевтическая работа с образами и внутренними частями для исследования проблемы, эмоциональных реакций, личной силы, границ и внутренней устойчивости.",
         action: "Сессии образной терапии",
         slug: "imagery-therapy",
@@ -45,22 +45,22 @@ const copy = {
         fullAction: "Записаться на расстановку",
         freeSlug: null,
         focus: "Цели, возможности и направление движения",
-        short: "Цели, отношения и трудные решения."
+        short: "Цели, отношения и трудные решения.",
         detail: "Системные расстановки и архетипические подходы помогают исследовать роли, отношения, бизнес и варианты решений. Внешние результаты и скорость достижения целей не гарантируются.",
         action: "Расстановочная сессия",
         slug: "systemic-constellations",
       },
     ],
     freeEyebrow: "Входящая услуга · бесплатно",
-    freeTitle: "Не знаете, с чего начать?"
-    freeText: "Короткий разговор о вашем запросе и возможном следующем шаге. Не медицинская диагностика."
+    freeTitle: "Не знаете, с чего начать?",
+    freeText: "Короткий разговор о вашем запросе и возможном следующем шаге. Не медицинская диагностика.",
     freeAction: "Бесплатная диагностика ситуации",
     note: "Гомеопатия не имеет надёжных доказательств лечения медицинских состояний и не заменяет диагностику или лечение. Скорость и результат личной работы не гарантируются. При физических симптомах обратитесь к врачу.",
   },
   en: {
     eyebrow: "My three services",
     title: "Three ways to work together",
-    compactIntro: "These are three different services. Unsure? Start with a free review."
+    compactIntro: "These are three different services. Unsure? Start with a free review.",
     fullIntro: "Low energy, emotional struggles or goals that feel out of reach: each situation deserves a different approach.",
     services: [
       {
@@ -71,7 +71,7 @@ const copy = {
         fullAction: "Start with a free psychohomeopathy session",
         freeSlug: "free-situation-review?topic=wellbeing",
         focus: "Personal resources & wellbeing",
-        short: "Wellbeing, tension and personal resources."
+        short: "Wellbeing, tension and personal resources.",
         detail: "A complementary one-to-one consultation about how you feel and your symptoms. Homeopathy lacks reliable evidence for treating medical conditions and does not replace standard or urgent medical care.",
         action: "Homeopathy consultation",
         slug: "psychohomeopathy",
@@ -84,7 +84,7 @@ const copy = {
         fullAction: "Explore personal imagery sessions",
         freeSlug: null,
         focus: "Explore a difficulty & build inner stability",
-        short: "Feelings, patterns and boundaries."
+        short: "Feelings, patterns and boundaries.",
         detail: "Psychotherapy-informed imagery and parts-oriented work to explore difficulties, emotional responses, boundaries, personal strengths and inner stability.",
         action: "Guided imagery sessions",
         slug: "imagery-therapy",
@@ -97,15 +97,15 @@ const copy = {
         fullAction: "Book a constellation session",
         freeSlug: null,
         focus: "Goals, choices & new possibilities",
-        short: "Goals, relationships and difficult decisions."
+        short: "Goals, relationships and difficult decisions.",
         detail: "Systemic constellations and archetypal approaches explore roles, relationships, business questions and choices. Faster progress or external outcomes cannot be guaranteed.",
         action: "Constellation session",
         slug: "systemic-constellations",
       },
     ],
     freeEyebrow: "Free introductory service",
-    freeTitle: "Not sure where to start?"
-    freeText: "A free conversation about your question and a possible next step. Not a medical diagnosis."
+    freeTitle: "Not sure where to start?",
+    freeText: "A free conversation about your question and a possible next step. Not a medical diagnosis.",
     freeAction: "Free situation & goal assessment",
     note: "Homeopathy has no reliable evidence for treating medical conditions and does not replace medical diagnosis or treatment. Progress and outcomes are not guaranteed. Consult a medical professional about physical symptoms.",
   },
