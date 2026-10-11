@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowDownToLine, ArrowUpRight, ClipboardPenLine, Flower2, FileText, LockKeyhole, Pin } from 'lucide-react'
 import { useState } from 'react'
+import './personal-analysis.css'
 import { generatePractitionerReportPdf } from '@/lib/profile/practitioner-report-pdf'
 
 const WORDS = {
