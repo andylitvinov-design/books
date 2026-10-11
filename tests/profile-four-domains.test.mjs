@@ -65,6 +65,7 @@ test('Google and private cabinets both select four areas without auto-linking pr
   assert.match(domain, /\/app\/history/)
   assert.match(domain, /<ProfileServiceOffer area={active} locale={locale} \/>/)
   assert.match(domain, /data-profile-service-cta={area}/)
+  assert.match(domain, /data-profile-interactive={interactive/)
   assert.doesNotMatch(domain, /hh-domain-next|consultHref|serviceHref/)
   assert.doesNotMatch(domain, /localStorage|sessionStorage/)
   assert.doesNotMatch(domain, /(?:diagnos\w*|percentage)\s*=\s*[^;]+/i)

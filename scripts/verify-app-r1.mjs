@@ -218,6 +218,8 @@ try {
    ['hypnotherapy','hypnotherapy-course','Hypnotherapy'],
  ]
  async function verifyProfileServiceOffers(target, locale='en') {
+   // Legacy cabinets are SSR-first: do not race a tap against React hydration.
+   await expect(target.locator('[data-profile-domains][data-profile-interactive="true"]')).toBeVisible({timeout:20000})
    for (const [area, slug, service] of profileOfferCases) {
      await target.locator('#hh-domain-tab-'+area).click()
      const promo=target.locator('[data-profile-service-cta="'+area+'"]')

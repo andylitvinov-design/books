@@ -160,11 +160,13 @@ export function ProfileDomains({
   const ru = locale === 'ru'
   const t = WORDS[ru ? 'ru' : 'en']
   const [active, setActive] = useState('psychology')
+  const [interactive, setInteractive] = useState(false)
   const [fetchedReports, setFetchedReports] = useState([])
   const [fetchedDocuments, setFetchedDocuments] = useState([])
   const [fetchState, setFetchState] = useState('idle')
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+  useEffect(() => { setInteractive(true) }, [])
   const external = mode === 'legacy'
   const recentResults = useMemo(() => ordered(results.map(result => ({ ...result, occurredOn: String(result.measurementAt || '').slice(0, 10) }))), [results])
   const reports = external ? assessments : fetchedReports
@@ -212,7 +214,7 @@ export function ProfileDomains({
   const panelTitle = { psychology: t.psyDetail, homeopathy: t.homeoDetail, wu_xing: t.wuDetail, hypnotherapy: t.hypnoDetail }
   const mayBeLimited = !external && (savedReports.filter(r => r.available !== false).length > 30 || savedDocuments.filter(d => d.kind === 'recommendation').length > 20)
 
-  return <section className="hh-profile-domains" data-profile-domains>
+  return <section className="hh-profile-domains" data-profile-domains data-profile-interactive={interactive ? "true" : "false"}>
     <header className="hh-domain-hero">
       <div><p className="hh-domain-eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p className="hh-domain-hero-subtitle">{t.reports}</p><p>{t.intro}</p></div>
       <span className="hh-domain-hero-symbol" aria-hidden="true"><Activity size={27} /></span>
