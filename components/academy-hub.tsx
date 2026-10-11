@@ -182,6 +182,19 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           actionLabel: action.program,
         },
         {
+          id: "academy-featured-kundalini-reiki",
+          title: locale === "ru" ? "Кундалини Рейки" : "Kundalini Reiki",
+          subtitle: action.featured,
+          description: locale === "ru"
+            ? "Отдельный курс 1–3 ступеней: личная практика, Кундалини и чакры, «Баланс» и мастерские настройки. Материалы PsiMaster, SuperSkills и PsiTrends."
+            : locale === "es"
+              ? "Curso independiente de tres niveles: meditación, chakras, Balance y formación de Maestro a partir de tres webs originales."
+              : "A distinct three-level journey: self-practice, chakra imagery, Balance and Master-level study, drawn from all three original sites.",
+          href: "/" + locale + "/academy/reiki/kundalini-reiki",
+          image: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+          actionLabel: action.program,
+        },
+        {
           id: "academy-featured-temple-studies",
           title: locale === "ru" ? "Temple Studies — Храмовые традиции" : locale === "es" ? "Temple Studies — Tradiciones del Templo" : "Temple Studies",
           subtitle: action.featured,
@@ -229,7 +242,7 @@ export function AcademyDirection({ locale, direction }: { locale: PublicLocale; 
     .filter((record) => direction !== "reiki" || record.logicalId !== "reiki/master-shamanic-healing")
     .sort((a, b) => {
       if (direction !== "reiki") return 0;
-      const rank = (id: string) => id === "reiki/yggdrasil" ? 0 : id === "reiki/tantra-reiki" ? 1 : 2;
+      const rank = (id: string) => id === "reiki/yggdrasil" ? 0 : id === "reiki/tantra-reiki" ? 1 : id === "reiki/kundalini-reiki" ? 2 : 3;
       return rank(a.logicalId) - rank(b.logicalId);
     });
   const items = records.map((record, index) => ({
