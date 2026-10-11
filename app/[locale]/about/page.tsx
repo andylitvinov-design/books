@@ -55,13 +55,13 @@ const consultationCopy = {
   en: {
     kicker: "Personal work",
     heading: "Personal Consultation",
-    text: "Want to explore your situation personally? Send me a short request and I’ll get back to you.",
+    text: "Choose a paid live consultation: €50 for 30 minutes (express) or €100 for 60 minutes. A separate free drawing assessment with written report is also available.",
     cabinetAction: "Log in to Client Cabinet",
   },
   ru: {
     kicker: "Личная работа",
     heading: "Личная консультация",
-    text: "Хотите разобрать свою ситуацию лично? Оставьте короткую заявку — я свяжусь с вами.",
+    text: "Выберите личную платную консультацию: €50 за 30 минут (экспресс) или €100 за 60 минут. Отдельно доступна бесплатная диагностика по рисунку с письменным отчётом.",
     cabinetAction: "Войти в кабинет клиента",
   },
 } as const;
