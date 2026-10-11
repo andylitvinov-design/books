@@ -7,8 +7,9 @@ import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { MIND_BODY_MONITOR_REGISTRY } from '../data/assessments/mind-body-monitor-registry.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
-import { scoreAssessment, } from '../lib/assessments/scoring.js'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
+import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 
 const key = 'ipip-big-five-50'
 const definition = IPIP_BIG_FIVE_50_EN_V1
@@ -95,6 +96,29 @@ test('17 additional psychotherapy scales are searchable references, not unlicens
       assert.ok(entry, ref)
       assert.equal(entry.selectable, false, ref)
       assert.equal(entry.definition, null, ref)
+    }
+  }
+})
+
+
+test('IPIP-50 Insights reports five distinct non-diagnostic trait interpretations and action prompts', () => {
+  const answers = Object.fromEntries(definition.questions.map(q => [q.id, 3]))
+  const scored = scoreAssessment(definition, answers)
+  for (const locale of ['en','ru']) {
+    const report = buildAssessmentResultReport(scored, locale)
+    assert.equal(report.sections.length, 5)
+    assert.equal(new Set(report.sections.map(section => section.construct)).size, 5)
+    assert.ok(report.sections.every(section => section.domain === 'personality'))
+    assert.ok(report.sections.every(section => section.steps.length === 2 && section.steps.every(step => step.length > 30)))
+    assert.ok(report.sections.every(section => section.meaning.length > 100))
+    assert.ok(report.sections.every(section => section.max === 50))
+    assert.equal(report.seekSupport, null)
+    if (locale === 'en') {
+      assert.match(report.sections[3].meaning, /not an anxiety or mood-disorder screening/i)
+      assert.match(report.sections[4].meaning, /not measured IQ/i)
+    } else {
+      assert.match(report.sections[3].meaning, /не результат диагностики/i)
+      assert.match(report.sections[4].meaning, /не IQ/i)
     }
   }
 })
