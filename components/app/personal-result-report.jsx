@@ -1,4 +1,6 @@
+import Link from 'next/link'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
+import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
 
 export function PersonalResultReport({ result, locale = 'en' }) {
@@ -6,6 +8,9 @@ export function PersonalResultReport({ result, locale = 'en' }) {
   if (!report.sections.length) return null
   const ru = locale === 'ru'
   const bach = result?.definitionKey === 'hh-bach-flower-profile'
+  const scaleGuide = getTestScaleGuide(result?.definitionKey, locale)
+  const byScale = new Map((scaleGuide?.scales || []).map(scale=>[scale.key,scale]))
+  const hasTrainableSkills = Boolean(scaleGuide?.skillAxes?.length)
   const featured = bach ? report.sections.slice(0, report.highlightedCount) : report.sections
   const extra = bach ? report.sections.slice(report.highlightedCount) : []
   const renderCard = (section, index) => (
@@ -30,6 +35,10 @@ export function PersonalResultReport({ result, locale = 'en' }) {
         </div>
       </div>
       <p className={styles.meaning}>{section.meaning}</p>
+      {!bach && byScale.has(section.key) && <div className={styles.observation} data-report-scale={section.key}>
+        <p><strong>{ru?'Что наблюдать':'What to monitor'}:</strong> {byScale.get(section.key).watch}</p>
+        {!!byScale.get(section.key).skill && <p><strong>{ru?'Навык по желанию':'Optional skill'}:</strong> {byScale.get(section.key).skill}</p>}
+      </div>}
       {!bach && section.bandBasis && <p className={styles.band}>{section.bandBasis === 'screening' ? (ru ? 'Опубликованный скрининговый диапазон' : 'Published screening band') : section.bandBasis === 'published-reference' ? (ru ? 'Справочный диапазон инструмента' : 'Instrument reference band') : (ru ? 'Описательный показатель' : 'Descriptive measure')}</p>}
       <h4>{ru ? 'Что попробовать за неделю' : 'Try this over the next week'}</h4>
       <ol className={styles.steps}>
@@ -77,6 +86,9 @@ export function PersonalResultReport({ result, locale = 'en' }) {
       <footer className={styles.footer}>
         {report.seekSupport && <p>{report.seekSupport}</p>}
         <small>{report.note}</small>
+        {!bach && hasTrainableSkills && <Link className={styles.myCourseLink} href={`/${ru?'ru':'en'}/app/course`} prefetch={false}>
+          {ru?'Выбрать навык и начать бесплатный личный курс →':'Choose a skill and explore your free personal course →'}
+        </Link>}
         {!bach && report.rulesVersion && <small className={styles.ruleVersion}>{ru ? 'Версия интерпретации' : 'Interpretation version'}: {report.rulesVersion}</small>}
       </footer>
     </section>
