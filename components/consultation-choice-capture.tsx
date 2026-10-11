@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Check, HeartHandshake, MessageCircle, Send, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Check, FileText, HeartHandshake, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./consultation-choice-capture.module.css";
@@ -12,22 +12,22 @@ type Topic = "personal" | "goal" | "business" | "wellbeing";
 type ServiceChoice = "session" | "free" | "questions";
 
 const topics: Topic[] = ["personal", "goal", "business", "wellbeing"];
-const serviceChoices: ServiceChoice[] = ["session", "free", "questions"];
+const serviceChoices: ServiceChoice[] = ["session", "questions", "free"];
 const telegramUrl = "https://t.me/AndyTherapist";
 
 const copy = {
   en: {
     eyebrow: "PERSONAL CONSULTATIONS · WITH ANDREY",
-    freeTitle: "Let's explore your next step",
-    freeLead: "Choose one topic. We can discuss the rest personally in a free introductory conversation.",
-    personalTitle: "What would you like to explore?",
-    personalLead: "A personal question, a difficult decision or feeling stuck — you can start with one simple message.",
-    readingTitle: "Would you like to talk about your situation?",
-    readingLead: "From reading to a personal conversation. Start with a free introduction, without choosing a method.",
-    serviceTitle: "How would you like to begin?",
-    serviceLead: "Ask about this personal service. I'll personally confirm the format, available times and price before any booking.",
-    chooseTopic: "What would you like to talk about?",
-    chooseService: "Choose what interests you",
+    freeTitle: "Start with a free drawing assessment",
+    freeLead: "Choose a topic, complete a coaching form and send a handwritten drawing. I'll reply with a written assessment.",
+    personalTitle: "A free drawing assessment of your situation",
+    personalLead: "Choose a topic and complete the coaching form and hand drawing. I'll send a personal written report. Live sessions are paid separately.",
+    readingTitle: "Explore your situation through a drawing",
+    readingLead: "Start with a free coaching questionnaire and pen-and-paper drawing. Receive a written report without booking a live call.",
+    serviceTitle: "Choose your consultation format",
+    serviceLead: "Personal sessions: 60 minutes for €100 or 30 minutes for €50. The free drawing assessment is separate and includes a written report, not a call.",
+    chooseTopic: "What is your situation about?",
+    chooseService: "Choose your format",
     topicOptions: {
       personal: "Personal situation",
       goal: "Goals & decisions",
@@ -35,31 +35,34 @@ const copy = {
       wellbeing: "Wellbeing & energy",
     },
     serviceOptions: {
-      session: "Request a personal session",
-      free: "Free introductory conversation",
-      questions: "Ask about format & fees",
+      session: "60-minute personal session · €100",
+      free: "Free drawing assessment + written report",
+      questions: "30-minute express consultation · €50",
     },
     serviceActions: {
-      session: "Request a personal session",
-      free: "Request free introduction",
-      questions: "Ask about this service",
+      session: "Book 60 min · €100",
+      free: "Start free drawing assessment",
+      questions: "Book 30 min · €50",
     },
     serviceMessages: {
-      session: "I'd like to request a personal session. Please tell me about availability, format and fees.",
-      free: "I'd like to have a free introductory conversation before deciding about a session.",
-      questions: "I'd like to know more about the format, duration and fees before deciding.",
+      session: "Request: I would like to book a paid personal session of 60 minutes for €100. Please confirm availability.",
+      free: "Request: I would like the free coaching-form and handwritten-drawing assessment with a written report.",
+      questions: "Request: I would like to book a paid 30-minute express consultation for €50. Please confirm availability.",
     },
-    freeAction: "Request free consultation",
-    messageTitle: "Free introductory conversation — Holistic House",
-    serviceMessageTitle: "Personal session enquiry — Holistic House",
+    freeAction: "Start free drawing assessment",
+    messageTitle: "Free drawing assessment — Holistic House",
+    serviceMessageTitle: "Paid personal session enquiry — Holistic House",
     topicField: "Topic",
     serviceField: "Service",
     intentField: "What interests me",
-    freeRequest: "Hello Andrey! I'd like to arrange a free introductory conversation about this topic.",
+    freeRequest: "I would like the free coaching-form and handwritten-drawing assessment with a written report.",
     serviceRequest: "Hello Andrey!",
-    messageNote: "WhatsApp opens a prepared message. Nothing is sent until you press Send.",
-    serviceNote: "This is an enquiry, not a confirmed appointment or payment. Dates and fees are agreed personally.",
-    safeguard: "An introductory conversation, not a medical diagnosis.",
+    messageNote: "WhatsApp opens a prepared paid-session request. Nothing is sent until you press Send.",
+    freeNote: "Next: fill out the coaching form, draw on paper and send both via WhatsApp. This is not a free call.",
+    writtenReport: "Personal written report",
+    paidHint: "Paid sessions: €50 / 30 min · €100 / 60 min",
+    serviceNote: "This is an enquiry, not a confirmed booking or payment. Rates: €50 / 30 min or €100 / 60 min.",
+    safeguard: "A symbolic written situation assessment, not a medical diagnosis.",
     personalReply: "Personal reply",
     noObligation: "No obligation",
     telegram: "Or write on Telegram",
@@ -67,16 +70,16 @@ const copy = {
   },
   ru: {
     eyebrow: "ЛИЧНЫЕ КОНСУЛЬТАЦИИ · С АНДРЕЕМ",
-    freeTitle: "Давайте найдём следующий шаг",
-    freeLead: "Выберите одну тему. Остальное обсудим лично на бесплатной вводной беседе.",
-    personalTitle: "Что вы хотели бы обсудить?",
-    personalLead: "Личная ситуация, сложное решение или ощущение тупика — начать можно с одного сообщения.",
-    readingTitle: "Хотите обсудить вашу ситуацию?",
-    readingLead: "От материала — к личному разговору. Начните с бесплатной беседы, не выбирая метод заранее.",
-    serviceTitle: "Как вам удобнее начать?",
-    serviceLead: "Выберите вариант. Я лично уточню формат, доступное время и стоимость до подтверждения записи.",
-    chooseTopic: "Что вас сейчас интересует?",
-    chooseService: "Выберите, что вам нужно",
+    freeTitle: "Бесплатная диагностика по рисунку",
+    freeLead: "Выберите тему, заполните коучинг-форму и отправьте рисунок ручкой. Я пришлю письменный отчёт.",
+    personalTitle: "Бесплатная диагностика по рисунку",
+    personalLead: "Выберите тему, заполните анкету и сделайте рисунок. Вы получите письменный разбор. Живые консультации оплачиваются отдельно.",
+    readingTitle: "Исследуйте ситуацию через рисунок",
+    readingLead: "Начните с коучинг-формы и рисунка ручкой, получите письменный отчёт — без бесплатного созвона.",
+    serviceTitle: "Выберите формат обращения",
+    serviceLead: "Личные сессии: 60 минут за €100 или 30 минут за €50. Бесплатная диагностика по рисунку — отдельная услуга с письменным отчётом.",
+    chooseTopic: "На какую тему ваш запрос?",
+    chooseService: "Выберите формат",
     topicOptions: {
       personal: "Личная ситуация",
       goal: "Цели и решения",
@@ -84,31 +87,34 @@ const copy = {
       wellbeing: "Самочувствие и ресурс",
     },
     serviceOptions: {
-      session: "Записаться на личную сессию",
-      free: "Бесплатная вводная беседа",
-      questions: "Узнать формат и стоимость",
+      session: "Личная сессия 60 минут · €100",
+      free: "Бесплатная диагностика по рисунку + отчёт",
+      questions: "Экспресс-консультация 30 минут · €50",
     },
     serviceActions: {
-      session: "Запросить запись на сессию",
-      free: "Записаться на бесплатную беседу",
-      questions: "Задать вопрос об услуге",
+      session: "Записаться на 60 минут · €100",
+      free: "Начать бесплатную диагностику",
+      questions: "Записаться на 30 минут · €50",
     },
     serviceMessages: {
-      session: "Хочу запросить личную сессию. Подскажите доступное время, формат и стоимость.",
-      free: "Хочу сначала договориться о бесплатной вводной беседе, прежде чем решать насчёт сессии.",
-      questions: "Хочу узнать формат, продолжительность и стоимость, прежде чем записываться.",
+      session: "Запрос: хочу записаться на платную личную сессию 60 минут за €100. Подскажите доступное время.",
+      free: "Запрос: хочу бесплатную диагностику по коучинг-форме и рисунку с письменным отчётом.",
+      questions: "Запрос: хочу записаться на платную экспресс-консультацию 30 минут за €50. Подскажите доступное время.",
     },
-    freeAction: "Записаться на бесплатный разбор",
-    messageTitle: "Бесплатная вводная консультация — Holistic House",
-    serviceMessageTitle: "Запрос на личную сессию — Holistic House",
+    freeAction: "Начать бесплатную диагностику по рисунку",
+    messageTitle: "Бесплатная диагностика по рисунку — Holistic House",
+    serviceMessageTitle: "Запрос на платную личную сессию — Holistic House",
     topicField: "Тема",
     serviceField: "Услуга",
     intentField: "Что меня интересует",
-    freeRequest: "Здравствуйте, Андрей! Хочу договориться о бесплатной вводной беседе по этой теме.",
+    freeRequest: "Хочу бесплатную диагностику по коучинг-форме и рисунку с письменным отчётом.",
     serviceRequest: "Здравствуйте, Андрей!",
-    messageNote: "Откроется подготовленное сообщение WhatsApp. Оно отправится только после вашего подтверждения.",
-    serviceNote: "Это запрос, а не подтверждённая запись или оплата. Время и стоимость согласуются лично.",
-    safeguard: "Вводная беседа, не медицинская диагностика.",
+    messageNote: "WhatsApp откроет запрос на платную сессию. Он отправится только после вашего подтверждения.",
+    freeNote: "Далее: заполните коучинг-форму, нарисуйте на бумаге и отправьте материалы через WhatsApp. Это не бесплатный созвон.",
+    writtenReport: "Персональный письменный отчёт",
+    paidHint: "Платные сессии: €50 / 30 мин · €100 / 60 мин",
+    serviceNote: "Это запрос, а не запись или оплата. Стоимость: €50 за 30 минут или €100 за 60 минут.",
+    safeguard: "Символический письменный разбор ситуации, не медицинский диагноз.",
     personalReply: "Личный ответ",
     noObligation: "Без обязательств",
     telegram: "Или напишите в Telegram",
@@ -116,16 +122,16 @@ const copy = {
   },
   es: {
     eyebrow: "CONSULTAS PERSONALES · CON ANDREY",
-    freeTitle: "Exploremos tu próximo paso",
-    freeLead: "Elige un tema. Podemos hablar de los detalles personalmente en una conversación gratuita.",
-    personalTitle: "¿Qué te gustaría explorar?",
-    personalLead: "Una situación personal, una decisión difícil o sentirte bloqueado: empieza con un mensaje sencillo.",
-    readingTitle: "¿Quieres hablar de tu situación?",
-    readingLead: "De la lectura a una conversación personal. Empieza gratis sin elegir un método.",
-    serviceTitle: "¿Cómo te gustaría empezar?",
-    serviceLead: "Elige una opción. Confirmaré personalmente la modalidad, el horario y el precio antes de reservar.",
-    chooseTopic: "¿Sobre qué te gustaría hablar?",
-    chooseService: "Elige qué te interesa",
+    freeTitle: "Evaluación gratuita mediante dibujo",
+    freeLead: "Elige un tema, completa el formulario de coaching y envía un dibujo a mano. Recibirás un informe escrito.",
+    personalTitle: "Evaluación gratuita de tu situación mediante dibujo",
+    personalLead: "Elige un tema, completa el formulario y dibuja a mano. Recibirás un informe escrito; las sesiones en directo son de pago.",
+    readingTitle: "Explora tu situación mediante un dibujo",
+    readingLead: "Empieza con un formulario de coaching y dibujo a mano. Recibe un informe escrito sin llamada gratuita.",
+    serviceTitle: "Elige tu modalidad de consulta",
+    serviceLead: "Sesiones personales: 60 minutos €100 o 30 minutos €50. La evaluación gratuita por dibujo incluye un informe escrito, no una llamada.",
+    chooseTopic: "¿Sobre qué trata tu situación?",
+    chooseService: "Elige la modalidad",
     topicOptions: {
       personal: "Situación personal",
       goal: "Objetivos y decisiones",
@@ -133,31 +139,34 @@ const copy = {
       wellbeing: "Bienestar y energía",
     },
     serviceOptions: {
-      session: "Solicitar una sesión personal",
-      free: "Conversación inicial gratuita",
-      questions: "Consultar formato y precio",
+      session: "Sesión personal de 60 minutos · €100",
+      free: "Evaluación gratuita por dibujo + informe",
+      questions: "Consulta exprés de 30 minutos · €50",
     },
     serviceActions: {
-      session: "Solicitar una sesión",
-      free: "Solicitar conversación gratuita",
-      questions: "Consultar este servicio",
+      session: "Reservar 60 minutos · €100",
+      free: "Iniciar evaluación gratuita",
+      questions: "Reservar 30 minutos · €50",
     },
     serviceMessages: {
-      session: "Quisiera solicitar una sesión personal. ¿Cuáles son la disponibilidad, la modalidad y el precio?",
-      free: "Quisiera tener una conversación inicial gratuita antes de decidir si reservo una sesión.",
-      questions: "Quisiera conocer la modalidad, la duración y el precio antes de decidir.",
+      session: "Solicitud: quisiera reservar una sesión personal de pago de 60 minutos por €100. Confirma la disponibilidad.",
+      free: "Solicitud: evaluación gratuita del formulario de coaching y dibujo a mano con informe escrito.",
+      questions: "Solicitud: quisiera reservar una consulta exprés de pago de 30 minutos por €50. Confirma la disponibilidad.",
     },
-    freeAction: "Solicitar conversación gratuita",
-    messageTitle: "Conversación inicial gratuita — Holistic House",
-    serviceMessageTitle: "Solicitud de sesión personal — Holistic House",
+    freeAction: "Iniciar evaluación gratuita por dibujo",
+    messageTitle: "Evaluación gratuita mediante dibujo — Holistic House",
+    serviceMessageTitle: "Solicitud de sesión personal de pago — Holistic House",
     topicField: "Tema",
     serviceField: "Servicio",
     intentField: "Qué me interesa",
-    freeRequest: "Hola Andrey. Quisiera acordar una conversación inicial gratuita sobre este tema.",
+    freeRequest: "Solicito evaluación gratuita del formulario de coaching y dibujo a mano con informe escrito.",
     serviceRequest: "Hola Andrey.",
-    messageNote: "WhatsApp abre un mensaje preparado. Solo se envía cuando confirmas Enviar.",
-    serviceNote: "Es una consulta, no una reserva ni un pago. Confirmaremos personalmente la fecha y el precio.",
-    safeguard: "Una conversación inicial, no un diagnóstico médico.",
+    messageNote: "WhatsApp prepara el mensaje de reserva de pago. Solo se envía cuando confirmas Enviar.",
+    freeNote: "Siguiente: rellena el formulario de coaching, dibuja en papel y envía ambos por WhatsApp. No es una llamada gratuita.",
+    writtenReport: "Informe escrito personal",
+    paidHint: "Sesiones de pago: €50 / 30 min · €100 / 60 min",
+    serviceNote: "Es una consulta, no una reserva ni un pago. Tarifas: €50 / 30 minutos o €100 / 60 minutos.",
+    safeguard: "Una evaluación simbólica escrita, no un diagnóstico médico.",
     personalReply: "Respuesta personal",
     noObligation: "Sin compromiso",
     telegram: "O escribe por Telegram",
@@ -200,21 +209,16 @@ export function ConsultationChoiceCapture({
   const lead = isService ? t.serviceLead : variant === "reading" ? t.readingLead
     : variant === "personal" ? t.personalLead : t.freeLead;
 
-  const message = isService
-    ? [
-        t.serviceMessageTitle,
-        t.serviceField + ": " + (service || (locale === "ru" ? "Личная консультация" : locale === "es" ? "Consulta individual" : "Personal consultation")),
-        t.intentField + ": " + t.serviceOptions[serviceChoice],
-        "",
-        t.serviceRequest + " " + t.serviceMessages[serviceChoice],
-      ].join("\n")
-    : [
-        t.messageTitle,
-        t.topicField + ": " + t.topicOptions[topic],
-        "",
-        t.freeRequest,
-      ].join("\n");
+  const message = [
+    t.serviceMessageTitle,
+    t.serviceField + ": " + (service || (locale === "ru" ? "Личная консультация" : locale === "es" ? "Consulta individual" : "Personal consultation")),
+    t.intentField + ": " + t.serviceOptions[serviceChoice],
+    "",
+    t.serviceMessages[serviceChoice],
+  ].join("\n");
+  const isPaidRequest = isService && serviceChoice !== "free";
   const whatsappUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(message);
+  const ctaHref = isPaidRequest ? whatsappUrl : "/" + locale + "/services/free-situation-review" + (isService ? "" : "?topic=" + topic);
   const cta = isService ? t.serviceActions[serviceChoice] : t.freeAction;
 
   return (
@@ -263,30 +267,31 @@ export function ConsultationChoiceCapture({
       <AcquisitionEventLink
         prefetch={false}
         className={styles.action}
-        href={whatsappUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={ctaHref}
+        target={isPaidRequest ? "_blank" : undefined}
+        rel={isPaidRequest ? "noopener noreferrer" : undefined}
         event="service_request_start"
-        attributes={{ "data-contact-channel": "whatsapp", "data-consultation-action": isService ? serviceChoice : topic }}
+        attributes={{ ...(isPaidRequest ? { "data-contact-channel": "whatsapp" } : {}), "data-consultation-action": isService ? serviceChoice : topic }}
       >
-        <MessageCircle size={19} aria-hidden="true" />
+        {isPaidRequest ? <MessageCircle size={19} aria-hidden="true" /> : <FileText size={19} aria-hidden="true" />}
         <span>{cta}</span>
         <ArrowUpRight size={20} aria-hidden="true" />
       </AcquisitionEventLink>
-      <p className={styles.note}>{t.messageNote}</p>
+      <p className={styles.note}>{isPaidRequest ? t.messageNote : t.freeNote}</p>
       <div className={styles.footer}>
         <div className={styles.assurances}>
-          <span><Check size={14} aria-hidden="true" />{t.personalReply}</span>
+          <span><Check size={14} aria-hidden="true" />{isPaidRequest ? t.personalReply : t.writtenReport}</span>
           <span><Check size={14} aria-hidden="true" />{t.noObligation}</span>
         </div>
         <div className={styles.secondary}>
-          {isService ? <Link prefetch={false} href={"/" + locale + "/services/free-situation-review"}><ShieldCheck size={14} aria-hidden="true" />{t.otherPath}</Link> : null}
+          {isPaidRequest ? <Link prefetch={false} href={"/" + locale + "/services/free-situation-review"}><ShieldCheck size={14} aria-hidden="true" />{t.otherPath}</Link>
+            : !isService ? <Link prefetch={false} href={"/" + locale + "/services"}><ShieldCheck size={14} aria-hidden="true" />{t.paidHint}</Link> : null}
           <AcquisitionEventLink prefetch={false} href={telegramUrl} target="_blank" rel="noopener noreferrer" event="contact_click" attributes={{ "data-contact-channel": "telegram" }}>
             <Send size={14} aria-hidden="true" />{t.telegram}
           </AcquisitionEventLink>
         </div>
       </div>
-      <p className={styles.disclaimer}>{isService ? t.serviceNote : t.safeguard}</p>
+      <p className={styles.disclaimer}>{isPaidRequest ? t.serviceNote : t.safeguard}</p>
     </section>
   );
 }
