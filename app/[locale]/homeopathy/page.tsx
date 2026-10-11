@@ -12,6 +12,7 @@ import { books } from "@/data/library";
 import { getHomeopathyLocaleParams, getRemedyDirectory, isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
@@ -89,7 +90,12 @@ export default async function HomeopathyPage({ params }: PageProps) {
       <PublicConsultationCta locale={locale as Locale} />
       <div className="public-consultation-direct-actions" aria-label={current.consultation}>
         <a href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">{current.telegram}</a>
-        <a href="https://wa.me/14376066502" rel="noreferrer" target="_blank">{current.whatsapp}</a>
+        <a href={whatsappEnquiryUrl({
+          locale,
+          service: locale === "ru" ? "Бесплатная консультация по материалам библиотеки гомеопатии" : "Free consultation about the homeopathy library",
+          request: locale === "ru" ? "Хочу задать вопрос по гомеопатической библиотеке и узнать, как договориться о бесплатной вводной беседе." : "I would like to ask about the homeopathy library and arrange a free introductory conversation.",
+          pagePath: "/" + locale + "/homeopathy",
+        })} rel="noreferrer" target="_blank">{current.whatsapp}</a>
       </div>
 
       <section className="remedies-books-section" aria-labelledby="remedies-books-title">
