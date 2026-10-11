@@ -86,14 +86,17 @@ test('purpose/origin/evidence explanations render in public explorer, prelogin s
     'components/app/test-explorer.jsx',
     'components/app/simple-test-picker.jsx',
     'components/app/app-workspace.jsx',
+    'components/app/account-test-battery.jsx',
     'components/app/personal-result-report.jsx',
     'lib/profile/client-report-pdf.js',
   ]
-  const [logic,explorer,picker,workspace,report,pdf]=await Promise.all(paths.map(x=>readFile(x,'utf8')))
+  const [logic,explorer,picker,workspace,savedBattery,report,pdf]=await Promise.all(paths.map(x=>readFile(x,'utf8')))
   assert.match(logic,/assessmentExplanation/)
   assert.match(explorer,/entry\.methodology/)
   assert.match(picker,/entry\.methodology/)
   assert.match(workspace,/assessmentMethodology/)
+  assert.match(savedBattery,/assessmentMethodology/)
+  assert.match(savedBattery,/row\.methodology/)
   assert.match(report,/report\.methodology/)
   assert.match(pdf,/test\.interpretation\?\.methodology/)
   for(const file of [explorer,picker,workspace,report])assert.doesNotMatch(file,/consultancyScore\s*=|diagnosis\s*=\s*true/i)
