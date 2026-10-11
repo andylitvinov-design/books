@@ -70,7 +70,7 @@ test("free Level 1 is first-party and keeps seven questions, video and teacher c
   assert.match(free, /AcademyVideoPlayer youtubeId="DYo-fG-SyKw"/);
   assert.match(free, /id="learning-faq"/);
   assert.match(free, /root \+ "\/basic-course\/description"/);
-  assert.match(free, /encodeURIComponent\(msg\)/);
+  assert.match(free, /whatsappEnquiryUrl\(\{/);
   assert.match(free, /https:\/\/t\.me\/AndyTherapist/);
 });
 

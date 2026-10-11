@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Check, FileText, HeartHandshake, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import type { PublicLocale } from "@/lib/public-locales";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./consultation-choice-capture.module.css";
 
 type Variant = "free" | "service" | "personal" | "reading";
@@ -209,15 +210,13 @@ export function ConsultationChoiceCapture({
   const lead = isService ? t.serviceLead : variant === "reading" ? t.readingLead
     : variant === "personal" ? t.personalLead : t.freeLead;
 
-  const message = [
-    t.serviceMessageTitle,
-    t.serviceField + ": " + (service || (locale === "ru" ? "Личная консультация" : locale === "es" ? "Consulta individual" : "Personal consultation")),
-    t.intentField + ": " + t.serviceOptions[serviceChoice],
-    "",
-    t.serviceMessages[serviceChoice],
-  ].join("\n");
   const isPaidRequest = isService && serviceChoice !== "free";
-  const whatsappUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(message);
+  const whatsappUrl = whatsappEnquiryUrl({
+    locale,
+    service: service || (locale === "ru" ? "Личная консультация" : locale === "es" ? "Consulta individual" : "Personal consultation"),
+    request: t.serviceMessages[serviceChoice],
+    option: t.serviceOptions[serviceChoice],
+  });
   const ctaHref = isPaidRequest ? whatsappUrl : "/" + locale + "/services/free-situation-review" + (isService ? "" : "?topic=" + topic);
   const cta = isService ? t.serviceActions[serviceChoice] : t.freeAction;
 

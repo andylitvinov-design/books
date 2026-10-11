@@ -19,11 +19,11 @@ test("four selectable topics and three actual offers: paid full, paid express an
 });
 
 test("paid sessions use labelled WhatsApp handoff; free assessment opens actual form without sharing sensitive details", () => {
-  assert.match(component, /encodeURIComponent\(message\)/);
+  assert.match(component, /whatsappEnquiryUrl\(\{/);
   assert.match(component, /t\.topicOptions\[choice\]/);
   assert.match(component, /t\.serviceOptions\[serviceChoice\]/);
   assert.match(component, /service \|\|/);
-  assert.match(component, /https:\/\/wa\.me\/14376066502\?text=/);
+  assert.match(component, /request: t\.serviceMessages\[serviceChoice\]/);
   assert.match(component, /https:\/\/t\.me\/AndyTherapist/);
   assert.match(component, /isPaidRequest = isService && serviceChoice !== "free"/);
   assert.match(component, /isPaidRequest \? whatsappUrl : "\/" \+ locale \+ "\/services\/free-situation-review"/);

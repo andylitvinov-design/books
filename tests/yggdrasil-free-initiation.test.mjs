@@ -53,7 +53,7 @@ test("entry includes three honest study options, required readings and post-init
   assert.ok(page.includes('root + "/basic-course#yggdrasil-basic-course-learning"'));
   assert.ok(page.includes('const learningFaqs: Record<PublicLocale'));
   assert.match(page, /const whatsAppHref =/);
-  assert.match(page, /encodeURIComponent\(msg\)/);
+  assert.match(page, /whatsappEnquiryUrl\(\{/);
   assert.match(page, /https:\/\/t.me\/AndyTherapist/);
   assert.doesNotMatch(page, /<form[\s>]/);
   assert.match(page, /not established medical facts|не доказанными медицинскими фактами/);

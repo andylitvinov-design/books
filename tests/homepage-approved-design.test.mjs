@@ -70,7 +70,7 @@ test("homepage contact remains consent-gated WhatsApp, Telegram and free-review 
   const cta = read("components/public-consultation-cta.tsx");
   assert.match(home, /<PublicConsultationCta locale=\{locale\} \/>/);
   assert.match(home, /className="home-contact-capture"/);
-  assert.match(cta, /wa\.me\/14376066502\?text=/);
+  assert.match(cta, /trainingEnquiryUrl\(locale, pathname\)/);
   assert.match(cta, /t\.me\/AndyTherapist/);
   assert.match(cta, /AcquisitionEventLink/);
   assert.match(cta, /services\/free-situation-review/);

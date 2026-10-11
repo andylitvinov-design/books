@@ -1,6 +1,7 @@
 import { MessageCircle, Send } from "lucide-react";
 import { ReikiChoiceCapture } from "@/components/reiki-choice-capture";
 import type { PublicLocale } from "@/lib/public-locales";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 
 type Kind = "first-level" | "consultation";
 
@@ -12,13 +13,13 @@ const copy = {
       eyebrow: "Start with a gift",
       title: "Free Reiki Yggdrasil Level 1",
       lead: "Request the first level directly from Andrey. No form to fill in.",
-      message: "Hello Andrey! I'd like to receive the free first level of Reiki Yggdrasil.",
+      message: "I'd like to receive the free first level of Reiki Yggdrasil.",
     },
     consultation: {
       eyebrow: "Let's talk",
       title: "Free personal consultation",
       lead: "Ask for an introductory conversation about your situation. No obligation.",
-      message: "Hello Andrey! I'd like to request a free personal consultation about my situation.",
+      message: "I'd like to request a free personal consultation about my situation.",
     },
   },
   ru: {
@@ -26,13 +27,13 @@ const copy = {
       eyebrow: "Подарок для начала",
       title: "1-я ступень Рейки Иггдрасиль — бесплатно",
       lead: "Напишите Андрею и получите информацию о бесплатной первой ступени.",
-      message: "Здравствуйте, Андрей! Хочу получить бесплатно первую ступень Рейки Иггдрасиль.",
+      message: "Хочу получить бесплатно первую ступень Рейки Иггдрасиль.",
     },
     consultation: {
       eyebrow: "Давайте познакомимся",
       title: "Бесплатная личная консультация",
       lead: "Напишите, чтобы договориться о вводной беседе и разборе вашей ситуации.",
-      message: "Здравствуйте, Андрей! Хочу записаться на бесплатную личную консультацию — разбор ситуации.",
+      message: "Хочу записаться на бесплатную личную консультацию — разбор ситуации.",
     },
   },
   es: {
@@ -40,21 +41,25 @@ const copy = {
       eyebrow: "Un regalo para comenzar",
       title: "Nivel 1 de Reiki Yggdrasil gratis",
       lead: "Escríbele a Andrey para solicitar el primer nivel gratuito, sin formularios.",
-      message: "Hola Andrey. Quiero solicitar gratis el primer nivel de Reiki Yggdrasil.",
+      message: "Quiero solicitar gratis el primer nivel de Reiki Yggdrasil.",
     },
     consultation: {
       eyebrow: "Hablemos",
       title: "Consulta personal gratuita",
       lead: "Escríbele para pedir una conversación inicial sobre tu situación.",
-      message: "Hola Andrey. Quiero pedir una consulta personal introductoria gratuita.",
+      message: "Quiero pedir una consulta personal introductoria gratuita.",
     },
   },
 } as const;
 
 function ReikiContactCard({ locale, kind, course }: { locale: PublicLocale; kind: Kind; course: string }) {
   const item = copy[locale][kind];
-  const whatsappUrl = "https://wa.me/14376066502?text=" +
-    encodeURIComponent(item.message + "\n" + "Course: " + course + " · Holistic House");
+  const whatsappUrl = whatsappEnquiryUrl({
+    locale,
+    service: course,
+    request: item.message,
+    option: item.title,
+  });
   return (
     <article className={"reiki-offer-card " + (kind === "first-level" ? "reiki-offer-card--gift" : "reiki-offer-card--consult")} data-reiki-contact={kind}>
       <div className="reiki-offer-card__intro">

@@ -47,8 +47,8 @@ test('consultation never falls back to an accidental GET with private form field
   const form = read('components/personal-consultation-form.tsx');
   const capture = read('components/consultation-choice-capture.tsx');
   assert.match(form, /ConsultationChoiceCapture/);
-  assert.match(capture, /encodeURIComponent\(message\)/);
-  assert.match(capture, /https:\/\/wa\.me\/14376066502/);
+  assert.match(capture, /whatsappEnquiryUrl\(\{/);
+  assert.match(capture, /request: t\.serviceMessages\[serviceChoice\]/);
   assert.match(capture, /Nothing is sent until you press Send/);
   assert.doesNotMatch(capture, /<form|<input|<textarea|FormData|sessionStorage|localStorage/);
 });
