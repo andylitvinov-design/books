@@ -209,8 +209,19 @@ export function ProfileDomains({
       {entries.map(({ key, summary }) => {
         const Icon = ICONS[key]
         return <button key={key} id={'hh-domain-tab-' + key} role="tab" type="button" aria-selected={active === key}
-          aria-controls="hh-domain-panel" tabIndex={0}
-          onClick={() => setActive(key)} className={active === key ? 'is-current' : ''}>
+          aria-controls="hh-domain-panel" tabIndex={active === key ? 0 : -1}
+          onClick={() => setActive(key)}
+          onKeyDown={event => {
+            const index = DOMAINS.indexOf(key)
+            const next = event.key === 'ArrowRight' ? (index + 1) % DOMAINS.length
+              : event.key === 'ArrowLeft' ? (index + DOMAINS.length - 1) % DOMAINS.length
+                : event.key === 'Home' ? 0 : event.key === 'End' ? DOMAINS.length - 1 : -1
+            if (next < 0) return
+            event.preventDefault()
+            setActive(DOMAINS[next])
+            event.currentTarget.parentElement?.querySelectorAll('[role="tab"]')[next]?.focus()
+          }}
+          className={active === key ? 'is-current' : ''}>
           <Icon size={23} strokeWidth={1.7} aria-hidden="true" />
           <strong>{t[key]}</strong>
           <small>{summary ? String(summary) + ' · ' + t.recent : t.unknown}</small>
@@ -222,6 +233,10 @@ export function ProfileDomains({
         <div className="hh-domain-heading"><div><p className="hh-domain-eyebrow">{t.psychology}</p><h2>{t.psyDetail}</h2><p>{t.psyIntro}</p></div></div>
         {external ? <>
           <ReportsHistory reports={psychologicalReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.emptyLegacyPsy} t={t} />
+          <div className="hh-domain-next">
+            <div><Sparkles size={21} aria-hidden="true" /><strong>{t.request}</strong><p>{t.profileIntro}</p></div>
+            <div className="hh-domain-next-actions"><a href={enquiry} target="_blank" rel="noopener noreferrer">{t.consultation} <ArrowRight size={16} /></a></div>
+          </div>
           <Link className="hh-domain-secondary-link" href={'/' + locale + '/app/portrait'} prefetch={false}>{t.google} <ArrowRight size={16} /></Link>
         </> : <>
           <div className="hh-domain-psy-summary"><span><strong>{recentResults.length}</strong>{t.testResults}</span><span><strong>{readableDate(recentResults[0]?.occurredOn, locale) || '—'}</strong>{t.latest}</span></div>
