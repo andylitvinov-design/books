@@ -26,15 +26,17 @@ export function PersonalResultReport({ result, locale = 'en' }) {
           <p className={styles.construct}>{section.construct}</p>
           <p className={styles.score}>{bach
             ? (ru ? 'Вес совпадений' : 'Weighted match') + ': ' + section.value
-            : (ru ? 'Результат' : 'Your score') + ': ' + section.value + ' / ' + section.max}</p>
+            : (ru ? 'Результат' : 'Your score') + ': ' + section.value + ' (' + (ru ? 'диапазон' : 'range') + ' ' + section.min + '–' + section.max + ')'}</p>
         </div>
       </div>
       <p className={styles.meaning}>{section.meaning}</p>
+      {!bach && section.bandBasis && <p className={styles.band}>{section.bandBasis === 'screening' ? (ru ? 'Опубликованный скрининговый диапазон' : 'Published screening band') : section.bandBasis === 'published-reference' ? (ru ? 'Справочный диапазон инструмента' : 'Instrument reference band') : (ru ? 'Описательный показатель' : 'Descriptive measure')}</p>}
       <h4>{ru ? 'Что попробовать за неделю' : 'Try this over the next week'}</h4>
       <ol className={styles.steps}>
         {section.steps.map((step) => <li key={step}>{step}</li>)}
       </ol>
       <p className={styles.followUp}>{section.followUp}</p>
+      {!bach && section.source && <a className={styles.source} href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Источник интерпретации' : 'Interpretation source'}</a>}
     </article>
   )
   return (
@@ -75,6 +77,7 @@ export function PersonalResultReport({ result, locale = 'en' }) {
       <footer className={styles.footer}>
         {report.seekSupport && <p>{report.seekSupport}</p>}
         <small>{report.note}</small>
+        {!bach && report.rulesVersion && <small className={styles.ruleVersion}>{ru ? 'Версия интерпретации' : 'Interpretation version'}: {report.rulesVersion}</small>}
       </footer>
     </section>
   )

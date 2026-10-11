@@ -28,3 +28,9 @@
 .more summary{display:flex;justify-content:space-between;gap:12px;align-items:center;cursor:pointer;color:#456c60;font-size:13px;font-weight:750;list-style-position:inside}
 .moreDescription{font-size:12px;line-height:1.5;color:#656b64;padding:0 2px;margin:13px 0}
 .more[open] .grid{margin-top:13px}
+
+/* Extra context for score-based tests; Bach retains its compact traditional-theme presentation. */
+.band{margin:-8px 0 11px;color:#79736d;font-size:11px;font-weight:650;letter-spacing:.015em}
+.source{display:inline-block;margin-top:8px;font-size:11px;color:#2f6254;text-decoration:underline;text-underline-offset:3px}
+.source:focus-visible{outline:2px solid #2f6254;outline-offset:3px}
+.ruleVersion{display:block;margin-top:7px;color:#77756c}
