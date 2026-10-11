@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AssessmentReading } from '@/components/assessment-reading'
+import { DownloadPractitionerReport } from '@/components/app/personal-analysis-panel'
 
 const COPY = {
   en: {
@@ -9,7 +10,7 @@ const COPY = {
     unavailable: 'This report link is unavailable or has expired.',
     save: 'Save this report to my Cabinet',
     saving: 'Preparing secure save…',
-    note: 'You can read this report without an account. If you save it, sign in with Google: this report will be stored in your Cabinet and your client profile with Andy will be linked to that Google Account.',
+    note: 'You can read this report without an account. If you save it, sign in with Google: this report will be pinned under Personal analysis in your Cabinet and your client profile with Andy will be linked to that Google Account.',
     viewOnly: 'This invitation is for viewing only. Saving to a personal Cabinet is not enabled for this link.',
     authUnavailable: 'Google sign-in is not connected in this environment yet.',
     guest: 'Guest access',
@@ -20,7 +21,7 @@ const COPY = {
     unavailable: 'Эта ссылка на отчёт недоступна или больше не действует.',
     save: 'Сохранить отчёт в личном кабинете',
     saving: 'Подготавливаем безопасное сохранение…',
-    note: 'Этот отчёт можно читать без аккаунта. Если вы сохраняете его, войдите через Google: отчёт появится в вашем кабинете, а ваша карточка клиента у Andy свяжется с этим Google-аккаунтом.',
+    note: 'Этот отчёт можно читать без аккаунта. Если вы сохраняете его, войдите через Google: отчёт закрепится во вкладке «Личный анализ», а ваша карточка клиента у Andy свяжется с этим Google-аккаунтом.',
     viewOnly: 'Эта ссылка предназначена только для просмотра. Сохранение в личный кабинет для неё не разрешено.',
     authUnavailable: 'В этом окружении вход через Google пока не подключён.',
     guest: 'Гостевой доступ',
@@ -113,6 +114,7 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
     <section className="shared-report-card">
       <p className="about-kicker">{c.guest}</p>
       <AssessmentReading record={report} locale={locale} />
+      <div className="hh-analysis-detail-download"><DownloadPractitionerReport report={report} locale={locale} /></div>
       {grant?.expiresAt && <p className="cabinet-test-note">{c.expires}: {new Date(grant.expiresAt).toLocaleString(locale)}</p>}
       <div className="shared-report-save">
         <p>{c.note}</p>
