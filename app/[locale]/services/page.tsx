@@ -23,46 +23,16 @@ export const revalidate = 0;
 
 const copy = {
   ru: {
-    title: "Индивидуальная работа в Торонто и онлайн — Holistic House",
-    description: "Бесплатная диагностика по коучинг-форме и рисунку «Я — цель — проблема» с письменным отчётом. Личные консультации отдельно: €50 за 30 минут, €100 за 60 минут.",
-    kicker: "Торонто и онлайн",
-    heading: "Индивидуальная работа",
-    lead: "Исследуйте повторяющиеся паттерны, отношения, важные решения и внутренние блоки в бережной индивидуальной работе.",
-    marketplaceCta: "Выбрать услугу",
-    freeReviewTitle: "Бесплатная диагностика по рисунку",
-    freeReviewText: "Опишите проблему в коучинг-форме, нарисуйте «Я — цель — проблема» ручкой на бумаге и получите мой письменный отчёт.",
-    freeReviewAction: "Начать бесплатную диагностику",
-    approachKicker: "Как устроена работа",
-    approachTitle: "Начинаем с вашего реального вопроса",
-    approachText: "Мы обсуждаем ваш запрос, границы и подходящий формат. Системная работа, образы и другие методы используются только по взаимному согласию и в подходящем контексте.",
+    title: "Индивидуальные услуги — Holistic House",
+    description: "Бесплатная диагностика ситуации, дао-диагностика ресурса, сессия «Алхимия души» и курс гипнотерапии. Четыре варианта личной работы с Андреем.",
     about: "Об Андрее",
-    consultationKicker: "Первый шаг",
-    consultation: "Начните с анкеты и рисунка",
-    consultationText: "Бесплатно получите письменный разбор. Платные личные консультации отдельно: €50 / 30 минут или €100 / 60 минут.",
-    telegram: "Написать в Telegram",
-    whatsapp: "WhatsApp",
-    note: "Эти форматы не заменяют медицинскую диагностику или неотложную помощь. Бизнес-расстановки не заменяют финансовую, юридическую или профессиональную экспертизу и не гарантируют результат.",
+    note: "Символические практики не заменяют медицинскую диагностику и лечение. Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний; конкретные результаты не гарантируются.",
   },
   en: {
-    title: "Personal work in Toronto and online — Holistic House",
-    description: "Start with a free drawing-based assessment: coaching form, handwritten ME / GOAL / PROBLEM and a personal written report. Live consultations cost €50/30 min or €100/60 min.",
-    kicker: "Toronto & online",
-    heading: "Personal work",
-    lead: "Explore repeating patterns, relationships, important decisions and inner blocks through thoughtful one-to-one work.",
-    marketplaceCta: "Choose a service",
-    freeReviewTitle: "Free drawing assessment + written report",
-    freeReviewText: "Complete a coaching form, draw ME, GOAL and PROBLEM on paper, and receive my personal written report. No live call required.",
-    freeReviewAction: "Start free drawing assessment",
-    approachKicker: "How the work begins",
-    approachTitle: "Start with your real question",
-    approachText: "We discuss your question, boundaries and the format that may fit. Systemic work, imagery and other methods are used only by mutual agreement and in an appropriate context.",
+    title: "Personal services — Holistic House",
+    description: "Explore four Holistic House offers: a free situation review, a free DAO resource profile, Alchemy of the Soul and guided imagery hypnotherapy.",
     about: "About Andrey",
-    consultationKicker: "First step",
-    consultation: "Start with your form and drawing",
-    consultationText: "The free first step is a written assessment. Separate paid sessions cost €50 / 30 min or €100 / 60 min.",
-    telegram: "Message on Telegram",
-    whatsapp: "WhatsApp",
-    note: "These formats do not replace medical diagnosis or urgent care. Business constellations do not replace financial, legal or professional advice and do not guarantee an outcome.",
+    note: "These symbolic approaches do not replace medical assessment or treatment. Homeopathy lacks reliable evidence for treating health conditions. Individual results are not guaranteed.",
   },
 } as const;
 
@@ -104,11 +74,13 @@ export default async function ServicesPage({ params }: PageProps) {
 
       <ServicesSolutions locale={locale as Locale} />
 
+      <PersonalTestimonials locale={locale as Locale} variant="services" />
+
       <details className={solutionStyles.extra} id="available-services">
         <summary className={solutionStyles.extraSummary}>
           <span>
             <strong>{locale === "ru" ? "Ищете конкретную услугу?" : "Already know which service you need?"}</strong>
-            <small>{locale === "ru" ? "Разверните каталог отдельных предложений и мастеров" : "Expand the separate practitioner offers and formats"}</small>
+            <small>{locale === "ru" ? "Дополнительные форматы и каталог практиков" : "Optional practitioner directory and additional formats"}</small>
           </span>
           <span className={solutionStyles.expandSymbol} aria-hidden="true">+</span>
         </summary>
@@ -280,9 +252,6 @@ export default async function ServicesPage({ params }: PageProps) {
         </div>
       </details>
 
-
-
-      <PersonalTestimonials locale={locale as Locale} variant="services" />
 
       <PublicConsultationCta locale={locale as Locale} id="consultation" />
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>

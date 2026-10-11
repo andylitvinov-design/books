@@ -1,320 +1,534 @@
 import type { PublicLocale } from "@/lib/public-locales";
 
 /**
- * Holistic House editorial adaptation of the owner's surviving Kundalini Reiki
- * teaching materials. These are spiritual/meditative traditions, not established
- * medical treatments. Preserve the original evidence links below.
+ * Editorial contract: visible paragraphs below are direct short excerpts from
+ * the user's PsiMaster / SuperSkills / PsiTrends pages, or translations of
+ * those excerpts and the USER-UPLOADED Paul Crick manual. Do not expand these
+ * into AI-written promises, curricula, diagnoses or supplemental explanations.
+ *
+ * Attribution: original 24-page PDF = "Kundalini Reiki Manual", Paul Crick.
+ * Source-page references are internal for reconciliation, not offsite CTAs.
  */
+
 export type LocalText = Record<PublicLocale, string>;
+export type SourceExcerpt = {
+  label: LocalText;
+  text: LocalText;
+  origin: string;
+};
+
+export const kundaliniOriginalManual = {
+  path: "/academy/kundalini-reiki/kundalini-reiki-manual-paul-crick.pdf",
+  fileName: "Kundalini_Reiki_Manual_Paul_Crick.pdf",
+  author: "Paul Crick",
+  pages: 24,
+  size: 243352,
+  sha256: "dd28184c0199ceb947295dc2ef407fbc3e818375bb533928e0b721528355f18b",
+} as const;
+
+export const kundaliniSourceEvidence = [
+  { name: "PsiMaster · Кундалини Рейки — Базовый курс (1–3 ступень)", url: "https://psimaster.net/service?shs_term_node_tid_depth=12345" },
+  { name: "SuperSkills · Kundalini Reiki — Free Class", url: "https://superskills.vip/trial-express-programs/academy-overview/master-of-kundalini-reiki.html" },
+  { name: "SuperSkills · Reiki Healing Marathon", url: "https://superskills.vip/trial-express-programs/academy-overview.html" },
+  { name: "SuperSkills · Vedic & Tantric Heritage", url: "https://superskills.vip/shamanicacademy/vedic-tantric-magic.html" },
+  { name: "PsiTrends · Shamanic Reiki School", url: "https://psitrends.com/studies/adv/reiki" },
+  { name: "Paul Crick · Kundalini Reiki Manual", page: "uploaded PDF, 24 pages" },
+] as const;
+
+export const kundaliniInterface: Record<PublicLocale, {
+  eyebrow: string;
+  title: string;
+  heroLead: string;
+  heroDetail: string;
+  heroSource: string;
+  levelCount: string;
+  manualCount: string;
+  start: string;
+  download: string;
+  introduction: string;
+  whatIsKundalini: string;
+  tradition: string;
+  levelsTitle: string;
+  level: string;
+  readLevel: string;
+  excerptTitle: string;
+  practicesTitle: string;
+  balanceTitle: string;
+  balanceSource: string;
+  balanceDescription: string;
+  extraAttunementsTitle: string;
+  extraAttunementsSummary: string;
+  extensionsTitle: string;
+  extensionsSource: string;
+  expand: string;
+  manualTitle: string;
+  manualAttribution: string;
+  manualSections: string;
+  manualNote: string;
+  sourcesLabel: string;
+  caution: string;
+  howToLearnTitle: string;
+  howToLearnQuote: string;
+  contactTitle: string;
+  contactText: string;
+  enquire: string;
+  personal: string;
+  telegram: string;
+  related: string;
+}> = {
+  en: {
+    eyebrow: "Kundalini Reiki · Basic course",
+    title: "Kundalini Reiki",
+    heroLead: "Kundalini Reiki is a different form of energy than traditional Usui Reiki. This is because it combines the Kundalini Energy (energy from the earth) along with the Reiki energy.",
+    heroDetail: "When a person receives all 3 Kundalini Reiki ‘attunements’ they then become a Kundalini Reiki Master.",
+    heroSource: "SuperSkills · Kundalini Reiki",
+    levelCount: "3 attunements",
+    manualCount: "24-page manual",
+    start: "Explore the levels",
+    download: "Download original PDF",
+    introduction: "Introduction to Kundalini Reiki",
+    whatIsKundalini: "What is Kundalini?",
+    tradition: "Kundalini energy is also referred to as “the Kundalini Fire”.",
+    levelsTitle: "Kundalini Reiki 1 · 2 · 3",
+    level: "Level",
+    readLevel: "Read original practices",
+    excerptTitle: "From the original course",
+    practicesTitle: "First recommendations",
+    balanceTitle: "Balance",
+    balanceSource: "PsiMaster: Level 2 · Paul Crick manual: p. 13",
+    balanceDescription: "Hold the tips of your fingers and thumbs of the opposite hands together for 30 seconds and think “balance”.",
+    extraAttunementsTitle: "Extra Attunements that come with the Kundalini 3 attunement",
+    extraAttunementsSummary: "Diamond Reiki · Crystalline Reiki · DNA Reiki · The trauma of birth · Location Reiki · Past life Reiki · Balance",
+    extensionsTitle: "Further attunements in the original manual",
+    extensionsSource: "Paul Crick · Kundalini Reiki Manual · pp. 16–22",
+    expand: "See details",
+    manualTitle: "Kundalini Reiki Manual",
+    manualAttribution: "Paul Crick · Original 24-page PDF",
+    manualSections: "Kundalini Reiki 1–3 · Diamond · Crystalline · DNA · Birth trauma · Location · Past life · Balance · Boosters · Gold Reiki · Ethereal Crystals",
+    manualNote: "The exact original file provided for this course.",
+    sourcesLabel: "Source material",
+    caution: "Historical spiritual teaching materials; no medical effect is established. Reiki does not replace healthcare.",
+    howToLearnTitle: "Course Structure",
+    howToLearnQuote: "Includes: Video, reading, partner practice, meditation, report",
+    contactTitle: "Kundalini Reiki · Training",
+    contactText: "Kundalini Reiki (3 levels)",
+    enquire: "Ask about training",
+    personal: "Request Level 1 initiation",
+    telegram: "Telegram",
+    related: "Other Reiki systems",
+  },
+  ru: {
+    eyebrow: "Кундалини Рейки · Базовый курс",
+    title: "Кундалини Рейки",
+    heroLead: "Кундалини Рейки для практиков. Главный канал энергии, от первой чакры до чакры Корона, чистится и готовится к пробуждению Кундалини, которое Вы испытаете в Кундалини Рейки 2.",
+    heroDetail: "Кундалини Рейки — Базовый курс (1–3 ступень).",
+    heroSource: "PsiMaster · Кундалини Рейки",
+    levelCount: "3 ступени",
+    manualCount: "24 страницы PDF",
+    start: "Посмотреть ступени",
+    download: "Скачать оригинальный PDF",
+    introduction: "Введение в Кундалини Рейки",
+    whatIsKundalini: "Что такое Кундалини?",
+    tradition: "Энергия Кундалини также называется «Огнём Кундалини».",
+    levelsTitle: "Кундалини Рейки · ступени 1, 2, 3",
+    level: "Ступень",
+    readLevel: "Подробнее из первоисточника",
+    excerptTitle: "Из исходной программы",
+    practicesTitle: "Первые рекомендации",
+    balanceTitle: "Баланс",
+    balanceSource: "PsiMaster: ступень 2 · Paul Crick: стр. 13",
+    balanceDescription: "Соединяете подушечки пальцев рук попарно на 30 сек. и проговариваете мысленно: «Кундалини Рейки, Баланс».",
+    extraAttunementsTitle: "Дополнительные настройки с третьей ступенью",
+    extraAttunementsSummary: "Алмазное Рейки · Кристаллическое Рейки · ДНК Рейки · Родовая травма · Местоположение Рейки · Прошлая жизнь Рейки · Баланс",
+    extensionsTitle: "Дополнительные ступени из оригинальной методички",
+    extensionsSource: "Paul Crick · Kundalini Reiki Manual · стр. 16–22",
+    expand: "Подробнее",
+    manualTitle: "Kundalini Reiki Manual",
+    manualAttribution: "Paul Crick · Оригинальный PDF, 24 страницы",
+    manualSections: "Кундалини Рейки 1–3 · Алмазное · Кристаллическое · ДНК · Рождение · Местоположение · Прошлая жизнь · Баланс · Booster · Gold Reiki · Ethereal Crystals",
+    manualNote: "Тот самый оригинальный документ, который приложен к курсу.",
+    sourcesLabel: "Первоисточники",
+    caution: "Исторические материалы духовной традиции. Лечебное действие не установлено; Рейки не заменяет медицинскую помощь.",
+    howToLearnTitle: "Структура обучения",
+    howToLearnQuote: "Видео, чтение, практика с партнёром, медитация, отчёт",
+    contactTitle: "Кундалини Рейки · Обучение",
+    contactText: "Кундалини Рейки (3 ступени)",
+    enquire: "Уточнить условия обучения",
+    personal: "Запросить инициацию 1-й ступени",
+    telegram: "Telegram",
+    related: "Другие системы Рейки",
+  },
+  es: {
+    eyebrow: "Kundalini Reiki · Curso básico",
+    title: "Kundalini Reiki",
+    heroLead: "Kundalini Reiki es una forma de energía diferente del Reiki Usui tradicional. Combina la energía Kundalini (la energía de la Tierra) con la energía Reiki.",
+    heroDetail: "Al recibir las tres iniciaciones de Kundalini Reiki, la persona se convierte en Maestro de Kundalini Reiki.",
+    heroSource: "SuperSkills · Kundalini Reiki",
+    levelCount: "3 niveles",
+    manualCount: "Manual de 24 páginas",
+    start: "Explorar los niveles",
+    download: "Descargar PDF original",
+    introduction: "Introducción a Kundalini Reiki",
+    whatIsKundalini: "¿Qué es Kundalini?",
+    tradition: "La energía Kundalini también se denomina «Fuego Kundalini».",
+    levelsTitle: "Kundalini Reiki 1 · 2 · 3",
+    level: "Nivel",
+    readLevel: "Leer prácticas originales",
+    excerptTitle: "Del curso original",
+    practicesTitle: "Primeras recomendaciones",
+    balanceTitle: "Balance",
+    balanceSource: "PsiMaster: nivel 2 · Manual de Paul Crick: p. 13",
+    balanceDescription: "Une las yemas de los dedos y pulgares de ambas manos durante 30 segundos y piensa «balance».",
+    extraAttunementsTitle: "Sintonizaciones adicionales del nivel 3",
+    extraAttunementsSummary: "Reiki Diamante · Reiki Cristalino · Reiki ADN · Trauma del nacimiento · Reiki de lugar · Reiki de vidas pasadas · Balance",
+    extensionsTitle: "Sintonizaciones adicionales del manual original",
+    extensionsSource: "Paul Crick · Kundalini Reiki Manual · pp. 16–22",
+    expand: "Ver detalles",
+    manualTitle: "Kundalini Reiki Manual",
+    manualAttribution: "Paul Crick · PDF original de 24 páginas",
+    manualSections: "Kundalini Reiki 1–3 · Diamante · Cristalino · ADN · Nacimiento · Lugar · Vidas pasadas · Balance · Boosters · Gold Reiki · Ethereal Crystals",
+    manualNote: "El mismo archivo original proporcionado para este curso.",
+    sourcesLabel: "Materiales originales",
+    caution: "Materiales históricos de una tradición espiritual. No se ha demostrado un efecto médico y no sustituyen la atención sanitaria.",
+    howToLearnTitle: "Estructura del curso",
+    howToLearnQuote: "Vídeo, lectura, práctica en pareja, meditación e informe",
+    contactTitle: "Kundalini Reiki · Formación",
+    contactText: "Kundalini Reiki (3 niveles)",
+    enquire: "Consultar formación",
+    personal: "Solicitar iniciación de nivel 1",
+    telegram: "Telegram",
+    related: "Otros sistemas de Reiki",
+  },
+};
+
 export type KundaliniLesson = {
   number: 1 | 2 | 3;
   title: LocalText;
   summary: LocalText;
-  focus: LocalText[];
-  exercise: LocalText;
-  assignment: LocalText;
+  source: string;
+  practice: SourceExcerpt[];
+  image: string;
 };
-
-export const kundaliniSources = [
-  {
-    site: "PsiMaster",
-    url: "https://psimaster.net/service?shs_term_node_tid_depth=12345",
-    label: "Кундалини Рейки — базовый курс I–III",
-    note: "Detailed source: Level 1, Level 2 Balance, Master level, self-practice, partner consent and named supplementary systems.",
-  },
-  {
-    site: "SuperSkills",
-    url: "https://superskills.vip/trial-express-programs/academy-overview/master-of-kundalini-reiki.html",
-    label: "Kundalini Reiki — original course introduction",
-    note: "Distinct three-attunement Reiki tradition, Kundalini imagery, overview and link to a separately hosted legacy manual.",
-  },
-  {
-    site: "SuperSkills",
-    url: "https://superskills.vip/trial-express-programs/academy-overview.html",
-    label: "Reiki Healing Marathon — Kundalini, Tantra, Yggdrasil",
-    note: "Positions Kundalini Reiki beside, not inside, Tantra Reiki and Runic Reiki Yggdrasil; past participation conditions are historical.",
-  },
-  {
-    site: "SuperSkills",
-    url: "https://superskills.vip/shamanicacademy/vedic-tantric-magic.html",
-    label: "Vedic & Tantric Heritage — programme index",
-    note: "Lists Kundalini Reiki as its own elective with three levels; distinct from a separate Kundalini Awakening programme.",
-  },
-  {
-    site: "PsiTrends",
-    url: "https://psitrends.com/studies/adv/reiki",
-    label: "Shamanic Reiki School — five introductory paths",
-    note: "Kundalini Reiki unit: chakras, reading, meditation, video, partner practice and learner report.",
-  },
-  {
-    site: "PsiTrends",
-    url: "https://psitrends.com/studies/master-taory",
-    label: "Academy of Ancient Temple Arts — wider training context",
-    note: "Documents the school's original Reiki teaching context without conflating Kundalini with Reiki Yggdrasil.",
-  },
-] as const;
 
 export const kundaliniLessons: KundaliniLesson[] = [
   {
     number: 1,
-    title: {
-      en: "Foundation & self-practice",
-      ru: "Основа и практика с собой",
-      es: "Fundamentos y práctica personal",
-    },
+    title: { en: "Kundalini Reiki 1", ru: "1 ступень Кундалини Рейки", es: "Kundalini Reiki 1" },
     summary: {
-      en: "Meet the language of Reiki and Kundalini, learn a grounded daily meditation and begin observing sensations without chasing dramatic effects.",
-      ru: "Познакомьтесь с языком Рейки и Кундалини, освойте спокойную ежедневную медитацию и наблюдение за ощущениями без ожидания необычных эффектов.",
-      es: "Conoce Reiki y Kundalini, establece una meditación diaria y observa tus sensaciones sin buscar experiencias extraordinarias.",
+      en: "The main energy channel, from the Crown chakra to the Root chakra, is cleansed and prepared for the Kundalini awakening that you will experience in Kundalini Reiki 2.",
+      ru: "Главный канал энергии, от первой чакры до чакры Корона, чистится и готовится к пробуждению Кундалини, которое Вы испытаете в Кундалини Рейки 2.",
+      es: "El canal principal de energía, desde el chakra corona hasta el chakra raíz, se limpia y prepara para el despertar Kundalini descrito en Kundalini Reiki 2.",
     },
-    focus: [
+    source: "Paul Crick · Manual p. 5 · PsiMaster",
+    image: "/academy/kundalini-reiki/kundalini-manual-level-1.jpg",
+    practice: [
       {
-        en: "The symbolic route from the root to the crown: seven chakra images and the central channel.",
-        ru: "Символический путь от корневого центра к макушке: семь чакр и центральный канал.",
-        es: "La ruta simbólica de la raíz a la corona: siete chakras y el canal central.",
+        label: { en: "Self healing", ru: "Самолечение", es: "Autotratamiento" },
+        text: {
+          en: "This is the same method that should be used for self-healing. It is a good idea to perform a self-healing every day.",
+          ru: "Лечить себя можно в любом удобном для вас положении: лёжа, сидя, стоя. Важно расслабиться, чтобы комфортно себя чувствовать.",
+          es: "Puedes practicar contigo en cualquier posición cómoda: acostado, sentado o de pie. Lo importante es relajarte.",
+        },
+        origin: "Paul Crick p. 6 / PsiMaster Level 1",
       },
       {
-        en: "Gassho (palms together), intention, grounding and a short seated self-practice.",
-        ru: "Гассё (ладони вместе), намерение, заземление и короткая практика сидя.",
-        es: "Gassho (palmas juntas), intención, enraizamiento y una práctica sentado.",
+        label: { en: "Healing", ru: "Вариант первый · гассё", es: "Gassho" },
+        text: {
+          en: "Clear your thoughts and think to yourself “Reiki” to start the energy flow. Just let the energy flow.",
+          ru: "Сложите ладони на уровне сердца в «молитвенное» положение (в Японии такое положение рук называют «гассё»).",
+          es: "Junta las palmas a la altura del corazón en la posición «gassho».",
+        },
+        origin: "Paul Crick p. 5 / PsiMaster Level 1",
       },
       {
-        en: "Gentle optional hand placements, body awareness and a short reflection journal.",
-        ru: "Мягкое расположение ладоней, внимание к телу и краткий дневник наблюдений.",
-        es: "Posiciones suaves de las manos, conciencia corporal y diario breve.",
+        label: { en: "Remote healing", ru: "Дистанционное", es: "A distancia" },
+        text: {
+          en: "Visualize the receiver, or the receiver’s name or names in the palm of your hand. Then place your palms together.",
+          ru: "Визуализировать пациента, или его имя в ладони, можете написать его на бумаге и соедините ладони вместе.",
+          es: "Visualiza a la persona o su nombre en la palma de tu mano. Después junta las palmas.",
+        },
+        origin: "Paul Crick p. 6 / PsiMaster",
       },
       {
-        en: "Practice with a willing partner, clear consent, boundaries and optional distance visualisation.",
-        ru: "Практика с согласным партнёром, ясные границы и при желании дистанционная визуализация.",
-        es: "Práctica con una pareja que consiente, límites claros y visualización a distancia opcional.",
+        label: { en: "Situation/qualities healing", ru: "Работа с ситуацией", es: "Situaciones y cualidades" },
+        text: {
+          en: "You can also help heal a situation or a personal quality/character trait.",
+          ru: "Так же направляется энергия и на гармонизацию ситуаций.",
+          es: "También puedes dirigir la intención hacia una situación o una cualidad personal.",
+        },
+        origin: "Paul Crick p. 7 / PsiMaster",
+      },
+      {
+        label: { en: "Consent", ru: "Согласие", es: "Consentimiento" },
+        text: {
+          en: "Remember that it should always “feel right” when you start a healing procedure.",
+          ru: "Этически неоправданно посылать Рейки тому, кто об этом не просил.",
+          es: "No es apropiado dirigir Reiki a quien no lo haya solicitado.",
+        },
+        origin: "Paul Crick p. 7 / PsiMaster Level 1",
       },
     ],
-    exercise: {
-      en: "Sit or lie comfortably. Bring palms together, name one personal intention, notice breath and physical sensations for 10–15 minutes, then record what you actually experienced.",
-      ru: "Сядьте или лягте удобно. Соедините ладони, сформулируйте одно личное намерение, 10–15 минут наблюдайте дыхание и ощущения, затем запишите фактические наблюдения.",
-      es: "Siéntate o recuéstate cómodamente. Junta las palmas, define una intención, observa la respiración y sensaciones durante 10–15 minutos y anota lo que realmente sentiste.",
-    },
-    assignment: {
-      en: "Keep a brief journal over several sessions. Describe mood, attention and sensations, and practise asking for consent before any partner exercise.",
-      ru: "Проведите несколько практик с дневником: отмечайте настроение, внимание и ощущения. Отдельно потренируйтесь спрашивать согласие на упражнения с партнёром.",
-      es: "Lleva un diario durante varias sesiones: ánimo, atención y sensaciones. Practica solicitar consentimiento antes de trabajar con otra persona.",
-    },
   },
   {
     number: 2,
-    title: {
-      en: "Kundalini imagery & Balance",
-      ru: "Образ Кундалини и «Баланс»",
-      es: "Imagen Kundalini y «Balance»",
-    },
+    title: { en: "Kundalini Reiki 2", ru: "2 ступень Кундалини Рейки", es: "Kundalini Reiki 2" },
     summary: {
-      en: "Deepen the traditional earth-to-crown visualisation, explore chakra symbolism and study the short Balance practice recorded in the original manual.",
-      ru: "Углубите традиционную визуализацию потока от земли к макушке, изучите символику чакр и короткую практику «Баланс» из первоисточника.",
-      es: "Profundiza la visualización tradicional de tierra a corona, explora los chakras y conoce el ejercicio breve «Balance» del manual.",
+      en: "The Kundalini Reiki 1 attunement is strengthened and the base chakra is opened, the third eye is enlarged.",
+      ru: "Пробуждается энергия Кундалини, увеличивается чакра третьего глаза.",
+      es: "La sintonización de Kundalini Reiki 1 se refuerza; se abre el chakra base y se amplía el tercer ojo.",
     },
-    focus: [
+    source: "Paul Crick · Manual pp. 8–9 · PsiMaster",
+    image: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
+    practice: [
       {
-        en: "The Kundalini Flame as a meditative image of vitality and upward movement.",
-        ru: "«Огонь Кундалини» как медитативный образ жизненности и движения вверх.",
-        es: "La «llama Kundalini» como imagen meditativa de vitalidad y movimiento ascendente.",
+        label: { en: "Kundalini Reiki Meditation", ru: "Медитация Кундалини Рейки", es: "Meditación Kundalini Reiki" },
+        text: {
+          en: "Sit or lay down with your eyes closed. Think “Kundalini Reiki Meditation”. The process will then start, and will automatically stop around 5 to 15 minutes later.",
+          ru: "Сядьте или лягте с закрытыми глазами. Мысленно произнесите «Kundalini Reiki Meditation».",
+          es: "Siéntate o recuéstate con los ojos cerrados. Piensa «Kundalini Reiki Meditation».",
+        },
+        origin: "Paul Crick p. 9",
       },
       {
-        en: "Chakra-focused attention and the difference between bodily sensations and interpretation.",
-        ru: "Внимание к чакрам и различение телесных ощущений и их интерпретаций.",
-        es: "Atención a los chakras y distinción entre sensaciones e interpretaciones.",
+        label: { en: "Healing", ru: "Работа с потоком", es: "Práctica" },
+        text: {
+          en: "From now on, when you are healing you should think “Kundalini Reiki”.",
+          ru: "Теперь, когда вы пользуетесь энергией (в т.ч. для лечения, чистки помещений, гармонизации отношений и ситуаций и пр.), надо думать не «Рейки», а «Кундалини Рейки».",
+          es: "A partir de ahora, al practicar, piensa «Kundalini Reiki» en lugar de «Reiki».",
+        },
+        origin: "Paul Crick p. 8 / PsiMaster Level 2",
       },
       {
-        en: "The historical Balance ritual: touch matching fingertips together, pause, and name your intention.",
-        ru: "Историческая практика «Баланс»: соединить подушечки пальцев обеих рук, сделать паузу и обозначить намерение.",
-        es: "El ritual histórico «Balance»: unir las yemas de ambas manos, hacer una pausa y nombrar tu intención.",
-      },
-      {
-        en: "Bringing the practice into daily life without claiming physical or medical effects.",
-        ru: "Интеграция практики в повседневность без обещаний физического или медицинского эффекта.",
-        es: "Integración cotidiana sin promesas de efectos físicos o médicos.",
+        label: { en: "Meditation duration", ru: "Длительность медитации", es: "Duración" },
+        text: {
+          en: "The meditation usually takes between 5 and 10 minutes.",
+          ru: "Медитация Кундалини Рейки — 5–10 минут (согласно Paul Crick, стр. 8).",
+          es: "La meditación suele durar entre 5 y 10 minutos.",
+        },
+        origin: "Paul Crick p. 8",
       },
     ],
-    exercise: {
-      en: "For about 30 seconds, bring corresponding fingertips together and silently name the Balance intention. Follow with an unhurried body check-in. This is a reflective ritual, not a proven intervention.",
-      ru: "Примерно на 30 секунд соедините соответствующие кончики пальцев и мысленно назовите намерение «Баланс». Затем спокойно проверьте ощущения в теле. Это рефлексивный ритуал, не доказанный лечебный метод.",
-      es: "Durante unos 30 segundos, une las yemas correspondientes y formula la intención «Balance». Después observa el cuerpo sin prisa. Es un ritual reflexivo, no un tratamiento demostrado.",
-    },
-    assignment: {
-      en: "Compare an ordinary grounding meditation and the Balance exercise in your notes; describe experience rather than promising outcomes.",
-      ru: "Сравните обычную медитацию заземления с «Балансом» в дневнике; описывайте опыт, а не предполагаемые результаты.",
-      es: "Compara la meditación de enraizamiento con «Balance» en tu diario; describe la experiencia, no resultados supuestos.",
-    },
   },
   {
     number: 3,
-    title: {
-      en: "Master level & traditional extensions",
-      ru: "Ступень Мастера и дополнительные настройки",
-      es: "Nivel Maestro y extensiones tradicionales",
-    },
+    title: { en: "Kundalini Reiki 3 · Master", ru: "3 ступень Кундалини Рейки · Мастер", es: "Kundalini Reiki 3 · Maestro" },
     summary: {
-      en: "Study the teacher/attunement format and the six named symbolic extensions preserved in the PsiMaster course; use them as historical learning themes, not cure claims.",
-      ru: "Изучите формат мастерской передачи и шесть дополнительных названных настроек из курса PsiMaster как темы традиции, а не обещания исцеления.",
-      es: "Estudia el formato de transmisión y seis extensiones simbólicas del curso PsiMaster como temas tradicionales, no promesas de curación.",
+      en: "Kundalini Reiki Master – The previous attunements are strengthened and the Throat, Solar Plexus, Hara and Root Chakras are opened wider.",
+      ru: "Предыдущие настройки усилены. Горло, Солнечное сплетение, Хара стабилизируются, чакры открыты.",
+      es: "Kundalini Reiki Maestro: se refuerzan las sintonizaciones anteriores y se amplían los chakras garganta, plexo solar, Hara y raíz.",
     },
-    focus: [
+    source: "Paul Crick · Manual pp. 10–16 · PsiMaster",
+    image: "/academy/kundalini-reiki/kundalini-manual-level-3.jpg",
+    practice: [
       {
-        en: "Master-level initiation/attunement as a teacher-led practice within this tradition.",
-        ru: "Мастерская инициация / настройка как практика с преподавателем в рамках традиции.",
-        es: "La iniciación de nivel Maestro como práctica guiada por un docente.",
+        label: { en: "Objects and crystals", ru: "Кристаллы и предметы", es: "Cristales y objetos" },
+        text: {
+          en: "You are taught to attune Crystals and other objects, so that they act as Reiki channels.",
+          ru: "Вы сможете настроить Кристаллы и другие объекты, так, чтобы они действовали как каналы Рейки.",
+          es: "Aprendes a sintonizar cristales y otros objetos para que actúen como canales Reiki.",
+        },
+        origin: "Paul Crick p. 10 / PsiMaster Level 3",
       },
       {
-        en: "Diamond Reiki and Crystal Reiki: traditional names for clarity and focus visualisation.",
-        ru: "Алмазное и Кристаллическое Рейки: традиционные названия образных практик ясности и внимания.",
-        es: "Reiki Diamante y Reiki Cristal: nombres tradicionales para visualización y atención.",
+        label: { en: "How to pass on Kundalini Reiki 1-2-3", ru: "Как настраивать человека на Кундалини Рейки", es: "Cómo transmitir Kundalini Reiki 1–3" },
+        text: {
+          en: "It is very simple to pass on the Kundalini Reiki attunements. You just ask your higher self for the attunements.",
+          ru: "Это очень простой процесс. Вы просите ваше Высшее Я дать настройку. Вы можете настраивать несколько человек сразу.",
+          es: "El texto describe la transmisión de las iniciaciones de Kundalini Reiki mediante una petición al Yo Superior.",
+        },
+        origin: "Paul Crick p. 15 / PsiMaster",
       },
       {
-        en: "DNA Reiki, Birth Trauma Reiki and Past Life Reiki: legacy ritual labels, not biological or psychological treatment.",
-        ru: "ДНК Рейки, Рейки Родовой травмы и Прошлой жизни: исторические ритуальные названия, не биологическое или психотерапевтическое лечение.",
-        es: "Reiki ADN, Trauma del Nacimiento y Vidas Pasadas: nombres rituales históricos, no tratamientos.",
-      },
-      {
-        en: "Location Reiki, object/crystal symbolism, and responsible communication with students.",
-        ru: "Рейки Местоположения, символика предметов/кристаллов и ответственная коммуникация с учениками.",
-        es: "Reiki de Lugar, simbolismo de objetos/cristales y comunicación responsable.",
+        label: { en: "Attuning objects", ru: "Инициация объектов", es: "Sintonizar objetos" },
+        text: {
+          en: "Crystals, trees and other objects can be opened to the Reiki energy.",
+          ru: "Кристаллы, дерево и другие объекты могут быть открыты к энергии Рейки.",
+          es: "Los cristales, árboles y otros objetos pueden abrirse a la energía Reiki, según el manual.",
+        },
+        origin: "Paul Crick p. 16 / PsiMaster",
       },
     ],
-    exercise: {
-      en: "The historic text proposes an eight-day sequence: Crystal (days 1–2), DNA (3), Birth (4), Location (5), Past Life (6–8). Study it as a symbolic reflection sequence only; no healing, DNA repair or past-life claims are implied.",
-      ru: "В историческом тексте есть восьмидневная последовательность: Кристалл (1–2), ДНК (3), Рождение (4), Место (5), Прошлая жизнь (6–8). Изучайте её только как символическую последовательность: она не означает лечение, восстановление ДНК или достоверность прошлых жизней.",
-      es: "El texto histórico propone ocho días: Cristal (1–2), ADN (3), Nacimiento (4), Lugar (5), Vida Pasada (6–8). Estúdialo solo como secuencia simbólica, sin afirmar curación ni reparación del ADN.",
-    },
-    assignment: {
-      en: "Prepare a responsible practice outline: purpose, participant consent, observable experience, limits of the method and clear language for any future students.",
-      ru: "Подготовьте этичный план практики: цель, согласие участников, наблюдаемый опыт, ограничения метода и понятные объяснения будущим ученикам.",
-      es: "Prepara un plan ético: objetivo, consentimiento, experiencia observable, límites del método y explicaciones claras.",
-    },
   },
 ];
 
-export const kundaliniEveryday: { title: LocalText; description: LocalText }[] = [
+export const kundaliniEveryday: SourceExcerpt[] = [
   {
-    title: { en: "Start with yourself", ru: "Начните с себя", es: "Empieza contigo" },
-    description: {
-      en: "Regular short sessions, at a comfortable pace. Pause if a practice feels distressing.",
-      ru: "Регулярные короткие сеансы в удобном темпе. При дискомфорте остановитесь.",
-      es: "Sesiones breves y regulares a un ritmo cómodo. Detente si surge malestar.",
+    label: { en: "First recommendations", ru: "Первые рекомендации", es: "Primeras recomendaciones" },
+    text: {
+      en: "It is a good idea to perform a self-healing every day.",
+      ru: "Во-первых, это работа с самим собой! Вы делаете себе сеансы ежедневно, краткосрочные можно.",
+      es: "Es buena idea realizar una práctica personal cada día.",
     },
+    origin: "Paul Crick p. 6 / PsiMaster",
   },
   {
-    title: { en: "Intention & hands", ru: "Намерение и ладони", es: "Intención y manos" },
-    description: {
-      en: "Use palms together or gentle self-touch as a focus for attention; specific placements are optional.",
-      ru: "Ладони вместе или мягкое прикосновение к себе как опора для внимания; фиксированные позиции необязательны.",
-      es: "Une las palmas o usa un contacto suave contigo como foco de atención; las posiciones son opcionales.",
+    label: { en: "The hands", ru: "Положение ладоней", es: "Las manos" },
+    text: {
+      en: "Sit in a comfortable chair and place your arms either on the arms of the chair or one on each thigh with your palms facing upwards.",
+      ru: "Руки должны лежать удобно, не напрягаться, подложите подушечку под них для удобства!",
+      es: "Siéntate cómodamente y coloca los brazos sobre los apoyabrazos o en los muslos, con las palmas hacia arriba.",
     },
+    origin: "Paul Crick p. 4 / PsiMaster",
   },
   {
-    title: { en: "Partner work with consent", ru: "Практика с согласия", es: "Práctica con consentimiento" },
-    description: {
-      en: "Ask first, agree on boundaries, and make touch optional. Visualisation at a distance is an intention exercise, not evidence that someone receives treatment.",
-      ru: "Сначала спросите, согласуйте границы, прикосновения необязательны. Дистанционная визуализация — упражнение с намерением, а не доказательство воздействия на другого.",
-      es: "Pregunta antes, acuerda límites y permite practicar sin tocar. La visualización a distancia no prueba un efecto sobre otros.",
+    label: { en: "Relax", ru: "Расслабление", es: "Relajación" },
+    text: {
+      en: "You do not have to do anything else but relax and enjoy the experience.",
+      ru: "Во время сеанса постарайтесь не концентрироваться на посторонних мыслях. Просто расслабьтесь и дайте энергии свободно течь.",
+      es: "No necesitas hacer nada más que relajarte y disfrutar de la experiencia.",
     },
-  },
-  {
-    title: { en: "Reflect on situations", ru: "Осмысление ситуаций", es: "Reflexión sobre situaciones" },
-    description: {
-      en: "The source applies intention to relationships, surroundings and personal goals. Use those as reflective prompts, not guarantees of external change.",
-      ru: "Первоисточник предлагает намерения для отношений, пространства и целей. Используйте их как темы осмысления, не гарантии изменения обстоятельств.",
-      es: "La fuente aplica intención a relaciones, entornos y metas; úsalas para reflexionar, sin prometer cambios externos.",
-    },
-  },
-  {
-    title: { en: "Keep a learning journal", ru: "Ведите дневник", es: "Lleva un diario" },
-    description: {
-      en: "Record what you actually did and felt, including questions to discuss with a teacher.",
-      ru: "Записывайте, что вы реально делали и чувствовали, и вопросы преподавателю.",
-      es: "Anota lo que hiciste y sentiste, incluyendo preguntas para el docente.",
-    },
+    origin: "Paul Crick p. 4 / PsiMaster",
   },
 ];
 
-export const kundaliniInterface: Record<PublicLocale, {
-  eyebrow: string; title: string; introduction: string; primary: string; secondary: string;
-  heroNote: string; levels: string; levelsSub: string; sourcesCount: string; focus: string;
-  stepsTitle: string; stepsSub: string; detailLabel: string; exercise: string; assignment: string;
-  methodTitle: string; methodLead: string; howTitle: string; howText: string[];
-  faqTitle: string; faqs: { q: string; a: string }[];
-  sourceTitle: string; sourceLead: string; archiveLabel: string; provenanceNote: string;
-  contactTitle: string; contactText: string; contactProgramme: string; contactLevel: string; telegram: string;
-  footerNote: string; back: string;
-}> = {
-  en: {
-    eyebrow: "HOLISTIC HOUSE · REIKI TRAINING",
-    title: "Kundalini Reiki",
-    introduction: "Three progressive levels: learn self-practice, explore Kundalini and chakra imagery, and study the traditional Master extensions. One clear learning path assembled from PsiMaster, SuperSkills and PsiTrends.",
-    primary: "Explore the 3 levels", secondary: "Ask about training",
-    heroNote: "Independent course · no prerequisite to enrol in Tantra Reiki or Yggdrasil",
-    levels: "3 levels", levelsSub: "Foundation → Balance → Master", sourcesCount: "3 original sites", focus: "A personal practice first",
-    stepsTitle: "The course, at a glance", stepsSub: "Read the overview first. Expand a level to see its practices and assignment.",
-    detailLabel: "Open level details", exercise: "Guided study exercise", assignment: "Practice & reflection",
-    methodTitle: "Everyday practice", methodLead: "Practical elements preserved from the original school material, with consent, grounding and honest observation at the centre.",
-    howTitle: "How learning works", howText: ["1. Read the lesson and practise your own meditation.", "2. Discuss the level and receive an initiation with a qualified teacher if you choose that path.", "3. Practise independently or with a consenting partner, then share a short reflection before progressing."],
-    faqTitle: "Questions before you begin",
-    faqs: [
-      { q: "How is Kundalini Reiki different from Tantra or Yggdrasil Reiki?", a: "These are distinct training paths. Kundalini Reiki focuses on a three-step attunement model and chakra/Kundalini imagery. Tantra Reiki has nine levels centred on relational and embodied themes; Yggdrasil has its own runic and temple-tradition structure." },
-      { q: "Do I need previous Reiki training?", a: "The original three-level course presents Level 1 as the beginning. Ask the teacher to confirm current prerequisites and the suitable entry point." },
-      { q: "Is Level 1 free? What does the course cost?", a: "Some older source pages mention trial, discounted or free offers. They are historical and do not establish a current price or place. Ask for today's options before booking." },
-      { q: "Is it a health treatment?", a: "No. This is spiritual and reflective education, not a diagnosis or a substitute for evidence-based medical or mental-health care. References to DNA, birth trauma and past lives are historical names, not established outcomes." },
-    ],
-    sourceTitle: "Original teaching sources", sourceLead: "The course brings together the surviving first-party descriptions; open the original pages for the full historic wording and the wider school context.", archiveLabel: "Read original", provenanceNote: "Legacy costs, certificates, superior-power comparisons and medical promises are not carried forward as current facts. The historical eight-day sequence is documented inside Level 3.",
-    contactTitle: "Begin with Level 1", contactText: "Ask Andy about the current course format, availability, study materials and personal initiation. No booking is made until you confirm it directly.",
-    contactProgramme: "Request course outline & current fees", contactLevel: "Request personal Level 1 initiation", telegram: "Or write on Telegram",
-    footerNote: "Educational, contemplative practice. Participation and physical touch are always optional.",
-    back: "Academy",
+export const kundaliniExtraNames: LocalText[] = [
+  { en: "Diamond Reiki", ru: "Алмазное Рейки", es: "Reiki Diamante" },
+  { en: "Crystalline Reiki", ru: "Кристаллическое Рейки", es: "Reiki Cristalino" },
+  { en: "DNA Reiki", ru: "ДНК Рейки", es: "Reiki ADN" },
+  { en: "The trauma of birth", ru: "Родовая травма и Рейки", es: "Trauma del nacimiento" },
+  { en: "Location Reiki", ru: "Местоположение Рейки", es: "Reiki de lugar" },
+  { en: "Past life Reiki", ru: "Прошлая жизнь Рейки", es: "Reiki de vidas pasadas" },
+  { en: "Balance", ru: "Баланс", es: "Balance" },
+];
+
+export const kundaliniExtraAttunements: SourceExcerpt[] = [
+  {
+    label: kundaliniExtraNames[0],
+    text: {
+      en: "During the opening an etheric diamond will be placed in the crown chakra.",
+      ru: "Когда Вы хотите использовать эту технику, думайте «Алмазное Рейки» вместо «Кундалини Рейки».",
+      es: "Durante la sintonización, el manual describe la colocación de un diamante etérico en el chakra corona.",
+    },
+    origin: "Paul Crick p. 10 / PsiMaster",
   },
-  ru: {
-    eyebrow: "HOLISTIC HOUSE · ОБУЧЕНИЕ РЕЙКИ",
-    title: "Кундалини Рейки",
-    introduction: "Три последовательные ступени: личная практика, работа с образами Кундалини и чакр, затем мастерские дополнительные настройки. Единый курс на основе PsiMaster, SuperSkills и PsiTrends.",
-    primary: "Посмотреть 3 ступени", secondary: "Узнать об обучении",
-    heroNote: "Самостоятельная система · не требует прохождения Тантра Рейки или Рейки Иггдрасиль",
-    levels: "3 ступени", levelsSub: "Основа → Баланс → Мастер", sourcesCount: "3 сайта-источника", focus: "Сначала личная практика",
-    stepsTitle: "Вся программа — за один взгляд", stepsSub: "Сначала короткое описание. Нажмите на ступень, чтобы раскрыть упражнения и задания.",
-    detailLabel: "Открыть содержание ступени", exercise: "Учебная практика", assignment: "Практическое задание",
-    methodTitle: "Практики на каждый день", methodLead: "Сохранили основные упражнения школы, добавив понятные границы, согласие и наблюдение за реальным опытом.",
-    howTitle: "Как проходит обучение", howText: ["1. Изучаете материал и осваиваете медитацию самостоятельно.", "2. При желании проходите соответствующую инициацию с преподавателем.", "3. Практикуете самостоятельно или с согласным партнёром и описываете результат наблюдений перед следующей ступенью."],
-    faqTitle: "Вопросы перед началом",
-    faqs: [
-      { q: "Чем Кундалини Рейки отличается от Тантра Рейки и Иггдрасиль?", a: "Это отдельная система: три ступени, настройка и образ Кундалини, символика чакр. Тантра Рейки имеет девять ступеней с акцентом на контакт и телесный опыт. Иггдрасиль — самостоятельная руническая и храмовая программа." },
-      { q: "Нужен ли опыт в Рейки?", a: "В исходной трёхступенчатой программе первая ступень представлена как входная. Актуальные требования и формат лучше уточнить у преподавателя." },
-      { q: "Первая ступень бесплатная? Какая цена?", a: "На старых сайтах встречаются пробные, бесплатные и акционные предложения. Они не подтверждают сегодняшнюю стоимость и доступность. Текущие условия уточняются перед записью." },
-      { q: "Это метод лечения?", a: "Нет. Это духовно-медитативное обучение, а не диагностика и не замена медицинской или психотерапевтической помощи. «ДНК», «родовая травма» и «прошлая жизнь» — названия исторических упражнений, а не доказанные лечебные эффекты." },
-    ],
-    sourceTitle: "Первоисточники и учебные материалы", sourceLead: "Здесь объединены сохранившиеся авторские страницы; все ссылки ведут на оригинальные тексты и контекст школы.", archiveLabel: "Читать первоисточник", provenanceNote: "Старые цены, сертификаты, сравнения силы разных Рейки и обещания исцеления не перенесены как актуальные факты. Историческая последовательность восьми дней описана внутри 3-й ступени.",
-    contactTitle: "Начните с 1-й ступени", contactText: "Уточните у Андрея актуальный формат, стоимость, доступные материалы и возможность личной инициации. Заявка не равна бронированию.",
-    contactProgramme: "Запросить программу и текущие цены", contactLevel: "Запросить личную инициацию 1-й ступени", telegram: "Или написать в Telegram",
-    footerNote: "Духовно-медитативная практика. Участие и прикосновения — только по желанию и с согласия.",
-    back: "Академия",
+  {
+    label: kundaliniExtraNames[1],
+    text: {
+      en: "A complete treatment consists of two healing sessions.",
+      ru: "Полное лечение состоит из двух сеансов. Сеанс делается 15–20 минут, один раз в день, два дня подряд.",
+      es: "El manual describe dos sesiones como un tratamiento completo.",
+    },
+    origin: "Paul Crick p. 11 / PsiMaster",
   },
-  es: {
-    eyebrow: "HOLISTIC HOUSE · FORMACIÓN REIKI",
-    title: "Kundalini Reiki",
-    introduction: "Tres niveles progresivos: práctica personal, imágenes de Kundalini y chakras, y extensiones tradicionales de Maestro. Un curso basado en PsiMaster, SuperSkills y PsiTrends.",
-    primary: "Ver los 3 niveles", secondary: "Consultar formación",
-    heroNote: "Sistema independiente · no requiere Tantra Reiki ni Reiki Yggdrasil",
-    levels: "3 niveles", levelsSub: "Fundamento → Balance → Maestro", sourcesCount: "3 sitios originales", focus: "Primero, práctica personal",
-    stepsTitle: "El curso de un vistazo", stepsSub: "Lee el resumen. Despliega cada nivel para ver ejercicios y tareas.",
-    detailLabel: "Ver detalles del nivel", exercise: "Ejercicio de estudio", assignment: "Práctica y reflexión",
-    methodTitle: "Práctica cotidiana", methodLead: "Elementos de los textos originales, con consentimiento, enraizamiento y observación honesta.",
-    howTitle: "Cómo funciona", howText: ["1. Lee la lección y practica la meditación.", "2. Si lo deseas, recibe la iniciación correspondiente con un docente.", "3. Practica a solas o con una pareja que consienta, y comparte tus observaciones."],
-    faqTitle: "Preguntas frecuentes",
-    faqs: [
-      { q: "¿En qué se diferencia de Tantra Reiki o Yggdrasil?", a: "Son cursos diferentes. Kundalini Reiki tiene tres niveles y usa imágenes de chakras; Tantra Reiki tiene nueve niveles relacionales, e Yggdrasil utiliza tradiciones rúnicas y de templo." },
-      { q: "¿Necesito experiencia previa?", a: "El material original presenta el Nivel 1 como entrada. Confirma los requisitos actuales con el docente." },
-      { q: "¿El Nivel 1 es gratuito?", a: "Algunas páginas históricas contienen promociones; no confirman la disponibilidad ni el precio actuales. Pregunta antes de reservar." },
-      { q: "¿Es un tratamiento médico?", a: "No. Es aprendizaje espiritual y contemplativo, sin sustituir atención médica o psicológica. ADN, trauma del nacimiento y vidas pasadas son nombres tradicionales, no resultados demostrados." },
-    ],
-    sourceTitle: "Fuentes originales", sourceLead: "Reunimos materiales de las tres webs; los enlaces llevan a los textos históricos.", archiveLabel: "Leer fuente", provenanceNote: "Precios antiguos, certificados, comparaciones de poder y promesas médicas no se presentan como hechos actuales. La secuencia histórica de ocho días aparece en el Nivel 3.",
-    contactTitle: "Comienza en el Nivel 1", contactText: "Consulta con Andrey el formato, precio, materiales y disponibilidad actual. No se realiza ninguna reserva automática.",
-    contactProgramme: "Solicitar programa y precios actuales", contactLevel: "Solicitar iniciación personal Nivel 1", telegram: "O escribir por Telegram",
-    footerNote: "Práctica educativa y contemplativa. Participación y contacto físico siempre opcionales.",
-    back: "Academia",
+  {
+    label: kundaliniExtraNames[2],
+    text: {
+      en: "This is reputed to strengthen the ability to heal DNA strands (our blue print).",
+      ru: "Соедините ваши ладони и думайте: «ДНК, Рейки».",
+      es: "El manual atribuye tradicionalmente a «Reiki ADN» un efecto sobre el ADN; esta afirmación no está demostrada.",
+    },
+    origin: "Paul Crick p. 11 / PsiMaster",
   },
+  {
+    label: kundaliniExtraNames[3],
+    text: {
+      en: "Put your hands together and think “Birth trauma Reiki”.",
+      ru: "Соедините ваши руки и думайте: «Родовая травма, Рейки».",
+      es: "Junta las manos y piensa «Birth trauma Reiki».",
+    },
+    origin: "Paul Crick p. 12 / PsiMaster",
+  },
+  {
+    label: kundaliniExtraNames[4],
+    text: {
+      en: "Put your hands together and think “Location Reiki”.",
+      ru: "Соедините ваши руки и думайте: «Местоположение, Рейки».",
+      es: "Junta las manos y piensa «Location Reiki».",
+    },
+    origin: "Paul Crick p. 12 / PsiMaster",
+  },
+  {
+    label: kundaliniExtraNames[5],
+    text: {
+      en: "Put your hands together and think “Past life Reiki”.",
+      ru: "Соедините ваши руки и думайте: «Прошлая жизнь, Рейки».",
+      es: "Junta las manos y piensa «Past life Reiki».",
+    },
+    origin: "Paul Crick p. 12 / PsiMaster",
+  },
+];
+
+export const kundaliniExtensions: Array<{
+  id: string;
+  title: LocalText;
+  excerpt: LocalText;
+  details: LocalText;
+  manualPages: string;
+  stoneNames?: string[];
+  stoneNamesAdvanced?: string[];
+  advancedTitle?: LocalText;
+}> = [
+  {
+    id: "boosters",
+    title: { en: "Kundalini Reiki Booster Attunements", ru: "Kundalini Reiki Booster · Усиления", es: "Kundalini Reiki · Sintonizaciones Booster" },
+    excerpt: {
+      en: "There are 6 booster attunements.",
+      ru: "В методичке описаны 6 усилений Кундалини Рейки (Booster Attunements).",
+      es: "El manual presenta seis sintonizaciones Booster.",
+    },
+    details: {
+      en: "Kundalini Reiki levels 3 – 9 or Kundalini Reiki Booster attunements 1–6 that you can pass on to others. It is recommended that a 5-day integrating period is left between the Kundalini Reiki Booster levels.",
+      ru: "«Kundalini Reiki levels 3–9» и «Kundalini Reiki Booster attunements 1–6» — обозначения из оригинальной методички. Между ступенями Booster рекомендованы интервалы по пять дней.",
+      es: "El texto llama a estas sintonizaciones «Kundalini Reiki Booster 1–6» y recomienda un período de integración de cinco días entre niveles.",
+    },
+    manualPages: "16–17",
+  },
+  {
+    id: "gold",
+    title: { en: "Gold Reiki 1–2–3 Attunement", ru: "Gold Reiki · 1–3 ступени", es: "Gold Reiki · niveles 1–3" },
+    excerpt: {
+      en: "Prerequisite: Kundalini Reiki 1-2-3.",
+      ru: "Предварительное условие по методичке: Kundalini Reiki 1–3.",
+      es: "Requisito previo: Kundalini Reiki 1–2–3.",
+    },
+    details: {
+      en: "Gold Reiki 2 & 3 Attunements. Both levels 2 and 3 increase and fortify the 1 attunement.",
+      ru: "В оригинальном руководстве выделены Gold Reiki 1, 2 и 3, а также отдельные настройки объектов.",
+      es: "El manual incluye Gold Reiki 1, 2 y 3, además de sintonizaciones de objetos.",
+    },
+    manualPages: "18",
+  },
+  {
+    id: "crystals",
+    title: { en: "Ethereal Crystals 1–6 attunement", ru: "Ethereal Crystals · 1–6 ступени", es: "Cristales etéricos · niveles 1–6" },
+    excerpt: {
+      en: "Prerequisite: Kundalini Reiki 1-2-3. There are 6 levels in a full ethereal crystal attunement.",
+      ru: "В методичке описаны шесть ступеней Ethereal Crystals после Kundalini Reiki 1–3.",
+      es: "Requisito previo: Kundalini Reiki 1–2–3. Seis niveles en total.",
+    },
+    details: {
+      en: "During the 1–3 attunements you are attuned to the following stones:",
+      ru: "Список камней из исходного руководства (Ethereal Crystals 1–3):",
+      es: "Piedras enumeradas en el manual (Ethereal Crystals 1–3):",
+    },
+    stoneNames: [
+      "Amber", "Amethyst", "Aquamarine", "Aventurine", "Pink Beryl", "Blue Lace Agate", "Botswana Agate",
+      "Green Calcite", "Carnelian", "Chrysocolla", "Citrine", "Clear Quartz", "Diamond",
+      "Single Terminated Clear Quartz", "Emerald", "Hematite", "Red Jasper", "Malachite",
+      "Rose Quartz", "Ruby", "Sodalite", "Turquoise",
+    ],
+    advancedTitle: {
+      en: "Ethereal Crystals 4–6 attunement",
+      ru: "Ethereal Crystals · 4–6 ступени",
+      es: "Cristales etéricos · niveles 4–6",
+    },
+    stoneNamesAdvanced: [
+      "Alexandrite", "Amazonite", "Azurite", "Bloodstone", "Gold Calcite",
+      "Fire Opal", "Fluorite", "Red Garnet", "Jade", "Lapis Lazuli",
+      "Moldavite", "Moonstone", "Peridot", "Pyrite", "Blue Sapphire",
+      "Yellow Sapphire", "Black Tourmaline", "Violet Tourmaline",
+      "Pink Tourmaline", "Double Terminated Clear Quartz",
+    ],
+    manualPages: "19–22",
+  },
+];
+
+export const kundaliniHistory: SourceExcerpt = {
+  label: { en: "History", ru: "История", es: "Historia" },
+  text: {
+    en: "Kundalini Reiki was brought to this earthly plane by Mr. Ole Gabrielsen. Mr. Gabrielsen is a Master of Meditation and has inspired many people throughout the world.",
+    ru: "Оригинальная методичка Paul Crick связывает происхождение Kundalini Reiki с Ole Gabrielsen.",
+    es: "El manual original de Paul Crick atribuye el origen de Kundalini Reiki a Ole Gabrielsen.",
+  },
+  origin: "Paul Crick · Manual p. 3",
 };

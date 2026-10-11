@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
   const description = routeKey(slug) === "reiki/kundalini-reiki"
-    ? locale === "ru" ? "Кундалини Рейки: отдельный курс 1–3 ступеней, медитации, практика Баланс, мастерские настройки и первоисточники PsiMaster, SuperSkills и PsiTrends." : locale === "es" ? "Kundalini Reiki: curso independiente de tres niveles, meditación, Balance, práctica de Maestro y fuentes originales." : "Kundalini Reiki: a distinct three-level programme with meditation, Balance, Master-level study and original PsiMaster, SuperSkills and PsiTrends sources."
+    ? locale === "ru" ? "Кундалини Рейки — базовый курс 1–3 ступени. Исходная методичка Kundalini Reiki Manual, Paul Crick, 24 страницы, PDF." : locale === "es" ? "Kundalini Reiki 1–3. Kundalini Reiki Manual de Paul Crick, PDF original de 24 páginas." : "Kundalini Reiki 1–3. Original Kundalini Reiki Manual by Paul Crick, 24-page PDF, extra attunements and Boosters."
     : child === "superskills-sources"
     ? locale === "ru" ? "Упорядоченная библиотека 19 исходных материалов SuperSkills: базовый и инструкторский курсы, практика, FAQ, отзывы, инициация." : locale === "es" ? "Biblioteca de 19 fuentes Reiki Yggdrasil, organizadas por cursos, ejercicios, iniciación y testimonios." : "Nineteen original SuperSkills source pages organized by Basic Course, Instructor Course, exercises, FAQ, initiation and testimonials."
     : child === "free-initiation"

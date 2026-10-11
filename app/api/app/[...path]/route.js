@@ -339,6 +339,7 @@ async function handle(request, { params }) {
       const body = await readBody(request)
       if (path[2] === 'advance') return json(await repo.advanceTestPlan(actor, path[1], body))
       if (path[2] === 'cancel') return json(await repo.cancelTestPlan(actor, path[1], body))
+      if (path[2] === 'remove') return json(await repo.removeTestPlanItem(actor, path[1], body))
     }
     if (joined === 'practitioner/open' && method === 'POST') {
       const body = await readBody(request)

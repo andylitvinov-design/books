@@ -14,6 +14,7 @@ type AcquisitionEventLinkProps = {
   event: AcquisitionEvent;
   href: string;
   id?: string;
+  onClick?: () => void;
   prefetch?: boolean;
   rel?: string;
   target?: string;
@@ -28,6 +29,6 @@ function emit(event: AcquisitionEvent) {
   dataLayer?.push({ event });
 }
 
-export function AcquisitionEventLink({ attributes, children, event, ...props }: AcquisitionEventLinkProps) {
-  return <Link {...props} {...attributes} onClick={() => emit(event)}>{children}</Link>;
+export function AcquisitionEventLink({ attributes, children, event, onClick, ...props }: AcquisitionEventLinkProps) {
+  return <Link {...props} {...attributes} onClick={() => { onClick?.(); emit(event); }}>{children}</Link>;
 }

@@ -81,3 +81,17 @@
 .paidOptions p{font:12px/1.45 Arial,Helvetica,sans-serif;color:#776e61;margin:4px 0 0}
 .paidOptions a:focus-visible{outline:3px solid #b88046;outline-offset:3px}
 @media(max-width:767px){.paid{grid-template-columns:minmax(0,1fr);padding:20px;margin-top:38px}.paidOptions a{gap:9px;min-height:58px;font-size:12px}.paidOptions a strong{font-size:18px}}
+
+
+/* Optional empty schematic, not fabricated client results. */
+.sample{box-sizing:border-box;width:min(1080px,calc(100% - 40px));margin:23px auto 0;padding:0 20px;border:1px solid #d9e0d5;border-radius:17px;background:#f6f9f2}
+.sample>summary{padding:17px 2px;cursor:pointer;color:#335f46;font:750 13px/1.45 Arial,Helvetica,sans-serif}
+.sample>summary:focus-visible{outline:3px solid #b48755;outline-offset:3px}
+.sampleGrid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:0 0 14px}
+.sampleSketch,.sampleReport{padding:18px;border-radius:14px;border:1px solid #e4e5dc;background:#fffdf9}
+.sample h3{font:400 20px/1.25 Georgia,serif;margin:0 0 13px;color:#3b4d3c}
+.sampleSketch>div{display:flex;align-items:center;justify-content:space-around;gap:12px;min-height:108px}
+.sampleSketch span{display:flex;align-items:center;justify-content:center;min-width:67px;min-height:67px;border:1px solid #c7dac8;border-radius:50%;background:#f0f7ec;color:#446047;font:750 12px/1.3 Arial,Helvetica,sans-serif;text-align:center}
+.sampleReport ol{margin:0;padding-left:22px;display:grid;gap:9px;color:#656357;font:13px/1.5 Arial,Helvetica,sans-serif}
+.sample>p{margin:0 0 16px;color:#79766c;font:11px/1.5 Arial,Helvetica,sans-serif}
+@media(max-width:767px){.sample{width:calc(100% - 28px);padding:0 15px;margin-top:16px}.sampleGrid{grid-template-columns:1fr}.sampleSketch,.sampleReport{padding:15px}.sampleSketch>div{min-height:80px}.sampleSketch span{min-width:57px;min-height:57px;font-size:11px}}

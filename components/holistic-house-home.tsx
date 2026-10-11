@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
-import { PersonalWorkJourney } from "@/components/personal-work-journey";
+import { ServicesSolutions } from "@/components/services-solutions";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
@@ -19,16 +19,16 @@ const copy = {
   ru: {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
-    heroTitle: "Нет сил, ясности или движения к цели?",
-    heroIntro: "Заполните бесплатную коучинг-форму, нарисуйте ручкой «Я — цель — проблема» и получите мой письменный отчёт.",
-    heroPrimary: "Бесплатная диагностика по рисунку",
-    heroSecondary: "Все услуги",
+    heroTitle: "Найдите больше ясности и внутренней опоры",
+    heroIntro: "Две бесплатные возможности и два формата личной работы. Выберите подходящий для вашего вопроса.",
+    heroPrimary: "Бесплатный разбор ситуации",
+    heroSecondary: "Четыре предложения",
     startKicker: "Другие возможности",
-    startTitle: "Исследуйте Holistic House",
-    startIntro: "Тесты, обучение и материалы — в дополнение к личным консультациям.",
+    startTitle: "Исследуйте самостоятельно",
+    startIntro: "Тесты, книги и программы — в дополнение к личной работе.",
     personalEyebrow: "1 · Личная работа",
     personalTitle: "Личная консультация",
-    personalText: "Личные сессии: €50 / 30 мин или €100 / 60 мин.",
+    personalText: "Разобраться в вашем вопросе и вариантах действий.",
     personalAction: "Посмотреть форматы",
     checkEyebrow: "2 · Бесплатно",
     checkTitle: "Пройти тесты",
@@ -51,16 +51,16 @@ const copy = {
   en: {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
-    heroTitle: "Feeling stuck, exhausted, or unsure what comes next?",
-    heroIntro: "Complete a free coaching form, hand-draw ME / GOAL / PROBLEM and receive my written situation report.",
-    heroPrimary: "Free drawing assessment + report",
-    heroSecondary: "Explore services",
+    heroTitle: "Explore your question. Find a clearer way forward.",
+    heroIntro: "Two free ways to begin and two personal-work options. Choose the one that fits your question.",
+    heroPrimary: "Free situation review",
+    heroSecondary: "Explore four services",
     startKicker: "Other ways to explore",
-    startTitle: "Explore Holistic House",
-    startIntro: "Tests, courses and books complement personal sessions.",
+    startTitle: "Explore at your own pace",
+    startIntro: "Tests, courses and books to complement personal work.",
     personalEyebrow: "1 · Personal work",
     personalTitle: "Personal sessions",
-    personalText: "Live sessions: €50 / 30 min or €100 / 60 min.",
+    personalText: "Explore your question and possible next steps.",
     personalAction: "Explore personal work",
     checkEyebrow: "2 · Free",
     checkTitle: "Take a test",
@@ -138,7 +138,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </div>
       </section>
 
-      <PersonalWorkJourney locale={locale} variant="compact" />
+      <ServicesSolutions locale={locale} variant="home" />
 
       <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
         <header className="service-home-start__heading">
@@ -148,18 +148,6 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </header>
 
         <div className="service-home-start__grid">
-          <AcquisitionEventLink
-            className="service-home-start-card"
-            href={`/${locale}/services`}
-            event="service_view"
-          >
-            <span className="service-home-start-card__icon" aria-hidden="true"><Sparkles /></span>
-            <span className="service-home-start-card__eyebrow">{text.personalEyebrow}</span>
-            <h3>{text.personalTitle}</h3>
-            <p>{text.personalText}</p>
-            <strong>{text.personalAction}<span aria-hidden="true">→</span></strong>
-          </AcquisitionEventLink>
-
           <AcquisitionEventLink
             className="service-home-start-card"
             href={entry.selfCheck.href}

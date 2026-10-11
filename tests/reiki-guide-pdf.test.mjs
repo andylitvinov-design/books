@@ -12,7 +12,7 @@ test("confirmed prices are recorded for one personal initiation level, not an in
   assert.equal(formatReikiLevelPrice("tantra", "es"), "€50 / 30 min / nivel");
 });
 
-test("Reiki PDF endpoint validates all six localized course selections", async () => {
+test("Reiki PDF endpoint validates all nine localized course selections", async () => {
   const [route, chooser] = await Promise.all([
     readFile("app/api/academy/reiki-guide/route.js", "utf8"),
     readFile("components/reiki-choice-capture.tsx", "utf8"),
@@ -55,6 +55,25 @@ for (const course of ["tantra", "yggdrasil"]) {
     });
   }
 }
+
+
+test("Kundalini PDF uses only the original user-provided Paul Crick manual, not a generated guide", async () => {
+  const [route, original, builder] = await Promise.all([
+    readFile("app/api/academy/reiki-guide/route.js", "utf8"),
+    readFile("public/academy/kundalini-reiki/kundalini-reiki-manual-paul-crick.pdf"),
+    readFile("lib/academy/reiki-guide-pdf.js", "utf8"),
+  ]);
+  assert.equal(original.length, 243352);
+  assert.equal(original.subarray(0, 8).toString("latin1"), "%PDF-1.3");
+  assert.match(route, /if \(course === "kundalini"\)/);
+  assert.match(route, /originalPath = "\/academy\/kundalini-reiki\/kundalini-reiki-manual-paul-crick\.pdf"/);
+  assert.match(route, /"Content-Disposition": 'attachment; filename="Kundalini_Reiki_Manual_Paul_Crick\.pdf"'/);
+  assert.match(builder, /Kundalini Reiki uses the uploaded original Paul Crick PDF/);
+  assert.throws(() => buildReikiCourseGuidePdf({ course: "kundalini", locale: "en", source: "old" }), /uploaded original/);
+  for (const locale of ["en", "ru", "es"]) {
+    await assert.rejects(readFile("public/academy/course-guides/kundalini." + locale + ".txt"), { code: "ENOENT" });
+  }
+});
 
 test("every Yggdrasil module includes a localized purpose, not only a list of names", async () => {
   for (const [locale, label] of [["en", "Focus"], ["ru", "Тема"], ["es", "Enfoque"]]) {

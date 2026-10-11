@@ -212,6 +212,33 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+const sampleCopy = {
+  en: {
+    summary: "Preview a simple drawing and report outline",
+    sketchTitle: "Drawing idea (illustrative only)",
+    sketch: ["ME", "GOAL", "PROBLEM"],
+    reportTitle: "Illustrative report outline",
+    rows: ["Your question", "Symbolic observations", "Themes to reflect on", "Possible next steps"],
+    note: "This is a blank example of the format, not a real client's drawing or results. Your report will be individual and may use a different structure.",
+  },
+  ru: {
+    summary: "Посмотреть пример рисунка и структуры отчёта",
+    sketchTitle: "Возможный рисунок (только схема)",
+    sketch: ["Я", "ЦЕЛЬ", "ПРОБЛЕМА"],
+    reportTitle: "Примерная структура отчёта",
+    rows: ["Ваш запрос", "Символические наблюдения", "Темы для размышления", "Возможные следующие шаги"],
+    note: "Это пустая схема, а не рисунок или результаты реального клиента. Персональный отчёт может иметь другую структуру.",
+  },
+  es: {
+    summary: "Ver un ejemplo de dibujo y esquema del informe",
+    sketchTitle: "Idea de dibujo (solo esquema)",
+    sketch: ["YO", "META", "PROBLEMA"],
+    reportTitle: "Esquema orientativo del informe",
+    rows: ["Tu pregunta", "Observaciones simbólicas", "Temas para reflexionar", "Próximos pasos posibles"],
+    note: "Este es un esquema vacío, no un dibujo o resultado real de un cliente. Tu informe puede tener otra estructura.",
+  },
+} as const;
+
 export default async function FreeSituationReviewPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
@@ -242,6 +269,21 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           <FreeSituationReviewForm locale={locale} />
         </div>
       </section>
+
+      <details className={styles.sample}>
+        <summary>{sampleCopy[locale].summary}</summary>
+        <div className={styles.sampleGrid}>
+          <div className={styles.sampleSketch}>
+            <h3>{sampleCopy[locale].sketchTitle}</h3>
+            <div>{sampleCopy[locale].sketch.map(label => <span key={label}>{label}</span>)}</div>
+          </div>
+          <div className={styles.sampleReport}>
+            <h3>{sampleCopy[locale].reportTitle}</h3>
+            <ol>{sampleCopy[locale].rows.map(item => <li key={item}>{item}</li>)}</ol>
+          </div>
+        </div>
+        <p>{sampleCopy[locale].note}</p>
+      </details>
 
       <section className={styles.details} id="how-it-works" aria-labelledby="review-steps-title">
         <header className={styles.sectionIntro}>

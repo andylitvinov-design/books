@@ -738,3 +738,24 @@ a.service-home-start-card:hover {
   .house-home--services .service-home-start-card--learning {min-height:0;gap:5px;}
   .house-home--services .service-home-start-card__actions {padding-top:9px;}
 }
+
+
+/* Shared four-offer experience: two small independent-resource choices after services. */
+.house-home--services .service-home-start{padding-top:19px;padding-bottom:22px}
+.house-home--services .service-home-start__heading{margin-bottom:15px}
+.house-home--services .service-home-start__heading h2{font-size:clamp(29px,3.3vw,42px)}
+.house-home--services .service-home-start__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.house-home--services .service-home-start-card{min-height:184px;padding:19px}
+.house-home--services .service-home-start-card--learning{
+  min-height:184px;grid-column:auto;display:flex;flex-direction:column;align-items:flex-start;gap:5px;justify-content:flex-start;
+}
+.house-home--services .service-home-start-card--learning > *:not(.service-home-start-card__icon){grid-column:auto}
+.house-home--services .service-home-start-card--learning .service-home-start-card__icon{grid-row:auto;margin-bottom:6px}
+.house-home--services .service-home-start-card h3{font-size:clamp(23px,2.5vw,30px);line-height:1.14}
+.house-home--services .service-home-start-card p{font-size:12px;line-height:1.45}
+@media(max-width:767px){
+ .house-home--services .service-home-hero{min-height:330px}
+ .house-home--services .service-home-start__grid{grid-template-columns:1fr;gap:9px}
+ .house-home--services .service-home-start-card,.house-home--services .service-home-start-card--learning{min-height:0;padding:16px}
+ .house-home--services .service-home-start-card--learning{display:flex}
+}

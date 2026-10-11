@@ -21,7 +21,7 @@ test("critical photo-first sections use existing local image files, never placeh
     "data/academy/catalog.ts",
     "components/academy-hub.tsx",
     "data/academy/temple-studies-curriculum.ts",
-    "components/services-solutions.tsx",
+    "data/core-service-offers.ts",
     "components/sitewide-lead-capture.tsx",
     "data/personal-service-pages.ts",
     "app/[locale]/wu-xing/page.tsx",

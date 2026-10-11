@@ -50,7 +50,10 @@ test("Review, meditation and enrollment prose is not rendered twice; authentic m
     read("components/tantra-reiki-story.tsx"),
   ]);
   assert.doesNotMatch(reviews, /reviewImages|tantra-review-gallery|tantra-review-archive/);
-  assert.doesNotMatch(reviews, /tantra-review-quote__label/);
+  // Labels were removed from repeated Level 1 reviews, but unique restored
+  // English source testimonials need their original participant names.
+  assert.equal((reviews.match(/tantra-review-quote__label/g) ?? []).length, 1);
+  assert.match(reviews, /review.name/);
   assert.match(reviews, /sourceReviewGroups\.map/);
   assert.match(reviews, /html5Videos\.ru\.map/);
   assert.match(reviews, /youtubeId="qM_nFUkYJ1k"/);

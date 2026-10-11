@@ -3079,3 +3079,106 @@
   font-size: 14px;
   line-height: 1.55;
 }
+
+/* Restored source-backed Tantra Reiki study text: readable without expanding
+   a chapter, with all nine original lesson steps beside Andrey's prose. */
+.academy-reading-shell--tantra .tantra-journey__practice--restored {
+  margin: 1px 0 8px;
+  padding: 13px 17px;
+  border-left: 3px solid #a87954;
+  border-radius: 0 10px 10px 0;
+  background: #fbf3e9;
+}
+.academy-reading-shell--tantra .tantra-journey__practice--restored strong {
+  font-size: 12px;
+  letter-spacing: .01em;
+  line-height: 1.55;
+}
+.academy-reading-shell--tantra .tantra-journey__practice--restored p {
+  max-width: 65ch;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(16px, 1.65vw, 18px);
+  line-height: 1.63;
+  color: #49362b;
+}
+.academy-reading-shell--tantra .tantra-journey__original-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  margin-top: 9px;
+  color: #77543b;
+  font-size: 13px;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+.academy-reading-shell--tantra .tantra-reading__restored {
+  margin-top: 13px;
+}
+.academy-reading-shell--tantra .tantra-reading__restored .tantra-reading__content {
+  font-family: var(--font-serif), Georgia, serif;
+}
+@media (max-width: 700px) {
+  .academy-reading-shell--tantra .tantra-journey__practice--restored { padding: 11px 13px; }
+  .academy-reading-shell--tantra .tantra-journey__practice--restored p { font-size: 16px; }
+}
+
+
+/* Preservation of source-verified, unique historical Tantra Reiki passages. */
+.academy-reading-shell--tantra .tantra-source-disclosure {
+  margin-top: 22px;
+  border: 1px solid #dfc9b3;
+  border-radius: 12px;
+  background: #fffcf7;
+  overflow: hidden;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure > summary {
+  cursor: pointer;
+  padding: 15px 18px;
+  color: #5b3f2d;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure > summary:focus-visible {
+  outline: 3px solid #af8059;
+  outline-offset: -3px;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure[open] > summary {
+  border-bottom: 1px solid #e8dacc;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure > p,
+.academy-reading-shell--tantra .tantra-source-disclosure > div,
+.academy-reading-shell--tantra .tantra-source-disclosure > ul {
+  margin: 12px 18px 16px;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure__note {
+  color: #7b6250;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.academy-reading-shell--tantra .tantra-source-disclosure li,
+.academy-reading-shell--tantra .tantra-teacher__history div p {
+  margin: 7px 0;
+  color: #533c2d;
+  font-size: 15px;
+  line-height: 1.64;
+}
+.academy-reading-shell--tantra .tantra-teacher__history { width: 100%; }
+.academy-reading-shell--tantra .tantra-testimonials__archival-quotes .tantra-review-quotes {
+  margin-top: 15px;
+}
+.academy-reading-shell--tantra .tantra-journey__setting-description {
+  margin: 12px 0 2px;
+  max-width: 60ch;
+  color: #604d40;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(15px, 1.45vw, 17px);
+  line-height: 1.6;
+}
+@media (max-width: 700px) {
+  .academy-reading-shell--tantra .tantra-source-disclosure > summary { padding: 14px 13px; }
+  .academy-reading-shell--tantra .tantra-source-disclosure > p,
+  .academy-reading-shell--tantra .tantra-source-disclosure > div,
+  .academy-reading-shell--tantra .tantra-source-disclosure > ul { margin: 11px 13px 15px; }
+  .academy-reading-shell--tantra .tantra-journey__setting-description { font-size: 16px; }
+}

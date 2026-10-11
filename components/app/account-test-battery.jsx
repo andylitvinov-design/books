@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Zap } from 'lucide-react'
+import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Trash2, Zap } from 'lucide-react'
 import { TestExplorer } from './test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import { MyTestsDashboard } from './my-tests-dashboard'
@@ -28,6 +28,10 @@ const COPY = {
     keep: 'Keep existing set', replace: 'Use new selection', error: 'Could not save your test selection. Please try again.',
     retry: 'Try again', account: 'My tests', history: 'Results history', privacy: 'Your responses and results stay private in your personal Cabinet. These self-checks are not a diagnosis.',
     signInFailed: 'Google sign-in was not completed. You can retry when you are ready.',
+    remove: 'Remove from my tests', removed: 'Removed from selection. Saved results and answers are unchanged.',
+    stale: 'Your selection was updated elsewhere. Refreshed the current list; please try again.',
+    filters: 'Edit test filters', closeFilters: 'Close filters', pendingReview: 'Review your proposed test selection',
+    pendingDescription: 'The filters returned another set of tests. Choose whether to keep your saved set or apply that set. Your completed assessments remain in history.',
   },
   ru: {
     title: 'Мои выбранные тесты', intro: 'Ваш личный набор тестов готов. Можно начать любой тест, сохранить прогресс и вернуться к нему позже.',
@@ -40,6 +44,10 @@ const COPY = {
     keep: 'Оставить текущий', replace: 'Использовать новый', error: 'Не удалось сохранить подборку. Повторите попытку.',
     retry: 'Повторить', account: 'Мои тесты', history: 'История результатов', privacy: 'Ваши ответы и результаты приватны и хранятся в личном кабинете. Эти тесты не являются диагнозом.',
     signInFailed: 'Вход через Google не завершён. При необходимости повторите вход.',
+    remove: 'Убрать из набора', removed: 'Тест убран из подборки. Ответы и результаты сохранены.',
+    stale: 'Подборка уже изменилась. Список обновлён; попробуйте ещё раз.',
+    filters: 'Изменить фильтры тестов', closeFilters: 'Закрыть фильтры', pendingReview: 'Проверить новую подборку тестов',
+    pendingDescription: 'Вы выбрали другой набор по фильтрам. Можно сохранить текущий или применить новую подборку. Пройденные результаты сохранятся.',
   },
 }
 // Questionnaires have abstract topic icons, never unrelated practitioner/client photos.
@@ -108,7 +116,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const [exploring, setExploring] = useState(false)
   const allowedFilters = ['all', 'notStarted', 'inProgress', 'completed', 'remaining']
   const requestedFilter = allowedFilters.includes(initialStatusFilter) ? initialStatusFilter : null
-  const [showList, setShowList] = useState(Boolean(requestedPlanId || requestedFilter))
+  const [showList, setShowList] = useState(true)
   const [statusFilter, setStatusFilter] = useState(requestedFilter || 'all')
   useEffect(() => {
     // The public Google handoff can replace ?selection=pending with ?plan=... without remounting.
@@ -124,8 +132,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }, [requestedFilter])
   const [conflict, setConflict] = useState(null)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const entries = useMemo(() => buildExplorerEntries({ locale, audience: 'account' }), [locale])
-  const currentPlan = plan || data.activeTestPlan || data.latestTestPlan || null
+  // A cancelled plan is historical data, not a selection to render as active.
+  const currentPlan = plan === null
+    ? (data.activeTestPlan || (data.latestTestPlan?.status === 'cancelled' ? null : data.latestTestPlan) || null)
+    : (plan.status === 'cancelled' ? null : plan)
   const rows = useMemo(() => planRows(currentPlan, data, locale), [currentPlan, data, locale])
   const completed = rows.filter((row) => row.completedInPlan).length
   const pastRows = useMemo(() => {
@@ -223,7 +235,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       const ids = entriesToStart.map((entry) => entry.definition?.id)
       if (JSON.stringify(ids) !== JSON.stringify(data.activeTestPlan.definitionIds)) {
         setConflict({ keys, preferences: selectionPreferences })
-        setExploring(false)
+        setExploring(true)
         return
       }
       await create(keys, false, selectionPreferences)
@@ -231,14 +243,41 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     }
     await create(keys, false, selectionPreferences)
   }
-  function openList() {
-    setShowList(true)
-    if (!rows.length) setExploring(true)
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      const target = document.getElementById(rows.length ? 'my-tests-list' : 'my-test-explorer')
-      target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      target?.querySelector('[data-test-list-heading]')?.focus({ preventScroll: true })
+  function openFilters() {
+    setExploring((open) => !open)
+    if (!exploring) window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      document.getElementById('my-test-explorer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }))
+  }
+  function openList() {
+    if (!rows.length) return openFilters()
+    document.getElementById('my-tests-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  async function removeSelectedTest(row) {
+    if (!currentPlan || currentPlan.status !== 'active' || busy) return
+    setBusy(true);setError('');setNotice('')
+    try {
+      const updated = await api('test-plans/' + encodeURIComponent(currentPlan.id) + '/remove', {
+        definitionId: row.definition.id, expectedRevision: currentPlan.revision,
+      })
+      // A zero-item set is represented by a cancelled plan, not a deleted row.
+      setPlan(updated)
+      setConflict(null)
+      try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* storage optional */ }
+      await reload()
+      setNotice(c.removed)
+      if (updated.status === 'cancelled') setExploring(false)
+      // Avoid keeping stale plan IDs in the URL after editing the current set.
+      if (requestedPlanId) router.replace(root + '/tests')
+    } catch (cause) {
+      if (cause.code === 'REVISION_CONFLICT') {
+        setPlan(null)
+        await reload()
+        setError(c.stale)
+      } else {
+        setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
+      }
+    } finally { setBusy(false) }
   }
   useEffect(() => {
     // A pending new selection should not automatically hide the current tests
@@ -246,20 +285,20 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     if (error) setShowList(true)
   }, [error])
   useEffect(() => {
-    if (!conflict) return
-    // When a new selection originated further down the page, bring the compact
-    // decision into view rather than leaving the visitor at an empty explorer.
+    // Only surface the difference inside the open filters, not as an
+    // intrusive warning above the saved test list.
+    if (!conflict || !exploring) return
     const frame = window.requestAnimationFrame(() => {
       document.querySelector('[data-pending-selection]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [conflict])
+  }, [conflict, exploring])
 
   function keepSavedSet() {
     try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browsers may block storage. */ }
     setConflict(null)
     setPlan(data.activeTestPlan || data.latestTestPlan || null)
-    setShowList(false)
+    setExploring(false)
     router.replace(root)
   }
 
@@ -289,117 +328,131 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }
   return <>
     <div className={styles.batteryLayout}>
-    <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
-      <MyTestsDashboard
-        locale={locale}
-        rows={rows}
-        completed={completed}
-        results={data.results}
-        snapshot={data.snapshot}
-        data={data}
-        onStart={openList}
-        listOpen={showList}
-        conflict={conflict}
-        onKeepSet={keepSavedSet}
-        onUseNewSet={applyNewSelection}
-        switchBusy={busy}
-      />
-      {showList && <div className={styles.listArea} id="my-tests-list">
-      <div className={styles.listHeading}>
-        <div>
-          <p className={styles.step}>{locale === 'ru' ? 'ВЫБРАННЫЕ ТЕСТЫ' : 'YOUR SAVED TESTS'}</p>
-          <h2 data-test-list-heading tabIndex={-1}>{locale === 'ru' ? 'Выберите тест' : 'Choose a test'}</h2>
-          <p>{locale === 'ru' ? 'Нажмите «Начать тестирование» у нужного теста.' : 'Press Start test next to the test you want.'}</p>
-        </div>
-        <button type="button" className={styles.collapseList} onClick={() => setShowList(false)}>{locale === 'ru' ? 'Свернуть' : 'Close'}</button>
-      </div>
-      {initializing && <p role="status">{c.preparing}</p>}
-
-      {error && <p role="alert">{error} <button type="button" onClick={() => setError('')}>{c.retry}</button></p>}
-      {(rows.length > 0 || (statusFilter === 'completed' && pastRows.length > 0)) ? <>
-        <details className={styles.filterDetails} defaultOpen={Boolean(requestedFilter)}>
-          <summary>{locale === 'ru' ? 'Фильтр по статусу' : 'Filter by status'}</summary>
-          <div className={styles.testFilters} role="group" aria-label={locale === 'ru' ? 'Фильтр по статусу' : 'Filter by status'}>
-          {[
-            ['all', locale === 'ru' ? 'Все' : 'All'],
-            ['notStarted', c.pending],
-            ['inProgress', c.underway],
-            ['completed', c.finished],
-            ['remaining', locale === 'ru' ? 'Оставшиеся' : 'Remaining'],
-          ].map(([key, label]) => (
-            <button key={key} type="button" aria-pressed={statusFilter === key}
-              onClick={() => setStatusFilter(key)}>{label}</button>
-          ))}
-        </div>
-        </details>
-        <div className={styles.group}>
-          {(statusFilter === 'completed' ? pastRows : rows).map((row) => {
-            const done = statusFilter === 'completed' ? Boolean(row.result) : row.completedInPlan
-            const state = done ? 'completed' : row.run ? 'inProgress' : 'notStarted'
-            const status = row.run ? c.underway : done ? c.finished : c.pending
-            if (statusFilter === 'remaining' && done) return null
-            if (!['all', 'remaining'].includes(statusFilter) && state !== statusFilter) return null
-            return <article key={row.definition.id} className={styles.row}>
-              <TestSymbol topics={row.topics} />
-              <div className={styles.info}>
-                <h3>{row.title}</h3>
-                <p className={styles.description}>{row.description}</p>
-                <div className={styles.meta}>
-                  <span>~{row.minutes} {c.mins}</span>
-                  <span>{row.definition.questions.length} {c.questions}</span>
-                  <strong className={state === 'inProgress' ? styles.inProgress : state === 'completed' ? styles.completed : styles.notStarted}>{status}</strong>
+      <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
+        <MyTestsDashboard
+          locale={locale} rows={rows} completed={completed}
+          results={data.results} snapshot={data.snapshot} data={data}
+          onOpenFilters={openFilters} filtersOpen={exploring}
+          hasNewSelection={Boolean(conflict)}
+          hasList={Boolean(rows.length || (statusFilter === 'completed' && pastRows.length))}
+        >
+          {(rows.length > 0 || (statusFilter === 'completed' && pastRows.length > 0)) && (
+            <section className={styles.listArea} id="my-tests-list"
+              aria-label={locale === 'ru' ? 'Выбранные тесты' : 'Your selected tests'}
+              data-inline-selected-tests>
+              <div className={styles.listHeading}>
+                <h2 data-test-list-heading tabIndex={-1}>
+                  {statusFilter === 'completed'
+                    ? (locale === 'ru' ? 'Пройденные тесты' : 'Completed tests')
+                    : (locale === 'ru' ? 'Ваши выбранные тесты' : 'Your selected tests')}
+                </h2>
+                <span className={styles.listCount}>
+                  {statusFilter === 'completed' ? pastRows.length : rows.length}
+                </span>
+              </div>
+              <div className={styles.group}>
+                {(statusFilter === 'completed' ? pastRows : rows).map((row) => {
+                  const done = statusFilter === 'completed' ? Boolean(row.result) : row.completedInPlan
+                  const state = done ? 'completed' : row.run ? 'inProgress' : 'notStarted'
+                  const status = row.run ? c.underway : done ? c.finished : c.pending
+                  if (statusFilter === 'remaining' && done) return null
+                  if (!['all', 'remaining'].includes(statusFilter) && state !== statusFilter) return null
+                  return <article key={row.definition.id} className={styles.row}
+                    data-saved-test={row.key} data-state={state}>
+                    <TestSymbol topics={row.topics} />
+                    <div className={styles.info}>
+                      <h3>{row.title}</h3>
+                      <div className={styles.meta}>
+                        <span>~{row.minutes} {c.mins}</span>
+                        <strong className={state === 'inProgress' ? styles.inProgress
+                          : state === 'completed' ? styles.completed : styles.notStarted}>{status}</strong>
+                      </div>
+                      {row.run && <div className={styles.draftProgress}>
+                        <progress max="100" value={row.progress} aria-label={status}/>
+                        <small>{row.progress}% {c.percent}</small>
+                      </div>}
+                      {done && row.result && <small className={styles.completedDate}>
+                        {c.date}: {formatDate(row.result.measurementAt, locale)}
+                      </small>}
+                    </div>
+                    <div className={styles.rowActions}>
+                      <button type="button" className="hh-primary" disabled={busy} onClick={() => openTest(row)}>
+                        {row.run ? c.resume : done ? c.repeat : c.begin}
+                        <ArrowRight aria-hidden="true" size={16}/>
+                      </button>
+                      {row.result && <Link href={root + '/results/' + encodeURIComponent(row.result.id)}
+                        prefetch={false}>{c.see}</Link>}
+                    </div>
+                    {currentPlan?.status === 'active' && statusFilter !== 'completed' &&
+                      <button type="button" className={styles.removeButton} disabled={busy}
+                        onClick={() => removeSelectedTest(row)}
+                        title={c.remove + ': ' + row.title}
+                        aria-label={c.remove + ': ' + row.title}
+                        data-remove-selected-test={row.key}>
+                        <Trash2 size={17} aria-hidden="true"/>
+                      </button>}
+                  </article>
+                })}
+              </div>
+              <details className={styles.filterDetails} defaultOpen={Boolean(requestedFilter)}>
+                <summary>{locale === 'ru' ? 'Отфильтровать список по статусу' : 'Filter this list by status'}</summary>
+                <div className={styles.testFilters} role="group"
+                  aria-label={locale === 'ru' ? 'Фильтр по статусу' : 'Filter by status'}>
+                  {[
+                    ['all', locale === 'ru' ? 'Все' : 'All'],
+                    ['notStarted', c.pending],['inProgress', c.underway],
+                    ['completed', c.finished],
+                    ['remaining', locale === 'ru' ? 'Оставшиеся' : 'Remaining'],
+                  ].map(([key,label]) => <button key={key} type="button"
+                    aria-pressed={statusFilter === key} onClick={() => setStatusFilter(key)}>{label}</button>)}
                 </div>
-                {done && row.result && <small className={styles.completedDate}>{c.date}: {formatDate(row.result.measurementAt, locale)}</small>}
-                {row.run && <div className={styles.draftProgress}>
-                  <progress max="100" value={row.progress} aria-label={status}/>
-                  <small>{row.progress}% {c.percent}</small>
-                </div>}
-              </div>
-              <div className={styles.rowActions}>
-                <button className="hh-primary" type="button" disabled={busy} onClick={() => openTest(row)}>
-                  {row.run ? c.resume : done ? c.repeat : c.begin} <ArrowRight aria-hidden="true" size={17} />
-                </button>
-                {row.result && <Link prefetch={false} href={root + '/results/' + encodeURIComponent(row.result.id)}>{c.see}</Link>}
-              </div>
-            </article>
-          })}
-        </div>
-        {!!savedPriorities.length && <details className={styles.preferencesDetails}>
-          <summary>{locale === 'ru' ? 'Мои темы и дополнительные рекомендации' : 'My interests & additional recommendations'}</summary>
-          {!!savedPriorities.length && <section className={styles.savedPriorities} aria-label={locale === 'ru' ? 'Мои сохранённые приоритеты' : 'My saved test priorities'}>
-        <strong>{locale === 'ru' ? 'Мои сохранённые темы и шкалы' : 'Your saved areas and scales'}</strong>
-        <div>{savedPriorities.map((label, index) => <span key={index}>{label}</span>)}</div>
-        <p>{locale === 'ru'
-          ? 'Они перенесены из публичного подбора и учитываются при поиске следующих тестов.'
-          : 'These came from your public selection and refine your next test recommendations.'}</p>
-        {suggestions.length > 0 && <div className={styles.nextSuggestions}>
-          <small>{locale === 'ru' ? 'По вашим темам также подходят:' : 'Also matching your interests:'}</small>
-          {suggestions.map((entry) => <span key={entry.key}>{entry.title}</span>)}
-          <button type="button" onClick={() => setExploring(true)}>{locale === 'ru' ? 'Изменить или дополнить подбор' : 'Refine my test selection'} →</button>
-        </div>}
-      </section>}
-        </details>}
-      </> : !initializing && <p className={styles.empty}>{c.empty}</p>}
-      <div className={styles.actions}>
-        <button type="button" disabled={busy} onClick={() => setExploring((value) => !value)}>
-          {exploring ? c.hide : c.choose}
-        </button>
-        <Link href={root + '/history'} prefetch={false}>{c.history} →</Link>
-      </div>
-      <p className={styles.muted}>{c.privacy}</p>
-      </div>}
-    </section>
-    <details className={styles.portraitDetails}>
-      <summary>{locale === 'ru' ? 'Мой психологический портрет · открыть подробности' : 'My psychological portrait · view details'}</summary>
-      <TestExplorerVisual locale={locale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(data.results)} />
-    </details>
+              </details>
+              {!!savedPriorities.length && <details className={styles.preferencesDetails}>
+                <summary>{locale === 'ru' ? 'Мои темы и дополнительные рекомендации' : 'My interests & additional recommendations'}</summary>
+                <section className={styles.savedPriorities} aria-label={locale === 'ru' ? 'Мои сохранённые приоритеты' : 'My saved test priorities'}>
+                  <strong>{locale === 'ru' ? 'Мои темы и шкалы' : 'My saved areas and scales'}</strong>
+                  <div>{savedPriorities.map((label,index)=><span key={index}>{label}</span>)}</div>
+                  {suggestions.length > 0 && <div className={styles.nextSuggestions}>
+                    <small>{locale === 'ru' ? 'По вашим темам также подходят:' : 'Also matching your interests:'}</small>
+                    {suggestions.map(entry=><span key={entry.key}>{entry.title}</span>)}
+                    <button type="button" onClick={openFilters}>
+                      {locale === 'ru' ? 'Изменить подбор' : 'Refine my test selection'} →
+                    </button>
+                  </div>}
+                </section>
+              </details>}
+            </section>
+          )}
+        </MyTestsDashboard>
+        {initializing && <p role="status" className={styles.inlineNotice}>{c.preparing}</p>}
+        {error && <p role="alert" className={styles.inlineError}>{error}
+          <button type="button" onClick={()=>setError('')}>{c.retry}</button></p>}
+        {notice && <p role="status" className={styles.inlineNotice}>{notice}</p>}
+      </section>
+      <details className={styles.portraitDetails}>
+        <summary>{locale === 'ru' ? 'Мой психологический портрет · открыть подробности'
+          : 'My psychological portrait · view details'}</summary>
+        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
+          portrait={buildPsychPortrait(data.results)}/>
+      </details>
     </div>
     {(exploring || (!rows.length && !initializing && !conflict)) &&
-      <div id="my-test-explorer" className={styles.explorerSection}>
-        <TestExplorer key={currentPlan?.id || 'new'} locale={locale} audience="account" onStart={choose} initialPreferences={selectionPreferences}
-        pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
-        recommendedKey={recommendedKey}
-        onResumeRun={(run) => router.push(root + '/runs/' + encodeURIComponent(run.id))} />
-      </div>}
+      <section id="my-test-explorer" className={styles.explorerSection} aria-label={c.filters}>
+        {conflict && <aside className={styles.reviewSelection} data-pending-selection>
+          <div>
+            <strong>{c.pendingReview}</strong>
+            <p>{c.pendingDescription}</p>
+          </div>
+          <div className={styles.reviewActions}>
+            <button type="button" disabled={busy} onClick={keepSavedSet}>{c.keep}</button>
+            <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
+          </div>
+        </aside>}
+        <TestExplorer key={currentPlan?.id || 'new'} locale={locale}
+          audience="account" onStart={choose} initialPreferences={selectionPreferences}
+          pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
+          recommendedKey={recommendedKey}
+          onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
+      </section>}
   </>
 }
