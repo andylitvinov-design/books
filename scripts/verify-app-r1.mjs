@@ -30,8 +30,26 @@ async function api(path,body,ctx=context){
 }
 async function ready(){
  const mobile=await page.evaluate(()=>window.innerWidth<=760)
- await expect(page.locator(mobile?'.hh-mobile-app-nav':'.hh-nav')).toBeVisible({timeout:60000})
- await page.waitForLoadState('networkidle')
+ const nav=page.locator(mobile?'.hh-mobile-app-nav':'.hh-nav')
+ for(let attempt=0;attempt<3;attempt++){
+  try {
+   await expect(nav).toBeVisible({timeout:attempt===0?30000:20000})
+   await page.waitForLoadState('networkidle')
+   return
+  } catch(error) {
+   if(attempt===2)throw error
+   // The isolated actor can hit its genuine sliding quota during hundreds of
+   // synthetic test answers. Only retry a signed-in app error, never weaken the
+   // production limit or accidentally sign in another account.
+   const retryShown=await page.getByRole('button',{name:/Try again|Повторить|Retry/}).isVisible().catch(()=>false)
+   if(!retryShown)throw error
+   const probe=await api('bootstrap').catch(()=>({status:0}))
+   if(probe.status!==429&&probe.status!==200)throw error
+   console.log('SYNTHETIC_APP_READ_COOLDOWN',attempt+1,probe.status)
+   if(probe.status===429)await page.waitForTimeout(25000)
+   await page.reload({waitUntil:'domcontentloaded'})
+  }
+ }
 }
 async function chooseVisibleTest(testPage,name){
  const customizer=testPage.getByRole('button',{name:/Choose my own tests and filters/})
@@ -303,7 +321,22 @@ try {
  const weeklyResumeRow=page.locator('#my-tests-list article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})})
  await expect(weeklyResumeRow).toBeVisible()
  await weeklyResumeRow.getByRole('button',{name:'Continue test'}).click()
- await expect(page.locator('.hh-quick-question')).toHaveCount(8)
+ await expect(page).toHaveURL(/\/runs\//)
+ // A long synthetic test battery can temporarily exhaust its own per-minute
+ // account read budget. Retry only this browser step after quota recovery;
+ // never increase or bypass production request limits.
+ const resumedQuestions=page.locator('.hh-quick-question')
+ for(let attempt=0;attempt<4;attempt++){
+  try {
+   await expect(resumedQuestions).toHaveCount(8,{timeout:7000})
+   break
+  } catch(error) {
+   if(attempt===3)throw error
+   console.log('SYNTHETIC_QUICK_RESUME_COOLDOWN',attempt+1)
+   await page.waitForTimeout(24000)
+   await page.reload({waitUntil:'domcontentloaded'})
+  }
+ }
  await expect(page.getByText('1 / 8 answered',{exact:true})).toBeVisible()
  await expect(page.locator('.hh-quick-question').first().locator('.hh-scale button').first()).toHaveAttribute('aria-pressed','true')
  await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()

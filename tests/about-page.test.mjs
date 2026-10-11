@@ -15,7 +15,7 @@ const siteNavigation = source('../components/site-navigation.tsx')
 
 test('publishes paired localized About routes with complete, Ontario-safe editorial biographies', () => {
   assert.match(page, /canonical: "\/" \+ locale \+ "\/about"/)
-  assert.match(page, /languages: \{ ru: "\/ru\/about", en: "\/en\/about" \}/)
+  assert.match(page, /languages: \{ ru: "\/ru\/about", en: "\/en\/about", es: "\/es\/about", "x-default": "\/en\/about" \}/)
   assert.match(biography, /Let me introduce myself\./)
   assert.match(biography, /Raised in Ukraine but living internationally\./)
   assert.match(biography, /24 years of facilitating group and personal growth work/)

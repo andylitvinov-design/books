@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ArrowDownToLine, ArrowUpRight, ClipboardPenLine, Flower2, FileText, LockKeyhole, Pin } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './personal-analysis.css'
 import { generatePractitionerReportPdf } from '@/lib/profile/practitioner-report-pdf'
 
@@ -32,6 +32,8 @@ const WORDS = {
     failed: 'PDF не удалось сформировать. Откройте отчёт и попробуйте снова.',
     saved: 'Закреплён',
     withdrawn: 'Отчёт отозван или больше недоступен',
+    legacy: 'Архивный формат: попросите Andy повторно отправить отчёт',
+    contact: 'Связаться с Andy',
     privacy: 'Ваши отчёты приватны. Другие клиенты их не видят. Бесплатные услуги не заменяют медицинскую или психиатрическую помощь.',
   },
   en: {
@@ -59,6 +61,8 @@ const WORDS = {
     failed: 'The PDF could not be prepared. Open the report and try again.',
     saved: 'Pinned',
     withdrawn: 'This report was withdrawn or is no longer available',
+    legacy: 'Older report format: please ask Andy to share an updated copy',
+    contact: 'Contact Andy',
     privacy: 'Your reports are private and not visible to other clients. Free services do not replace medical or mental-health care.',
   },
 }
@@ -142,25 +146,42 @@ export function PersonalAnalysisReportList({ locale = 'en', reports = [], select
   return <section className="hh-analysis-reports" aria-labelledby="hh-analysis-reports-title">
     <div className="hh-analysis-reports-head"><span className="hh-analysis-reports-pin"><Pin size={19} aria-hidden="true" /></span><div><h2 id="hh-analysis-reports-title">{t.reportsTitle}</h2><p>{t.reportsIntro}</p></div></div>
     {items.length ? <div className="hh-analysis-report-list">{items.map(item => {
-      const unavailable = item.available === false
+      const unavailable = item.available === false || item.legacy === true
       const href = selector
         ? `/${locale}/client/${selector}/assessments/${item.id}`
         : `/${locale}/app/reports/${item.id}`
       return <article className="hh-analysis-report" key={item.id}>
         <div className="hh-analysis-report-icon"><FileText size={21} aria-hidden="true" /></div>
-        <div className="hh-analysis-report-body"><span className="hh-analysis-report-state">{unavailable ? t.withdrawn : t.saved}</span><h3>{item.title || t.report}</h3><p>{dateLabel(item.occurredOn)}</p></div>
+        <div className="hh-analysis-report-body"><span className="hh-analysis-report-state">{item.legacy ? t.legacy : unavailable ? t.withdrawn : t.saved}</span><h3>{item.title || t.report}</h3><p>{dateLabel(item.occurredOn)}</p></div>
         {!unavailable && <div className="hh-analysis-report-actions"><Link href={href} prefetch={false}>{t.open}</Link><DownloadPractitionerReport reportId={item.id} selector={selector} locale={locale} /></div>}
+        {item.legacy && <a className="hh-analysis-legacy-contact" href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer">{t.contact}</a>}
       </article>
     })}</div> : <div className="hh-analysis-reports-empty"><FileText size={23} aria-hidden="true" /><strong>{t.empty}</strong><p>{selector ? t.emptyLegacy : t.emptyGoogle}</p></div>}
     <p className="hh-analysis-privacy"><LockKeyhole size={16} aria-hidden="true" />{t.privacy}</p>
   </section>
 }
 
-export function PersonalAnalysisPanel({ locale = 'en', reports = [], selector = null }) {
+export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyReports = [], selector = null }) {
   const t = WORDS[locale === 'ru' ? 'ru' : 'en']
+  const [verified, setVerified] = useState(null)
+  useEffect(() => {
+    if (selector || !reports.length) return undefined
+    let active = true
+    fetch('/api/app/personal-analysis-reports', { credentials: 'same-origin', cache: 'no-store' })
+      .then(async response => {
+        if (!response.ok) throw new Error('REPORTS_UNAVAILABLE')
+        return response.json()
+      })
+      .then(result => {
+        if (active && Array.isArray(result.reports)) setVerified(result.reports)
+      })
+      .catch(() => { /* Keep existing account-scoped fallback; no private data is cached. */ })
+    return () => { active = false }
+  }, [selector, reports.length])
+  const visibleReports = selector ? reports : (verified ?? reports)
   return <section className="hh-personal-analysis" aria-label={t.title}>
     <div className="hh-personal-analysis-header"><p>{t.eyebrow}</p><h1>{t.title}</h1><div>{t.intro}</div></div>
     <PersonalAnalysisOffers locale={locale} />
-    <PersonalAnalysisReportList reports={reports} locale={locale} selector={selector} />
+    <PersonalAnalysisReportList reports={[...visibleReports, ...legacyReports]} locale={locale} selector={selector} />
   </section>
 }
