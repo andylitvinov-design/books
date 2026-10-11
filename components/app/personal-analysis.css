@@ -43,15 +43,15 @@
 .hh-analysis-privacy { display: flex; align-items: flex-start; gap: 9px; color: #827266; margin: 19px 0 0; font-size: 11px; line-height: 1.55; }
 .hh-analysis-privacy > svg { flex: 0 0 auto; }
 .client-cabinet-sections { display: flex; gap: 9px; margin: 23px 0; border-bottom: 1px solid #decfbd; padding: 0 0 11px; }
-.client-cabinet-sections button { display: inline-flex; align-items: center; justify-content: center; min-height: 45px; padding: 9px 18px; border: 1px solid #d4bcaa; border-radius: 999px; color: #694a38; font-size: 13px; font-weight: 750; background: #fffaf3; cursor: pointer; }
-.client-cabinet-sections button[aria-pressed="true"] { color: white; border-color: #775039; background: #775039; }
+.client-cabinet-sections a { display: inline-flex; text-decoration: none; align-items: center; justify-content: center; min-height: 45px; padding: 9px 18px; border: 1px solid #d4bcaa; border-radius: 999px; color: #694a38; font-size: 13px; font-weight: 750; background: #fffaf3; cursor: pointer; }
+.client-cabinet-sections a[aria-current="page"] { color: white; border-color: #775039; background: #775039; }
 .hh-app .hh-analysis-offers { margin-top: 6px; }
 .hh-app .hh-personal-analysis-header h1 { font-size: clamp(34px,4vw,49px); }
 .hh-app .hh-analysis-offer > a { color: white !important; }
 .hh-app .hh-analysis-report-actions a { color: #714a34; }
 .hh-analysis-detail-download { margin: 15px 0; }
 .hh-analysis-detail-download .hh-analysis-download > button { min-height: 45px; }
-.hh-analysis-offer a:focus-visible, .hh-analysis-report-actions a:focus-visible, .hh-analysis-download button:focus-visible, .client-cabinet-sections button:focus-visible { outline: 3px solid #98664d; outline-offset: 3px; }
+.hh-analysis-offer a:focus-visible, .hh-analysis-report-actions a:focus-visible, .hh-analysis-download button:focus-visible, .client-cabinet-sections a:focus-visible { outline: 3px solid #98664d; outline-offset: 3px; }
 @media (max-width:760px) {
   .hh-analysis-offers { grid-template-columns: 1fr; gap: 12px; }
   .hh-analysis-offer { min-height: 0; padding: 19px; }
@@ -62,5 +62,5 @@
   .hh-analysis-report-actions { flex: 1 1 100%; justify-content: stretch; }
   .hh-analysis-report-actions > a, .hh-analysis-report-actions > .hh-analysis-download, .hh-analysis-report-actions .hh-analysis-download button { flex: 1; }
   .hh-analysis-report-actions .hh-analysis-download button { width: 100%; }
-  .client-cabinet-sections button { flex: 1; padding: 8px 10px; }
+  .client-cabinet-sections a { flex: 1; padding: 8px 10px; }
 }
