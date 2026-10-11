@@ -21,6 +21,7 @@ test('verified app practitioner bridge never exposes admin credentials or public
 
   assert.match(route, /joined === 'practitioner\/open'/)
   assert.match(route, /repo\.isPractitioner\(actor\)/)
+  assert.match(route, /!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)/)
   assert.match(route, /issueTrustedAdminSession/)
   assert.match(route, /throw new AppError\('NOT_FOUND', 404\)/)
 
@@ -42,7 +43,8 @@ test('bootstrap exposes only a boolean practitioner capability', async () => {
   assert.match(repository, /const practitioner = await practitionerOwned\(db, actor\)/)
   assert.match(repository, /practitioner,\n\s+results/)
   assert.match(repository, /async isPractitioner\(actor\)/)
-  assert.match(repository, /trusted_auth_user_id=\$1/)
+  assert.match(repository, /Only the legacy practice owner may open/)
+  assert.doesNotMatch(repository, /Boolean\(linked\) \|\| practitionerEmailAllowed/)
   assert.match(repository, /practitionerEmailAllowed\(actor\)/)
   assert.doesNotMatch(repository, /PRESCRIPTIONS_ADMIN_(?:PIN|TOKEN)/)
 })
