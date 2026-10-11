@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { yggdrasilBasicLearning, yggdrasilInstructorLearning } from "@/components/yggdrasil-source-study-guide";
 import { ChevronDown, Compass, Eye, Flame, Flower2, HeartPulse, MoonStar, Shield, Sparkles, Sun, WandSparkles } from "lucide-react";
@@ -263,7 +264,7 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
         className={visualStyles.stepPhoto}
         role="img"
         aria-label={step.title[locale]}
-        style={{ backgroundImage: `linear-gradient(180deg, rgba(34, 28, 23, .05) 55%, rgba(34, 28, 23, .45)), url("${visualPhoto}")` }}
+        style={{ backgroundImage: `linear-gradient(180deg, rgba(34, 28, 23, .05) 55%, rgba(34, 28, 23, .45)), url("${reikiPhotoUrl(visualPhoto, 1200)}")` }}
       >
         <span className={visualStyles.photoRibbon}>{level.stepLabel[locale]} {String(step.number).padStart(2, "0")}</span>
       </div>
