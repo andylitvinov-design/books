@@ -1382,9 +1382,12 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
             {c.next}
           </button>
         )}
-        <button disabled={busy || Boolean(operation.current)} onClick={exit}>
-          {c.saveExit}
-        </button>
+        {!(isContext || (mode === 'quick' && allAnswered) ||
+          (mode === 'guided' && index === def.questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
+          <button disabled={busy || Boolean(operation.current)} onClick={exit}>
+            {c.saveExit}
+          </button>
+        )}
       </div>
       <details className="hh-secondary">
         <summary>{c.decline}</summary>
