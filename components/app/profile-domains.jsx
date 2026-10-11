@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, ArrowRight, Brain, Flower2, HeartHandshake, Leaf, LockKeyhole, Sparkles } from 'lucide-react'
+import { Activity, ArrowRight, Brain, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
-import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
+import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
 import './profile-domains.css'
 
-const DOMAINS = ['psychology', 'homeopathy', 'wu_xing', 'hypnotherapy']
+const DOMAINS = PROFILE_AREAS
 const ICONS = { psychology: Brain, homeopathy: Leaf, wu_xing: Flower2, hypnotherapy: HeartHandshake }
 const WORDS = {
   en: {
@@ -128,6 +128,26 @@ function ReportsHistory({ reports, locale, selector, title, empty, t }) {
   </div>
 }
 
+function ProfileServiceOffer({ area, locale }) {
+  const offer = profileServiceOffer(area, locale)
+  const hint = locale === 'ru'
+    ? 'WhatsApp откроет готовый запрос. Вы сами подтверждаете отправку.'
+    : 'WhatsApp opens a prepared request. You decide whether to send it.'
+  return <aside className="hh-domain-promo" data-profile-service-cta={area} aria-label={offer.title}>
+    <div className="hh-domain-promo-copy">
+      <span className="hh-domain-promo-icon" aria-hidden="true"><MessageCircle size={19} /></span>
+      <div><strong>{offer.title}</strong><p>{offer.description}</p></div>
+    </div>
+    <div className="hh-domain-promo-actions">
+      <a href={offer.requestHref} target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp" data-service-area={area}>
+        {offer.button} <ArrowRight size={15} aria-hidden="true" />
+      </a>
+      <Link href={offer.descriptionHref} prefetch={false}>{offer.details}</Link>
+      <small>{hint}</small>
+    </div>
+  </aside>
+}
+
 /**
  * One authenticated profile selector for the Google Cabinet and the existing
  * private-link Cabinet. Never joins client archives or derives remedies,
@@ -190,16 +210,6 @@ export function ProfileDomains({
         : key === 'wu_xing' ? wuReports.length : hypnoReports.length,
   }))
   const panelTitle = { psychology: t.psyDetail, homeopathy: t.homeoDetail, wu_xing: t.wuDetail, hypnotherapy: t.hypnoDetail }
-  const enquiry = whatsappEnquiryUrl({
-    locale, service: ru ? 'Консультация: ' + panelTitle[active] : 'Consultation: ' + panelTitle[active],
-    request: ru ? 'Хочу обсудить свой профиль и возможные дальнейшие шаги.' : 'I would like to discuss my profile and possible next steps.',
-  })
-  const consultHref = external ? enquiry : '/' + locale + '/app/consultations?source=profile-' + active
-  const serviceHref = active === 'wu_xing'
-    ? '/' + locale + '/services/dao-health-profile'
-    : active === 'hypnotherapy'
-      ? '/' + locale + '/services/hypnotherapy-course'
-      : '/' + locale + '/services'
   const mayBeLimited = !external && (savedReports.filter(r => r.available !== false).length > 30 || savedDocuments.filter(d => d.kind === 'recommendation').length > 20)
 
   return <section className="hh-profile-domains" data-profile-domains>
@@ -231,14 +241,11 @@ export function ProfileDomains({
       })}
     </div>
     <div role="tabpanel" id="hh-domain-panel" aria-labelledby={'hh-domain-tab-' + active} className="hh-domain-panel" tabIndex={0}>
+      <ProfileServiceOffer area={active} locale={locale} />
       {active === 'psychology' && <section className="hh-domain-content" data-domain="psychology">
         <div className="hh-domain-heading"><div><p className="hh-domain-eyebrow">{t.psychology}</p><h2>{t.psyDetail}</h2><p>{t.psyIntro}</p></div></div>
         {external ? <>
           <ReportsHistory reports={psychologicalReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.emptyLegacyPsy} t={t} />
-          <div className="hh-domain-next">
-            <div><Sparkles size={21} aria-hidden="true" /><strong>{t.request}</strong><p>{t.profileIntro}</p></div>
-            <div className="hh-domain-next-actions"><a href={enquiry} target="_blank" rel="noopener noreferrer">{t.consultation} <ArrowRight size={16} /></a></div>
-          </div>
           <Link className="hh-domain-secondary-link" href={'/' + locale + '/app/portrait'} prefetch={false}>{t.google} <ArrowRight size={16} /></Link>
         </> : <>
           <div className="hh-domain-psy-summary"><span><strong>{recentResults.length}</strong>{t.testResults}</span><span><strong>{readableDate(recentResults[0]?.occurredOn, locale) || '—'}</strong>{t.latest}</span></div>
@@ -260,13 +267,6 @@ export function ProfileDomains({
         </div>}
         {(external || fetchState !== 'loading') && active === 'wu_xing' && <ReportsHistory reports={wuReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noWu} t={t} />}
         {(external || fetchState !== 'loading') && active === 'hypnotherapy' && <ReportsHistory reports={hypnoReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noHypno} t={t} />}
-        <div className="hh-domain-next">
-          <div><Sparkles size={21} aria-hidden="true" /><strong>{t.request}</strong><p>{t.profileIntro}</p></div>
-          <div className="hh-domain-next-actions">
-            <a href={consultHref} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{t.consultation} <ArrowRight size={16} /></a>
-            <Link href={serviceHref} prefetch={false}>{active === 'wu_xing' ? t.freeWu : t.learnMore}</Link>
-          </div>
-        </div>
         <Link className="hh-domain-secondary-link" href={external ? '/' + locale + '/client/' + encodeURIComponent(selector) + '?view=analysis' : '/' + locale + '/app/analysis'} prefetch={false}>{t.seeAll} <ArrowRight size={16} /></Link>
         {fetchState === 'partial' && <p role="status" className="hh-domain-caution">{t.incomplete}</p>}
         {mayBeLimited && <p className="hh-domain-caution">{t.visibleLimit}</p>}

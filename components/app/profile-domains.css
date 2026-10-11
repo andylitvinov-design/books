@@ -42,14 +42,6 @@
 .hh-domain-history-row small { display:block; color:#897b6e; font-size:11px; line-height:1.5; margin-top:3px; }
 .hh-domain-history-row svg { flex:0 0 auto; }
 .hh-domain-empty { padding:19px; background:#f8f2ea; border:1px dashed #decfbe; border-radius:13px; color:#776759; font:400 13px/1.6 system-ui,sans-serif; }
-.hh-domain-next { display:flex; flex-wrap:wrap; justify-content:space-between; gap:15px; align-items:center; padding:clamp(18px,3vw,25px); background:#f7eee4; border-radius:17px; margin:22px 0 16px; }
-.hh-domain-next > div:first-child { max-width:530px; }
-.hh-domain-next > div:first-child svg { color:#9b634a; vertical-align:middle; margin-right:7px; }
-.hh-domain-next strong { color:#523b2c; font:650 16px/1.5 system-ui,sans-serif; }
-.hh-domain-next p { font:400 12px/1.6 system-ui,sans-serif; color:#77665a; margin:7px 0 0; }
-.hh-domain-next-actions { display:flex; flex-wrap:wrap; gap:9px; }
-.hh-domain-next-actions a { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:43px; padding:10px 15px; border-radius:11px; background:#89543b; color:white; font:650 12px/1.35 system-ui,sans-serif; text-align:center; }
-.hh-domain-next-actions a + a { color:#78503e; background:#fffaf4; border:1px solid #d7c3b1; }
 .hh-domain-secondary-link { width:fit-content; max-width:100%; }
 .hh-domain-loading,.hh-domain-caution { font:400 12px/1.65 system-ui,sans-serif; color:#866b50; }
 .hh-domain-private { display:flex; gap:8px; align-items:flex-start; margin:13px 3px 0; font:400 11px/1.6 system-ui,sans-serif; color:#8a796a; }
@@ -72,7 +64,6 @@
   .hh-domain-panel { padding:16px; border-radius:17px; }
   .hh-domain-psy-summary { gap:7px; }
   .hh-domain-psy-summary > span { padding:11px 9px; font-size:11px; }
-  .hh-domain-next-actions,.hh-domain-next-actions a { width:100%; }
   .hh-domain-link-row a { flex:1; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -97,4 +88,29 @@
 @media(max-width:760px) {
   .client-cabinet .client-cabinet-sections { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
   .client-cabinet .client-cabinet-sections a { min-width:0; width:100%; padding:9px 5px; text-align:center; font-size:11px; line-height:1.3; border-radius:13px; overflow-wrap:anywhere; }
+}
+/* One gentle and directly actionable service offer per profile tab. */
+.hh-profile-domains .hh-domain-promo {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  margin:0 0 19px; padding:13px 15px; background:#f8f1e8; border:1px solid #e0cfbe;
+  border-radius:15px; color:#49362a;
+}
+.hh-domain-promo-copy { display:flex; flex:1 1 245px; align-items:flex-start; gap:10px; min-width:0; }
+.hh-domain-promo-icon { display:grid; place-items:center; flex:0 0 35px; width:35px; height:35px; color:#8a5c43; background:#efe1d2; border-radius:11px; }
+.hh-domain-promo-copy strong { display:block; font:650 13px/1.4 system-ui,sans-serif; color:#503c2f; margin:0; }
+.hh-domain-promo-copy p { margin:4px 0 0; color:#806e60; font:400 11.5px/1.5 system-ui,sans-serif; max-width:440px; }
+.hh-domain-promo-actions { display:flex; flex:0 1 auto; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; max-width:380px; }
+.hh-domain-promo-actions a { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:42px; padding:10px 13px; border-radius:10px; border:1px solid #875438; background:#875438; color:#fff !important; font:650 12px/1.3 system-ui,sans-serif; text-decoration:none; text-align:center; }
+.hh-domain-promo-actions a:hover { filter:brightness(.96); }
+.hh-domain-promo-actions a:nth-child(2) { background:transparent; color:#77513b !important; border-color:transparent; text-decoration:underline; text-underline-offset:3px; padding-inline:7px; }
+.hh-domain-promo-actions small { flex:1 1 100%; text-align:right; color:#8d7b6c; font:400 10px/1.4 system-ui,sans-serif; }
+.hh-domain-promo a:focus-visible { outline:3px solid #a26f4d; outline-offset:2px; }
+@media(max-width:760px) {
+  .hh-profile-domains .hh-domain-promo { align-items:flex-start; padding:12px; gap:9px; }
+  .hh-domain-promo-copy { flex-basis:100%; }
+  .hh-domain-promo-actions { flex-basis:100%; justify-content:flex-start; max-width:none; }
+  .hh-domain-promo-actions small { text-align:left; }
+}
+@media(max-width:420px) {
+  .hh-domain-promo-actions a:first-child { flex:1; }
 }
