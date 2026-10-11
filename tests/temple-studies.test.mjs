@@ -162,7 +162,7 @@ test("Temple Studies makes tradition, deity channel and three initiation formats
   assert.match(chooser, /aria-pressed=\{item\.id === formatId\}/);
   assert.match(chooser, /t\.messageTradition \+ ": " \+ traditionName/);
   assert.match(chooser, /t\.messageDeity \+ ": " \+ deityName/);
-  assert.match(chooser, /t\.messageFormat \+ ": " \+ format\.title\[locale\]/);
+  assert.match(chooser, /t\.messageFormat \+ ": " \+ \(format\?\.title\[locale\] \?\? t\.pending\)/);
   assert.match(chooser, /encodeURIComponent\(message\)/);
   assert.match(chooser, /https:\/\/wa\.me\/14376066502/);
   assert.match(chooser, /data-temple-whatsapp-request/);
