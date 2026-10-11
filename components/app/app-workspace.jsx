@@ -435,6 +435,8 @@ function SaveContinuation({ data, locale, reload }) {
   const [intent, setIntent] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const autoSaveTriggered = useRef('')
+  const authIssue = params.get('auth')
   const ru = locale === 'ru'
 
   useEffect(() => {
@@ -458,7 +460,7 @@ function SaveContinuation({ data, locale, reload }) {
     }
   }, [intentId, ru])
 
-  async function commit() {
+  const commit = useCallback(async () => {
     if (!intentId || busy) return
     setBusy(true)
     setError('')
@@ -487,6 +489,38 @@ function SaveContinuation({ data, locale, reload }) {
               : 'The selected item could not be saved.',
       )
     } finally {
+      setBusy(false)
+    }
+  }, [intentId, busy, locale, ru, reload, router])
+
+  // The invitation button is the explicit consent to save this one report.
+  // The browser-bound 15-minute intent and authenticated Google account still
+  // get checked on the server. New accounts first complete onboarding consent.
+  useEffect(() => {
+    if (!intentId || intent?.sourceKind !== 'delivered_report' ||
+        intent.status !== 'pending' || intent.expired || authIssue ||
+        autoSaveTriggered.current === intentId) return
+    autoSaveTriggered.current = intentId
+    void commit()
+  }, [intent, intentId, authIssue, commit])
+
+  useEffect(() => {
+    if (authIssue === 'cancelled' || authIssue === 'failed') {
+      setError(ru
+        ? 'Вход через Google не завершён. Выберите аккаунт, чтобы открыть и сохранить отчёт.'
+        : 'Google sign-in was not completed. Choose your account to open and save the report.')
+    }
+  }, [authIssue, ru])
+
+  async function restartGoogle() {
+    if (busy || !intentId) return
+    setBusy(true)
+    setError('')
+    try {
+      const auth = await appFetch('auth/start', { locale, intentId })
+      window.location.assign(auth.redirectUrl)
+    } catch {
+      setError(ru ? 'Не удалось открыть вход через Google. Попробуйте снова.' : 'Could not open Google sign-in. Please try again.')
       setBusy(false)
     }
   }
@@ -547,18 +581,28 @@ function SaveContinuation({ data, locale, reload }) {
             >
               {ru ? 'Открыть сохранённый материал' : 'Open saved item'}
             </Link>
+          ) : intent.sourceKind === 'delivered_report' && authIssue ? (
+            <button className="hh-primary" type="button" disabled={busy} onClick={restartGoogle}>
+              {busy
+                ? (ru ? 'Открываем Google…' : 'Opening Google…')
+                : (ru ? 'Выбрать Google-аккаунт' : 'Choose Google account')}
+            </button>
+          ) : intent.sourceKind === 'delivered_report' && !error ? (
+            <p role="status" aria-live="polite" className="hh-muted">
+              {ru ? 'Открываем и сохраняем ваш отчёт…' : 'Opening and saving your report…'}
+            </p>
           ) : (
             <button className="hh-primary" type="button" disabled={busy} onClick={commit}>
-              {busy ? (ru ? 'Сохраняем…' : 'Saving…') : (ru ? 'Сохранить' : 'Save')}
+              {busy ? (ru ? 'Сохраняем…' : 'Saving…') : (ru ? 'Повторить сохранение' : 'Try saving again')}
             </button>
           )}
         </>
       )}
       {error && <p role="alert">{error}</p>}
       <p className="hh-fine">
-        {ru
-          ? 'Если вы выбрали не тот Google-аккаунт, вернитесь к исходному результату и начните сохранение заново.'
-          : 'If this is not the Google account you intended, return to the original result and start Save again.'}
+        {intent?.sourceKind === 'delivered_report'
+          ? (ru ? 'После сохранения полный отчёт откроется автоматически в вашем Google-кабинете.' : 'Your complete report opens automatically in your Google Cabinet after saving.')
+          : (ru ? 'Если вы выбрали не тот Google-аккаунт, вернитесь к исходному результату и начните сохранение заново.' : 'If this is not the Google account you intended, return to the original result and start Save again.')}
       </p>
     </section>
   )
@@ -2625,13 +2669,15 @@ function SavedReportPage({ id, locale, reload }) {
   if (error) return <p role="alert">{ru ? 'Не удалось открыть отчёт.' : 'The report could not be opened.'}</p>
   if (!value) return <p>{ru ? 'Загружаем отчёт…' : 'Loading report…'}</p>
   return (
-    <section className="hh-panel">
-      <p className="hh-kicker">{ru ? 'Сохранённый отчёт' : 'Saved report'}</p>
-      <AssessmentReading record={value.report} locale={locale} />
+    <section className="hh-panel hh-saved-report-page">
+      <div className="hh-saved-report-heading">
+        <p className="hh-kicker">{ru ? 'Мой личный отчёт · Holistic House' : 'My personal report · Holistic House'}</p>
+        <p className="hh-fine">{ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}</p>
+      </div>
+      <div className="hh-saved-report-paper">
+        <AssessmentReading record={value.report} locale={locale} />
+      </div>
       <div className="hh-analysis-detail-download"><DownloadPractitionerReport reportId={id} locale={locale} /></div>
-      <p className="hh-fine">
-        {ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}
-      </p>
       <div className="hh-actions">
         <Link href={'/' + locale + '/app/analysis'} prefetch={false}>
           {ru ? 'Личный анализ' : 'Personal analysis'}
