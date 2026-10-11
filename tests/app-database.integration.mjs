@@ -10,6 +10,7 @@ import {
   commitReportSaveIntent,
   exchangeReportViewer,
   issueReportGrant,
+  listPersonalAnalysisReports,
   readSavedReport,
   rotateReportGrant,
 } from '../lib/app/report-flow.js'
@@ -997,9 +998,18 @@ test('report save race binds one account, stays idempotent and rotation does not
   const replay = await commitReportSaveIntent(config, store, winner, winnerIntent.id, winnerProof)
   assert.equal(replay.id, saved.id)
   assert.equal(replay.report.title, 'Synthetic delivered report')
+  const winnerList = await listPersonalAnalysisReports(config, store, winner)
+  const pinned = winnerList.reports.find((item) => item.id === saved.id)
+  assert.deepEqual({ title: pinned.title, kind: pinned.kind, unread: pinned.unread, available: pinned.available }, {
+    title: 'Synthetic delivered report', kind: 'research_result', unread: true, available: true,
+  })
+  const loserList = await listPersonalAnalysisReports(config, store, winnerIndex === 0 ? b : a)
+  assert.equal(loserList.reports.some((item) => item.id === saved.id), false, 'cross-account report title must not leak')
   const opened = await readSavedReport(config, store, winner, saved.id)
   assert.equal(opened.report.id, sourceAssessmentId)
   assert.equal(opened.report.relatedDocumentIds, undefined)
+  const openedList = await listPersonalAnalysisReports(config, store, winner)
+  assert.equal(openedList.reports.find((item) => item.id === saved.id)?.unread, false, 'listing does not mark reports as read')
 
   await assert.rejects(
     () => authorizeReportViewer(config, store, issued.selector, {
@@ -1043,6 +1053,13 @@ test('report save race binds one account, stays idempotent and rotation does not
     ).rows[0]
     assert.equal(grant.status, 'revoked')
     assert.equal(grant.bound_account_id, winner.id)
+    // Unsharing a report invalidates the live source. Existing archive entry remains
+    // visible but offers neither content nor a false promise of a downloadable PDF.
+    reportRecord.status = 'draft'
+    const unavailable = await listPersonalAnalysisReports(config, store, winner)
+    const entry = unavailable.reports.find((item) => item.id === saved.id)
+    assert.equal(entry.available, false)
+    assert.equal(entry.title, undefined)
   } finally {
     await adminAfter.end()
   }
