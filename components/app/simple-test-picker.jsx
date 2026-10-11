@@ -253,7 +253,7 @@ export function SimpleTestPicker({
             <span className={styles.testInfo}>
               <strong>{entry.title}</strong>
               <small>{entry.description || entry.category}</small>
-              {entry.methodology && <small className={styles.methodology}>{entry.methodology}</small>
+              {entry.methodology && <small className={styles.methodology}>{entry.methodology}</small>}
             </span>
             <span className={styles.testMeta}>
               <strong className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
