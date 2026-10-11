@@ -103,9 +103,9 @@ test("home restores four approved image-left service cards and their titles", ()
   const css = read("components/services-solutions.module.css");
   assert.match(cards, /homeTitle: "How I can help"/);
   assert.match(cards, /homeTitle: "Чем я могу помочь"/);
-  assert.match(cards, /const visibleOffers = isHome \\? allOffers : personalOffers/);
+  assert.match(cards, /const visibleOffers = isHome \? allOffers : personalOffers/);
   assert.match(cards, /visibleOffers.map/);
-  assert.match(css, /grid-template-columns:minmax\\(113px,2fr\\) minmax\\(0,3fr\\)/);
+  assert.match(css, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
   assert.match(home, /href="#core-services"/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=/);
 });
