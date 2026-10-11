@@ -1358,6 +1358,10 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           )}
         </div>
       )}
+      {(isContext || (mode === 'quick' && allAnswered)) && (
+        <TestFinishActions locale={locale} disabled={busy || Boolean(operation.current) || !allAnswered}
+          onReport={() => finish('report')} onNext={() => finish('next')} />
+      )}
       <div className="hh-actions hh-runner-actions">
         {mode !== 'quick' && (
           <button
@@ -1375,10 +1379,6 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           >
             {c.next}
           </button>
-        )}
-        {(isContext || (mode === 'quick' && allAnswered)) && (
-          <TestFinishActions locale={locale} disabled={busy || Boolean(operation.current) || !allAnswered}
-            onReport={() => finish('report')} onNext={() => finish('next')} />
         )}
         <button disabled={busy || Boolean(operation.current)} onClick={exit}>
           {c.saveExit}
