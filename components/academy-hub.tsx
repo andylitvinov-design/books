@@ -174,10 +174,10 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           title: locale === "ru" ? "Кундалини Рейки" : "Kundalini Reiki",
           subtitle: action.featured,
           description: locale === "ru"
-            ? "Отдельный курс 1–3 ступеней: личная практика, Кундалини и чакры, «Баланс» и мастерские настройки. Материалы PsiMaster, SuperSkills и PsiTrends."
+            ? "Три ступени: личная практика, образы Кундалини и чакр, «Баланс» и мастерские настройки. Вся программа внутри Holistic House."
             : locale === "es"
-              ? "Curso independiente de tres niveles: meditación, chakras, Balance y formación de Maestro a partir de tres webs originales."
-              : "A distinct three-level journey: self-practice, chakra imagery, Balance and Master-level study, drawn from all three original sites.",
+              ? "Tres niveles: meditación, chakras, Balance y Maestro. Toda la formación disponible en Holistic House."
+              : "A simple three-level learning path: personal meditation, chakra imagery, Balance and traditional Master-level study. Read everything here on Holistic House.",
           href: "/" + locale + "/academy/reiki/kundalini-reiki",
           image: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
           actionLabel: action.program,

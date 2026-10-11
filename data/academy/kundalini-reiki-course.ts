@@ -3,7 +3,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 /**
  * Holistic House editorial adaptation of the owner's surviving Kundalini Reiki
  * teaching materials. These are spiritual/meditative traditions, not established
- * medical treatments. Preserve the original evidence links below.
+ * medical treatments. Original references are retained only in the internal source audit, never as public off-site course links.
  */
 export type LocalText = Record<PublicLocale, string>;
 export type KundaliniLesson = {
@@ -108,9 +108,9 @@ export const kundaliniLessons: KundaliniLesson[] = [
       es: "Imagen Kundalini y «Balance»",
     },
     summary: {
-      en: "Deepen the traditional earth-to-crown visualisation, explore chakra symbolism and study the short Balance practice recorded in the original manual.",
-      ru: "Углубите традиционную визуализацию потока от земли к макушке, изучите символику чакр и короткую практику «Баланс» из первоисточника.",
-      es: "Profundiza la visualización tradicional de tierra a corona, explora los chakras y conoce el ejercicio breve «Balance» del manual.",
+      en: "Deepen the traditional earth-to-crown visualisation, explore chakra symbolism and study the short Balance practice recorded within the Kundalini Reiki tradition.",
+      ru: "Углубите традиционную визуализацию потока от земли к макушке, изучите символику чакр и короткую практику «Баланс» в традиции Кундалини Рейки.",
+      es: "Profundiza la visualización tradicional de tierra a corona, explora los chakras y conoce el ejercicio breve «Balance» de la tradición.",
     },
     focus: [
       {
@@ -153,9 +153,9 @@ export const kundaliniLessons: KundaliniLesson[] = [
       es: "Nivel Maestro y extensiones tradicionales",
     },
     summary: {
-      en: "Study the teacher/attunement format and the six named symbolic extensions preserved in the PsiMaster course; use them as historical learning themes, not cure claims.",
-      ru: "Изучите формат мастерской передачи и шесть дополнительных названных настроек из курса PsiMaster как темы традиции, а не обещания исцеления.",
-      es: "Estudia el formato de transmisión y seis extensiones simbólicas del curso PsiMaster como temas tradicionales, no promesas de curación.",
+      en: "Study the teacher/attunement format and the six named symbolic extensions included in the teaching sequence; approach these as symbolic study themes, not cure claims.",
+      ru: "Изучите формат мастерской передачи и шесть дополнительных названных настроек как символические темы традиции без обещаний исцеления.",
+      es: "Estudia el formato de transmisión y seis extensiones simbólicas como temas simbólicos tradicionales, sin promesas de curación.",
     },
     focus: [
       {
@@ -220,9 +220,9 @@ export const kundaliniEveryday: { title: LocalText; description: LocalText }[] =
   {
     title: { en: "Reflect on situations", ru: "Осмысление ситуаций", es: "Reflexión sobre situaciones" },
     description: {
-      en: "The source applies intention to relationships, surroundings and personal goals. Use those as reflective prompts, not guarantees of external change.",
-      ru: "Первоисточник предлагает намерения для отношений, пространства и целей. Используйте их как темы осмысления, не гарантии изменения обстоятельств.",
-      es: "La fuente aplica intención a relaciones, entornos y metas; úsalas para reflexionar, sin prometer cambios externos.",
+      en: "Explore intention in relationships, surroundings and personal goals. Use those as reflective prompts, not guarantees of external change.",
+      ru: "Исследуйте намерение в отношениях, пространстве и личных целях. Используйте их как темы осмысления, не гарантии изменения обстоятельств.",
+      es: "Explora la intención en relaciones, entornos y metas; úsalas para reflexionar, sin prometer cambios externos.",
     },
   },
   {
@@ -237,6 +237,9 @@ export const kundaliniEveryday: { title: LocalText; description: LocalText }[] =
 
 export const kundaliniInterface: Record<PublicLocale, {
   eyebrow: string; title: string; introduction: string; primary: string; secondary: string;
+  pdfButton: string; heroImageAlt: string; heroStamp: string; benefitsLabel: string; benefits: string[];
+  programmeKicker: string; levelLabel: string; learningKicker: string; practiceImageAlt: string;
+  guideKicker: string; guideTitle: string; guideDescription: string; contactKicker: string;
   heroNote: string; levels: string; levelsSub: string; sourcesCount: string; focus: string;
   stepsTitle: string; stepsSub: string; detailLabel: string; exercise: string; assignment: string;
   methodTitle: string; methodLead: string; howTitle: string; howText: string[];
@@ -246,16 +249,25 @@ export const kundaliniInterface: Record<PublicLocale, {
   footerNote: string; back: string;
 }> = {
   en: {
+    pdfButton: "Download PDF", heroImageAlt: "Authentic school photography — a calm Reiki learning environment",
+    heroStamp: "Meditation · Practice · Initiation",
+    benefitsLabel: "Programme benefits",
+    benefits: ["Three clear levels", "Practice at your own pace", "Personal learning with a teacher"],
+    programmeKicker: "YOUR LEARNING PATH", levelLabel: "LEVEL", learningKicker: "SIMPLE & PERSONAL",
+    practiceImageAlt: "Practice and meditation — Holistic House learning materials",
+    guideKicker: "YOUR STUDY MATERIALS", guideTitle: "Keep the complete course guide",
+    guideDescription: "A beautifully organised PDF in English with all three levels, practice notes and guidance on how to begin.",
+    contactKicker: "BEGIN WITH LEVEL 1",
     eyebrow: "HOLISTIC HOUSE · REIKI TRAINING",
     title: "Kundalini Reiki",
-    introduction: "Three progressive levels: learn self-practice, explore Kundalini and chakra imagery, and study the traditional Master extensions. One clear learning path assembled from PsiMaster, SuperSkills and PsiTrends.",
+    introduction: "Three levels of meditation, chakra imagery and personal Reiki practice. Begin gently, develop balance, and continue towards Master-level study.",
     primary: "Explore the 3 levels", secondary: "Ask about training",
-    heroNote: "Independent course · no prerequisite to enrol in Tantra Reiki or Yggdrasil",
+    heroNote: "Meditation and personal attention — a gentle independent practice",
     levels: "3 levels", levelsSub: "Foundation → Balance → Master", sourcesCount: "3 original sites", focus: "A personal practice first",
-    stepsTitle: "The course, at a glance", stepsSub: "Read the overview first. Expand a level to see its practices and assignment.",
-    detailLabel: "Open level details", exercise: "Guided study exercise", assignment: "Practice & reflection",
-    methodTitle: "Everyday practice", methodLead: "Practical elements preserved from the original school material, with consent, grounding and honest observation at the centre.",
-    howTitle: "How learning works", howText: ["1. Read the lesson and practise your own meditation.", "2. Discuss the level and receive an initiation with a qualified teacher if you choose that path.", "3. Practise independently or with a consenting partner, then share a short reflection before progressing."],
+    stepsTitle: "Three levels. One clear path.", stepsSub: "Select a level to see its full lessons and practical exercises.",
+    detailLabel: "View the full level", exercise: "Guided study exercise", assignment: "Practice & reflection",
+    methodTitle: "Five everyday practice notes", methodLead: "Practical elements preserved from the original school material, with consent, grounding and honest observation at the centre.",
+    howTitle: "How you learn", howText: ["1. Read the lesson and practise your own meditation.", "2. Discuss the level and receive an initiation with a qualified teacher if you choose that path.", "3. Practise independently or with a consenting partner, then share a short reflection before progressing."],
     faqTitle: "Questions before you begin",
     faqs: [
       { q: "How is Kundalini Reiki different from Tantra or Yggdrasil Reiki?", a: "These are distinct training paths. Kundalini Reiki focuses on a three-step attunement model and chakra/Kundalini imagery. Tantra Reiki has nine levels centred on relational and embodied themes; Yggdrasil has its own runic and temple-tradition structure." },
@@ -264,21 +276,30 @@ export const kundaliniInterface: Record<PublicLocale, {
       { q: "Is it a health treatment?", a: "No. This is spiritual and reflective education, not a diagnosis or a substitute for evidence-based medical or mental-health care. References to DNA, birth trauma and past lives are historical names, not established outcomes." },
     ],
     sourceTitle: "Original teaching sources", sourceLead: "The course brings together the surviving first-party descriptions; open the original pages for the full historic wording and the wider school context.", archiveLabel: "Read original", provenanceNote: "Legacy costs, certificates, superior-power comparisons and medical promises are not carried forward as current facts. The historical eight-day sequence is documented inside Level 3.",
-    contactTitle: "Begin with Level 1", contactText: "Ask Andy about the current course format, availability, study materials and personal initiation. No booking is made until you confirm it directly.",
-    contactProgramme: "Request course outline & current fees", contactLevel: "Request personal Level 1 initiation", telegram: "Or write on Telegram",
+    contactTitle: "Ready for your first step?", contactText: "Read the complete programme here or in the PDF. Then contact Andrey about a personal initiation or current course conditions.",
+    contactProgramme: "Ask about training format & fees", contactLevel: "Request personal Level 1 initiation", telegram: "Or write on Telegram",
     footerNote: "Educational, contemplative practice. Participation and physical touch are always optional.",
     back: "Academy",
   },
   ru: {
+    pdfButton: "Скачать PDF", heroImageAlt: "Реальное фото из материалов школы — атмосфера обучения Рейки",
+    heroStamp: "Медитация · Практика · Инициация",
+    benefitsLabel: "Преимущества программы",
+    benefits: ["Три понятные ступени", "Практика в своём темпе", "Личное обучение с преподавателем"],
+    programmeKicker: "ВАШ ПУТЬ ОБУЧЕНИЯ", levelLabel: "СТУПЕНЬ", learningKicker: "ПРОСТО И ЛИЧНО",
+    practiceImageAlt: "Практика и медитация — обучающие материалы Holistic House",
+    guideKicker: "УЧЕБНЫЕ МАТЕРИАЛЫ", guideTitle: "Сохраните полное описание курса",
+    guideDescription: "Красивый PDF на русском: все три ступени, практические задания и как начать обучение.",
+    contactKicker: "НАЧНИТЕ С ПЕРВОЙ СТУПЕНИ",
     eyebrow: "HOLISTIC HOUSE · ОБУЧЕНИЕ РЕЙКИ",
     title: "Кундалини Рейки",
-    introduction: "Три последовательные ступени: личная практика, работа с образами Кундалини и чакр, затем мастерские дополнительные настройки. Единый курс на основе PsiMaster, SuperSkills и PsiTrends.",
+    introduction: "Три ступени медитации, работы с образом Кундалини и личной практики Рейки. От первых упражнений — к «Балансу» и мастерским настройкам.",
     primary: "Посмотреть 3 ступени", secondary: "Узнать об обучении",
-    heroNote: "Самостоятельная система · не требует прохождения Тантра Рейки или Рейки Иггдрасиль",
+    heroNote: "Медитация и внимание к себе — мягкая самостоятельная практика",
     levels: "3 ступени", levelsSub: "Основа → Баланс → Мастер", sourcesCount: "3 сайта-источника", focus: "Сначала личная практика",
-    stepsTitle: "Вся программа — за один взгляд", stepsSub: "Сначала короткое описание. Нажмите на ступень, чтобы раскрыть упражнения и задания.",
-    detailLabel: "Открыть содержание ступени", exercise: "Учебная практика", assignment: "Практическое задание",
-    methodTitle: "Практики на каждый день", methodLead: "Сохранили основные упражнения школы, добавив понятные границы, согласие и наблюдение за реальным опытом.",
+    stepsTitle: "Три ступени. Один понятный путь.", stepsSub: "Раскройте ступень, чтобы посмотреть все темы и упражнения.",
+    detailLabel: "Подробнее о ступени", exercise: "Учебная практика", assignment: "Практическое задание",
+    methodTitle: "Пять подсказок для практики", methodLead: "Сохранили основные упражнения школы, добавив понятные границы, согласие и наблюдение за реальным опытом.",
     howTitle: "Как проходит обучение", howText: ["1. Изучаете материал и осваиваете медитацию самостоятельно.", "2. При желании проходите соответствующую инициацию с преподавателем.", "3. Практикуете самостоятельно или с согласным партнёром и описываете результат наблюдений перед следующей ступенью."],
     faqTitle: "Вопросы перед началом",
     faqs: [
@@ -288,22 +309,31 @@ export const kundaliniInterface: Record<PublicLocale, {
       { q: "Это метод лечения?", a: "Нет. Это духовно-медитативное обучение, а не диагностика и не замена медицинской или психотерапевтической помощи. «ДНК», «родовая травма» и «прошлая жизнь» — названия исторических упражнений, а не доказанные лечебные эффекты." },
     ],
     sourceTitle: "Первоисточники и учебные материалы", sourceLead: "Здесь объединены сохранившиеся авторские страницы; все ссылки ведут на оригинальные тексты и контекст школы.", archiveLabel: "Читать первоисточник", provenanceNote: "Старые цены, сертификаты, сравнения силы разных Рейки и обещания исцеления не перенесены как актуальные факты. Историческая последовательность восьми дней описана внутри 3-й ступени.",
-    contactTitle: "Начните с 1-й ступени", contactText: "Уточните у Андрея актуальный формат, стоимость, доступные материалы и возможность личной инициации. Заявка не равна бронированию.",
-    contactProgramme: "Запросить программу и текущие цены", contactLevel: "Запросить личную инициацию 1-й ступени", telegram: "Или написать в Telegram",
+    contactTitle: "Готовы начать обучение?", contactText: "Вся программа — здесь и в PDF. Напишите Андрею, чтобы согласовать личную инициацию или актуальные условия обучения.",
+    contactProgramme: "Узнать формат обучения и стоимость", contactLevel: "Запросить личную инициацию 1-й ступени", telegram: "Или написать в Telegram",
     footerNote: "Духовно-медитативная практика. Участие и прикосновения — только по желанию и с согласия.",
     back: "Академия",
   },
   es: {
+    pdfButton: "Descargar PDF", heroImageAlt: "Fotografía original de la escuela y su práctica de Reiki",
+    heroStamp: "Meditación · Práctica · Iniciación",
+    benefitsLabel: "Ventajas del curso",
+    benefits: ["Tres niveles claros", "Práctica a tu ritmo", "Aprendizaje personal con el docente"],
+    programmeKicker: "TU CAMINO DE ESTUDIO", levelLabel: "NIVEL", learningKicker: "SIMPLE Y PERSONAL",
+    practiceImageAlt: "Práctica y meditación en Holistic House",
+    guideKicker: "MATERIAL DE ESTUDIO", guideTitle: "Descarga la guía completa",
+    guideDescription: "PDF en español con los tres niveles, ejercicios y pasos para comenzar.",
+    contactKicker: "EMPIEZA CON EL NIVEL 1",
     eyebrow: "HOLISTIC HOUSE · FORMACIÓN REIKI",
     title: "Kundalini Reiki",
-    introduction: "Tres niveles progresivos: práctica personal, imágenes de Kundalini y chakras, y extensiones tradicionales de Maestro. Un curso basado en PsiMaster, SuperSkills y PsiTrends.",
+    introduction: "Tres niveles de meditación, imágenes de chakras y práctica personal de Reiki: fundamentos, equilibrio y formación de Maestro.",
     primary: "Ver los 3 niveles", secondary: "Consultar formación",
-    heroNote: "Sistema independiente · no requiere Tantra Reiki ni Reiki Yggdrasil",
-    levels: "3 niveles", levelsSub: "Fundamento → Balance → Maestro", sourcesCount: "3 sitios originales", focus: "Primero, práctica personal",
-    stepsTitle: "El curso de un vistazo", stepsSub: "Lee el resumen. Despliega cada nivel para ver ejercicios y tareas.",
-    detailLabel: "Ver detalles del nivel", exercise: "Ejercicio de estudio", assignment: "Práctica y reflexión",
-    methodTitle: "Práctica cotidiana", methodLead: "Elementos de los textos originales, con consentimiento, enraizamiento y observación honesta.",
-    howTitle: "Cómo funciona", howText: ["1. Lee la lección y practica la meditación.", "2. Si lo deseas, recibe la iniciación correspondiente con un docente.", "3. Practica a solas o con una pareja que consienta, y comparte tus observaciones."],
+    heroNote: "Meditación y atención personal",
+    levels: "3 niveles", levelsSub: "Fundamentos → Balance → Maestro", sourcesCount: "3 sitios originales", focus: "Primero, práctica personal",
+    stepsTitle: "Tres niveles. Un camino claro.", stepsSub: "Abre cada nivel para ver el contenido y los ejercicios.",
+    detailLabel: "Ver el nivel completo", exercise: "Ejercicio de estudio", assignment: "Práctica y reflexión",
+    methodTitle: "Cinco pautas de práctica", methodLead: "Elementos de los textos originales, con consentimiento, enraizamiento y observación honesta.",
+    howTitle: "Cómo aprender", howText: ["1. Lee la lección y practica la meditación.", "2. Si lo deseas, recibe la iniciación correspondiente con un docente.", "3. Practica a solas o con una pareja que consienta, y comparte tus observaciones."],
     faqTitle: "Preguntas frecuentes",
     faqs: [
       { q: "¿En qué se diferencia de Tantra Reiki o Yggdrasil?", a: "Son cursos diferentes. Kundalini Reiki tiene tres niveles y usa imágenes de chakras; Tantra Reiki tiene nueve niveles relacionales, e Yggdrasil utiliza tradiciones rúnicas y de templo." },
@@ -312,8 +342,8 @@ export const kundaliniInterface: Record<PublicLocale, {
       { q: "¿Es un tratamiento médico?", a: "No. Es aprendizaje espiritual y contemplativo, sin sustituir atención médica o psicológica. ADN, trauma del nacimiento y vidas pasadas son nombres tradicionales, no resultados demostrados." },
     ],
     sourceTitle: "Fuentes originales", sourceLead: "Reunimos materiales de las tres webs; los enlaces llevan a los textos históricos.", archiveLabel: "Leer fuente", provenanceNote: "Precios antiguos, certificados, comparaciones de poder y promesas médicas no se presentan como hechos actuales. La secuencia histórica de ocho días aparece en el Nivel 3.",
-    contactTitle: "Comienza en el Nivel 1", contactText: "Consulta con Andrey el formato, precio, materiales y disponibilidad actual. No se realiza ninguna reserva automática.",
-    contactProgramme: "Solicitar programa y precios actuales", contactLevel: "Solicitar iniciación personal Nivel 1", telegram: "O escribir por Telegram",
+    contactTitle: "¿Listo para comenzar?", contactText: "Toda la guía está aquí y en PDF. Contacta con Andrey para acordar una iniciación personal o consultar las condiciones.",
+    contactProgramme: "Consultar formato y precio", contactLevel: "Solicitar iniciación personal Nivel 1", telegram: "O escribir por Telegram",
     footerNote: "Práctica educativa y contemplativa. Participación y contacto físico siempre opcionales.",
     back: "Academia",
   },

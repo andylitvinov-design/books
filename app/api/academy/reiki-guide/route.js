@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 const coursePaths = {
   tantra: "tantra",
   yggdrasil: "yggdrasil",
+  kundalini: "kundalini",
 };
 const locales = new Set(["en", "ru", "es"]);
 
@@ -35,12 +36,12 @@ export async function GET(request) {
   }
 
   const buffer = buildReikiCourseGuidePdf({ course, locale, source: guide });
-  const basename = course === "tantra" ? "tantra-reiki" : "reiki-yggdrasil";
+  const basename = course === "tantra" ? "tantra-reiki" : course === "kundalini" ? "kundalini-reiki" : "reiki-yggdrasil";
   return new Response(new Uint8Array(buffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": 'attachment; filename="' + basename + "-study-prices-" + locale + '.pdf"',
+      "Content-Disposition": 'attachment; filename="' + basename + (course === "kundalini" ? "-study-guide-" : "-study-prices-") + locale + '.pdf"',
       "Content-Length": String(buffer.length),
       "Cache-Control": "no-store, max-age=0, must-revalidate",
       "X-Content-Type-Options": "nosniff",
