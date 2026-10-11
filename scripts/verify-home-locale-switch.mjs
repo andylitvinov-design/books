@@ -63,6 +63,9 @@ async function exercise(engine, browserType, width) {
     await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
     await expect(journey.locator('[data-service-slug]')).toHaveCount(3);
     await expect(page.locator('[data-home-contact-capture]')).toHaveCount(1);
+    const freeLink = page.locator('.home-contact-capture__text-link');
+    await expect(freeLink).toHaveAttribute('href', /\/services\/free-situation-review$/);
+    await expect(freeLink).toBeVisible();
     const portrait = page.locator('.service-home-about__image');
     await portrait.scrollIntoViewIfNeeded();
     await expect.poll(() => portrait.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);

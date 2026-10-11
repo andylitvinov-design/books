@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, MessageCircle, Send } from "lucide-react";
+import { ArrowUpRight, MessageCircle, Send } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import type { Locale } from "@/data/remedies";
 
@@ -37,7 +37,7 @@ export function HomepageContactCta({ locale }: { locale: Locale }) {
       <div className="home-contact-capture__copy">
         <p className="service-home-kicker">{c.eyebrow}</p>
         <h2 id="home-contact-title">{c.title}</h2>
-        <p>{c.description}</p>
+        <p>{c.description} <Link className="home-contact-capture__text-link" href={`/${locale}/services/free-situation-review`}>{c.free}</Link></p>
       </div>
       <div className="home-contact-capture__actions">
         <AcquisitionEventLink
@@ -66,9 +66,7 @@ export function HomepageContactCta({ locale }: { locale: Locale }) {
           <span>{c.telegram}</span>
           <ArrowUpRight size={18} aria-hidden="true" />
         </AcquisitionEventLink>
-        <Link className="home-contact-capture__free" href={`/${locale}/services/free-situation-review`}>
-          {c.free}<ArrowRight size={15} aria-hidden="true" />
-        </Link>
+
       </div>
     </section>
   );

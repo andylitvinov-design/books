@@ -663,10 +663,11 @@ a.service-home-start-card:hover {
 .house-home--services .home-contact-capture__primary:hover{background:#70422c}
 .house-home--services .home-contact-capture__secondary{background:#fffaf7;color:#83543d;border:1px solid #bd9d87}
 .house-home--services .home-contact-capture__secondary:hover{background:#fff}
-.house-home--services .home-contact-capture__actions>a.home-contact-capture__free{
- min-height:36px;justify-content:center;padding:5px 9px;border:0;border-radius:8px;
- background:transparent;color:#825139;font-size:11px;text-decoration:underline;text-underline-offset:3px
+.house-home--services .home-contact-capture__text-link{
+ display:inline; color:#865039; font-weight:750;
+ text-decoration:underline; text-underline-offset:3px;
 }
+.house-home--services .home-contact-capture__text-link:hover{color:#6e412e}
 .house-home--services :is(.home-contact-capture__actions a,.service-home-about__copy a):focus-visible{outline:3px solid #aa7652;outline-offset:3px}
 @media(max-width:1200px){
  .house-home--services .service-home-start,.house-home--services .service-home-about,.house-home--services .home-contact-capture{margin-left:20px;margin-right:20px}
