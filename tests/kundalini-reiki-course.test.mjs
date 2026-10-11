@@ -15,7 +15,8 @@ test("Kundalini Reiki has its own trilingual Academy route and metadata", async 
   assert.match(component, /kundaliniLessons\.map/);
   assert.match(component, /<details className=\{styles\.levelDetail\}>/);
   assert.match(component, /kundaliniEveryday\.map/);
-  assert.match(component, /kundaliniSources\.map/);
+  assert.doesNotMatch(component, /kundaliniSources|source\.url|Original teaching sources|https:\/\/(?:psimaster|superskills|psitrends)/);
+  assert.match(component, /<Image[\s\S]*?heroPhoto/);
 });
 
 test("Kundalini Reiki is a featured standalone program with no confused Yggdrasil routing", async () => {
@@ -50,5 +51,31 @@ test("course reconciles three named first-party sites, all three levels and ethi
   assert.match(component, /Course \/ Система:/);
   assert.match(component, /Request \/ Запрос:/);
   assert.match(component, /encodeURIComponent/);
-  assert.match(css, /@media \(max-width: 650px\)/);
+  assert.match(css, /@media \(max-width: 760px\)/);
+});
+
+test("Kundalini public page is self-contained, photo-led, and downloads its guide", async () => {
+  const [page, style, data, route] = await Promise.all([
+    file("components/kundalini-reiki-course.tsx"),
+    file("components/kundalini-reiki-course.module.css"),
+    file("data/academy/kundalini-reiki-course.ts"),
+    file("app/api/academy/reiki-guide/route.js"),
+  ]);
+  assert.doesNotMatch(page, /href=\{source\.url\}|kundaliniSources\.map|psimaster\.net|superskills\.vip|psitrends\.com/);
+  assert.match(page, /\/api\/academy\/reiki-guide\?course=kundalini&locale=/);
+  assert.match(page, /<Image/);
+  assert.match(page, /\/academy\/reiki-yggdrasil\/source\/school-introduction\.jpg/);
+  assert.match(page, /levelPhotos\[index\]/);
+  assert.match(page, /kundaliniEveryday\.map/);
+  assert.match(style, /@media \(max-width: 760px\)/);
+  assert.match(route, /kundalini: "kundalini"/);
+  for (const lng of ["en", "ru", "es"]) {
+    const guide = await file("public/academy/course-guides/kundalini." + lng + ".txt");
+    assert.ok(guide.length > 3000, "full guide is missing in " + lng);
+    assert.match(guide, /holistichouse\.vercel\.app/);
+    assert.doesNotMatch(guide, /https:\/\/(?:psimaster|superskills|psitrends)/);
+  }
+  for (const name of ["pdfButton", "guideTitle", "heroImageAlt", "contactKicker"]) {
+    assert.ok(data.includes(name + ":"), "missing label " + name);
+  }
 });
