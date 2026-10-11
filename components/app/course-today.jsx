@@ -161,7 +161,7 @@ export default function CourseToday({locale='en'}){
  if(loading&&!data)return <section className={'hh-panel '+styles.shell} aria-busy="true">{ru?'Открываем ваш ежедневный курс…':'Opening your daily course…'}</section>
  if(!data)return <section className={'hh-panel '+styles.shell} role="alert"><p>{t.error}</p><button type="button" onClick={reload}>{t.retry}</button></section>
  const cycle=data.cycle,lesson=data.lesson,progress=data.progress||{},target=data.target||{},today=data.currentCheckin
- const session=data.currentSession,completed=Boolean(session),paused=cycle?.status==='paused',isFinished=cycle?.status==='completed'
+ const session=data.currentSession,completed=Boolean(session),paused=cycle?.status==='paused',isFinished=cycle?.status==='completed'||Boolean(cycle?.afterCycle)
  const reportDay=cycle?.day>=14?14:cycle?.day>=7?7:null
  const reviewed=reportDay&&data.reviews?.some(r=>r.day===reportDay)
  const problem=target.label||''
