@@ -81,7 +81,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: current.meta.description,
     alternates: {
       canonical: "/" + locale + "/about",
-      languages: { ru: "/ru/about", en: "/en/about" },
+      languages: { ru: "/ru/about", en: "/en/about", es: "/es/about", "x-default": "/en/about" },
     },
   };
 }
