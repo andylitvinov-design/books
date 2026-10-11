@@ -83,7 +83,7 @@ export function PersonalAnalysisOffers({ locale = 'en' }) {
   </div>
 }
 
-export function DownloadPractitionerReport({ reportId, selector = null, locale = 'en', disabled = false }) {
+export function DownloadPractitionerReport({ reportId = null, report = null, selector = null, locale = 'en', disabled = false }) {
   const t = WORDS[locale === 'ru' ? 'ru' : 'en']
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -95,10 +95,13 @@ export function DownloadPractitionerReport({ reportId, selector = null, locale =
       const path = selector
         ? `/api/client/${encodeURIComponent(selector)}/assessments/${encodeURIComponent(reportId)}`
         : `/api/app/reports/${encodeURIComponent(reportId)}`
-      const response = await fetch(path, { cache: 'no-store', credentials: 'same-origin' })
-      if (!response.ok) throw new Error('Report unavailable')
-      const value = await response.json()
-      const record = selector ? value.report : value.report
+      let record = report
+      if (!record) {
+        const response = await fetch(path, { cache: 'no-store', credentials: 'same-origin' })
+        if (!response.ok) throw new Error('Report unavailable')
+        const value = await response.json()
+        record = value.report
+      }
       if (!record || !record.title) throw new Error('Report unavailable')
       const pdf = await generatePractitionerReportPdf(record, locale)
       const url = URL.createObjectURL(pdf)
