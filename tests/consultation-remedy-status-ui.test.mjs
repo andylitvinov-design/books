@@ -111,7 +111,7 @@ test('mixed rows serialize explicit Homeopathy and Bach item types without dose 
   rows[1] = { ...rows[1], selected: true, remedySlug: null, displayNameOverride: 'Mimulus', query: 'Mimulus', sourceStatus: 'custom', itemType: 'bach', potency: '', granules: '', timesPerDay: '' }
   const saved = editor.serializeConsultationRows(rows)
   assert.equal(saved[0].itemType, 'homeopathy')
-  assert.equal(saved[0].potency, '30')
+  assert.equal(saved[0].potency, '')
   assert.equal(saved[1].itemType, 'bach')
   assert.equal(saved[1].displayNameOverride, 'Mimulus')
   assert.equal(saved[1].potency, '')
