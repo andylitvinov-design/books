@@ -7,32 +7,66 @@ import { getPrioritySitemapEntries, SEO_PRIORITY_PAGE_FAMILIES } from "../data/s
 const projectRoot = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, projectRoot), "utf8");
 const origin = "https://holistichouse.vercel.app";
-const entries = getPrioritySitemapEntries(origin);
-const map = JSON.parse(read("data/seo-demand-map.json"));
+const publicRouteSources = [
+  ["app/[locale]/about/page.tsx", /generateMetadata/, /alternates:/, /<h1/],
+  ["app/[locale]/services/free-situation-review/page.tsx", /generateMetadata/, /alternates:/, /<h1/],
+  ["app/[locale]/academy/[[...slug]]/page.tsx", /generateMetadata/, /alternates:/],
+  ["components/yggdrasil-free-initiation.tsx", /<h1/],
+];
+const privateRouteSources = [
+  "app/[locale]/app/[[...path]]/page.jsx",
+  "app/[locale]/client/[selector]/page.js",
+  "app/[locale]/report/[assessmentId]/page.jsx",
+  "app/admin/clients/page.js",
+];
 
-assert.equal(entries.length, 12, "Unexpected number of public locale-complete pages");
-assert.equal(SEO_PRIORITY_PAGE_FAMILIES.length, 4);
-assert.equal(new Set(entries.map((e) => e.url)).size, entries.length);
-assert.ok(map.keywords.length >= 30);
-assert.match(map.status, /not_google_metrics/);
-for (const row of map.keywords) {
-  assert.equal(row.source, "editorial_seed_unvalidated");
-  for (const metric of Object.values(row.measured)) {
-    assert.equal(metric, null, "Do not invent Google metrics for " + row.cluster_id);
+export function auditSeoSources() {
+  const failures = [];
+  const check = (condition, message) => { if (!condition) failures.push(message); };
+  const entries = getPrioritySitemapEntries(origin);
+  const map = JSON.parse(read("data/seo-demand-map.json"));
+  check(entries.length === 12, "Unexpected number of public locale-complete pages");
+  check(SEO_PRIORITY_PAGE_FAMILIES.length === 4, "Unexpected number of priority page families");
+  check(new Set(entries.map((entry) => entry.url)).size === entries.length, "Duplicate priority sitemap URLs");
+  for (const entry of entries) {
+    check(entry.url.startsWith(origin + "/"), "Priority URL must use the canonical HTTPS origin: " + entry.url);
+    check(Object.keys(entry.alternates.languages).sort().join(",") === "en,es,ru", "Priority sitemap alternate set is incomplete: " + entry.url);
+    check(!/\/(api|admin|app|client|report|prescriptions|documents)(\/|$)/.test(entry.url), "Private URL in priority sitemap: " + entry.url);
   }
-  if (row.primary_path !== null) {
-    assert.ok(row.primary_path === "/" || row.primary_path.startsWith("/" + row.locale + "/"));
-    assert.doesNotMatch(row.primary_path, /\/(api|admin|app|client|report|prescriptions|documents)(\/|$)/);
+  check(map.keywords.length >= 30, "Demand map is unexpectedly incomplete");
+  check(/not_google_metrics/.test(map.status), "Demand map must not claim unavailable Google metrics");
+  for (const row of map.keywords) {
+    check(row.source === "editorial_seed_unvalidated", "Demand source is not an editorial seed: " + row.cluster_id);
+    for (const metric of Object.values(row.measured)) check(metric === null, "Invented Google metric for " + row.cluster_id);
+    if (row.primary_path !== null) {
+      check(row.primary_path === "/" || row.primary_path.startsWith("/" + row.locale + "/"), "Demand path locale mismatch: " + row.cluster_id);
+      check(!/\/(api|admin|app|client|report|prescriptions|documents)(\/|$)/.test(row.primary_path), "Private demand path: " + row.cluster_id);
+    }
   }
+  for (const [path, ...patterns] of publicRouteSources) {
+    check(existsSync(new URL(path, projectRoot)), "Missing public SEO source: " + path);
+    const source = read(path);
+    for (const pattern of patterns) check(pattern.test(source), "Missing public SEO contract " + pattern + " in " + path);
+  }
+  for (const path of privateRouteSources) {
+    check(existsSync(new URL(path, projectRoot)), "Missing private route source: " + path);
+    check(/robots:\s*\{\s*index:\s*false/.test(read(path)), "Private route must remain noindex: " + path);
+  }
+  const sitemapCode = read("app/sitemap.ts");
+  check(/getPrioritySitemapEntries\(base\)/.test(sitemapCode), "Priority sitemap entries are not integrated");
+  check(/\.\.\.existing, \.\.\.entries, \.\.\.priorityEntries, \.\.\.network/.test(sitemapCode), "Sitemap merge or deduplication contract changed");
+  const shell = read("app/layout.tsx");
+  check(/type="application\/ld\+json"/.test(shell) && /"@type": "WebSite"/.test(shell), "Public WebSite JSON-LD is missing");
+  const freeInitiation = read("components/yggdrasil-free-initiation.tsx");
+  for (const suffix of ["/basic-course#ry-l01-s01", "/basic-course/description", "/basic-course"]) {
+    check(freeInitiation.includes(suffix), "Missing internal Yggdrasil learning link: " + suffix);
+  }
+  return { ok: failures.length === 0, failures, checked: { publicRoutes: publicRouteSources.length, privateRoutes: privateRouteSources.length, prioritySitemapEntries: entries.length } };
 }
-for (const suffix of ["/about", "/services/free-situation-review"]) {
-  assert.ok(existsSync(new URL("app/[locale]" + suffix + "/page.tsx", projectRoot)));
-}
-assert.ok(existsSync(new URL("app/[locale]/academy/[[...slug]]/page.tsx", projectRoot)));
-const sitemapCode = read("app/sitemap.ts");
-assert.match(sitemapCode, /getPrioritySitemapEntries\(base\)/);
-assert.match(sitemapCode, /\.\.\.existing, \.\.\.entries, \.\.\.priorityEntries, \.\.\.network/);
-console.log("PASS: SEO map, 12 public locale URLs, sitemap integration, no invented metrics/private URLs");
+
+const report = auditSeoSources();
+assert.ok(report.ok, report.failures.join("\n"));
+console.log(`PASS: SEO map, ${report.checked.prioritySitemapEntries} public locale URLs, sitemap integration, public metadata/H1 and private noindex contracts`);
 
 const liveArg = process.argv.find((arg) => arg.startsWith("--live-base="));
 if (liveArg) {
