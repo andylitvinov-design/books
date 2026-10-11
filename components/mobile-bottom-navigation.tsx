@@ -1,5 +1,5 @@
 "use client";
-import { BookOpen, House, Sparkles, UserRound, GraduationCap, CircleUserRound } from 'lucide-react';
+import { BookOpen, House, Sparkles, UserRound, GraduationCap, CircleUserRound, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
@@ -7,7 +7,7 @@ import type { PublicLocale } from '@/lib/public-locales';
 import { activeNavigationId, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 
-const icons = { home: House, library: BookOpen, services: Sparkles, academy: GraduationCap, about: UserRound, cabinet: CircleUserRound };
+const icons = { home: House, library: BookOpen, services: Sparkles, relationships: Heart, academy: GraduationCap, about: UserRound, cabinet: CircleUserRound };
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname();

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
-import { RELATIONSHIPS_INTIMACY_KEYS, RELATIONSHIPS_INTIMACY_DEFINITIONS, RELATIONSHIPS_INTIMACY_CATALOG, RELATIONSHIP_DIMENSION_ROWS } from '../data/assessments/relationships-intimacy-v1.js'
+import { RELATIONSHIPS_INTIMACY_KEYS, RELATIONSHIPS_INTIMACY_DEFINITIONS, RELATIONSHIP_DIMENSION_ROWS } from '../data/assessments/relationships-intimacy-v1.js'
 import { getAssessmentDefinition, validateAnswers } from '../lib/assessments/definitions.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
