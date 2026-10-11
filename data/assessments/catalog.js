@@ -16,6 +16,41 @@ export const MONITORING_AXES = deepFreeze([
 
 export const MONITORING_CATALOG = deepFreeze([
   {
+    key: 'hh-bach-flower-profile',
+    version: 'v1',
+    instrumentLocale: 'dynamic',
+    axis: 'state',
+    resultAxes: ['state'],
+    topics: ['mood', 'stress', 'anxiety', 'relationships', 'personality', 'resources'],
+    moodAffinities: ['sad', 'neutral', 'happy'],
+    categoryAffinities: ['emotions', 'relationships', 'body', 'other'],
+    questionCount: 115,
+    durationMinutes: 18,
+    testStyle: 'engaging',
+    testLength: 'comprehensive',
+    suggestedRepeatDays: 14,
+    cooldownDays: 7,
+    startable: true,
+    starterEligible: false, // An 18-minute questionnaire should never auto-fill the quick starter set.
+    access: 'account',
+    rightsStatus: 'cleared',
+    guestEligible: true,
+    free: true,
+    analysisAxes: [
+      { key: 'emotional_regulation', weight: 1 },
+      { key: 'mood', weight: 0.9 },
+      { key: 'stress', weight: 0.85 },
+      { key: 'personality', weight: 0.65 },
+      { key: 'relationships', weight: 0.65 },
+      { key: 'self_support', weight: 0.6 },
+    ],
+    title: { en: 'Bach Flower Emotional Profile', ru: 'Эмоциональный профиль по Баху' },
+    description: {
+      en: 'An in-depth reflection on 115 emotional statements across situation, recurring patterns and support, with traditional Bach flower-theme matches. Not a medical test or prescription.',
+      ru: '115 утверждений о текущей ситуации, устойчивых паттернах и эмоциональной поддержке с сопоставлением традиционных тем 38 эссенций Баха. Не является диагностикой или назначением.',
+    },
+  },
+  {
     key: 'hh-current-state',
     version: 'v2',
     instrumentLocale: 'dynamic',
