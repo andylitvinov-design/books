@@ -77,3 +77,9 @@
 }
 @media(max-width:350px){.row{grid-template-columns:30px minmax(0,1fr) auto 29px;gap:5px;padding:7px 5px}.iconTile{width:30px;height:30px}.rowActions button{padding:6px 5px!important;font-size:.66rem!important}.removeButton{width:29px!important}}
 @media(prefers-reduced-motion:reduce){.row *{transition:none}}
+
+/* Compact selected-test rows with optional provenance and scientific status. */
+.aboutTest{margin-top:5px;color:#766b62;font-size:.72rem;line-height:1.45}
+.aboutTest summary{cursor:pointer;color:#456e63;font-weight:650;outline-offset:3px}
+.aboutTest p{margin:6px 0 0;font-size:.73rem;line-height:1.5;color:#6a625b}
+.aboutTest[open]{padding:4px 0 5px}
