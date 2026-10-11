@@ -78,3 +78,17 @@
 @media (prefers-reduced-motion: reduce) {
   .hh-domain-tabs button { transition:none; }
 }
+
+.hh-domain-elements { background:#f7f6f1; border:1px solid #dfdfd3; border-radius:16px; padding:16px; margin:16px 0 23px; }
+.hh-domain-elements > p { color:#777465; font:600 11px/1.4 system-ui,sans-serif; margin:0 0 13px; letter-spacing:.01em; }
+.hh-domain-element-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+.hh-domain-element { min-height:57px; border:1px solid #d9dccf; background:#fff; border-radius:14px; color:#5c5a4f; font:600 12px/1.3 system-ui,sans-serif; display:grid; place-items:center; text-align:center; padding:8px 3px; }
+.hh-domain-element-0 { border-color:#c4d6c2; background:#edf3ea; }
+.hh-domain-element-1 { border-color:#e5c4bb; background:#f9ece7; }
+.hh-domain-element-2 { border-color:#e7d7b4; background:#fcf3df; }
+.hh-domain-element-3 { border-color:#d5d9d9; background:#f1f3f2; }
+.hh-domain-element-4 { border-color:#cbd5df; background:#eaf1f6; }
+@media(max-width:420px) {
+  .hh-domain-element-grid { gap:4px; }
+  .hh-domain-element { font-size:10px; min-height:47px; border-radius:10px; padding:6px 2px; }
+}
