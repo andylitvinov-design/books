@@ -5,15 +5,13 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
-import { SCALE_FOCUS } from '@/lib/assessments/scale-guides'
 import { TestScaleGuide } from './test-scale-guide'
 
 const TEXT = {
   en: {
     kicker:'TEST SELECTION', title:'Choose your tests',
-    scaleTitle:'1 · Choose the scales to observe', scaleHelp:'Tests will be ranked first by the measures they actually score. You can later choose related skills to practise; a score is not a diagnosis.',
     lead:'Find questionnaires that fit what you would like to explore. Your recommendations update as you select topics.',
-    first:'What would you like to explore?', firstHelp:'Select one or more areas that matter to you right now.',
+    first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Choose the level of detail or add time and format filters.',
     depth:'How deep do you want to go?', depthHelp:'This helps prioritize recommendations. It does not limit your options.',
     quick:'Quick check-in', quickNote:'Short introductory tests',
@@ -33,9 +31,8 @@ const TEXT = {
   },
   ru: {
     kicker:'ПОДБОР ТЕСТОВ', title:'Подберите свои тесты',
-    scaleTitle:'1 · Выберите показатели для наблюдения', scaleHelp:'Первыми будут тесты, которые действительно измеряют выбранные шкалы. Позже можно добровольно выбрать связанные навыки для практики; балл не является диагнозом.',
     lead:'Найдите тесты по интересующим вас темам. Подходящие рекомендации меняются сразу.',
-    first:'Что вы хотите исследовать?', firstHelp:'Отметьте одну или несколько важных для вас тем.',
+    first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Глубина, время прохождения и формат — при желании.',
     depth:'Насколько глубоко хотите исследовать?', depthHelp:'Меняет порядок рекомендаций, не закрывая другие тесты.',
     quick:'Быстрый обзор', quickNote:'Короткие вводные тесты',
@@ -55,9 +52,8 @@ const TEXT = {
   },
   es: {
     kicker:'SELECCIÓN DE PRUEBAS', title:'Elige tus pruebas',
-    scaleTitle:'1 · Elige qué observar', scaleHelp:'Primero aparecen las pruebas que miden esas dimensiones; los resultados no son un diagnóstico.',
     lead:'Encuentra cuestionarios que se ajusten a tus intereses. Las recomendaciones cambian al elegir temas.',
-    first:'¿Qué te gustaría explorar?', firstHelp:'Elige uno o varios temas importantes para ti.',
+    first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Profundidad, tiempo y formato.',
     depth:'¿Cuánto quieres profundizar?', depthHelp:'Ajusta la prioridad, sin excluir los demás tests.',
     quick:'Revisión rápida', quickNote:'Pruebas introductorias',
@@ -103,7 +99,6 @@ function iconFor(entry) {
 export function SimpleTestPicker({
   locale = 'en',
   focus, onToggleFocus,
-  axes = [], onToggleAxis,
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
   maxMinutes, onMaxMinutes,
@@ -116,7 +111,6 @@ export function SimpleTestPicker({
   const [visibleCount, setVisibleCount] = useState(5)
   const [showAllProblems, setShowAllProblems] = useState(false)
   const focusKey = [...focus].sort().join('|')
-  const scaleKey = [...axes].sort().join('|')
   const problemKey = [...problems].sort().join('|')
   const allProblems = problemsForTopics(focus)
   const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
@@ -126,7 +120,7 @@ export function SimpleTestPicker({
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
     setShowAllProblems(false)
-  }, [focusKey, scaleKey, depth, maxMinutes, professionalOnly, problemKey])
+  }, [focusKey, depth, maxMinutes, professionalOnly, problemKey])
   const visibleRecommendations = recommendations.slice(0, visibleCount)
   const remainingCount = Math.max(0, recommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
@@ -145,18 +139,9 @@ export function SimpleTestPicker({
       <Leaf className={styles.heroLeaf} size={78} strokeWidth={0.8} aria-hidden="true" />
     </header>
 
-    <section className={styles.scalesSection} aria-labelledby="hh-simple-scale-title" data-scale-first-selection>
-      <div><h2 id="hh-simple-scale-title">{c.scaleTitle}</h2><p>{c.scaleHelp}</p></div>
-      <div className={styles.scalesRail} role="group" aria-label={c.scaleTitle}>
-        {Object.entries(SCALE_FOCUS).map(([key,scale])=><button type="button" key={key}
-          aria-pressed={axes.includes(key)} onClick={()=>onToggleAxis?.(key)}>
-          {axes.includes(key)?'✓ ':''}{scale[locale==='ru'?'ru':'en']}
-        </button>)}
-      </div>
-    </section>
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">2</span>
+        <span className={styles.step} aria-hidden="true">1</span>
         <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
       </div>
       <div className={styles.topicGrid} role="group" aria-label={c.first}>
@@ -174,7 +159,7 @@ export function SimpleTestPicker({
 
     <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">3</span>
+        <span className={styles.step} aria-hidden="true">2</span>
         <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
       </div>
       {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> :
@@ -233,7 +218,7 @@ export function SimpleTestPicker({
 
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations">
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">4</span>
+        <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
       <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
@@ -262,7 +247,7 @@ export function SimpleTestPicker({
               <small><Clock3 size={14} aria-hidden="true"/> ~{entry.durationMinutes ?? '—'} min</small>
             </span>
           </label>
-          <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={onToggleAxis} /></div>
+          <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>
           </div>
         })}
       </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
