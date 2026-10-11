@@ -34,7 +34,7 @@ import {
   removeSavedReport,
   setReportViewerCookie,
 } from '@/lib/app/report-flow'
-import { practitionerDestination } from '@/lib/app/practitioner-access'
+import { practitionerDestination, practitionerEmailAllowed } from '@/lib/app/practitioner-access'
 import {
   commitLegacyDocumentSaveIntent,
   readSavedDocument,
@@ -346,7 +346,7 @@ async function handle(request, { params }) {
       onlyKeys(body, ['destination'])
       const destination = practitionerDestination[body.destination]
       if (!destination) throw new AppError('NOT_FOUND', 404)
-      if (!await repo.isPractitioner(actor)) throw new AppError('NOT_FOUND', 404)
+      if (!practitionerEmailAllowed(actor) || !await repo.isPractitioner(actor)) throw new AppError('NOT_FOUND', 404)
       const response = json({ redirectUrl: destination })
       if (!issueTrustedAdminSession(response, { secure: !config.test }))
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
