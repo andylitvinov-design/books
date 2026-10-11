@@ -12,6 +12,15 @@ export function PersonalResultReport({ result, locale = 'en' }) {
         <h2>{report.title}</h2>
         <p>{report.intro}</p>
         <div className={styles.purpose}><strong>{ru ? 'Что измеряет тест' : 'What this test measures'}</strong><p>{report.purpose}</p></div>
+        {report.personalityType && (
+          <div className={styles.typeSummary} role="note" data-personality-type-summary>
+            <p className={styles.typeLabel}>{ru ? 'Гипотеза для самопознания' : 'Self-reflection hypothesis'}</p>
+            <h3>{report.personalityType.headline}</h3>
+            <p>{report.personalityType.description}</p>
+            {report.personalityType.alternatives?.map((alternative) => <p key={alternative} className={styles.typeAlternative}>{alternative}</p>)}
+            <small>{report.personalityType.warning}</small>
+          </div>
+        )>
       </header>
       <div className={styles.grid}>
         {report.sections.map((section, index) => (
