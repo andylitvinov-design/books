@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import { coreServiceOffers } from "@/data/core-service-offers";
@@ -66,7 +67,7 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
               <h3><Link href={offer.href}>{offer.title}</Link></h3>
               <p className={styles.cardSummary}>{offer.promise}</p>
               <p className={styles.cardBenefit}>{offer.benefit}</p>
-              <Link className={styles.cardCta} href={offer.href}>{offer.action}<ArrowUpRight size={18} aria-hidden="true" /></Link>
+              <AcquisitionEventLink className={styles.cardCta} href={offer.href} event={offer.id === "situation" || offer.id === "dao" ? "service_request_start" : "service_view"}>{offer.action}<ArrowUpRight size={18} aria-hidden="true" /></AcquisitionEventLink>
             </div>
           </article>
         ))}
@@ -76,7 +77,7 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
         <>
           <div className={styles.bridge}>
             <div><h3>{t.uncertain}</h3><p>{t.uncertainText}</p></div>
-            <Link href={"/" + locale + "/services/free-situation-review"}>{t.uncertainAction}<ArrowRight size={19} aria-hidden="true"/></Link>
+            <AcquisitionEventLink href={"/" + locale + "/services/free-situation-review"} event="service_request_start">{t.uncertainAction}<ArrowRight size={19} aria-hidden="true"/></AcquisitionEventLink>
           </div>
           <details className={styles.methodDisclosure} id="methods">
             <summary>{t.more}<ChevronDown size={18} aria-hidden="true" /></summary>
