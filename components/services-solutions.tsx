@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import Link from "next/link";
-import { ArrowUpRight, ChevronDown } from "lucide-react";
+import { ArrowUpRight, ChevronDown, PlayCircle } from "lucide-react";
+import { getServiceVideoWatchUrl } from "@/data/service-video-library";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import type { Locale } from "@/data/remedies";
 import styles from "./services-solutions.module.css";
@@ -76,6 +77,14 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
               <h3><Link href={offer.href}>{offer.title}</Link></h3>
               <p className={styles.cardSummary}>{offer.promise}</p>
               <p className={styles.cardBenefit}>{offer.benefit}</p>
+              {(offer.id === "alchemy" || offer.id === "hypnotherapy") && (
+                <a className={styles.cardVideo} href={getServiceVideoWatchUrl(offer.id, locale)}
+                  target="_blank" rel="noopener noreferrer" data-service-card-video={offer.id}
+                  aria-label={locale === "ru" ? "Открыть видео о подходе в новой вкладке" : "Watch the method video in a new tab"}>
+                  <PlayCircle size={18} aria-hidden="true" />
+                  {locale === "ru" ? "Смотреть видео о подходе" : "Watch a short video"}
+                </a>
+              )}
               <AcquisitionEventLink className={styles.cardCta} href={offer.href} event={offer.id === "situation" || offer.id === "dao" ? "service_request_start" : "service_view"}>{offer.action}<ArrowUpRight size={18} aria-hidden="true" /></AcquisitionEventLink>
             </div>
           </article>

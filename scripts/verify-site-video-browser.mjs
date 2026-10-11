@@ -95,9 +95,10 @@ try {
   ]) {
     await navigate(target)
     if (slot === 'services-intro' && await page.locator('#method-videos').count()) {
-      // The Services page prioritizes the free intake; videos now live in an
-      // optional native disclosure. Open it to verify the real published player.
-      await page.locator('#method-videos > summary').click()
+      // Videos are visible by default; old production may still use a closed disclosure.
+      if (await page.locator('#method-videos').getAttribute('open') === null) {
+        await page.locator('#method-videos > summary').click()
+      }
       await expect(page.locator('#method-videos')).toHaveAttribute('open', '')
     }
     const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`)
@@ -116,6 +117,55 @@ try {
     await expect(block.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${id}`, { timeout: 10000 })
   }
   pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos load exact HeyGen embeds on click`)
+
+  // Regressions reported by the owner: the Services videos were buried inside
+  // a collapsed block, while the detailed service pages contained no players.
+  // These checks run against built/served pages in an isolated local environment.
+  if (!live) {
+    for (const locale of ['en', 'ru']) {
+      await navigate('/' + locale + '/services')
+      const visibleGallery = page.locator('#method-videos')
+      await expect(visibleGallery).toHaveAttribute('open', '')
+      await expect(visibleGallery.locator('[data-video-slot="services-intro"] .site-video-play')).toBeVisible()
+      const sourceLinks = page.locator('[data-core-service-offers="services"] [data-service-card-video]')
+      await expect(sourceLinks).toHaveCount(2)
+      const hrefs = await sourceLinks.evaluateAll(links => links.map(link => link.getAttribute('href')))
+      assert.ok(hrefs.every(url => url && /^(https:\/\/(?:www\.youtube\.com\/watch\?v=|app\.heygen\.com\/share\/))/.test(url)))
+      await page.setViewportSize({ width: 390, height: 844 })
+      await expect(visibleGallery.locator('[data-video-slot="services-intro"] .site-video-play')).toBeVisible()
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
+      await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
+      await page.setViewportSize({ width: 1365, height: 1000 })
+    }
+    pass('EN/RU Services galleries are open on load, video links work, and mobile width is safe')
+
+    const detailRoutes = [
+      ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
+      ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      ['/en/services/psychohomeopathy', 'homeopathy', 'https://www.youtube-nocookie.com/embed/ILyRWyHtJoE?'],
+      ['/ru/services/psychohomeopathy', 'homeopathy', 'https://www.youtube-nocookie.com/embed/Q9NvYECKWuc?'],
+      ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
+      ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
+      ['/ru/services/dao-health-profile', 'overview', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+    ]
+    for (const [route, topic, expectedUrl] of detailRoutes) {
+      await navigate(route)
+      const block = page.locator(`[data-service-video="${topic}"]`)
+      await expect(block).toHaveCount(1)
+      await block.scrollIntoViewIfNeeded()
+      await expect(block.locator('.site-video-play')).toBeVisible()
+      assert.equal(await block.locator('iframe').count(), 0, route + ' eager third-party iframe')
+      await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
+      await block.locator('.site-video-play').click()
+      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
+      assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
+    }
+    pass('Ten service routes EN/RU/ES have real click-to-play video iframes and original watch links')
+  }
+
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
