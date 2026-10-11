@@ -19,7 +19,7 @@ test('Remedies landing combines remedy search, free consultation and book covers
   assert.match(page, /Free consultation/)
   assert.match(page, /PublicConsultationCta/)
   assert.match(cta, /t\.me\/AndyTherapist/)
-  assert.match(cta, /wa\.me\/14376066502/)
+  assert.match(cta, /trainingEnquiryUrl/)
   assert.match(search, /Find a homeopathic remedy/)
   assert.match(search, /Full description/)
   assert.match(directory, /Найти гомеопатический препарат/)
