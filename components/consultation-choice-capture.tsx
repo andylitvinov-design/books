@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Check, HeartHandshake, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import type { PublicLocale } from "@/lib/public-locales";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./consultation-choice-capture.module.css";
 
 type Variant = "free" | "service" | "personal" | "reading";
@@ -52,10 +53,14 @@ const copy = {
     freeAction: "Request free consultation",
     messageTitle: "Free introductory conversation — Holistic House",
     serviceMessageTitle: "Personal session enquiry — Holistic House",
+    freeService: "Free situation review",
+    personalService: "Free introductory personal consultation",
+    readingService: "Free introductory consultation about educational material",
+    fallbackService: "Personal consultation",
     topicField: "Topic",
     serviceField: "Service",
     intentField: "What interests me",
-    freeRequest: "Hello Andrey! I'd like to arrange a free introductory conversation about this topic.",
+    freeRequest: "I would like to request a free introductory conversation about the selected topic and discuss the next step.",
     serviceRequest: "Hello Andrey!",
     messageNote: "WhatsApp opens a prepared message. Nothing is sent until you press Send.",
     serviceNote: "This is an enquiry, not a confirmed appointment or payment. Dates and fees are agreed personally.",
@@ -101,10 +106,14 @@ const copy = {
     freeAction: "Записаться на бесплатный разбор",
     messageTitle: "Бесплатная вводная консультация — Holistic House",
     serviceMessageTitle: "Запрос на личную сессию — Holistic House",
+    freeService: "Бесплатный разбор ситуации",
+    personalService: "Бесплатная личная вводная консультация",
+    readingService: "Бесплатная консультация по образовательным материалам",
+    fallbackService: "Личная консультация",
     topicField: "Тема",
     serviceField: "Услуга",
     intentField: "Что меня интересует",
-    freeRequest: "Здравствуйте, Андрей! Хочу договориться о бесплатной вводной беседе по этой теме.",
+    freeRequest: "Хочу запросить бесплатную вводную беседу по выбранной теме и обсудить возможный следующий шаг.",
     serviceRequest: "Здравствуйте, Андрей!",
     messageNote: "Откроется подготовленное сообщение WhatsApp. Оно отправится только после вашего подтверждения.",
     serviceNote: "Это запрос, а не подтверждённая запись или оплата. Время и стоимость согласуются лично.",
@@ -150,10 +159,14 @@ const copy = {
     freeAction: "Solicitar conversación gratuita",
     messageTitle: "Conversación inicial gratuita — Holistic House",
     serviceMessageTitle: "Solicitud de sesión personal — Holistic House",
+    freeService: "Evaluación inicial gratuita de la situación",
+    personalService: "Consulta personal introductoria gratuita",
+    readingService: "Consulta gratuita sobre material educativo",
+    fallbackService: "Consulta personal",
     topicField: "Tema",
     serviceField: "Servicio",
     intentField: "Qué me interesa",
-    freeRequest: "Hola Andrey. Quisiera acordar una conversación inicial gratuita sobre este tema.",
+    freeRequest: "Quisiera solicitar una conversación introductoria gratuita sobre el tema elegido y hablar de los próximos pasos.",
     serviceRequest: "Hola Andrey.",
     messageNote: "WhatsApp abre un mensaje preparado. Solo se envía cuando confirmas Enviar.",
     serviceNote: "Es una consulta, no una reserva ni un pago. Confirmaremos personalmente la fecha y el precio.",
@@ -186,10 +199,12 @@ export function ConsultationChoiceCapture({
   const titleId = useId();
   const [topic, setTopic] = useState<Topic>("personal");
   const [serviceChoice, setServiceChoice] = useState<ServiceChoice>("session");
+  const [publicPath, setPublicPath] = useState<string | null>(null);
   const isService = variant === "service";
 
   // Existing ?topic= links still preselect a topic, without putting private notes in URLs.
   useEffect(() => {
+    setPublicPath(window.location.pathname);
     if (variant === "service") return;
     const requestedTopic = new URLSearchParams(window.location.search).get("topic");
     if (isTopic(requestedTopic)) setTopic(requestedTopic);
@@ -200,21 +215,17 @@ export function ConsultationChoiceCapture({
   const lead = isService ? t.serviceLead : variant === "reading" ? t.readingLead
     : variant === "personal" ? t.personalLead : t.freeLead;
 
-  const message = isService
-    ? [
-        t.serviceMessageTitle,
-        t.serviceField + ": " + (service || (locale === "ru" ? "Личная консультация" : locale === "es" ? "Consulta individual" : "Personal consultation")),
-        t.intentField + ": " + t.serviceOptions[serviceChoice],
-        "",
-        t.serviceRequest + " " + t.serviceMessages[serviceChoice],
-      ].join("\n")
-    : [
-        t.messageTitle,
-        t.topicField + ": " + t.topicOptions[topic],
-        "",
-        t.freeRequest,
-      ].join("\n");
-  const whatsappUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(message);
+  const serviceName = isService
+    ? service || t.fallbackService
+    : variant === "reading" ? t.readingService : variant === "personal" ? t.personalService : t.freeService;
+  const whatsappUrl = whatsappEnquiryUrl({
+    locale,
+    service: serviceName,
+    request: isService ? t.serviceMessages[serviceChoice] : t.freeRequest,
+    option: isService ? t.serviceOptions[serviceChoice] : t.freeAction,
+    topic: isService ? undefined : t.topicOptions[topic],
+    pagePath: publicPath || undefined,
+  });
   const cta = isService ? t.serviceActions[serviceChoice] : t.freeAction;
 
   return (
