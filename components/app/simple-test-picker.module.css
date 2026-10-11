@@ -109,3 +109,17 @@
  .problemActions{margin-top:6px}
 }
 @media(max-width:350px){.problemChip{font-size:.71rem!important;padding:7px}}
+
+/* The real scale selector is the first non-hero control. Keep cards visible on mobile. */
+.scalesSection{margin:8px 0 12px;padding:12px 15px;border:1px solid #dbe8dd;border-radius:17px;background:#f8fcf7}
+.scalesSection h2{font:normal clamp(1.1rem,2vw,1.3rem)/1.2 Georgia,serif!important;color:#354f43;margin:0 0 3px!important}
+.scalesSection p{margin:0 0 9px!important;color:#667569;font-size:.78rem;line-height:1.45}
+.scalesRail{display:flex;gap:7px;overflow-x:auto;scrollbar-width:thin;overscroll-behavior-x:contain;padding:0 0 7px}
+.scalesRail button{flex:0 0 auto;min-height:38px;padding:7px 11px;border:1px solid #ccded2;border-radius:999px;background:#fffefa;color:#36614f;font-size:.8rem;white-space:nowrap;cursor:pointer}
+.scalesRail button[aria-pressed=true]{background:#2b7361;border-color:#2b7361;color:white}
+.scalesRail button:focus-visible{outline:3px solid #268173;outline-offset:3px}
+.testEntry{border:1px solid #e3dad0;border-radius:15px;background:#fffefa;min-width:0;overflow:visible}
+.testEntry .testRow{border:0;background:transparent;border-radius:15px 15px 0 0;margin:0}
+.testGuide{padding:0 12px 8px 85px}
+.testGuide [data-scale-guide]{margin:0}
+@media(max-width:600px){.scalesSection{margin:7px 0 9px;padding:10px 11px}.testGuide{padding:0 10px 8px 11px}}
