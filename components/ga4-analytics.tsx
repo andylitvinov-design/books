@@ -14,6 +14,10 @@ function hasConsent() {
   return document.documentElement.dataset.analyticsConsent === "granted";
 }
 
+function isCanonicalProductionHost() {
+  return window.location.hostname === "holistichouse.vercel.app";
+}
+
 function loadGoogleTag(measurementId: string, nonce?: string) {
   if (window.gtag) return window.gtag;
   window.dataLayer = window.dataLayer || [];
@@ -41,7 +45,7 @@ export function Ga4Analytics({ nonce }: { nonce?: string }) {
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   useEffect(() => {
-    if (!measurementId || !isPublicAnalyticsPath(pathname)) return;
+    if (!measurementId || !isCanonicalProductionHost() || !isPublicAnalyticsPath(pathname)) return;
     const sendPageView = () => {
       if (!hasConsent() || lastPage.current === pathname) return;
       const gtag = loadGoogleTag(measurementId, nonce);

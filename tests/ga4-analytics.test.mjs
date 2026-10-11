@@ -36,3 +36,13 @@ test("root metadata carries the Holistic House Search Console verification token
   const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
   assert.match(layout, /google-site-verification/);
 });
+
+test("Google collection is limited to the canonical production host and the shared event allowlist", () => {
+  const analytics = readFileSync(new URL("../components/ga4-analytics.tsx", import.meta.url), "utf8");
+  const links = readFileSync(new URL("../components/acquisition-event-link.tsx", import.meta.url), "utf8");
+  const middleware = readFileSync(new URL("../middleware.ts", import.meta.url), "utf8");
+
+  assert.match(analytics, /window\.location\.hostname === "holistichouse\.vercel\.app"/);
+  assert.doesNotMatch(links, /dataLayer\?\.push/);
+  assert.match(middleware, /response\.headers\.set\('Content-Security-Policy', csp\)/);
+});

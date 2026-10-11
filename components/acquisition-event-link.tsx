@@ -26,8 +26,6 @@ function emit(event: AcquisitionEvent) {
   if (analyticsConsent !== "granted") return;
 
   window.dispatchEvent(new CustomEvent("holistic-house:acquisition", { detail: { event } }));
-  const dataLayer = (window as unknown as { dataLayer?: Array<{ event: string }> }).dataLayer;
-  dataLayer?.push({ event });
 }
 
 export function AcquisitionEventLink({ attributes, children, event, onClick, ...props }: AcquisitionEventLinkProps) {
