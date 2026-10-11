@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { makeTestSelectionIntent, readTestSelectionIntent, validTestKeys, PENDING_TEST_SELECTION_KEY } from '../lib/app/test-selection-intent.js'
 
@@ -42,14 +42,13 @@ test('account Cabinet waits for onboarding, restores selection, keeps progress a
   assert.match(dashboard, /replaceActive/)
   assert.match(dashboard, /row\.progress/)
   assert.match(dashboard, /row\.result\.measurementAt/)
-  assert.match(dashboard, /row\.result \? c\.repeat/)
+  assert.match(dashboard, /done \? c\.repeat/)
   assert.match(dashboard, /api\('runs'/)
-  assert.match(dashboard, /<Image src=\{row\.photo\}/)
+  assert.match(dashboard, /<TestSymbol topics=\{row\.topics\}/)
+  assert.match(dashboard, /styles\.iconTile/)
+  assert.doesNotMatch(dashboard, /<Image src=\{row\.photo\}/)
   assert.match(repo, /latestTestPlan/)
   assert.match(workspace, /Return to the complete battery after each result/)
-  const paths = [...dashboard.matchAll(/'\/(?:images|academy)\/[^']+\.(?:jpg|png|webp)'/g)]
-  assert.ok(paths.length >= 10)
-  for (const [quoted] of paths) assert.ok(existsSync(new URL('../public' + quoted.slice(1, -1), import.meta.url)), quoted)
 })
 
 test('a personal battery counts completion in any order and ignores already recorded instruments', async () => {
