@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
@@ -85,4 +85,17 @@ test("the real practitioner photo stays full-width on mobile", () => {
   assert.match(home, /height=\{720\}/);
   assert.match(css, /\.house-home--services \.service-home-about__image/);
   assert.match(css, /aspect-ratio:16\/9/);
+});
+
+test("every review has a same-origin illustration underneath its real thumbnail", () => {
+  const testimonials = read("components", "personal-testimonials.tsx");
+  const player = read("components", "site-video-player.tsx");
+  const style = read("components", "personal-testimonials.module.css");
+  assert.match(player, /fallbackPoster\\?: string/);
+  assert.match(player, /site-video-fallback-poster/);
+  assert.match(testimonials, /fallbackPoster=\\{index % 2 === 0/);
+  assert.match(style, /\\.videoItem :global\\(\\.site-video-poster-title\\) \\{ display: none;/);
+  for (const poster of ["homepage-constellations.svg", "homepage-guided-imagery.svg"]) {
+    assert.ok(existsSync(path.join(process.cwd(), "public/images/holistic-house", poster)));
+  }
 });
