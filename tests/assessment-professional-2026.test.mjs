@@ -86,7 +86,7 @@ test('source-backed instruments integrate into locale-aware explorer without lea
   const guestComponent=await readFile(new URL('../components/app/cabinet-landing.jsx',import.meta.url),'utf8')
   assert.match(guestComponent, /item\.guestEligible === false/)
   assert.match(guestComponent, /question\.responseAnchors \|\| definition\.responseAnchors/)
-  assert.match(component,/question\.responseAnchors \|\| def\.responseAnchors/)
+  assert.match(component,/question\.responseAnchors \|\| definition\.responseAnchors/)
 })
 
 test('clinical scales have source attribution and appropriate automatic-battery eligibility', async () => {
@@ -100,7 +100,7 @@ test('clinical scales have source attribution and appropriate automatic-battery 
   const component = await readFile(new URL('../components/app/app-workspace.jsx', import.meta.url), 'utf8')
   assert.match(component, /Source and methodology/)
   assert.match(component, /def\.source\.citation/)
-  assert.match(component, /Over the past two weeks/)
+  assert.match(component, /Over the past (?:two|2) weeks/)
   const researched = ['ders-16','wemwbs-14','swemwbs-7','bdi-ii','bai-21','maas-15','tas-20','panas-20','gse-10','spane-12']
   for (const key of researched) {
     const instrument = entries.find(entry => entry.key === key)

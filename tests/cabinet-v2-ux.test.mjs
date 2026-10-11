@@ -342,14 +342,25 @@ test('signed-in and guest test runners expose equivalent Quick and Guided modes'
     assert.ok(source.includes('hh-test-mode-toggle'))
   }
 
-  assert.match(
-    workspace,
-    /mode === 'quick' \? Math\.min\(index \+ 1, def\.questions\.length\) : index/,
-  )
-  assert.match(
-    landing,
-    /progress: quick \? Math\.min\(index \+ 1, definition\.questions\.length\) : index/,
-  )
+  // Quick is a single scrollable page; out-of-order answers persist without
+  // advancing to the next question. Guided retains its explicit Next action.
+  assert.match(workspace, /className="hh-quick-form"/)
+  assert.match(workspace, /def\.questions\.map\(\(item, step\) => \(/)
+  assert.match(workspace, /async function chooseAnswer\(value, questionId/)
+  assert.match(workspace, /const firstMissing = def\.questions\.findIndex/)
+  assert.match(workspace, /mode === 'quick' \? \(firstMissing < 0/)
+  assert.match(landing, /className="cabinet-quick-form"/)
+  assert.match(landing, /definition\.questions\.map\(\(item, step\) => \(/)
+  assert.match(landing, /async function choose\(value, targetQuestion/)
+  assert.match(landing, /const firstMissing = definition\.questions\.findIndex/)
+  assert.match(landing, /progress,\s*expectedRevision: run\.revision/)
+  assert.match(workspace, /quickMinutes.*monitoringCatalogItem/)
+  assert.match(landing, /quickMinutes.*monitoringCatalogItem/)
+  assert.match(workspace, /guidedMinutes = Math\.max/)
+  assert.match(landing, /guidedMinutes = Math\.max/)
+  assert.match(workspace, /hh-runner-methodology/)
+  assert.match(workspaceCss, /\.hh-app \.hh-runner--guided \.hh-scale-words button/)
+  assert.match(ia, /\.cabinet-landing-shell \.cabinet-guided-question \.cabinet-answer-list button/)
   assert.ok(landing.includes("phase === 'mode'"))
   assert.ok(workspaceCss.includes('Test runner v2 — two equivalent completion modes'))
   assert.ok(ia.includes('Cabinet test runner v2 — shared Quick / Guided interaction model'))

@@ -106,6 +106,6 @@ test('0-to-30 inputs appear as keyboard-accessible numeric dropdowns, not 31 cra
   assert.match(signed,/Over the past 30 days/)
   assert.match(signed,/<select/)
   assert.match(guest,/<select/)
-  assert.match(signed,/onChange=\{\(event\)/)
-  assert.match(guest,/onChange=\{\(event\)/)
+  assert.match(signed,/onChange=\{(?:\(event\)|event =>)/)
+  assert.match(guest,/onChange=\{(?:\(event\)|event =>)/)
 })
