@@ -7,6 +7,8 @@ import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
+import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
@@ -511,22 +513,37 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function submitSavedRun(currentRun) {
+  async function submitSavedRun(currentRun, destination = 'report') {
     const result = await guestFetch('guest/runs/' + currentRun.id + '/submit', {
       expectedRevision: currentRun.revision,
     })
     setGuestResult(result)
+    let advanced = null
     if (activePlan?.status === 'active') {
-      const advanced = await guestFetch(`guest/test-plans/${activePlan.id}/advance`, {
+      advanced = await guestFetch('guest/test-plans/' + activePlan.id + '/advance', {
         completedRunId: result.runId,
         expectedRevision: activePlan.revision,
       })
       setActivePlan(advanced)
       const bootstrap = await guestFetch('guest/bootstrap')
-      const rows = (bootstrap.results || []).filter((item) => advanced.completedRunIds?.includes(item.runId))
+      const rows = (bootstrap.results || []).filter(item => advanced.completedRunIds?.includes(item.runId))
       setPlanResults(rows)
-      setPhase(advanced.status === 'completed' ? 'summary' : 'result')
+    }
+    if (destination === 'next') {
+      if (advanced?.status === 'active' && advanced.definitionIds?.[advanced.currentIndex]) {
+        const nextDefinition = getDefinitionById(advanced.definitionIds[advanced.currentIndex])
+        setActive(nextDefinition.key)
+        await startRun(nextDefinition)
+      } else if (advanced?.status === 'completed') {
+        setPhase('summary')
+      } else {
+        setActive(null)
+        setRun(null)
+        setMode(null)
+        setPhase('catalog')
+      }
     } else {
+      // Always display this saved attempt's full recommendations.
       setPhase('result')
     }
     return result
@@ -563,12 +580,12 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function submitResult(currentRun = run) {
+  async function submitResult(currentRun = run, destination = 'report') {
     if (!currentRun || busy) return
     setBusy(true)
     setError('')
     try {
-      await submitSavedRun(currentRun)
+      await submitSavedRun(currentRun, destination)
     } catch {
       setError(c.error)
     } finally {
@@ -606,7 +623,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function saveContextAndFinish() {
+  async function saveContextAndFinish(destination = 'report') {
     if (!run || busy) return
     setBusy(true)
     setError('')
@@ -620,7 +637,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       })
       setRun(saved)
       setBusy(false)
-      await submitResult(saved)
+      await submitResult(saved, destination)
     } catch {
       setError(c.error)
       setBusy(false)
@@ -865,18 +882,19 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                   {c.back}
                 </button>
               )}
-              {mode === 'guided' && (
+              {mode === 'guided' &&
+                (index !== definition.questions.length - 1 || definition.optionalContext?.length > 0) && (
                 <button type="button" disabled={busy || selected === undefined} onClick={next}>
-                  {index === definition.questions.length - 1 && !definition.optionalContext?.length ? c.finish : c.next}
-                </button>
-              )}
-              {mode === 'quick' && allAnswered && (
-                <button type="button" className="cabinet-quick-finish" disabled={busy}
-                  onClick={() => definition.optionalContext?.length ? saveContextAndFinish() : submitResult()}>
-                  {c.finish}
+                  {c.next}
                 </button>
               )}
             </div>
+            {((mode === 'guided' && index === definition.questions.length - 1 && allAnswered && !definition.optionalContext?.length) ||
+              (mode === 'quick' && allAnswered)) && (
+              <TestFinishActions locale={locale} disabled={busy} temporary
+                onReport={() => definition.optionalContext?.length ? saveContextAndFinish('report') : submitResult(run, 'report')}
+                onNext={() => definition.optionalContext?.length ? saveContextAndFinish('next') : submitResult(run, 'next')} />
+            )}
           </div>
         )}
 
@@ -891,8 +909,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <label>{c.note}<textarea value={context.note} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, note: e.target.value }))} /></label>
             <div className="cabinet-test-actions">
               <button type="button" disabled={busy} onClick={() => setPhase('questions')}>{c.back}</button>
-              <button type="button" disabled={busy} onClick={saveContextAndFinish}>{c.finish}</button>
             </div>
+            <TestFinishActions locale={locale} disabled={busy} temporary
+              onReport={() => saveContextAndFinish('report')}
+              onNext={() => saveContextAndFinish('next')} />
           </div>
         )}
 
@@ -943,6 +963,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             </section>
 
+            <PersonalResultReport result={guestResult} locale={locale} />
             <div className="cabinet-result-actions-grid">
               <section className="cabinet-result-save-panel">
                 <p className="about-kicker">{locale === 'ru' ? 'Сохранить динамику' : 'Keep your history'}</p>
