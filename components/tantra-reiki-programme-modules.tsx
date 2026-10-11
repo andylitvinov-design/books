@@ -41,6 +41,7 @@ const copy = {
     historicalLevel3: "Level 3, alternative historical names:",
     fullResearchTitle: "Andrey’s complete nine-level research",
     fullResearchDetail: "The full author-written progression: Spring, Fire, Ocean, Love, Inner Light, Unity, Illumination, Creation and Mastery. Read the original teaching text in one place.",
+    englishOriginalIntroTitle: "Osho Tantra Reiki · original English introduction",
     fullProgrammeTitle: "Complete original Master Teacher programme",
     fullProgrammeDetail: "The complete original English training outline: the attunements, level-by-level exercises, mandalas, artifacts, supervision and historical completion requirements.",
     sourceLanguageNote: "Original English programme from the archived Academy material. The historical course length, certification and claimed effects are source wording, not current promises.",
@@ -61,6 +62,7 @@ const copy = {
     historicalLevel3: "",
     fullResearchTitle: "Полное авторское исследование девяти ступеней",
     fullResearchDetail: "Исходный текст Андрея о «Роднике Жизни», «Жаре Жизни», «Океане», «Вертикали», «Внутреннем Свете» и всех девяти ступенях — без сокращений и пересказа.",
+    englishOriginalIntroTitle: "Ошо Тантра Рейки · оригинальное английское введение",
     fullProgrammeTitle: "Полная авторская программа обучения Master Teacher",
     fullProgrammeDetail: "Исходная английская программа: настройки каждой ступени, работа с партнёром, мандалы, артефакты, супервизия, ритуалы и мастерская аттестация.",
     sourceLanguageNote: "Ниже английский текст первоначальной учебной программы. Сроки, сертификаты и описания эффектов — исторические формулировки, а не текущие обещания.",
@@ -81,6 +83,7 @@ const copy = {
     historicalLevel3: "",
     fullResearchTitle: "La investigación completa de las nueve etapas",
     fullResearchDetail: "El texto completo de Andrey sobre las nueve etapas, conservado en su traducción inglesa del original ruso.",
+    englishOriginalIntroTitle: "Osho Tantra Reiki · introducción original en inglés",
     fullProgrammeTitle: "Programa original completo de Maestro de Tantra Reiki",
     fullProgrammeDetail: "El curso original en inglés: sintonizaciones, mandalas, artefactos, supervisión y formación etapa por etapa.",
     sourceLanguageNote: "El documento de formación se reproduce en su inglés original. Fechas, certificados y resultados pertenecen al texto histórico y no son promesas actuales.",
@@ -168,6 +171,8 @@ function FullOriginalMaterials({ locale }: { locale: PublicLocale }) {
         </summary>
         <div className="tantra-reading__content" lang="en">
           <p>{c.sourceLanguageNote}</p>
+          <h3>{c.englishOriginalIntroTitle}</h3>
+          <p>{originalEnglishArchive.blocks.en[5].text}</p>
           {sourceContent(masterProgramme as AcademyBlock[], "complete-master-programme")}
         </div>
       </details>
