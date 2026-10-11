@@ -455,6 +455,8 @@ export const kundaliniExtensions: Array<{
   details: LocalText;
   manualPages: string;
   stoneNames?: string[];
+  stoneNamesAdvanced?: string[];
+  advancedTitle?: LocalText;
 }> = [
   {
     id: "boosters",
@@ -504,6 +506,18 @@ export const kundaliniExtensions: Array<{
       "Green Calcite", "Carnelian", "Chrysocolla", "Citrine", "Clear Quartz", "Diamond",
       "Single Terminated Clear Quartz", "Emerald", "Hematite", "Red Jasper", "Malachite",
       "Rose Quartz", "Ruby", "Sodalite", "Turquoise",
+    ],
+    advancedTitle: {
+      en: "Ethereal Crystals 4–6 attunement",
+      ru: "Ethereal Crystals · 4–6 ступени",
+      es: "Cristales etéricos · niveles 4–6",
+    },
+    stoneNamesAdvanced: [
+      "Alexandrite", "Amazonite", "Azurite", "Bloodstone", "Gold Calcite",
+      "Fire Opal", "Fluorite", "Red Garnet", "Jade", "Lapis Lazuli",
+      "Moldavite", "Moonstone", "Peridot", "Pyrite", "Blue Sapphire",
+      "Yellow Sapphire", "Black Tourmaline", "Violet Tourmaline",
+      "Pink Tourmaline", "Double Terminated Clear Quartz",
     ],
     manualPages: "19–22",
   },
