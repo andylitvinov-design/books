@@ -48,7 +48,10 @@ test('account Cabinet waits for onboarding, restores selection, keeps progress a
   assert.match(dashboard, /styles\.iconTile/)
   assert.doesNotMatch(dashboard, /<Image src=\{row\.photo\}/)
   assert.match(repo, /latestTestPlan/)
-  assert.match(workspace, /Return to the complete battery after each result/)
+  // Users explicitly choose between opening a full report and continuing their battery.
+  assert.match(workspace, /destination !== 'next'/)
+  assert.match(workspace, /advanced\?\.status === 'completed'/)
+  assert.match(workspace, /completedRunId: result\.runId/)
 })
 
 test('a personal battery counts completion in any order and ignores already recorded instruments', async () => {
