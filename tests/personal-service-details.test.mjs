@@ -73,7 +73,7 @@ test("paid individual services retain contextual handoff without a compulsory in
   assert.match(shared, /Request a personal session/);
   assert.match(shared, /Free introductory conversation/);
   assert.match(shared, /Ask about format & fees/);
-  assert.match(shared, /t\.serviceField \+ ": " \+ \(service/);
+  assert.match(shared, /service: serviceName/);
   assert.match(shared, /This is an enquiry, not a confirmed appointment or payment/);
   assert.match(landing, /id="request-session"/);
   assert.match(landing, /<PersonalConsultationForm locale=\{locale\} service=\{t.orderLabel\}/);
