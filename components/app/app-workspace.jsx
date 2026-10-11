@@ -14,6 +14,8 @@ import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
+import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
@@ -241,6 +243,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   const nav = [
     ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', ''],
+    ['portfolio', locale === 'ru' ? 'Результаты' : 'Insights', '/portfolio'],
     ['portrait', c.portrait, '/portrait'],
     ['analysis', locale === 'ru' ? 'Личный анализ' : 'Personal analysis', '/analysis'],
     ['monitoring', c.monitoring, '/monitoring'],
@@ -1704,78 +1707,117 @@ function ProfileActionHub({ data, locale, profile, nextStep }) {
   )
 }
 
+function readableScaleName(dimension, locale) {
+  const raw = String(dimension?.sourceConstruct || dimension?.key || '').trim()
+  if (raw && !/^[a-z_-]+[.][a-z0-9_.-]+$/i.test(raw)) return raw
+  const localized = labelFor(dimension?.key || raw, locale)
+  if (localized && localized !== (dimension?.key || raw)) return localized
+  return raw.split('.').pop().replace(/[_-]+/g, ' ').replace(/^./, letter => letter.toUpperCase())
+}
+
 function PortfolioPage({ data, locale }) {
-  const c = COPY[locale]
-  const [selected, setSelected] = useState(null)
+  const ru = locale === 'ru'
+  const groups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
+  const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
   const dimensions = data.snapshot?.dimensions || []
-  const profile = profileCompletionRecommendations({
-    snapshot: data.snapshot,
-    results: data.results,
-    locale,
-  })
+  const [selected, setSelected] = useState(null)
 
   return (
-    <section>
-      <div className="hh-heading hh-portfolio-heading">
-        <p className="hh-kicker">{locale === 'ru' ? 'Мой профиль' : 'My profile'}</p>
-        <h1>{locale === 'ru' ? 'Портфель результатов' : 'Results portfolio'}</h1>
-        <p>
-          {locale === 'ru'
-            ? 'Подробные результаты, графики, сравнение замеров и рекомендации по тому, какие данные стоит добавить дальше.'
-            : 'Detailed results, charts, measurement comparisons and recommendations for what to add next.'}
-        </p>
-      </div>
+    <section className="hh-insights-page" aria-labelledby="hh-insights-title" data-testid="completed-test-insights">
+      <header className="hh-insights-intro">
+        <div>
+          <p className="hh-kicker">Insights · Holistic House</p>
+          <h1 id="hh-insights-title">{ru ? 'Мои пройденные тесты' : 'My completed tests'}</h1>
+          <p>{ru
+            ? 'Выберите тест, чтобы прочитать именно его результаты, объяснение и рекомендации. Измерения остаются приватными.'
+            : 'Choose a completed test to read its results, interpretation and practical recommendations. Your results stay private.'}</p>
+        </div>
+        <span className="hh-insights-total">{groups.length} {ru ? 'пройдено' : 'completed'}</span>
+      </header>
 
-      <section className="hh-panel hh-complete-pdf-export" aria-label={locale === 'ru' ? 'Печать всех результатов' : 'Print all results'}>
-        <h2>{locale === 'ru' ? 'Мой полный отчёт' : 'My complete report'}</h2>
-        <p>{locale === 'ru' ? 'Все завершённые тесты, их шкалы, краткие выводы и общие рекомендации одним PDF.' : 'All completed assessments, original scores, concise conclusions and next steps in one PDF.'}</p>
-        <ClientReportActions data={data} locale={locale} />
-      </section>
-      <ProfileOverview profile={profile} locale={locale} />
-
-      {dimensions.length > 0 && (
-        <>
-          {[
-            ['state', c.state],
-            ['symptoms', c.symptoms],
-            ['function', c.functioning],
-            ['resources', c.resources],
-            ['trait', c.personality],
-          ].map(([kind, title]) => {
-            const found = dimensions.filter((d) => d.dimensionClass === kind)
-            return found.length ? (
-              <section key={kind} className="hh-section">
-                <h2>{title}</h2>
-                <div className="hh-metrics">
-                  {found.map((d) => (
-                    <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />
-                  ))}
-                </div>
-              </section>
-            ) : null
+      {groups.length ? (
+        <div className="hh-insights-test-list">
+          {groups.map(group => {
+            const latest = group.latest
+            const report = buildAssessmentResultReport(latest, locale)
+            const first = report.sections[0]
+            return (
+              <article className="hh-insights-test-card" key={group.key}>
+                <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}>
+                  <div className="hh-insights-test-meta">
+                    <span>{ru ? 'Завершённый тест' : 'Completed assessment'}</span>
+                    <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
+                  </div>
+                  <h2>{group.title}</h2>
+                  <p className="hh-insights-test-purpose">{report.purpose}</p>
+                  {first && (
+                    <p className="hh-insights-test-summary">
+                      <strong>{first.title}</strong> — {first.meaning}
+                    </p>
+                  )}
+                  <div className="hh-insights-test-scores">
+                    {(latest.dimensions || []).slice(0, 2).map(d => (
+                      <span key={d.key}>{readableScaleName(d, locale)}: <strong>{d.value} / {d.max}</strong></span>
+                    ))}
+                    {latest.dimensions?.length > 2 && <span>{ru ? 'И другие показатели' : 'And more measured areas'}</span>}
+                  </div>
+                  <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
+                </Link>
+                {group.count > 1 && (
+                  <details className="hh-insights-history">
+                    <summary>{ru ? `История прохождений (${group.count})` : `Assessment history (${group.count})`}</summary>
+                    <ul>{group.history.map(attempt => <li key={attempt.id}>
+                      <time dateTime={attempt.measurementAt}>{dateLabel(attempt.measurementAt, locale)}</time>
+                      <Link href={`/${locale}/app/results/${encodeURIComponent(attempt.id)}`} prefetch={false}>{ru ? 'Посмотреть отчёт' : 'View report'}</Link>
+                    </li>)}</ul>
+                  </details>
+                )}
+              </article>
+            )
           })}
-          <PortraitGuide locale={locale} dimensions={dimensions} />
-          <LatestChange locale={locale} results={data.results} />
-        </>
+        </div>
+      ) : (
+        <div className="hh-insights-empty hh-panel">
+          <h2>{ru ? 'Отчётов пока нет' : 'No reports yet'}</h2>
+          <p>{ru ? 'Завершите первый тест — здесь появится его результат с анализом и рекомендациями.' : 'Finish your first assessment and its analysis and recommendations will appear here.'}</p>
+          <Link href={`/${locale}/app/tests`} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>
+        </div>
       )}
 
-      {selected && (
-        <section className="hh-panel hh-detail" aria-live="polite">
-          <button className="hh-close" onClick={() => setSelected(null)}>
-            {c.close}
-          </button>
-          <h2>{labelFor(selected.key, locale)}</h2>
-          <p>{explanationFor(selected.key, locale)}</p>
-          <p>{c.measured}: {dateLabel(selected.measurementAt, locale)}</p>
-          <p>
-            {c.source}: {getDefinitionById(selected.sourceDefinitionId).key} ·{' '}
-            {getDefinitionById(selected.sourceDefinitionId).version} · {selected.instrumentLocale}
-          </p>
-          <div className="hh-actions">
-            <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{c.view}</Link>
-            <Link href={`/${locale}/app/history`} prefetch={false}>{c.history}</Link>
-          </div>
-        </section>
+      {groups.length > 0 && (
+        <details className="hh-insights-export">
+          <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>
+          <ClientReportActions data={data} locale={locale} />
+        </details>
+      )}
+      <div className="hh-insights-links">
+        <Link href={`/${locale}/app/history`} prefetch={false}>{ru ? 'История и динамика' : 'History & progress'}</Link>
+        <Link href={`/${locale}/app/tests`} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
+      </div>
+
+      {groups.length > 0 && (
+        <details className="hh-insights-advanced">
+          <summary>{ru ? 'Дополнительно: общие графики и таблица измерений' : 'Advanced: combined charts and measurements'}</summary>
+          <ProfileOverview profile={profile} locale={locale} />
+          {dimensions.length > 0 && (
+            <div className="hh-insights-advanced-metrics">
+              <h2>{ru ? 'Все измеренные шкалы' : 'All recorded scales'}</h2>
+              <div className="hh-metrics">
+                {dimensions.map(d => <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />)}
+              </div>
+              <PortraitGuide locale={locale} dimensions={dimensions} />
+              <LatestChange locale={locale} results={data.results} />
+            </div>
+          )}
+          {selected && (
+            <div className="hh-panel hh-detail">
+              <button type="button" onClick={() => setSelected(null)}>{ru ? 'Закрыть' : 'Close'}</button>
+              <h2>{readableScaleName(selected, locale)}</h2>
+              <p>{explanationFor(selected.key, locale)}</p>
+              <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{ru ? 'Полный отчёт' : 'Full report'}</Link>
+            </div>
+          )}
+        </details>
       )}
     </section>
   )
@@ -1839,13 +1881,13 @@ function ProfileOverview({ profile, locale }) {
               <div className="hh-profile-chart-row" key={row.key}>
                 <div className="hh-profile-chart-label">
                   <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
-                  <strong>{row.sourceConstruct || labelFor(row.key, locale)}</strong>
+                  <strong>{readableScaleName(row, locale)}</strong>
                 </div>
                 <div
                   className="hh-profile-chart-track"
                   role="img"
                   aria-label={
-                    `${row.sourceConstruct || labelFor(row.key, locale)}: ${profileNumber(row.value)} / ${row.max}`
+                    `${readableScaleName(row, locale)}: ${profileNumber(row.value)} / ${row.max}`
                   }
                 >
                   <i style={{ width: `${row.currentPercent || 0}%` }} />
@@ -1911,7 +1953,7 @@ function ProfileOverview({ profile, locale }) {
                     <tr key={row.key}>
                       <th scope="row">
                         <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
-                        <strong>{row.sourceConstruct || labelFor(row.key, locale)}</strong>
+                        <strong>{readableScaleName(row, locale)}</strong>
                         <span>{definition.title || definition.key}</span>
                       </th>
                       <td><strong>{profileNumber(row.value)}</strong><small>{row.min}–{row.max}</small></td>
@@ -2004,7 +2046,7 @@ function MetricCard({ dimension, locale, onSelect }) {
     def = getDefinitionById(dimension.sourceDefinitionId)
   return (
     <button className="hh-metric" onClick={() => onSelect(dimension)}>
-      <span>{dimension.sourceConstruct || labelFor(dimension.key, locale)}</span>
+      <span>{readableScaleName(dimension, locale)}</span>
       <strong>
         {dimension.value}
         <small> / {dimension.max}</small>
@@ -2248,7 +2290,6 @@ function ResultPage({ id, locale, data }) {
   }, [id])
   if (error) return <p role="alert">{message(error, c)}</p>
   if (!result) return <p>{c.loading}</p>
-  const guidance = nextPersonalRecommendation({ results: data.results, snapshot: data.snapshot, locale })
   const changeSummary = resultChangeSummary(result, data.results, locale)
   const series = seriesFor(data.results, result),
     previous = series
@@ -2269,9 +2310,9 @@ function ResultPage({ id, locale, data }) {
           <p className="hh-kicker">{c.result}</p>
           <h1>{title}</h1>
           <p className="hh-result-intro">
-            {locale === 'ru'
-              ? 'Ваш личный замер состояния — спокойно, без ярлыков и автоматических выводов.'
-              : 'Your personal measurement — calm, private and without automatic labels.'}
+            {monitoringCatalogItem(result.definitionKey)?.description?.[locale] ||
+              monitoringCatalogItem(result.definitionKey)?.description?.en ||
+              (locale === 'ru' ? 'Ваши ответы по этому конкретному тесту, с пояснениями и рекомендациями ниже.' : 'Your responses to this specific assessment, with interpretation and recommendations below.')}
           </p>
         </div>
         <div className="hh-result-meta">
@@ -2305,7 +2346,7 @@ function ResultPage({ id, locale, data }) {
             return (
               <section className="hh-result-metric" key={d.key}>
                 <div className="hh-result-metric-copy">
-                  <h3>{d.sourceConstruct || labelFor(d.key, locale)}</h3>
+                  <h3>{readableScaleName(d, locale)}</h3>
                   {explanationFor(d.key, locale) && <p>{explanationFor(d.key, locale)}</p>}
                 </div>
                 <div className="hh-result-score">
@@ -2324,13 +2365,20 @@ function ResultPage({ id, locale, data }) {
         </div>
       </section>
 
-      <aside className="hh-result-guidance"><p className="hh-kicker">{locale === 'ru' ? 'Что означает этот замер' : 'What this check-in tells you'}</p>
-        <h2>{locale === 'ru' ? 'Ваша личная динамика и следующий шаг' : 'Your progress and next step'}</h2>
-        {changeSummary.previous ? <p>{locale === 'ru' ? 'Есть совместимый предыдущий замер' : 'Compatible previous result'}: {dateLabel(changeSummary.previous.measurementAt, locale)}. {locale === 'ru' ? 'Изменения показателей не доказывают причину или диагноз.' : 'Score changes alone do not establish a cause or diagnosis.'}</p> : <p>{locale === 'ru' ? 'Это первая совместимая точка отсчёта. В дальнейшем можно сравнить результат с повторным прохождением.' : 'This is your first comparable baseline. Future check-ins can be compared with it.'}</p>}
-        {!!changeSummary.changes.length && <ul>{changeSummary.changes.slice(0, 5).map((change) => <li key={change.key}>{change.label}: {change.from} → {change.to} ({change.delta > 0 ? '+' : ''}{change.delta})</li>)}</ul>}
-        <h3>{guidance.title}</h3><p>{guidance.reason}</p>{guidance.observation && <p className="hh-fine">{guidance.observation}</p>}{guidance.reflection && <p><strong>{locale === 'ru' ? 'Что попробовать: ' : 'Something to try: '}</strong>{guidance.reflection}</p>}<div className="hh-actions"><Link href={guidance.key ? `/${locale}/app/tests?suggest=${encodeURIComponent(guidance.key)}` : `/${locale}/app/history`}>{guidance.key ? (locale === 'ru' ? 'Выбрать рекомендуемый тест' : 'Choose suggested test') : (locale === 'ru' ? 'Посмотреть историю' : 'Review history')}</Link><Link href={`/${locale}/app/history`}>{locale === 'ru' ? 'Все прошлые результаты' : 'All past results'}</Link></div>
-        <small>{locale === 'ru' ? 'Автоматическая подсказка не является диагнозом или индивидуальным назначением лечения.' : 'This automatic suggestion is not a diagnosis or personalized treatment.'}</small>
-      </aside>
+      <PersonalResultReport result={result} locale={locale} />
+      <section className="hh-result-comparison" aria-label={locale === 'ru' ? 'История и повторные измерения' : 'Progress and previous assessments'}>
+        <div>
+          <h2>{locale === 'ru' ? 'Динамика результата' : 'Your result over time'}</h2>
+          {changeSummary.previous
+            ? <p>{locale === 'ru' ? 'Предыдущий совместимый замер' : 'Previous comparable assessment'}: {dateLabel(changeSummary.previous.measurementAt, locale)}</p>
+            : <p>{locale === 'ru' ? 'Это первый совместимый замер. При повторном прохождении сможете сравнить результаты.' : 'This is your first comparable baseline. Repeat the same version later to see changes.'}</p>}
+          {changeSummary.changes.length > 0 && <ul>{changeSummary.changes.map(change => (
+            <li key={change.key}>{readableScaleName({key:change.key,sourceConstruct:change.label},locale)}: {change.from} → {change.to}</li>
+          ))}</ul>}
+          <small>{locale === 'ru' ? 'Числа показывают ответы по шкале теста, а не медицинский диагноз.' : 'Scores describe this questionnaire, not a medical diagnosis.'}</small>
+        </div>
+        <Link href={`/${locale}/app/portfolio`} prefetch={false}>{locale === 'ru' ? 'Все мои отчёты' : 'All my reports'} →</Link>
+      </section>
       {Object.entries(result.context || {}).length > 0 && (
         <aside className="hh-context-at-checkin hh-result-context">
           <p className="hh-kicker">{locale === 'ru' ? 'Ваш контекст' : 'Your context'}</p>
@@ -2696,7 +2744,7 @@ function HistoryView({ data, locale, reload }) {
               <p>{locale === 'ru' ? 'Прохождений' : 'Completed'}: <strong>{group.count}</strong>{group.latest && <> · {locale === 'ru' ? 'Последний' : 'Most recent'}: <time>{dateLabel(group.latest.measurementAt, locale)}</time></>}</p></div>
               {group.latest && <Link href={`/${locale}/app/results/${group.latest.id}`}>{locale === 'ru' ? 'Последний результат →' : 'Latest result →'}</Link>}</div>
             {group.latest && <div className="hh-assessment-history-dimensions">{group.latest.dimensions.map((d) => (
-              <div key={d.key}><span>{d.sourceConstruct || labelFor(d.key, locale)}</span><strong>{d.value} <small>/ {d.max}</small></strong></div>
+              <div key={d.key}><span>{readableScaleName(d, locale)}</span><strong>{d.value} <small>/ {d.max}</small></strong></div>
             ))}</div>}
             {group.count > 1 && <details className="hh-assessment-history-previous"><summary>{locale === 'ru' ? `Все прохождения (${group.count})` : `All attempts (${group.count})`}</summary><ul>{group.history.map((result) => <li key={result.id}><time>{dateLabel(result.measurementAt, locale)}</time> <Link href={`/${locale}/app/results/${result.id}`}>{locale === 'ru' ? 'Открыть результат' : 'Open result'}</Link></li>)}</ul></details>}
             <div className="hh-actions">{group.draft && <Link href={`/${locale}/app/runs/${group.draft.id}`}>{locale === 'ru' ? 'Продолжить начатый тест' : 'Resume unfinished test'}</Link>}
