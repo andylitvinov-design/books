@@ -252,3 +252,10 @@
   .home .cardCta{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.home .card,.home .cardCta{transition:none}}
+
+/* A one-tap source video option on each compact personal-service card. */
+.cardVideo{display:inline-flex;align-items:center;gap:8px;margin:1px 0 9px;min-height:44px;color:#6e4939!important;font:700 12px/1.45 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.cardVideo svg{flex:none}
+.cardVideo:hover{color:#305e4a!important}
+.cardVideo:focus-visible{outline:3px solid #b48554;outline-offset:3px}
+@media(max-width:760px){.cardVideo{font-size:11px;margin:0 0 5px;min-height:42px}}
