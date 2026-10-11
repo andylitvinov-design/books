@@ -1,0 +1,35 @@
+/* Editorial companion to the existing warm Holistic House UI — no modal, carousel or page takeover. */
+.shell{box-sizing:border-box;width:min(1188px,calc(100% - 32px));margin:24px auto 25px;padding:22px 27px 17px;border:1px solid #e8dccd;border-radius:21px;background:#faf5ec;color:#3d3027}
+.shell *{box-sizing:border-box}
+.heading{display:flex;align-items:end;justify-content:space-between;gap:18px}
+.heading>div{min-width:0}
+.eyebrow{margin:0 0 5px;color:#906548;font:700 10px/1.5 Arial,Helvetica,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+.heading h2{margin:0;font:400 clamp(25px,2.7vw,36px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.028em;text-wrap:balance}
+.intro{margin:0;max-width:410px;color:#71655a;font:12px/1.6 Arial,Helvetica,sans-serif}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:18px;padding-top:16px;border-top:1px solid #e6dacc}
+.item{display:flex;min-width:0;flex-direction:column;align-items:flex-start;padding:1px 20px 2px;border-right:1px solid #e6dacc}
+.item:first-child{padding-left:0}
+.item:last-child{border-right:0;padding-right:0}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:7px;color:#57715d;font:600 10px/1.35 Arial,Helvetica,sans-serif}
+.number{color:#977b64}
+.label{color:#6b795c;letter-spacing:.04em;text-transform:uppercase}
+.item h3{margin:12px 0 6px;color:#382c24;font:400 clamp(18px,2vw,23px)/1.17 Georgia,"Times New Roman",serif;letter-spacing:-.018em;text-wrap:balance}
+.item>p{margin:0 0 12px;color:#685d53;font:12px/1.54 Arial,Helvetica,sans-serif}
+.action{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:auto;color:#285944;font:700 12px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:4px}
+.action:hover{color:#8b563a}
+.action:focus-visible{outline:3px solid #986f49;outline-offset:3px;border-radius:4px}
+.note{margin:13px 0 0;color:#807469;font:11px/1.45 Arial,Helvetica,sans-serif}
+.cabinet{width:100%;max-width:none;margin:0 0 16px;padding:14px 18px 12px;border-radius:17px;background:#faf5ee}
+.cabinet .heading h2{font-size:clamp(20px,2.2vw,26px)}
+.cabinet .intro{max-width:440px;font-size:11px}
+.cabinet .grid{margin-top:12px;padding-top:11px}
+.cabinet .item{padding-inline:14px}
+.cabinet .item:first-child{padding-left:0}
+.cabinet .item:last-child{padding-right:0}
+.cabinet .item h3{font-size:16px;margin:7px 0 5px}
+.cabinet .item>p{font-size:11px;margin-bottom:5px}
+.cabinet .action{font-size:11px;min-height:38px}
+.cabinet .note{font-size:10px;margin-top:8px}
+@media(max-width:850px){.heading{align-items:start;flex-direction:column;gap:8px}.intro{max-width:720px}.item{padding-inline:14px}.item h3{font-size:19px}}
+@media(max-width:760px){.shell{width:calc(100% - 24px);margin:16px auto 20px;padding:17px 18px 13px;border-radius:18px}.heading h2{font-size:clamp(24px,6vw,30px)}.intro{font-size:12px}.grid{grid-template-columns:1fr;margin-top:12px;padding-top:0}.item,.cabinet .item{padding:13px 0;border-right:0;border-bottom:1px solid #e6dacc}.item:last-child,.cabinet .item:last-child{border-bottom:0;padding-bottom:0}.item h3,.cabinet .item h3{font-size:20px;margin:7px 0 4px}.item>p,.cabinet .item>p{font-size:12px;margin-bottom:4px}.action,.cabinet .action{font-size:12px;min-height:42px}.note{margin-top:12px}.cabinet{width:100%;margin:0 0 14px;padding:14px 16px 11px}.cabinet .heading h2{font-size:21px}.cabinet .intro{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.action{scroll-behavior:auto}}

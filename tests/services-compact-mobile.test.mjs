@@ -4,14 +4,16 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("four benefit-led core Services offers link to their own local EN/RU pages", () => {
+test("three free entrances plus two personal services retain all original local EN/RU pages", () => {
   const page = read("app/[locale]/services/page.tsx");
   const ui = read("components/services-solutions.tsx");
   const offers = read("data/core-service-offers.ts");
   const css = read("components/services-solutions.module.css");
   const hero = read("components/services-conversion-hero.tsx");
   assert.match(page, /<ServicesSolutions locale=/);
-  assert.match(ui, /coreServiceOffers\(locale\)\.map/);
+  assert.match(ui, /coreServiceOffers\(locale\)\.filter/);
+  assert.match(ui, /personalOffers\.map/);
+  assert.match(page, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   for (const key of ["situation","dao","alchemy","hypnotherapy"])
     assert.ok(offers.includes('id: "' + key + '"'), key);
   for (const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
@@ -31,6 +33,7 @@ test("four benefit-led core Services offers link to their own local EN/RU pages"
 test("homepage reuses exact four offers and keeps tests/Academy below, without duplicate personal offer", () => {
   const home = read("components/holistic-house-home.tsx");
   const css = read("app/holistic-house-home.css");
+  assert.match(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.match(home, /event="self_check_start"/);

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, ArrowRight, Brain, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
+import { FreeInsightsPaths } from '@/components/free-insights-paths'
 import './profile-domains.css'
 
 const DOMAINS = PROFILE_AREAS
@@ -219,6 +220,7 @@ export function ProfileDomains({
       <div><p className="hh-domain-eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p className="hh-domain-hero-subtitle">{t.reports}</p><p>{t.intro}</p></div>
       <span className="hh-domain-hero-symbol" aria-hidden="true"><Activity size={27} /></span>
     </header>
+    <FreeInsightsPaths locale={locale} variant="cabinet" testHref={external ? '/' + locale + '/client' : '/' + locale + '/app/tests'} />
     <div className="hh-domain-tabs" role="tablist" aria-label={t.title}>
       {entries.map(({ key, summary }) => {
         const Icon = ICONS[key]

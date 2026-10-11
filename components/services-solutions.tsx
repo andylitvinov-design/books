@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import type { Locale } from "@/data/remedies";
 import styles from "./services-solutions.module.css";
@@ -16,14 +16,11 @@ const homepageMedia = {
 
 const copy = {
   en: {
-    eyebrow: "FOUR WAYS TO WORK TOGETHER",
-    title: "Choose the support that fits your question",
-    homeTitle: "How I can help",
-    lead: "Two free ways to begin, or a personal session and a guided-imagery course. Choose by the result you want — not by the technique.",
-    homeLead: "Two free starting points and two personal-work options.",
-    uncertain: "Not sure which one fits?",
-    uncertainText: "Start with the free situation review. You can consider the other options afterward.",
-    uncertainAction: "Get a free situation review",
+    eyebrow: "PERSONAL GUIDANCE · WHEN YOU ARE READY",
+    title: "Personal support for your next step",
+    homeTitle: "Personal work, at your pace",
+    lead: "After exploring your question, you can choose a personal Alchemy of the Soul session or a guided-imagery course.",
+    homeLead: "If you want to explore further together, these are two personal-work formats.",
     more: "Curious about the methods?",
     moreText: "Systemic constellations, guided imagery and homeopathy are approaches used in specific sessions, not extra services you must choose on this page.",
     methods: [
@@ -34,14 +31,11 @@ const copy = {
     disclaimer: "The DAO profile is a non-medical symbolic assessment. Homeopathy has no reliable evidence for treating medical or mental-health conditions, and none of these services replaces standard or urgent care.",
   },
   ru: {
-    eyebrow: "ЧЕТЫРЕ ОСНОВНЫХ ПРЕДЛОЖЕНИЯ",
-    title: "Выберите помощь под свой запрос",
-    homeTitle: "Чем я могу помочь",
-    lead: "Две бесплатные возможности для начала, личная сессия и курс образной работы. Выбирайте по результату, а не по методу.",
-    homeLead: "Два бесплатных варианта и два формата личной работы.",
-    uncertain: "Не знаете, что выбрать?",
-    uncertainText: "Начните с бесплатного разбора ситуации. Остальные варианты можно обсудить позже.",
-    uncertainAction: "Бесплатный разбор ситуации",
+    eyebrow: "ЛИЧНАЯ РАБОТА · КОГДА ВЫ ГОТОВЫ",
+    title: "Личная работа для следующего шага",
+    homeTitle: "Личная работа в вашем темпе",
+    lead: "После бесплатного знакомства со своим запросом можно выбрать сессию «Алхимия души» или курс образной работы.",
+    homeLead: "Если хочется пойти глубже, доступны два формата индивидуальной работы.",
     more: "Хотите подробнее о методах?",
     moreText: "Системные расстановки, образная работа и гомеопатия — инструменты отдельных сессий, а не обязательные дополнительные услуги.",
     methods: [
@@ -56,6 +50,8 @@ const copy = {
 export function ServicesSolutions({ locale, variant = "services" }: { locale: Locale; variant?: "services" | "home" }) {
   const t = copy[locale];
   const isHome = variant === "home";
+  // The three complimentary entrances are presented once above these cards.
+  const personalOffers = coreServiceOffers(locale).filter((offer) => offer.id === "alchemy" || offer.id === "hypnotherapy");
   return (
     <section className={[styles.solutions, isHome ? styles.home : ""].filter(Boolean).join(" ")} id={isHome ? "core-services" : "solutions"} aria-labelledby={isHome ? "home-core-services-title" : "services-solutions-title"} data-core-service-offers={variant}>
       <header className={styles.header}>
@@ -64,7 +60,7 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
         <p className={styles.intro}>{isHome ? t.homeLead : t.lead}</p>
       </header>
       <div className={styles.grid}>
-        {coreServiceOffers(locale).map((offer, index) => (
+        {personalOffers.map((offer, index) => (
           <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : undefined} data-core-service-id={offer.id}>
             {!isHome && offer.id === "alchemy" ? <><span id="business" className={styles.anchor} /><span id="archetypal" className={styles.anchor}/></> : null}
             <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true">
@@ -83,10 +79,6 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
 
       {!isHome ? (
         <>
-          <div className={styles.bridge}>
-            <div><h3>{t.uncertain}</h3><p>{t.uncertainText}</p></div>
-            <AcquisitionEventLink href={"/" + locale + "/services/free-situation-review"} event="service_request_start">{t.uncertainAction}<ArrowRight size={19} aria-hidden="true"/></AcquisitionEventLink>
-          </div>
           <details className={styles.methodDisclosure} id="methods">
             <summary>{t.more}<ChevronDown size={18} aria-hidden="true" /></summary>
             <div><p>{t.moreText}</p>

@@ -7,6 +7,7 @@ import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
+import { FreeInsightsPaths } from "@/components/free-insights-paths";
 import solutionStyles from "@/components/services-solutions.module.css";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
@@ -72,6 +73,7 @@ export default async function ServicesPage({ params }: PageProps) {
 
       <ServicesConversionHero locale={locale as Locale} />
 
+      <FreeInsightsPaths locale={locale as Locale} />
       <ServicesSolutions locale={locale as Locale} />
 
       <PersonalTestimonials locale={locale as Locale} variant="services" />
