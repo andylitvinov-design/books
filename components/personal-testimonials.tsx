@@ -101,12 +101,13 @@ export function PersonalTestimonials({
         <span>{current.videoLanguage}</span>
       </div>
       <div className={styles.videoGrid}>
-        {videos.map((item) => (
+        {videos.map((item, index) => (
           <div className={styles.videoItem} key={item.id}>
             <SiteVideoPlayer
               video={{ youtubeId: item.id, language: item.language, title: item.title }}
               locale={locale}
               compact
+              fallbackPoster={index % 2 === 0 ? "/images/holistic-house/homepage-constellations.svg" : "/images/holistic-house/homepage-guided-imagery.svg"}
             />
           </div>
         ))}

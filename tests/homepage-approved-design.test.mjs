@@ -77,16 +77,22 @@ test("premium botanical cards are responsive, keyboard-accessible and do not alt
   assert.match(homeStyle, /prefers-reduced-motion:reduce/);
 });
 
-test("homepage contact remains consent-gated WhatsApp, Telegram and free-review path", () => {
+test("homepage uses the real blue enquiry chooser instead of the old beige direct-contact card", () => {
   const home = read("components/holistic-house-home.tsx");
   const cta = read("components/homepage-contact-cta.tsx");
+  const capture = read("components/consultation-choice-capture.tsx");
+  const captureCss = read("components/consultation-choice-capture.module.css");
+  const homeStyle = read("app/holistic-house-home.css");
   assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
   assert.match(cta, /data-home-contact-capture/);
-  assert.match(cta, /wa\.me\/14376066502\?text=/);
-  assert.match(cta, /t\.me\/AndyTherapist/);
-  assert.match(cta, /data-contact-channel/);
-  assert.match(cta, /services\/free-situation-review/);
-  assert.match(cta, /AcquisitionEventLink/);
-  assert.match(cta, /home-contact-capture__text-link/);
+  assert.match(cta, /<ConsultationChoiceCapture/);
+  assert.match(cta, /variant="service"/);
+  assert.match(capture, /serviceChoices: ServiceChoice\[\] = \["session", "questions", "free"\]/);
+  assert.match(capture, /whatsappEnquiryUrl/);
+  assert.match(capture, /t\.me\/AndyTherapist/);
+  assert.match(capture, /services\/free-situation-review/);
+  assert.match(captureCss, /linear-gradient\(125deg, #e9f7fe/);
+  assert.match(homeStyle, /\.house-home--services \.home-contact-choice/);
+  assert.doesNotMatch(cta, /home-contact-capture__primary|You can simply write to me/);
   assert.doesNotMatch(home, /fake-testimonial|stock-avatar/);
 });

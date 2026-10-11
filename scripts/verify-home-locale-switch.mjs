@@ -68,9 +68,15 @@ async function exercise(engine, browserType, width) {
     await expect(freePaths.locator('[data-free-insights-offer="wu"] a')).toHaveAttribute('href', /\/services\/dao-health-profile$/);
     await expect(offers.locator('[data-core-service-id]')).toHaveCount(2);
     await expect(page.locator('[data-home-contact-capture]')).toHaveCount(1);
-    const freeLink = page.locator('.home-contact-capture__text-link');
-    await expect(freeLink).toHaveAttribute('href', /\/services\/free-situation-review$/);
-    await expect(freeLink).toBeVisible();
+    const capture = page.locator('[data-home-contact-capture] [data-consultation-capture="service"]');
+    await expect(capture).toBeVisible();
+    await expect(capture.locator('[data-choice-layout="service"] button')).toHaveCount(3);
+    await capture.locator('[data-choice-layout="service"] button').last().click();
+    await expect(capture.locator('a[data-consultation-action="free"]')).toHaveAttribute('href', /\/services\/free-situation-review$/);
+    const videoPosters = page.locator('[data-personal-testimonials="home"] .site-video-fallback-poster');
+    await expect(videoPosters).toHaveCount(6);
+    await videoPosters.first().scrollIntoViewIfNeeded();
+    await expect.poll(() => videoPosters.first().evaluate(image => image.complete && image.naturalWidth > 100), { timeout: 15000 }).toBe(true);
     const portrait = page.locator('.service-home-about__image');
     await portrait.scrollIntoViewIfNeeded();
     await expect.poll(() => portrait.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
@@ -91,9 +97,9 @@ async function exercise(engine, browserType, width) {
         portraitWidth: portrait?.width,
         portraitHeight: portrait?.height,
         contactWidth: contact?.width,
-        contactButtons: frame?.querySelectorAll('[data-contact-channel]').length,
-        contactHasGenericSelector: !!frame?.querySelector('[data-consultation-capture]'),
-        contactBackground: frame && getComputedStyle(frame).backgroundImage,
+        contactChoices: frame?.querySelectorAll('[data-choice-layout="service"] button').length,
+        contactHasBlueCapture: !!frame?.querySelector('[data-consultation-capture="service"]'),
+        contactBackground: frame && getComputedStyle(frame.querySelector('[data-consultation-capture="service"]')).backgroundImage,
       };
     });
     assert.equal(measurements.freeCount, 3, 'Exactly three free starting paths should be visible');
@@ -103,9 +109,9 @@ async function exercise(engine, browserType, width) {
     assert.ok(measurements.featuredPhotoWidth >= 90 && measurements.featuredPhotoHeight >= 95, 'Personal-service artwork is tiny or hidden: ' + JSON.stringify(measurements));
     assert.ok(measurements.portraitWidth > (width === 390 ? 180 : 230), 'Real practitioner portrait has collapsed: ' + JSON.stringify(measurements));
     assert.ok(measurements.portraitHeight >= 160, 'Real practitioner portrait is too short: ' + JSON.stringify(measurements));
-    assert.equal(measurements.contactButtons, 2, 'Homepage must have exactly WhatsApp and Telegram direct-contact channels');
-    assert.equal(measurements.contactHasGenericSelector, false, 'Homepage must not show the long generic consultation form');
-    assert.ok(measurements.contactBackground?.includes('linear-gradient'), 'Approved warm contact card background is missing');
+    assert.equal(measurements.contactChoices, 3, 'Modern capture must offer the three requested choices');
+    assert.equal(measurements.contactHasBlueCapture, true, 'Homepage must contain the shared blue capture form');
+    assert.ok(measurements.contactBackground?.includes('linear-gradient'), 'Blue capture gradient must render');
     results.push({ engine, width, homeVisual: true, ...measurements });
     await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-${engine}-${width}.png`, fullPage: true });
   } catch (error) {
