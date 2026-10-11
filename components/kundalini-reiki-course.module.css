@@ -310,6 +310,7 @@
 .extensionDetails summary { padding: 10px 0; border-top: 1px solid #e0e8df; }
 .extensionDetails > div { color: #566b60; font-size: .85rem; line-height: 1.6; }
 .extensionDetails > div p { margin: 4px 0 12px; }
+.stoneGroupTitle { margin: 19px 0 9px; color: #2f6851; font-size: .85rem; font-weight: 800; }
 .stoneList { columns: 2; margin: 0; padding: 0 0 0 16px; line-height: 1.65; }
 .stoneList li { break-inside: avoid; font-size: .75rem; }
 
