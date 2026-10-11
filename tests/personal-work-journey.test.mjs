@@ -6,14 +6,14 @@ import test from "node:test";
 const root = process.cwd();
 const source = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("home displays direct three-service choices before the introductory video", () => {
+test("home keeps direct three-service choices ahead of introductory video", () => {
   const home = source("components", "holistic-house-home.tsx");
   const cards = home.indexOf('<PersonalWorkJourney locale={locale} variant="compact" />');
-  const video = home.indexOf('{introVideo ? (');
+  const video = home.indexOf("{introVideo ? (");
   assert.ok(cards > 0 && video > cards);
 });
 
-test("services prioritizes concrete client solutions and a free conversation over method catalogues", () => {
+test("Services prioritizes concrete client problems and a free drawing report, not a free call", () => {
   const s = source("app", "[locale]", "services", "page.tsx");
   const solutions = source("components", "services-solutions.tsx");
   const hero = s.indexOf("<ServicesConversionHero");
@@ -26,23 +26,22 @@ test("services prioritizes concrete client solutions and a free conversation ove
   assert.match(s, /<PersonalTestimonials/);
   assert.match(solutions, /What would you like to change/);
   assert.match(solutions, /Что вы хотели бы изменить/);
+  assert.match(solutions, /Free drawing assessment \+ written report/);
+  assert.match(solutions, /Бесплатная диагностика рисунка \+ отчёт/);
   for (const topic of ["wellbeing", "personal", "goal", "business"]) {
     assert.match(solutions, new RegExp('topic: "' + topic + '"'));
   }
   assert.match(solutions, /free-situation-review\?topic=/);
+  assert.doesNotMatch(solutions, /Start with a free conversation|Первый разговор — бесплатно/);
 });
 
-test("three services are choices with direct real service links, not implied treatment stages", () => {
+test("three service directions link to real pages, not implied stages", () => {
   const component = source("components", "personal-work-journey.tsx");
   for (const phrase of [
     "Гомеопатия", "Образная терапия", "Расстановки",
     "Homeopathy", "Guided imagery therapy", "Constellations",
-    "psychohomeopathy",
-    "imagery-therapy",
-    "systemic-constellations",
-    "free-situation-review",
-    "Три типа моих услуг",
-    "three different services",
+    "psychohomeopathy", "imagery-therapy", "systemic-constellations",
+    "free-situation-review", "Три направления работы", "three different services",
   ]) assert.ok(component.includes(phrase), "missing text: " + phrase);
   assert.match(component, /text\.services\.map/);
   assert.match(component, /<article className=\{styles\.service\}/);
@@ -52,25 +51,29 @@ test("three services are choices with direct real service links, not implied tre
   assert.doesNotMatch(component, /вылечит|снимает симптомы|cures|guarantees faster|guaranteed results/i);
 });
 
-test("free situation review and imagery therapy have real bilingual pages and actionable forms", () => {
+test("free review and imagery therapy have real EN/RU/ES pages and honest contact journeys", () => {
   const free = source("app", "[locale]", "services", "free-situation-review", "page.tsx");
   const imagery = source("app", "[locale]", "services", "imagery-therapy", "page.tsx");
   const form = source("components", "free-situation-review-form.tsx");
+  const intake = source("components", "free-drawing-intake.tsx");
   const consultation = source("components", "personal-consultation-form.tsx");
-  for (const phrase of ["Бесплатная диагностика ситуации", "Free situation & goal assessment", "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata"]) assert.ok(free.includes(phrase), phrase);
+  for (const phrase of ["Бесплатная диагностика ситуации", "Free situation & drawing assessment",
+    "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata", "paidOptions"]) {
+    assert.ok(free.includes(phrase), phrase);
+  }
   for (const phrase of ["PersonalServiceLanding", "imagery-therapy", "service={service}"]) assert.ok(imagery.includes(phrase), phrase);
-  const chooser = source("components", "consultation-choice-capture.tsx");
   assert.match(consultation, /service\?: string/);
   assert.match(consultation, /service \? "service" : "personal"/);
-  assert.match(form, /variant="free"/);
-  assert.ok(chooser.includes('t.serviceField + ": " + (service'));
-  assert.ok(chooser.includes('t.topicOptions[topic]'));
-  assert.ok(chooser.includes('wa.me/14376066502'));
-  assert.ok(chooser.includes('Nothing is sent until you press Send'));
-  assert.doesNotMatch(form + chooser, /localStorage|sessionStorage|sendBeacon|<textarea|<form/);
+  assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
+  assert.match(intake, /new URLSearchParams\(window\.location\.search\)\.get\("topic"\)/);
+  assert.match(intake, /setTopic\(requested as Topic\)/);
+  assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
+  assert.match(intake, /wa\.me/);
+  assert.match(intake, /Nothing is sent automatically/);
+  assert.doesNotMatch(form + intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
 });
 
-test("service links retain mobile tap targets, no horizontal layout overflow from grid", () => {
+test("service links remain tappable, mobile-safe and keyboard accessible", () => {
   const css = source("components", "personal-work-journey.module.css");
   const detailCss = source("app", "[locale]", "services", "offerings.module.css");
   assert.match(css, /min-height:44px/);
@@ -81,29 +84,26 @@ test("service links retain mobile tap targets, no horizontal layout overflow fro
   assert.match(detailCss, /grid-template-columns:1fr/);
 });
 
-test("services hero makes the free consultation the first and only primary offer", () => {
+test("Services hero emphasizes the free questionnaire and written report instead of a free call", () => {
   const hero = source("components", "services-conversion-hero.tsx");
   const css = source("components", "services-conversion-hero.module.css");
-  for (const phrase of ["Feeling stuck?", "Не знаете, как двигаться дальше?", "free-situation-review", "Request my free situation review", "Записаться на бесплатную диагностику"]) {
-    assert.ok(hero.includes(phrase), phrase);
-  }
-  assert.doesNotMatch(hero, /selfCheck|self_check_start|#available-services/);
+  for (const phrase of [
+    "Your free situation assessment starts with a drawing",
+    "Бесплатная диагностика ситуации по вашему рисунку",
+    "free-situation-review", "Start my free drawing assessment", "Начать бесплатную диагностику",
+  ]) assert.ok(hero.includes(phrase), phrase);
+  assert.doesNotMatch(hero, /selfCheck|self_check_start|#available-services|free personal conversation/i);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /min-height:60px/);
 });
 
-test("approach one preselects an actual free psychohomeopathy-focused intake; no false instant booking", () => {
+test("wellbeing preselection enters an actual free drawing intake, never a phantom live session", () => {
   const journey = source("components", "personal-work-journey.tsx");
-  const intake = source("components", "free-situation-review-form.tsx");
+  const intake = source("components", "free-drawing-intake.tsx");
   const freePage = source("app", "[locale]", "services", "free-situation-review", "page.tsx");
   assert.match(journey, /free-situation-review\?topic=wellbeing/);
-  assert.match(journey, /Грусть, одиночество/);
-  assert.match(journey, /You have a goal but cannot see/);
-  const chooser = source("components", "consultation-choice-capture.tsx");
-  assert.match(intake, /variant="free"/);
-  assert.ok(chooser.includes('new URLSearchParams(window.location.search).get("topic")'));
-  assert.ok(chooser.includes('if (isTopic(requestedTopic)) setTopic(requestedTopic)'));
-  assert.ok(chooser.includes('"wellbeing"'));
-  assert.ok(freePage.indexOf('className={styles.contentGrid}') < freePage.indexOf('className={styles.details}'));
-  assert.ok(chooser.includes('encodeURIComponent(message)'));
+  assert.ok(intake.includes('new URLSearchParams(window.location.search).get("topic")'));
+  assert.ok(intake.includes('setTopic(requested as Topic)'));
+  assert.ok(intake.includes('"wellbeing"'));
+  assert.ok(freePage.indexOf("className={styles.contentGrid}") < freePage.indexOf("className={styles.details}"));
 });
