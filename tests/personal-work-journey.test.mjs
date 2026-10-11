@@ -36,7 +36,7 @@ test("three services are choices with direct real service links, not implied tre
   const component = source("components", "personal-work-journey.tsx");
   for (const phrase of [
     "Гомеопатия", "Образная терапия", "Расстановки и архетипическая работа",
-    "Homeopathy", "Guided imagery therapy", "Systemic & archetypal constellations",
+    "Homeopathy", "Guided imagery therapy", "Constellations",
     "psychohomeopathy",
     "imagery-therapy",
     "systemic-constellations",
