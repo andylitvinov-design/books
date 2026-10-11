@@ -125,11 +125,12 @@ test("All 41 unique recovered PsiMaster videos appear in their matching Russian 
   const planetary = new Set(media.filter((video) => video.logicalId === "videos/planetary-power").map((video) => video.videoId));
   assert.equal(media.filter((video) => video.logicalId === "videos/strength-protection" && planetary.has(video.videoId)).length, 4, "show transparent overlap note instead of losing four historical cross-links");
   assert.ok(media.every((video) => video.sourceUrl.startsWith("https://psimaster.net/service?")), "every record retains its exact PsiMaster origin");
-  assert.match(page, /locale === "ru" \? templeVideoCollections/);
+  assert.match(page, /const videoCollections = templeVideoCollections\(stage\.id, locale\)/);
+  assert.match(page, /const videoIndex = templeStages\.map/);
   assert.match(page, /<AcademyVideoPlayer youtubeId=\{video\.id\}/);
   assert.match(page, /className="temple-video-series"/);
   assert.match(page, /className="temple-video-index"/);
-  assert.match(page, /aria-label="Перейти к видеокурсам"/);
+  assert.match(page, /aria-label=\{vt\.navigate\}/);
   assert.match(page, /className="temple-video-series-summary-text"/);
   assert.match(page, /collection\.repeatedCount > 0/);
   assert.match(page, /<ol className="temple-video-grid">/);
@@ -156,7 +157,7 @@ test("Temple Studies makes tradition, deity channel and three initiation formats
   for (const id of ["meditation", "personal", "group"]) {
     assert.match(chooser, new RegExp('id: "' + id + '"'));
   }
-  assert.match(chooser, /setDeityId\(item\.deities\[0\]\?\.id \?\? ""\)/);
+  assert.match(chooser, /setDeityId\(""\)/);
   assert.match(chooser, /aria-pressed=\{deityId === deity\.id\}/);
   assert.match(chooser, /aria-pressed=\{item\.id === formatId\}/);
   assert.match(chooser, /t\.messageTradition \+ ": " \+ traditionName/);
@@ -176,4 +177,64 @@ test("Temple Studies makes tradition, deity channel and three initiation formats
   assert.match(page, /<details className="temple-video-series" key=\{collection\.key\}>/);
   assert.match(chaptersCss, /\.temple-stage-details\[open\]/);
   assert.match(chaptersCss, /\.temple-stage \{ display: grid;/);
+});
+
+
+test("Temple initiation is a real three-step flow without preselected deity or paid commitment", () => {
+  const chooser = read("components/temple-initiation-chooser.tsx");
+  const css = read("components/temple-initiation-chooser.module.css");
+  const navigation = read("components/reiki-course-side-nav.tsx");
+  assert.match(chooser, /useState<1 \| 2 \| 3>\(1\)/);
+  assert.match(chooser, /useState<TraditionId \| null>\(null\)/);
+  assert.match(chooser, /useState<FormatId \| null>\(null\)/);
+  assert.match(chooser, /const ready = hasTradition && hasDeity && Boolean\(format\)/);
+  assert.match(chooser, /\{ready \? \(/);
+  assert.match(chooser, /data-temple-whatsapp-disabled/);
+  assert.match(chooser, /aria-current=\{step === item\.number \? "step" : undefined\}/);
+  assert.match(chooser, /setStep\(id === "other" \? 1 : 2\)/);
+  assert.match(chooser, /if \(id !== "custom"\) setStep\(3\)/);
+  assert.match(chooser, /disabled=\{!customTradition\.trim\(\)\}/);
+  assert.match(chooser, /disabled=\{!customDeity\.trim\(\)\}/);
+  assert.match(chooser, /data-temple-custom-deity/);
+  assert.match(chooser, /data-temple-help-deity/);
+  assert.match(chooser, /setFormatId\(null\)/);
+  assert.match(chooser, /\{step === 1 \? \(/);
+  assert.match(chooser, /\{step === 2 \? \(/);
+  assert.match(chooser, /\{step === 3 \? \(/);
+  assert.match(css, /\.progressItem\[data-active="true"\]/);
+  assert.match(css, /\.actionDisabled/);
+  assert.match(css, /@media \(max-width: 700px\)/);
+  assert.match(navigation, /key: "choose", sectionId: "temple-choose", href: "#temple-choose"/);
+  assert.match(navigation, /activeKey="choose"/);
+});
+
+test("Archive videos remain reachable and identify Russian audio for every public locale", () => {
+  const page = read("components/temple-studies.tsx");
+  const deepLink = read("components/temple-course-hash-sync.tsx");
+  const css = read("app/temple-studies.css");
+  assert.match(page, /const videoIndex = templeStages\.map/);
+  assert.match(page, /title: stage\.copy\[locale\]\.title/);
+  assert.match(page, /href=\{"#temple-video-" \+ stage\.id\}/);
+  assert.match(page, /id=\{"temple-video-" \+ stage\.id\}/);
+  assert.match(page, /vt\.audio/);
+  assert.match(page, /Audio: Russian/);
+  assert.match(page, /Язык видео: русский/);
+  assert.match(page, /Audio: ruso/);
+  assert.match(page, /lang="ru">\{collection\.title\}/);
+  assert.match(page, /<TempleCourseHashSync/);
+  assert.match(deepLink, /window\.addEventListener\("hashchange", revealVideoTarget\)/);
+  assert.match(deepLink, /disclosure\.open = true/);
+  assert.match(deepLink, /sourceVideos\.scrollIntoView/);
+  assert.match(css, /\.temple-language-badge/);
+});
+
+test("Expanded chapters use full-width reading rather than stretching a narrow mobile image", () => {
+  const source = read("components/temple-studies.tsx");
+  const css = read("app/temple-studies.css");
+  assert.match(source, /<div className="temple-stage-reading">[\s\S]*?<\/div>\s*<details className="temple-stage-details">/);
+  assert.match(source, /<div className="temple-stage-expanded">/);
+  assert.match(css, /\.temple-stage-details \{ grid-column: 1 \/ -1; grid-row: 2/);
+  assert.match(css, /\.temple-stage-reading \{ grid-column: 2; grid-row: 1/);
+  assert.match(css, /\.temple-stage-cover \{ grid-column: 1; grid-row: 1/);
+  assert.match(css, /\.temple-stage-expanded \{ padding:/);
 });
