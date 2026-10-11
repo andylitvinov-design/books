@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { BarChart3, ClipboardList, House, UserRound } from 'lucide-react'
+import { BarChart3, ClipboardList, FileText, House, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
@@ -27,6 +27,7 @@ import {
 } from '@/lib/assessments/test-recommendations'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
+import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 export async function appFetch(path, body, method) {
@@ -241,6 +242,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   const nav = [
     ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', ''],
     ['portrait', c.portrait, '/portrait'],
+    ['analysis', locale === 'ru' ? 'Личный анализ' : 'Personal analysis', '/analysis'],
     ['monitoring', c.monitoring, '/monitoring'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
@@ -251,12 +253,14 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span>
         </Link>
+        {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={`${root}/practice`} prefetch={false}>{locale === 'ru' ? 'Мастер' : 'Master'}</Link>}
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
           <div>
             <Link href={root + '/portrait'} prefetch={false}>
               {c.portrait}
             </Link>
+            <Link href={root + '/analysis'} prefetch={false}>{locale === 'ru' ? 'Личный анализ' : 'Personal analysis'}</Link>
             <Link href={root + '/history'} prefetch={false}>
               {c.history}
             </Link>
@@ -309,7 +313,8 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
-          {page === 'practice' && <PracticeWorkspace locale={locale} />}
+          {page === 'analysis' && <PersonalAnalysisPanel locale={locale} reports={reportTimeline(data.savedReports)} />}
+          {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}
@@ -355,7 +360,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'documents' && recordId && (
             <SavedDocumentPage key={recordId} id={recordId} locale={locale} reload={load} />
           )}
-          {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
+          {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} />}
           {page === 'settings' && (
             <>
@@ -380,6 +385,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={locale === 'ru' ? '/?lang=ru' : '/?lang=en'} prefetch={false}><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
         <Link href={root} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
         <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
+        <Link href={root + '/analysis'} prefetch={false} aria-current={page === 'analysis' ? 'page' : undefined}><FileText aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Анализ' : 'Analysis'}</span></Link>
         <Link href={root + '/portrait'} prefetch={false} aria-current={page === 'portrait' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Профиль' : 'Profile'}</span></Link>
       </nav>}
     </main>
@@ -2094,6 +2100,7 @@ function Portrait({ data, locale }) {
         </div>
         {data.practitioner && <OwnerTools locale={locale} />}
         <ReportsFromAndy data={data} locale={locale} />
+        <ClientMaterialsFromAndy locale={locale} />
       </ProfileAssessmentOverview>
     </section>
   )
@@ -2168,6 +2175,23 @@ function LatestChange({ locale, results }) {
   const changes = latestCompatibleChange(results)
   if (!changes.length) return null
   return <section className="hh-section hh-panel"><h2>{locale === 'ru' ? 'Последнее изменение' : 'Latest change'}</h2><p className="hh-fine">{locale === 'ru' ? 'Последний совместимый замер рядом с предыдущим; это не объяснение причин или тренд.' : 'Latest compatible measurement beside the previous one; this does not state a cause or trend.'}</p><ul className="hh-change-list">{changes.map((change) => <li key={change.key}>{labelFor(change.key, locale)} <strong>{change.previous} → {change.value}</strong></li>)}</ul></section>
+}
+function ClientMaterialsFromAndy({ locale }) {
+  const [materials, setMaterials] = useState([])
+  useEffect(() => {
+    let active = true
+    appFetch('shared-materials')
+      .then(value => { if (active) setMaterials(Array.isArray(value.materials) ? value.materials : []) })
+      .catch(() => { if (active) setMaterials([]) })
+    return () => { active = false }
+  }, [])
+  if (!materials.length) return null
+  return <section className="hh-section hh-client-shared-materials" aria-label={locale === 'ru' ? 'Материалы от специалиста' : 'Materials from practitioner'}>
+    <p className="hh-kicker">{locale === 'ru' ? 'От Andy' : 'From Andy'}</p>
+    <h2>{locale === 'ru' ? 'Материалы для вас' : 'Your study materials'}</h2>
+    <p>{locale === 'ru' ? 'Ссылки от вашего специалиста. Сохранённые рецепты и счета находятся в истории кабинета.' : 'Links shared by your practitioner. Documents you explicitly saved are in your account history.'}</p>
+    <div className="hh-client-shared-materials-grid">{materials.map(material => <a key={material.id} href={material.url} target="_blank" rel="noopener noreferrer"><span>{material.title}</span><span aria-hidden="true">↗</span></a>)}</div>
+  </section>
 }
 function ReportsFromAndy({ data, locale }) {
   const reports = reportTimeline(data.savedReports).filter((report) => report.available !== false).slice(0, 3)
@@ -2499,7 +2523,7 @@ function SavedReportPage({ id, locale, reload }) {
     try {
       await appFetch('reports/' + id + '/remove', {})
       await reload()
-      router.replace('/' + locale + '/app/history')
+      router.replace('/' + locale + '/app/analysis')
     } catch (e) {
       setError(e)
       setBusy(false)
@@ -2510,8 +2534,8 @@ function SavedReportPage({ id, locale, reload }) {
       <section className="hh-panel">
         <h1>{ru ? 'Отчёт больше недоступен' : 'Report no longer available'}</h1>
         <p>{ru ? 'Ссылка в истории может оставаться как запись, но содержимое было отозвано или исходный отчёт больше недоступен.' : 'The history reference may remain, but the content was withdrawn or the source report is no longer available.'}</p>
-        <Link className="hh-primary" href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'Вернуться в историю' : 'Back to History'}
+        <Link className="hh-primary" href={'/' + locale + '/app/analysis'} prefetch={false}>
+          {ru ? 'К личному анализу' : 'Back to Personal Analysis'}
         </Link>
       </section>
     )
@@ -2521,12 +2545,13 @@ function SavedReportPage({ id, locale, reload }) {
     <section className="hh-panel">
       <p className="hh-kicker">{ru ? 'Сохранённый отчёт' : 'Saved report'}</p>
       <AssessmentReading record={value.report} locale={locale} />
+      <div className="hh-analysis-detail-download"><DownloadPractitionerReport reportId={id} locale={locale} /></div>
       <p className="hh-fine">
         {ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}
       </p>
       <div className="hh-actions">
-        <Link href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'История' : 'History'}
+        <Link href={'/' + locale + '/app/analysis'} prefetch={false}>
+          {ru ? 'Личный анализ' : 'Personal analysis'}
         </Link>
         <button type="button" disabled={busy} onClick={remove}>
           {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}

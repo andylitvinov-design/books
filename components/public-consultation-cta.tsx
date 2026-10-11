@@ -122,7 +122,7 @@ export function PublicConsultationCta({ locale, id }: { locale: "en" | "ru" | "e
         <span>{text.text}</span>
       </div>
       <div className="public-consultation-cta__actions">
-        <AcquisitionEventLink prefetch={false} href={whatsappUrl} rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "whatsapp" }} event={mode === "training" ? "contact_click" : "service_request_start"}>
+        <AcquisitionEventLink prefetch={false} href={whatsappUrl} rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "whatsapp" }} event={mode === "training" ? "academy_course_enquiry_click" : "whatsapp_handoff_click"}>
           <span data-contact-channel="whatsapp">{text.whatsapp}</span><ArrowUpRight aria-hidden="true" />
         </AcquisitionEventLink>
         <AcquisitionEventLink prefetch={false} href="https://t.me/AndyTherapist" rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "telegram" }} event="contact_click">

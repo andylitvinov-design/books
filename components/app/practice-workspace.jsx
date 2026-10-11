@@ -34,7 +34,7 @@ export function PracticeEntry({data,locale}){
   </section>
 }
 
-export default function PracticeWorkspace({locale}){
+export default function PracticeWorkspace({locale,ownerTools=null}){
   const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false)
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
@@ -58,7 +58,7 @@ export default function PracticeWorkspace({locale}){
     moderation:'Changes publish only after moderation.',verified:'Verified',partner:'Holistic House Partner',
   },[ru])
   async function act(fn){setBusy(true);setError('');try{await fn();await load()}catch(e){setError(e.code||e.message)}finally{setBusy(false)}}
-  if(!data)return <section className="hh-panel"><h1>{t.title}</h1><p>{error||'…'}</p></section>
+  if(!data)return <section className="hh-panel"><h1>{t.title}</h1>{ownerTools}{error&&<p role="alert">{error}</p>}</section>
   const p=data.practitioner
   const onboardingService=(data.services||[]).find(item=>item.pricingMode==='free'||item.draftCopy?.pricingMode==='free')||null
   const needsOnboarding=!p||(!Object.keys(p.profile||{}).length&&['draft','submitted','changes_requested'].includes(p.status))
@@ -68,6 +68,7 @@ export default function PracticeWorkspace({locale}){
       <h1>{needsOnboarding?t.becomeTitle:t.title}</h1><p>{t.intro}</p>
       {p&&<p><span className="hh-badge">{t.status}: {p.status}</span>{p.isPartner&&<> <span className="hh-badge">{t.partner}</span></>}</p>}
     </div>
+    {ownerTools && <div className="hh-master-clinical-tools"><p className="hh-kicker">{ru?'Личный рабочий кабинет · приватно':'Private client work · owner only'}</p>{ownerTools}</div>}
     {needsOnboarding?
       <MasterOnboarding
         key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}

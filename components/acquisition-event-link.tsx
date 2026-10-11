@@ -4,10 +4,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
+import type { PublicAnalyticsEvent } from "@/lib/public-analytics";
 
-type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number];
+type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
 
 type AcquisitionEventLinkProps = {
+  analyticsEvent?: PublicAnalyticsEvent;
   attributes?: Record<string, string>;
   children: ReactNode;
   className?: string;
@@ -25,10 +27,8 @@ function emit(event: AcquisitionEvent) {
   if (analyticsConsent !== "granted") return;
 
   window.dispatchEvent(new CustomEvent("holistic-house:acquisition", { detail: { event } }));
-  const dataLayer = (window as unknown as { dataLayer?: Array<{ event: string }> }).dataLayer;
-  dataLayer?.push({ event });
 }
 
-export function AcquisitionEventLink({ attributes, children, event, onClick, ...props }: AcquisitionEventLinkProps) {
-  return <Link {...props} {...attributes} onClick={() => { onClick?.(); emit(event); }}>{children}</Link>;
+export function AcquisitionEventLink({ analyticsEvent, attributes, children, event, onClick, ...props }: AcquisitionEventLinkProps) {
+  return <Link {...props} {...attributes} onClick={() => { onClick?.(); emit(event); if (analyticsEvent) emit(analyticsEvent); }}>{children}</Link>;
 }

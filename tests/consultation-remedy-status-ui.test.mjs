@@ -55,11 +55,11 @@ test('mobile consultation UI has compact controls, bounded dropdowns and a full-
 })
 
 
-test('new consultation remedy rows default to potency 30, 5 granules and three times per day and serialize edited values', () => {
+test('new consultation dosing fields stay blank until practitioner fills them, then preserve edits', () => {
   const [row] = editor.initialConsultationRows(null, remedies, 1)
-  assert.equal(row.potency, '30')
-  assert.equal(row.granules, '5')
-  assert.equal(row.timesPerDay, '3')
+  assert.equal(row.potency, '')
+  assert.equal(row.granules, '')
+  assert.equal(row.timesPerDay, '')
   row.remedySlug = 'aconitum'
   row.sourceStatus = 'canonical'
   row.selected = true
@@ -111,7 +111,7 @@ test('mixed rows serialize explicit Homeopathy and Bach item types without dose 
   rows[1] = { ...rows[1], selected: true, remedySlug: null, displayNameOverride: 'Mimulus', query: 'Mimulus', sourceStatus: 'custom', itemType: 'bach', potency: '', granules: '', timesPerDay: '' }
   const saved = editor.serializeConsultationRows(rows)
   assert.equal(saved[0].itemType, 'homeopathy')
-  assert.equal(saved[0].potency, '30')
+  assert.equal(saved[0].potency, '')
   assert.equal(saved[1].itemType, 'bach')
   assert.equal(saved[1].displayNameOverride, 'Mimulus')
   assert.equal(saved[1].potency, '')

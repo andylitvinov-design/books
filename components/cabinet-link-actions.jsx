@@ -11,7 +11,7 @@ export function CabinetLinkActions({ clientId, locale = 'en' }) {
     setBusy(true)
     setStatus('')
     try {
-      const response = await fetch(`/admin/api/clients/${clientId}/access`, { method: 'POST', cache: 'no-store' })
+      const response = await fetch(`/admin/api/clients/${clientId}/access`, { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: '{}' })
       if (!response.ok) throw new Error('Unavailable')
       const { selector, secret } = await response.json()
       const url = `${location.origin}/${locale}/client/${selector}#${secret}`

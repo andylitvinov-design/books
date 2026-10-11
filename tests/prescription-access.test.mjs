@@ -17,6 +17,7 @@ import {
   authorizePrescription,
   closePrescriptionSession,
   exchangePrescriptionAccess,
+  isSameOriginRequest,
   prescriptionAccessFailure,
 } from '../lib/prescriptions/session.js'
 
@@ -98,6 +99,34 @@ test('new and client prescription objects expose no bearer or private identifier
   assert.equal('id' in document, false)
   assert.equal('internalNotes' in document, false)
   assert.equal('access' in document, false)
+})
+
+test('same-origin authentication tolerates internal proxy URLs without admitting cross-site requests', () => {
+  const path = 'http://localhost:3100/admin/api/clients/test/access'
+  const good = headers => new Request(path, { method: 'POST', headers })
+  assert.equal(isSameOriginRequest(good({
+    origin: 'http://127.0.0.1:3100', host: '127.0.0.1:3100',
+    'sec-fetch-site': 'same-origin',
+  })), true)
+  assert.equal(isSameOriginRequest(good({
+    origin: 'https://holistichouse.vercel.app', host: 'internal.vercel.app',
+    'x-forwarded-host': 'holistichouse.vercel.app', 'sec-fetch-site': 'same-origin',
+  })), true)
+  assert.equal(isSameOriginRequest(good({
+    origin: 'https://evil.example', host: 'holistichouse.vercel.app',
+    'sec-fetch-site': 'cross-site',
+  })), false)
+  assert.equal(isSameOriginRequest(good({
+    origin: 'https://evil.example', host: 'evil.example',
+    'sec-fetch-site': 'cross-site',
+  })), false)
+  assert.equal(isSameOriginRequest(good({
+    origin: 'https://evil.example', host: 'evil.example',
+  })), false)
+  assert.equal(isSameOriginRequest(good({
+    origin: 'https://holistichouse.vercel.app/extra', host: 'holistichouse.vercel.app',
+    'sec-fetch-site': 'same-origin',
+  })), false)
 })
 
 test('exchanges a same-origin fragment credential for an opaque server session', async () => {

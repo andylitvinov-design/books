@@ -34,5 +34,18 @@ export function getSitemapEntries(baseUrl) {
 }
 
 export function getRobotsPolicy(baseUrl) {
-  return { rules: { userAgent: '*', allow: '/' }, sitemap: at(baseUrl, '/sitemap.xml') }
+  return {
+    rules: {
+      userAgent: '*',
+      allow: '/',
+      disallow: [
+        '/api', '/api/', '/admin', '/document-preview/',
+        '/en/app', '/ru/app', '/es/app',
+        '/en/client', '/ru/client', '/es/client',
+        '/en/report', '/ru/report', '/es/report',
+        '/en/prescriptions/', '/ru/prescriptions/', '/es/prescriptions/',
+      ],
+    },
+    sitemap: at(baseUrl, '/sitemap.xml'),
+  }
 }

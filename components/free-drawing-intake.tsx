@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, Check, ClipboardCopy, FileText, PenLine, Send } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { emitPublicAnalyticsEvent } from "@/lib/public-analytics";
 import styles from "./free-drawing-intake.module.css";
 
 type Topic = "personal" | "goal" | "business" | "wellbeing";
@@ -126,6 +127,7 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
   const [prepared, setPrepared] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
+  const questionnaireStarted = useRef(false);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("topic");
@@ -150,6 +152,10 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
   );
 
   function changeAnswer(setter: (value: string) => void, value: string) {
+    if (!questionnaireStarted.current) {
+      questionnaireStarted.current = true;
+      emitPublicAnalyticsEvent("free_questionnaire_started");
+    }
     setter(value);
     setPrepared(false);
     setCopied(false);
@@ -171,7 +177,7 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
       <p className={styles.eyebrow}><FileText size={17} aria-hidden="true" />{t.eyebrow}</p>
       <h2 id={titleId}>{t.title}</h2>
       <p className={styles.lead}>{t.lead}</p>
-      <form onSubmit={(event) => { event.preventDefault(); setPrepared(true); }} className={styles.form}>
+      <form onSubmit={(event) => { event.preventDefault(); setPrepared(true); emitPublicAnalyticsEvent("free_questionnaire_prepared"); }} className={styles.form}>
         <fieldset className={styles.topics}>
           <legend>{t.topicQuestion}</legend>
           <div className={styles.topicGrid}>
@@ -214,7 +220,7 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
         <textarea className={styles.preview} readOnly value={answers} rows={7} aria-label={t.ready}
           onFocus={event => event.currentTarget.select()} />
         <AcquisitionEventLink className={styles.whatsapp} href={whatsappUrl} prefetch={false} target="_blank" rel="noopener noreferrer"
-          event="service_request_start" onClick={() => { void copyAnswers(); }} attributes={{ "data-contact-channel": "whatsapp" }}>
+          event="whatsapp_handoff_click" onClick={() => { void copyAnswers(); }} attributes={{ "data-contact-channel": "whatsapp" }}>
           <Send size={18} aria-hidden="true" />{t.openWhatsapp}<ArrowUpRight size={18} aria-hidden="true" />
         </AcquisitionEventLink>
         <button type="button" onClick={() => { void copyAnswers(); }} className={styles.copyButton}>

@@ -28,8 +28,10 @@ test('sitemap includes all localized Homeopathy indexes and all 208 paired remed
 })
 
 test('robots advertises the generated sitemap', () => {
-  assert.deepEqual(getRobotsPolicy('https://example.test'), {
-    rules: { userAgent: '*', allow: '/' },
-    sitemap: 'https://example.test/sitemap.xml',
-  })
+  const robots = getRobotsPolicy('https://example.test')
+  assert.equal(robots.rules.userAgent, '*')
+  assert.equal(robots.rules.allow, '/')
+  assert.equal(robots.sitemap, 'https://example.test/sitemap.xml')
+  assert.ok(robots.rules.disallow.includes('/admin'))
+  assert.ok(robots.rules.disallow.includes('/en/client'))
 })

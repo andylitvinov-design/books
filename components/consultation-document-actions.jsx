@@ -23,7 +23,7 @@ export function ConsultationDocumentActions({
   const [copiedLocale, setCopiedLocale] = useState(null)
 
   if (!cache.current) cache.current = createDocumentLinkCache(async () => {
-    const response = await fetch(`/admin/api/documents/${recordId}/client-link`, { method: 'POST', credentials: 'same-origin', cache: 'no-store' })
+    const response = await fetch(`/admin/api/documents/${recordId}/client-link`, { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: '{}' })
     if (!response.ok) throw new Error('Unavailable')
     return response.json()
   })
