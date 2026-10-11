@@ -6,33 +6,31 @@ import test from "node:test";
 const root = process.cwd();
 const source = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("home keeps direct three-service choices ahead of introductory video", () => {
+test("home presents the same four core offers as Services before videos", () => {
   const home = source("components", "holistic-house-home.tsx");
-  const cards = home.indexOf('<PersonalWorkJourney locale={locale} variant="compact" />');
+  const cards = home.indexOf('<ServicesSolutions locale={locale} variant="home" />');
   const video = home.indexOf("{introVideo ? (");
   assert.ok(cards > 0 && video > cards);
+  assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
 });
 
-test("Services prioritizes concrete client problems and a free drawing report, not a free call", () => {
-  const s = source("app", "[locale]", "services", "page.tsx");
-  const solutions = source("components", "services-solutions.tsx");
-  const hero = s.indexOf("<ServicesConversionHero");
-  const choices = s.indexOf("<ServicesSolutions");
-  const marketplace = s.indexOf('<details className={solutionStyles.extra} id="available-services">');
-  assert.ok(hero >= 0 && choices > hero && marketplace > choices);
-  assert.doesNotMatch(s, /<CatalogShowcase|<PersonalWorkJourney locale/);
-  assert.match(s, /services-marketplace/);
-  assert.match(s, /free-wu-xing-diagnostic/);
-  assert.match(s, /<PersonalTestimonials/);
-  assert.match(solutions, /What would you like to change/);
-  assert.match(solutions, /Что вы хотели бы изменить/);
-  assert.match(solutions, /Free drawing assessment \+ written report/);
-  assert.match(solutions, /Бесплатная диагностика рисунка \+ отчёт/);
-  for (const topic of ["wellbeing", "personal", "goal", "business"]) {
-    assert.match(solutions, new RegExp('topic: "' + topic + '"'));
-  }
-  assert.match(solutions, /free-situation-review\?topic=/);
-  assert.doesNotMatch(solutions, /Start with a free conversation|Первый разговор — бесплатно/);
+test("Services leads with four benefits, not step-by-step drawing instructions or prices", () => {
+  const page = source("app", "[locale]", "services", "page.tsx");
+  const offers = source("data", "core-service-offers.ts");
+  const ui = source("components", "services-solutions.tsx");
+  const hero = source("components", "services-conversion-hero.tsx");
+  const choiceIndex = page.indexOf("<ServicesSolutions");
+  const testimonials = page.indexOf("<PersonalTestimonials");
+  const extra = page.indexOf('id="available-services"');
+  assert.ok(choiceIndex > 0 && testimonials > choiceIndex && extra > testimonials);
+  assert.match(ui, /coreServiceOffers\(locale\)\.map/);
+  for(const id of ["situation","dao","alchemy","hypnotherapy"])
+    assert.ok(offers.includes('id: "' + id + '"'), id);
+  for(const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
+    assert.ok(offers.includes('route: "' + route + '"'), route);
+  assert.match(hero, /Get a free situation review/);
+  assert.doesNotMatch(hero, /Draw by hand on paper|€50|€100/);
+  assert.doesNotMatch(page, /€50|€100/);
 });
 
 test("three service directions link to real pages, not implied stages", () => {
@@ -84,15 +82,15 @@ test("service links remain tappable, mobile-safe and keyboard accessible", () =>
   assert.match(detailCss, /grid-template-columns:1fr/);
 });
 
-test("Services hero emphasizes the free questionnaire and written report instead of a free call", () => {
+test("Services hero sells the options and points to free review without diagnostic steps", () => {
   const hero = source("components", "services-conversion-hero.tsx");
   const css = source("components", "services-conversion-hero.module.css");
-  for (const phrase of [
-    "Your free situation assessment starts with a drawing",
-    "Бесплатная диагностика ситуации по вашему рисунку",
-    "free-situation-review", "Start my free drawing assessment", "Начать бесплатную диагностику",
-  ]) assert.ok(hero.includes(phrase), phrase);
-  assert.doesNotMatch(hero, /selfCheck|self_check_start|#available-services|free personal conversation/i);
+  assert.match(hero, /Four ways to explore your question/);
+  assert.match(hero, /Больше ясности, опоры и вариантов движения/);
+  assert.match(hero, /free-situation-review/);
+  assert.match(hero, /Explore all four services/);
+  assert.match(hero, /href="#solutions"/);
+  assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper|€50/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /min-height:60px/);
 });
