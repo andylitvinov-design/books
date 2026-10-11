@@ -23,6 +23,7 @@ import {
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { authorizeCabinetRequest } from '@/lib/clients/session'
 import { authorizePrescription, prescriptionSessionCookieName } from '@/lib/prescriptions/session'
 import { issueTrustedAdminSession } from '@/lib/prescriptions/admin-session'
 import {
@@ -205,9 +206,18 @@ async function handle(request, { params }) {
       } else if (body.sourceKind === 'legacy_document') {
         if (typeof body.selector !== 'string') throw new AppError('DOCUMENT_UNAVAILABLE', 404)
         const store = getPrescriptionStore()
-        const token = request.cookies.get(prescriptionSessionCookieName())?.value
-        const record = await authorizePrescription(store, body.selector, token)
-        if (!record?.clientId) throw new AppError('DOCUMENT_UNAVAILABLE', 404)
+        let record
+        if (body.sourceId !== undefined) {
+          // The stable client-cabinet link authorizes only a document owned by that client.
+          // A Google save still needs separate user authentication and confirmation.
+          requireUUID(body.sourceId)
+          const access = await authorizeCabinetRequest(body.selector, body.sourceId)
+          record = access?.record
+        } else {
+          const token = request.cookies.get(prescriptionSessionCookieName())?.value
+          record = await authorizePrescription(store, body.selector, token)
+        }
+        if (!record?.clientId || record.status !== 'active') throw new AppError('DOCUMENT_UNAVAILABLE', 404)
         intent = await createLegacyDocumentSaveIntent(config, record, body.operationId)
       } else {
         throw new AppError('SOURCE_UNAVAILABLE', 400)
