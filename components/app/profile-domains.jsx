@@ -22,6 +22,7 @@ const WORDS = {
     profileIntro: 'A dated view of practitioner-shared information. Nothing is inferred from unrelated test scores or report text.',
     homeoIntro: 'Your most recently shared remedy selection and earlier written recommendations. This shows what was issued, not what you currently take.',
     resourceIntro: 'Your individual resource analysis in the author’s symbolic Wu Xing model. No five-element values are calculated without a practitioner report.',
+    elementLegend: 'Five perspectives · illustrative guide, not a reading', elementNames: ['Wood','Fire','Earth','Metal','Water'],
     hypnoIntro: 'Personal reflections or exercises shared by your hypnotherapist. The plan is not generated automatically.',
     current: 'Most recently shared selection', datedChanges: 'Previous selections', reportHistory: 'Reports and observations over time',
     noPsy: 'No psychological test results are available in this cabinet yet.',
@@ -52,6 +53,7 @@ const WORDS = {
     profileIntro: 'Записи и отчёты от специалиста с сохранением дат. Никаких выводов из произвольных цифр или текста.',
     homeoIntro: 'Последний переданный подбор препаратов и история рекомендаций. Это история выданных документов, а не подтверждение текущего приёма.',
     resourceIntro: 'Индивидуальная диагностика ресурсов в авторской символической модели пяти стихий У-Син. Показатели не вычисляются без отчёта специалиста.',
+    elementLegend: 'Пять стихий · ориентир по модели, не ваш результат', elementNames: ['Дерево','Огонь','Земля','Металл','Вода'],
     hypnoIntro: 'Личные рекомендации или упражнения, переданные гипнотерапевтом. Никаких автоматически составленных программ.',
     current: 'Последний переданный подбор', datedChanges: 'Предыдущие подборы', reportHistory: 'Отчёты и наблюдения по датам',
     noPsy: 'В этом кабинете пока нет результатов психологических тестов.',
@@ -252,6 +254,10 @@ export function ProfileDomains({
           <RemedyHistory updates={updates} locale={locale} selector={selector} t={t} />
           {homeopathicReports.length > 0 && <ReportsHistory reports={homeopathicReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noHomeo} t={t} />}
         </>}
+        {active === 'wu_xing' && <div className="hh-domain-elements" aria-label={t.elementLegend}>
+          <p>{t.elementLegend}</p>
+          <div className="hh-domain-element-grid">{t.elementNames.map((name, index) => <span key={name} className={'hh-domain-element hh-domain-element-' + index}>{name}</span>)}</div>
+        </div>}
         {(external || fetchState !== 'loading') && active === 'wu_xing' && <ReportsHistory reports={wuReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noWu} t={t} />}
         {(external || fetchState !== 'loading') && active === 'hypnotherapy' && <ReportsHistory reports={hypnoReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noHypno} t={t} />}
         <div className="hh-domain-next">
