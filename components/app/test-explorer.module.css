@@ -640,3 +640,7 @@
 /* Canonical warm terracotta for all Test Explorer primary start actions. */
 .explorer .quickPrimary,.explorer .battery .primary,.explorer .primary{background:#bf4f2e!important;border-color:#bf4f2e!important;color:#fff!important;box-shadow:0 9px 23px #92371d20}
 .explorer .quickPrimary:hover:not(:disabled),.explorer .battery .primary:hover:not(:disabled),.explorer .primary:hover:not(:disabled){background:#a84227!important;border-color:#a84227!important}
+
+/* What the instrument is, where it comes from, and its professional evidence level. */
+.explorer .rowBody>.methodology{color:#77685e;font-size:.77rem;line-height:1.5;margin:5px 0 8px;font-weight:400}
+@media(max-width:760px){.explorer .rowBody>.methodology{-webkit-line-clamp:5;line-clamp:5;overflow:hidden;font-size:.73rem;line-height:1.47}}
