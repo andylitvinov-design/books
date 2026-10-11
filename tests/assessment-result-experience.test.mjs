@@ -48,7 +48,7 @@ test('CBI Personal Burnout is interpreted as exhaustion, not just a 0–100 numb
   assert.match(low.sections[0].steps[0], /maintain your balance/)
   assert.match(high.sections[0].steps[0], /For 7 days/)
   assert.match(high.sections[0].followUp, /healthcare professional/)
-  assert.match(buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'ru').sections[0].steps.join(' '), /недел/)
+  assert.match(buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'ru').sections[0].steps.join(' '), /7 дней/)
 })
 
 test('high resource measurements receive maintenance rather than deficit advice', () => {
