@@ -109,12 +109,12 @@ test('public and signed-in routes share the complete Test Explorer rather than a
 
 test('active assessment inventory is classified for style and length filters', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 72)
+  assert.equal(active.length, 74)
   assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 54)
-  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 18)
+  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 20)
   assert.equal(active.filter((item) => item.testLength === 'short').length, 29)
-  assert.equal(active.filter((item) => item.testLength === 'medium').length, 37)
-  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 6)
+  assert.equal(active.filter((item) => item.testLength === 'medium').length, 38)
+  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 7)
   assert.ok(active.every((item) => TEST_STYLE_FILTERS.some((filter) => filter.key === item.testStyle)))
   assert.ok(active.every((item) => TEST_LENGTH_FILTERS.some((filter) => filter.key === item.testLength)))
 })
@@ -136,7 +136,7 @@ test('style and length filters combine before recommendation ranking', () => {
   })
   assert.deepEqual(
     professionalMedium.map((definition) => definition.key).sort(),
-    ['cbi-client','cbi-personal','cbi-work','cdc-healthy-days-symptoms','cdc-hrqol-4','erq', 'gad-7', 'phq-9'].sort(),
+    ['cbi-client','cbi-personal','cbi-work','cdc-healthy-days-symptoms','cdc-hrqol-4','erq', 'gad-7', 'phq-9', 'rses-10'].sort(),
   )
 
   const engagingComprehensive = rankAssessmentDefinitions(definitions, {
