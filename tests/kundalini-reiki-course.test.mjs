@@ -60,6 +60,9 @@ test("text comes from the specified three websites and the uploaded manual, not 
   assert.match(data, /kundaliniLessons: KundaliniLesson\[\]/);
   assert.deepEqual((data.match(/^\s+number: [123],$/gm) || []).map(s => Number(s.match(/[123]/)[0])), [1,2,3]);
   assert.match(data, /kundaliniExtraAttunements/);
+  assert.match(data, /stoneNamesAdvanced/);
+  assert.match(data, /Moldavite/);
+  assert.match(data, /Double Terminated Clear Quartz/);
   for (const name of ["Diamond Reiki", "Crystalline Reiki", "DNA Reiki", "Location Reiki", "Past life Reiki", "Balance"]) {
     assert.ok(data.includes(name), "the source named this traditional attunement: " + name);
   }
