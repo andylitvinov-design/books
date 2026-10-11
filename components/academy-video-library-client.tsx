@@ -40,7 +40,7 @@ const ui = {
     ruBoundary: "From here, the original videos are in Russian",
     enAudio: "English audio",
     ruAudio: "Russian audio",
-    choose: "Choose a module",
+    modules: "modules",
     videos: "videos",
     video: "video",
     programs: "programs",
@@ -62,7 +62,7 @@ const ui = {
     ruBoundary: "Начиная отсюда — оригинальные видео на русском языке",
     enAudio: "Английская речь",
     ruAudio: "Русская речь",
-    choose: "Выберите модуль",
+    modules: "модулей",
     videos: "видео",
     video: "видео",
     programs: "программы",
@@ -84,7 +84,7 @@ const ui = {
     ruBoundary: "A partir de aquí, los vídeos originales están en ruso",
     enAudio: "Audio en inglés",
     ruAudio: "Audio en ruso",
-    choose: "Elige un módulo",
+    modules: "módulos",
     videos: "vídeos",
     video: "vídeo",
     programs: "programas",
@@ -192,7 +192,7 @@ export function AcademyVideoLibraryClient({
                       <span className={styles.programPoster}><Image src={program.poster} width={100} height={68} sizes="84px" alt="" /></span>
                       <span className={styles.programCopy}>
                         <strong>{program.title}</strong>
-                        <small>{program.courses.length} {t.choose.toLowerCase()} · {programCount} {t.videos}</small>
+                        <small>{program.courses.length} {t.modules} · {programCount} {t.videos}</small>
                       </span>
                       <ChevronDown className={styles.chevron + (expanded ? " " + styles.rotate : "")} aria-hidden="true" />
                     </button>
