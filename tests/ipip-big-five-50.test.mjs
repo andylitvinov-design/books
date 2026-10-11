@@ -47,7 +47,7 @@ test('IPIP-50 original English questions, permission and immutable version are s
 })
 
 test('each of the five 10-item traits has correct official reverse coding and raw bounds', () => {
-  assert.deepEqual(definition.scoring.dimensions.map(d => d.key), factorNames.map(f => 'trait.' + f))
+  assert.deepEqual(definition.scoring.dimensions.map(d => d.key), factorNames.map(f => 'trait.ipip50.' + f))
   assert.deepEqual(definition.scoring.dimensions.map(d => d.reverseItems.length), [5, 4, 4, 8, 3])
   const minAnswers = {}, maxAnswers = {}, midAnswers = {}
   for (const dim of definition.scoring.dimensions) {
