@@ -2,8 +2,8 @@
 
 import { ChevronDown, ExternalLink, Film, Play } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useId, useRef, useState } from "react";
-import { parseSiteVideoSource, siteVideoWatchUrl, type PublishedSiteVideo } from "@/lib/site-videos/model";
+import { useEffect, useRef, useState } from "react";
+import { parseSiteVideoSource, siteVideoTitleId, siteVideoWatchUrl, type PublishedSiteVideo } from "@/lib/site-videos/model";
 import styles from "./site-video-minimal.module.css";
 
 export type SiteVideoPlayerProps = {
@@ -101,7 +101,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   // Optimized posters load from our own origin to avoid mobile third-party image blocking.
   const [poster, setPoster] = useState<"maxres" | "hq" | "direct" | null>(compact ? "hq" : "maxres");
   const playerRef = useRef<HTMLIFrameElement>(null);
-  const titleId = useId();
+  const titleId = siteVideoTitleId(video, locale);
   const duration = videoDuration(video.durationSeconds);
   const watchUrl = siteVideoWatchUrl(video);
   const isHeygen = Boolean(video.heygenId);
