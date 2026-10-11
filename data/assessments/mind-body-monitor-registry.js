@@ -218,6 +218,65 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
   row('promis-sleep-impairment-4a', 'sleep_recovery', 'sleep', 'B', 'PROMIS Sleep-Related Impairment Short Form 4a', 'PROMIS Sleep Impact 4a', 4, '~2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://www.healthmeasures.net/explore-measurement-systems/promis/obtain-administer-measures', rightsNote: 'HEAP/electronic permission required for commercial portal; not runnable' }),
   row('neuro-qol-cognitive-8', 'body_fatigue_cognition', 'body', 'B', 'Neuro-QoL Cognitive Function Short Form 8', 'Neuro-QoL Cog 8', 8, '~3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://www.healthmeasures.net/images/PROMIS/Terms_of_Use_HM_approved_1-12-17_-_Updated_Copyright_Notices.pdf', rightsNote: 'Northwestern HealthMeasures copyright; digital reproduction/electronic integration permission required' }),
   row('promis-companionship-4a', 'relationships_support', 'relationships', 'B', 'PROMIS Companionship Short Form 4a', 'PROMIS Companionship', 4, '~2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://www.healthmeasures.net/explore-measurement-systems/promis/obtain-administer-measures', rightsNote: 'HEAP/electronic permission required for commercial portal; not runnable' }),
+
+  // Psychotherapy-specific measures absent from the initial research registry.
+  // Reference metadata only: no questions, scoring or public start actions without verified
+  // electronic/commercial permission, appropriate clinical safeguards and a source-validated form.
+  row('iip-32', 'relationships_support', 'relationships', 'A', 'Inventory of Interpersonal Problems – 32', 'IIP-32', 32, '7–12 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://shop.mindgarden.info/113-inventory-of-interpersonal-problems',
+    rightsNote: 'Mind Garden licenses each administration, including non-Mind Garden digital forms. No item reproduction without purchase.',
+  }),
+  row('iip-64', 'relationships_support', 'relationships', 'B', 'Inventory of Interpersonal Problems – 64', 'IIP-64', 64, '10–15 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://shop.mindgarden.info/113-inventory-of-interpersonal-problems',
+    rightsNote: 'Mind Garden per-administration commercial/digital licence required.',
+  }),
+  row('wai-sr-12', 'routine_outcomes', 'therapy', 'A', 'Working Alliance Inventory – Short Revised', 'WAI-SR', 12, '3–5 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://www.psychotherapyresearch.org/store/viewproduct.aspx?id=24834231',
+    rightsNote: 'Society for Psychotherapy Research paid clinical licence; both client/therapist form and qualified workflow must be reviewed.',
+  }),
+  row('srs-pcoms-4', 'routine_outcomes', 'therapy', 'A', 'Session Rating Scale – Therapeutic Alliance', 'SRS / PCOMS', 4, '1–2 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'PCOMS/Session Rating Scale administration and proprietary scoring require commercial-use licence review. Different from Social Responsiveness Scale (SRS-2).',
+  }),
+  row('ysq-s3-90', 'clinician_reference', 'personality', 'A', 'Young Schema Questionnaire – Short Form 3', 'YSQ-S3', 90, '15–25 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Schema-therapy original wording, translation rights, version, scoring and digital commercial permission must be reviewed; not for unsupervised self-diagnosis.',
+  }),
+  row('smi-118', 'clinician_reference', 'personality', 'B', 'Schema Mode Inventory – Short Form', 'SMI', 118, '20–30 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Licensed/original items, 14 mode scales, translations and electronic reproduction not verified. Clinical interpretation required.',
+  }),
+  row('rfq-8', 'emotion_recovery', 'resources', 'B', 'Reflective Functioning Questionnaire – 8 item', 'RFQ-8', 8, '2–3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Mentalization-oriented questionnaire: obtain author permission for commercial electronic use, version-specific scoring and translation.',
+  }),
+  row('des-ii-28', 'trauma_ptsd', 'trauma', 'B', 'Dissociative Experiences Scale – II', 'DES-II', 28, '5–10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Dissociation screening requires source scoring, rights confirmation and trauma-informed qualified review; no casual public quiz.',
+  }),
+  row('ecr-rs-9', 'relationships_support', 'relationships', 'A', 'Experiences in Close Relationships – Relationship Structures', 'ECR-RS', '9 per relationship', '3–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', {
+    rightsNote: 'Relationship-specific attachment variant distinct from ECR-R-36. Confirm complete original forms, targets, scoring and online permission.',
+  }),
+  row('csq-8', 'routine_outcomes', 'therapy', 'B', 'Client Satisfaction Questionnaire – 8', 'CSQ-8', 8, '2–3 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Service satisfaction outcome measure; licensing and client/therapist independence required. Not a symptom or diagnostic test.',
+  }),
+  row('hads-14', 'mood_anxiety', 'mood', 'B', 'Hospital Anxiety and Depression Scale', 'HADS', 14, '3–5 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Publisher-controlled use and scoring; do not publish protected questionnaires.',
+  }),
+  row('aas-collins-read-18', 'relationships_support', 'relationships', 'B', 'Adult Attachment Scale – Collins & Read', 'AAS', 18, '4–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', {
+    rightsNote: 'Attachment scale; original wording, 3-subscale key, permissions and validated language need review.',
+  }),
+  row('ace-10', 'trauma_ptsd', 'trauma', 'C', 'Adverse Childhood Experiences Questionnaire', 'ACE-10', 10, '3–5 min', RIGHTS_STATUS.MANAGED_SAFETY_ONLY, 'practitioner', {
+    rightsNote: 'Adversity exposure, not PTSD diagnosis and not an automatic personalized treatment selector. Trauma-informed informed consent and professional support needed.',
+  }),
+  row('beaq-15', 'emotion_recovery', 'resources', 'B', 'Brief Experiential Avoidance Questionnaire', 'BEAQ', 15, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', {
+    rightsNote: 'Experiential avoidance relevant to ACT; publication alone does not grant permission for electronic commercial items.',
+  }),
+  row('ius-12', 'anxiety_deep_dive', 'mood', 'B', 'Intolerance of Uncertainty Scale – 12', 'IUS-12', 12, '3–4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', {
+    rightsNote: 'Original 12-item version, scoring key and online-commercial terms not confirmed.',
+  }),
+  row('ptgi-21', 'trauma_ptsd', 'trauma', 'C', 'Posttraumatic Growth Inventory', 'PTGI', 21, '5–7 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Posttraumatic growth is not evidence that trauma was beneficial; verify authorized items and trauma-informed administration.',
+  }),
+  row('fad-gf-12', 'relationships_support', 'relationships', 'B', 'McMaster Family Assessment Device – General Functioning', 'FAD-GF', 12, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Family functioning scale; rights, version, scoring, translations and respondent permissions require review.',
+  }),
+
 ])
 
 export const PRODUCT_MONITOR_MODULES = Object.freeze([
