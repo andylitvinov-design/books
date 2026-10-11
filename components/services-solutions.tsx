@@ -1,247 +1,91 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, ChevronDown, Check } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
+import { coreServiceOffers } from "@/data/core-service-offers";
 import type { Locale } from "@/data/remedies";
 import styles from "./services-solutions.module.css";
 
 const copy = {
   en: {
-    eyebrow: "START WITH YOUR SITUATION",
-    title: "What would you like to change?",
-    lead: "Choose what fits. Start with a free drawing assessment and written report.",
-    outcomeLabel: "What we can explore",
-    methodsLabel: "Possible approaches",
-    cardAction: "Free drawing assessment",
-    solutions: [
-      {
-        title: "Low energy or constant tension",
-        summary: "Explore what drains you and where to find support.",
-        outcomes: ["Notice possible sources of strain", "Explore resources and boundaries"],
-        method: "Guided imagery; optional complementary homeopathy discussion.",
-        topic: "wellbeing",
-        image: "/images/holistic-house/homeopathy-still-life.svg",
-      },
-      {
-        title: "Relationships & emotions",
-        summary: "Explore recurring reactions and difficult connections.",
-        outcomes: ["Notice triggers and repeating patterns", "Explore boundaries and options"],
-        method: "Imagery and systemic exploration.",
-        topic: "personal",
-        image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
-      },
-      {
-        title: "A goal that feels out of reach",
-        summary: "Clarify what may be holding you back.",
-        outcomes: ["Identify perceived obstacles", "Consider realistic next steps"],
-        method: "Imagery and constellations.",
-        topic: "goal",
-        image: "/images/holistic-house/hero-olive-incense.webp",
-      },
-      {
-        title: "Work & difficult decisions",
-        summary: "Explore options before an important decision.",
-        outcomes: ["Map roles and priorities", "Compare options and what to verify"],
-        method: "Business constellations; not a substitute for expert advice.",
-        topic: "business",
-        image: "/images/holistic-house/video-posters/services-en-v2.webp",
-      },
-    ],
-    bridgeEyebrow: "YOUR FIRST STEP",
-    bridgeTitle: "Free drawing assessment + written report",
-    bridgeText: "Fill out a coaching form and hand-draw ME, GOAL and PROBLEM. I’ll send a written review. Paid calls: €50 / 30 min or €100 / 60 min.",
-    bridgeButton: "Start free drawing assessment",
-    processEyebrow: "HOW IT WORKS",
-    processTitle: "What you actually receive",
-    steps: [
-      { title: "1. Coaching form", text: "Describe the problem and goal." },
-      { title: "2. Hand drawing", text: "Draw ME, GOAL and PROBLEM on paper." },
-      { title: "3. Written report", text: "Receive my personal written review." },
-    ],
-    scope: "This is a symbolic situation review, not a medical or mental-health diagnosis. Outcomes are not guaranteed. Live consultations are paid separately.",
-    methodEyebrow: "THE METHODS, EXPLAINED",
-    methodTitle: "I choose the approach around your question",
-    methodLead: "You don't need to choose a method before we speak.",
-    detailAction: "Understand this approach",
+    eyebrow: "FOUR WAYS TO WORK TOGETHER",
+    title: "Choose the support that fits your question",
+    homeTitle: "How I can help",
+    lead: "Two free ways to begin, or a personal session and a guided-imagery course. Choose by the result you want — not by the technique.",
+    homeLead: "Two free starting points and two personal-work options.",
+    uncertain: "Not sure which one fits?",
+    uncertainText: "Start with the free situation review. You can consider the other options afterward.",
+    uncertainAction: "Get a free situation review",
+    more: "Curious about the methods?",
+    moreText: "Systemic constellations, guided imagery and homeopathy are approaches used in specific sessions, not extra services you must choose on this page.",
     methods: [
-      {
-        title: "Guided imagery & hypnotherapy",
-        desc: "A reflective conversation using attention, imagery and inner parts to explore emotional responses and repeating patterns.",
-        href: "imagery-therapy",
-      },
-      {
-        title: "Systemic & business constellations",
-        desc: "A way to map roles, relationships, competing needs and possible choices around a personal or work situation.",
-        href: "systemic-constellations",
-      },
-      {
-        title: "Psychohomeopathy & personal resources",
-        desc: "A complementary conversation about how you feel and what supports you. Homeopathy has no reliable evidence for treating medical conditions.",
-        href: "psychohomeopathy",
-      },
+      {label:"Systemic constellations", href:"systemic-constellations"},
+      {label:"Guided imagery", href:"imagery-therapy"},
+      {label:"Psychohomeopathy", href:"psychohomeopathy"},
     ],
-    expandLabel: "How do these methods work? Read brief explanations",
+    disclaimer: "The DAO profile is a non-medical symbolic assessment. Homeopathy has no reliable evidence for treating medical or mental-health conditions, and none of these services replaces standard or urgent care.",
   },
   ru: {
-    eyebrow: "НАЧНИТЕ СО СВОЕГО ЗАПРОСА",
-    title: "Что вы хотели бы изменить?",
-    lead: "Выберите ситуацию. Бесплатно получите разбор рисунка с письменным отчётом.",
-    outcomeLabel: "Что можно прояснить",
-    methodsLabel: "Возможные методы",
-    cardAction: "Диагностика по рисунку",
-    solutions: [
-      {
-        title: "Нет сил и много напряжения",
-        summary: "Исследовать источники напряжения и возможную поддержку.",
-        outcomes: ["Замечать повторяющиеся реакции", "Исследовать ресурсы и границы"],
-        method: "Образная работа; при желании — беседа о гомеопатии.",
-        topic: "wellbeing",
-        image: "/images/holistic-house/homeopathy-still-life.svg",
-      },
-      {
-        title: "Отношения и эмоции",
-        summary: "Разобраться в повторяющихся реакциях и отношениях.",
-        outcomes: ["Замечать триггеры и привычные роли", "Рассмотреть границы и варианты"],
-        method: "Образы и системное исследование.",
-        topic: "personal",
-        image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
-      },
-      {
-        title: "Цель без движения",
-        summary: "Прояснить препятствия и возможный следующий шаг.",
-        outcomes: ["Уточнить цель и затруднения", "Наметить реалистичный шаг"],
-        method: "Образы и расстановки.",
-        topic: "goal",
-        image: "/images/holistic-house/hero-olive-incense.webp",
-      },
-      {
-        title: "Работа и сложные решения",
-        summary: "Увидеть альтернативы перед важным решением.",
-        outcomes: ["Разобрать роли и приоритеты", "Сравнить варианты и риски"],
-        method: "Бизнес-расстановки как дополнение к экспертной оценке.",
-        topic: "business",
-        image: "/images/holistic-house/video-posters/services-en-v2.webp",
-      },
-    ],
-    bridgeEyebrow: "ВАШ ПЕРВЫЙ ШАГ",
-    bridgeTitle: "Бесплатная диагностика рисунка + отчёт",
-    bridgeText: "Заполните коучинг-форму и нарисуйте «Я — цель — проблема» ручкой. Я пришлю отчёт. Живые сессии отдельно: €50 / 30 мин или €100 / 60 мин.",
-    bridgeButton: "Начать диагностику по рисунку",
-    processEyebrow: "КАК ЭТО ПРОХОДИТ",
-    processTitle: "Что именно вы получите",
-    steps: [
-      { title: "1. Коучинг-форма", text: "Опишите проблему и цель." },
-      { title: "2. Рисунок ручкой", text: "Нарисуйте «Я», «Цель», «Проблема»." },
-      { title: "3. Письменный отчёт", text: "Получите мой личный разбор." },
-    ],
-    scope: "Это символический разбор ситуации, не медицинская или психиатрическая диагностика. Результаты не гарантируются; платные сессии необязательны.",
-    methodEyebrow: "МЕТОДЫ — ТОЛЬКО ПОЯСНЕНИЕ",
-    methodTitle: "Метод подбирается под задачу",
-    methodLead: "Не нужно выбирать метод до нашей беседы.",
-    detailAction: "Подробнее о подходе",
+    eyebrow: "ЧЕТЫРЕ ОСНОВНЫХ ПРЕДЛОЖЕНИЯ",
+    title: "Выберите помощь под свой запрос",
+    homeTitle: "Чем я могу помочь",
+    lead: "Две бесплатные возможности для начала, личная сессия и курс образной работы. Выбирайте по результату, а не по методу.",
+    homeLead: "Два бесплатных варианта и два формата личной работы.",
+    uncertain: "Не знаете, что выбрать?",
+    uncertainText: "Начните с бесплатного разбора ситуации. Остальные варианты можно обсудить позже.",
+    uncertainAction: "Бесплатный разбор ситуации",
+    more: "Хотите подробнее о методах?",
+    moreText: "Системные расстановки, образная работа и гомеопатия — инструменты отдельных сессий, а не обязательные дополнительные услуги.",
     methods: [
-      {
-        title: "Образная работа и гипнотерапия",
-        desc: "Бережное исследование эмоциональных реакций и повторяющихся схем через внимание, образы и внутренние части.",
-        href: "imagery-therapy",
-      },
-      {
-        title: "Системные и бизнес-расстановки",
-        desc: "Исследование ролей, отношений, противоречивых потребностей и вариантов решения личной или деловой ситуации.",
-        href: "systemic-constellations",
-      },
-      {
-        title: "Психогомеопатия и личные ресурсы",
-        desc: "Дополнительная беседа о самочувствии и ресурсах. Эффективность гомеопатии для лечения заболеваний не подтверждена надёжными доказательствами.",
-        href: "psychohomeopathy",
-      },
+      {label:"Системные расстановки", href:"systemic-constellations"},
+      {label:"Образная работа", href:"imagery-therapy"},
+      {label:"Психогомеопатия", href:"psychohomeopathy"},
     ],
-    expandLabel: "Как устроены методы? Короткие объяснения",
+    disclaimer: "Дао-профиль — символическая оценка ресурса, не медицинская диагностика. Эффективность гомеопатии для лечения заболеваний не подтверждена надёжными доказательствами. Эти форматы не заменяют обычную и неотложную медицинскую помощь.",
   },
 } as const;
 
-export function ServicesSolutions({ locale }: { locale: Locale }) {
+export function ServicesSolutions({ locale, variant = "services" }: { locale: Locale; variant?: "services" | "home" }) {
   const t = copy[locale];
+  const isHome = variant === "home";
   return (
-    <>
-      <section className={styles.solutions} id="solutions" aria-labelledby="services-solutions-title">
-        <div className={styles.header}>
-          <p className={styles.eyebrow}>{t.eyebrow}</p>
-          <h2 id="services-solutions-title">{t.title}</h2>
-          <p className={styles.intro}>{t.lead}</p>
-        </div>
-        <div className={styles.grid}>
-          {t.solutions.map((solution) => {
-            return (
-              <article className={styles.card} key={solution.topic} id={solution.topic}>
-                <div className={styles.cardTop}>
-                  <div className={styles.photo}>
-                    <Image src={solution.image} alt="" fill sizes="(max-width: 760px) 105px, 155px" loading="lazy" />
-                  </div>
-                  <div className={styles.cardIntro}>
-                    <h3>{solution.title}</h3>
-                    <p>{solution.summary}</p>
-                  </div>
-                </div>
-                <details className={styles.cardMore}>
-                  <summary>{t.outcomeLabel}<ChevronDown size={15} aria-hidden="true" /></summary>
-                  <div className={styles.cardBody}>
-                  <ul>
-                    {solution.outcomes.map((outcome) => <li key={outcome}><Check size={16} aria-hidden="true" />{outcome}</li>)}
-                  </ul>
-                  <p className={styles.method}><strong>{t.methodsLabel}:</strong> {solution.method}</p>
-                  </div>
-                </details>
-                <Link
-                  className={styles.cardCta}
-                  href={"/" + locale + "/services/free-situation-review?topic=" + solution.topic}
-                >
-                  {t.cardAction}<ArrowUpRight size={19} aria-hidden="true" />
-                </Link>
-              </article>
-            );
-          })}
-        </div>
-      </section>
+    <section className={[styles.solutions, isHome ? styles.home : ""].filter(Boolean).join(" ")} id={isHome ? "core-services" : "solutions"} aria-labelledby={isHome ? "home-core-services-title" : "services-solutions-title"} data-core-service-offers={variant}>
+      <header className={styles.header}>
+        <p className={styles.eyebrow}>{t.eyebrow}</p>
+        <h2 id={isHome ? "home-core-services-title" : "services-solutions-title"}>{isHome ? t.homeTitle : t.title}</h2>
+        <p className={styles.intro}>{isHome ? t.homeLead : t.lead}</p>
+      </header>
+      <div className={styles.grid}>
+        {coreServiceOffers(locale).map((offer, index) => (
+          <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : offer.id === "dao" ? "business" : undefined}>
+            <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true">
+              <Image src={offer.image} alt="" fill sizes="(max-width: 760px) 96px, (max-width: 1080px) 140px, 200px" loading={index === 0 ? "eager" : "lazy"} />
+            </Link>
+            <div className={styles.cardContent}>
+              <span className={styles.cardLabel}>{offer.label}</span>
+              <h3><Link href={offer.href}>{offer.title}</Link></h3>
+              <p className={styles.cardSummary}>{offer.promise}</p>
+              <p className={styles.cardBenefit}>{offer.benefit}</p>
+              <Link className={styles.cardCta} href={offer.href}>{offer.action}<ArrowUpRight size={18} aria-hidden="true" /></Link>
+            </div>
+          </article>
+        ))}
+      </div>
 
-      <section className={styles.bridge} aria-labelledby="services-bridge-title">
-        <div>
-          <p className={styles.bridgeEyebrow}>{t.bridgeEyebrow}</p>
-          <h2 id="services-bridge-title">{t.bridgeTitle}</h2>
-          <p>{t.bridgeText}</p>
-        </div>
-        <Link href={"/" + locale + "/services/free-situation-review"}>{t.bridgeButton}<ArrowRight size={20} aria-hidden="true" /></Link>
-      </section>
-
-      <section className={styles.process} aria-labelledby="services-process-title">
-        <div className={styles.processHead}>
-          <p className={styles.eyebrow}>{t.processEyebrow}</p>
-          <h2 id="services-process-title">{t.processTitle}</h2>
-        </div>
-        <div className={styles.steps}>
-          {t.steps.map((step) => (
-            <article className={styles.step} key={step.title}>
-              <h3>{step.title}</h3>
-              <p>{step.text}</p>
-            </article>
-          ))}
-        </div>
-        <p className={styles.scope}>{t.scope}</p>
-      </section>
-
-      <section className={styles.methods} id="methods" aria-labelledby="services-method-title">
-        <p className={styles.eyebrow}>{t.methodEyebrow}</p>
-        <h2 id="services-method-title">{t.methodTitle}</h2>
-        <p className={styles.intro}>{t.methodLead}</p>
-        <div className={styles.methodGrid}>
-          {t.methods.map((method) => (
-            <article className={styles.methodCard} key={method.href} id={method.href === "psychohomeopathy" ? "alchemy" : method.href === "systemic-constellations" ? "archetypal" : undefined}>
-              <h3>{method.title}</h3>
-              <p>{method.desc}</p>
-              <Link href={"/" + locale + "/services/" + method.href}>{t.detailAction}<ArrowRight size={16} aria-hidden="true" /></Link>
-            </article>
-          ))}
-        </div>
-      </section>
-    </>
+      {!isHome ? (
+        <>
+          <div className={styles.bridge}>
+            <div><h3>{t.uncertain}</h3><p>{t.uncertainText}</p></div>
+            <Link href={"/" + locale + "/services/free-situation-review"}>{t.uncertainAction}<ArrowRight size={19} aria-hidden="true"/></Link>
+          </div>
+          <details className={styles.methodDisclosure} id="methods">
+            <summary>{t.more}<ChevronDown size={18} aria-hidden="true" /></summary>
+            <div><p>{t.moreText}</p>
+              <nav aria-label={t.more}>{t.methods.map(item => <Link key={item.href} href={"/" + locale + "/services/" + item.href}>{item.label}<ArrowUpRight size={15} aria-hidden="true"/></Link>)}</nav>
+            </div>
+          </details>
+          <p className={styles.disclaimer}>{t.disclaimer}</p>
+        </>
+      ) : null}
+    </section>
   );
 }
