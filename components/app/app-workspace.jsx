@@ -1212,7 +1212,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
         </aside>
       )}
       <p className="hh-muted">
-        {def.timeframe === 'past-2-weeks' ? (locale === 'ru' ? 'За последние две недели' : 'Over the past two weeks') : def.timeframe === 'past-30-days' ? (locale === 'ru' ? 'За последние 30 дней' : 'Over the past 30 days') : def.timeframe === 'past-4-weeks' ? (locale === 'ru' ? 'За последние четыре недели' : 'Over the past four weeks') : def.timeframe === 'past-7-days' ? c.pastWeek : def.timeframe === 'right-now' ? c.rightNow : c.general}
+        {def.timeframe === 'past-2-weeks' ? (locale === 'ru' ? 'За последние две недели' : 'Over the past two weeks') : def.timeframe === 'past-30-days' ? (locale === 'ru' ? 'За последние 30 дней' : 'Over the past 30 days') : def.timeframe === 'past-7-days' ? c.pastWeek : def.timeframe === 'right-now' ? c.rightNow : c.general}
       </p>
 
       {question ? (
@@ -1220,7 +1220,6 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           {mode === 'guided' && <p className="hh-guided-step">{modeCopy.guidedPrompt}</p>}
           <legend>
             <h1>{question.text}</h1>
-            {question.helpText && <p className="hh-fine" role="note">{question.helpText}</p>}
           </legend>
           {def.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
             <p className="hh-muted">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
