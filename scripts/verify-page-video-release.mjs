@@ -79,11 +79,13 @@ async function exercise(engine, browserType) {
         assert.equal(response.status(), 200);
         await page.evaluate(() => document.fonts.ready);
         if (path.endsWith('/services')) {
-          // The Services page keeps method videos in a closed, optional
-          // disclosure to prioritize free situation review on mobile.
+          // Services intentionally exposes published videos by default.
+          // Only toggle older deployments that still start collapsed.
           const disclosure = page.locator('#method-videos');
           if (await disclosure.count()) {
-            await page.locator('#method-videos > summary').click();
+            if (await disclosure.getAttribute('open') === null) {
+              await page.locator('#method-videos > summary').click();
+            }
             await expect(disclosure).toHaveAttribute('open', '');
           }
         }
