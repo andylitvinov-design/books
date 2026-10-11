@@ -58,7 +58,8 @@ export default async function RelationshipsPage({params}:Props) {
   if(input!=='en'&&input!=='ru') notFound()
   const locale = input as Language
   const c = copy[locale]
-  const tests = new Map(RELATIONSHIPS_INTIMACY_CATALOG.map(item => [item.key,item]))
+  type PublicTest = { key: string; title: Record<Language,string>; description: Record<Language,string> }
+  const tests = new Map<string,PublicTest>((RELATIONSHIPS_INTIMACY_CATALOG as PublicTest[]).map((item:PublicTest) => [item.key,item]))
   return <main className={styles.page} lang={locale}>
     <PublicSiteHeader locale={locale} showAssessmentStrip={false}/>
     <section className={styles.hero} aria-labelledby="relationships-title">

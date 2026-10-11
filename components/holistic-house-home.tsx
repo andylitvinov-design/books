@@ -142,6 +142,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
 
       <FreeInsightsPaths locale={locale} />
       <ServicesSolutions locale={locale} variant="home" />
+      <RelationshipsSpotlight locale={locale} />
 
       <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
         <header className="service-home-start__heading">

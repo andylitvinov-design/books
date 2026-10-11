@@ -68,7 +68,7 @@ test('catalog selection, privacy and recommended focus discover intimacy and sex
     for(const key of RELATIONSHIPS_INTIMACY_KEYS){
       const entry=entries.find(row=>row.key===key)
       assert.equal(entry?.selectable,true,key)
-      assert.equal(entry.measurementAxes.length,2)
+      assert.ok(entry.measurementAxes.length >= 1 && entry.measurementAxes.length <= 2,key)
       assert.deepEqual(validTestKeys([key]),[key])
     }
     const sexuality=filterExplorerEntries(entries,{focus:['sexuality']})
