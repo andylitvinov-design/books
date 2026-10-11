@@ -17,6 +17,8 @@ export type SiteVideoPlayerProps = {
   /** Only above-the-fold placements should eagerly load their small still image. */
   posterPriority?: boolean;
   className?: string;
+  /** Same-origin illustrative image visible whenever YouTube blocks its real thumbnail. */
+  fallbackPoster?: string;
 };
 
 const copy = {
@@ -78,7 +80,7 @@ function videoDuration(seconds?: number) {
 }
 
 /** A page cannot turn arbitrary source data into an iframe URL. */
-export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, minimal = false, posterPriority = false, className }: SiteVideoPlayerProps) {
+export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, minimal = false, posterPriority = false, className, fallbackPoster }: SiteVideoPlayerProps) {
   const watchUrl = siteVideoWatchUrl(video);
   const source = watchUrl ? parseSiteVideoSource(watchUrl) : null;
   if (!source) return null;
@@ -86,12 +88,12 @@ export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, 
     <PlayableSiteVideo
       key={`${source.heygenId ? "heygen:" + source.heygenId : "youtube:" + source.youtubeId}:${locale}:${video.language}`}
       video={{ ...video, ...source }} locale={locale} textLanguage={textLanguage} compact={compact}
-      minimal={minimal || minimalPageVideoIds.has(source.heygenId ?? "")} posterPriority={posterPriority} className={className}
+      minimal={minimal || minimalPageVideoIds.has(source.heygenId ?? "")} posterPriority={posterPriority} className={className} fallbackPoster={fallbackPoster}
     />
   );
 }
 
-function PlayableSiteVideo({ video, locale, textLanguage = video.language, compact = false, minimal = false, posterPriority = false, className }: SiteVideoPlayerProps) {
+function PlayableSiteVideo({ video, locale, textLanguage = video.language, compact = false, minimal = false, posterPriority = false, className, fallbackPoster }: SiteVideoPlayerProps) {
   const text = copy[locale];
   const [playing, setPlaying] = useState(false);
   // SSR may appear before React attaches handlers on a slow connection.
@@ -127,6 +129,9 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           <iframe ref={playerRef} className="site-video-iframe" src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
           <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
+            {!isHeygen && fallbackPoster && (
+              <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
+            )}
             {approvedPoster && poster ? (
               <Image className="site-video-poster" src={approvedPoster} alt="" fill priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
             ) : isHeygen ? (
