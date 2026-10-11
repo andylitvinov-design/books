@@ -28,6 +28,7 @@ const DASHBOARD_COPY = {
     "breadcrumb": "My Practice",
     "subtitle": "Manage services, reports and client work.",
     "privateTitle": "Practitioner tools",
+    "publicTools": "Manage your practice",
     "addService": "Add service",
     "createReport": "Create report",
     "myData": "My data",
@@ -58,6 +59,7 @@ const DASHBOARD_COPY = {
     "breadcrumb": "Моя практика",
     "subtitle": "Управляйте услугами, отчётами и работой с клиентами.",
     "privateTitle": "Инструменты мастера",
+    "publicTools": "Управление практикой",
     "addService": "Добавить услугу",
     "createReport": "Создать отчёт",
     "myData": "Мои данные",
@@ -205,7 +207,7 @@ export default function PracticeWorkspace({locale,ownerTools=null}){
         </button>
       </nav>
       <section aria-labelledby="hh-practice-tools-title" className="hh-practice-tools">
-        <div className="hh-practice-tool-heading"><h2 id="hh-practice-tools-title">{d.privateTitle}</h2></div>
+        <div className="hh-practice-tool-heading"><h2 id="hh-practice-tools-title">{isOwner?d.privateTitle:d.publicTools}</h2></div>
         <div className="hh-practice-tool-grid">
           {isOwner&&<PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
             onClick={()=>openOwner('clients')} />}
@@ -262,7 +264,7 @@ export default function PracticeWorkspace({locale,ownerTools=null}){
             onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))} />
         </>}
       </section>}
-    {ownerTools&&<details className="hh-practice-more-tools">
+    {ownerTools && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
     </details>}
