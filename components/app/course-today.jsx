@@ -173,7 +173,7 @@ export default function CourseToday({locale='en'}){
    <p className={styles.hint}>{t.consent}</p>
    <button type="button" className="hh-primary" disabled={busy||targetLabel.trim().length<3}
      onClick={()=>submit('activate',{problemLabel:targetLabel,intention,timeZone:timezone()},()=>setExpanded('checkin'))}>{t.activate}</button>
-   {error&&<p role="alert">{t.error} ({error})</p>}
+   {error&&<p role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error})</p>}
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
  return <section className={styles.shell} data-daily-course>
