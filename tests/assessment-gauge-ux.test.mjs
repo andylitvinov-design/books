@@ -1,0 +1,55 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+test('result page leads with score gauge, two practical actions and a true retake runner CTA', () => {
+  const page = source('components/app/app-workspace.jsx')
+  const report = source('components/app/compact-assessment-report.jsx')
+  const gauge = source('components/app/assessment-gauge.jsx')
+  const css = source('app/[locale]/app/[[...path]]/assessment-dashboard.css')
+  const resultAt = page.indexOf('function ResultPage(')
+  const reportAt = page.indexOf('<PersonalResultReport result={result}', resultAt)
+  const retakeAt = page.indexOf('className="hh-result-repeat"', resultAt)
+  const rawAt = page.indexOf('<details className="hh-result-raw-details">', resultAt)
+  assert.ok(resultAt >= 0 && reportAt > resultAt && retakeAt > reportAt && rawAt > retakeAt)
+  assert.match(page, /async function repeatTest\(\)/)
+  assert.match(page, /await appFetch\('runs', \{/)
+  assert.match(page, /operationId: crypto.randomUUID\(\)/)
+  assert.match(page, /router.push\('\/' \+ locale \+ '\/app\/runs\/'/)
+  assert.match(page, /Retake this test/)
+  assert.match(report, /section.steps.slice\(0, 2\)/)
+  assert.match(report, /data-compact-assessment-report/)
+  assert.match(report, /<ScoreGauge dimension=\{dimension\}/)
+  assert.match(report, /More about this score & sources/)
+  assert.match(gauge, /data-assessment-gauge=\{model.orientation\}/)
+  assert.match(css, /\.hh-result-repeat button/)
+})
+
+test('Insights renders one real measurement gauge per test and filters by date without cross-test mixing', () => {
+  const page = source('components/app/app-workspace.jsx')
+  const dashboard = page.slice(page.indexOf('function PortfolioPage('), page.indexOf('function ProfileOverview('))
+  assert.match(dashboard, /assessmentHistoryGroups\(data.results/)
+  assert.match(dashboard, /periodWindow\(period, periodStart, periodEnd\)/)
+  assert.match(dashboard, /resultsForPeriod\(group.history, period, periodStart, periodEnd\)/)
+  assert.match(dashboard, /periodComparison\(history\)/)
+  assert.match(dashboard, /type="date"/)
+  assert.match(dashboard, /'week'/)
+  assert.match(dashboard, /'month'/)
+  assert.match(dashboard, /'quarter'/)
+  assert.match(dashboard, /<ScoreGauge dimension=\{main\} locale=\{locale\} compact/)
+  assert.match(dashboard, /<ScoreTrend current=\{latest\} previous=\{group.periodPrior\}/)
+  assert.match(dashboard, /data-testid="completed-test-insights"/)
+  assert.match(dashboard, /<ClientReportActions data=\{data\}/)
+  assert.match(dashboard, /group.history.map\(attempt =>/)
+  assert.doesNotMatch(dashboard, /Your overall health score/)
+})
+
+test('non-normative traits are not color coded as healthy or unhealthy', () => {
+  const helper = source('lib/assessments/dashboard-gauges.js')
+  const dial = source('components/app/assessment-gauge.jsx')
+  assert.match(helper, /dimension.dimensionClass === 'trait'/)
+  assert.match(helper, /orientation:.*neutral|orientation = trait/)
+  assert.match(dial, /model.orientation === 'neutral' \? neutral : favorable/)
+})
