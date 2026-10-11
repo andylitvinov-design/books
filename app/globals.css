@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+.analytics-consent { position: fixed; z-index: 70; right: 1rem; bottom: 1rem; max-width: 31rem; padding: 1rem; border: 1px solid #183b5a; border-radius: .75rem; background: #fff; color: #17324d; box-shadow: 0 1rem 2.5rem rgb(0 0 0 / .18); font-size: .875rem; }
+.analytics-consent p { margin: 0 0 .75rem; }
+.analytics-consent div { display: flex; flex-wrap: wrap; gap: .5rem; }
+.analytics-consent button { border: 1px solid #183b5a; border-radius: .35rem; padding: .5rem .75rem; background: #183b5a; color: #fff; font: inherit; cursor: pointer; }
+.analytics-consent button + button { background: #fff; color: #183b5a; }
+
 /* Holistic House public umbrella; existing reading and product surfaces keep their styles. */
 .house-home { --house-ink: #352c25; --house-accent: #855139; color: var(--house-ink); background: #f8f4ec; }
 .house-header { position: sticky; top: 0; z-index: 30; display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 22px 5vw; background: #f8f4ec; border-bottom: 1px solid #d9cfc0; }

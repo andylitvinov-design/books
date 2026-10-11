@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowUpRight, Check, Download, HeartHandshake, Send } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { emitPublicAnalyticsEvent } from "@/lib/public-analytics";
 import { formatReikiLevelPrice } from "@/lib/academy/reiki-level-pricing";
 import styles from "./reiki-choice-capture.module.css";
 
@@ -228,6 +229,7 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
         target={download ? undefined : "_blank"}
         rel={download ? undefined : "noopener noreferrer"}
         aria-label={download ? t.common.action.guide : "WhatsApp — " + t.common.action[selected]}
+        onClick={() => emitPublicAnalyticsEvent(download ? "academy_study_material_request_click" : selected === "express" ? "academy_level_one_initiation_enquiry_click" : "academy_personal_initiation_enquiry_click")}
       >
         {download ? <Download size={21} aria-hidden="true" /> : <WhatsAppMark size={22} />}
         <span>{t.common.action[selected]}</span>

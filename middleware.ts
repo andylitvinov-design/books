@@ -54,14 +54,15 @@ export function middleware(request: NextRequest) {
   const videoManager = request.nextUrl.pathname === '/admin/videos'
   const academyVideoPage = /^\/(en|ru|es)\/academy(?:\/|$)/.test(request.nextUrl.pathname)
   const csp = [
-    "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentEval}`, "style-src 'self' 'unsafe-inline'",
-    videoManager || academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com" : "img-src 'self' data:",
+    "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${developmentEval}`, "style-src 'self' 'unsafe-inline'",
+    videoManager || academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
     videoManager ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : academyVideoPage ? "frame-src https://www.youtube-nocookie.com" : "frame-src 'none'",
-    "font-src 'self'", "connect-src 'self'", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
+    "font-src 'self'", "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('Content-Security-Policy', csp)
   const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set('Content-Security-Policy', csp)
   if (privatePath(request.nextUrl.pathname)) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')

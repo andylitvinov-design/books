@@ -1,0 +1,215 @@
+{
+  "project": "Holistic House",
+  "version": "2026-10-11",
+  "status": "DRAFT_NOT_CONNECTED",
+  "approvedSpendCad": null,
+  "googleAdsAccountId": null,
+  "measurementPropertyId": null,
+  "keywordsAreResearchSeedsNotMeasuredVolumes": true,
+  "notes": "All campaigns are paused. No campaign may be enabled without legal review, verified leads, analytics, account connection and explicit budget approval. Do not use patient/test data, customer matching or remarketing.",
+  "conversionContract": {
+    "primary": [
+      "lead_received_verified",
+      "academy_enquiry_received_verified"
+    ],
+    "secondary": [
+      "free_review_cta_click",
+      "assessment_prepared",
+      "whatsapp_handoff_click",
+      "academy_enquiry_click"
+    ],
+    "neverCountAsConfirmedLead": [
+      "click",
+      "form_open",
+      "assessment_prepared",
+      "whatsapp_handoff_click",
+      "whatsapp_open"
+    ],
+    "payload": "event name, anonymous source and locale only; never questions, conditions, diagnoses, drawings, emails, tests or private-client details"
+  },
+  "campaigns": [
+    {
+      "name": "HH | Search | Consultations | EN | Toronto",
+      "status": "PAUSED",
+      "launchGate": "BLOCKED_PENDING_POLICY_AND_VERIFIED_CONVERSIONS",
+      "channel": "SEARCH",
+      "dailyBudgetCad": null,
+      "language": "en",
+      "target": {
+        "location": "Toronto, Ontario, Canada",
+        "locationOption": "PRESENCE_ONLY",
+        "searchPartners": false,
+        "displayExpansion": false
+      },
+      "audiences": [],
+      "negativeKeywords": [
+        "jobs",
+        "salary",
+        "torrent",
+        "DIY",
+        "definition"
+      ],
+      "adGroups": [
+        {
+          "name": "Systemic constellations",
+          "status": "PAUSED",
+          "landingPath": "/en/services/systemic-constellations",
+          "keywords": [
+            "[family constellations toronto]",
+            "\"family constellation sessions toronto\"",
+            "[systemic constellations toronto]"
+          ],
+          "responsiveSearchAd": {
+            "status": "PAUSED",
+            "headlines": [
+              "Family Constellations",
+              "Sessions in Toronto & Online",
+              "Explore Systemic Patterns",
+              "Personal Reflective Sessions",
+              "Understand Your Next Step",
+              "With Andrey Litvinov",
+              "Discover The Approach",
+              "Ask About A Session"
+            ],
+            "descriptions": [
+              "Explore relationships and recurring patterns in a voluntary one-to-one session.",
+              "Learn how a session works and enquire about availability with Andrey."
+            ]
+          }
+        },
+        {
+          "name": "Free drawing situation review",
+          "status": "PAUSED",
+          "landingPath": "/en/services/free-situation-review",
+          "keywords": [
+            "\"personal situation review\"",
+            "\"drawing based coaching\"",
+            "[free situation review]"
+          ],
+          "responsiveSearchAd": {
+            "status": "PAUSED",
+            "headlines": [
+              "Free Situation Review",
+              "A Hand-Drawing Assessment",
+              "Receive A Written Report",
+              "No Free Call Required",
+              "Describe Your Situation",
+              "Draw Me, Goal And Problem",
+              "Personal Review By Andrey",
+              "Explore The Three Steps"
+            ],
+            "descriptions": [
+              "Complete a short coaching form and handwritten drawing for a personal written review.",
+              "A symbolic situation review, not a medical diagnosis. Paid sessions are optional."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "HH | Search | Reiki Education | EN | Toronto",
+      "status": "PAUSED",
+      "launchGate": "BLOCKED_PENDING_POLICY_AND_VERIFIED_CONVERSIONS",
+      "channel": "SEARCH",
+      "dailyBudgetCad": null,
+      "language": "en",
+      "target": {
+        "location": "Toronto, Ontario, Canada",
+        "locationOption": "PRESENCE_ONLY",
+        "searchPartners": false,
+        "displayExpansion": false
+      },
+      "audiences": [],
+      "negativeKeywords": [
+        "jobs",
+        "salary",
+        "torrent",
+        "DIY",
+        "definition"
+      ],
+      "adGroups": [
+        {
+          "name": "Reiki Yggdrasil learning",
+          "status": "PAUSED",
+          "landingPath": "/en/academy/reiki/yggdrasil",
+          "keywords": [
+            "[reiki yggdrasil]",
+            "\"reiki yggdrasil training\"",
+            "\"runic reiki course\""
+          ],
+          "responsiveSearchAd": {
+            "status": "PAUSED",
+            "headlines": [
+              "Reiki Yggdrasil Training",
+              "Explore The Course Levels",
+              "Runic Reiki Learning Path",
+              "Start With The Basics",
+              "Study With Andrey Litvinov",
+              "Ask About The Programme",
+              "Discover The Seven Modules",
+              "Request Training Details"
+            ],
+            "descriptions": [
+              "Explore the Reiki Yggdrasil curriculum, learning levels and training enquiry options.",
+              "Review the programme and ask about suitable entry level and current availability."
+            ]
+          }
+        },
+        {
+          "name": "Tantra Reiki learning",
+          "status": "PAUSED",
+          "landingPath": "/en/academy/reiki/tantra-reiki",
+          "keywords": [
+            "[tantra reiki training]",
+            "\"tantra reiki initiation\"",
+            "\"tantra reiki course\""
+          ],
+          "responsiveSearchAd": {
+            "status": "PAUSED",
+            "headlines": [
+              "Tantra Reiki Programme",
+              "Explore The Nine Levels",
+              "Learn The Course Structure",
+              "Personal Initiation Options",
+              "Study With Andrey",
+              "Request Course Materials",
+              "Explore Tantra Reiki",
+              "Ask About Level One"
+            ],
+            "descriptions": [
+              "Explore the author's nine-level Tantra Reiki curriculum and available learning options.",
+              "Read the levels and request training information before choosing your next step."
+            ]
+          }
+        },
+        {
+          "name": "Kundalini Reiki learning",
+          "status": "PAUSED",
+          "landingPath": "/en/academy/reiki/kundalini-reiki",
+          "keywords": [
+            "[kundalini reiki course]",
+            "\"kundalini reiki training\"",
+            "\"kundalini reiki levels\""
+          ],
+          "responsiveSearchAd": {
+            "status": "PAUSED",
+            "headlines": [
+              "Kundalini Reiki Course",
+              "Explore Three Levels",
+              "Kundalini Reiki Learning",
+              "See The Training Programme",
+              "Request Course Information",
+              "Explore Learning Options",
+              "A Structured Reiki Course",
+              "Ask About Initiation"
+            ],
+            "descriptions": [
+              "Learn about the Kundalini Reiki programme, three levels and course enquiry options.",
+              "Explore the curriculum first and enquire about the next available learning format."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
