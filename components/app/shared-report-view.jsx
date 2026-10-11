@@ -109,10 +109,6 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
         selector,
         operationId: crypto.randomUUID(),
       })
-      if (intent.signedIn) {
-        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id))
-        return
-      }
       const auth = await api('auth/start', { locale, intentId: intent.id })
       window.location.assign(auth.redirectUrl)
     } catch {
