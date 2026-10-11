@@ -7,8 +7,10 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 test("approved 2026-10-09 home design keeps all three service directions and original routes", () => {
   const home = read("components/holistic-house-home.tsx");
   const journey = read("components/personal-work-journey.tsx");
-  assert.match(home, /<PersonalWorkJourney locale=\{locale\} variant="compact" \/>/);
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.match(journey, /text\.services\.map/);
+  const offers = read("data/core-service-offers.ts");
+  for (const slug of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"]) assert.ok(offers.includes(slug));
   for (const slug of ["psychohomeopathy", "imagery-therapy", "systemic-constellations"]) {
     assert.ok(journey.includes(slug), "Lost service route: " + slug);
   }

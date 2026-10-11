@@ -40,21 +40,20 @@ test('acquisition events are an allowlist and never describe personal or assessm
   assert.doesNotMatch(JSON.stringify(ACQUISITION_EVENTS), /answer|score|email|name|health/i)
 })
 
-test('the public home keeps local acquisition; Services now leads with client questions', () => {
-  const home = readFileSync(new URL('../components/holistic-house-home.tsx', import.meta.url), 'utf8')
-  const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8')
-  const solutions = readFileSync(new URL('../components/services-solutions.tsx', import.meta.url), 'utf8')
-  const styles = readFileSync(new URL('../app/holistic-house-home.css', import.meta.url), 'utf8')
-
-  assert.match(home, /LOCAL_ACQUISITION/)
-  assert.match(styles, /\.service-home-self-check/)
-  assert.match(services, /<ServicesSolutions locale=/)
-  assert.doesNotMatch(services, /<CatalogShowcase/)
-  assert.match(solutions, /free-situation-review\?topic=/)
-  for (const topic of ['personal', 'goal', 'business', 'wellbeing']) {
-    assert.ok(solutions.includes('topic: "' + topic + '"'), topic)
-  }
-})
+test('public Home and Services use four shared offers without exposing private answers', () => {
+  const home = readFileSync(new URL('../components/holistic-house-home.tsx', import.meta.url), 'utf8');
+  const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8');
+  const ui = readFileSync(new URL('../components/services-solutions.tsx', import.meta.url), 'utf8');
+  const offers = readFileSync(new URL('../data/core-service-offers.ts', import.meta.url), 'utf8');
+  assert.match(home, /LOCAL_ACQUISITION/);
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home"/);
+  assert.match(services, /<ServicesSolutions locale=/);
+  assert.doesNotMatch(services, /<CatalogShowcase/);
+  assert.match(ui, /coreServiceOffers\(locale\)/);
+  assert.match(offers, /dao-health-profile/);
+  assert.match(offers, /alchemy-of-soul/);
+  assert.match(offers, /hypnotherapy-course/);
+});
 
 test('Services preserves source-backed videos in optional method explanations, not in competing cards', () => {
   const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8')

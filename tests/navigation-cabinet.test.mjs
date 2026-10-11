@@ -41,8 +41,8 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
 
   assert.match(home, /восстановление · практика · поддержка/)
   assert.match(home, /healing · practice · guidance/)
-  assert.match(home, /Исследуйте Holistic House/)
-  assert.match(home, /Explore Holistic House/)
+  assert.match(home, /Исследуйте самостоятельно/)
+  assert.match(home, /Explore at your own pace/)
   assert.match(home, /Курсы и библиотека/)
   assert.match(home, /Courses & Library/)
   assert.match(page, /uiLocale/)

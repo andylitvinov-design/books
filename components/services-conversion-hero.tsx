@@ -1,29 +1,31 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Check } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import type { Locale } from "@/data/remedies";
 import styles from "./services-conversion-hero.module.css";
 
 const copy = {
   ru: {
-    eyebrow: "Бесплатная диагностика по рисунку · письменный отчёт",
-    heading: "Бесплатная диагностика ситуации по вашему рисунку",
-    lead: "Опишите проблему в коучинг-форме и нарисуйте на бумаге ручкой «Я — цель — проблема». Я подготовлю личный письменный отчёт. Платная сессия не обязательна.",
-    benefits: ["Заполните коучинг-форму", "Нарисуйте ситуацию ручкой", "Получите письменный отчёт"],
-    cta: "Начать бесплатную диагностику",
-    small: "Бесплатно · без звонка · не медицинский диагноз",
-    imageLabel: "Ваш вопрос, рисунок, письменный ответ",
-    caption: "Персональный письменный разбор от Андрея",
+    eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ РАБОТА",
+    heading: "Больше ясности, опоры и вариантов движения",
+    lead: "Четыре предложения под разные запросы: две бесплатные диагностики, личная сессия «Алхимия души» и курс гипнотерапии. Выберите, что актуально именно вам.",
+    benefits: ["2 бесплатных варианта", "Личные сессии", "Торонто и онлайн"],
+    cta: "Бесплатный разбор ситуации",
+    secondary: "Посмотреть все 4 предложения",
+    small: "Бесплатный разбор — письменный, без обязательного созвона",
+    imageLabel: "Лично с Андреем Литвиновым",
+    caption: "Начните со своего вопроса",
   },
   en: {
-    eyebrow: "Free drawing assessment · written report",
-    heading: "Your free situation assessment starts with a drawing",
-    lead: "Describe your concern in a coaching form and draw ME, GOAL and PROBLEM by hand on paper. I'll send you a personal written report. Live sessions are separate paid services.",
-    benefits: ["Complete the coaching form", "Draw by hand on paper", "Receive your written report"],
-    cta: "Start my free drawing assessment",
-    small: "Free · no live call · not a medical diagnosis",
-    imageLabel: "Your question, drawing and written review",
-    caption: "A personal written review from Andrey",
+    eyebrow: "HOLISTIC HOUSE · PERSONAL SUPPORT",
+    heading: "More clarity, inner resources and choices",
+    lead: "Four ways to explore your question: two free assessments, Alchemy of the Soul and a guided imagery hypnotherapy course. Start where it feels right for you.",
+    benefits: ["2 free starting points", "One-to-one sessions", "Toronto & online"],
+    cta: "Get a free situation review",
+    secondary: "Explore all four services",
+    small: "The free situation review is written, not a free call",
+    imageLabel: "Personal work with Andrey Litvinov",
+    caption: "Start with your question",
   },
 } as const;
 
@@ -35,22 +37,22 @@ export function ServicesConversionHero({ locale }: { locale: Locale }) {
         <p className={styles.eyebrow}><span className={styles.spark} aria-hidden="true">✦</span>{t.eyebrow}</p>
         <h1 id="services-conversion-title">{t.heading}</h1>
         <p className={styles.lead}>{t.lead}</p>
-        <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
-          {t.cta}<ArrowUpRight size={21} aria-hidden="true" />
-        </Link>
+        <div className={styles.actions}>
+          <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
+            {t.cta}<ArrowUpRight size={20} aria-hidden="true" />
+          </Link>
+          <Link className={styles.secondary} href="#solutions">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>
+        </div>
         <p className={styles.small}>{t.small}</p>
         <ul className={styles.benefits}>
-          {t.benefits.map((benefit) => <li key={benefit}><Check size={17} strokeWidth={2.3} aria-hidden="true" />{benefit}</li>)}
+          {t.benefits.map(benefit => <li key={benefit}><Check size={16} strokeWidth={2.2} aria-hidden="true" />{benefit}</li>)}
         </ul>
       </div>
       <div className={styles.visual}>
         <Image
           src="/images/holistic-house/andy-about.png"
-          alt={locale === "ru" ? "Портрет Андрея Литвинова" : "Portrait of Andrey Litvinov"}
-          fill
-          priority
-          sizes="(max-width: 760px) 100vw, 42vw"
-          className={styles.image}
+          alt={locale === "ru" ? "Андрей Литвинов" : "Andrey Litvinov"}
+          fill priority sizes="(max-width: 760px) 100vw, 42vw" className={styles.image}
         />
         <div className={styles.visualText}>
           <span className={styles.visualLabel}>{t.imageLabel}</span>
