@@ -2523,7 +2523,7 @@ function SavedReportPage({ id, locale, reload }) {
     try {
       await appFetch('reports/' + id + '/remove', {})
       await reload()
-      router.replace('/' + locale + '/app/history')
+      router.replace('/' + locale + '/app/analysis')
     } catch (e) {
       setError(e)
       setBusy(false)
@@ -2534,8 +2534,8 @@ function SavedReportPage({ id, locale, reload }) {
       <section className="hh-panel">
         <h1>{ru ? 'Отчёт больше недоступен' : 'Report no longer available'}</h1>
         <p>{ru ? 'Ссылка в истории может оставаться как запись, но содержимое было отозвано или исходный отчёт больше недоступен.' : 'The history reference may remain, but the content was withdrawn or the source report is no longer available.'}</p>
-        <Link className="hh-primary" href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'Вернуться в историю' : 'Back to History'}
+        <Link className="hh-primary" href={'/' + locale + '/app/analysis'} prefetch={false}>
+          {ru ? 'К личному анализу' : 'Back to Personal Analysis'}
         </Link>
       </section>
     )
@@ -2550,8 +2550,8 @@ function SavedReportPage({ id, locale, reload }) {
         {ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}
       </p>
       <div className="hh-actions">
-        <Link href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'История' : 'History'}
+        <Link href={'/' + locale + '/app/analysis'} prefetch={false}>
+          {ru ? 'Личный анализ' : 'Personal analysis'}
         </Link>
         <button type="button" disabled={busy} onClick={remove}>
           {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}
