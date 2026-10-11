@@ -1,6 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { Plus, FileText, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList } from 'lucide-react'
+import './practice-dashboard.css'
 
 async function practiceFetch(path='',body){
   const response=await fetch('/api/app/practice'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined})
@@ -21,8 +23,81 @@ const AREAS={
 const emptyProfile={displayName:'',professionalTitle:'',shortBio:'',fullBio:'',languages:['en'],city:'',region:'',country:'',formats:['online'],areas:['personal_development'],methods:[],yearsExperience:'',websiteUrl:'',socialUrls:[],photoPath:''}
 const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:''}
 const emptyFreeService={...emptyService,pricingMode:'free',confirmedPrice:null,currency:''}
+const DASHBOARD_COPY = {
+  "en": {
+    "breadcrumb": "My Practice",
+    "subtitle": "Manage services, reports and client work.",
+    "privateTitle": "Practitioner tools",
+    "addService": "Add service",
+    "createReport": "Create report",
+    "myData": "My data",
+    "clients": "Clients",
+    "clientsHint": "Client database, history and documents.",
+    "services": "Services",
+    "servicesHint": "Manage your services and offerings.",
+    "reports": "Reports",
+    "reportsHint": "Create and view client reports.",
+    "invoices": "Invoices",
+    "invoicesHint": "Receipts, invoices and payments.",
+    "activity": "Practice activity",
+    "activityHint": "Your services and incoming requests.",
+    "credentials": "Credentials",
+    "extra": "More practitioner tools",
+    "close": "Close",
+    "active": "Active services",
+    "allServices": "Existing services",
+    "status": "Status",
+    "approved": "approved",
+    "ownerError": "Could not open private practitioner tools. Please retry.",
+    "loading": "Opening My Practice…",
+    "requestsMetric": "Requests",
+    "servicesMetric": "Services",
+    "partner": "Holistic House Partner"
+  },
+  "ru": {
+    "breadcrumb": "Моя практика",
+    "subtitle": "Управляйте услугами, отчётами и работой с клиентами.",
+    "privateTitle": "Инструменты мастера",
+    "addService": "Добавить услугу",
+    "createReport": "Создать отчёт",
+    "myData": "Мои данные",
+    "clients": "Клиенты",
+    "clientsHint": "База клиентов, история и документы.",
+    "services": "Услуги",
+    "servicesHint": "Редактирование и публикация услуг.",
+    "reports": "Отчёты",
+    "reportsHint": "Создание и просмотр отчётов клиентов.",
+    "invoices": "Счета",
+    "invoicesHint": "Квитанции, счета и платежи.",
+    "activity": "Активность практики",
+    "activityHint": "Услуги и входящие заявки.",
+    "credentials": "Квалификации",
+    "extra": "Другие инструменты мастера",
+    "close": "Закрыть",
+    "active": "Опубликованные услуги",
+    "allServices": "Сохранённые услуги",
+    "status": "Статус",
+    "approved": "одобрен",
+    "ownerError": "Не удалось открыть приватные инструменты. Повторите попытку.",
+    "loading": "Открываем My Practice…",
+    "requestsMetric": "Заявки",
+    "servicesMetric": "Услуги",
+    "partner": "Партнёр Holistic House"
+  }
+}
 const arr=value=>Array.isArray(value)?value.join(', '):''
 const list=value=>String(value||'').split(',').map(x=>x.trim()).filter(Boolean)
+
+function PracticeTile({Icon,title,description,onClick,active=false}) {
+  return <button type="button" className="hh-practice-tool-card" onClick={onClick} aria-pressed={active}>
+    <span className="hh-practice-tool-top">
+      <span className="hh-practice-tool-icon"><Icon aria-hidden="true" /></span>
+      <span className="hh-practice-tool-title">{title}</span>
+      <ChevronRight className="hh-practice-tool-arrow" aria-hidden="true" />
+    </span>
+    <span className="hh-practice-tool-description">{description}</span>
+  </button>
+}
 
 export function PracticeEntry({data,locale}){
   const ru=locale==='ru',practice=data?.practice
@@ -35,9 +110,14 @@ export function PracticeEntry({data,locale}){
 }
 
 export default function PracticeWorkspace({locale,ownerTools=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false)
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null)
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
+  useEffect(()=>{
+    if(!activePanel)return undefined
+    const frame=requestAnimationFrame(()=>document.getElementById('hh-practice-workspace-detail')?.scrollIntoView({behavior:'smooth',block:'start'}))
+    return ()=>cancelAnimationFrame(frame)
+  },[activePanel])
   const t=useMemo(()=>ru?{
     title:'Моя практика',personal:'Личное пространство',intro:'Публичный профиль, услуги и заявки — отдельно от ваших личных тестов и истории.',
     noProfile:'Начните с короткого профиля. Он не станет публичным без проверки.',profile:'Профиль мастера',credentials:'Образование и credentials',services:'Услуги',requests:'Заявки',
@@ -58,36 +138,135 @@ export default function PracticeWorkspace({locale,ownerTools=null}){
     moderation:'Changes publish only after moderation.',verified:'Verified',partner:'Holistic House Partner',
   },[ru])
   async function act(fn){setBusy(true);setError('');try{await fn();await load()}catch(e){setError(e.code||e.message)}finally{setBusy(false)}}
-  if(!data)return <section className="hh-panel"><h1>{t.title}</h1>{ownerTools}{error&&<p role="alert">{error}</p>}</section>
+  const d=DASHBOARD_COPY[ru?'ru':'en']
+  const isOwner=Boolean(ownerTools)
+  async function openOwner(destination) {
+    if(busy||!isOwner)return
+    setBusy(true);setError('')
+    try {
+      const response=await fetch('/api/app/practitioner/open',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({destination}),
+      })
+      if(!response.ok)throw new Error('OPEN_UNAVAILABLE')
+      const result=await response.json()
+      // The server validates ownership and maps only allowed admin destinations.
+      if(typeof result.redirectUrl!=='string'||!result.redirectUrl.startsWith('/admin'))throw new Error('OPEN_UNAVAILABLE')
+      window.location.assign(result.redirectUrl)
+    } catch {
+      setError(d.ownerError);setBusy(false)
+    }
+  }
+  function choosePanel(panel) {
+    setActivePanel(current=>current===panel?null:panel)
+    setError('')
+  }
+  if(!data)return <section className="hh-practice-dashboard" aria-busy={!error}>
+    <p role="status">{d.loading}</p>{error&&<p role="alert">{error}</p>}
+  </section>
+
   const p=data.practitioner
   const onboardingService=(data.services||[]).find(item=>item.pricingMode==='free'||item.draftCopy?.pricingMode==='free')||null
   const needsOnboarding=!p||(!Object.keys(p.profile||{}).length&&['draft','submitted','changes_requested'].includes(p.status))
-  return <section>
-    <div className="hh-heading">
-      <div className="hh-actions"><Link href={'/'+locale+'/app'} prefetch={false}>{t.personal}</Link><strong>My Practice</strong></div>
-      <h1>{needsOnboarding?t.becomeTitle:t.title}</h1><p>{t.intro}</p>
-      {p&&<p><span className="hh-badge">{t.status}: {p.status}</span>{p.isPartner&&<> <span className="hh-badge">{t.partner}</span></>}</p>}
-    </div>
-    {ownerTools && <div className="hh-master-clinical-tools"><p className="hh-kicker">{ru?'Личный рабочий кабинет · приватно':'Private client work · owner only'}</p>{ownerTools}</div>}
-    {needsOnboarding?
-      <MasterOnboarding
+  const requests=data.requests||[]
+  const services=data.services||[]
+  const publishedCount=services.filter(item=>item.status==='published').length
+  const openRequests=requests.filter(item=>['requested','contacted'].includes(item.status)).length
+  return <section className="hh-practice-dashboard">
+    <header className="hh-practice-head">
+      <nav className="hh-practice-breadcrumb" aria-label={ru?'Путь':'Breadcrumb'}>
+        <Link href={'/'+locale+'/app'} prefetch={false}>{t.personal}</Link>
+        <ChevronRight aria-hidden="true" />
+        <strong>{d.breadcrumb}</strong>
+      </nav>
+      <h1>{needsOnboarding?t.becomeTitle:t.title}</h1>
+      <p className="hh-practice-intro">{needsOnboarding?t.noProfile:d.subtitle}</p>
+      {p&&<div className="hh-practice-status">
+        <span className={'hh-practice-status-chip'+(p.status==='approved'?' is-approved':'')}>
+          <span className="hh-practice-status-dot" aria-hidden="true" />
+          {d.status}: {p.status==='approved'?d.approved:p.status}
+        </span>
+        {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
+      </div>}
+    </header>
+    {!needsOnboarding&&<>
+      <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
+        <button className="hh-practice-quick-primary" type="button"
+          aria-pressed={activePanel==='services'} onClick={()=>choosePanel('services')}>
+          <Plus aria-hidden="true" />{d.addService}
+        </button>
+        {isOwner?<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
+          <FileText aria-hidden="true" />{d.createReport}
+        </button>:<button type="button" aria-pressed={activePanel==='requests'}
+          onClick={()=>choosePanel('requests')}><ClipboardList aria-hidden="true" />{t.requests}</button>}
+        <button type="button" aria-pressed={activePanel==='profile'} onClick={()=>choosePanel('profile')}>
+          <IdCard aria-hidden="true" />{d.myData}
+        </button>
+      </nav>
+      <section aria-labelledby="hh-practice-tools-title" className="hh-practice-tools">
+        <div className="hh-practice-tool-heading"><h2 id="hh-practice-tools-title">{d.privateTitle}</h2></div>
+        <div className="hh-practice-tool-grid">
+          {isOwner&&<PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
+            onClick={()=>openOwner('clients')} />}
+          <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
+            onClick={()=>choosePanel('services')} active={activePanel==='services'} />
+          {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
+            onClick={()=>openOwner('report')} />}
+          {isOwner?<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint}
+            onClick={()=>openOwner('payment')} />:
+          <PracticeTile Icon={IdCard} title={d.myData} description={t.profile}
+            onClick={()=>choosePanel('profile')} active={activePanel==='profile'} />}
+        </div>
+        <button className="hh-practice-activity" type="button" aria-pressed={activePanel==='requests'}
+          onClick={()=>choosePanel('requests')}>
+          <span className="hh-practice-tool-icon"><BarChart3 aria-hidden="true" /></span>
+          <span className="hh-practice-activity-copy">
+            <strong>{d.activity}</strong>
+            <small>{d.activityHint} · {openRequests} {d.requestsMetric.toLowerCase()}</small>
+          </span>
+          <ChevronRight className="hh-practice-tool-arrow" aria-hidden="true" />
+        </button>
+      </section>
+    </>}
+    {needsOnboarding? <MasterOnboarding
         key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
-        data={data}
-        practitioner={p}
-        service={onboardingService}
-        locale={locale}
-        t={t}
-        busy={busy}
-        onAction={(payload)=>act(()=>practiceFetch('/onboarding',payload))}
-      />:
-      <>
-        <ProfileEditor key={p?.revision||'profile'} practitioner={p} locale={locale} t={t} busy={busy} onSave={(profile,expectedRevision)=>act(()=>practiceFetch('/profile',{action:'save',profile,expectedRevision}))} onSubmit={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))}/>
-        <Credentials items={data.credentials||[]} t={t} busy={busy} onCreate={value=>act(()=>practiceFetch('/credentials',value))} onDelete={id=>act(()=>practiceFetch('/credentials/'+id,{action:'delete'}))}/>
-        <Services items={data.services||[]} t={t} locale={locale} busy={busy} onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))} onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))} onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))}/>
-        <Requests items={data.requests||[]} t={t} busy={busy} onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}/>
-      </>
-    }
-    {error&&<p role="alert">{error}</p>}
+        data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
+        busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} />:
+      activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
+        <div className="hh-practice-form-heading">
+          <h2>{activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:d.credentials}</h2>
+          <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
+        </div>
+        {activePanel==='services'&&<Services items={services} t={t} locale={locale} busy={busy}
+          onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
+          onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
+          onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />}
+        {activePanel==='profile'&&<>
+          <ProfileEditor key={p?.revision||'profile'} practitioner={p} locale={locale} t={t} busy={busy}
+            onSave={(profile,expectedRevision)=>act(()=>practiceFetch('/profile',{action:'save',profile,expectedRevision}))}
+            onSubmit={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />
+          <details className="hh-practice-saved-services"><summary>{d.credentials} ({(data.credentials||[]).length})</summary>
+            <Credentials items={data.credentials||[]} t={t} busy={busy}
+              onCreate={value=>act(()=>practiceFetch('/credentials',value))}
+              onDelete={id=>act(()=>practiceFetch('/credentials/'+id,{action:'delete'}))} />
+          </details>
+        </>}
+        {activePanel==='requests'&&<>
+          <div className="hh-practice-metrics">
+            <div><strong>{services.length}</strong><span>{d.servicesMetric}</span></div>
+            <div><strong>{publishedCount}</strong><span>{d.active}</span></div>
+            <div><strong>{openRequests}</strong><span>{d.requestsMetric}</span></div>
+          </div>
+          <Requests items={requests} t={t} busy={busy}
+            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))} />
+        </>}
+      </section>}
+    {ownerTools&&<details className="hh-practice-more-tools">
+      <summary>{d.extra}</summary>
+      <div className="hh-master-clinical-tools">{ownerTools}</div>
+    </details>}
+    {error&&<p role="alert" className="hh-practice-error">{error}</p>}
   </section>
 }
 
@@ -184,8 +363,14 @@ function Credentials({items,t,busy,onCreate,onDelete}){
     <label>{t.credTitle}<input required value={v.title} onChange={e=>setV({...v,title:e.target.value})}/></label><label>{t.issuer}<input value={v.issuer} onChange={e=>setV({...v,issuer:e.target.value})}/></label><label>{t.jurisdiction}<input value={v.jurisdiction} onChange={e=>setV({...v,jurisdiction:e.target.value})}/></label><label>{t.reference}<input value={v.reference} onChange={e=>setV({...v,reference:e.target.value})}/></label><label className="hh-check"><input type="checkbox" checked={v.public} onChange={e=>setV({...v,public:e.target.checked})}/>{t.public}</label><button disabled={busy}>{t.add}</button></form></section>
 }
 function Services({items,t,locale,busy,onSave,onSubmit,onPause}){
-  return <section className="hh-section"><h2>{t.services}</h2>{items.map(item=><ServiceEditor key={item.id+item.revision} item={item} t={t} locale={locale} busy={busy} onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>)}
-    <ServiceEditor key="new" item={null} t={t} locale={locale} busy={busy} onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>
+  return <section className="hh-practice-services-editor">
+    <ServiceEditor key="new" item={null} t={t} locale={locale} busy={busy}
+      onSave={onSave} onSubmit={onSubmit} onPause={onPause} />
+    {items.length>0&&<details className="hh-practice-saved-services">
+      <summary>{locale==='ru'?'Существующие услуги':'Existing services'} ({items.length})</summary>
+      {items.map(item=><ServiceEditor key={item.id+item.revision} item={item} t={t} locale={locale}
+        busy={busy} onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>)}
+    </details>}
   </section>
 }
 function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
