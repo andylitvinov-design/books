@@ -4,8 +4,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
+import type { PublicAnalyticsEvent } from "@/lib/public-analytics";
 
-type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number];
+type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
 
 type AcquisitionEventLinkProps = {
   attributes?: Record<string, string>;
