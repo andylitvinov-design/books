@@ -100,7 +100,7 @@ function Rating({value,onChange,label,optional=false}){
     <select value={value===null?'':String(value)}
       onChange={e=>onChange(e.target.value===''?null:Number(e.target.value))}
       aria-label={label}>
-      {optional && <option value="">—</option>}
+      <option value="" disabled={!optional}>—</option>
       {choices.filter(x=>x!==null).map(x=><option key={x} value={x}>{x}/10</option>)}
     </select>
   </label>
@@ -120,7 +120,7 @@ export default function CourseToday({locale='en'}){
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0)
- const [severity,setSeverity]=useState(5),[interference,setInterference]=useState(null),[resource,setResource]=useState(null)
+ const [severity,setSeverity]=useState(null),[interference,setInterference]=useState(null),[resource,setResource]=useState(null)
  const [dailyNote,setDailyNote]=useState(''),[beforeNow,setBeforeNow]=useState(null),[afterNow,setAfterNow]=useState(null)
  const [feedback,setFeedback]=useState('skip'),[reflection,setReflection]=useState('')
  const [reviewNote,setReviewNote]=useState(''),[reviewDecision,setReviewDecision]=useState('continue')
@@ -210,7 +210,7 @@ export default function CourseToday({locale='en'}){
     <label className={styles.field}>{t.addNote}<textarea maxLength={500} rows={2} value={dailyNote} onChange={e=>setDailyNote(e.target.value)}/></label>
     {today&&<p className={styles.saved}><Check size={15}/>{t.saved}</p>}
     <div className={styles.actions}>
-      <button type="button" disabled={busy||paused} className="hh-primary" onClick={()=>submit('checkin',{
+      <button type="button" disabled={busy||paused||!Number.isInteger(severity)} className="hh-primary" onClick={()=>submit('checkin',{
         severity,interference,resource,note:dailyNote,operationId:crypto.randomUUID(),
         ...(today?{expectedRevision:today.revision}:{})
       },()=>setExpanded('thought'))}>{today?t.update:t.save}<ArrowRight size={16}/></button>
