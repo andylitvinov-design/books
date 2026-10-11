@@ -39,6 +39,8 @@ test('complete PDF model includes every runnable public assessment and every sto
   assert.ok(testResult.title)
   assert.ok(testResult.description)
   assert.ok(testResult.conclusion.length>40)
+  assert.equal(testResult.guidance.sections.length,testResult.dimensions.length)
+  assert.ok(testResult.guidance.sections.every(section=>section.steps.length >= 2 && section.steps.every(Boolean)))
   assert.ok(testResult.dimensions.length>0)
   assert.equal(testResult.attempts.length,1)
   assert.ok(testResult.dimensions.every(d=>Number.isFinite(d.value)&&Number.isFinite(d.min)&&Number.isFinite(d.max)))
