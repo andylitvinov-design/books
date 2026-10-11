@@ -10,9 +10,9 @@ import styles from "./kundalini-reiki-course.module.css";
 const whatsapp = "https://wa.me/14376066502?text=";
 
 const levelPhotos = [
-  "/academy/reiki-yggdrasil/source/basic-program.jpg",
-  "/academy/reiki-yggdrasil/source/eastern-tradition.png",
   "/academy/reiki-yggdrasil/source/program-overview.jpg",
+  "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+  "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
 ];
 
 function guideUrl(locale: PublicLocale) {
@@ -56,8 +56,8 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
           </div>
           <div className={styles.heroPhoto}>
             <Image
-              src="/academy/reiki-yggdrasil/source/school-introduction.jpg"
-              alt={t.heroImageAlt}
+              src="/academy/reiki-yggdrasil/source/temple-studies.png"
+              alt={locale === "ru" ? "Спокойная медитативная атмосфера — статуя Будды в саду" : locale === "es" ? "Ambiente contemplativo — una estatua de Buda en un jardín" : "Calm contemplative setting — a Buddha statue in a garden"}
               fill
               priority
               sizes="(max-width: 760px) 100vw, 48vw"
@@ -115,8 +115,8 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
         <section className={styles.learningFeature} aria-labelledby="kundalini-learning-title">
           <div className={styles.learningPhoto}>
             <Image
-              src="/academy/reiki-yggdrasil/source/basic-program.jpg"
-              alt={t.practiceImageAlt}
+              src="/academy/reiki-yggdrasil/source/school-introduction.jpg"
+              alt={locale === "ru" ? "Реальная фотография учебной группы из материалов школы" : locale === "es" ? "Fotografía auténtica de un grupo de formación" : "Authentic photograph of a Reiki teaching group"}
               fill
               sizes="(max-width: 780px) 100vw, 44vw"
               className={styles.coverImage}
