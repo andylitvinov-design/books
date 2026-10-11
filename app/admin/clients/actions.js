@@ -2,9 +2,21 @@
 import { redirect } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
-import { updateClient, assignLegacyConsultation } from '@/lib/clients/service'
+import { createClient, updateClient, assignLegacyConsultation } from '@/lib/clients/service'
 import { rotateCabinetAccess, revokeCabinetAccess } from '@/lib/clients/access'
 async function ownerStore() { if (!await requireAdminRequest()) throw new Error('Unavailable'); const store = getPrescriptionStore(); if (!store) throw new Error('Unavailable'); return store }
+export async function createClientAction(data) {
+  const store = await ownerStore()
+  const client = createClient({
+    fullName: data.get('fullName'),
+    preferredLocale: data.get('preferredLocale'),
+    email: data.get('email'),
+    phone: data.get('phone'),
+  })
+  await store.saveClient(client)
+  redirect(`/admin/clients/${client.id}`)
+}
+
 export async function editClientAction(id, data) {
   const store = await ownerStore(), current = await store.findClientById(id)
   const next = updateClient(current, Object.fromEntries(['fullName', 'preferredLocale', 'email', 'phone', 'notes', 'status'].map(k => [k, data.get(k)])))
