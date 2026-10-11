@@ -655,6 +655,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...EXPANDED_CATALOG_V4,
   ...PROFESSIONAL_BATTERY_2026_CATALOG,
   ...CDC_HEALTHY_DAYS_CATALOG,
+  ...PROFESSIONAL_BATTERY_2026_B_CATALOG,
   {
     key: 'mspss',
     version: 'v1',
