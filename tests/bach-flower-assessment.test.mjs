@@ -66,7 +66,7 @@ test('score reproduces the author algorithm, including cross-section, control an
   assert.equal(dimension.evidenceCount, 3)
   assert.deepEqual(dimension.sections, ['situation', 'character', 'control'])
   assert.equal(dimension.max, 29)
-  assert.equal(dimension.theme, 'вина, самоукор')
+  assert.equal(dimension.theme, 'вина')
 })
 
 test('0–5 responses allow formerly unreachable author peak bonuses and reject out-of-range inputs', () => {
@@ -96,7 +96,7 @@ test('zero scores produce a neutral, non-prescriptive report in both languages',
   assert.match(ru.sections[0].title, /не найдено/)
   assert.match(en.note, /not a clinical cutoff/)
   assert.match(ru.note, /не клинический порог/)
-  assert.doesNotMatch(en.intro, /prescrib/i)
+  assert.match(en.intro, /not prescriptions/i)
 })
 
 test('ranked interpretation shows primary/additional/verification themes, not a medical prescription', () => {
