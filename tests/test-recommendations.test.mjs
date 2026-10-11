@@ -39,21 +39,21 @@ test('balanced stress monitoring ranks Weekly Pulse first', () => {
   assert.deepEqual(ranked[0].matchedFocus, ['stress', 'sleep'])
 })
 
-test('theme relevance outranks a shorter but unrelated test', () => {
+test('measured attention scales outrank a personality topic heuristic', () => {
   const ranked = rankAssessmentDefinitions(availableDefinitions(), {
     focus: ['attention'],
     depth: 'quick',
   })
-  assert.equal(ranked[0].definition.key, 'mini-ipip-20')
-  assert.deepEqual(ranked[0].matchedFocus, ['attention'])
+  assert.equal(ranked[0].definition.key, 'hh-weekly-pulse')
+  assert.deepEqual(ranked[0].matchedFocus, [])
 })
 
-test('relationship concerns with deeper preference rank the personality baseline first', () => {
+test('a measured connection scale outranks indirect personality relevance', () => {
   const ranked = rankAssessmentDefinitions(availableDefinitions(), {
     focus: ['relationships'],
     depth: 'deep',
   })
-  assert.equal(ranked[0].definition.key, 'mini-ipip-20')
+  assert.equal(ranked[0].definition.key, 'hh-weekly-pulse')
   assert.deepEqual(ranked[0].matchedFocus, ['relationships'])
 })
 
