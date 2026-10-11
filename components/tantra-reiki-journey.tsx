@@ -1,4 +1,5 @@
 import type { PublicLocale } from "@/lib/public-locales";
+import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
 import originalRussianEnglishTranslation from "@/data/academy/tantra-reiki-ru-en.generated.json";
 
@@ -459,7 +460,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
           <article className={"tantra-journey__level tantra-journey__level--phase-"+phase} id={"tantra-level-"+n} key={n} aria-labelledby={"tantra-heading-"+n}>
             <figure className="tantra-journey__photo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.src} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+              <img src={reikiPhotoUrl(photo.src, 1200)} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
             </figure>
             <div className="tantra-journey__level-heading">
               <div className="tantra-journey__chapter">

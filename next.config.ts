@@ -3,7 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  images: { remotePatterns: [{ protocol: "https", hostname: "i.ytimg.com" }] },
+  images: { remotePatterns: [
+    { protocol: "https", hostname: "i.ytimg.com" },
+    // The site owns the original course photographs; proxy them same-origin
+    // so iOS Safari does not have to hotlink PsiTrends directly.
+    { protocol: "https", hostname: "psitrends.com", pathname: "/images/**" },
+    { protocol: "https", hostname: "www.psitrends.com", pathname: "/images/**" },
+  ] },
   async headers() {
     return [
       {
