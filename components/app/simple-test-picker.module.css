@@ -123,3 +123,6 @@
 .testGuide{padding:0 12px 8px 85px}
 .testGuide [data-scale-guide]{margin:0}
 @media(max-width:600px){.scalesSection{margin:7px 0 9px;padding:10px 11px}.testGuide{padding:0 10px 8px 11px}}
+
+/* Compact evidence paragraph alongside the separately expandable measured-scale guide. */
+.testInfo .methodology{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden;color:#796f65;font-size:.73rem;line-height:1.42;margin-top:2px}
