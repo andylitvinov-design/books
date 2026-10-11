@@ -1260,3 +1260,25 @@ test('owner can remove saved selections atomically without erasing answers, resu
     error=>error.code==='REVISION_CONFLICT',
   )
 })
+
+// Bach profile: real private account persistence, all 38 dimensions, and cross-account isolation.
+test('Bach Flower Emotional Profile saves 115 answers in the authorized Google account', async () => {
+  const definition = getAssessmentDefinition('hh-bach-flower-profile','v1','en')
+  const run = await start(a, definition)
+  const answers = Object.fromEntries(definition.questions.map(question => [question.id, 0]))
+  answers['bach.situation.21'] = 4
+  answers['bach.character.04'] = 3
+  answers['bach.control.04'] = 5
+  const saved = await repo.saveRun(a, run.id, {
+    answers, context: {}, progress: definition.questions.length,
+    expectedRevision: run.revision, operationId: randomUUID(),
+  })
+  const submitted = await repo.submitRun(a, run.id, { expectedRevision: saved.revision })
+  assert.equal(submitted.definitionKey, 'hh-bach-flower-profile')
+  assert.equal(submitted.dimensions.length, 38)
+  assert.equal(submitted.dimensions.find(d => d.sourceConstruct === 'Olive').value, 23)
+  const stored = await repo.getResult(a, submitted.id)
+  assert.equal(stored.dimensions.find(d => d.key === 'bach.olive').value, 23)
+  await assert.rejects(() => repo.getResult(b, submitted.id), error =>
+    ['NOT_FOUND', 'FORBIDDEN'].includes(error.code))
+})
