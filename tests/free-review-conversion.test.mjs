@@ -40,8 +40,8 @@ test("privacy-first blue consultation capture needs only one topic selection", (
   assert.match(capture, /data-choice-layout=\{isService \? "service" : "topic"\}/);
   assert.match(capture, /aria-pressed=\{topic === choice\}/);
   assert.match(capture, /new URLSearchParams\(window.location.search\).get\("topic"\)/);
-  assert.match(capture, /https:\/\/wa\.me\/14376066502\?text=/);
-  assert.match(capture, /encodeURIComponent\(message\)/);
+  assert.match(capture, /whatsappEnquiryUrl\(\{/);
+  assert.match(capture, /service: serviceName/);
   assert.match(capture, /Nothing is sent until you press Send/);
   assert.match(capture, /Оно отправится только после вашего подтверждения/);
   assert.match(capture, /Solo se envía cuando confirmas Enviar/);
