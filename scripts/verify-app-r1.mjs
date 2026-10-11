@@ -28,7 +28,11 @@ async function api(path,body,ctx=context){
  }
  throw error
 }
-async function ready(){await expect(page.locator('.hh-nav')).toBeVisible({timeout:60000});await page.waitForLoadState('networkidle')}
+async function ready(){
+ const mobile=await page.evaluate(()=>window.innerWidth<=760)
+ await expect(page.locator(mobile?'.hh-mobile-app-nav':'.hh-nav')).toBeVisible({timeout:60000})
+ await page.waitForLoadState('networkidle')
+}
 async function chooseVisibleTest(testPage,name){
  const customizer=testPage.getByRole('button',{name:/Choose my own tests and filters/})
  if(!(await customizer.count())){
@@ -67,7 +71,7 @@ async function enterTest(name='Current State Check',mode='Guided'){
  if(!(await candidate().count())){
   await chooseVisibleTest(page,name)
   await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
-  if(await page.getByRole('heading',{name:'You already have an active test set'}).count())
+  if(await page.getByText('Another selection is ready',{exact:true}).count())
    await page.getByRole('button',{name:'Use new selection'}).click()
   await expect(page.locator('#my-tests-list').getByRole('heading',{name:'Choose a test'})).toBeVisible()
  }
@@ -153,7 +157,14 @@ try {
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
- await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:'Start with your first test',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:/^Choose tests/})).toBeInViewport();await page.screenshot({path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'My profile',exact:true})).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await expect(page.getByRole('heading',{name:'Your measured scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
+ await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:'Your testing starts here',exact:true})).toBeVisible();
+ await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible();
+ await expect(page.getByRole('button',{name:/^Choose tests/})).toBeInViewport();
+ await expect(page.getByRole('button',{name:'Get recommendations'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
+ await expect(page.locator('.hh-nav')).toBeHidden();
+ await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
+ await page.screenshot({path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'My profile',exact:true})).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await expect(page.getByRole('heading',{name:'Your measured scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
  await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-initial.png',fullPage:true});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
  await page.getByRole('button',{name:'Happy',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect.poll(async()=>((await api('bootstrap')).data.moodCheckins||[]).length).toBe(1);await page.getByRole('button',{name:'Not now',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);passed('signed-in mood tap persists even when the user chooses Not now')
  const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
@@ -171,9 +182,9 @@ try {
  await saveAndExit();await enterTest();await page.getByText('Add optional context',{exact:true}).click();await expect(page.getByLabel('Anything else you want to note?')).toHaveValue('Synthetic private context, not a real person.');await expect(page.getByLabel('What changed or seems to trigger this?')).toHaveValue('Synthetic trigger.');await expect(page.getByLabel('What would you like to change?')).toHaveValue('Synthetic desired change.');passed('Save and exit flushes versioned optional context without touching scores')
  await page.getByRole('button',{name:'Save my result'}).click();await openCompletedPlanResult();await expect(page.getByRole('heading',{name:'Context at this check-in'})).toBeVisible();await expect(page.getByText('Synthetic trigger.',{exact:true})).toBeVisible();const first=(await api('bootstrap')).data.results[0];assert.equal(first.dimensions.length,5);passed('first result, owner-only optional context and snapshot persist in actual PostgreSQL')
  await page.goto(origin+'/en/app');await ready()
- await page.locator('details').filter({has:page.getByText('Reports & recommendations',{exact:true})}).locator('summary').click()
+ await expect(page.getByRole('button',{name:'Download report'})).toBeEnabled()
  const pdfDownloadPromise=page.waitForEvent('download',{timeout:60000})
- await page.getByRole('button',{name:'Download complete PDF'}).click()
+ await page.getByRole('button',{name:'Download report'}).click()
  const pdfDownload=await pdfDownloadPromise
  assert.match(pdfDownload.suggestedFilename(),/\.pdf$/)
  const pdfBytes=await readFile(await pdfDownload.path())
@@ -336,7 +347,7 @@ try {
  await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
  // An existing in-progress battery must not be discarded silently.
  // Choose the newly requested set through the explicit replacement confirmation.
- await expect(page.getByRole('heading',{name:'You already have an active test set'})).toBeVisible()
+ await expect(page.getByText('Another selection is ready',{exact:true})).toBeVisible()
  await page.getByRole('button',{name:'Use new selection'}).click()
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  const reopenedPlan=(await api('bootstrap')).data.activeTestPlan
