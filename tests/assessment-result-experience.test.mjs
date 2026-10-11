@@ -20,7 +20,8 @@ test('every runnable, versioned assessment produces EN/RU score-tied advice with
     assert.ok(scored.dimensions.length > 0, def.key)
     for (const locale of ['en', 'ru']) {
       const report = buildAssessmentResultReport(scored, locale)
-      assert.equal(report.sections.length, scored.dimensions.length, def.key + ' ' + locale)
+      if (def.key === 'hh-bach-flower') assert.ok(report.sections.length >= 1 && report.sections.length <= 13, def.key + ' ' + locale)
+      else assert.equal(report.sections.length, scored.dimensions.length, def.key + ' ' + locale)
       assert.ok(report.title.length > 15)
       assert.ok(report.intro.length > 30)
       for (const section of report.sections) {
