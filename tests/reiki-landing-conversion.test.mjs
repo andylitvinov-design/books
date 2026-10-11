@@ -30,9 +30,9 @@ test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () 
   assert.match(capture, /Request free express Level 1 initiation/);
   assert.match(capture, /Бесплатная экспресс-инициация 1-й ступени/);
   assert.match(capture, /Скачать учебные материалы и цены/);
-  assert.match(capture, /wa\.me\/14376066502/);
+  assert.match(capture, /whatsappEnquiryUrl\(\{/);
   assert.match(capture, /WhatsAppMark/);
-  assert.match(capture, /Selected option \/ Выбрано:/);
+  assert.match(capture, /option: t\.common\.options\[selected\]/);
   assert.match(capture, /reiki-guide/);
   assert.match(capture, /t\.me\/AndyTherapist/);
   assert.match(capture, /download=\{download \? true : undefined\}/);
