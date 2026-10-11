@@ -245,6 +245,15 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     // behind a large conflict panel. Its compact choice stays on the overview.
     if (error) setShowList(true)
   }, [error])
+  useEffect(() => {
+    if (!conflict) return
+    // When a new selection originated further down the page, bring the compact
+    // decision into view rather than leaving the visitor at an empty explorer.
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector('[data-pending-selection]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [conflict])
 
   function keepSavedSet() {
     try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browsers may block storage. */ }
