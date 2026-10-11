@@ -962,9 +962,9 @@ const definition = (locale, id, contentHash) => ({
 
 export const BACH_FLOWER_EN_V1 = deepFreeze(definition(
   'en', 'e89664f9-1b9d-43a9-8ade-d0b1effc0512',
-  'sha256:SOURCE_EN_PLACEHOLDER',
+  'sha256:9df0414210456a9c0223a118a97e8cfdd40488d8e90496b5de74db046ef4ea7d',
 ))
 export const BACH_FLOWER_RU_V1 = deepFreeze(definition(
   'ru', '0c8af245-93b4-4db7-a5bf-d180bbfbb632',
-  'sha256:SOURCE_RU_PLACEHOLDER',
+  'sha256:2a60d7f2bbda2b203bf96baf41176f29750525e78c1971956811c029cb1f2a4c',
 ))
