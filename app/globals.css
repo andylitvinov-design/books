@@ -5462,7 +5462,10 @@
   padding: 12px 22px;
   background: #74452f;
   color: #fffaf4;
-  font: 750 .94rem/1.3 inherit;
+  font-family: inherit;
+  font-size: .94rem;
+  font-weight: 750;
+  line-height: 1.3;
   cursor: pointer;
   transition: background-color .15s ease;
 }
@@ -5508,10 +5511,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .shared-report-lock button { transition: none; }
-}
-@media (max-width: 767px) {
-  .shared-report-card { margin-top: 18px; border-radius: 22px; padding: 26px 20px; }
-  .shared-report-save > button { width: 100%; }
 }
  .legal-page {
   box-sizing: border-box;
