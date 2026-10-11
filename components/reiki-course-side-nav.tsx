@@ -196,9 +196,9 @@ export function TempleStudiesSideNavigation({
   stages: Array<{ id: string; title: string }>;
 }) {
   const navigation = {
-    en: { eyebrow: "Your learning path", title: "Temple Studies" },
-    ru: { eyebrow: "Этапы единой программы", title: "Temple Studies" },
-    es: { eyebrow: "Etapas del programa", title: "Temple Studies" },
+    en: { eyebrow: "Optional learning chapters", title: "Temple Studies" },
+    ru: { eyebrow: "Учебные главы · по желанию", title: "Temple Studies" },
+    es: { eyebrow: "Capítulos de consulta", title: "Temple Studies" },
   }[locale];
 
   return (
