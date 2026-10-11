@@ -44,6 +44,12 @@ test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () 
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
   assert.match(css, /\.choice\[data-selected="true"\]/);
   assert.match(css, /@media \(max-width: 640px\)/);
+  assert.match(css, /\.choices \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.choice:nth-child\(3\) \{ grid-column: 1 \/ -1/);
+  const mobile = css.split("@media (max-width: 640px) {")[1];
+  assert.match(mobile, /\.choices \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(mobile, /\.choice:nth-child\(3\) \{ min-height: 60px/);
+  assert.doesNotMatch(mobile, /\.choices \{ grid-template-columns: minmax\(0, 1fr\)/);
 });
 
 test("all ten YouTube testimonials are immediately accessible, with accurate classification", async () => {
