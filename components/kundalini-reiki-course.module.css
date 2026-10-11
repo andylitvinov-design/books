@@ -134,7 +134,7 @@
 .capturePrimary { color: #fff; background: #156f61; }
 .captureSecondary { color: #195e55; background: rgba(255,255,255,.88); border: 1px solid #bfd9d5; }
 .telegram { display: inline-flex; align-items: center; gap: 7px; color: #1a6c63; text-decoration: none; font-size: .85rem; font-weight: 650; margin: 3px auto 0; }
-a:focus-visible,summary:focus-visible { outline: 3px solid #efb85f; outline-offset: 3px; }
+.wrapper a:focus-visible,.wrapper summary:focus-visible { outline: 3px solid #efb85f; outline-offset: 3px; }
 @media (max-width: 1000px) {
   .hero { min-height: 480px; }
   .heroText { padding: 34px; }
