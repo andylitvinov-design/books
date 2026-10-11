@@ -31,7 +31,14 @@ test('report invitation uses fragment exchange, report-scoped viewer and explici
   assert.match(view, /history\.replaceState/)
   assert.match(view, /report-viewer\/exchange/)
   assert.match(view, /report-viewer\//)
-  assert.match(view, /Save this report to my Cabinet/)
+  assert.match(view, /Open report & save to my Google Cabinet/)
+  assert.match(view, /data-report-preview/)
+  assert.match(view, /shared-report-paper-faded/)
+  assert.match(view, /grant\\?\\.saveAllowed/)
+  assert.match(view, /c\\.viewOnly/)
+  assert.match(appApi, /reportInvitationPreview/)
+  assert.match(appApi, /opened\\.grant\\.saveAllowed \\? reportInvitationPreview\\(opened\\.report\\) : opened\\.report/)
+  assert.match(appApi, /prompt: 'select_account'/)
   assert.match(view, /save-intents/)
   assert.match(view, /intentId/)
   assert.doesNotMatch(view, /report\/claim/)
@@ -80,4 +87,25 @@ test('Cabinet guest flow is server-backed and never auto-imports on ordinary log
   assert.match(route, /save-intents/)
   assert.doesNotMatch(clientPage, /redirect\(/)
   assert.match(clientPage, /legacySelector/)
+})
+
+test('one-tap report invitation saves only after Google authentication and opens the saved report', async () => {
+  const [workspace, viewer, route, styles] = await Promise.all([
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+    readFile('components/app/shared-report-view.jsx', 'utf8'),
+    readFile('app/api/app/[...path]/route.js', 'utf8'),
+    readFile('app/globals.css', 'utf8'),
+  ])
+  assert.match(viewer, /sourceKind: 'delivered_report'/)
+  assert.match(viewer, /auth\/start/)
+  assert.doesNotMatch(viewer, /if \(intent\.signedIn\)/)
+  assert.match(workspace, /autoSaveTriggered/)
+  assert.match(workspace, /intent\?\.sourceKind !== 'delivered_report'/)
+  assert.match(workspace, /void commit\(\)/)
+  assert.match(workspace, /saved\.sourceKind === 'delivered_report'/)
+  assert.match(workspace, /hh-saved-report-paper/)
+  assert.match(route, /confirmed !== true/)
+  assert.match(route, /saveIntentBrowserProof/)
+  assert.match(styles, /\.shared-report-paper-faded \{[\s\S]*?filter: blur\(3\.5px\)/)
+  assert.match(styles, /\.shared-report-lock button:focus-visible/)
 })
