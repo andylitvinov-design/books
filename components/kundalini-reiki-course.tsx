@@ -200,6 +200,14 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
                         {extension.stoneNames.map((stone) => <li key={stone}>{stone}</li>)}
                       </ul>
                     ) : null}
+                    {extension.stoneNamesAdvanced && extension.advancedTitle ? (
+                      <>
+                        <h4 className={styles.stoneGroupTitle}>{extension.advancedTitle[locale]}</h4>
+                        <ul className={styles.stoneList}>
+                          {extension.stoneNamesAdvanced.map((stone) => <li key={stone}>{stone}</li>)}
+                        </ul>
+                      </>
+                    ) : null}
                   </div>
                 </details>
                 <small>Paul Crick · pp. {extension.manualPages}</small>
