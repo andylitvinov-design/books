@@ -24,7 +24,7 @@ export const revalidate = 0;
 const copy = {
   ru: {
     title: "Индивидуальная работа в Торонто и онлайн — Holistic House",
-    description: "Бесплатная диагностика по коучинг-форме и рисунку «Я — цель — проблема» с письменным отчётом. Личные консультации отдельно: €50 за 30 минут, €100 за 60 минут.",
+    description: "Четыре предложения Holistic House: бесплатная диагностика ситуации, дао-диагностика ресурса, личная сессия «Алхимия души» и курс гипнотерапии.",
     kicker: "Торонто и онлайн",
     heading: "Индивидуальная работа",
     lead: "Исследуйте повторяющиеся паттерны, отношения, важные решения и внутренние блоки в бережной индивидуальной работе.",
@@ -45,7 +45,7 @@ const copy = {
   },
   en: {
     title: "Personal work in Toronto and online — Holistic House",
-    description: "Start with a free drawing-based assessment: coaching form, handwritten ME / GOAL / PROBLEM and a personal written report. Live consultations cost €50/30 min or €100/60 min.",
+    description: "Four Holistic House services: free situation review, free DAO resource profile, Alchemy of the Soul session and guided imagery hypnotherapy course.",
     kicker: "Toronto & online",
     heading: "Personal work",
     lead: "Explore repeating patterns, relationships, important decisions and inner blocks through thoughtful one-to-one work.",
@@ -104,11 +104,13 @@ export default async function ServicesPage({ params }: PageProps) {
 
       <ServicesSolutions locale={locale as Locale} />
 
+      <PersonalTestimonials locale={locale as Locale} variant="services" />
+
       <details className={solutionStyles.extra} id="available-services">
         <summary className={solutionStyles.extraSummary}>
           <span>
             <strong>{locale === "ru" ? "Ищете конкретную услугу?" : "Already know which service you need?"}</strong>
-            <small>{locale === "ru" ? "Разверните каталог отдельных предложений и мастеров" : "Expand the separate practitioner offers and formats"}</small>
+            <small>{locale === "ru" ? "Дополнительные форматы и каталог практиков" : "Optional practitioner directory and additional formats"}</small>
           </span>
           <span className={solutionStyles.expandSymbol} aria-hidden="true">+</span>
         </summary>
@@ -280,9 +282,6 @@ export default async function ServicesPage({ params }: PageProps) {
         </div>
       </details>
 
-
-
-      <PersonalTestimonials locale={locale as Locale} variant="services" />
 
       <PublicConsultationCta locale={locale as Locale} id="consultation" />
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
