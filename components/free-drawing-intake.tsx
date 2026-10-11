@@ -34,8 +34,8 @@ const copy = {
     copyButton: "Copy answers",
     copied: "Copied — paste them into WhatsApp",
     copyFallback: "Select and copy the text below, then paste it into WhatsApp.",
-    openWhatsapp: "Open WhatsApp — send answers + drawing photo",
-    sendNote: "Paste your answers into the chat and attach the photo of your handwritten drawing. Nothing is sent automatically.",
+    openWhatsapp: "Copy answers & open WhatsApp",
+    sendNote: "Paste the copied answers and attach your drawing photo. If copying was blocked, use Copy answers here. Nothing is sent automatically.",
     privacy: "This page does not upload or store your answers or drawing. You choose what to send in WhatsApp. The written report is a symbolic situation review, not a medical or mental-health diagnosis.",
     questionLabel: "Coaching questionnaire — free drawing assessment",
     request: "Request: Please review my coaching answers and handwritten drawing (ME / MY GOAL / MY PROBLEM) and send me a personal written report.",
@@ -68,8 +68,8 @@ const copy = {
     copyButton: "Скопировать ответы",
     copied: "Скопировано — вставьте в WhatsApp",
     copyFallback: "Выделите и скопируйте текст ниже, затем вставьте его в WhatsApp.",
-    openWhatsapp: "Открыть WhatsApp — отправить ответы и фото рисунка",
-    sendNote: "Вставьте ответы в переписку и прикрепите фотографию рисунка от руки. Автоматически ничего не отправляется.",
+    openWhatsapp: "Скопировать ответы и открыть WhatsApp",
+    sendNote: "Вставьте скопированные ответы и фото рисунка. Если копирование заблокировано, вернитесь к кнопке «Скопировать ответы». Автоматически ничего не отправляется.",
     privacy: "Страница не загружает и не хранит ваши ответы и рисунок. Вы сами выбираете, что отправить через WhatsApp. Отчёт — символический разбор ситуации, а не медицинский или психиатрический диагноз.",
     questionLabel: "Коучинг-форма — бесплатная диагностика по рисунку",
     request: "Запрос: прошу провести диагностику по моим ответам и рисунку (Я / МОЯ ЦЕЛЬ / МОЯ ПРОБЛЕМА) и прислать персональный письменный отчёт.",
@@ -102,8 +102,8 @@ const copy = {
     copyButton: "Copiar respuestas",
     copied: "Copiado — pega las respuestas en WhatsApp",
     copyFallback: "Selecciona y copia el texto siguiente y pégalo en WhatsApp.",
-    openWhatsapp: "Abrir WhatsApp — enviar respuestas y foto",
-    sendNote: "Pega las respuestas en el chat y adjunta la foto del dibujo a mano. No se envía nada automáticamente.",
+    openWhatsapp: "Copiar respuestas y abrir WhatsApp",
+    sendNote: "Pega las respuestas copiadas y adjunta la foto. Si falla la copia, usa el botón Copiar respuestas. Nada se envía automáticamente.",
     privacy: "Esta página no sube ni guarda tus respuestas ni tu dibujo. Tú decides qué enviar por WhatsApp. El informe es una reflexión simbólica sobre la situación, no un diagnóstico médico ni de salud mental.",
     questionLabel: "Formulario de coaching — evaluación gratuita mediante dibujo",
     request: "Solicitud: analiza mis respuestas y mi dibujo a mano (YO / MI META / MI PROBLEMA) y envíame un informe escrito personal.",
@@ -213,13 +213,14 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
         <h3>{t.ready}</h3>
         <textarea className={styles.preview} readOnly value={answers} rows={7} aria-label={t.ready}
           onFocus={event => event.currentTarget.select()} />
-        <button type="button" onClick={copyAnswers} className={styles.copyButton}>
+        <AcquisitionEventLink className={styles.whatsapp} href={whatsappUrl} prefetch={false} target="_blank" rel="noopener noreferrer"
+          event="service_request_start" onClick={() => { void copyAnswers(); }} attributes={{ "data-contact-channel": "whatsapp" }}>
+          <Send size={18} aria-hidden="true" />{t.openWhatsapp}<ArrowUpRight size={18} aria-hidden="true" />
+        </AcquisitionEventLink>
+        <button type="button" onClick={() => { void copyAnswers(); }} className={styles.copyButton}>
           <ClipboardCopy size={18} aria-hidden="true" />{t.copyButton}
         </button>
         <p aria-live="polite" className={styles.copyStatus}>{copied ? t.copied : copyFailed ? t.copyFallback : null}</p>
-        <AcquisitionEventLink className={styles.whatsapp} href={whatsappUrl} prefetch={false} target="_blank" rel="noopener noreferrer" event="service_request_start" attributes={{ "data-contact-channel": "whatsapp" }}>
-          <Send size={18} aria-hidden="true" />{t.openWhatsapp}<ArrowUpRight size={18} aria-hidden="true" />
-        </AcquisitionEventLink>
         <p className={styles.note}>{t.sendNote}</p>
       </div> : null}
       <p className={styles.privacy}>{t.privacy}</p>
