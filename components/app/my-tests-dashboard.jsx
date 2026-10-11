@@ -29,7 +29,7 @@ const COPY = {
 
 export function MyTestsDashboard({
   locale='en',rows=[],completed=0,results=[],snapshot,data,
-  onOpenFilters,filtersOpen=false,hasNewSelection=false,children,
+  onOpenFilters,filtersOpen=false,hasNewSelection=false,hasList=false,children,
 }) {
   const c=COPY[locale]||COPY.en
   const [showGuidance,setShowGuidance]=useState(false)
@@ -64,7 +64,7 @@ export function MyTestsDashboard({
         <ArrowRight size={18} aria-hidden="true"/>
       </button>
 
-      {rows.length?children:<button type="button" className={styles.chooseButton} onClick={onOpenFilters}>
+      {hasList?children:<button type="button" className={styles.chooseButton} onClick={onOpenFilters}>
         <Play size={20} fill="currentColor" aria-hidden="true"/>
         <span><strong>{c.choose}</strong><small>{c.chooseHint}</small></span>
         <ArrowRight size={19} aria-hidden="true"/>
