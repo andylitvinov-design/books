@@ -6,6 +6,8 @@ import {MONITORING_CATALOG} from '../data/assessments/catalog.js'
 import {canonicalJSON} from '../lib/assessments/contracts.js'
 import {getAssessmentDefinition} from '../lib/assessments/definitions.js'
 import {scoreAssessment} from '../lib/assessments/scoring.js'
+import {buildExplorerEntries} from '../lib/assessments/test-explorer.js'
+import {MIND_BODY_MONITOR_REGISTRY} from '../data/assessments/mind-body-monitor-registry.js'
 
 test('six new source-backed measures have intact definitions',()=>{
  assert.equal(definitions.length,6)
@@ -46,5 +48,31 @@ test('brief and somatic forms have original item counts and upper scores',()=>{
   const d=getAssessmentDefinition(key,'v1','en')
   assert.equal(d.questions.length,items)
   assert.equal(scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,d.answerScale.max]))).dimensions[0].value,max)
+ }
+})
+
+test('all six measures are runnable in owner account and visible as appropriate to guests',()=>{
+ const allowed=new Set(['phq-2','gad-2','rses-10'])
+ for(const locale of ['en','ru']){
+  const account=buildExplorerEntries({locale,audience:'account'})
+  const guest=buildExplorerEntries({locale,audience:'guest'})
+  for(const d of definitions){
+   const item=account.find(e=>e.key===d.key)
+   assert.ok(item?.selectable)
+   assert.equal(item.questionCount,d.questions.length)
+   assert.equal(guest.find(e=>e.key===d.key).selectable,allowed.has(d.key))
+  }
+ }
+})
+test('protected professional references are metadata only, not publicly startable',()=>{
+ const protectedKeys=['stai-40','bfi-2-60','ctq-sf-28','sf-36','ecr-r-36','srs-2']
+ const guest=buildExplorerEntries({locale:'en',audience:'guest'})
+ for(const key of protectedKeys){
+  const item=MIND_BODY_MONITOR_REGISTRY.find(e=>e.key===key)
+  assert.ok(item)
+  assert.equal(item.enabled,false)
+  const view=guest.find(e=>e.key===key)
+  assert.equal(view.selectable,false)
+  assert.equal(view.definition,null)
  }
 })
