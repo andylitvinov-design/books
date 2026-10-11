@@ -38,7 +38,7 @@ export const IPIP_BIG_FIVE_50_EN_V1 = deepFreeze({
   "scoring": {
     "dimensions": [
       {
-        "key": "trait.extraversion",
+        "key": "trait.ipip50.extraversion",
         "method": "sum",
         "items": [
           "ipip50.01",
@@ -66,7 +66,7 @@ export const IPIP_BIG_FIVE_50_EN_V1 = deepFreeze({
         ]
       },
       {
-        "key": "trait.agreeableness",
+        "key": "trait.ipip50.agreeableness",
         "method": "sum",
         "items": [
           "ipip50.02",
@@ -93,7 +93,7 @@ export const IPIP_BIG_FIVE_50_EN_V1 = deepFreeze({
         ]
       },
       {
-        "key": "trait.conscientiousness",
+        "key": "trait.ipip50.conscientiousness",
         "method": "sum",
         "items": [
           "ipip50.03",
@@ -120,7 +120,7 @@ export const IPIP_BIG_FIVE_50_EN_V1 = deepFreeze({
         ]
       },
       {
-        "key": "trait.emotional_stability",
+        "key": "trait.ipip50.emotional_stability",
         "method": "sum",
         "items": [
           "ipip50.04",
@@ -151,7 +151,7 @@ export const IPIP_BIG_FIVE_50_EN_V1 = deepFreeze({
         ]
       },
       {
-        "key": "trait.intellect_imagination",
+        "key": "trait.ipip50.intellect_imagination",
         "method": "sum",
         "items": [
           "ipip50.05",
@@ -432,7 +432,7 @@ export const IPIP_BIG_FIVE_50_EN_V1 = deepFreeze({
   ],
   "optionalContext": [],
   "suggestedRepeatDays": null,
-  "contentHash": "sha256:2b789c665a89678c620fefce1f86e3f40f065827812176c5bc8ba4357cd90271"
+  "contentHash": "sha256:345b4697313e391676818d22197335b8e02a7271eabf3de014bf468148d3c034"
 })
 
 export const IPIP_BIG_FIVE_50_CATALOG = deepFreeze([
