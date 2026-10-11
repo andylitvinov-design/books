@@ -77,7 +77,7 @@ test('MMPI remains professional licensed, while IPIP and original typology have 
   const bach=active.find(x=>x.key==='hh-bach-flower-profile')
   const b=assessmentMethodology({key:bach.key,catalog:bach,locale:'ru'})
   assert.equal(b.status,'bach')
-  assert.match(b.text,/не является валидированным/)
+  assert.match(b.text,/не является валидированным/i)
 })
 
 test('purpose/origin/evidence explanations render in public explorer, prelogin selector, account tests, Insights and PDF',async()=>{
