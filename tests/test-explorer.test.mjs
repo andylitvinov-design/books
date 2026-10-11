@@ -190,12 +190,13 @@ test('extended filters work together across new releases without dropping all te
   for (const item of [v3, v4]) {
     const entry = entries.find((candidate) => candidate.key === item.key)
     assert.ok(entry.selectable)
+    assert.ok(entry.measurementAxes.length > 0)
     const matched = filterExplorerEntries(entries, {
       availability: 'available',
       focus: ['body'], areas: ['body'], details: ['body'],
       styles: ['engaging'], lengths: [entry.testLength],
       maxMinutes: 5, language: 'bilingual', tracking: 'repeat',
-      axes: [entry.analysisAxes[0].key],
+      axes: [entry.measurementAxes[0]],
     })
     assert.ok(matched.some((candidate) => candidate.key === item.key), item.key)
     assert.ok(matched.every((candidate) => candidate.areas.includes('body')))

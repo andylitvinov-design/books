@@ -640,3 +640,14 @@
 /* Canonical warm terracotta for all Test Explorer primary start actions. */
 .explorer .quickPrimary,.explorer .battery .primary,.explorer .primary{background:#bf4f2e!important;border-color:#bf4f2e!important;color:#fff!important;box-shadow:0 9px 23px #92371d20}
 .explorer .quickPrimary:hover:not(:disabled),.explorer .battery .primary:hover:not(:disabled),.explorer .primary:hover:not(:disabled){background:#a84227!important;border-color:#a84227!important}
+
+/* Scale-first discovery: compact measured-area rail, subordinate to no topic categories. */
+.explorer .scaleFirst{margin:9px 0 11px;padding:12px 13px;border:1px solid #d7e4db;border-radius:14px;background:#f6faf5;color:#3a5248}
+.explorer .scaleFirst strong{display:block;font-size:.87rem;font-weight:750}
+.explorer .scaleFirst p{font-size:.73rem;line-height:1.42;margin:3px 0 9px;color:#6a776e}
+.explorer .scaleRail{display:flex;gap:7px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:6px}
+.explorer .scaleRail button{flex:0 0 auto;min-height:36px;padding:6px 10px;border:1px solid #c8d8ce;border-radius:999px;background:#fffdf9;color:#365a4b;font-size:.77rem;cursor:pointer}
+.explorer .scaleRail button[aria-pressed=true]{background:#2c6e60;color:#fff;border-color:#2c6e60}
+.explorer .scaleRail button:focus-visible{outline:3px solid #28776a;outline-offset:2px}
+.explorer .rowBody [data-scale-guide]{max-width:100%;margin:7px 0 5px}
+@media(max-width:650px){.explorer .scaleFirst{padding:10px;margin:7px 0}.explorer .scaleFirst p{font-size:.7rem}}
