@@ -169,7 +169,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
             <summary>{video.transcript ? text.transcriptShort : text.details}<ChevronDown aria-hidden="true" /></summary>
             <div className="site-video-more">{video.transcript && <p lang={textLanguage}>{video.transcript}</p>}<div className="site-video-actions">{externalLink}</div></div>
           </details>
-          <div className={styles.quickWatch}>{mirrorLink ?? externalLink}</div>
+          {mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}
           {(isHeygen || audioNotice) && <span className="site-video-ai-badge" title={isHeygen ? aiDisclosure : undefined} aria-label={[audioNotice, isHeygen ? aiDisclosure : ""].filter(Boolean).join(". ")}>{audioNotice}{audioNotice && isHeygen ? " · " : ""}{isHeygen ? (isApprovedAndyIntro ? text.avatarShort : text.aiShort) : ""}</span>}
         </figcaption>
       ) : (
