@@ -1358,7 +1358,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           )}
         </div>
       )}
-      {(isContext || (mode === 'quick' && allAnswered)) && (
+      {(isContext || (mode === 'quick' && allAnswered) ||
+        (mode === 'guided' && index === def.questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
         <TestFinishActions locale={locale} disabled={busy || Boolean(operation.current) || !allAnswered}
           onReport={() => finish('report')} onNext={() => finish('next')} />
       )}
@@ -1371,7 +1372,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
             {c.back}
           </button>
         )}
-        {!isContext && mode === 'guided' && (
+        {!isContext && mode === 'guided' &&
+          !(index === def.questions.length - 1 && allAnswered && !def.optionalContext.length) && (
           <button
             className="hh-primary"
             disabled={busy || run.answers[question.id] === undefined || Boolean(operation.current)}
