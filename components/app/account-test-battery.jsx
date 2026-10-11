@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Zap } from 'lucide-react'
+import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Trash2, Zap } from 'lucide-react'
 import { TestExplorer } from './test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import { MyTestsDashboard } from './my-tests-dashboard'
@@ -28,6 +28,10 @@ const COPY = {
     keep: 'Keep existing set', replace: 'Use new selection', error: 'Could not save your test selection. Please try again.',
     retry: 'Try again', account: 'My tests', history: 'Results history', privacy: 'Your responses and results stay private in your personal Cabinet. These self-checks are not a diagnosis.',
     signInFailed: 'Google sign-in was not completed. You can retry when you are ready.',
+    remove: 'Remove from my tests', removed: 'Removed from selection. Saved results and answers are unchanged.',
+    stale: 'Your selection was updated elsewhere. Refreshed the current list; please try again.',
+    filters: 'Edit test filters', closeFilters: 'Close filters', pendingReview: 'Review your proposed test selection',
+    pendingDescription: 'The filters returned another set of tests. Choose whether to keep your saved set or apply that set. Your completed assessments remain in history.',
   },
   ru: {
     title: 'Мои выбранные тесты', intro: 'Ваш личный набор тестов готов. Можно начать любой тест, сохранить прогресс и вернуться к нему позже.',
@@ -40,6 +44,10 @@ const COPY = {
     keep: 'Оставить текущий', replace: 'Использовать новый', error: 'Не удалось сохранить подборку. Повторите попытку.',
     retry: 'Повторить', account: 'Мои тесты', history: 'История результатов', privacy: 'Ваши ответы и результаты приватны и хранятся в личном кабинете. Эти тесты не являются диагнозом.',
     signInFailed: 'Вход через Google не завершён. При необходимости повторите вход.',
+    remove: 'Убрать из набора', removed: 'Тест убран из подборки. Ответы и результаты сохранены.',
+    stale: 'Подборка уже изменилась. Список обновлён; попробуйте ещё раз.',
+    filters: 'Изменить фильтры тестов', closeFilters: 'Закрыть фильтры', pendingReview: 'Проверить новую подборку тестов',
+    pendingDescription: 'Вы выбрали другой набор по фильтрам. Можно сохранить текущий или применить новую подборку. Пройденные результаты сохранятся.',
   },
 }
 // Questionnaires have abstract topic icons, never unrelated practitioner/client photos.
@@ -108,7 +116,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const [exploring, setExploring] = useState(false)
   const allowedFilters = ['all', 'notStarted', 'inProgress', 'completed', 'remaining']
   const requestedFilter = allowedFilters.includes(initialStatusFilter) ? initialStatusFilter : null
-  const [showList, setShowList] = useState(Boolean(requestedPlanId || requestedFilter))
+  const [showList, setShowList] = useState(true)
   const [statusFilter, setStatusFilter] = useState(requestedFilter || 'all')
   useEffect(() => {
     // The public Google handoff can replace ?selection=pending with ?plan=... without remounting.
@@ -124,8 +132,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }, [requestedFilter])
   const [conflict, setConflict] = useState(null)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const entries = useMemo(() => buildExplorerEntries({ locale, audience: 'account' }), [locale])
-  const currentPlan = plan || data.activeTestPlan || data.latestTestPlan || null
+  // A cancelled plan is historical data, not a selection to render as active.
+  const currentPlan = plan === null
+    ? (data.activeTestPlan || (data.latestTestPlan?.status === 'cancelled' ? null : data.latestTestPlan) || null)
+    : (plan.status === 'cancelled' ? null : plan)
   const rows = useMemo(() => planRows(currentPlan, data, locale), [currentPlan, data, locale])
   const completed = rows.filter((row) => row.completedInPlan).length
   const pastRows = useMemo(() => {
@@ -223,7 +235,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       const ids = entriesToStart.map((entry) => entry.definition?.id)
       if (JSON.stringify(ids) !== JSON.stringify(data.activeTestPlan.definitionIds)) {
         setConflict({ keys, preferences: selectionPreferences })
-        setExploring(false)
+        setExploring(true)
         return
       }
       await create(keys, false, selectionPreferences)
@@ -231,14 +243,41 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     }
     await create(keys, false, selectionPreferences)
   }
-  function openList() {
-    setShowList(true)
-    if (!rows.length) setExploring(true)
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      const target = document.getElementById(rows.length ? 'my-tests-list' : 'my-test-explorer')
-      target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      target?.querySelector('[data-test-list-heading]')?.focus({ preventScroll: true })
+  function openFilters() {
+    setExploring((open) => !open)
+    if (!exploring) window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      document.getElementById('my-test-explorer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }))
+  }
+  function openList() {
+    if (!rows.length) return openFilters()
+    document.getElementById('my-tests-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  async function removeSelectedTest(row) {
+    if (!currentPlan || currentPlan.status !== 'active' || busy) return
+    setBusy(true);setError('');setNotice('')
+    try {
+      const updated = await api('test-plans/' + encodeURIComponent(currentPlan.id) + '/remove', {
+        definitionId: row.definition.id, expectedRevision: currentPlan.revision,
+      })
+      // A zero-item set is represented by a cancelled plan, not a deleted row.
+      setPlan(updated)
+      setConflict(null)
+      try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* storage optional */ }
+      await reload()
+      setNotice(c.removed)
+      if (updated.status === 'cancelled') setExploring(false)
+      // Avoid keeping stale plan IDs in the URL after editing the current set.
+      if (requestedPlanId) router.replace(root + '/tests')
+    } catch (cause) {
+      if (cause.code === 'REVISION_CONFLICT') {
+        setPlan(null)
+        await reload()
+        setError(c.stale)
+      } else {
+        setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
+      }
+    } finally { setBusy(false) }
   }
   useEffect(() => {
     // A pending new selection should not automatically hide the current tests
@@ -246,20 +285,20 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     if (error) setShowList(true)
   }, [error])
   useEffect(() => {
-    if (!conflict) return
-    // When a new selection originated further down the page, bring the compact
-    // decision into view rather than leaving the visitor at an empty explorer.
+    // Only surface the difference inside the open filters, not as an
+    // intrusive warning above the saved test list.
+    if (!conflict || !exploring) return
     const frame = window.requestAnimationFrame(() => {
       document.querySelector('[data-pending-selection]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [conflict])
+  }, [conflict, exploring])
 
   function keepSavedSet() {
     try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browsers may block storage. */ }
     setConflict(null)
     setPlan(data.activeTestPlan || data.latestTestPlan || null)
-    setShowList(false)
+    setExploring(false)
     router.replace(root)
   }
 
