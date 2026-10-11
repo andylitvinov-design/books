@@ -1,0 +1,17 @@
+// Holistic House original prompts. Do not attribute to external authors.
+export const SHARED_DAYS = Object.freeze([
+  {phase:'awareness',quote:['Noticing is a meaningful first step.','Замечать — уже важный первый шаг.'],reflection:['What felt most noticeable today?','Что сегодня оказалось самым заметным?']},
+  {phase:'awareness',quote:['A difficult moment is one part of the day, not the whole day.','Трудный момент — часть дня, а не весь день.'],reflection:['Did you discover an early signal?','Удалось ли заметить ранний сигнал?']},
+  {phase:'awareness',quote:['I can describe a reaction without judging myself for having it.','Я могу описывать реакцию, не осуждая себя за неё.'],reflection:['Which pattern did you recognize?','Какую повторяющуюся реакцию вы узнали?']},
+  {phase:'regulation',quote:['The present moment can offer a small point of support.','Настоящий момент может дать небольшую точку опоры.'],reflection:['What felt comfortable enough to repeat?','Что было достаточно комфортным, чтобы повторить?']},
+  {phase:'regulation',quote:['A tiny, repeatable step matters more than a perfect performance.','Маленький повторяемый шаг важнее идеального результата.'],reflection:['What small choice did you manage today?','Какой маленький выбор удалось сделать?']},
+  {phase:'regulation',quote:['I can respond gently, even when feelings are complicated.','Я могу реагировать бережно, даже если чувства сложные.'],reflection:['Which gentler response could you keep?','Какой более мягкий способ реакции хотелось бы сохранить?']},
+  {phase:'review',quote:['Reviewing is a way to listen, not to grade myself.','Подведение итогов — способ прислушаться, а не выставить себе оценку.'],reflection:['What did the week teach you about your needs?','Что эта неделя показала о ваших потребностях?']},
+  {phase:'application',quote:['A skill becomes useful when it meets ordinary life.','Навык становится полезным, когда встречается с обычной жизнью.'],reflection:['Where might you try this again safely?','Где можно безопасно попробовать это ещё раз?']},
+  {phase:'application',quote:['Support can be practiced and requested.','Поддержку можно замечать, тренировать и просить.'],reflection:['What did you learn about your supports?','Что вы узнали о своей поддержке?']},
+  {phase:'application',quote:['A pause creates space for a choice.','Пауза создаёт пространство для выбора.'],reflection:['What choice became a little clearer?','Какой выбор стал немного яснее?']},
+  {phase:'application',quote:['I can learn without demanding an instant result.','Я могу учиться, не требуя немедленного результата.'],reflection:['What did you practise rather than perfect?','Что вы сегодня практиковали, не стремясь к идеалу?']},
+  {phase:'integration',quote:['What helps me is worth writing down.','То, что мне помогает, стоит записать.'],reflection:['What belongs in your personal toolkit?','Что войдёт в вашу личную копилку навыков?']},
+  {phase:'integration',quote:['I can carry one small resource into tomorrow.','Я могу взять один маленький ресурс с собой в завтрашний день.'],reflection:['When would you choose this skill again?','Когда вы снова выберете этот навык?']},
+  {phase:'review',quote:['My progress is a story of observations, not a verdict.','Мой прогресс — история наблюдений, а не приговор.'],reflection:['What would you like to continue, change or rest from?','Что хотелось бы продолжить, изменить или пока отложить?']},
+])
