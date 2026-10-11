@@ -16,5 +16,5 @@ export default async function CabinetPage({ params }) {
   const assessments = (await access.store.listClientAssessments(access.client.id))
     .map(record => clientAssessmentSummary(record, access.client.id)).filter(Boolean)
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || a.id.localeCompare(b.id))
-  return <ClientCabinet assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} />
+  return <ClientCabinet assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} />
 }

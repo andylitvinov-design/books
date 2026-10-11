@@ -23,6 +23,8 @@ import {
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { authorizeCabinetRequest } from '@/lib/clients/session'
+import { listLegacyClientIdsForAccount } from '@/lib/app/client-account-binding'
 import { authorizePrescription, prescriptionSessionCookieName } from '@/lib/prescriptions/session'
 import { issueTrustedAdminSession } from '@/lib/prescriptions/admin-session'
 import {
@@ -34,7 +36,7 @@ import {
   removeSavedReport,
   setReportViewerCookie,
 } from '@/lib/app/report-flow'
-import { practitionerDestination } from '@/lib/app/practitioner-access'
+import { practitionerDestination, practitionerEmailAllowed } from '@/lib/app/practitioner-access'
 import {
   commitLegacyDocumentSaveIntent,
   readSavedDocument,
@@ -205,9 +207,18 @@ async function handle(request, { params }) {
       } else if (body.sourceKind === 'legacy_document') {
         if (typeof body.selector !== 'string') throw new AppError('DOCUMENT_UNAVAILABLE', 404)
         const store = getPrescriptionStore()
-        const token = request.cookies.get(prescriptionSessionCookieName())?.value
-        const record = await authorizePrescription(store, body.selector, token)
-        if (!record?.clientId) throw new AppError('DOCUMENT_UNAVAILABLE', 404)
+        let record
+        if (body.sourceId !== undefined) {
+          // The stable client-cabinet link authorizes only a document owned by that client.
+          // A Google save still needs separate user authentication and confirmation.
+          requireUUID(body.sourceId)
+          const access = await authorizeCabinetRequest(body.selector, body.sourceId)
+          record = access?.record
+        } else {
+          const token = request.cookies.get(prescriptionSessionCookieName())?.value
+          record = await authorizePrescription(store, body.selector, token)
+        }
+        if (!record?.clientId || record.status !== 'active') throw new AppError('DOCUMENT_UNAVAILABLE', 404)
         intent = await createLegacyDocumentSaveIntent(config, record, body.operationId)
       } else {
         throw new AppError('SOURCE_UNAVAILABLE', 400)
@@ -331,6 +342,18 @@ async function handle(request, { params }) {
       )
     }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if (joined === 'shared-materials' && method === 'GET') {
+      const clientIds = await listLegacyClientIdsForAccount(config, actor)
+      const store = getPrescriptionStore()
+      const materials = []
+      if (store) for (const clientId of clientIds) {
+        const client = await store.findClientById(clientId)
+        if (client?.status === 'active' && !client.cabinetAccess?.revoked) for (const material of client.sharedMaterials ?? []) {
+          materials.push({ id: material.id, title: material.title, url: material.url })
+        }
+      }
+      return json({ materials })
+    }
     if (joined === 'test-plans' && method === 'POST')
       return json(await repo.createTestPlan(actor, await readBody(request)), 201)
     if (path[0] === 'test-plans' && path.length === 2 && method === 'GET')
@@ -346,7 +369,7 @@ async function handle(request, { params }) {
       onlyKeys(body, ['destination'])
       const destination = practitionerDestination[body.destination]
       if (!destination) throw new AppError('NOT_FOUND', 404)
-      if (!await repo.isPractitioner(actor)) throw new AppError('NOT_FOUND', 404)
+      if (!practitionerEmailAllowed(actor) || !await repo.isPractitioner(actor)) throw new AppError('NOT_FOUND', 404)
       const response = json({ redirectUrl: destination })
       if (!issueTrustedAdminSession(response, { secure: !config.test }))
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
