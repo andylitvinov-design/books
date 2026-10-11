@@ -8,7 +8,7 @@ const copy = {
   en: {
     eyebrow: "START WITH YOUR SITUATION",
     title: "What would you like to change?",
-    lead: "Choose what feels closest to your situation. The first conversation is free."
+    lead: "Choose what feels closest to your situation. The first conversation is free.",
     outcomeLabel: "What we can explore",
     methodsLabel: "Possible approaches",
     cardAction: "Free situation review",
@@ -48,7 +48,7 @@ const copy = {
     ],
     bridgeEyebrow: "YOUR FIRST STEP",
     bridgeTitle: "Start with a free conversation",
-    bridgeText: "Clarify your question and a possible next step. No obligation to continue."
+    bridgeText: "Clarify your question and a possible next step. No obligation to continue.",
     bridgeButton: "Request my free situation review",
     processEyebrow: "HOW IT WORKS",
     processTitle: "What you actually receive",
@@ -60,7 +60,7 @@ const copy = {
     scope: "This is an introductory conversation, not a medical or mental-health diagnosis. No cure, business outcome or personal change is guaranteed.",
     methodEyebrow: "THE METHODS, EXPLAINED",
     methodTitle: "I choose the approach around your question",
-    methodLead: "You don't need to choose a method before we speak."
+    methodLead: "You don't need to choose a method before we speak.",
     detailAction: "Understand this approach",
     methods: [
       {
@@ -84,7 +84,7 @@ const copy = {
   ru: {
     eyebrow: "НАЧНИТЕ СО СВОЕГО ЗАПРОСА",
     title: "Что вы хотели бы изменить?",
-    lead: "Выберите близкую вам ситуацию. Первый разговор — бесплатно."
+    lead: "Выберите близкую вам ситуацию. Первый разговор — бесплатно.",
     outcomeLabel: "Что можно прояснить",
     methodsLabel: "Возможные методы",
     cardAction: "Бесплатный разбор",
@@ -93,7 +93,7 @@ const copy = {
         title: "Нет сил и много напряжения",
         summary: "Исследовать источники напряжения и возможную поддержку.",
         outcomes: ["Замечать повторяющиеся реакции", "Исследовать ресурсы и границы"],
-        method: "Образная работа; при желании — беседа о гомеопатии."
+        method: "Образная работа; при желании — беседа о гомеопатии.",
         topic: "wellbeing",
         image: "/images/holistic-house/homeopathy-still-life.svg",
       },
@@ -101,7 +101,7 @@ const copy = {
         title: "Отношения и эмоции",
         summary: "Разобраться в повторяющихся реакциях и отношениях.",
         outcomes: ["Замечать триггеры и привычные роли", "Рассмотреть границы и варианты"],
-        method: "Образы и системное исследование."
+        method: "Образы и системное исследование.",
         topic: "personal",
         image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
       },
@@ -109,7 +109,7 @@ const copy = {
         title: "Цель без движения",
         summary: "Прояснить препятствия и возможный следующий шаг.",
         outcomes: ["Уточнить цель и затруднения", "Наметить реалистичный шаг"],
-        method: "Образы и расстановки."
+        method: "Образы и расстановки.",
         topic: "goal",
         image: "/images/holistic-house/hero-olive-incense.webp",
       },
@@ -117,14 +117,14 @@ const copy = {
         title: "Работа и сложные решения",
         summary: "Увидеть альтернативы перед важным решением.",
         outcomes: ["Разобрать роли и приоритеты", "Сравнить варианты и риски"],
-        method: "Бизнес-расстановки как дополнение к экспертной оценке."
+        method: "Бизнес-расстановки как дополнение к экспертной оценке.",
         topic: "business",
         image: "/images/holistic-house/video-posters/services-en-v2.webp",
       },
     ],
     bridgeEyebrow: "ВАШ ПЕРВЫЙ ШАГ",
     bridgeTitle: "Начните с бесплатного разбора",
-    bridgeText: "Проясним ваш запрос и возможный следующий шаг. Продолжать работу необязательно."
+    bridgeText: "Проясним ваш запрос и возможный следующий шаг. Продолжать работу необязательно.",
     bridgeButton: "Записаться на бесплатную диагностику",
     processEyebrow: "КАК ЭТО ПРОХОДИТ",
     processTitle: "Что именно вы получите",
@@ -136,7 +136,7 @@ const copy = {
     scope: "Это вводный разбор, а не медицинская или психиатрическая диагностика. Излечение, деловые достижения и личные изменения не гарантируются.",
     methodEyebrow: "МЕТОДЫ — ТОЛЬКО ПОЯСНЕНИЕ",
     methodTitle: "Метод подбирается под задачу",
-    methodLead: "Не нужно выбирать метод до нашей беседы."
+    methodLead: "Не нужно выбирать метод до нашей беседы.",
     detailAction: "Подробнее о подходе",
     methods: [
       {
