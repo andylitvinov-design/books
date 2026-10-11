@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { ArrowUpRight, Check, ClipboardCopy, FileText, PenLine, Send } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import styles from "./free-drawing-intake.module.css";
 
 type Topic = "personal" | "goal" | "business" | "wellbeing";
@@ -175,7 +176,7 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
           <legend>{t.topicQuestion}</legend>
           <div className={styles.topicGrid}>
             {topics.map((choice) => <button key={choice} type="button" aria-pressed={topic === choice}
-              data-selected={topic === choice} onClick={() => { setTopic(choice); setPrepared(false); setCopied(false); }}>
+              data-selected={topic === choice} onClick={() => { setTopic(choice); setPrepared(false); setCopied(false); setCopyFailed(false); }}>
               {topic === choice ? <Check size={15} aria-hidden="true" /> : null}{t.options[choice]}
             </button>)}
           </div>
@@ -216,9 +217,9 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
           <ClipboardCopy size={18} aria-hidden="true" />{t.copyButton}
         </button>
         <p aria-live="polite" className={styles.copyStatus}>{copied ? t.copied : copyFailed ? t.copyFallback : null}</p>
-        <a className={styles.whatsapp} href={whatsappUrl} target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp">
+        <AcquisitionEventLink className={styles.whatsapp} href={whatsappUrl} prefetch={false} target="_blank" rel="noopener noreferrer" event="service_request_start" attributes={{ "data-contact-channel": "whatsapp" }}>
           <Send size={18} aria-hidden="true" />{t.openWhatsapp}<ArrowUpRight size={18} aria-hidden="true" />
-        </a>
+        </AcquisitionEventLink>
         <p className={styles.note}>{t.sendNote}</p>
       </div> : null}
       <p className={styles.privacy}>{t.privacy}</p>
