@@ -22,16 +22,13 @@ type AcquisitionEventLinkProps = {
   target?: string;
 };
 
-function emit(event: AcquisitionEvent, analyticsEvent?: PublicAnalyticsEvent) {
+function emit(event: AcquisitionEvent) {
   const analyticsConsent = document.documentElement.dataset.analyticsConsent;
   if (analyticsConsent !== "granted") return;
 
   window.dispatchEvent(new CustomEvent("holistic-house:acquisition", { detail: { event } }));
-  if (analyticsEvent) {
-    window.dispatchEvent(new CustomEvent("holistic-house:acquisition", { detail: { event: analyticsEvent } }));
-  }
 }
 
 export function AcquisitionEventLink({ analyticsEvent, attributes, children, event, onClick, ...props }: AcquisitionEventLinkProps) {
-  return <Link {...props} {...attributes} onClick={() => { onClick?.(); emit(event, analyticsEvent); }}>{children}</Link>;
+  return <Link {...props} {...attributes} onClick={() => { onClick?.(); emit(event); if (analyticsEvent) emit(analyticsEvent); }}>{children}</Link>;
 }
