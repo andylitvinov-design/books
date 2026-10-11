@@ -221,6 +221,10 @@ try {
  await page.getByRole('link',{name:'Master',exact:true}).click();
  await expect(page).toHaveURL(/\/en\/app\/practice$/);
  await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toHaveCount(0);
+ await expect(page.locator('.hh-practice-dashboard')).toBeVisible({timeout:25000});
+ await expect(page.getByRole('button',{name:'Create report',exact:true})).toHaveCount(0);
+ await expect(page.locator('.hh-practice-more-tools')).toHaveCount(0);
+ await page.screenshot({path:output+'/master-compact-practice-mobile.png',fullPage:false});
  const practitionerOpen=await api('practitioner/open',{destination:'clients'});
  assert.equal(practitionerOpen.status,404);assert.equal(practitionerOpen.data.error,'NOT_FOUND');
  passed('public Master can open own practice but cannot access owner client database')
@@ -342,6 +346,16 @@ try {
   await handoffPage.locator('.master-client-create-form button[type="submit"]').click()
   await expect(handoffPage).toHaveURL(/\/admin\/clients\/[a-f0-9-]{36}$/,{timeout:20000})
   await expect(handoffPage.getByRole('heading',{name:'Synthetic Handoff Client',exact:true})).toBeVisible()
+   // Owner's Create report path selects a real private client record; it never
+   // creates or publishes a report before explicit Save/Share in the editor.
+   const reportPickerPage=await admin.newPage();
+   await reportPickerPage.goto(origin+'/admin/reports/new');
+   await expect(reportPickerPage.getByRole('heading',{name:'Create client report',exact:true})).toBeVisible();
+   const syntheticReportChoice=reportPickerPage.getByRole('link',{name:/Synthetic Handoff Client/});
+   await expect(syntheticReportChoice).toBeVisible();
+   await expect(syntheticReportChoice).toHaveAttribute('href',/\/admin\/clients\/[a-f0-9-]{36}\/assessments\/new\?kind=research_result$/);
+   await reportPickerPage.close();
+   passed('owner-only Create report opens draft editor after selecting a client');
   await handoffPage.locator('.client-detail-materials > details > summary').click()
   await handoffPage.locator('.client-detail-material-form input[name="title"]').fill('Reiki study guide')
   await handoffPage.locator('.client-detail-material-form input[name="url"]').fill('https://holistichouse.vercel.app/en/academy/reiki')
