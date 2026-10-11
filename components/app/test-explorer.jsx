@@ -8,6 +8,7 @@ import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } fr
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries, rankPublicTestMatches } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
+import { normalizeProblemsForTopics } from '@/lib/assessments/test-problems'
 import { SimpleTestPicker } from './simple-test-picker'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import styles from './test-explorer.module.css'
@@ -121,6 +122,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       return
     }
     setFocus(concernAnalysis.focus)
+    setProblems([])
     setAvailability('available')
     setConcernMessage('')
   }
@@ -141,6 +143,16 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     } catch { setListening(false); setSpeechError(locale === 'ru' ? 'Микрофон недоступен. Введите запрос текстом.' : 'Microphone unavailable. Please type instead.') }
   }
   const [focus, setFocus] = useState(() => initialPreferences?.focus ?? [])
+  const [problems, setProblems] = useState(() => normalizeProblemsForTopics(
+    initialPreferences?.problems ?? [], initialPreferences?.focus ?? [],
+  ))
+  useEffect(() => {
+    // Never retain hidden concerns once their parent topics are deselected.
+    setProblems((previous) => {
+      const next = normalizeProblemsForTopics(previous, focus)
+      return next.length === previous.length ? previous : next
+    })
+  }, [focus])
   const [stylesFilter, setStylesFilter] = useState(() => initialPreferences?.styles ?? [])
   const [lengths, setLengths] = useState(() => initialPreferences?.lengths ?? [])
   const [depth, setDepth] = useState(() => initialPreferences?.depth ?? 'balanced')
@@ -167,18 +179,18 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   useEffect(() => {
     if (recommendedKey && entries.some((entry) => entry.key === recommendedKey && entry.selectable)) setSelectedKeys([recommendedKey])
   }, [recommendedKey, entries])
-  const facets = { availability, focus, styles: stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
-  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
+  const facets = { availability, focus, problems, styles: stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
+  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
   // Facet counts reflect the whole eligible catalog and every *other* active
   // criterion. Exclude the facet's own current selection (multi-choice OR).
-  const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, stylesFilter, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
-  const areaCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, areas: [] }), [entries, availability, focus, stylesFilter, lengths, details, axes, maxMinutes, language, tracking, freeOnly, query])
-  const axisCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, axes: [] }), [entries, availability, focus, stylesFilter, lengths, areas, details, maxMinutes, language, tracking, freeOnly, query])
+  const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, problems, stylesFilter, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
+  const areaCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, areas: [] }), [entries, availability, focus, problems, stylesFilter, lengths, details, axes, maxMinutes, language, tracking, freeOnly, query])
+  const axisCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, axes: [] }), [entries, availability, focus, problems, stylesFilter, lengths, areas, details, maxMinutes, language, tracking, freeOnly, query])
   const detailCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_DETAIL_TOPICS.map((item) => [item.key, detailCandidates.filter((entry) => entry.topics.includes(item.key)).length])), [detailCandidates])
   const areaCounts = useMemo(() => Object.fromEntries(MONITOR_AREAS.map((item) => [item.key, areaCandidates.filter((entry) => entry.areas?.includes(item.key)).length])), [areaCandidates])
   const axisCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_AXES.map((key) => [key, axisCandidates.filter((entry) => entry.analysisAxes.some((axis) => axis.key === key)).length])), [axisCandidates])
   // A selected test stays visible even if new filters no longer match it.
-  const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
+  const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, problems, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
   const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, axes, depth, stylesFilter, lengths, selectedKeys])
   // Keep checked tests above the shortened discovery list. Re-ranking after
   // a checkbox change must never make that same checkbox disappear mid-click.
@@ -194,8 +206,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   // Public browsing uses its own match-based order, unaffected by checkbox toggles.
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
     matching.filter((entry) => entry.selectable),
-    { focus, details, axes, depth, styles: stylesFilter, lengths },
-  ), [matching, focus, details, axes, depth, stylesFilter, lengths])
+    { focus, problems, details, axes, depth, styles: stylesFilter, lengths },
+  ), [matching, focus, problems, details, axes, depth, stylesFilter, lengths])
   const simpleAuto = useMemo(() => simpleRecommendations.slice(0, 3), [simpleRecommendations])
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
@@ -212,10 +224,10 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const showingCoverage = selectedKeys.length > 0
   const displayedCoverage = showingCoverage ? coverage : topicCoverage
   const matchCount = matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)).length
-  const appliedFilters = stylesFilter.length + lengths.length + areas.length + details.length + axes.length + (maxMinutes ? 1 : 0) + (language !== 'any' ? 1 : 0) + (tracking !== 'any' ? 1 : 0) + (freeOnly ? 1 : 0) + (query.trim() ? 1 : 0) + (axisFilter ? 1 : 0)
+  const appliedFilters = stylesFilter.length + lengths.length + areas.length + details.length + problems.length + axes.length + (maxMinutes ? 1 : 0) + (language !== 'any' ? 1 : 0) + (tracking !== 'any' ? 1 : 0) + (freeOnly ? 1 : 0) + (query.trim() ? 1 : 0) + (axisFilter ? 1 : 0)
   const guidedCopy = GUIDED_COPY[locale] || GUIDED_COPY.en
   const guidedCounts = {
-    topics: focus.length, concerns: details.length, areas: areas.length, scales: axes.length,
+    topics: focus.length, concerns: details.length + problems.length, areas: areas.length, scales: axes.length,
     timing: lengths.length + (maxMinutes ? 1 : 0) + (depth !== 'balanced' ? 1 : 0),
     format: stylesFilter.length + (freeOnly ? 1 : 0),
     language: language !== 'any' ? 1 : 0, goal: tracking !== 'any' ? 1 : 0, describe: 0,
@@ -233,7 +245,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     }
     setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.analysisAxes.some((axis) => axis.key === axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
   }
-  const resetFilters = () => { setAvailability('available'); setFocus([]); setStylesFilter([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
+  const resetFilters = () => { setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
     setSelectedKeys((current) => {
@@ -260,7 +272,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
     try { await onStart(activeBattery, {
-      focus, details, axes, areas, styles: stylesFilter, lengths,
+      focus, problems, details, axes, areas, styles: stylesFilter, lengths,
       depth, maxMinutes, language, tracking, freeOnly,
     }) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
@@ -270,6 +282,15 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       locale={locale}
       focus={focus}
       onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
+      problems={problems}
+      onToggleProblem={(key) => {
+        const allowed = normalizeProblemsForTopics([key], focus)
+        if (!allowed.length) return
+        setProblems((current) => current.includes(key)
+          ? current.filter((problem) => problem !== key)
+          : current.length < 12 ? [...current, key] : current)
+      }}
+      onClearProblems={() => setProblems([])}
       depth={depth}
       onDepth={setDepth}
       maxMinutes={maxMinutes}

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
+import { problemsForTopics } from '@/lib/assessments/test-problems'
 
 const TEXT = {
   en: {
@@ -18,13 +19,14 @@ const TEXT = {
     time:'Time per test', anyTime:'Any duration', shortTime:'Up to 5 min', mediumTime:'Up to 10 min',
     professional:'Professional tests only', clear:'Clear optional filters',
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
-    why:'Why these tests?', whyText:'The match percentage is an approximate recommendation score calculated from your selected topics, questionnaire coverage and optional test depth. With no topics selected, it represents general starter relevance. It is not a clinical probability, diagnostic accuracy or health percentage.',
+    why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free testing', buildHelp:'Save your selection and get started',
     browse:'Browse full database', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
     noTests:'Choose a test to continue.', reset:'Use suggested set', back:'Back to easy selection', saved:'Already have a plan? Open my saved tests',
-    more:'Show {count} more tests', showing:'Showing {shown} of {total} matching tests', fit:'match', fitInfo:'Estimated relevance — not a clinical score or diagnosis.',
+    more:'Show {count} more tests', showing:'Showing {shown} of {total} matching tests', fit:'match', fitInfo:'Estimated relevance from your selected topics and concerns — not a clinical score or diagnosis.',
+    problemsTitle:'Which problems are most important?', problemsHelp:'Optional: choose what specifically troubles you. These suggestions come from the topics above.', problemsEmpty:'Choose a topic above to see relevant concerns.', problemsClear:'Clear problems', problemsMore:'Show more problems', problemsLess:'Show fewer problems',
   },
   ru: {
     kicker:'ПОДБОР ТЕСТОВ', title:'Подберите свои тесты',
@@ -38,13 +40,14 @@ const TEXT = {
     time:'Время на один тест', anyTime:'Любое', shortTime:'До 5 мин', mediumTime:'До 10 мин',
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
-    why:'Почему эти тесты?', whyText:'Процент соответствия — ориентировочная оценка по выбранным темам, охвату параметров и глубине теста. Если темы не указаны, он отражает пригодность для общего знакомства. Это не клиническая вероятность, не точность диагностики и не процент здоровья.',
+    why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Пройти тестирование бесплатно', buildHelp:'Сохранить подборку и начать',
     browse:'Открыть всю базу тестов', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
     noTests:'Выберите тест для продолжения.', reset:'Вернуть рекомендованный набор', back:'Назад к простому подбору', saved:'Уже есть подборка? Открыть мои тесты',
-    more:'Показать ещё {count} тестов', showing:'Показано {shown} из {total} подходящих тестов', fit:'соответствие', fitInfo:'Ориентировочная релевантность — не диагноз и не показатель здоровья.',
+    more:'Показать ещё {count} тестов', showing:'Показано {shown} из {total} подходящих тестов', fit:'соответствие', fitInfo:'Ориентировочная релевантность по выбранным темам и проблемам — не диагноз и не показатель здоровья.',
+    problemsTitle:'Какие проблемы беспокоят?', problemsHelp:'Необязательно: уточните запрос. Варианты зависят от выбранных тем.', problemsEmpty:'Сначала выберите тему — появятся соответствующие проблемы.', problemsClear:'Очистить проблемы', problemsMore:'Показать больше проблем', problemsLess:'Показать меньше проблем',
   },
   es: {
     kicker:'SELECCIÓN DE PRUEBAS', title:'Elige tus pruebas',
@@ -64,7 +67,8 @@ const TEXT = {
     build:'Comenzar pruebas gratuitas', buildHelp:'Guardar selección y empezar',
     browse:'Explorar base completa', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
     noTests:'Elige una prueba para continuar.', reset:'Usar selección sugerida', back:'Volver al selector sencillo', saved:'¿Ya tienes pruebas? Abrir mis pruebas',
-    more:'Mostrar {count} pruebas más', showing:'Mostrando {shown} de {total} pruebas', fit:'coincidencia', fitInfo:'Relevancia estimada, no una puntuación médica ni un diagnóstico.',
+    more:'Mostrar {count} pruebas más', showing:'Mostrando {shown} de {total} pruebas', fit:'coincidencia', fitInfo:'Relevancia estimada por temas y dificultades seleccionadas; no es un diagnóstico.',
+    problemsTitle:'¿Qué dificultades te preocupan?', problemsHelp:'Opcional: concreta tus inquietudes según los temas elegidos.', problemsEmpty:'Elige primero un tema para ver dificultades relacionadas.', problemsClear:'Borrar dificultades', problemsMore:'Mostrar más dificultades', problemsLess:'Mostrar menos dificultades',
   },
 }
 
@@ -94,6 +98,7 @@ function iconFor(entry) {
 export function SimpleTestPicker({
   locale = 'en',
   focus, onToggleFocus,
+  problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   professionalOnly, onProfessional,
@@ -103,11 +108,18 @@ export function SimpleTestPicker({
 }) {
   const c = TEXT[locale] || TEXT.en
   const [visibleCount, setVisibleCount] = useState(5)
+  const [showAllProblems, setShowAllProblems] = useState(false)
   const focusKey = [...focus].sort().join('|')
+  const problemKey = [...problems].sort().join('|')
+  const allProblems = problemsForTopics(focus)
+  const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
+    ...allProblems.filter((item) => !problems.includes(item.key))]
+  const visibleProblems = showAllProblems ? chosenFirst : chosenFirst.slice(0, 8)
   useEffect(() => {
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
-  }, [focusKey, depth, maxMinutes, professionalOnly])
+    setShowAllProblems(false)
+  }, [focusKey, depth, maxMinutes, professionalOnly, problemKey])
   const visibleRecommendations = recommendations.slice(0, visibleCount)
   const remainingCount = Math.max(0, recommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
@@ -142,6 +154,32 @@ export function SimpleTestPicker({
           </button>
         })}
       </div>
+    </section>
+
+    <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
+      <div className={styles.sectionHeader}>
+        <span className={styles.step} aria-hidden="true">2</span>
+        <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
+      </div>
+      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> :
+        <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
+          {visibleProblems.map((problem) => {
+            const checked = problems.includes(problem.key)
+            return <button key={problem.key} type="button" className={styles.problemChip}
+              aria-pressed={checked} data-problem-key={problem.key} onClick={() => onToggleProblem(problem.key)}>
+              {checked && <Check size={15} aria-hidden="true" />}
+              <span>{problem.label[locale] || problem.label.en}</span>
+            </button>
+          })}
+        </div>}
+      {focus.length > 0 && <div className={styles.problemActions}>
+        {allProblems.length > 8 && <button type="button" className={styles.problemMore}
+          aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
+          {showAllProblems ? c.problemsLess : c.problemsMore} <ChevronDown size={16} aria-hidden="true"/>
+        </button>}
+        {problems.length > 0 && <button type="button" className={styles.problemClear}
+          onClick={onClearProblems}>{c.problemsClear} ({problems.length})</button>}
+      </div>}
     </section>
 
     <details className={styles.advanced}>
@@ -179,7 +217,7 @@ export function SimpleTestPicker({
 
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations">
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">2</span>
+        <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
       <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
