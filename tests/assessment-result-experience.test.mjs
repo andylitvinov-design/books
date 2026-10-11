@@ -45,8 +45,17 @@ test('CBI Personal Burnout is interpreted as exhaustion, not just a 0–100 numb
   assert.match(high.sections[0].steps.join(' '), /7 days/)
   assert.match(high.sections[0].meaning, /upper part/)
   assert.match(low.sections[0].meaning, /lower part/)
+  assert.match(low.sections[0].steps[0], /maintain your balance/)
+  assert.match(high.sections[0].steps[0], /For 7 days/)
   assert.match(high.sections[0].followUp, /healthcare professional/)
   assert.match(buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'ru').sections[0].steps.join(' '), /недел/)
+})
+
+test('high resource measurements receive maintenance rather than deficit advice', () => {
+  const def = tests.find(item => item.key === 'hh-role-freedom')
+  assert.ok(def)
+  const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max')), 'en')
+  assert.ok(report.sections.some(section => /source of support or strength/.test(section.steps[0])))
 })
 
 test('neutral personality scales are not interpreted as a clinical severity or universal good/bad score', () => {
