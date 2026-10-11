@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowRight, BookOpen, Check, CheckCircle2, CirclePause, ClipboardList, Feather, Heart, LockKeyhole, Play, RotateCcw, Sparkles, Target } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS, courseLesson, growthSuggestions, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { MONITORING_CATALOG } from '@/data/assessments/catalog'
@@ -21,7 +22,7 @@ const WORDS = {
     changes: 'Changes in my weekly check-ins', noComparison: 'You need at least two comparable weekly check-ins to see a change. This is different from your lesson completion progress.',
     changeNotice: 'These numbers describe your self-reports on different dates; they do not establish that the course caused a change.',
     explore: 'Open the full test finder', testHint: 'Use the existing My Tests filters to choose and save the tests that suit you. You may change your selection.',
-    saveContinue: 'Save and go to testing', selected: 'Selected tests', done: 'Completed', results: 'Saved results',
+    saveContinue: 'Save and open the test finder', selectedReady: 'My tests are selected — continue', selected: 'Selected tests', done: 'Completed', results: 'Saved results',
     testTitle: 'Explore yourself through testing', testText: 'Continue any saved test, or select new questionnaires. Your responses and detailed reports remain in your private account.',
     runTests: 'Go to My Tests', review: 'Review my results and growth options', noTests: 'Complete at least one test to proceed. You can always return here.',
     approveTitle: 'Choose the resources you want to develop', approveText: 'These suggestions are optional. Only you decide which skills to practise.',
@@ -54,7 +55,7 @@ const WORDS = {
     changes: 'Изменения по недельным самоотчётам', noComparison: 'Для анализа изменений нужны хотя бы два сопоставимых недельных замера. Это отдельно от количества выполненных уроков.',
     changeNotice: 'Цифры описывают ваши ответы в разные даты, но не доказывают, что изменения вызваны курсом.',
     explore: 'Открыть полный подбор тестов', testHint: 'В существующем разделе My Tests выберите тесты по темам и проблемам, сохраните набор; его всегда можно изменить.',
-    saveContinue: 'Сохранить и перейти к тестам', selected: 'Выбрано тестов', done: 'Пройдено', results: 'Сохранённые результаты',
+    saveContinue: 'Сохранить и подобрать тесты', selectedReady: 'Тесты выбраны — продолжить', selected: 'Выбрано тестов', done: 'Пройдено', results: 'Сохранённые результаты',
     testTitle: 'Изучите себя с помощью тестов', testText: 'Продолжите сохранённые тесты или подберите новые. Ответы и подробные отчёты остаются в вашем кабинете.',
     runTests: 'Перейти к моим тестам', review: 'Посмотреть результаты и направления развития', noTests: 'Чтобы продолжить, пройдите хотя бы один тест. Вы сможете вернуться сюда.',
     approveTitle: 'Выберите ресурсы, которые хотите развивать', approveText: 'Предложения необязательны. Только вы решаете, какие навыки практиковать.',
@@ -103,6 +104,7 @@ export function MyCourse({ data, locale = 'en' }) {
   const ru = locale === 'ru'
   const t = WORDS[locale] || WORDS.en
   const root = '/' + locale + '/app'
+  const router = useRouter()
   const [state, setState] = useState(undefined)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -153,6 +155,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const today = stateCourse?.today || 1
   const completions = stateCourse?.dayCompletions || {}
   const todayComplete = Boolean(completions[String(today)])
+  const hasTestSelection = (assessment.plannedInSet > 0 && assessment.planStatus !== 'cancelled') ||
+    assessment.resultsCount > 0
   const testsReady = assessment.resultsCount > 0 && (assessment.planStatus !== 'active' ||
     (assessment.plannedInSet > 0 && assessment.completedInSet >= assessment.plannedInSet))
   const activeGoal = stateCourse?.goals?.[(today - 1) % Math.max(stateCourse?.goals?.length || 1, 1)] || 'calm_regulation'
@@ -221,11 +225,21 @@ export function MyCourse({ data, locale = 'en' }) {
         setError('')
         try {
           const saved = await request({ action:'intake', expectedRevision:stateCourse.revision, concerns, focusTags })
-          const advanced = await request({ action:'to-tests', expectedRevision:saved.course.revision })
-          setState(advanced)
+          setState(saved)
+          router.push(root + '/tests')
         } catch (e) { setError(e.message) }
         finally { setBusy(false) }
       }}>{t.saveContinue}<ArrowRight size={17}/></button>
+      {hasTestSelection && <button type="button" disabled={busy || suggestedTopics.urgent}
+        onClick={async () => {
+          if (busy || suggestedTopics.urgent) return
+          setBusy(true); setError('')
+          try {
+            const saved = await request({ action:'intake', expectedRevision:stateCourse.revision, concerns, focusTags })
+            setState(await request({ action:'to-tests', expectedRevision:saved.course.revision }))
+          } catch (e) { setError(e.message) }
+          finally { setBusy(false) }
+        }}>{t.selectedReady}<ArrowRight size={17}/></button>
     </section>}
 
     {stage === 2 && <section className={'hh-panel ' + styles.chapter}>
