@@ -108,7 +108,7 @@ const published = [
   ['phq-8','symptoms.phq_8.total',0,24, [[4,'minimal'],[5,'mild'],[9,'mild'],[10,'moderate'],[14,'moderate'],[15,'moderately_severe'],[19,'moderately_severe'],[20,'severe'],[24,'severe']]],
   ['gad-7','symptoms.gad7.total',0,21, [[4,'minimal'],[5,'mild'],[9,'mild'],[10,'moderate'],[14,'moderate'],[15,'severe'],[21,'severe']]],
   ['k6','symptoms.k6.total',0,24, [[12,'below_screen'],[13,'screen_signal'],[24,'screen_signal']]],
-  ['phq-15','symptoms.phq15.total',0,30, [[4,'minimal'],[5,'mild'],[9,'mild'],[10,'moderate'],[14,'moderate'],[15,'high'],[30,'high']]],
+  ['phq-15','symptoms.phq15.total',0,30, [[4,'minimal'],[5,'low'],[9,'low'],[10,'medium'],[14,'medium'],[15,'high'],[30,'high']]],
   ['brcs','resources.brcs.total',4,20, [[4,'low_coping'],[13,'low_coping'],[14,'mid_coping'],[16,'mid_coping'],[17,'high_coping'],[20,'high_coping']]],
 ]
 
