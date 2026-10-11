@@ -277,6 +277,50 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
     rightsNote: 'Family functioning scale; rights, version, scoring, translations and respondent permissions require review.',
   }),
 
+
+  // Clinical and licensed personality assessments are reference entries only.
+  // MMPI-3 is already listed above; do not create duplicate keys or public scoring clones.
+  row('mmpi-2', 'clinician_reference', 'personality', 'C', 'Minnesota Multiphasic Personality Inventory-2', 'MMPI-2', 567, '60–90 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician', {
+    sourceUrl: 'https://www.pearsonclinical.ca/',
+    rightsNote: 'University of Minnesota/Pearson copyrighted assessment; qualification level C, paid digital/manual administration and independent qualified interpretation required. No public questionnaire.',
+  }),
+  row('mmpi-2-rf', 'clinician_reference', 'personality', 'C', 'Minnesota Multiphasic Personality Inventory-2 Restructured Form', 'MMPI-2-RF', 338, '35–50 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician', {
+    sourceUrl: 'https://www.pearsonclinical.ca/en-ca/mmpi-2/Minnesota-Multiphasic-Personality-Inventory-2-Restructured-Form/p/P100008141',
+    rightsNote: 'Level C/Pearson and University of Minnesota protected scales; not available for public online self-testing.',
+  }),
+  row('mbti-step-i', 'clinician_reference', 'personality', 'B', 'Myers–Briggs Type Indicator Step I', 'MBTI Step I', 'licensed form', '15–25 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://www.themyersbriggs.com/en-US/Support/Copyright-and-Permissions',
+    rightsNote: 'Official MBTI forms, type scoring, reports, norms and logos are copyrighted; qualified practitioner and digital-use licence required. The HH original socionics quiz is NOT MBTI.',
+  }),
+  row('mbti-step-ii', 'clinician_reference', 'personality', 'B', 'Myers–Briggs Type Indicator Step II', 'MBTI Step II', 'licensed form', '20–35 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://www.themyersbriggs.com/en-US/Support/Copyright-and-Permissions',
+    rightsNote: 'Official MBTI Step II licensed practitioner scoring and protected copyrighted material. Not equivalent to socionics J/P.',
+  }),
+  row('neo-pi-3', 'clinician_reference', 'personality', 'B', 'NEO Personality Inventory 3', 'NEO-PI-3', 240, '30–45 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Publisher-controlled NEO-PI-3 items, factor/facet scores and normative interpretations. Obtain commercial/digital licence and qualification.',
+  }),
+  row('neo-ffi-3', 'clinician_reference', 'personality', 'B', 'NEO Five-Factor Inventory 3', 'NEO-FFI-3', 60, '10–15 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Publisher-controlled NEO-FFI-3; the site already uses licensed-free IPIP Big Five alternatives.',
+  }),
+  row('hexaco-60', 'clinician_reference', 'personality', 'B', 'HEXACO Personality Inventory Revised – 60', 'HEXACO-60', 60, '10–15 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'practitioner', {
+    sourceUrl: 'https://hexaco.org/hexaco-inventory',
+    rightsNote: 'Official HEXACO online/for-profit counselling use requires authorization from authors; downloadable research forms are not permission for this commercial public site.',
+  }),
+  row('hexaco-100', 'clinician_reference', 'personality', 'B', 'HEXACO Personality Inventory Revised – 100', 'HEXACO-100', 100, '15–25 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'practitioner', {
+    sourceUrl: 'https://hexaco.org/nonacademicuse.htm',
+    rightsNote: 'Non-academic use and public electronic administration are subject to author permission and qualification requirements.',
+  }),
+  row('16pf-fifth-edition', 'clinician_reference', 'personality', 'B', '16 Personality Factor Questionnaire – Fifth Edition', '16PF-5', 185, '30–50 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Proprietary 16PF questionnaires/norms are licensed assessments, not a public 16-type quiz.',
+  }),
+  row('mcmi-iv', 'clinician_reference', 'personality', 'C', 'Millon Clinical Multiaxial Inventory IV', 'MCMI-IV', 195, '25–35 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician', {
+    rightsNote: 'Pearson copyrighted clinical personality/psychopathology scales. Qualified clinician and appropriate population required; no self-diagnosis.',
+  }),
+  row('cpi-260', 'clinician_reference', 'personality', 'B', 'California Psychological Inventory 260', 'CPI 260', 260, '35–50 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://www.themyersbriggs.com/en-US/Support/Copyright-and-Permissions',
+    rightsNote: 'Publisher controlled CPI 260 forms, scoring and reports; qualification/licence required.',
+  }),
+
 ])
 
 export const PRODUCT_MONITOR_MODULES = Object.freeze([
