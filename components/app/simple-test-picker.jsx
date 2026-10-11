@@ -156,7 +156,7 @@ export function SimpleTestPicker({
     </section>
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">1</span>
+        <span className={styles.step} aria-hidden="true">2</span>
         <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
       </div>
       <div className={styles.topicGrid} role="group" aria-label={c.first}>
@@ -174,7 +174,7 @@ export function SimpleTestPicker({
 
     <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">2</span>
+        <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
       </div>
       {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> :
@@ -233,7 +233,7 @@ export function SimpleTestPicker({
 
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations">
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">3</span>
+        <span className={styles.step} aria-hidden="true">4</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
       <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
