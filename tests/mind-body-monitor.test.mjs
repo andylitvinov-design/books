@@ -10,10 +10,10 @@ import {
   registryCount,
 } from '../data/assessments/mind-body-monitor-registry.js'
 
-test('Mind–Body Monitor registry contains 128 unique research instruments', () => {
-  assert.equal(registryCount(), 128)
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 128)
-  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 128)
+test('Mind–Body Monitor registry contains 139 unique research instruments', () => {
+  assert.equal(registryCount(), 139)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 139)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 139)
   assert.equal(MONITOR_AREAS.length, 14)
 })
 
@@ -40,7 +40,7 @@ test('research registry is metadata-gated and cannot silently publish questionna
   }
 })
 
-test('existing runnable modules remain separate from the 128-instrument research registry', () => {
+test('existing runnable modules remain separate from the 139-instrument research registry', () => {
   assert.deepEqual(
     PRODUCT_MONITOR_MODULES.filter((item) => item.enabled).map((item) => item.key),
     ['hh-current-state', 'mini-ipip-20'],
