@@ -644,3 +644,6 @@
 /* What the instrument is, where it comes from, and its professional evidence level. */
 .explorer .rowBody>.methodology{color:#77685e;font-size:.77rem;line-height:1.5;margin:5px 0 8px;font-weight:400}
 @media(max-width:760px){.explorer .rowBody>.methodology{-webkit-line-clamp:5;line-clamp:5;overflow:hidden;font-size:.73rem;line-height:1.47}}
+
+.explorer .rowBody .sourceLink{display:inline-block;color:#356f65;font-size:.75rem;text-decoration:underline;text-underline-offset:2px;margin-left:8px;font-weight:650}
+.explorer .rowBody .sourceLink:focus-visible{outline:2px solid #356f65;outline-offset:2px}
