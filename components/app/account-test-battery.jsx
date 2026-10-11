@@ -409,7 +409,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
               </details>
               {!!savedPriorities.length && <details className={styles.preferencesDetails}>
                 <summary>{locale === 'ru' ? 'Мои темы и дополнительные рекомендации' : 'My interests & additional recommendations'}</summary>
-                <section className={styles.savedPriorities}>
+                <section className={styles.savedPriorities} aria-label={locale === 'ru' ? 'Мои сохранённые приоритеты' : 'My saved test priorities'}>
                   <strong>{locale === 'ru' ? 'Мои темы и шкалы' : 'My saved areas and scales'}</strong>
                   <div>{savedPriorities.map((label,index)=><span key={index}>{label}</span>)}</div>
                   {suggestions.length > 0 && <div className={styles.nextSuggestions}>
