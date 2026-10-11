@@ -1087,7 +1087,9 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
     quickMinutes = def ? Math.max(1, Number(monitoringCatalogItem(def.key)?.durationMinutes) || Math.ceil(def.questions.length / 5)) : 1,
     guidedMinutes = Math.max(quickMinutes + 1, Math.ceil(quickMinutes * 1.4)),
     timeUnit = locale === 'ru' ? 'мин' : 'min',
-    timeframe = def?.timeframe === 'past-2-weeks'
+    timeframe = def?.key === 'hh-bach-flower-profile'
+      ? (locale === 'ru' ? 'Часть ответов относится к текущей ситуации, часть — к привычным эмоциональным реакциям. Отвечайте без спешки.' : 'Some statements describe your present situation; others concern your recurring emotional patterns. Answer at your own pace.')
+      : def?.timeframe === 'past-2-weeks'
       ? (locale === 'ru' ? 'За последние 2 недели' : 'Over the past 2 weeks')
       : def?.timeframe === 'past-30-days'
         ? (locale === 'ru' ? 'За последние 30 дней' : 'Over the past 30 days')
@@ -1208,9 +1210,17 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
 
   const min = question?.min ?? def.answerScale?.min,
     max = question?.max ?? def.answerScale?.max,
-    partCount = Math.min(4, Math.max(1, def.questions.length)),
+    partCount = def.key === 'hh-bach-flower-profile' ? 3 : Math.min(4, Math.max(1, def.questions.length)),
     partSize = Math.ceil(def.questions.length / partCount),
-    currentPart = Math.min(partCount, Math.floor(Math.min(index, def.questions.length - 1) / partSize) + 1)
+    currentPart = def.key === 'hh-bach-flower-profile'
+      ? (index < 38 ? 1 : index < 77 ? 2 : 3)
+      : Math.min(partCount, Math.floor(Math.min(index, def.questions.length - 1) / partSize) + 1),
+    bachSectionName = section => {
+      const names = locale === 'ru'
+        ? { situation: '1/3 · Текущая ситуация', character: '2/3 · Эмоциональные паттерны', control: '3/3 · Проверка и поддержка' }
+        : { situation: '1/3 · Current situation', character: '2/3 · Recurring patterns', control: '3/3 · Cross-check & support' }
+      return names[section] || ''
+    }
 
   if (!mode && !isContext)
     return (
@@ -1295,6 +1305,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
             <fieldset className="hh-quick-question" key={item.id} disabled={busy || Boolean(operation.current)}>
               <legend>
                 <span className="hh-quick-number">{modeCopy.question} {step + 1} / {def.questions.length}</span>
+                {def.key === 'hh-bach-flower-profile' && <span className="hh-kicker">{bachSectionName(item.section)}</span>}
                 <h2>{item.text}</h2>
               </legend>
               {def.key === 'cdc-hrqol-4' && item.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
@@ -1309,7 +1320,10 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
         </div>
       ) : question ? (
         <fieldset className="hh-runner-question" disabled={busy || Boolean(operation.current)}>
-          <legend><h1>{question.text}</h1></legend>
+          <legend>
+            {def.key === 'hh-bach-flower-profile' && <p className="hh-kicker">{bachSectionName(question.section)}</p>}
+            <h1>{question.text}</h1>
+          </legend>
           {def.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
             <p className="hh-muted">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
           )}
