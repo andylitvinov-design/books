@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
+import CourseGuidedTimer from './course-guided-timer'
 import styles from './course-today.module.css'
 
 const UI={
@@ -36,7 +37,7 @@ const UI={
   error:'Could not save your information. Nothing has been marked complete; you can try again.',
   retry:'Try again',quickTip:'Any section can be skipped. Finishing does not require a special feeling.',
   lessonDone:'Already completed',count:'practices',outOf:'out of',rating:'rating',zero:'0',none:'Not answered',
-  reviewSaved:'Your weekly reflection was saved.',private:'Private to your account',
+  reviewSaved:'Your weekly reflection was saved.',private:'Private to your account',printReport:'Print or save my course report',
   checkinSchedule:'How often to offer a problem check-in',dailyFrequency:'Every day',alternateFrequency:'Every other day',weeklyFrequency:'Once a week',
   softerSuggestion:'The last practice felt uncomfortable. You can choose the short or no-imagery version today.',
   retestDue:'Your optional weekly self-report is due',retestLater:'Next eligible weekly self-report',startRetest:'Open this test',
@@ -74,7 +75,7 @@ const UI={
   error:'Не удалось сохранить данные. Ничего не отмечено как выполненное; можно попробовать ещё раз.',
   retry:'Повторить',quickTip:'Любой этап можно пропустить. Не требуется специально менять самочувствие.',
   lessonDone:'Уже выполнено',count:'практик',outOf:'из',rating:'оценка',zero:'0',none:'Нет оценки',
-  reviewSaved:'Недельный обзор сохранён.',private:'Приватно в кабинете',
+  reviewSaved:'Недельный обзор сохранён.',private:'Приватно в кабинете',printReport:'Распечатать или сохранить отчёт о курсе',
   checkinSchedule:'Как часто предлагать оценивать проблему',dailyFrequency:'Каждый день',alternateFrequency:'Через день',weeklyFrequency:'Раз в неделю',
   softerSuggestion:'Предыдущее упражнение было некомфортным. Сегодня можно выбрать короткую практику или вариант без визуализаций.',
   retestDue:'Подошёл срок дополнительного недельного замера',retestLater:'Следующий допустимый недельный замер',startRetest:'Открыть этот тест',
@@ -242,6 +243,9 @@ export default function CourseToday({locale='en'}){
        <span>{t.step} {stage+1} {t.of} {lesson?.sections?.length||5} · <Clock3 size={13} aria-hidden="true"/> ~{lesson?.sections?.[stage]?.seconds||0}s</span>
        <h3>{lesson?.sections?.[stage]?.title}</h3>
        <p>{lesson?.sections?.[stage]?.text}</p>
+       {lesson?.sections?.[stage] && <CourseGuidedTimer
+         key={cycle.id+'-'+cycle.day+'-'+stage+'-'+(cycle.preferences?.length||'standard')}
+         seconds={lesson.sections[stage].seconds} locale={locale}/>}
      </div>
      <div className={styles.actions}>
        <button type="button" className="hh-primary" onClick={()=>{
@@ -307,6 +311,9 @@ export default function CourseToday({locale='en'}){
     })}>{t.saveReview}<Check size={17}/></button>
    </section>}
   {reviewed&&<p className={styles.saved}><CheckCircle2 size={17}/>{t.reviewSaved}</p>}
+  {isFinished&&<div className={styles.reportActions}>
+    <button type="button" onClick={()=>window.print()}>{t.printReport}</button>
+  </div>}
   {isFinished&&<section className={styles.review}>
     <h3>{t.nextCycle}</h3><label className={styles.field}>{t.problem}
       <input maxLength={160} value={targetLabel} onChange={e=>setTargetLabel(e.target.value)} placeholder={problem}/>
