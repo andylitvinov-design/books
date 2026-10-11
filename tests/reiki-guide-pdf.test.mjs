@@ -12,7 +12,7 @@ test("confirmed prices are recorded for one personal initiation level, not an in
   assert.equal(formatReikiLevelPrice("tantra", "es"), "€50 / 30 min / nivel");
 });
 
-test("Reiki PDF endpoint validates all six localized course selections", async () => {
+test("Reiki PDF endpoint validates all nine localized course selections", async () => {
   const [route, chooser] = await Promise.all([
     readFile("app/api/academy/reiki-guide/route.js", "utf8"),
     readFile("components/reiki-choice-capture.tsx", "utf8"),
@@ -54,6 +54,22 @@ for (const course of ["tantra", "yggdrasil"]) {
       assert.match(pdf.toString("latin1"), /\/Count [2-9][0-9]* >>/); // separate cover + syllabus
     });
   }
+}
+
+
+for (const locale of ["en", "ru", "es"]) {
+  test("Kundalini "+locale+" PDF contains its own full three-level course", async () => {
+    const guide = await readFile("public/academy/course-guides/kundalini."+locale+".txt", "utf8");
+    assert.ok(guide.length > 3000);
+    assert.match(guide, /holistichouse\.vercel\.app/);
+    const pdf = buildReikiCourseGuidePdf({ course: "kundalini", locale, source: guide });
+    assert.equal(pdf.subarray(0,8).toString("latin1"), "%PDF-1.7");
+    assert.ok(pdf.length > 20000);
+    assert.match(pdf.toString("latin1"), /\/ToUnicode/);
+    assert.match(pdf.toString("latin1"), /\/Count [2-9][0-9]* >>/);
+    assert.match(pdf.toString("latin1"), /personal initiation fee on request/);
+    assert.doesNotMatch(pdf.toString("latin1"), /Reiki initiation price: EUR .* per .* minutes per level/);
+  });
 }
 
 test("every Yggdrasil module includes a localized purpose, not only a list of names", async () => {
