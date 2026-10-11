@@ -25,3 +25,26 @@ test('registered instruments compute raw scores in declared ranges',()=>{
   assert.ok(score.value>=score.min&&score.value<=score.max)
  }
 })
+
+test('positive and negative reversed items produce the expected range endpoints',()=>{
+ for(const [key,reverseSet,maximum] of [
+  ['rses-10',[3,5,8,9,10],30],
+  ['ces-d-20',[4,8,12,16],60],
+ ]){
+  const d=getAssessmentDefinition(key,'v1','en')
+  const negative=new Set(reverseSet)
+  const answers=(invert)=>Object.fromEntries(d.questions.map((q,index)=>[
+   q.id,negative.has(index+1)?(invert?0:d.answerScale.max):(invert?d.answerScale.max:0),
+  ]))
+  assert.deepEqual(d.scoring.dimensions[0].reverseItems,reverseSet.map(index=>d.questions[index-1].id))
+  assert.equal(scoreAssessment(d,answers(false)).dimensions[0].value,0)
+  assert.equal(scoreAssessment(d,answers(true)).dimensions[0].value,maximum)
+ }
+})
+test('brief and somatic forms have original item counts and upper scores',()=>{
+ for(const [key,items,max] of [['phq-2',2,6],['gad-2',2,6],['k10',10,40],['phq-15',15,30]]){
+  const d=getAssessmentDefinition(key,'v1','en')
+  assert.equal(d.questions.length,items)
+  assert.equal(scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,d.answerScale.max]))).dimensions[0].value,max)
+ }
+})
