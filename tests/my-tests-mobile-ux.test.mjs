@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import test from 'node:test'
+
+const read=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+
+test('the first mobile viewport follows the approved hierarchy instead of hiding reports',()=>{
+ const ui=read('components/app/my-tests-dashboard.jsx')
+ const css=read('components/app/my-tests-dashboard.module.css')
+ const a=ui.indexOf('<div className={styles.stats}')
+ const b=ui.indexOf('<div className={styles.quickActions}')
+ const c=ui.indexOf('<button type="button" className={styles.primary}')
+ const d=ui.indexOf('<div className={styles.preview}>')
+ assert.ok(a>0&&b>a&&c>b&&d>c)
+ assert.match(ui, /rows\.length \? Math\.round\(\(completed \/ rows\.length\) \* 100\) : 0/)
+ assert.match(ui, /<ClientReportActions data=\{data\} locale=\{locale\} singleAction/)
+ assert.match(ui, /onClick=\{\(\) => setShowGuidance\(\(value\) => !value\)\}/)
+ assert.match(ui, /onStart.*listOpen/)
+ assert.match(ui, /c\.start : c\.choose/)
+ assert.doesNotMatch(ui, /styles\.extras|<details|My psychological portrait/)
+ assert.match(css,/\.stats\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+ assert.match(css,/\.quickActions\{display:grid/)
+ assert.match(css,/\.primary\{/)
+})
+
+test('incoming test selection is optional and compact, retaining explicit consent to switch',()=>{
+ const ui=read('components/app/my-tests-dashboard.jsx')
+ const battery=read('components/app/account-test-battery.jsx')
+ assert.match(ui,/data-pending-selection/)
+ assert.match(ui,/onKeepSet/)
+ assert.match(ui,/onUseNewSet/)
+ assert.match(battery,/window\.sessionStorage\.removeItem\(PENDING_TEST_SELECTION_KEY\)/)
+ assert.match(battery,/setPlan\(data\.activeTestPlan \|\| data\.latestTestPlan \|\| null\)/)
+ assert.match(battery,/void create\(conflict\.keys, true, conflict\.preferences\)/)
+ assert.match(battery,/setConflict\(\{ keys: valid, preferences: selectionPreferences \}\)/)
+ assert.doesNotMatch(battery,/<div className=\{styles\.notice\} role="group"/)
+ assert.doesNotMatch(battery,/if \(conflict \|\| error\) setShowList\(true\)/)
+})
+
+test('the test list is compact, uses themed icons rather than unrelated photos, and retains the two-click path',()=>{
+ const battery=read('components/app/account-test-battery.jsx')
+ const css=read('components/app/account-test-battery.module.css')
+ assert.match(battery,/function TestSymbol\(\{topics\}\)/)
+ assert.match(battery,/<TestSymbol topics=\{row\.topics\}/)
+ assert.doesNotMatch(battery, /<Image src=\{row\.photo\}/)
+ assert.match(battery,/id="my-tests-list"/)
+ assert.match(battery,/onClick=\{\(\) => openTest\(row\)\}/)
+ assert.match(battery,/router\.push\(root \+ '\/runs\/'/)
+ assert.match(battery,/mode=quick/)
+ assert.match(battery,/row\.run \? c\.resume : done \? c\.repeat : c\.begin/)
+ assert.match(css,/\.row\{display:grid;grid-template-columns:46px minmax\(0,1fr\) auto/)
+ assert.match(css,/@media\(max-width:760px\)/)
+})
+
+test('mobile uses one navigation: Home / My tests / Insights / Profile; desktop retains tabs',()=>{
+ const workspace=read('components/app/app-workspace.jsx')
+ const css=read('app/[locale]/app/[[...path]]/workspace.css')
+ assert.match(workspace, /<nav className="hh-nav"/)
+ assert.match(workspace, /<nav className="hh-mobile-app-nav"/)
+ assert.match(workspace, /href=\{root \+ '\/portrait'\} prefetch=\{false\} aria-current=\{page === 'portrait'/)
+ assert.match(workspace, /locale === 'ru' \? 'Профиль' : 'Profile'/)
+ assert.match(workspace, /href=\{root \+ '\/history'\} prefetch=\{false\}/)
+ assert.match(workspace, /href=\{root \+ '\/monitoring'\} prefetch=\{false\}/)
+ assert.match(css, /\.hh-app \.hh-nav\{display:none!important\}/)
+ assert.match(css, /\.hh-mobile-app-nav/)
+})
