@@ -1190,6 +1190,7 @@ test('owner can remove saved selections atomically without erasing answers, resu
     operationId:randomUUID(),replaceActive:true,
   })
   assert.equal(plan.definitionIds.length,3)
+  const unfinishedRun=await start(v2Actor,weekly)
   const started=await start(v2Actor,enV2)
   const saved=await save(started,v2Actor)
   const recorded=await repo.submitRun(v2Actor,started.id,{expectedRevision:saved.revision})
@@ -1222,7 +1223,7 @@ test('owner can remove saved selections atomically without erasing answers, resu
   const after=await repo.bootstrap(v2Actor)
   assert.equal(after.activeTestPlan.id,plan.id)
   assert.ok(after.results.some(x=>x.id===recorded.id))
-  assert.ok(after.runs.some(x=>x.id===started.id))
+  assert.ok(after.runs.some(x=>x.id===unfinishedRun.id),'unfinished draft must survive removing its test from the plan')
   // Removing a completed test detaches its *plan credit*, not its private report.
   const reduced=await repo.removeTestPlanItem(v2Actor,plan.id,{
     definitionId:enV2.id,expectedRevision:removed.revision,
