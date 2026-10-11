@@ -63,9 +63,9 @@ test("free situation review and imagery therapy have real bilingual pages and ac
   assert.match(consultation, /service\?: string/);
   assert.match(consultation, /service \? "service" : "personal"/);
   assert.match(form, /variant="free"/);
-  assert.ok(chooser.includes('t.serviceField + ": " + (service'));
+  assert.ok(chooser.includes('service: serviceName'));
   assert.ok(chooser.includes('t.topicOptions[topic]'));
-  assert.ok(chooser.includes('wa.me/14376066502'));
+  assert.ok(chooser.includes('whatsappEnquiryUrl'));
   assert.ok(chooser.includes('Nothing is sent until you press Send'));
   assert.doesNotMatch(form + chooser, /localStorage|sessionStorage|sendBeacon|<textarea|<form/);
 });
@@ -105,5 +105,5 @@ test("approach one preselects an actual free psychohomeopathy-focused intake; no
   assert.ok(chooser.includes('if (isTopic(requestedTopic)) setTopic(requestedTopic)'));
   assert.ok(chooser.includes('"wellbeing"'));
   assert.ok(freePage.indexOf('className={styles.contentGrid}') < freePage.indexOf('className={styles.details}'));
-  assert.ok(chooser.includes('encodeURIComponent(message)'));
+  assert.ok(chooser.includes('whatsappEnquiryUrl({'));
 });
