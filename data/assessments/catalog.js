@@ -2,6 +2,7 @@ import { deepFreeze } from '../../lib/assessments/contracts.js'
 import { EXPANDED_CATALOG_V2 } from './catalog-v2.js'
 import { EXPANDED_CATALOG_V3 } from './expanded-battery-v3.js'
 import { EXPANDED_CATALOG_V4 } from './expanded-battery-v4.js'
+import { RELATIONSHIPS_INTIMACY_CATALOG } from './relationships-intimacy-v1.js'
 import { PROFESSIONAL_BATTERY_2026_CATALOG } from './professional-battery-2026.js'
 import { CDC_HEALTHY_DAYS_CATALOG } from './cdc-healthy-days-2026.js'
 import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from './professional-battery-2026-b.js'
@@ -689,6 +690,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...EXPANDED_CATALOG_V2,
   ...EXPANDED_CATALOG_V3,
   ...EXPANDED_CATALOG_V4,
+  ...RELATIONSHIPS_INTIMACY_CATALOG,
   ...PROFESSIONAL_BATTERY_2026_CATALOG,
   ...CDC_HEALTHY_DAYS_CATALOG,
   ...PROFESSIONAL_BATTERY_2026_B_CATALOG,
