@@ -349,6 +349,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                   <span>{row.definition.questions.length} {c.questions}</span>
                   <strong className={state === 'inProgress' ? styles.inProgress : state === 'completed' ? styles.completed : styles.notStarted}>{status}</strong>
                 </div>
+                {done && row.result && <small className={styles.completedDate}>{c.date}: {formatDate(row.result.measurementAt, locale)}</small>}
                 {row.run && <div className={styles.draftProgress}>
                   <progress max="100" value={row.progress} aria-label={status}/>
                   <small>{row.progress}% {c.percent}</small>
