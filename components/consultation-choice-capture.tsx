@@ -166,7 +166,7 @@ const copy = {
     topicField: "Tema",
     serviceField: "Servicio",
     intentField: "Qué me interesa",
-    freeRequest: "Quisiera solicitar una conversación introductoria gratuita sobre el tema elegido y hablar de los próximos pasos.",
+    freeRequest: "Quisiera solicitar una conversación inicial gratuita sobre el tema elegido y hablar de los próximos pasos.",
     serviceRequest: "Hola Andrey.",
     messageNote: "WhatsApp abre un mensaje preparado. Solo se envía cuando confirmas Enviar.",
     serviceNote: "Es una consulta, no una reserva ni un pago. Confirmaremos personalmente la fecha y el precio.",
