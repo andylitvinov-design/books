@@ -11,6 +11,7 @@ import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
+import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
@@ -101,6 +102,7 @@ function planRows(plan, data, locale) {
       definition, run, result: latest, completedInPlan, progress, key: item,
       title: catalog?.title?.[locale] || catalog?.title?.en || definition.title,
       description: catalog?.description?.[locale] || catalog?.description?.en || '',
+      methodology: assessmentMethodology({key: item, catalog, definition, locale}).text,
       minutes: catalog?.durationMinutes || Math.max(1, Math.round(definition.questions.length / 6)),
       topics: catalog?.topics || [],
     }
@@ -367,7 +369,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                         <strong className={state === 'inProgress' ? styles.inProgress
                           : state === 'completed' ? styles.completed : styles.notStarted}>{status}</strong>
                       </div>
-                      {row.run && <div className={styles.draftProgress}>
+                      <details className={styles.aboutTest}>
+                         <summary>{locale === 'ru' ? 'О тесте и научном статусе' : 'About this test & evidence'}</summary>
+                         <p>{row.description}</p>
+                         <p>{row.methodology}</p>
+                       </details>
+                       {row.run && <div className={styles.draftProgress}>
                         <progress max="100" value={row.progress} aria-label={status}/>
                         <small>{row.progress}% {c.percent}</small>
                       </div>}
