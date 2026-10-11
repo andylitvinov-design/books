@@ -239,7 +239,7 @@ export function MyCourse({ data, locale = 'en' }) {
             setState(await request({ action:'to-tests', expectedRevision:saved.course.revision }))
           } catch (e) { setError(e.message) }
           finally { setBusy(false) }
-        }}>{t.selectedReady}<ArrowRight size={17}/></button>
+        }}>{t.selectedReady}<ArrowRight size={17}/></button>}
     </section>}
 
     {stage === 2 && <section className={'hh-panel ' + styles.chapter}>
