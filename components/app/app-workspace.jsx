@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { BarChart3, ClipboardList, FileText, House, UserRound } from 'lucide-react'
+import { BarChart3, BookOpen, ClipboardList, FileText, House, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
@@ -31,6 +31,7 @@ import {
 } from '@/lib/assessments/test-recommendations'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
+import MyCourse from '@/components/app/my-course'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -275,6 +276,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     ['monitoring', c.monitoring, '/monitoring'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
+    ['course', locale === 'ru' ? 'Мой курс' : 'My course', '/course'],
   ]
   return (
     <main className="hh-app">
@@ -290,6 +292,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               {c.portrait}
             </Link>
             <Link href={root + '/analysis'} prefetch={false}>{locale === 'ru' ? 'Личный анализ' : 'Personal analysis'}</Link>
+            <Link href={root + '/course'} prefetch={false}>{locale === 'ru' ? 'Мой курс' : 'My course'}</Link>
             <Link href={root + '/history'} prefetch={false}>
               {c.history}
             </Link>
@@ -344,6 +347,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
+          {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'analysis' && <PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
           {page === 'monitoring' && (
@@ -418,6 +422,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
         <Link href={root + '/analysis'} prefetch={false} aria-current={page === 'analysis' ? 'page' : undefined}><FileText aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Анализ' : 'Analysis'}</span></Link>
         <Link href={root + '/portrait'} prefetch={false} aria-current={page === 'portrait' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Профиль' : 'Profile'}</span></Link>
+        <Link href={root + '/course'} prefetch={false} aria-current={page === 'course' ? 'page' : undefined}><BookOpen aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мой курс' : 'My course'}</span></Link>
       </nav>}
     </main>
   )
