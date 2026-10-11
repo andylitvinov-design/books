@@ -139,3 +139,41 @@ test("All 41 unique recovered PsiMaster videos appear in their matching Russian 
   assert.match(css, /\.temple-video-grid/);
   assert.match(css, /@media \(max-width: 700px\)/);
 });
+
+
+test("Temple Studies makes tradition, deity channel and three initiation formats selectable before any long reading", () => {
+  const page = read("components/temple-studies.tsx");
+  const chooser = read("components/temple-initiation-chooser.tsx");
+  const css = read("components/temple-initiation-chooser.module.css");
+  const chaptersCss = read("app/temple-studies.css");
+
+  assert.match(page, /<TempleInitiationChooser locale=\{locale\}/);
+  assert.match(page, /href="#temple-choose"/);
+  assert.match(chooser, /id="temple-choose"/);
+  for (const id of ["greek", "roman", "egyptian", "norse", "slavic", "other"]) {
+    assert.match(chooser, new RegExp('id: "' + id + '"'));
+  }
+  for (const id of ["meditation", "personal", "group"]) {
+    assert.match(chooser, new RegExp('id: "' + id + '"'));
+  }
+  assert.match(chooser, /setDeityId\(item\.deities\[0\]\?\.id \?\? ""\)/);
+  assert.match(chooser, /aria-pressed=\{deityId === deity\.id\}/);
+  assert.match(chooser, /aria-pressed=\{item\.id === formatId\}/);
+  assert.match(chooser, /t\.messageTradition \+ ": " \+ traditionName/);
+  assert.match(chooser, /t\.messageDeity \+ ": " \+ deityName/);
+  assert.match(chooser, /t\.messageFormat \+ ": " \+ format\.title\[locale\]/);
+  assert.match(chooser, /encodeURIComponent\(message\)/);
+  assert.match(chooser, /https:\/\/wa\.me\/14376066502/);
+  assert.match(chooser, /data-temple-whatsapp-request/);
+  assert.match(chooser, /const copy = \{[\s\S]*en: \{[\s\S]*ru: \{[\s\S]*es: \{/);
+  assert.match(css, /@media \(max-width: 640px\)/);
+
+  assert.match(page, /<details className="temple-stage-details">/);
+  assert.match(page, /<summary>\{t\.more\}/);
+  assert.match(page, /className="temple-stage-expanded"/);
+  assert.match(page, /className="temple-stage-intro">\{data\.introduction\}/);
+  assert.match(page, /className="temple-video-index"/);
+  assert.match(page, /<details className="temple-video-series" key=\{collection\.key\}>/);
+  assert.match(chaptersCss, /\.temple-stage-details\[open\]/);
+  assert.match(chaptersCss, /\.temple-stage \{ display: grid;/);
+});
