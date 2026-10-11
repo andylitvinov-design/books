@@ -340,6 +340,11 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const quickMinutes = definition ? Math.max(1, Number(monitoringCatalogItem(definition.key)?.durationMinutes) || Math.ceil(definition.questions.length / 5)) : 1
   const guidedMinutes = Math.max(quickMinutes + 1, Math.ceil(quickMinutes * 1.4))
   const timeUnit = locale === 'ru' ? 'мин' : 'min'
+  const guestVisibleDimensions = guestResult?.definitionKey === 'hh-bach-flower'
+    ? [...(guestResult.dimensions || [])].filter(item => item.value > 0)
+        .sort((a, b) => b.value - a.value || String(a.sourceConstruct).localeCompare(String(b.sourceConstruct)))
+        .slice(0, 5)
+    : (guestResult?.dimensions || [])
 
   useEffect(() => {
     let live = true
@@ -934,11 +939,15 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             </header>
 
+            {guestResult.definitionKey === 'hh-bach-flower' && <PersonalResultReport result={guestResult} locale={locale} />}
+
             <section className="cabinet-result-section" aria-labelledby="guest-result-values">
               <div className="cabinet-result-section-heading">
                 <div>
                   <p className="about-kicker">{locale === 'ru' ? 'Результаты' : 'Results'}</p>
-                  <h4 id="guest-result-values">{locale === 'ru' ? 'Ваши показатели' : 'Your measurements'}</h4>
+                  <h4 id="guest-result-values">{guestResult.definitionKey === 'hh-bach-flower'
+                    ? (locale === 'ru' ? 'Ведущие соответствия' : 'Leading matches')
+                    : (locale === 'ru' ? 'Ваши показатели' : 'Your measurements')}</h4>
                 </div>
                 <p>
                   {locale === 'ru'
@@ -946,8 +955,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                     : 'This is a personal baseline. Compatible repeat measurements can show change over time.'}
                 </p>
               </div>
-              <div className="cabinet-result-grid" data-count={Math.min(guestResult.dimensions.length, 3)}>
-                {guestResult.dimensions.map((dimension) => (
+              <div className="cabinet-result-grid" data-count={Math.min(guestVisibleDimensions.length, 3)}>
+                {guestVisibleDimensions.map((dimension) => (
                   <section key={dimension.key}>
                     <h5>{resultLabel(definition, dimension)}</h5>
                     <div className="cabinet-result-score">
@@ -963,7 +972,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             </section>
 
-            <PersonalResultReport result={guestResult} locale={locale} />
+            {guestResult.definitionKey !== 'hh-bach-flower' && <PersonalResultReport result={guestResult} locale={locale} />}
             <div className="cabinet-result-actions-grid">
               <section className="cabinet-result-save-panel">
                 <p className="about-kicker">{locale === 'ru' ? 'Сохранить динамику' : 'Keep your history'}</p>
