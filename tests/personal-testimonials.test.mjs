@@ -80,5 +80,10 @@ test("the real practitioner photo stays full-width on mobile", () => {
   const home = read("components", "holistic-house-home.tsx");
   const css = read("app", "holistic-house-home.css");
   assert.match(home, /src="\/images\/holistic-house\/andy-about\.png"/);
-  assert.match(css, /\.house-home--services \.service-home-about > \.service-home-about__portrait \{\s*align-self:stretch; width:100%; height:215px;/);
+  assert.match(home, /className="service-home-about__image"/);
+  assert.match(home, /width=\{900\}/);
+  assert.match(home, /height=\{720\}/);
+  assert.match(css, /\.house-home--services \.service-home-about__image/);
+  assert.match(css, /aspect-ratio:16\/9/);
+  assert.match(css, /object-fit:cover/);
 });
