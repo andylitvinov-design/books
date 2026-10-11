@@ -32,7 +32,7 @@ test('ES About retains all sections, real translated destinations, form and SEO'
   const form = source('components/personal-consultation-form.tsx');
   const chooser = source('components/consultation-choice-capture.tsx');
   assert.match(form, /service \? "service" : "personal"/);
-  for (const phrase of ['Exploremos tu próximo paso', 'Situación personal', 'Conversación inicial gratuita', 'Solicitar conversación gratuita', 'Solicitud de sesión personal', 'Solo se envía cuando confirmas Enviar', 't.me/AndyTherapist']) assert.ok(chooser.includes(phrase), phrase);
+  for (const phrase of ['Evaluación gratuita mediante dibujo', 'Situación personal', 'Evaluación gratuita por dibujo + informe', 'Iniciar evaluación gratuita', 'Solicitud de sesión personal', 'Solo se envía cuando confirmas Enviar', 't.me/AndyTherapist']) assert.ok(chooser.includes(phrase), phrase);
   assert.match(source('app/sitemap.ts'), /\/es\/about/);
 });
 test('Public ES routing does not enable unsupported private-cabinet locales', () => {

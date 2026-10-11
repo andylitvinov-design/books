@@ -6,10 +6,14 @@ const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf
 const landing = read("app/[locale]/services/free-situation-review/page.tsx");
 const css = read("app/[locale]/services/free-situation-review/review.module.css");
 const form = read("components/free-situation-review-form.tsx");
+const intake = read("components/free-drawing-intake.tsx");
+const intakeCss = read("components/free-drawing-intake.module.css");
 
-test("all three locales have distinct real offers, human-first content and correct SEO", () => {
-  for (const phrase of ["Бесплатная диагностика ситуации", "Free situation & goal assessment", "Evaluación gratuita de tu situación", "Feeling stuck or unsure what to do next?", "¿Te sientes bloqueado", "Застряли в проблеме"]) {
-    assert.ok(landing.includes(phrase), "Missing: " + phrase);
+test("EN, RU, ES free offer is a handwritten drawing diagnostic with a written report", () => {
+  for (const phrase of ["Бесплатная диагностика ситуации по рисунку", "Free situation & drawing assessment",
+    "Evaluación gratuita mediante dibujo", "КОУЧИНГ-ФОРМА", "Coaching questionnaire", "Formulario de coaching",
+    "ME, MY GOAL and MY PROBLEM", "Я", "МОЯ ЦЕЛЬ", "МИ ПРОБЛЕМА".replace("МИ", "МОЯ")]) {
+    assert.ok(landing.includes(phrase) || intake.includes(phrase), "Missing: " + phrase);
   }
   for (const path of ["/en/services/free-situation-review", "/ru/services/free-situation-review", "/es/services/free-situation-review"]) {
     assert.ok(landing.includes(path), "Locale/canonical missing: " + path);
@@ -17,57 +21,49 @@ test("all three locales have distinct real offers, human-first content and corre
   assert.ok(landing.includes('Image src="/images/holistic-house/andy-about.png"'));
   assert.ok(landing.includes("<FreeSituationReviewForm locale={locale} />"));
   assert.ok(landing.includes('id="request-free-review"'));
-  assert.ok(landing.includes('href="#request-free-review"'));
 });
 
-test("client funnel: above-fold form, three real steps, optional paths, FAQs", () => {
-  assert.ok(landing.indexOf('className={styles.contentGrid}') < landing.indexOf('className={styles.details}'));
-  assert.ok(landing.includes('<ol className={styles.steps}>'));
-  assert.ok(landing.includes("t.steps.map"));
-  assert.ok(landing.includes("t.directions.map"));
-  assert.ok(landing.includes("t.faqs.map"));
-  assert.ok(landing.includes("<details"));
-  assert.ok(landing.includes("/services/\" + direction.href"));
+test("landing explains precisely three free steps and two optional priced live sessions", () => {
+  for (const key of ["scopeTitle", "scopeIntro", "scopeItems", "scopeLimit",
+    "t.steps.map", "t.directions.map", "t.faqs.map", "t.paidOptions.map"]) assert.ok(landing.includes(key));
+  for (const price of ["€50", "€100"]) assert.ok(landing.includes(price));
+  for (const mins of ["30 minutes", "60 minutes", "30 минут", "60 минут"]) assert.ok(landing.includes(mins));
+  assert.ok(landing.includes("encodeURIComponent(option.message)"));
+  assert.ok(landing.includes('href="#request-free-review"'));
   assert.ok(landing.includes("getHomeopathyLocaleParams"));
   assert.ok(landing.includes("isPublicLocale"));
+  assert.ok(landing.includes('className={styles.paid}'));
 });
 
-test("privacy-first blue consultation capture needs only one topic selection", () => {
-  const capture = read("components/consultation-choice-capture.tsx");
-  const blueCss = read("components/consultation-choice-capture.module.css");
-  assert.match(form, /<ConsultationChoiceCapture locale=\{locale\} variant="free"/);
-  assert.match(capture, /"personal", "goal", "business", "wellbeing"/);
-  assert.match(capture, /data-choice-layout=\{isService \? "service" : "topic"\}/);
-  assert.match(capture, /aria-pressed=\{topic === choice\}/);
-  assert.match(capture, /new URLSearchParams\(window.location.search\).get\("topic"\)/);
-  assert.match(capture, /https:\/\/wa\.me\/14376066502\?text=/);
-  assert.match(capture, /encodeURIComponent\(message\)/);
-  assert.match(capture, /Nothing is sent until you press Send/);
-  assert.match(capture, /Оно отправится только после вашего подтверждения/);
-  assert.match(capture, /Solo se envía cuando confirmas Enviar/);
-  assert.match(capture, /AcquisitionEventLink/);
-  assert.doesNotMatch(capture, /<form|<input|<select|<textarea|new FormData|localStorage|sessionStorage|sendBeacon|fetch\(/);
-  assert.match(blueCss, /linear-gradient\(125deg, #e9f7fe/);
-  assert.match(blueCss, /background:#e66d50/);
-  assert.match(blueCss, /@media \(max-width:640px\)/);
+test("coaching form is real, ephemeral, mobile-friendly and does not leak responses in WhatsApp URL", () => {
+  assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
+  for (const field of ["problem", "goal", "obstacle", "tried"]) assert.ok(intake.includes("set" + field[0].toUpperCase() + field.slice(1)), field);
+  assert.match(intake, /<form onSubmit=/);
+  assert.match(intake, /<textarea required/);
+  assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
+  assert.match(intake, /setPrepared\(true\)/);
+  assert.match(intake, /"https:\/\/wa\.me\/" \+ phone/);
+  assert.match(intake, /encodeURIComponent\(\s*\[t\.whatsappIntro/);
+  assert.doesNotMatch(intake, /encodeURIComponent\((?:answers|problem|goal|obstacle|tried)\)/);
+  assert.doesNotMatch(intake, /localStorage|sessionStorage|indexedDB|fetch\(|sendBeacon|\/api\/app\/|FileReader/);
+  assert.match(intake, /attach a photo of my handwritten drawing/);
+  assert.match(intake, /Nothing is sent automatically/);
+  assert.match(intakeCss, /@media\(max-width:767px\)/);
+  assert.match(intakeCss, /focus-visible/);
 });
 
-test("mobile editorial layout has no card-grid overload, usable input controls and reduced motion", () => {
-  for (const s of [".contentGrid", ".capturePanel", ".steps", ".directions", ".about", ".faq", ".closing"]) assert.ok(css.includes(s));
+test("mobile design keeps a clear first-step form and separates paid plans", () => {
+  for (const value of [".contentGrid", ".capturePanel", ".steps", ".scope", ".paid", ".directions", ".about", ".faq", ".closing"]) assert.ok(css.includes(value));
   assert.ok(css.includes("@media(max-width:767px)"));
   assert.ok(landing.includes('className={styles.mobileCta}'));
   assert.ok(css.includes(".mobileCta { display:inline-flex"));
   assert.ok(css.includes("grid-template-columns:minmax(0,1fr)"));
-  assert.ok(read("components/consultation-choice-capture.module.css").includes("min-height:56px"));
   assert.ok(css.includes(":focus-visible"));
   assert.ok(css.includes("prefers-reduced-motion"));
-  assert.ok(!css.includes("repeat(3"));
 });
 
-test("do not imply a diagnosis, guaranteed outcome or compulsory paid continuation", () => {
-  assert.ok(landing.includes("not a medical diagnosis"));
-  assert.ok(landing.includes("no es un diagnóstico"));
-  assert.ok(landing.includes("не медицинский"));
+test("written situation report is never represented as a healthcare diagnosis or cure", () => {
+  for (const phrase of ["not a medical diagnosis", "не медицин", "no un diagnóstico"]) assert.ok(landing.includes(phrase), phrase);
   assert.ok(landing.includes("optional"));
-  assert.ok(!/guaranteed cure|лечим все|100% success|medical diagnosis provided/i.test(landing));
+  assert.doesNotMatch(landing, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
 });

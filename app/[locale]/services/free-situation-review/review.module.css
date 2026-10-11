@@ -68,3 +68,16 @@
 .scope li svg{flex:none;margin-top:2px;color:#477053}
 .scope .scopeLimit{border-top:1px solid #d5cdbf;padding-top:17px;margin:19px 0 0;font:13px/1.7 Arial,Helvetica,sans-serif;color:#756453}
 @media(max-width:767px){.scope{width:calc(100% - 28px);margin-top:48px;padding:24px 21px}.scope h2{font-size:30px}}
+
+
+/* Live personal consultations are a separate paid offer, not the free assessment. */
+.paid{width:min(1080px,calc(100% - 40px));margin:clamp(44px,6vw,72px) auto 0;padding:clamp(23px,4vw,37px);border:1px solid #d8cdbc;border-radius:20px;background:#f8f2e8;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.95fr);gap:clamp(18px,3vw,34px);align-items:center}
+.paid h2{margin:0 0 8px;color:#342e28;font:400 clamp(27px,3vw,36px)/1.18 Georgia,serif}
+.paid > div > p:not(.eyebrow){margin:0;color:#6c6154;font:15px/1.58 Arial,Helvetica,sans-serif}
+.paidOptions{display:grid;gap:8px}
+.paidOptions a{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:13px;min-height:62px;padding:12px 15px;border:1px solid #c2dacd;border-radius:13px;background:#eaf6ee;color:#2c5040;text-decoration:none;font:700 14px/1.35 Arial,Helvetica,sans-serif}
+.paidOptions a strong{font-size:19px;color:#264d3d;white-space:nowrap}
+.paidOptions a:hover{background:#d5eadb}
+.paidOptions p{font:12px/1.45 Arial,Helvetica,sans-serif;color:#776e61;margin:4px 0 0}
+.paidOptions a:focus-visible{outline:3px solid #b88046;outline-offset:3px}
+@media(max-width:767px){.paid{grid-template-columns:minmax(0,1fr);padding:20px;margin-top:38px}.paidOptions a{gap:9px;min-height:58px;font-size:12px}.paidOptions a strong{font-size:18px}}
