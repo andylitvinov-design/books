@@ -1,39 +1,46 @@
 import Image from "next/image";
-import { ArrowDown, ArrowRight, BookOpen, Check, ChevronDown, Download, MessageCircle } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Download, FileText, MessageCircle } from "lucide-react";
 
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { kundaliniEveryday, kundaliniInterface, kundaliniLessons } from "@/data/academy/kundalini-reiki-course";
+import {
+  kundaliniEveryday,
+  kundaliniExtensions,
+  kundaliniExtraAttunements,
+  kundaliniExtraNames,
+  kundaliniHistory,
+  kundaliniInterface,
+  kundaliniLessons,
+  kundaliniOriginalManual,
+} from "@/data/academy/kundalini-reiki-course";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./kundalini-reiki-course.module.css";
 
 const whatsapp = "https://wa.me/14376066502?text=";
+// Original diagrams are stored in /public, extracted without replacing the user PDF.
 
-const levelPhotos = [
-  "/academy/reiki-yggdrasil/source/program-overview.jpg",
-  "/academy/reiki-yggdrasil/source/eastern-tradition.png",
-  "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
-];
-
-function guideUrl(locale: PublicLocale) {
-  return "/api/academy/reiki-guide?course=kundalini&locale=" + locale;
-}
-
-function enquire(locale: PublicLocale, option: "programme" | "level-one") {
-  const original = "https://holistichouse.vercel.app/" + locale + "/academy/reiki/kundalini-reiki";
-  const service = locale === "ru" ? "Кундалини Рейки" : "Kundalini Reiki";
-  const request = option === "programme"
-    ? locale === "ru" ? "Здравствуйте, Андрей! Хочу узнать формат, даты и актуальные цены обучения Кундалини Рейки (1–3 ступени). Программа и PDF уже доступны на сайте Holistic House."
-      : locale === "es" ? "Hola Andrey. Quisiera conocer el formato, fechas y precio actual de Kundalini Reiki (niveles 1–3). Ya puedo consultar el programa y PDF en Holistic House."
-      : "Hello Andrey! I'd like to ask about the current training format, dates and fees for Kundalini Reiki Levels 1–3. I can already read the full outline and PDF at Holistic House."
-    : locale === "ru" ? "Здравствуйте, Андрей! Хочу запросить личную инициацию 1-й ступени Кундалини Рейки. Уточните формат, доступность и цену."
-      : locale === "es" ? "Hola Andrey. Quisiera solicitar la iniciación personal de Kundalini Reiki Nivel 1. ¿Cuál es el formato, disponibilidad y precio?"
-      : "Hello Andrey! I'd like to request a personal Kundalini Reiki Level 1 initiation. Please confirm the format, availability and price.";
-  return whatsapp + encodeURIComponent([request, "", "Course / Система: " + service, "Request / Запрос: " + (option === "programme" ? "Training dates, format and fees" : "Personal Level 1 initiation"), "Page / Страница: " + original].join("\n"));
+function enquiryUrl(locale: PublicLocale, kind: "training" | "initiation") {
+  const page = "https://holistichouse.vercel.app/" + locale + "/academy/reiki/kundalini-reiki";
+  const course = locale === "ru" ? "Кундалини Рейки" : "Kundalini Reiki";
+  const request = kind === "training"
+    ? locale === "ru" ? "Здравствуйте, Андрей! Хочу узнать о курсе Кундалини Рейки, формате обучения, доступных датах и актуальной стоимости."
+      : locale === "es" ? "Hola Andrey. Me interesa el curso de Kundalini Reiki. ¿Cuál es el formato, la disponibilidad y el precio actual?"
+      : "Hello Andrey! I'm interested in Kundalini Reiki training. Please tell me the current format, availability and price."
+    : locale === "ru" ? "Здравствуйте, Андрей! Хочу запросить личную инициацию 1-й ступени Кундалини Рейки. Подскажите условия."
+      : locale === "es" ? "Hola Andrey. Quisiera solicitar una iniciación personal de Kundalini Reiki nivel 1. ¿Cuáles son las condiciones?"
+      : "Hello Andrey! I'd like to request a personal Kundalini Reiki Level 1 initiation. Please let me know the conditions.";
+  return whatsapp + encodeURIComponent([
+    request,
+    "",
+    "Course / Система: " + course,
+    "Request / Запрос: " + (kind === "training" ? "Kundalini Reiki training" : "Kundalini Reiki Level 1 personal initiation"),
+    "Holistic House: " + page,
+  ].join("\n"));
 }
 
 export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
   const t = kundaliniInterface[locale];
+  const pdf = kundaliniOriginalManual.path;
 
   return (
     <main className={styles.page} lang={locale}>
@@ -42,69 +49,79 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
         <AcademyBackLink locale={locale} />
 
         <section className={styles.hero} aria-labelledby="kundalini-title">
-          <div className={styles.heroText}>
-            <span className={styles.eyebrow}>{t.eyebrow}</span>
+          <div className={styles.heroCopy}>
+            <p className={styles.eyebrow}>{t.eyebrow}</p>
             <h1 id="kundalini-title">{t.title}</h1>
-            <p className={styles.heroLead}>{t.introduction}</p>
-            <p className={styles.heroMeta}>{t.levels} <span aria-hidden="true">·</span> {t.levelsSub}</p>
+            <p className={styles.heroLead}>{t.heroLead}</p>
+            <blockquote className={styles.sourceQuote}>
+              <p>{t.heroDetail}</p><footer>{t.heroSource}</footer>
+            </blockquote>
+            <div className={styles.heroMetrics}>
+              <span>{t.levelCount}</span>
+              <span>{t.manualCount}</span>
+            </div>
             <div className={styles.heroActions}>
-              <a className={styles.buttonPrimary} href="#kundalini-levels">{t.primary}<ArrowDown size={18} aria-hidden="true" /></a>
-              <a className={styles.buttonSecondary} href={guideUrl(locale)} download>
-                <Download size={18} aria-hidden="true" />{t.pdfButton}
+              <a className={styles.primaryAction} href="#kundalini-levels">
+                {t.start}<ArrowDown size={17} aria-hidden="true" />
+              </a>
+              <a className={styles.secondaryAction} href={pdf} download={kundaliniOriginalManual.fileName}>
+                <Download size={18} aria-hidden="true" />{t.download}
               </a>
             </div>
           </div>
-          <div className={styles.heroPhoto}>
-            <Image
-              src="/academy/reiki-yggdrasil/source/temple-studies.png"
-              alt={locale === "ru" ? "Спокойная медитативная атмосфера — статуя Будды в саду" : locale === "es" ? "Ambiente contemplativo — una estatua de Buda en un jardín" : "Calm contemplative setting — a Buddha statue in a garden"}
-              fill
-              priority
-              sizes="(max-width: 760px) 100vw, 48vw"
-              className={styles.coverImage}
-            />
-            <div className={styles.photoShade} />
-            <div className={styles.heroStamp}>{t.heroStamp}</div>
+          <div className={styles.heroPhoto} aria-label="Kundalini Reiki attunement diagrams from Paul Crick's original manual">
+            <div className={styles.heroDiagramSet}>
+              {kundaliniLessons.map((level) => (
+                <div className={styles.heroDiagram} key={level.number}>
+                  <Image
+                    src={level.image}
+                    alt={level.title[locale] + " · original Paul Crick manual"}
+                    fill
+                    priority={level.number === 2}
+                    sizes="(max-width: 760px) 31vw, 14vw"
+                    className={styles.heroDiagramImage}
+                  />
+                  <span>{String(level.number).padStart(2, "0")}</span>
+                </div>
+              ))}
+            </div>
+            <span className={styles.photoCaption}>Paul Crick · Kundalini Reiki Manual</span>
           </div>
         </section>
 
-        <div className={styles.quietBenefits} aria-label={t.benefitsLabel}>
-          {t.benefits.map((item) => <span key={item}><Check size={16} aria-hidden="true" />{item}</span>)}
-        </div>
-
         <section className={styles.section} id="kundalini-levels" aria-labelledby="kundalini-levels-title">
-          <header className={styles.sectionHeading}>
-            <span className={styles.eyebrow}>{t.programmeKicker}</span>
-            <h2 id="kundalini-levels-title">{t.stepsTitle}</h2>
-            <p>{t.stepsSub}</p>
+          <header className={styles.sectionHead}>
+            <p className={styles.eyebrow}>{t.introduction}</p>
+            <h2 id="kundalini-levels-title">{t.levelsTitle}</h2>
           </header>
           <div className={styles.levels}>
-            {kundaliniLessons.map((level, index) => (
+            {kundaliniLessons.map((level) => (
               <article className={styles.levelCard} key={level.number}>
-                <div className={styles.levelPhoto}>
+                <div className={styles.levelArt}>
                   <Image
-                    src={levelPhotos[index]}
-                    alt={level.title[locale]}
+                    src={level.image}
+                    alt={level.title[locale] + " · Paul Crick manual"}
                     fill
-                    sizes="(max-width: 680px) 100vw, (max-width: 1020px) 50vw, 33vw"
-                    className={styles.coverImage}
+                    sizes="(max-width: 760px) 100vw, (max-width: 1040px) 50vw, 33vw"
+                    className={styles.manualDrawing}
                   />
-                  <span className={styles.levelBadge}>{t.levelLabel} {String(level.number).padStart(2, "0")}</span>
+                  <span className={styles.levelNumber}>{t.level} {String(level.number).padStart(2, "0")}</span>
                 </div>
-                <div className={styles.levelContent}>
+                <div className={styles.levelBody}>
                   <h3>{level.title[locale]}</h3>
-                  <p>{level.summary[locale]}</p>
+                  <p className={styles.levelExcerpt}>{level.summary[locale]}</p>
+                  <small className={styles.provenance}>{level.source}</small>
                 </div>
-                <details className={styles.levelDetail}>
-                  <summary>{t.detailLabel}<ChevronDown size={18} aria-hidden="true" /></summary>
-                  <div className={styles.detailBody}>
-                    <ul>
-                      {level.focus.map((item, i) => <li key={i}><Check size={15} aria-hidden="true" />{item[locale]}</li>)}
-                    </ul>
-                    <h4>{t.exercise}</h4>
-                    <p>{level.exercise[locale]}</p>
-                    <h4>{t.assignment}</h4>
-                    <p>{level.assignment[locale]}</p>
+                <details className={styles.accordion}>
+                  <summary>{t.readLevel}<ChevronDown size={17} aria-hidden="true" /></summary>
+                  <div className={styles.accordionBody}>
+                    {level.practice.map((entry, index) => (
+                      <div className={styles.sourceEntry} key={index}>
+                        <h4>{entry.label[locale]}</h4>
+                        <p>{entry.text[locale]}</p>
+                        <small>{entry.origin}</small>
+                      </div>
+                    ))}
                   </div>
                 </details>
               </article>
@@ -112,72 +129,132 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.learningFeature} aria-labelledby="kundalini-learning-title">
-          <div className={styles.learningPhoto}>
-            <Image
-              src="/academy/reiki-yggdrasil/source/school-introduction.jpg"
-              alt={locale === "ru" ? "Реальная фотография учебной группы из материалов школы" : locale === "es" ? "Fotografía auténtica de un grupo de formación" : "Authentic photograph of a Reiki teaching group"}
-              fill
-              sizes="(max-width: 780px) 100vw, 44vw"
-              className={styles.coverImage}
-            />
+        <section className={styles.balanceSection} aria-labelledby="kundalini-balance-title">
+          <div className={styles.balanceHeading}>
+            <span className={styles.eyebrow}>PsiMaster · Paul Crick</span>
+            <h2 id="kundalini-balance-title">{t.balanceTitle}</h2>
           </div>
-          <div className={styles.learningContent}>
-            <span className={styles.eyebrow}>{t.learningKicker}</span>
-            <h2 id="kundalini-learning-title">{t.howTitle}</h2>
-            <ol>
-              {t.howText.map((item, index) => (
-                <li key={index}><span>{String(index + 1).padStart(2, "0")}</span>{item.replace(/^\d+\.\s*/, "")}</li>
-              ))}
-            </ol>
-            <details className={styles.practiceNotes}>
-              <summary>{t.methodTitle}<ChevronDown size={18} aria-hidden="true" /></summary>
-              <ul>
-                {kundaliniEveryday.map((item, index) => (
-                  <li key={index}><strong>{item.title[locale]}</strong> — {item.description[locale]}</li>
-                ))}
-              </ul>
-            </details>
+          <div className={styles.balanceBody}>
+            <p>{t.balanceDescription}</p>
+            <small>{t.balanceSource}</small>
           </div>
         </section>
 
-        <section className={styles.downloadFeature} id="kundalini-guide" aria-labelledby="kundalini-guide-title">
-          <div className={styles.guideIcon}><BookOpen size={33} aria-hidden="true" /></div>
-          <div className={styles.guideCopy}>
-            <span className={styles.eyebrow}>{t.guideKicker}</span>
-            <h2 id="kundalini-guide-title">{t.guideTitle}</h2>
-            <p>{t.guideDescription}</p>
-          </div>
-          <a className={styles.downloadButton} href={guideUrl(locale)} download><Download size={19} aria-hidden="true" />{t.pdfButton}</a>
-        </section>
-
-        <section className={styles.faqSection} aria-labelledby="kundalini-faq-title">
-          <h2 id="kundalini-faq-title">{t.faqTitle}</h2>
-          <div className={styles.faq}>
-            {t.faqs.map((item, index) => (
-              <details key={index}>
-                <summary>{item.q}<ChevronDown size={18} aria-hidden="true" /></summary>
-                <p>{item.a}</p>
-              </details>
+        <section className={styles.practices} aria-labelledby="kundalini-practices-title">
+          <header className={styles.sectionHead}>
+            <h2 id="kundalini-practices-title">{t.practicesTitle}</h2>
+          </header>
+          <div className={styles.practiceRows}>
+            {kundaliniEveryday.map((entry, index) => (
+              <div className={styles.practiceRow} key={index}>
+                <span className={styles.practiceNumber}>0{index + 1}</span>
+                <div>
+                  <h3>{entry.label[locale]}</h3>
+                  <p>{entry.text[locale]}</p>
+                </div>
+              </div>
             ))}
           </div>
         </section>
 
-        <section className={styles.capture} id="kundalini-enquire" aria-labelledby="kundalini-enquire-title">
-          <div className={styles.captureCopy}>
-            <span className={styles.eyebrow}>{t.contactKicker}</span>
-            <h2 id="kundalini-enquire-title">{t.contactTitle}</h2>
+        <section className={styles.section} id="kundalini-extra" aria-labelledby="kundalini-extra-title">
+          <header className={styles.sectionHead}>
+            <p className={styles.eyebrow}>Kundalini Reiki 3 · Paul Crick</p>
+            <h2 id="kundalini-extra-title">{t.extraAttunementsTitle}</h2>
+          </header>
+          <div className={styles.extraTags}>
+            {kundaliniExtraNames.map((name, index) => (
+              <span key={index}>{name[locale]}</span>
+            ))}
+          </div>
+          <details className={styles.extraAccordion}>
+            <summary>{t.readLevel}<ChevronDown size={17} aria-hidden="true" /></summary>
+            <div className={styles.extraList}>
+              {kundaliniExtraAttunements.map((entry, index) => (
+                <article key={index}>
+                  <h3>{entry.label[locale]}</h3>
+                  <p>{entry.text[locale]}</p>
+                  <small>{entry.origin}</small>
+                </article>
+              ))}
+            </div>
+          </details>
+        </section>
+
+        <section className={styles.section} id="kundalini-extensions" aria-labelledby="kundalini-extensions-title">
+          <header className={styles.sectionHead}>
+            <h2 id="kundalini-extensions-title">{t.extensionsTitle}</h2>
+            <p className={styles.sourceHint}>{t.extensionsSource}</p>
+          </header>
+          <div className={styles.extensionGrid}>
+            {kundaliniExtensions.map((extension) => (
+              <article className={styles.extensionCard} key={extension.id}>
+                <h3>{extension.title[locale]}</h3>
+                <p>{extension.excerpt[locale]}</p>
+                <details className={styles.extensionDetails}>
+                  <summary>{t.expand}<ChevronDown size={16} aria-hidden="true" /></summary>
+                  <div>
+                    <p>{extension.details[locale]}</p>
+                    {extension.stoneNames ? (
+                      <ul className={styles.stoneList}>
+                        {extension.stoneNames.map((stone) => <li key={stone}>{stone}</li>)}
+                      </ul>
+                    ) : null}
+                  </div>
+                </details>
+                <small>Paul Crick · pp. {extension.manualPages}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.manualFeature} id="kundalini-manual" aria-labelledby="kundalini-manual-title">
+          <div className={styles.bookPicture} aria-hidden="true">
+            <div className={styles.bookCover}>
+              <span>Kundalini</span><span>Reiki</span>
+              <span className={styles.bookLabel}>Manual</span>
+              <span className={styles.bookAuthor}>Paul Crick</span>
+            </div>
+          </div>
+          <div className={styles.manualText}>
+            <p className={styles.eyebrow}>{t.manualAttribution}</p>
+            <h2 id="kundalini-manual-title">{t.manualTitle}</h2>
+            <p className={styles.manualContents}>{t.manualSections}</p>
+            <div className={styles.manualActions}>
+              <a className={styles.primaryAction} href={pdf} download={kundaliniOriginalManual.fileName}>
+                <Download size={19} aria-hidden="true" />{t.download}
+              </a>
+              <a className={styles.manualOpen} href={pdf} target="_blank" rel="noopener noreferrer">
+                <FileText size={17} aria-hidden="true" />PDF · {kundaliniOriginalManual.pages}
+              </a>
+            </div>
+            <small>{t.manualNote}</small>
+          </div>
+        </section>
+
+        <details className={styles.history}>
+          <summary>{kundaliniHistory.label[locale]}<ChevronDown size={17} aria-hidden="true" /></summary>
+          <p>{kundaliniHistory.text[locale]}</p>
+          <small>{kundaliniHistory.origin}</small>
+        </details>
+
+        <aside className={styles.safetyNote}>{t.caution}</aside>
+
+        <section className={styles.capture} id="kundalini-enquire" aria-labelledby="kundalini-contact-title">
+          <div className={styles.captureContent}>
+            <p className={styles.eyebrow}>HOLISTIC HOUSE · KUNDALINI REIKI</p>
+            <h2 id="kundalini-contact-title">{t.contactTitle}</h2>
             <p>{t.contactText}</p>
-            <small>{t.footerNote}</small>
+            <p className={styles.studySource}><BookOpen size={16} aria-hidden="true" />{t.howToLearnTitle}: {t.howToLearnQuote} · PsiTrends</p>
           </div>
           <div className={styles.captureActions}>
-            <a href={enquire(locale, "level-one")} target="_blank" rel="noopener noreferrer" className={styles.capturePrimary}>
-              <MessageCircle size={19} aria-hidden="true" />{t.contactLevel}<ArrowRight size={18} aria-hidden="true" />
+            <a href={enquiryUrl(locale, "initiation")} target="_blank" rel="noopener noreferrer" className={styles.capturePrimary}>
+              <MessageCircle size={19} aria-hidden="true" />{t.personal}<ArrowRight size={16} aria-hidden="true" />
             </a>
-            <a href={enquire(locale, "programme")} target="_blank" rel="noopener noreferrer" className={styles.captureSecondary}>
-              <MessageCircle size={19} aria-hidden="true" />{t.contactProgramme}<ArrowRight size={18} aria-hidden="true" />
+            <a href={enquiryUrl(locale, "training")} target="_blank" rel="noopener noreferrer" className={styles.captureSecondary}>
+              <MessageCircle size={19} aria-hidden="true" />{t.enquire}<ArrowRight size={16} aria-hidden="true" />
             </a>
-            <a className={styles.telegram} href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer">{t.telegram} <ArrowRight size={16} aria-hidden="true" /></a>
+            <a href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer" className={styles.telegram}>{t.telegram} <ArrowRight size={16} aria-hidden="true" /></a>
           </div>
         </section>
       </div>
