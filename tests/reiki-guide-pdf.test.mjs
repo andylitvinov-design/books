@@ -57,20 +57,23 @@ for (const course of ["tantra", "yggdrasil"]) {
 }
 
 
-for (const locale of ["en", "ru", "es"]) {
-  test("Kundalini "+locale+" PDF contains its own full three-level course", async () => {
-    const guide = await readFile("public/academy/course-guides/kundalini."+locale+".txt", "utf8");
-    assert.ok(guide.length > 3000);
-    assert.match(guide, /holistichouse\.vercel\.app/);
-    const pdf = buildReikiCourseGuidePdf({ course: "kundalini", locale, source: guide });
-    assert.equal(pdf.subarray(0,8).toString("latin1"), "%PDF-1.7");
-    assert.ok(pdf.length > 20000);
-    assert.match(pdf.toString("latin1"), /\/ToUnicode/);
-    assert.match(pdf.toString("latin1"), /\/Count [2-9][0-9]* >>/);
-    assert.match(pdf.toString("latin1"), /personal initiation fee on request/);
-    assert.doesNotMatch(pdf.toString("latin1"), /Reiki initiation price: EUR .* per .* minutes per level/);
-  });
-}
+test("Kundalini PDF uses only the original user-provided Paul Crick manual, not a generated guide", async () => {
+  const [route, original, builder] = await Promise.all([
+    readFile("app/api/academy/reiki-guide/route.js", "utf8"),
+    readFile("public/academy/kundalini-reiki/kundalini-reiki-manual-paul-crick.pdf"),
+    readFile("lib/academy/reiki-guide-pdf.js", "utf8"),
+  ]);
+  assert.equal(original.length, 243352);
+  assert.equal(original.subarray(0, 8).toString("latin1"), "%PDF-1.3");
+  assert.match(route, /if \(course === "kundalini"\)/);
+  assert.match(route, /originalPath = "\/academy\/kundalini-reiki\/kundalini-reiki-manual-paul-crick\.pdf"/);
+  assert.match(route, /"Content-Disposition": 'attachment; filename="Kundalini_Reiki_Manual_Paul_Crick\.pdf"'/);
+  assert.match(builder, /Kundalini Reiki uses the uploaded original Paul Crick PDF/);
+  assert.throws(() => buildReikiCourseGuidePdf({ course: "kundalini", locale: "en", source: "old" }), /uploaded original/);
+  for (const locale of ["en", "ru", "es"]) {
+    await assert.rejects(readFile("public/academy/course-guides/kundalini." + locale + ".txt"), { code: "ENOENT" });
+  }
+});
 
 test("every Yggdrasil module includes a localized purpose, not only a list of names", async () => {
   for (const [locale, label] of [["en", "Focus"], ["ru", "Тема"], ["es", "Enfoque"]]) {
