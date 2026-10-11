@@ -69,7 +69,7 @@ try {
         const capture = page.locator('[data-consultation-capture="personal"]');
         await expect(capture).toHaveAttribute('lang', 'es');
         await expect(capture.locator('[role="group"] button')).toHaveCount(4);
-        await expect(capture.locator('[data-contact-channel="whatsapp"]')).toContainText('Solicitar conversación gratuita');
+        await expect(capture.locator('[data-consultation-action="personal"]')).toContainText('Iniciar evaluación gratuita por dibujo');
         assert.equal(await capture.locator('form, input, textarea').count(), 0, 'No sensitive written intake required');
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'ES horizontal overflow');
         await page.evaluate(() => document.fonts.ready);
@@ -77,16 +77,17 @@ try {
         await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-es-about-${engine}-${width}.png`, fullPage: true });
         await intro.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-es-video-${engine}-${width}.png` });
         if (!live) {
-          const action = capture.locator('[data-contact-channel="whatsapp"]');
-          const initial = new URL(await action.getAttribute('href'));
+          // The current approved free offer is a drawing/coach-form diagnostic,
+          // not a free live WhatsApp conversation.
+          const action = capture.locator('[data-consultation-action]');
+          const initial = new URL(await action.getAttribute('href'), origin);
           await capture.locator('[role="group"] button').nth(2).click();
           await expect(capture.locator('[role="group"] button').nth(2)).toHaveAttribute('aria-pressed', 'true');
-          const updated = new URL(await action.getAttribute('href'));
-          assert.equal(updated.origin, 'https://wa.me');
-          assert.equal(updated.pathname, '/14376066502');
-          assert.notEqual(updated.searchParams.get('text'), initial.searchParams.get('text'));
-          assert.match(updated.searchParams.get('text'), /Trabajo y negocios/);
-          assert.match(updated.searchParams.get('text'), /conversación inicial gratuita/);
+          const updated = new URL(await action.getAttribute('href'), origin);
+          assert.equal(updated.origin, new URL(origin).origin);
+          assert.equal(updated.pathname, '/es/services/free-situation-review');
+          assert.notEqual(updated.searchParams.get('topic'), initial.searchParams.get('topic'));
+          assert.equal(updated.searchParams.get('topic'), 'business');
           assert.equal(await capture.locator('form, input, textarea').count(), 0);
         }
         await intro.getByRole('button', { name: /^Ver vídeo:/ }).click();
