@@ -1,0 +1,35 @@
+.card{border:1px solid #b7dbe0;border-radius:22px;background:linear-gradient(135deg,#ecf9f6,#e6f4f0 72%,#f4f3e5);box-shadow:0 11px 34px rgba(26,91,105,.08);padding:clamp(18px,3vw,28px);color:#24473e}
+.card *{box-sizing:border-box}
+.eyebrow{margin:0 0 10px;color:#2b746d;font:800 10px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.07em;display:flex;align-items:center;gap:8px}
+.card h2{font:400 clamp(27px,3vw,35px)/1.16 Georgia,serif;letter-spacing:-.025em;margin:0 0 10px;color:#23483c}
+.lead{font:14px/1.55 Arial,Helvetica,sans-serif;color:#4e6761;margin:0 0 14px}
+.form{display:grid;gap:13px}
+.topics{min-width:0;margin:0;padding:0;border:0}
+.topics legend{font:750 13px/1.4 Arial,Helvetica,sans-serif;padding:0;margin:0 0 8px}
+.topicGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.topicGrid button{min-height:46px;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:11px;border:1px solid #b8d2cb;background:#fffdf8;color:#36584d;font:700 12px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.topicGrid button[data-selected="true"]{background:#246656;border-color:#246656;color:white}
+.field{display:grid;gap:6px;font:700 13px/1.4 Arial,Helvetica,sans-serif;color:#345247}
+.field textarea{width:100%;min-height:62px;border:1px solid #bed3cb;background:#fffefa;border-radius:10px;resize:vertical;padding:11px 12px;font:16px/1.45 Arial,Helvetica,sans-serif;color:#2c413a}
+.field textarea::placeholder{color:#8b9791}
+.optional{margin-top:0}
+.optional summary{font:700 13px/1.4 Arial,Helvetica,sans-serif;color:#365d50;cursor:pointer;padding:3px 0}
+.optional[open]{display:grid;gap:12px}
+.optional[open] summary{margin-bottom:8px}
+.drawing{background:rgba(255,255,255,.60);padding:14px;border:1px dashed #b2cbb8;border-radius:14px}
+.drawing h3{display:flex;gap:8px;align-items:center;margin:0 0 10px;color:#2c5a45;font:700 15px/1.3 Arial,Helvetica,sans-serif}
+.drawingTags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+.drawingTags span{padding:5px 8px;background:#f6f0e3;border:1px solid #ddd0b7;border-radius:999px;color:#665643;font:750 10px/1.3 Arial,Helvetica,sans-serif}
+.drawing p,.note{margin:0;color:#597063;font:12px/1.48 Arial,Helvetica,sans-serif}
+.prepare,.copyButton{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;width:100%;padding:10px 14px;cursor:pointer;border:0;border-radius:12px;background:#2d654f;color:white;font:800 14px/1.35 Arial,Helvetica,sans-serif}
+.prepare svg{margin-left:auto}
+.ready{margin-top:18px;padding-top:14px;border-top:1px solid #b9d3c4}
+.ready h3{margin:0 0 10px;font:700 16px/1.4 Georgia,serif}
+.preview{width:100%;padding:10px;border:1px solid #b3c9bd;background:#fffefa;border-radius:9px;color:#36483d;font:12px/1.5 Arial,Helvetica,sans-serif;resize:vertical}
+.copyButton{background:#426959;margin-top:10px}
+.copyStatus{min-height:17px;margin:5px 0;color:#32654c;font:700 12px/1.4 Arial,Helvetica,sans-serif}
+.whatsapp{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;margin-top:6px;padding:11px;border-radius:12px;background:#e66d50;color:#fff;text-align:center;text-decoration:none;font:750 14px/1.35 Arial,Helvetica,sans-serif}
+.note{margin:9px 0 0}
+.privacy{margin:14px 0 0;padding-top:10px;border-top:1px solid #c7dfd1;color:#6c7970;font:11px/1.55 Arial,Helvetica,sans-serif}
+.card :is(button,textarea,a,summary):focus-visible{outline:3px solid #be8d5a;outline-offset:3px}
+@media(max-width:767px){.card{border-radius:18px;padding:18px 15px}.topicGrid button{font-size:11px;min-height:49px}.lead{font-size:13px}.whatsapp{font-size:13px}}
