@@ -144,7 +144,7 @@ test('style and length filters combine before recommendation ranking', () => {
     styles: ['engaging'],
     lengths: ['comprehensive'],
   })
-  assert.deepEqual(engagingComprehensive.map((item) => item.definition.key), ['hh-monthly-profile'])
+  assert.deepEqual(engagingComprehensive.map((item) => item.definition.key), ['hh-monthly-profile','hh-socionics-32','hh-enneagram-36'])
   assert.deepEqual(engagingComprehensive[0].matchedFocus, ['relationships'])
 })
 
