@@ -1279,6 +1279,17 @@ test('Bach Flower Emotional Profile saves 115 answers in the authorized Google a
   assert.equal(submitted.dimensions.find(d => d.sourceConstruct === 'Olive').value, 23)
   const stored = await repo.getResult(a, submitted.id)
   assert.equal(stored.dimensions.find(d => d.key === 'bach.olive').value, 23)
-  await assert.rejects(() => repo.getResult(b, submitted.id), error =>
-    ['NOT_FOUND', 'FORBIDDEN'].includes(error.code))
+  // Earlier integration cases intentionally put account B into deletion state.
+  // Verify true cross-client privacy using a fresh, fully active synthetic account.
+  const outsider = actor('10000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000004')
+  const db = await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)', [outsider.id, 'bach-outsider@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [outsider.claims.session_id, outsider.id])
+  } finally { await db.end() }
+  await repo.ensureAccount(outsider)
+  await repo.onboarding(outsider, { adult:true, necessary:true, marketing:false,
+    displayName:'Bach isolation test', uiLocale:'en', timezone:'America/Toronto', goal:'explore' })
+  await assert.rejects(() => repo.getResult(outsider, submitted.id), error =>
+    error.code === 'NOT_FOUND')
 })
