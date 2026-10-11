@@ -5,10 +5,13 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
+import { SCALE_FOCUS } from '@/lib/assessments/scale-guides'
+import { TestScaleGuide } from './test-scale-guide'
 
 const TEXT = {
   en: {
     kicker:'TEST SELECTION', title:'Choose your tests',
+    scaleTitle:'1 · Choose the scales to observe', scaleHelp:'Tests will be ranked first by the measures they actually score. You can later choose related skills to practise; a score is not a diagnosis.',
     lead:'Find questionnaires that fit what you would like to explore. Your recommendations update as you select topics.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas that matter to you right now.',
     detail:'Detailed selection (optional)', detailHelp:'Choose the level of detail or add time and format filters.',
@@ -30,6 +33,7 @@ const TEXT = {
   },
   ru: {
     kicker:'ПОДБОР ТЕСТОВ', title:'Подберите свои тесты',
+    scaleTitle:'1 · Выберите показатели для наблюдения', scaleHelp:'Первыми будут тесты, которые действительно измеряют выбранные шкалы. Позже можно добровольно выбрать связанные навыки для практики; балл не является диагнозом.',
     lead:'Найдите тесты по интересующим вас темам. Подходящие рекомендации меняются сразу.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте одну или несколько важных для вас тем.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Глубина, время прохождения и формат — при желании.',
@@ -51,6 +55,7 @@ const TEXT = {
   },
   es: {
     kicker:'SELECCIÓN DE PRUEBAS', title:'Elige tus pruebas',
+    scaleTitle:'1 · Elige qué observar', scaleHelp:'Primero aparecen las pruebas que miden esas dimensiones; los resultados no son un diagnóstico.',
     lead:'Encuentra cuestionarios que se ajusten a tus intereses. Las recomendaciones cambian al elegir temas.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige uno o varios temas importantes para ti.',
     detail:'Selección detallada (opcional)', detailHelp:'Profundidad, tiempo y formato.',
@@ -98,6 +103,7 @@ function iconFor(entry) {
 export function SimpleTestPicker({
   locale = 'en',
   focus, onToggleFocus,
+  axes = [], onToggleAxis,
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
   maxMinutes, onMaxMinutes,
@@ -110,6 +116,7 @@ export function SimpleTestPicker({
   const [visibleCount, setVisibleCount] = useState(5)
   const [showAllProblems, setShowAllProblems] = useState(false)
   const focusKey = [...focus].sort().join('|')
+  const scaleKey = [...axes].sort().join('|')
   const problemKey = [...problems].sort().join('|')
   const allProblems = problemsForTopics(focus)
   const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
@@ -119,7 +126,7 @@ export function SimpleTestPicker({
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
     setShowAllProblems(false)
-  }, [focusKey, depth, maxMinutes, professionalOnly, problemKey])
+  }, [focusKey, scaleKey, depth, maxMinutes, professionalOnly, problemKey])
   const visibleRecommendations = recommendations.slice(0, visibleCount)
   const remainingCount = Math.max(0, recommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
@@ -138,6 +145,15 @@ export function SimpleTestPicker({
       <Leaf className={styles.heroLeaf} size={78} strokeWidth={0.8} aria-hidden="true" />
     </header>
 
+    <section className={styles.scalesSection} aria-labelledby="hh-simple-scale-title" data-scale-first-selection>
+      <div><h2 id="hh-simple-scale-title">{c.scaleTitle}</h2><p>{c.scaleHelp}</p></div>
+      <div className={styles.scalesRail} role="group" aria-label={c.scaleTitle}>
+        {Object.entries(SCALE_FOCUS).map(([key,scale])=><button type="button" key={key}
+          aria-pressed={axes.includes(key)} onClick={()=>onToggleAxis?.(key)}>
+          {axes.includes(key)?'✓ ':''}{scale[locale==='ru'?'ru':'en']}
+        </button>)}
+      </div>
+    </section>
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.sectionHeader}>
         <span className={styles.step} aria-hidden="true">1</span>
@@ -229,7 +245,8 @@ export function SimpleTestPicker({
         {visibleRecommendations.map((entry,index) => {
           const Icon = iconFor(entry)
           const checked = selectedKeys.has(entry.key)
-          return <label key={entry.key} className={styles.testRow} data-selected={checked} data-test-match={entry.key} data-relevance={entry.matchPercent}>
+          return <div className={styles.testEntry} key={entry.key}>
+          <label className={styles.testRow} data-selected={checked} data-test-match={entry.key} data-relevance={entry.matchPercent}>
             <input type="checkbox" checked={checked} onChange={() => onToggleTest(entry.key)}
               aria-label={entry.title} />
             <span className={styles.testArt} aria-hidden="true"><Icon size={24} strokeWidth={1.7}/></span>
@@ -245,6 +262,8 @@ export function SimpleTestPicker({
               <small><Clock3 size={14} aria-hidden="true"/> ~{entry.durationMinutes ?? '—'} min</small>
             </span>
           </label>
+          <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={onToggleAxis} /></div>
+          </div>
         })}
       </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
       {recommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
