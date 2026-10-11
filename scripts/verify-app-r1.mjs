@@ -196,8 +196,16 @@ try {
  await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-initial.png',fullPage:true});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
  await page.getByRole('button',{name:'Happy',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect.poll(async()=>((await api('bootstrap')).data.moodCheckins||[]).length).toBe(1);await page.getByRole('button',{name:'Not now',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);passed('signed-in mood tap persists even when the user chooses Not now')
  const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
- await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:/^Clients/})).toBeVisible()
- const practitionerOpen=await api('practitioner/open',{destination:'clients'});assert.equal(practitionerOpen.status,200);assert.equal(practitionerOpen.data.redirectUrl,'/admin/clients');const practitionerPage=await context.newPage();await practitionerPage.goto(origin+practitionerOpen.data.redirectUrl);await expect(practitionerPage.getByRole('heading',{name:'Clients',exact:true})).toBeVisible();await practitionerPage.close();passed('trusted practitioner opens existing client database from My Profile without PIN')
+ // A public Master account must not be allowed to open the owner's global client database.
+ await page.goto(origin+'/en/app/portrait');await ready();
+ await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Master',exact:true})).toBeVisible();
+ await page.getByRole('link',{name:'Master',exact:true}).click();
+ await expect(page).toHaveURL(/\/en\/app\/practice$/);
+ await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toHaveCount(0);
+ const practitionerOpen=await api('practitioner/open',{destination:'clients'});
+ assert.equal(practitionerOpen.status,404);assert.equal(practitionerOpen.data.error,'NOT_FOUND');
+ passed('public Master can open own practice but cannot access owner client database')
  await page.goto(origin+'/en/app');await ready()
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
@@ -282,6 +290,49 @@ try {
  await page.screenshot({path:output+'/consultation-request.png',fullPage:true})
  await page.getByRole('button',{name:'Send request',exact:true}).click();await expect(page.getByText('Received',{exact:true})).toBeVisible();data=(await api('bootstrap')).data;assert.equal(data.requests.length,1);assert.equal(data.requests[0].sharedExcerpt,null);passed('real consultation request without implicit profile sharing')
  const admin=await browser.newContext();await admin.addCookies([{name:'prescriptions_admin',value:createHmac('sha256',process.env.PRESCRIPTIONS_ADMIN_TOKEN).update('prescriptions-admin-v1').digest('base64url'),url:origin+'/admin',httpOnly:true,sameSite:'Strict'}]);const adminPage=await admin.newPage();await adminPage.goto(origin+'/admin/app-requests');await expect(adminPage.getByText('synthetic@example.invalid',{exact:true})).toBeVisible();await adminPage.getByRole('button',{name:'Contacted',exact:true}).click();await expect(adminPage.locator('.hh-badge')).toHaveText('Contacted');await adminPage.screenshot({path:output+'/practitioner-inbox.png',fullPage:true});passed('existing practitioner authorization and real request status inbox')
+  // Separate tab: avoid racing a pending redirect from the preceding inbox mutation on WebKit.
+  // Synthetic end-to-end Master → client → resource → recipient link. No real records.
+  const handoffPage = await admin.newPage()
+  await handoffPage.goto(origin+'/admin/clients')
+  await expect(handoffPage.getByRole('heading',{name:'Client database',exact:true})).toBeVisible()
+  await handoffPage.locator('.master-client-create > summary').click()
+  await handoffPage.locator('.master-client-create input[name="fullName"]').fill('Synthetic Handoff Client')
+  await handoffPage.locator('.master-client-create input[name="email"]').fill('synthetic-recipient@example.invalid')
+  await handoffPage.locator('.master-client-create-form button[type="submit"]').click()
+  await expect(handoffPage).toHaveURL(/\/admin\/clients\/[a-f0-9-]{36}$/,{timeout:20000})
+  await expect(handoffPage.getByRole('heading',{name:'Synthetic Handoff Client',exact:true})).toBeVisible()
+  await handoffPage.locator('.client-detail-materials > details > summary').click()
+  await handoffPage.locator('.client-detail-material-form input[name="title"]').fill('Reiki study guide')
+  await handoffPage.locator('.client-detail-material-form input[name="url"]').fill('https://holistichouse.vercel.app/en/academy/reiki')
+  await handoffPage.locator('.client-detail-material-form button[type="submit"]').click()
+  await expect(handoffPage.getByRole('link',{name:/Reiki study guide/})).toBeVisible()
+  await expect(handoffPage.getByRole('button',{name:'Copy material link'})).toBeVisible()
+  // Stub only the OS clipboard; the real client-link and authorization API remain live.
+  await handoffPage.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: async value => { window.__syntheticCopiedLink = value } },
+  }))
+  await handoffPage.getByRole('button',{name:'Copy material link'}).click()
+  await expect(handoffPage.locator('.master-material-copy [role="status"]')).toContainText('Link copied')
+  assert.equal(await handoffPage.evaluate(() => window.__syntheticCopiedLink), 'https://holistichouse.vercel.app/en/academy/reiki')
+  const clientLink=await handoffPage.evaluate(async () => {
+    const id=location.pathname.split('/').at(-1)
+    const response=await fetch('/admin/api/clients/'+id+'/access',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'})
+    if (!response.ok) throw new Error('Synthetic cabinet link unavailable: '+response.status)
+    const {selector,secret}=await response.json()
+    return location.origin+'/en/client/'+selector+'#'+secret
+  })
+  await handoffPage.locator('.consultation-cabinet-primary').click()
+  await expect(handoffPage.locator('.consultation-cabinet-status')).toContainText('Link copied')
+  assert.equal(await handoffPage.evaluate(() => window.__syntheticCopiedLink), clientLink)
+  const clientContext=await browser.newContext({viewport:{width:390,height:844}})
+  const clientPage=await clientContext.newPage()
+  await clientPage.goto(clientLink)
+  await expect(clientPage.getByRole('heading',{name:'Study materials from Andy'})).toBeVisible({timeout:20000})
+  await expect(clientPage.getByRole('link',{name:/Reiki study guide/})).toHaveAttribute('href','https://holistichouse.vercel.app/en/academy/reiki')
+  await clientPage.screenshot({path:output+'/master-client-material-handoff.png',fullPage:true})
+  await clientContext.close()
+  passed('Master creates synthetic client, attaches study link and recipient opens private cabinet')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
  const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();await expect(otherPage).toHaveURL(/\/en\/app$/,{timeout:15000});assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
  // The public Start free testing button must transfer the exact selection into an existing Google account.

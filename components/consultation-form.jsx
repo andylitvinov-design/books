@@ -108,7 +108,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [items, setItems] = useState(() => initialConsultationRows(consultation, remedies, consultation ? 1 : 1))
   const [focused, setFocused] = useState(null)
   const [error, setError] = useState('')
-  const [paymentStatus, setPaymentStatus] = useState(payment?.paymentStatus ?? 'received')
+  const [paymentStatus, setPaymentStatus] = useState(payment?.paymentStatus ?? 'unpaid')
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
   const [uiLocale, setUiLocale] = useState('en')
@@ -156,9 +156,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         displayNameOverride: wasBach ? null : item.displayNameOverride,
         sourceStatus: wasBach ? null : item.sourceStatus,
         selected: wasBach ? false : item.selected,
-        potency: item.potency || '30',
-        granules: item.granules || '5',
-        timesPerDay: item.timesPerDay || '3',
+        potency: item.potency || '',
+        granules: item.granules || '',
+        timesPerDay: item.timesPerDay || '',
       }
     }))
     setFocused(null)
@@ -308,14 +308,15 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       </div>
     </fieldset>
 
+    <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Указывайте препарат, потенцию и схему приёма только после личной проверки. Поля дозировки намеренно пустые.' : 'Review the recommendation yourself. Potency and dosing are intentionally left blank.'}</p>
     <label className="consultation-note">{labels.note}<textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} /></label>
 
     <div className="consultation-payment-row">
       <label>{labels.payment}<select name="paymentStatus" value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}><option value="received">{labels.paid}</option><option value="unpaid">{labels.unpaid}</option></select></label>
       <details className="consultation-details consultation-payment-settings"><summary>{labels.paymentSettings}</summary><div className="consultation-two-columns">
-        <label>{labels.amount}<input name="amount" inputMode="decimal" required defaultValue={payment ? (payment.amount / 100).toFixed(2) : '230.00'} /></label>
+        <label>{labels.amount}<input name="amount" inputMode="decimal" required defaultValue={payment ? (payment.amount / 100).toFixed(2) : ''} /></label>
         <label>{labels.currency}<select name="currency" defaultValue={payment?.currency ?? 'CAD'}>{['CAD', 'USD', 'EUR', 'UAH'].map((code) => <option key={code}>{code}</option>)}</select></label>
-        <label>{labels.service}<input name="service" required defaultValue={payment?.service ?? 'Individual consultation'} /></label>
+        <label>{labels.service}<input name="service" required defaultValue={payment?.service ?? ''} /></label>
         <label>{labels.paymentStatus}<select aria-label={labels.paymentStatus} value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}><option value="received">{labels.paid}</option><option value="unpaid">{labels.unpaid}</option></select></label>
         <label>{labels.paymentMethod}<input name="paymentMethod" maxLength={120} defaultValue={payment?.paymentMethod} /></label>
         <label>{labels.documentNumber}<input name="documentNumber" defaultValue={payment?.documentNumber} /></label>
