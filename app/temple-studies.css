@@ -743,3 +743,21 @@
   .temple-video-series-summary-text strong { font-size: 14px; }
   .temple-language-badge { display: inline-flex; margin: 7px 0 0; }
 }
+
+/* First sidebar action opens the three-step choice instead of another archive chapter. */
+.temple-course-layout .reiki-course-side-nav__item--wide {
+  grid-template-columns: minmax(0, 1fr);
+  padding-left: 16px;
+  border: 1px solid #bfd6d4;
+  background: #eaf6f4;
+  color: #235d65;
+}
+.temple-course-layout .reiki-course-side-nav__item--wide.is-active {
+  border-color: #39878c; background: #d9eeea;
+}
+@media (max-width: 920px) {
+  .temple-course-layout .reiki-course-side-nav__item--wide {
+    padding: 7px 12px;
+    background: #e0f1ed;
+  }
+}
