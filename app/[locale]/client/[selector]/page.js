@@ -5,9 +5,10 @@ import { ClientCabinet } from '@/components/client-cabinet'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Holistic House · Private cabinet', robots: { index: false, follow: false } }
-export default async function CabinetPage({ params }) {
+export default async function CabinetPage({ params, searchParams }) {
   const { locale, selector } = await params
   if (!['en', 'ru'].includes(locale)) notFound()
+  const view = (await searchParams)?.view === 'analysis' ? 'analysis' : 'documents'
   const access = await authorizeCabinetRequest(selector)
   if (!access) return <PrescriptionAccessGate locale={locale} selector={selector} cabinet />
   const records = await access.store.listClientDocuments(access.client.id)
@@ -16,5 +17,5 @@ export default async function CabinetPage({ params }) {
   const assessments = (await access.store.listClientAssessments(access.client.id))
     .map(record => clientAssessmentSummary(record, access.client.id)).filter(Boolean)
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || a.id.localeCompare(b.id))
-  return <ClientCabinet assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} />
+  return <ClientCabinet assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} view={view} />
 }
