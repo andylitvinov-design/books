@@ -4,7 +4,6 @@ import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
-import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import {
@@ -354,13 +353,6 @@ async function handle(request, { params }) {
         return json(await daily.command(actor, path[1], await readBody(request), locale))
       throw new AppError('NOT_FOUND', 404)
     }
-    if (joined === 'course/daily') {
-      const daily = createDailyCourseRepository(config)
-      const locale = new URL(request.url).searchParams.get('locale') === 'ru' ? 'ru' : 'en'
-      if (method === 'GET') return json(await daily.read(actor, locale))
-      if (method === 'POST') return json(await daily.command(actor, await readBody(request), locale))
-      throw new AppError('NOT_FOUND', 404)
-    }
     if (joined === 'course') {
       const growth = createGrowthCourseRepository(config)
       if (method === 'GET') return json(await growth.read(actor))
@@ -418,7 +410,6 @@ async function handle(request, { params }) {
       }
       exported.savedReports = savedReports
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
-      exported.growthDailyHistory = await createDailyCourseRepository(config).exportHistory(actor)
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
       const response = json(exported)
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
