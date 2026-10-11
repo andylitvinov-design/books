@@ -14,12 +14,13 @@ test('locale counterpart paths preserve the current localized route', async () =
   assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
-test('public navigation shares six destinations and never exposes administration', async () => {
+test('public navigation includes the relationship hub on EN/RU and never exposes administration', async () => {
   const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'academy', 'about', 'cabinet'])
+  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'relationships', 'academy', 'about', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
-    assert.equal(items.length, 6)
+    assert.equal(items.length, locale === 'es' ? 6 : 7)
+    if (locale !== 'es') assert.equal(items.find(item=>item.id==='relationships').href, '/'+locale+'/relationships')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
     assert.equal(items.find(item => item.id === 'academy').href, `/${locale}/academy`)

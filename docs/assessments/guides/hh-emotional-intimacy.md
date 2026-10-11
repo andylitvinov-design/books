@@ -1,14 +1,20 @@
 # Emotional Intimacy / Эмоциональная близость
 
+**Instrument ID:** `hh-emotional-intimacy`
+
 **Instrument:** `hh-emotional-intimacy` · V1 · six original items, EN/RU · approximately 2 minutes · response 0–4 · timeframe: last 30 days.
 
 **Status:** Original Holistic House educational self-reflection. Not a validated questionnaire, psychometric diagnosis, medical screening, sexuality diagnosis, attachment diagnosis, compatibility test or way to determine consent. No population norms, clinically validated thresholds or inference about another person.
 
-## Purpose / Назначение
+## What this test explores / Что исследует тест
 
 EN: Explore vulnerable communication and closeness at a pace you choose, with no assumption that you have a partner.
 
 RU: Исследуйте открытость и эмоциональную близость в подходящем вам темпе, без предположения, что у вас есть партнёр.
+
+## Шкалы, наблюдение и добровольная работа
+
+## What you can try / Что можно попробовать
 
 ## Scored dimensions / Отдельные шкалы
 

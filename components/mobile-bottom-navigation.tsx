@@ -25,7 +25,9 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   if (hidden) return null;
   const current = activeNavigationId(pathname);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
-    {getSiteNavigation(locale).map(item => {
+    {/* Keep the six high-priority destinations on the compact bottom bar. The
+        new love/intimacy hub remains prominent in the desktop menu and homepage. */}
+    {getSiteNavigation(locale).filter(item => item.id !== 'relationships').map(item => {
       const Icon = icons[item.id];
       const content = <><Icon aria-hidden="true" /><span>{item.label}</span></>;
       return item.external

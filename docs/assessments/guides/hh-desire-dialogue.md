@@ -1,14 +1,20 @@
 # Desire & Sexual Communication / Желание и сексуальный диалог
 
+**Instrument ID:** `hh-desire-dialogue`
+
 **Instrument:** `hh-desire-dialogue` · V1 · six original items, EN/RU · approximately 2 minutes · response 0–4 · timeframe: last 30 days.
 
 **Status:** Original Holistic House educational self-reflection. Not a validated questionnaire, psychometric diagnosis, medical screening, sexuality diagnosis, attachment diagnosis, compatibility test or way to determine consent. No population norms, clinically validated thresholds or inference about another person.
 
-## Purpose / Назначение
+## What this test explores / Что исследует тест
 
 EN: An inclusive, non-diagnostic reflection on understanding personal desire, including low or absent desire, and talking about preferences without pressure.
 
 RU: Бережное наблюдение за собственным желанием, включая слабое или отсутствующее, и разговором о предпочтениях без давления. Не диагностика.
+
+## Шкалы, наблюдение и добровольная работа
+
+## What you can try / Что можно попробовать
 
 ## Scored dimensions / Отдельные шкалы
 

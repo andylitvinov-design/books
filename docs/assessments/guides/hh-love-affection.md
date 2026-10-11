@@ -1,14 +1,20 @@
 # Love & Affection / Любовь и нежность
 
+**Instrument ID:** `hh-love-affection`
+
 **Instrument:** `hh-love-affection` · V1 · six original items, EN/RU · approximately 2 minutes · response 0–4 · timeframe: last 30 days.
 
 **Status:** Original Holistic House educational self-reflection. Not a validated questionnaire, psychometric diagnosis, medical screening, sexuality diagnosis, attachment diagnosis, compatibility test or way to determine consent. No population norms, clinically validated thresholds or inference about another person.
 
-## Purpose / Назначение
+## What this test explores / Что исследует тест
 
 EN: How comfortably you express warmth and receive affection in relationships or trusted connections. Original self-reflection; not a clinical test.
 
 RU: Насколько свободно вы выражаете тепло и принимаете нежность в отношениях и доверительном общении. Авторский опросник, не клинический тест.
+
+## Шкалы, наблюдение и добровольная работа
+
+## What you can try / Что можно попробовать
 
 ## Scored dimensions / Отдельные шкалы
 

@@ -1,14 +1,20 @@
 # Tantric Presence & Grounding / Тантрическое присутствие и заземление
 
+**Instrument ID:** `hh-tantra-presence`
+
 **Instrument:** `hh-tantra-presence` · V1 · six original items, EN/RU · approximately 2 minutes · response 0–4 · timeframe: last 30 days.
 
 **Status:** Original Holistic House educational self-reflection. Not a validated questionnaire, psychometric diagnosis, medical screening, sexuality diagnosis, attachment diagnosis, compatibility test or way to determine consent. No population norms, clinically validated thresholds or inference about another person.
 
-## Purpose / Назначение
+## What this test explores / Что исследует тест
 
 EN: A Tantra-inspired mindful-presence reflection: grounded attention, choice and connection. Spiritual practice, not a clinical assessment or treatment.
 
 RU: Авторская саморефлексия в духе тантрической практики: внимание к телу, выбор и контакт. Духовная практика, не клиническая оценка или лечение.
+
+## Шкалы, наблюдение и добровольная работа
+
+## What you can try / Что можно попробовать
 
 ## Scored dimensions / Отдельные шкалы
 

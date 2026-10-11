@@ -1,14 +1,20 @@
 # Sexual Self-Acceptance / Принятие себя в сексуальности
 
+**Instrument ID:** `hh-sexual-self-kindness`
+
 **Instrument:** `hh-sexual-self-kindness` · V1 · six original items, EN/RU · approximately 2 minutes · response 0–4 · timeframe: last 30 days.
 
 **Status:** Original Holistic House educational self-reflection. Not a validated questionnaire, psychometric diagnosis, medical screening, sexuality diagnosis, attachment diagnosis, compatibility test or way to determine consent. No population norms, clinically validated thresholds or inference about another person.
 
-## Purpose / Назначение
+## What this test explores / Что исследует тест
 
 EN: Explore self-compassion and autonomy around sexual identity, interests and boundaries without labels, diagnosis or performance targets.
 
 RU: Исследуйте самопринятие и свободу выбора в сфере сексуальности без ярлыков, диагнозов или требований к «результату».
+
+## Шкалы, наблюдение и добровольная работа
+
+## What you can try / Что можно попробовать
 
 ## Scored dimensions / Отдельные шкалы
 

@@ -1,14 +1,20 @@
 # Intimacy, Boundaries & Consent / Близость, границы и согласие
 
+**Instrument ID:** `hh-intimacy-consent`
+
 **Instrument:** `hh-intimacy-consent` · V1 · six original items, EN/RU · approximately 2 minutes · response 0–4 · timeframe: last 30 days.
 
 **Status:** Original Holistic House educational self-reflection. Not a validated questionnaire, psychometric diagnosis, medical screening, sexuality diagnosis, attachment diagnosis, compatibility test or way to determine consent. No population norms, clinically validated thresholds or inference about another person.
 
-## Purpose / Назначение
+## What this test explores / Что исследует тест
 
 EN: Reflect on freely chosen closeness, asking permission, and the right to change your mind. Original educational questionnaire, not a safety certification.
 
 RU: Самонаблюдение о добровольности близости, уважении к согласию и праве передумать. Авторская анкета, не сертификат безопасности.
+
+## Шкалы, наблюдение и добровольная работа
+
+## What you can try / Что можно попробовать
 
 ## Scored dimensions / Отдельные шкалы
 
