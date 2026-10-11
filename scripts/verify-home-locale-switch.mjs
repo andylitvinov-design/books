@@ -60,8 +60,13 @@ async function exercise(engine, browserType, width) {
     assert.deepEqual(errors, []);
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
     const offers = page.locator('[data-core-service-offers="home"]');
+    const freePaths = page.locator('[data-free-insights="public"]');
     await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
-    await expect(offers.locator('[data-core-service-id]')).toHaveCount(4);
+    await expect(freePaths.locator('[data-free-insights-offer]')).toHaveCount(3);
+    await expect(freePaths.locator('[data-free-insights-offer="stress"] a')).toHaveAttribute('href', /\/client$/);
+    await expect(freePaths.locator('[data-free-insights-offer="situation"] a')).toHaveAttribute('href', /\/services\/free-situation-review$/);
+    await expect(freePaths.locator('[data-free-insights-offer="wu"] a')).toHaveAttribute('href', /\/services\/dao-health-profile$/);
+    await expect(offers.locator('[data-core-service-id]')).toHaveCount(2);
     await expect(page.locator('[data-home-contact-capture]')).toHaveCount(1);
     const freeLink = page.locator('.home-contact-capture__text-link');
     await expect(freeLink).toHaveAttribute('href', /\/services\/free-situation-review$/);
@@ -71,13 +76,14 @@ async function exercise(engine, browserType, width) {
     await expect.poll(() => portrait.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
     const measurements = await page.evaluate(() => {
       const bounds = selector => document.querySelector(selector)?.getBoundingClientRect();
-      const first = bounds('[data-core-service-id="situation"]');
-      const photo = bounds('[data-core-service-id="situation"] img');
+      const first = bounds('[data-free-insights-offer="stress"]');
+      const photo = bounds('[data-core-service-id="alchemy"] img');
       const portrait = bounds('.service-home-about__image');
       const contact = bounds('[data-home-contact-capture]');
       const frame = document.querySelector('[data-home-contact-capture]');
       return {
         cardCount: document.querySelectorAll('[data-core-service-offers="home"] [data-core-service-id]').length,
+        freeCount: document.querySelectorAll('[data-free-insights="public"] [data-free-insights-offer]').length,
         overflow: document.documentElement.scrollWidth - innerWidth,
         featuredCardWidth: first?.width,
         featuredPhotoWidth: photo?.width,
@@ -90,9 +96,11 @@ async function exercise(engine, browserType, width) {
         contactBackground: frame && getComputedStyle(frame).backgroundImage,
       };
     });
-    assert.equal(measurements.cardCount, 4);
+    assert.equal(measurements.freeCount, 3, 'Exactly three free starting paths should be visible');
+    assert.equal(measurements.cardCount, 2, 'Paid work is presented in only two personal-service cards');
     assert.ok(measurements.overflow <= 2, 'Homepage causes horizontal scroll: ' + JSON.stringify(measurements));
-    assert.ok(measurements.featuredPhotoWidth >= 90 && measurements.featuredPhotoHeight >= 115, 'Featured artwork is tiny or hidden: ' + JSON.stringify(measurements));
+    assert.ok(measurements.featuredCardWidth > (width === 390 ? 250 : 200), 'The free path is too narrow: ' + JSON.stringify(measurements));
+    assert.ok(measurements.featuredPhotoWidth >= 90 && measurements.featuredPhotoHeight >= 95, 'Personal-service artwork is tiny or hidden: ' + JSON.stringify(measurements));
     assert.ok(measurements.portraitWidth > (width === 390 ? 180 : 230), 'Real practitioner portrait has collapsed: ' + JSON.stringify(measurements));
     assert.ok(measurements.portraitHeight >= 160, 'Real practitioner portrait is too short: ' + JSON.stringify(measurements));
     assert.equal(measurements.contactButtons, 2, 'Homepage must have exactly WhatsApp and Telegram direct-contact channels');

@@ -6,7 +6,7 @@ import test from "node:test";
 const root = process.cwd();
 const read = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("Services and Home share four offerings; Academy and Library keep their catalogue", () => {
+test("Services and Home share three free paths and two personal offers; Academy and Library remain intact", () => {
   const services = read("app", "[locale]", "services", "page.tsx");
   const home = read("components", "holistic-house-home.tsx");
   const solutions = read("components", "services-solutions.tsx");
@@ -14,7 +14,9 @@ test("Services and Home share four offerings; Academy and Library keep their cat
   const library = read("components", "library-hub.tsx");
   assert.match(services, /<ServicesSolutions locale=/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home"/);
-  assert.match(solutions, /coreServiceOffers\(locale\)\.map/);
+  assert.match(solutions, /coreServiceOffers\(locale\)\.filter/);
+  assert.match(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
+  assert.match(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
   assert.doesNotMatch(services, /<CatalogShowcase/);
   assert.match(academy, /CatalogShowcase/);
   assert.match(library, /CatalogShowcase/);

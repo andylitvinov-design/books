@@ -8,10 +8,10 @@ const copy = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ РАБОТА",
     heading: "Больше ясности, опоры и вариантов движения",
-    lead: "Четыре предложения под разные запросы: две бесплатные диагностики, личная сессия «Алхимия души» и курс гипнотерапии. Выберите, что актуально именно вам.",
-    benefits: ["2 бесплатных варианта", "Личные сессии", "Торонто и онлайн"],
+    lead: "Три бесплатных способа начать: психологические тесты, личный разбор ситуации или профиль ресурсов У-Син. При желании можно продолжить личную работу.",
+    benefits: ["3 бесплатных направления", "Личная работа по желанию", "Торонто и онлайн"],
     cta: "Бесплатный разбор ситуации",
-    secondary: "Посмотреть все 4 предложения",
+    secondary: "Все три бесплатных варианта",
     small: "Бесплатный разбор — письменный, без обязательного созвона",
     imageLabel: "Лично с Андреем Литвиновым",
     caption: "Начните со своего вопроса",
@@ -19,10 +19,10 @@ const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · PERSONAL SUPPORT",
     heading: "More clarity, inner resources and choices",
-    lead: "Four ways to explore your question: two free assessments, Alchemy of the Soul and a guided imagery hypnotherapy course. Start where it feels right for you.",
-    benefits: ["2 free starting points", "One-to-one sessions", "Toronto & online"],
+    lead: "Three free ways to begin: psychological self-checks, a personal situation review, or a Wu Xing resource profile. Personal sessions are optional.",
+    benefits: ["3 free starting points", "Optional one-to-one work", "Toronto & online"],
     cta: "Get a free situation review",
-    secondary: "Explore all four services",
+    secondary: "See all three free options",
     small: "The free situation review is written, not a free call",
     imageLabel: "Personal work with Andrey Litvinov",
     caption: "Start with your question",
@@ -41,7 +41,7 @@ export function ServicesConversionHero({ locale }: { locale: Locale }) {
           <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
             {t.cta}<ArrowUpRight size={20} aria-hidden="true" />
           </Link>
-          <Link className={styles.secondary} href="#solutions">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>
+          <Link className={styles.secondary} href="#free-insights">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>
         </div>
         <p className={styles.small}>{t.small}</p>
         <ul className={styles.benefits}>
