@@ -1178,3 +1178,68 @@ test('durable guest and account assessment plans enforce ordered private sequent
     (error) => error.code === '42501',
   )
 })
+
+
+test('owner can remove saved selections atomically without erasing answers, results or other plan items', async () => {
+  const chosen=[enV2,weekly,mini]
+  const plan=await repo.createTestPlan(v2Actor,{
+    items:chosen.map(def=>({
+      definitionKey:def.key,definitionVersion:def.version,
+      instrumentLocale:def.instrumentLocale,
+    })),
+    operationId:randomUUID(),replaceActive:true,
+  })
+  assert.equal(plan.definitionIds.length,3)
+  const unfinishedRun=await start(v2Actor,weekly)
+  const started=await start(v2Actor,enV2)
+  const saved=await save(started,v2Actor)
+  const recorded=await repo.submitRun(v2Actor,started.id,{expectedRevision:saved.revision})
+  const inProgressPlan=await repo.advanceTestPlan(v2Actor,plan.id,{
+    completedRunId:recorded.runId,expectedRevision:plan.revision,
+  })
+  assert.equal(inProgressPlan.status,'active')
+  assert.equal(inProgressPlan.completedRunIds.length,1)
+  await assert.rejects(
+    ()=>repo.removeTestPlanItem(a,plan.id,{definitionId:weekly.id,expectedRevision:inProgressPlan.revision}),
+    error=>error.code==='NOT_FOUND',
+  )
+  await assert.rejects(
+    ()=>repo.removeTestPlanItem(v2Actor,plan.id,{definitionId:weekly.id,expectedRevision:plan.revision}),
+    error=>error.code==='REVISION_CONFLICT',
+  )
+  await assert.rejects(
+    ()=>repo.removeTestPlanItem(v2Actor,plan.id,{
+      definitionId:weekly.id,expectedRevision:inProgressPlan.revision,extra:'invalid',
+    }),
+    error=>error.code==='UNKNOWN_FIELD',
+  )
+  const removed=await repo.removeTestPlanItem(v2Actor,plan.id,{
+    definitionId:weekly.id,expectedRevision:inProgressPlan.revision,
+  })
+  assert.deepEqual(removed.definitionIds,[enV2.id,mini.id])
+  assert.deepEqual(removed.completedRunIds,[recorded.runId])
+  assert.equal(removed.currentIndex,1)
+  assert.equal(removed.status,'active')
+  const after=await repo.bootstrap(v2Actor)
+  assert.equal(after.activeTestPlan.id,plan.id)
+  assert.ok(after.results.some(x=>x.id===recorded.id))
+  assert.ok(after.runs.some(x=>x.id===unfinishedRun.id),'unfinished draft must survive removing its test from the plan')
+  // Removing a completed test detaches its *plan credit*, not its private report.
+  const reduced=await repo.removeTestPlanItem(v2Actor,plan.id,{
+    definitionId:enV2.id,expectedRevision:removed.revision,
+  })
+  assert.deepEqual(reduced.definitionIds,[mini.id])
+  assert.deepEqual(reduced.completedRunIds,[])
+  assert.equal(reduced.currentIndex,0)
+  assert.ok((await repo.getResult(v2Actor,recorded.id)).dimensions.length)
+  const empty=await repo.removeTestPlanItem(v2Actor,plan.id,{
+    definitionId:mini.id,expectedRevision:reduced.revision,
+  })
+  assert.equal(empty.status,'cancelled')
+  assert.equal((await repo.bootstrap(v2Actor)).activeTestPlan,null)
+  assert.ok((await repo.getResult(v2Actor,recorded.id)).dimensions.length)
+  await assert.rejects(
+    ()=>repo.removeTestPlanItem(v2Actor,plan.id,{definitionId:mini.id,expectedRevision:empty.revision}),
+    error=>error.code==='REVISION_CONFLICT',
+  )
+})
