@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
-import { FreeInsightsPaths } from "@/components/free-insights-paths";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
@@ -21,9 +20,9 @@ const copy = {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
     heroTitle: "Найдите больше ясности и внутренней опоры",
-    heroIntro: "Три бесплатных способа лучше понять себя и два формата личной работы — начните с того, что сейчас актуально.",
+    heroIntro: "Две бесплатные возможности и два формата личной работы. Выберите подходящий для вашего вопроса.",
     heroPrimary: "Бесплатный разбор ситуации",
-    heroSecondary: "Все 3 бесплатных варианта",
+    heroSecondary: "Четыре предложения",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте самостоятельно",
     startIntro: "Тесты, книги и программы — в дополнение к личной работе.",
@@ -53,9 +52,9 @@ const copy = {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
     heroTitle: "Explore your question. Find a clearer way forward.",
-    heroIntro: "Three free ways to understand yourself, plus two personal-work options when you want to go deeper.",
+    heroIntro: "Two free ways to begin and two personal-work options. Choose the one that fits your question.",
     heroPrimary: "Free situation review",
-    heroSecondary: "Explore 3 free options",
+    heroSecondary: "Explore four services",
     startKicker: "Other ways to explore",
     startTitle: "Explore at your own pace",
     startIntro: "Tests, courses and books to complement personal work.",
@@ -130,7 +129,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
             </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--secondary"
-              href="#free-insights"
+              href="#core-services"
               event="service_view"
             >
               {text.heroSecondary}<span aria-hidden="true">→</span>
@@ -139,7 +138,6 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </div>
       </section>
 
-      <FreeInsightsPaths locale={locale} />
       <ServicesSolutions locale={locale} variant="home" />
 
       <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>

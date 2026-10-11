@@ -18,15 +18,18 @@ test("three free paths use real, existing local service and test routes", () => 
   assert.match(offer, /prefetch=\{false\}/);
 });
 
-test("public surfaces show the trio once, and personal service cards do not repeat two free offers", () => {
+test("Services shows the free trio while Home retains four photo-left cards", () => {
   const home = read("components/holistic-house-home.tsx");
   const services = read("app/[locale]/services/page.tsx");
   const solutions = read("components/services-solutions.tsx");
   const hero = read("components/services-conversion-hero.tsx");
-  assert.match(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
+  assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.match(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   assert.match(solutions, /offer.id === "alchemy" \|\| offer.id === "hypnotherapy"/);
-  assert.match(solutions, /personalOffers.map/);
+  assert.match(solutions, /const visibleOffers = isHome \? allOffers : personalOffers/);
+  assert.match(solutions, /visibleOffers.map/);
+  assert.match(solutions, /homeTitle: "How I can help"/);
   assert.match(hero, /href="#free-insights"/);
   assert.doesNotMatch(home, /Two free ways to begin/);
   assert.doesNotMatch(hero, /two free assessments/i);

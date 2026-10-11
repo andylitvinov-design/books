@@ -17,10 +17,11 @@ const homepageMedia = {
 const copy = {
   en: {
     eyebrow: "PERSONAL GUIDANCE · WHEN YOU ARE READY",
+    homeEyebrow: "FOUR WAYS TO WORK TOGETHER",
     title: "Personal support for your next step",
-    homeTitle: "Personal work, at your pace",
+    homeTitle: "How I can help",
     lead: "After exploring your question, you can choose a personal Alchemy of the Soul session or a guided-imagery course.",
-    homeLead: "If you want to explore further together, these are two personal-work formats.",
+    homeLead: "Two free starting points and two personal-work options. Find the support that fits your question.",
     more: "Curious about the methods?",
     moreText: "Systemic constellations, guided imagery and homeopathy are approaches used in specific sessions, not extra services you must choose on this page.",
     methods: [
@@ -32,10 +33,11 @@ const copy = {
   },
   ru: {
     eyebrow: "ЛИЧНАЯ РАБОТА · КОГДА ВЫ ГОТОВЫ",
+    homeEyebrow: "ЧЕТЫРЕ ОСНОВНЫХ ПРЕДЛОЖЕНИЯ",
     title: "Личная работа для следующего шага",
-    homeTitle: "Личная работа в вашем темпе",
+    homeTitle: "Чем я могу помочь",
     lead: "После бесплатного знакомства со своим запросом можно выбрать сессию «Алхимия души» или курс образной работы.",
-    homeLead: "Если хочется пойти глубже, доступны два формата индивидуальной работы.",
+    homeLead: "Две бесплатные возможности для начала и два формата личной работы. Выберите то, что отвечает вашему запросу.",
     more: "Хотите подробнее о методах?",
     moreText: "Системные расстановки, образная работа и гомеопатия — инструменты отдельных сессий, а не обязательные дополнительные услуги.",
     methods: [
@@ -50,17 +52,20 @@ const copy = {
 export function ServicesSolutions({ locale, variant = "services" }: { locale: Locale; variant?: "services" | "home" }) {
   const t = copy[locale];
   const isHome = variant === "home";
-  // The three complimentary entrances are presented once above these cards.
-  const personalOffers = coreServiceOffers(locale).filter((offer) => offer.id === "alchemy" || offer.id === "hypnotherapy");
+  // Keep the approved four image-left cards on Home. The Services page already displays
+  // the three free options above, so only personal-work cards repeat there.
+  const allOffers = coreServiceOffers(locale);
+  const personalOffers = allOffers.filter((offer) => offer.id === "alchemy" || offer.id === "hypnotherapy");
+  const visibleOffers = isHome ? allOffers : personalOffers;
   return (
     <section className={[styles.solutions, isHome ? styles.home : ""].filter(Boolean).join(" ")} id={isHome ? "core-services" : "solutions"} aria-labelledby={isHome ? "home-core-services-title" : "services-solutions-title"} data-core-service-offers={variant}>
       <header className={styles.header}>
-        <p className={styles.eyebrow}>{t.eyebrow}</p>
+        <p className={styles.eyebrow}>{isHome ? t.homeEyebrow : t.eyebrow}</p>
         <h2 id={isHome ? "home-core-services-title" : "services-solutions-title"}>{isHome ? t.homeTitle : t.title}</h2>
         <p className={styles.intro}>{isHome ? t.homeLead : t.lead}</p>
       </header>
       <div className={styles.grid}>
-        {personalOffers.map((offer, index) => (
+        {visibleOffers.map((offer, index) => (
           <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : undefined} data-core-service-id={offer.id}>
             {!isHome && offer.id === "alchemy" ? <><span id="business" className={styles.anchor} /><span id="archetypal" className={styles.anchor}/></> : null}
             <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true">
