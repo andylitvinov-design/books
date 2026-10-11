@@ -35,7 +35,7 @@ test("landing explains precisely three free steps and two optional priced live s
   assert.ok(landing.includes('className={styles.paid}'));
 });
 
-test("coaching form is real, ephemeral, mobile-friendly and does not leak responses in WhatsApp URL", () => {
+test("coaching form is local until a minimal first-party receipt and does not leak responses in WhatsApp URL", () => {
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
   for (const field of ["problem", "goal", "obstacle", "tried"]) assert.ok(intake.includes("set" + field[0].toUpperCase() + field.slice(1)), field);
   assert.match(intake, /<form onSubmit=/);
@@ -45,7 +45,10 @@ test("coaching form is real, ephemeral, mobile-friendly and does not leak respon
   assert.match(intake, /"https:\/\/wa\.me\/" \+ phone/);
   assert.match(intake, /encodeURIComponent\(\s*\[t\.whatsappIntro/);
   assert.doesNotMatch(intake, /encodeURIComponent\((?:answers|problem|goal|obstacle|tried)\)/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|indexedDB|fetch\(|sendBeacon|\/api\/app\/|FileReader/);
+  assert.doesNotMatch(intake, /localStorage|sessionStorage|indexedDB|sendBeacon|\/api\/app\/|FileReader/);
+  assert.match(intake, /fetch\("\/api\/public-leads"/);
+  assert.match(intake, /JSON\.stringify\(\{ email, preferredContact, topic, locale, consentToContact \}\)/);
+  assert.doesNotMatch(intake, /JSON\.stringify\([^)]*(?:problem|goal|obstacle|tried|answers|drawing)/);
   assert.match(intake, /attach a photo of my handwritten drawing/);
   assert.match(intake, /Nothing is sent automatically/);
   assert.match(intakeCss, /@media\(max-width:767px\)/);
