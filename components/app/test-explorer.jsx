@@ -180,6 +180,17 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   useEffect(() => {
     if (recommendedKey && entries.some((entry) => entry.key === recommendedKey && entry.selectable)) setSelectedKeys([recommendedKey])
   }, [recommendedKey, entries])
+  // A marketing page may preselect exactly one startable, rights-cleared test by key.
+  // URL contains no answers, health details or identity information.
+  useEffect(() => {
+    const key = new URLSearchParams(window.location.search).get('test')
+    const entry = entries.find(row => row.key === key && row.selectable)
+    if (!entry) return
+    setSelectedKeys([entry.key])
+    setSimpleSelectionChanged(true)
+    setAvailability('available')
+    setFocus([entry.topics.includes('sexuality') ? 'sexuality' : entry.topics.includes('tantra') ? 'tantra' : 'intimacy'])
+  }, [entries])
   const facets = { availability, focus, problems, styles: stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
   const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
   // Facet counts reflect the whole eligible catalog and every *other* active

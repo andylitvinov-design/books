@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
+import { RelationshipsSpotlight } from "@/components/relationships-spotlight";
 import { FreeInsightsPaths } from "@/components/free-insights-paths";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";

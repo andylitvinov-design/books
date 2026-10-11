@@ -1,7 +1,7 @@
 // Original EN/RU adult relationships and sexual-wellbeing self-reflections.
 // Not validated clinical tests, compatibility predictions, sex-function diagnoses, or consent assessments.
 // Immutable V1 question hashes preserve provenance for private assessment reports.
-import { deepFreeze, canonicalJSON } from '../../lib/assessments/contracts.js'
+import { deepFreeze } from '../../lib/assessments/contracts.js'
 
 // Metadata, question text and dimensions are kept together to avoid drift.
 const CONFIGS = [
