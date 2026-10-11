@@ -14,6 +14,8 @@ import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
+import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
@@ -173,21 +175,46 @@ export default function AppWorkspace({ locale, path = [] }) {
       router.replace(root)
     }
   }
-  async function completePlan(result) {
+  async function completePlan(result, destination = 'report') {
     const planId = searchParams.get('plan')
-    if (!planId) {
+    let advanced = null
+    if (planId) {
+      const plan = await appFetch('test-plans/' + encodeURIComponent(planId))
+      advanced = await appFetch('test-plans/' + encodeURIComponent(planId) + '/advance', {
+        completedRunId: result.runId,
+        expectedRevision: plan.revision,
+      })
+    }
+    // The first choice ALWAYS opens the actual persisted result report, even
+    // when this was the final assessment in a battery.
+    if (destination !== 'next') {
       await load()
-      router.push(root + '/results/' + result.id)
+      router.push(root + '/results/' + encodeURIComponent(result.id) +
+        (planId ? '?plan=' + encodeURIComponent(planId) : ''))
       return
     }
-    const plan = await appFetch('test-plans/' + encodeURIComponent(planId))
-    await appFetch(`test-plans/${encodeURIComponent(planId)}/advance`, {
-      completedRunId: result.runId,
-      expectedRevision: plan.revision,
-    })
+    // The second choice is an explicit user action; never auto-chain tests
+    // just because the current questionnaire is complete.
+    if (advanced?.status === 'active' && advanced.definitionIds?.[advanced.currentIndex]) {
+      const nextDefinition = getDefinitionById(advanced.definitionIds[advanced.currentIndex])
+      const snapshot = await appFetch('bootstrap')
+      const existing = (snapshot.runs || []).find((candidate) =>
+        candidate.definitionId === nextDefinition.id && ['draft', 'in_progress'].includes(candidate.status))
+      const nextRun = existing || await appFetch('runs', {
+        definitionKey: nextDefinition.key,
+        definitionVersion: nextDefinition.version,
+        instrumentLocale: nextDefinition.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      await load()
+      router.push(root + '/runs/' + encodeURIComponent(nextRun.id) +
+        '?mode=quick&plan=' + encodeURIComponent(planId))
+      return
+    }
     await load()
-    // Return to the complete battery after each result; no forced next test.
-    router.push(`${root}/tests?plan=${encodeURIComponent(planId)}`)
+    router.push(advanced?.status === 'completed'
+      ? root + '/tests?plan=' + encodeURIComponent(planId) + '&summary=1'
+      : root + '/tests?filter=remaining')
   }
   if (deleted || state === 'deletion')
     return (
@@ -337,8 +364,8 @@ export default function AppWorkspace({ locale, path = [] }) {
                 await load()
                 router.push(root + '/tests')
               }}
-              onComplete={async (result) => {
-                await completePlan(result)
+              onComplete={async (result, destination) => {
+                await completePlan(result, destination)
               }}
             />
           )}
@@ -1102,13 +1129,13 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
     if (!question || run.answers[question.id] === undefined) return
     await save({}, index + 1)
   }
-  async function finish() {
+  async function finish(destination = 'report') {
     const saved = await save({}, def.questions.length)
     if (!saved) return
     setBusy(true)
     try {
       const result = await appFetch(`runs/${id}/submit`, { expectedRevision: saved.revision })
-      await onComplete(result)
+      await onComplete(result, destination)
     } catch (e) {
       setError(e)
     } finally {
@@ -1350,11 +1377,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           </button>
         )}
         {(isContext || (mode === 'quick' && allAnswered)) && (
-          <button className="hh-primary"
-            disabled={busy || Boolean(operation.current) || !allAnswered}
-            onClick={finish}>
-            {c.finish}
-          </button>
+          <TestFinishActions locale={locale} disabled={busy || Boolean(operation.current) || !allAnswered}
+            onReport={() => finish('report')} onNext={() => finish('next')} />
         )}
         <button disabled={busy || Boolean(operation.current)} onClick={exit}>
           {c.saveExit}
@@ -2300,6 +2324,7 @@ function ResultPage({ id, locale, data }) {
         </div>
       </section>
 
+      <PersonalResultReport result={result} locale={locale} />
       <aside className="hh-result-guidance"><p className="hh-kicker">{locale === 'ru' ? 'Что означает этот замер' : 'What this check-in tells you'}</p>
         <h2>{locale === 'ru' ? 'Ваша личная динамика и следующий шаг' : 'Your progress and next step'}</h2>
         {changeSummary.previous ? <p>{locale === 'ru' ? 'Есть совместимый предыдущий замер' : 'Compatible previous result'}: {dateLabel(changeSummary.previous.measurementAt, locale)}. {locale === 'ru' ? 'Изменения показателей не доказывают причину или диагноз.' : 'Score changes alone do not establish a cause or diagnosis.'}</p> : <p>{locale === 'ru' ? 'Это первая совместимая точка отсчёта. В дальнейшем можно сравнить результат с повторным прохождением.' : 'This is your first comparable baseline. Future check-ins can be compared with it.'}</p>}
