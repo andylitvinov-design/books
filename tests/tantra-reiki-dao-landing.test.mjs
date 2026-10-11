@@ -44,7 +44,10 @@ test("only the three secondary level sections collapse, never the original autho
   const details = journey.slice(expandable, end);
   assert.match(details, /tantra-journey__application/);
   assert.match(details, /tantra-journey__settings/);
-  assert.match(details, /tantra-journey__practice/);
+  assert.match(journey, /tantra-journey__practice--restored/);
+  assert.ok(journey.indexOf('className="tantra-journey__practice tantra-journey__practice--restored"') > author);
+  assert.ok(journey.indexOf('className="tantra-journey__practice tantra-journey__practice--restored"') < expandable);
+  assert.match(journey, /originalProgrammeStudyStep\(locale, i\)/);
   assert.match(details, /<summary>/);
   assert.doesNotMatch(journey, /<details className="tantra-journey__extras" open/);
 });

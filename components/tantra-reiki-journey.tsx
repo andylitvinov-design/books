@@ -2,7 +2,6 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
 import originalRussianEnglishTranslation from "@/data/academy/tantra-reiki-ru-en.generated.json";
-import type { PublicLocale as TantraLocale } from "@/lib/public-locales";
 
 // Stage descriptions and attunements are editorially aligned with the captured
 // EN/RU PsiTrends source (data/academy/tantra-reiki-full.generated.json).
@@ -429,7 +428,7 @@ const translatedProgrammeSteps: Record<"ru" | "es", string[]> = {
   ],
 };
 
-function originalProgrammeStudyStep(locale: TantraLocale, levelIndex: number): string {
+function originalProgrammeStudyStep(locale: PublicLocale, levelIndex: number): string {
   if (locale !== "en") return translatedProgrammeSteps[locale][levelIndex];
   return originalProgrammeStepIndices[levelIndex].map((index) =>
     tantraReikiArchive.blocks.en[index].text

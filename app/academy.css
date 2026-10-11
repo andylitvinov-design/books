@@ -3079,3 +3079,45 @@
   font-size: 14px;
   line-height: 1.55;
 }
+
+/* Restored source-backed Tantra Reiki study text: readable without expanding
+   a chapter, with all nine original lesson steps beside Andrey's prose. */
+.academy-reading-shell--tantra .tantra-journey__practice--restored {
+  margin: 1px 0 8px;
+  padding: 13px 17px;
+  border-left: 3px solid #a87954;
+  border-radius: 0 10px 10px 0;
+  background: #fbf3e9;
+}
+.academy-reading-shell--tantra .tantra-journey__practice--restored strong {
+  font-size: 12px;
+  letter-spacing: .01em;
+  line-height: 1.55;
+}
+.academy-reading-shell--tantra .tantra-journey__practice--restored p {
+  max-width: 65ch;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(16px, 1.65vw, 18px);
+  line-height: 1.63;
+  color: #49362b;
+}
+.academy-reading-shell--tantra .tantra-journey__original-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  margin-top: 9px;
+  color: #77543b;
+  font-size: 13px;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+.academy-reading-shell--tantra .tantra-reading__restored {
+  margin-top: 13px;
+}
+.academy-reading-shell--tantra .tantra-reading__restored .tantra-reading__content {
+  font-family: var(--font-serif), Georgia, serif;
+}
+@media (max-width: 700px) {
+  .academy-reading-shell--tantra .tantra-journey__practice--restored { padding: 11px 13px; }
+  .academy-reading-shell--tantra .tantra-journey__practice--restored p { font-size: 16px; }
+}

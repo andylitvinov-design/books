@@ -10,7 +10,7 @@ test("Tantra Reiki renders one self-contained section per level, not a nine-card
   assert.match(journey, /stages\.map\(\(stage, i\) =>/);
   assert.match(journey, /id=\{"tantra-level-"\+n\}/);
   assert.match(journey, /copy\.att\.map/);
-  assert.match(journey, /copy\.practice/);
+  assert.match(journey, /originalProgrammeStudyStep\(locale, i\)/);
   assert.ok(journey.includes('"#tantra-level-"+(n+1)'));
   assert.match(journey, /#tantra-testimonials/);
   assert.match(journey, /href="#tantra-course-hero-title"/);
