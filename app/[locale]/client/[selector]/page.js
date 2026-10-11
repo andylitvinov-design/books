@@ -1,4 +1,6 @@
 import { clientAssessmentSummary } from '@/lib/clients/assessments'
+import { legacyDocumentProjection } from '@/lib/app/legacy-document'
+import { recommendationItemType } from '@/lib/documents/recommendation'
 import { notFound } from 'next/navigation'
 import { PrescriptionAccessGate } from '@/components/prescription-access-gate'
 import { ClientCabinet } from '@/components/client-cabinet'
@@ -8,7 +10,8 @@ export const metadata = { title: 'Holistic House · Private cabinet', robots: { 
 export default async function CabinetPage({ params, searchParams }) {
   const { locale, selector } = await params
   if (!['en', 'ru'].includes(locale)) notFound()
-  const view = (await searchParams)?.view === 'analysis' ? 'analysis' : 'documents'
+  const requestedView = (await searchParams)?.view
+  const view = ['analysis', 'profile'].includes(requestedView) ? requestedView : 'documents'
   const access = await authorizeCabinetRequest(selector)
   if (!access) return <PrescriptionAccessGate locale={locale} selector={selector} cabinet />
   const records = await access.store.listClientDocuments(access.client.id)
@@ -17,5 +20,14 @@ export default async function CabinetPage({ params, searchParams }) {
   const assessments = (await access.store.listClientAssessments(access.client.id))
     .map(record => clientAssessmentSummary(record, access.client.id)).filter(Boolean)
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || a.id.localeCompare(b.id))
-  return <ClientCabinet assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} view={view} />
+  const homeopathyUpdates = records.filter(record => record.status === 'active' && record.clientId === access.client.id)
+    .map(record => {
+      const document = legacyDocumentProjection(record, locale)
+      if (!document || !['homeopathy', 'mixed'].includes(document.recommendationType)) return null
+      const remedies = [...new Set((document.items || [])
+        .filter(item => recommendationItemType(item, document.recommendationType) === 'homeopathy')
+        .map(item => String(item.displayName || '').trim()).filter(Boolean))]
+      return { id: record.id, date: record.dateIssued, remedies }
+    }).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
+  return <ClientCabinet homeopathyUpdates={homeopathyUpdates} assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} view={view} />
 }

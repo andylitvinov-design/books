@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, ArrowRight, Brain, FileText, Flower2, HeartHandshake, Leaf, LockKeyhole, Sparkles } from 'lucide-react'
+import { Activity, ArrowRight, Brain, Flower2, HeartHandshake, Leaf, LockKeyhole, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
 import './profile-domains.css'
@@ -142,7 +142,7 @@ export function ProfileDomains({
   const [fetchedDocuments, setFetchedDocuments] = useState([])
   const [fetchState, setFetchState] = useState('idle')
   const mounted = useRef(true)
-  useEffect(() => () => { mounted.current = false }, [])
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const external = mode === 'legacy'
   const recentResults = useMemo(() => ordered(results.map(result => ({ ...result, occurredOn: String(result.measurementAt || '').slice(0, 10) }))), [results])
   const reports = external ? assessments : fetchedReports
@@ -194,7 +194,7 @@ export function ProfileDomains({
   const serviceHref = active === 'wu_xing'
     ? '/' + locale + '/services/dao-health-profile'
     : active === 'hypnotherapy'
-      ? '/' + locale + '/services/guided-imagery-hypnotherapy'
+      ? '/' + locale + '/services/hypnotherapy-course'
       : '/' + locale + '/services'
   const mayBeLimited = !external && (savedReports.filter(r => r.available !== false).length > 30 || savedDocuments.filter(d => d.kind === 'recommendation').length > 20)
 
@@ -207,7 +207,7 @@ export function ProfileDomains({
       {entries.map(({ key, summary }) => {
         const Icon = ICONS[key]
         return <button key={key} id={'hh-domain-tab-' + key} role="tab" type="button" aria-selected={active === key}
-          aria-controls="hh-domain-panel" tabIndex={active === key ? 0 : -1}
+          aria-controls="hh-domain-panel" tabIndex={0}
           onClick={() => setActive(key)} className={active === key ? 'is-current' : ''}>
           <Icon size={23} strokeWidth={1.7} aria-hidden="true" />
           <strong>{t[key]}</strong>
@@ -231,12 +231,12 @@ export function ProfileDomains({
       {active !== 'psychology' && <section className="hh-domain-content" data-domain={active}>
         <div className="hh-domain-heading"><div><p className="hh-domain-eyebrow">{t[active]}</p><h2>{panelTitle[active]}</h2><p>{active === 'homeopathy' ? t.homeoIntro : active === 'wu_xing' ? t.resourceIntro : t.hypnoIntro}</p></div></div>
         {!external && fetchState === 'loading' && <p className="hh-domain-loading" role="status">{t.loading}</p>}
-        {active === 'homeopathy' && <>
+        {(external || fetchState !== 'loading') && active === 'homeopathy' && <>
           <RemedyHistory updates={updates} locale={locale} selector={selector} t={t} />
           {homeopathicReports.length > 0 && <ReportsHistory reports={homeopathicReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noHomeo} t={t} />}
         </>}
-        {active === 'wu_xing' && <ReportsHistory reports={wuReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noWu} t={t} />}
-        {active === 'hypnotherapy' && <ReportsHistory reports={hypnoReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noHypno} t={t} />}
+        {(external || fetchState !== 'loading') && active === 'wu_xing' && <ReportsHistory reports={wuReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noWu} t={t} />}
+        {(external || fetchState !== 'loading') && active === 'hypnotherapy' && <ReportsHistory reports={hypnoReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noHypno} t={t} />}
         <div className="hh-domain-next">
           <div><Sparkles size={21} aria-hidden="true" /><strong>{t.request}</strong><p>{t.profileIntro}</p></div>
           <div className="hh-domain-next-actions">
