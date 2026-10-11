@@ -90,9 +90,9 @@ test("method showcases expose direct original HeyGen fallback and release tests 
   const showcase = read("components/service-video-showcase.tsx");
   const css = read("components/service-video-showcase.module.css");
   const verifier = read("scripts/verify-page-video-release.mjs");
-  assert.match(showcase, /siteVideoWatchUrl\\(video\\.video\\)/);
-  assert.match(showcase, /className=\\{styles\\.original\\}/);
-  assert.match(showcase, /target="_blank" rel="noopener noreferrer"/);
-  assert.match(css, /\\.original:focus-visible/);
-  assert.match(verifier, /disclosure.getAttribute\\('open'\\) === null/);
+  assert.ok(showcase.includes("siteVideoWatchUrl(video.video)"));
+  assert.ok(showcase.includes("className={styles.original}"));
+  assert.ok(showcase.includes('target="_blank" rel="noopener noreferrer"'));
+  assert.ok(css.includes(".original:focus-visible"));
+  assert.ok(verifier.includes("disclosure.getAttribute('open') === null"));
 });
