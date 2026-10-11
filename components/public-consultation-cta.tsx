@@ -12,7 +12,7 @@ const copy = {
     personal: {
       eyebrow: "A gentle first step",
       title: "You can simply write to me",
-      text: "Ask about working together, or begin with a free situation review. You do not need to choose a method before we speak.",
+      text: "Start with a free coaching form and handwritten drawing for a written report, or ask about a paid personal session (€50 / 30 min or €100 / 60 min).",
       whatsapp: "WhatsApp · +1 437 606 6502",
       telegram: "Telegram · @AndyTherapist",
       free: "Free situation review",
@@ -21,7 +21,7 @@ const copy = {
     reading: {
       eyebrow: "When a question becomes personal",
       title: "Want to talk about your own situation?",
-      text: "These pages are for learning. A free introductory conversation can help you explore an individual question without treating the material as a medical diagnosis.",
+      text: "These pages are educational. A free coaching form and handwritten drawing can lead to a personal written situation review, not a medical diagnosis.",
       whatsapp: "Ask via WhatsApp",
       telegram: "Telegram · @AndyTherapist",
       free: "Start with a free review",
@@ -41,7 +41,7 @@ const copy = {
     personal: {
       eyebrow: "Первый шаг без давления",
       title: "Можно просто написать мне",
-      text: "Обсудите личный запрос или начните с бесплатной диагностики ситуации. Заранее выбирать метод не нужно.",
+      text: "Отправьте коучинг-форму и рисунок ручкой для бесплатного письменного отчёта. Личная сессия отдельно: €50 / 30 мин или €100 / 60 мин.",
       whatsapp: "WhatsApp · +1 437 606 6502",
       telegram: "Telegram · @AndyTherapist",
       free: "Бесплатная диагностика",
@@ -50,7 +50,7 @@ const copy = {
     reading: {
       eyebrow: "От знаний — к своему вопросу",
       title: "Хотите обсудить собственную ситуацию?",
-      text: "Это образовательные материалы. Бесплатная вводная беседа поможет прояснить личный вопрос — без медицинской диагностики и обязательства продолжать.",
+      text: "Это образовательные материалы. Коучинг-форма и рисунок от руки позволяют получить бесплатный письменный разбор, не медицинский диагноз.",
       whatsapp: "Спросить в WhatsApp",
       telegram: "Telegram · @AndyTherapist",
       free: "Бесплатный разбор ситуации",
@@ -70,7 +70,7 @@ const copy = {
     personal: {
       eyebrow: "Un primer paso sencillo",
       title: "Puedes escribirme directamente",
-      text: "Pregunta por una sesión individual o empieza con una evaluación gratuita de tu situación, sin elegir un método de antemano.",
+      text: "Empieza con un formulario de coaching y dibujo a mano para un informe escrito gratuito, o elige una sesión pagada de €50 / 30 min o €100 / 60 min.",
       whatsapp: "WhatsApp · +1 437 606 6502",
       telegram: "Telegram · @AndyTherapist",
       free: "Evaluación inicial gratuita",
@@ -79,7 +79,7 @@ const copy = {
     reading: {
       eyebrow: "Del aprendizaje a tu pregunta",
       title: "¿Quieres hablar de tu propia situación?",
-      text: "Estos materiales son educativos. Una conversación gratuita puede ayudar a aclarar tu consulta, sin diagnóstico médico ni compromiso.",
+      text: "Estos materiales son educativos. Un formulario de coaching y dibujo a mano permiten solicitar un informe escrito gratuito, no un diagnóstico médico.",
       whatsapp: "Consultar por WhatsApp",
       telegram: "Telegram · @AndyTherapist",
       free: "Evaluación gratuita",
