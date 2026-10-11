@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
+import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import {
@@ -342,6 +343,12 @@ async function handle(request, { params }) {
         path[1],
       )
     }
+    if (joined === 'course') {
+      const growth = createGrowthCourseRepository(config)
+      if (method === 'GET') return json(await growth.read(actor))
+      if (method === 'POST') return json(await growth.command(actor, await readBody(request)))
+      throw new AppError('NOT_FOUND', 404)
+    }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
     if (joined === 'personal-analysis-reports' && method === 'GET')
       return json(await listPersonalAnalysisReports(config, getPrescriptionStore(), actor))
@@ -392,6 +399,7 @@ async function handle(request, { params }) {
         }
       }
       exported.savedReports = savedReports
+      exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       const response = json(exported)
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
       return response
