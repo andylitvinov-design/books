@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, BookOpen, Check, CheckCircle2, CirclePause, ClipboardList, Feather, Heart, LockKeyhole, Play, RotateCcw, Sparkles, Target } from 'lucide-react'
-import { GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS, courseLesson, growthSuggestions } from '@/lib/inner-growth/course-model'
+import { GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS, courseLesson, growthSuggestions, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { MONITORING_CATALOG } from '@/data/assessments/catalog'
 import styles from './my-course.module.css'
 
@@ -17,6 +17,9 @@ const WORDS = {
     concernsTitle: 'Tell us what you want to work on', concernsHint: 'Describe a current difficulty or an important goal in your own words. Optional; do not include emergency information.',
     concernPlaceholder: 'For example: I would like to feel calmer in difficult conversations and have more inner support.',
     themes: 'What would you like to explore?', suggestions: 'Tests that may help explore your topics',
+    suggestTopics: 'Suggest themes from my description', urgent: 'If you may be in danger or thinking of harming yourself, please contact local emergency services or a qualified crisis support service now. This course is not monitored for emergencies.',
+    changes: 'Changes in my weekly check-ins', noComparison: 'You need at least two comparable weekly check-ins to see a change. This is different from your lesson completion progress.',
+    changeNotice: 'These numbers describe your self-reports on different dates; they do not establish that the course caused a change.',
     explore: 'Open the full test finder', testHint: 'Use the existing My Tests filters to choose and save the tests that suit you. You may change your selection.',
     saveContinue: 'Save and go to testing', selected: 'Selected tests', done: 'Completed', results: 'Saved results',
     testTitle: 'Explore yourself through testing', testText: 'Continue any saved test, or select new questionnaires. Your responses and detailed reports remain in your private account.',
@@ -47,6 +50,9 @@ const WORDS = {
     concernsTitle: 'Что бы вы хотели изменить?', concernsHint: 'Опишите трудность или важную цель своими словами. Поле необязательное; не используйте его для экстренных обращений.',
     concernPlaceholder: 'Например: хочу спокойнее чувствовать себя в общении и больше опираться на себя.',
     themes: 'Какие темы вам близки?', suggestions: 'Тесты, которые помогут изучить эти темы',
+    suggestTopics: 'Предложить темы на основе моего описания', urgent: 'Если вам сейчас угрожает опасность или есть мысли причинить себе вред, обратитесь в местную экстренную службу или кризисную службу поддержки. Этот курс не отслеживается специалистом в реальном времени.',
+    changes: 'Изменения по недельным самоотчётам', noComparison: 'Для анализа изменений нужны хотя бы два сопоставимых недельных замера. Это отдельно от количества выполненных уроков.',
+    changeNotice: 'Цифры описывают ваши ответы в разные даты, но не доказывают, что изменения вызваны курсом.',
     explore: 'Открыть полный подбор тестов', testHint: 'В существующем разделе My Tests выберите тесты по темам и проблемам, сохраните набор; его всегда можно изменить.',
     saveContinue: 'Сохранить и перейти к тестам', selected: 'Выбрано тестов', done: 'Пройдено', results: 'Сохранённые результаты',
     testTitle: 'Изучите себя с помощью тестов', testText: 'Продолжите сохранённые тесты или подберите новые. Ответы и подробные отчёты остаются в вашем кабинете.',
@@ -136,11 +142,13 @@ export function MyCourse({ data, locale = 'en' }) {
   const stage = stateCourse?.stage || 0
   const assessment = state?.assessments || {}
   const suggested = useMemo(() => growthSuggestions(data.results || [], locale), [data.results, locale])
+  const suggestedTopics = useMemo(() => suggestedCourseTopics(concerns), [concerns])
   const testCards = useMemo(() => {
     const match = MONITORING_CATALOG.filter((item) => item.startable && item.rightsStatus === 'cleared' &&
+      (item.instrumentLocale === locale || item.instrumentLocale === 'dynamic') &&
       focusTags.some((tag) => item.topics?.includes(tag)))
     return match.slice(0, 3)
-  }, [focusTags])
+  }, [focusTags, locale])
   const total = stateCourse?.durationDays || 14
   const today = stateCourse?.today || 1
   const completions = stateCourse?.dayCompletions || {}
@@ -150,6 +158,17 @@ export function MyCourse({ data, locale = 'en' }) {
   const activeGoal = stateCourse?.goals?.[(today - 1) % Math.max(stateCourse?.goals?.length || 1, 1)] || 'calm_regulation'
   const lesson = courseLesson(activeGoal, today, locale)
   const completed = Object.keys(completions).length
+  const weekly = assessment.weeklyChange
+  const weeklyNames = {
+    'weekly.mood': ru ? 'Эмоциональное состояние' : 'Mood',
+    'weekly.tension': ru ? 'Напряжение' : 'Tension',
+    'weekly.load': ru ? 'Психологическая нагрузка' : 'Stress load',
+    'weekly.recovery': ru ? 'Восстановление' : 'Recovery',
+    'weekly.energy': ru ? 'Энергия' : 'Energy',
+    'weekly.clarity': ru ? 'Ясность' : 'Mental clarity',
+    'weekly.connection': ru ? 'Поддержка' : 'Connection',
+    'weekly.functioning': ru ? 'Повседневная активность' : 'Daily functioning',
+  }
 
   if (state === undefined && !error) return <section className={'hh-panel ' + styles.root} aria-busy="true"><p>{ru ? 'Открываем ваш курс…' : 'Opening your course…'}</p></section>
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
@@ -180,6 +199,11 @@ export function MyCourse({ data, locale = 'en' }) {
       <label htmlFor="growth-concerns" className={styles.formLabel}>{t.concernsTitle}</label>
       <textarea id="growth-concerns" rows={4} maxLength={1000} value={concerns} placeholder={t.concernPlaceholder}
         onChange={(e) => setConcerns(e.target.value)} />
+      {suggestedTopics.urgent && <p role="alert" className={styles.error}>{t.urgent}</p>}
+      {suggestedTopics.topics.length > 0 && !suggestedTopics.urgent &&
+        <button type="button" className={styles.suggestButton} onClick={() => setFocusTags(suggestedTopics.topics)}>
+          <Sparkles size={16} aria-hidden="true"/>{t.suggestTopics}
+        </button>}
       <div><strong>{t.themes}</strong><div className={styles.chips}>
         {COURSE_TOPICS.map((tag) => <button key={tag.id} type="button" aria-pressed={focusTags.includes(tag.id)}
           onClick={() => setFocusTags((tags) => tags.includes(tag.id) ? tags.filter((x) => x !== tag.id) : [...tags,tag.id])}>
@@ -191,8 +215,8 @@ export function MyCourse({ data, locale = 'en' }) {
         {testCards.map((item) => <div key={item.key} className={styles.testMatch}><ClipboardList size={17}/><span>{asLocale(item.title,locale)}</span><small>~{item.durationMinutes} min</small></div>)}
       </div>}
       <p className={styles.small}>{t.testHint}</p>
-      <button type="button" className="hh-primary" disabled={busy} onClick={async () => {
-        if (busy) return
+      <button type="button" className="hh-primary" disabled={busy || suggestedTopics.urgent} onClick={async () => {
+        if (busy || suggestedTopics.urgent) return
         setBusy(true)
         setError('')
         try {
@@ -277,7 +301,16 @@ export function MyCourse({ data, locale = 'en' }) {
         </button>
         <Link href={root + '/portfolio'} prefetch={false}>{t.mood}</Link>
       </div>
-      <aside className={styles.comparison}><Target size={18}/><div><strong>{t.compare}</strong><p>{t.compareNote}</p><Link href={root+'/monitoring'} prefetch={false}>{t.mood} →</Link></div></aside>
+      <aside className={styles.comparison}><Target size={18}/><div><strong>{t.changes}</strong>
+        {weekly ? <div className={styles.weeklyChanges}>
+          <small>{new Date(weekly.from).toLocaleDateString(ru?'ru-RU':'en-CA')} → {new Date(weekly.to).toLocaleDateString(ru?'ru-RU':'en-CA')}</small>
+          <div className={styles.scoreGrid}>
+            {weekly.changes.filter((item)=>Object.hasOwn(weeklyNames,item.key)).map((item)=>
+              <span key={item.key}><strong>{weeklyNames[item.key]}</strong><small>{item.from} → {item.to} / 10</small></span>)}
+          </div>
+          <p>{t.changeNotice}</p>
+        </div> : <p>{t.noComparison}</p>}
+        <p>{t.compareNote}</p><Link href={root+'/monitoring'} prefetch={false}>{t.compare} →</Link></div></aside>
     </section>}
 
     <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>
