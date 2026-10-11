@@ -251,6 +251,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span>
         </Link>
+        {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={`${root}/practice`} prefetch={false}>{locale === 'ru' ? 'Мастер' : 'Master'}</Link>}
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
           <div>
@@ -309,7 +310,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
-          {page === 'practice' && <PracticeWorkspace locale={locale} />}
+          {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}
