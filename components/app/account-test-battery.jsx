@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Zap } from 'lucide-react'
 import { TestExplorer } from './test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import { MyTestsDashboard } from './my-tests-dashboard'
@@ -42,56 +42,14 @@ const COPY = {
     signInFailed: 'Вход через Google не завершён. При необходимости повторите вход.',
   },
 }
-const PHOTO = {
-  'hh-current-state': '/images/holistic-house/video-posters/home-en-v2.webp',
-  'mini-ipip-20': '/images/holistic-house/video-posters/services-en-v2.webp',
-  'hh-weekly-pulse': '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
-  'phq-4': '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
-  'k6': '/images/holistic-house/video-posters/constellations-en-v1.webp',
-  'phq-9': '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
-  'gad-7': '/images/holistic-house/video-posters/home-en-v2.webp',
-  'hh-resource-pulse': '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
-  'hh-monthly-profile': '/images/holistic-house/video-posters/services-en-v2.webp',
-  'mspss': '/images/holistic-house/video-posters/constellations-en-v1.webp',
-  'scs-sf': '/images/holistic-house/video-posters/home-en-v2.webp',
-}
-const THEMED_PHOTOS = {
-  state: [
-    '/images/holistic-house/video-posters/home-en-v2.webp',
-    '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
-    '/images/holistic-house/video-posters/services-en-v2.webp',
-  ],
-  symptoms: [
-    '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
-    '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
-    '/images/holistic-house/video-posters/home-en-v2.webp',
-  ],
-  resources: [
-    '/images/holistic-house/video-posters/constellations-en-v1.webp',
-    '/images/holistic-house/video-posters/home-en-v2.webp',
-    '/images/holistic-house/video-posters/homeopathy-en-v2.webp',
-  ],
-  function: [
-    '/images/holistic-house/video-posters/services-en-v2.webp',
-    '/images/holistic-house/video-posters/home-en-v2.webp',
-    '/images/holistic-house/video-posters/constellations-en-v1.webp',
-  ],
-  baseline: [
-    '/images/holistic-house/video-posters/services-en-v2.webp',
-    '/images/holistic-house/video-posters/home-en-v2.webp',
-  ],
-}
-// All photos are existing, approved local source assets. Never invent a patient photo.
-function photoForTest(item, catalog) {
-  if (PHOTO[item]) return PHOTO[item]
-  const topics = catalog?.topics || []
-  const themed = topics.includes('relationships')
-    ? THEMED_PHOTOS.resources
-    : topics.includes('body') || topics.includes('sleep')
-      ? THEMED_PHOTOS.symptoms
-      : THEMED_PHOTOS[catalog?.axis] || THEMED_PHOTOS.state
-  const fingerprint = [...item].reduce((sum, char) => sum * 31 + char.charCodeAt(0), 0) >>> 0
-  return themed[fingerprint % themed.length]
+// Questionnaires have abstract topic icons, never unrelated practitioner/client photos.
+const TOPIC_ICONS = {stress:Zap,anxiety:Brain,mood:Heart,sleep:Moon,energy:Zap,
+  recovery:Shield,relationships:Heart,support:Heart,work:Activity,
+  function:Activity,attention:Brain,focus:Brain,personality:Sparkles,resources:Shield}
+function TestSymbol({topics}) {
+  const key = (topics || []).find((topic) => TOPIC_ICONS[topic]) || 'default'
+  const Icon = TOPIC_ICONS[key] || ClipboardList
+  return <span className={styles.iconTile} data-theme={key} aria-hidden="true"><Icon size={23} strokeWidth={1.8}/></span>
 }
 
 async function api(path, body) {
@@ -136,7 +94,7 @@ function planRows(plan, data, locale) {
       title: catalog?.title?.[locale] || catalog?.title?.en || definition.title,
       description: catalog?.description?.[locale] || catalog?.description?.en || '',
       minutes: catalog?.durationMinutes || Math.max(1, Math.round(definition.questions.length / 6)),
-      photo: photoForTest(item, catalog),
+      topics: catalog?.topics || [],
     }
   }).filter(Boolean)
 }
@@ -211,12 +169,13 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setConflict(null)
       setPlan(created)
       setExploring(false)
+      setShowList(true)
       // Reconcile the saved account state before replacing the handoff URL.
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
       router.replace(root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
-      if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict(valid)
+      if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
       else setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
     } finally {
       setBusy(false)
@@ -282,8 +241,32 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     }))
   }
   useEffect(() => {
-    if (conflict || error) setShowList(true)
-  }, [conflict, error])
+    // A pending new selection should not automatically hide the current tests
+    // behind a large conflict panel. Its compact choice stays on the overview.
+    if (error) setShowList(true)
+  }, [error])
+  useEffect(() => {
+    if (!conflict) return
+    // When a new selection originated further down the page, bring the compact
+    // decision into view rather than leaving the visitor at an empty explorer.
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector('[data-pending-selection]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [conflict])
+
+  function keepSavedSet() {
+    try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browsers may block storage. */ }
+    setConflict(null)
+    setPlan(data.activeTestPlan || data.latestTestPlan || null)
+    setShowList(false)
+    router.replace(root)
+  }
+
+  function applyNewSelection() {
+    if (!Array.isArray(conflict?.keys) || !conflict.keys.length || busy) return
+    void create(conflict.keys, true, conflict.preferences)
+  }
 
   async function openTest(row) {
     setBusy(true)
@@ -315,29 +298,23 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         snapshot={data.snapshot}
         data={data}
         onStart={openList}
+        listOpen={showList}
+        conflict={conflict}
+        onKeepSet={keepSavedSet}
+        onUseNewSet={applyNewSelection}
+        switchBusy={busy}
       />
       {showList && <div className={styles.listArea} id="my-tests-list">
       <div className={styles.listHeading}>
         <div>
-          <p className={styles.step}>{locale === 'ru' ? 'ШАГ 2 ИЗ 2' : 'STEP 2 OF 2'}</p>
+          <p className={styles.step}>{locale === 'ru' ? 'ВЫБРАННЫЕ ТЕСТЫ' : 'YOUR SAVED TESTS'}</p>
           <h2 data-test-list-heading tabIndex={-1}>{locale === 'ru' ? 'Выберите тест' : 'Choose a test'}</h2>
           <p>{locale === 'ru' ? 'Нажмите «Начать тестирование» у нужного теста.' : 'Press Start test next to the test you want.'}</p>
         </div>
         <button type="button" className={styles.collapseList} onClick={() => setShowList(false)}>{locale === 'ru' ? 'Свернуть' : 'Close'}</button>
       </div>
       {initializing && <p role="status">{c.preparing}</p>}
-      {conflict && <div className={styles.notice} role="group" aria-label={c.conflictTitle}>
-        <h2>{c.conflictTitle}</h2><p>{c.conflict}</p>
-        <div>
-          <button type="button" onClick={() => {
-            try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browser storage may be disabled. */ }
-            setConflict(null)
-            setPlan(data.activeTestPlan)
-            if (data.activeTestPlan?.id) router.replace(root + '/tests?plan=' + encodeURIComponent(data.activeTestPlan.id))
-          }}>{c.keep}</button>
-          <button type="button" className="hh-primary" disabled={busy} onClick={() => create(conflict.keys, true, conflict.preferences)}>{c.replace}</button>
-        </div>
-      </div>}
+
       {error && <p role="alert">{error} <button type="button" onClick={() => setError('')}>{c.retry}</button></p>}
       {(rows.length > 0 || (statusFilter === 'completed' && pastRows.length > 0)) ? <>
         <details className={styles.filterDetails} defaultOpen={Boolean(requestedFilter)}>
@@ -363,25 +340,24 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             if (statusFilter === 'remaining' && done) return null
             if (!['all', 'remaining'].includes(statusFilter) && state !== statusFilter) return null
             return <article key={row.definition.id} className={styles.row}>
-              <span className={styles.image}><Image src={row.photo} alt="" fill sizes="(max-width: 720px) 92px, 140px" /></span>
+              <TestSymbol topics={row.topics} />
               <div className={styles.info}>
-                <h2>{row.title}</h2>
+                <h3>{row.title}</h3>
                 <p className={styles.description}>{row.description}</p>
-                <div className={styles.meta}><span>{row.definition.questions.length} {c.questions}</span>
-                  <span>~{row.minutes} {c.mins}</span></div>
-                <div className={styles.status}>
-                  <strong className={state === 'inProgress' ? styles.inProgress : state === 'completed' ? styles.completed : ''}>{status}</strong>
-                  {row.run
-                    ? <><progress max="100" value={row.progress} aria-label={status} /><span>{row.progress}% {c.percent}</span>
-                        {row.result && <span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span>}</>
-                    : done
-                      ? <><span>100% {c.percent}</span><span>{c.date}: {formatDate(row.result.measurementAt, locale)}</span></>
-                      : null}
+                <div className={styles.meta}>
+                  <span>~{row.minutes} {c.mins}</span>
+                  <span>{row.definition.questions.length} {c.questions}</span>
+                  <strong className={state === 'inProgress' ? styles.inProgress : state === 'completed' ? styles.completed : styles.notStarted}>{status}</strong>
                 </div>
+                {done && row.result && <small className={styles.completedDate}>{c.date}: {formatDate(row.result.measurementAt, locale)}</small>}
+                {row.run && <div className={styles.draftProgress}>
+                  <progress max="100" value={row.progress} aria-label={status}/>
+                  <small>{row.progress}% {c.percent}</small>
+                </div>}
               </div>
               <div className={styles.rowActions}>
                 <button className="hh-primary" type="button" disabled={busy} onClick={() => openTest(row)}>
-                  {row.run ? c.resume : row.result ? c.repeat : c.begin} →
+                  {row.run ? c.resume : done ? c.repeat : c.begin} <ArrowRight aria-hidden="true" size={17} />
                 </button>
                 {row.result && <Link prefetch={false} href={root + '/results/' + encodeURIComponent(row.result.id)}>{c.see}</Link>}
               </div>

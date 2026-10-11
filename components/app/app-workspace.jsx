@@ -254,6 +254,15 @@ export default function AppWorkspace({ locale, path = [] }) {
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
           <div>
+            <Link href={root + '/portrait'} prefetch={false}>
+              {c.portrait}
+            </Link>
+            <Link href={root + '/history'} prefetch={false}>
+              {c.history}
+            </Link>
+            <Link href={root + '/monitoring'} prefetch={false}>
+              {c.monitoring}
+            </Link>
             <Link href={`${root}/settings`} prefetch={false}>
               {c.settings}
             </Link>
@@ -371,7 +380,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={locale === 'ru' ? '/?lang=ru' : '/?lang=en'} prefetch={false}><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
         <Link href={root} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
         <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
-        <Link href={root + '/settings'} prefetch={false} aria-current={page === 'settings' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Аккаунт' : 'Account'}</span></Link>
+        <Link href={root + '/portrait'} prefetch={false} aria-current={page === 'portrait' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Профиль' : 'Profile'}</span></Link>
       </nav>}
     </main>
   )

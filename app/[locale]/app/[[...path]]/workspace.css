@@ -1445,3 +1445,21 @@
   .hh-mobile-app-nav a[aria-current='page']{color:#246b5d;background:#e7f1e9;font-weight:700}
   .hh-mobile-app-nav a:focus-visible{outline:3px solid #236e61;outline-offset:-1px}
 }
+
+
+/* My Tests mobile navigation: one predictable menu, not two competing tab bars. */
+@media(max-width:760px){
+  .hh-app{width:min(100% - 24px,1120px);padding-top:14px;padding-bottom:calc(105px + env(safe-area-inset-bottom))}
+  .hh-app .hh-nav{display:none!important}
+  .hh-app .hh-header{margin-bottom:13px;gap:8px;align-items:flex-start}
+  .hh-app .hh-brand{font-size:22px;line-height:1.18;max-width:60%;min-width:0}
+  .hh-app .hh-brand span{font-size:.68rem;line-height:1.4;letter-spacing:.13em;margin-top:3px}
+  .hh-app .hh-account-menu{max-width:45%}
+  .hh-app .hh-account-menu summary{display:flex;align-items:center;min-height:40px;padding:7px 11px;border:1px solid #e4d9ca;background:#fffaf4;border-radius:11px;color:#655347;font-size:.8rem;font-weight:700;list-style:none;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hh-app .hh-account-menu summary::-webkit-details-marker{display:none}
+  .hh-app .hh-account-menu summary:after{content:'⌄';font-size:.9rem;margin-left:5px;color:#9a7965}
+  .hh-app .hh-account-menu>div{min-width:min(270px,90vw);padding:7px}
+  .hh-app .hh-account-menu a,.hh-app .hh-account-menu button{min-height:44px!important;text-align:left!important;font-size:.86rem!important}
+  .hh-mobile-app-nav{background:#fffdf9;box-shadow:0 -5px 20px #3f332118}
+  .hh-mobile-app-nav a{min-height:49px;font-size:.69rem}
+}
