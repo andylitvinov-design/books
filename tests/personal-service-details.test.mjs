@@ -23,20 +23,18 @@ test("all three canonical service pages exist in EN/RU/ES with SEO and actual en
   assert.match(component, /t\.disclaimer/);
 });
 
-test("services and free diagnostic link to canonical order pages, not DB-only routes", () => {
-  const journey = read("components/personal-work-journey.tsx");
+test("four core service links lead to real detail pages while legacy method references remain available", () => {
   const services = read("app/[locale]/services/page.tsx");
+  const offers = read("data/core-service-offers.ts");
+  const ui = read("components/services-solutions.tsx");
   const free = read("app/[locale]/services/free-situation-review/page.tsx");
-  for (const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"]) {
-    assert.ok(journey.includes('slug: "' + slug + '"'), slug + " missing in journey");
-    assert.ok(free.includes('href: "' + slug + '"'), slug + " missing in free");
-  }
   assert.match(services, /<ServicesSolutions locale=/);
-  const solutions = read("components/services-solutions.tsx");
-  for (const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"]) {
-    assert.ok(solutions.includes('href: "' + slug + '"'), "missing canonical service: " + slug);
-  }
-  assert.match(solutions, /free-situation-review\?topic=/);
+  for(const slug of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
+    assert.ok(offers.includes('route: "' + slug + '"'));
+  for(const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"])
+    assert.ok(ui.includes('href:"' + slug + '"') || ui.includes('href: "' + slug + '"'));
+  assert.match(ui, /href=.*free-situation-review/);
+  assert.match(free, /FreeSituationReviewForm/);
 });
 
 test("free diagnostic explains its scope and explicitly excludes diagnoses, prescriptions and obligation", () => {
