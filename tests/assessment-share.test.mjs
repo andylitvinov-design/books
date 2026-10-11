@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { publicAssessmentView } from '../lib/clients/assessment-share.js'
+import { publicAssessmentView, reportInvitationPreview } from '../lib/clients/assessment-share.js'
 
 const record = {
   id: '10000000-0000-4000-8000-000000000101',
@@ -43,4 +43,18 @@ test('public report view contains only the approved single-report projection', (
 test('unshared legacy assessment cannot become a public report projection', () => {
   assert.equal(publicAssessmentView({ ...record, status: 'draft' }), undefined)
   assert.equal(publicAssessmentView({ ...record, status: 'archived' }), undefined)
+})
+
+test('save-enabled report invitation never includes the private findings or notes', () => {
+  const preview = reportInvitationPreview(publicAssessmentView(record))
+  assert.deepEqual(preview, {
+    title: 'Synthetic report',
+    kind: 'research_result',
+    occurredOn: '2026-10-02',
+    language: 'en',
+  })
+  for (const privateField of ['description', 'originalResult', 'practitionerComment', 'sourceName', 'sourceVersion', 'clientId']) {
+    assert.equal(Object.hasOwn(preview, privateField), false)
+  }
+  assert.equal(reportInvitationPreview(undefined), undefined)
 })
