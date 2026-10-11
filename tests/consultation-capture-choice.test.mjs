@@ -19,11 +19,11 @@ test("four clearly selectable consultation topics and three service intents work
 });
 
 test("the selected topic or paid service is included in a WhatsApp draft, not sent to a hidden backend", () => {
-  assert.match(component, /encodeURIComponent\(message\)/);
+  assert.match(component, /whatsappEnquiryUrl\(\{/);
   assert.match(component, /t\.topicOptions\[topic\]/);
   assert.match(component, /t\.serviceOptions\[serviceChoice\]/);
   assert.match(component, /service \|\|/);
-  assert.match(component, /https:\/\/wa\.me\/14376066502\?text=/);
+  assert.match(component, /service: serviceName/);
   assert.match(component, /https:\/\/t\.me\/AndyTherapist/);
   assert.match(component, /event="service_request_start"/);
   assert.match(component, /event="contact_click"/);
