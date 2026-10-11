@@ -24,6 +24,7 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
+import { listLegacyClientIdsForAccount } from '@/lib/app/client-account-binding'
 import { authorizePrescription, prescriptionSessionCookieName } from '@/lib/prescriptions/session'
 import { issueTrustedAdminSession } from '@/lib/prescriptions/admin-session'
 import {
@@ -341,6 +342,18 @@ async function handle(request, { params }) {
       )
     }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if (joined === 'shared-materials' && method === 'GET') {
+      const clientIds = await listLegacyClientIdsForAccount(config, actor)
+      const store = getPrescriptionStore()
+      const materials = []
+      if (store) for (const clientId of clientIds) {
+        const client = await store.findClientById(clientId)
+        if (client?.status === 'active') for (const material of client.sharedMaterials ?? []) {
+          materials.push({ id: material.id, title: material.title, url: material.url })
+        }
+      }
+      return json({ materials })
+    }
     if (joined === 'test-plans' && method === 'POST')
       return json(await repo.createTestPlan(actor, await readBody(request)), 201)
     if (path[0] === 'test-plans' && path.length === 2 && method === 'GET')
