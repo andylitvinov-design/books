@@ -42,7 +42,7 @@ export async function GET(request) {
       "Content-Type": "application/pdf",
       "Content-Disposition": 'attachment; filename="' + basename + "-study-prices-" + locale + '.pdf"',
       "Content-Length": String(buffer.length),
-      "Cache-Control": "public, max-age=3600, s-maxage=86400",
+      "Cache-Control": "no-store, max-age=0, must-revalidate",
       "X-Content-Type-Options": "nosniff",
     },
   });

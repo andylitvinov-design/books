@@ -56,6 +56,14 @@ for (const course of ["tantra", "yggdrasil"]) {
   }
 }
 
+test("every Yggdrasil module includes a localized purpose, not only a list of names", async () => {
+  for (const [locale, label] of [["en", "Focus"], ["ru", "Тема"], ["es", "Enfoque"]]) {
+    const source = await readFile("public/academy/course-guides/yggdrasil." + locale + ".txt", "utf8");
+    assert.equal((source.match(new RegExp(label + ":", "g")) || []).length, 7);
+    assert.ok(source.includes("1.") && source.includes("6."));
+  }
+});
+
 test("Unknown course and language cannot produce a course PDF", () => {
   for (const [course,locale] of [["unknown","en"],["tantra","de"],["yggdrasil","../../etc"]]) {
     assert.throws(() => buildReikiCourseGuidePdf({course,locale,source:"not an allowed course"}), /Unsupported course or locale/);
