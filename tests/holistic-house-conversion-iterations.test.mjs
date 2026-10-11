@@ -20,7 +20,7 @@ test("iteration 2: first contact is a single-click preselected topic, with no pr
   const capture = readFileSync(new URL("../components/consultation-choice-capture.tsx", import.meta.url), "utf8");
   assert.match(form, /<ConsultationChoiceCapture locale=\{locale\} variant="free"/);
   assert.match(capture, /useState<Topic>\("personal"\)/);
-  assert.match(capture, /https:\/\/wa\.me\/14376066502/);
+  assert.match(capture, /whatsappEnquiryUrl\(\{/);
   assert.match(capture, /not a medical diagnosis/i);
   assert.match(capture, /Оно отправится только после вашего подтверждения/);
   assert.doesNotMatch(capture, /<input|<textarea|<form|new FormData|localStorage|sessionStorage/);
