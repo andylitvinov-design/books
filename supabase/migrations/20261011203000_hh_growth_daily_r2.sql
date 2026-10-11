@@ -1,10 +1,11 @@
 -- Holistic House My Course R2: private, account-owned daily self-help records.
 -- No public client, authenticated, advertiser or practitioner access.
 begin;
+alter table app_private.growth_courses add constraint growth_courses_id_owner unique(id,account_id);
 create table app_private.growth_cycles (
   id uuid primary key default gen_random_uuid(),
   account_id uuid not null references app.accounts(id) on delete cascade,
-  course_id uuid not null references app_private.growth_courses(id) on delete cascade,
+  course_id uuid not null,
   cycle_number integer not null default 1 check(cycle_number between 1 and 100),
   primary_domain text not null check(primary_domain in ('calm_regulation','inner_support','emotional_flexibility','attention_clarity','connection_boundaries','energy_agency')),
   content_version text not null default 'hh-growth-r2-v1',
@@ -20,7 +21,8 @@ create table app_private.growth_cycles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique(course_id,cycle_number),
-  unique(id,account_id)
+  unique(id,account_id),
+  foreign key (course_id,account_id) references app_private.growth_courses(id,account_id) on delete cascade
 );
 create unique index growth_one_current_cycle on app_private.growth_cycles(account_id)
   where status in ('active','paused');
