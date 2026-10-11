@@ -7,7 +7,7 @@ const form = readFileSync(new URL("../components/free-situation-review-form.tsx"
 const testimonials = readFileSync(new URL("../components/personal-testimonials.tsx", import.meta.url), "utf8");
 
 test("iteration 1: home hero leads directly to a free handwritten drawing assessment", () => {
-  assert.match(home, /heroPrimary: "Free drawing assessment + report"/);
+  assert.match(home, /heroPrimary: "Free drawing assessment \+ report"/);
   assert.match(home, /heroPrimary: "Бесплатная диагностика по рисунку"/);
   assert.match(home, /href={`\/\$\{locale\}\/services\/free-situation-review`}/);
   assert.match(home, /event="service_request_start"/);
