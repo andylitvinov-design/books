@@ -19,7 +19,7 @@ async function api(path, body) {
   return value
 }
 
-export function SavePrivateDocumentControl({ selector, locale = 'en', appAvailable = false }) {
+export function SavePrivateDocumentControl({ selector, documentId = null, locale = 'en', appAvailable = false }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const ru = locale === 'ru'
@@ -36,6 +36,7 @@ export function SavePrivateDocumentControl({ selector, locale = 'en', appAvailab
       const intent = await api('save-intents', {
         sourceKind: 'legacy_document',
         selector,
+        ...(documentId ? { sourceId: documentId } : {}),
         operationId: crypto.randomUUID(),
       })
       if (intent.signedIn) {
