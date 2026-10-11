@@ -109,3 +109,6 @@
  .problemActions{margin-top:6px}
 }
 @media(max-width:350px){.problemChip{font-size:.71rem!important;padding:7px}}
+
+/* Readable provenance beside every recommended questionnaire, without new badges. */
+.testInfo .methodology{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden;color:#796f65;font-size:.73rem;line-height:1.43;margin-top:2px}
