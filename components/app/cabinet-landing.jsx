@@ -888,13 +888,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                   {c.next}
                 </button>
               )}
-              {((mode === 'guided' && index === definition.questions.length - 1 && allAnswered && !definition.optionalContext?.length) ||
-                (mode === 'quick' && allAnswered)) && (
-                <TestFinishActions locale={locale} disabled={busy} temporary
-                  onReport={() => definition.optionalContext?.length ? saveContextAndFinish('report') : submitResult(run, 'report')}
-                  onNext={() => definition.optionalContext?.length ? saveContextAndFinish('next') : submitResult(run, 'next')} />
-              )}
             </div>
+            {((mode === 'guided' && index === definition.questions.length - 1 && allAnswered && !definition.optionalContext?.length) ||
+              (mode === 'quick' && allAnswered)) && (
+              <TestFinishActions locale={locale} disabled={busy} temporary
+                onReport={() => definition.optionalContext?.length ? saveContextAndFinish('report') : submitResult(run, 'report')}
+                onNext={() => definition.optionalContext?.length ? saveContextAndFinish('next') : submitResult(run, 'next')} />
+            )}
           </div>
         )}
 
@@ -909,10 +909,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <label>{c.note}<textarea value={context.note} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, note: e.target.value }))} /></label>
             <div className="cabinet-test-actions">
               <button type="button" disabled={busy} onClick={() => setPhase('questions')}>{c.back}</button>
-              <TestFinishActions locale={locale} disabled={busy} temporary
-                onReport={() => saveContextAndFinish('report')}
-                onNext={() => saveContextAndFinish('next')} />
             </div>
+            <TestFinishActions locale={locale} disabled={busy} temporary
+              onReport={() => saveContextAndFinish('report')}
+              onNext={() => saveContextAndFinish('next')} />
           </div>
         )}
 
