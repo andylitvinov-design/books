@@ -58,22 +58,25 @@ async function chooseVisibleTest(testPage,name){
 }
 async function enterTest(name='Current State Check',mode='Guided'){
  await page.goto(origin+'/en/app/tests');await ready()
- const openList=page.getByRole('button',{name:/^(Start testing|Choose tests)/})
- if(await openList.count()){
-  await expect(openList).toBeInViewport()
-  await openList.click()
+ if(await page.locator('[data-saved-test]').count()){
   await expect(page.locator('#my-tests-list')).toBeVisible()
+  assert.equal(await page.getByRole('button',{name:/^Start testing/}).count(),0)
   await page.screenshot({path:output+'/my-tests-choose-test.png',fullPage:false})
  }
  const candidate=()=>page.locator('article').filter({
    has:page.getByRole('heading',{name,exact:true}),
  }).filter({has:page.getByRole('button',{name:/^(Start test|Continue test|Retake test)/})}).first()
  if(!(await candidate().count())){
+  const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
+  if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
   await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
-  if(await page.getByText('Another selection is ready',{exact:true}).count())
-   await page.getByRole('button',{name:'Use new selection'}).click()
-  await expect(page.locator('#my-tests-list').getByRole('heading',{name:'Choose a test'})).toBeVisible()
+  if(await page.getByRole('button',{name:/Review test filters/}).count()){
+   await page.getByRole('button',{name:/Review test filters/}).click()
+   await expect(page.locator('[data-pending-selection]')).toBeVisible()
+   await page.locator('[data-pending-selection]').getByRole('button',{name:'Use new selection'}).click()
+  }
+  await expect(page.locator('#my-tests-list')).toBeVisible()
  }
  await expect(candidate()).toBeVisible({timeout:15000})
  await candidate().getByRole('button',{name:/^(Start test|Continue test|Retake test)/}).click()
@@ -101,7 +104,7 @@ async function openCompletedPlanResult(){
  // A completed battery returns to the overview; a retake may navigate to its result directly.
  await expect(page).toHaveURL(/\/(?:tests\?plan=|results\/)/,{timeout:15000})
  if(/\/results\//.test(page.url()))return
- await expect(page.locator('#my-tests-list').getByRole('heading',{name:'Choose a test'})).toBeVisible()
+ await expect(page.locator('#my-tests-list')).toBeVisible()
  const resultLink=page.getByRole('link',{name:'View result'}).first()
  await expect(resultLink).toHaveAttribute('href',/\/results\//)
  // WebKit can hydrate a newly completed test overview more slowly in CI.
@@ -178,9 +181,9 @@ try {
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
- await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:'Your testing starts here',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:'Choose your tests',exact:true})).toBeVisible();
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible();
- await expect(page.getByRole('button',{name:/^Choose tests/})).toBeInViewport();
+ await expect(page.getByRole('button',{name:/^Choose tests/}).first()).toBeInViewport();await expect(page.getByRole('button',{name:/Open test filters/})).toBeVisible();
  await expect(page.getByRole('button',{name:'Get recommendations'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
@@ -222,7 +225,7 @@ try {
   await expect(page.getByRole('link',{name:/Get personal recommendations from a specialist/})).toBeVisible();
   await page.getByRole('link',{name:/Retake completed tests/}).click();
   await expect(page).toHaveURL(/\/en\/app\/tests\?filter=completed/);
-  await expect(page.getByRole('heading',{name:'Choose a test',exact:true})).toBeVisible();
+  await expect(page.locator('#my-tests-list')).toBeVisible();
   await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-extra-tools] > summary').click();
   await expect(page.getByRole('heading',{name:'Add your baseline profile',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:/Results portfolio/})).toBeVisible()
  for(const width of[320,360,390,430,768,1280]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${output}/portrait-en-${width}.png`,fullPage:true})}
@@ -236,7 +239,7 @@ try {
  await page.screenshot({path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
  await page.getByRole('button',{name:'Save my result'}).click();await openCompletedPlanResult();data=(await api('bootstrap')).data;const trait=data.results.find(r=>r.definitionKey==='mini-ipip-20');assert.deepEqual(trait.dimensions.map(d=>d.value),[12,12,12,12,12]);assert.equal(data.snapshot.dimensions.length,10);passed('Mini-IPIP scoring is preserved alongside completed plan summaries')
- await enterTest('Weekly Psychic Health','Quick');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await savedClick(page.locator('.hh-scale button').first());await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();passed('Quick mode saves and auto-advances in the signed-in runner');await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.getByRole('button',{name:/^Start testing/}).click();await page.locator('article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})}).getByRole('button',{name:'Continue test'}).click();await expect(page.locator('.hh-runner-question')).toBeVisible();await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible();passed('Weekly Psychic Health is a resumable sequential plan step')
+ await enterTest('Weekly Psychic Health','Quick');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await savedClick(page.locator('.hh-scale button').first());await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();passed('Quick mode saves and auto-advances in the signed-in runner');await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await expect(page.locator('#my-tests-list')).toBeVisible();await page.locator('article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})}).getByRole('button',{name:'Continue test'}).click();await expect(page.locator('.hh-runner-question')).toBeVisible();await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible();passed('Weekly Psychic Health is a resumable sequential plan step')
  await page.goto(origin+'/ru/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Мой профиль',exact:true})).toBeVisible();await page.screenshot({path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Request a consultation',exact:true}).first().click();await page.getByLabel('How should Andy contact you?').fill('synthetic@example.invalid');await page.getByLabel('Your message (optional)').fill('A synthetic request for CI only.')
  await page.screenshot({path:output+'/consultation-request.png',fullPage:true})
@@ -262,7 +265,7 @@ try {
  await expect(selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true})).toHaveAttribute('aria-pressed','true')
  await selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
- await expect(selectionPage.locator('#my-tests-list').getByRole('heading',{name:'Choose a test'})).toBeVisible()
+ await expect(selectionPage.locator('#my-tests-list')).toBeVisible()
  await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
  const selectedPlan=(await api('bootstrap',null,other)).data.activeTestPlan
  assert.equal(selectedPlan.definitionIds.length,1)
@@ -368,12 +371,14 @@ try {
  await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
  // An existing in-progress battery must not be discarded silently.
  // Choose the newly requested set through the explicit replacement confirmation.
- await expect(page.getByText('Another selection is ready',{exact:true})).toBeVisible()
- await page.getByRole('button',{name:'Use new selection'}).click()
+ await expect(page.getByRole('button',{name:'Review test filters'})).toBeVisible()
+ await page.getByRole('button',{name:'Review test filters'}).click()
+ await expect(page.locator('[data-pending-selection]')).toBeVisible()
+ await page.locator('[data-pending-selection]').getByRole('button',{name:'Use new selection'}).click()
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  const reopenedPlan=(await api('bootstrap')).data.activeTestPlan
  assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'after replacement URL must identify saved plan')
- await expect(page.locator('#my-tests-list').getByRole('heading',{name:'Choose a test'})).toBeVisible()
+ await expect(page.locator('#my-tests-list')).toBeVisible()
  await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
  passed('public test selection starts Google authentication and opens account test battery')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
