@@ -112,9 +112,7 @@ export function PublicConsultationCta({ locale, id }: { locale: "en" | "ru" | "e
     return <ConsultationChoiceCapture locale={locale} variant={mode === "reading" ? "reading" : "personal"} id={id} />;
   }
   const text = copy[locale][mode];
-  const whatsappUrl = mode === "training"
-    ? trainingEnquiryUrl(locale, pathname)
-    : "https://wa.me/14376066502?text=" + encodeURIComponent(text.message);
+  const whatsappUrl = trainingEnquiryUrl(locale, pathname);
   const further = mode === "training" ? "/" + locale + "/academy" : "/" + locale + "/services/free-situation-review";
   return (
     <aside className="public-consultation-cta" id={id} aria-label={text.title} data-consultation-cta data-conversion-kind={mode} lang={locale}>
