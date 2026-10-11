@@ -1,0 +1,27 @@
+.guide{min-width:0;margin:7px 0 0;color:#62574b;font-size:12px}
+.summaryLine{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 8px;line-height:1.5}
+.summaryLine strong{color:#41695e;font-weight:750;font-size:11px}
+.summaryLine span{color:#6e655a}
+.details{margin-top:6px;padding:0}
+.details summary{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:#286858;font-size:12px;font-weight:700;text-decoration:underline;text-underline-offset:3px;min-height:32px}
+.details summary:focus-visible{outline:3px solid #28776a;outline-offset:3px;border-radius:4px}
+.content{margin:8px 0 0;padding:13px;border:1px solid #e3d8c9;border-radius:13px;background:#fcfaf6}
+.purpose{margin:0 0 8px;font-size:12px;line-height:1.5}
+.context{display:flex;flex-wrap:wrap;gap:6px 14px;color:#75675b;font-size:11px;margin-bottom:12px}
+.rows{display:grid;gap:9px}
+.scaleRow{border:1px solid #ece3d9;background:#fffefa;border-radius:12px;padding:11px 13px;min-width:0}
+.scaleRow header{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 10px}
+.scaleRow header strong{font-size:13px;color:#3e3b34}
+.scaleRow header span{font-size:11px;color:#526f63}
+.scaleRow>small{display:block;color:#807367;margin-top:3px;font-size:10px}
+.scaleRow p{font-size:12px;line-height:1.5;color:#5b5147;margin:7px 0}
+.scaleRow b{font-weight:700;color:#4b584f}
+.choose{display:inline-flex;align-items:center;min-height:35px;padding:7px 11px;margin-top:5px;border:1px solid #c9d8cf;border-radius:9px;background:#f4f9f4;color:#255c4e;cursor:pointer;font-size:11px;font-weight:700}
+.choose[aria-pressed=true]{background:#e0eee5;border-color:#609888}
+.choose:focus-visible,.source:focus-visible{outline:3px solid #28776a;outline-offset:2px}
+.bands{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 3px}
+.bands strong{flex-basis:100%;color:#655448;font-size:10px}
+.bands span{font-size:10px;color:#5b625e;background:#f0efe9;border-radius:7px;padding:4px 7px}
+.source{display:inline-block;color:#2d685b;font-size:11px;margin:14px 0 6px;text-underline-offset:2px}
+.disclaimer{display:block;font-size:11px;line-height:1.55;color:#857364;margin:10px 0 0}
+@media(max-width:600px){.content{padding:10px}.scaleRow{padding:10px}.details summary{min-height:38px}}
