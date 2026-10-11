@@ -348,7 +348,7 @@ async function handle(request, { params }) {
       const materials = []
       if (store) for (const clientId of clientIds) {
         const client = await store.findClientById(clientId)
-        if (client?.status === 'active') for (const material of client.sharedMaterials ?? []) {
+        if (client?.status === 'active' && !client.cabinetAccess?.revoked) for (const material of client.sharedMaterials ?? []) {
           materials.push({ id: material.id, title: material.title, url: material.url })
         }
       }
