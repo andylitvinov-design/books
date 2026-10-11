@@ -17,7 +17,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./kundalini-reiki-course.module.css";
 
 const whatsapp = "https://wa.me/14376066502?text=";
-const kundaliniSourcePhoto = "https://psimaster.net/sites/default/files/kundalini%20reiki_1.jpg";
+// Original diagrams are stored in /public, extracted without replacing the user PDF.
 
 function enquiryUrl(locale: PublicLocale, kind: "training" | "initiation") {
   const page = "https://holistichouse.vercel.app/" + locale + "/academy/reiki/kundalini-reiki";
@@ -69,16 +69,23 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
               </a>
             </div>
           </div>
-          <div className={styles.heroPhoto}>
-            <Image
-              src={kundaliniSourcePhoto}
-              alt="Kundalini Reiki · PsiMaster"
-              fill
-              priority
-              sizes="(max-width: 760px) 100vw, 42vw"
-              className={styles.coverImage}
-            />
-            <span className={styles.photoCaption}>PsiMaster · Kundalini Reiki</span>
+          <div className={styles.heroPhoto} aria-label="Kundalini Reiki attunement diagrams from Paul Crick's original manual">
+            <div className={styles.heroDiagramSet}>
+              {kundaliniLessons.map((level) => (
+                <div className={styles.heroDiagram} key={level.number}>
+                  <Image
+                    src={level.image}
+                    alt={level.title[locale] + " · original Paul Crick manual"}
+                    fill
+                    priority={level.number === 2}
+                    sizes="(max-width: 760px) 31vw, 14vw"
+                    className={styles.heroDiagramImage}
+                  />
+                  <span>{String(level.number).padStart(2, "0")}</span>
+                </div>
+              ))}
+            </div>
+            <span className={styles.photoCaption}>Paul Crick · Kundalini Reiki Manual</span>
           </div>
         </section>
 
