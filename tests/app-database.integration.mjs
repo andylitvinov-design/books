@@ -1199,7 +1199,7 @@ test('owner can remove saved selections atomically without erasing answers, resu
   assert.equal(inProgressPlan.status,'active')
   assert.equal(inProgressPlan.completedRunIds.length,1)
   await assert.rejects(
-    ()=>repo.removeTestPlanItem(b,plan.id,{definitionId:weekly.id,expectedRevision:inProgressPlan.revision}),
+    ()=>repo.removeTestPlanItem(a,plan.id,{definitionId:weekly.id,expectedRevision:inProgressPlan.revision}),
     error=>error.code==='NOT_FOUND',
   )
   await assert.rejects(
