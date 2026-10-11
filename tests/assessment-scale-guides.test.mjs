@@ -100,23 +100,32 @@ test('scale matching filters by actual scored measurements, not catalog illustra
   assert.ok(chosenFocus[0].measurementAxes.includes('anxiety'), 'Direct scale takes priority over unrelated topics')
 })
 
-test('scale-first public UI remains opt-in, bilingual and retains topic/problem controls',()=>{
+test('simple picker uses topic cards as measured-scale intent, without a duplicate scale rail',()=>{
   const simple=read('components/app/simple-test-picker.jsx')
   const full=read('components/app/test-explorer.jsx')
   const ui=read('components/app/test-scale-guide.jsx')
   const intent=read('lib/app/test-selection-intent.js')
-  assert.ok(simple.indexOf('data-scale-first-selection')<simple.indexOf('hh-simple-topic-title'))
-  assert.match(simple,/axes\.includes\(key\)/)
-  assert.match(simple,/onToggleAxis\?\.\(key\)/)
-  assert.match(full,/onToggleAxis=\{\(key\)/)
-  assert.match(full,/data-scale-first-selection/)
-  assert.match(full,/measurementAxes\?\.includes\(key\)/)
-  assert.match(ui,/data-scale-guide=\{guide\.key\}/)
-  assert.match(ui,/row\.bands\.rows/)
-  assert.match(simple,/data-topic-problem-filter/)
-  assert.match(intent,/axes: TEST_EXPLORER_AXES/)
   const css=read('components/app/simple-test-picker.module.css')
-  assert.match(css,/\.scalesRail/)
+  assert.doesNotMatch(simple,/data-scale-first-selection|scalesSection|onToggleAxis/)
+  assert.doesNotMatch(css,/\\.scalesSection|\\.scalesRail/)
+  assert.match(simple,/hh-simple-topic-title/)
+  assert.match(simple,/onToggleFocus\\(key\\)/)
+  assert.match(simple,/data-topic-problem-filter/)
+  assert.match(simple,/TestScaleGuide guide=\\{entry\\.scaleGuide\\} locale=\\{locale\\}/)
+  assert.match(full,/simpleMode \\? \\[\\] : \\(initialPreferences\\?\\.axes \\?\\? \\[\\]\\)/)
+  assert.match(full,/setAxes\\(\\[\\]\\); setBrowseFull\\(false\\)/)
+  // The full database keeps its explicit measured-scale refinement controls.
+  assert.match(full,/data-scale-first-selection/)
+  assert.match(full,/measurementAxes\\?\\.includes\\(key\\)/)
+  assert.match(ui,/data-scale-guide=\\{guide\\.key\\}/)
+  assert.match(ui,/row\\.bands\\.rows/)
+  assert.match(intent,/axes: TEST_EXPLORER_AXES/)
+  const ready=buildExplorerEntries({locale:'en',audience:'guest'}).filter(entry=>entry.selectable)
+  for(const [topic,scale] of [['stress','stress'],['anxiety','anxiety'],['mood','mood'],['sleep','sleep'],['body','energy'],['relationships','relationships']]) {
+    const ranked=rankPublicTestMatches(ready,{focus:[topic],axes:[],depth:'balanced'})
+    assert.ok(ranked.slice(0,5).some(entry=>entry.measurementAxes.includes(scale)),
+      'Topic '+topic+' must prioritize tests that actually score '+scale)
+  }
 })
 
 test('unknown/restricted catalog items never gain runnable test guides',()=>{
