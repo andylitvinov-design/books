@@ -101,12 +101,12 @@ test("approved Andy portrait precedes a compact blue three-choice Reiki capture"
   assert.ok(page.indexOf('<TantraReikiTeacher locale=') < page.indexOf('<TantraReikiLeadForms locale='));
   assert.match(teacher, /\/images\/holistic-house\/andy-about\.png/);
   assert.match(leads, /<ReikiChoiceCapture locale=\{locale\} course="tantra"/);
-  assert.match(capture, /Book a free express initiation|Free express initiation/);
-  assert.match(capture, /Tantra Reiki Master Course/);
+  assert.match(capture, /Book a free express initiation|Request free express Level 1 initiation/);
+  assert.match(capture, /Request full personal Level 1 initiation/);
   assert.match(capture, /data-reiki-choice-action=\{selected\}/);
   assert.match(capture, /aria-pressed=\{selected === choice\}/);
   assert.match(capture, /wa\.me\/14376066502/);
   assert.doesNotMatch(leads, /<input|<select|<textarea|<form/);
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
-  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
 });

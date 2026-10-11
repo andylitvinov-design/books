@@ -22,15 +22,18 @@ test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () 
     readFile("components/reiki-choice-capture.module.css", "utf8"),
   ]);
   assert.match(wrapper, /<ReikiChoiceCapture locale=\{locale\} course="yggdrasil"/);
-  assert.match(capture, /"guide", "free", "master"/);
+  assert.match(capture, /"guide", "express", "personal"/);
   assert.match(capture, /data-reiki-choice-capture=\{course\}/);
   assert.match(capture, /aria-pressed=\{selected === choice\}/);
   assert.match(capture, /id="reiki-free-consultation"/);
   assert.match(capture, /course === "tantra" \? "tantra-next-steps" : "reiki-free-level-one"/);
-  assert.match(capture, /Free express initiation/);
-  assert.match(capture, /Бесплатная первая ступень/);
-  assert.match(capture, /Скачать подробное описание/);
+  assert.match(capture, /Request free express Level 1 initiation/);
+  assert.match(capture, /Бесплатная экспресс-инициация 1-й ступени/);
+  assert.match(capture, /Скачать учебные материалы и цены/);
   assert.match(capture, /wa\.me\/14376066502/);
+  assert.match(capture, /WhatsAppMark/);
+  assert.match(capture, /Selected option \/ Выбрано:/);
+  assert.match(capture, /reiki-guide/);
   assert.match(capture, /t\.me\/AndyTherapist/);
   assert.match(capture, /download=\{download \? true : undefined\}/);
   for (const tag of ["<form", "<input", "<textarea", "<select", "new FormData"]) {
@@ -82,9 +85,9 @@ test("Tantra Reiki ends with the shared selector, without a long Master applicat
   assert.match(page, /isVerbatimTantraArchive \? <TantraReikiLeadForms locale=\{locale\}/);
   assert.match(wrapper, /<ReikiChoiceCapture locale=\{locale\} course="tantra"/);
   assert.match(chooser, /"tantra-master-course"/);
-  assert.match(chooser, /Request free express initiation/);
-  assert.match(chooser, /Tantra Reiki Master Course/);
-  assert.match(chooser, /WhatsApp opens a prepared request/);
+  assert.match(chooser, /Request free express Level 1 initiation/);
+  assert.match(chooser, /Request full personal Level 1 initiation/);
+  assert.match(chooser, /WhatsApp opens with your exact selection/);
   assert.doesNotMatch(wrapper, /<form|<input|<select|<textarea/);
   assert.match(page, /!isCanonicalYggdrasil && !isVerbatimTantraArchive \? <PublicConsultationCta/);
 });
@@ -101,7 +104,7 @@ test("mobile testimonial cards and two-stage forms have responsive spacing", asy
 
 test("all six download links serve actual localized detailed course guides", async () => {
   const chooser = await readFile("components/reiki-choice-capture.tsx", "utf8");
-  assert.match(chooser, /"\/academy\/course-guides\/" \+ course \+ "\." \+ locale \+ "\.txt"/);
+  assert.match(chooser, /reiki-guide/);
   for (const course of ["tantra", "yggdrasil"]) {
     for (const locale of ["en", "ru", "es"]) {
       const text = await readFile("public/academy/course-guides/" + course + "." + locale + ".txt", "utf8");

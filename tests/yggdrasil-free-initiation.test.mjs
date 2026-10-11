@@ -69,7 +69,7 @@ test("the new article is discoverable from the programme, basic course, book, so
     ["free capture", capture],
   ]) assert.ok(value.includes("/free-initiation"), name);
   assert.doesNotMatch(hub, /<YggdrasilSourceStudyGuide/);
-  assert.match(capture, /selected === "free"/);
+  assert.match(capture, /selected === "express"/);
   assert.match(capture, /data-reiki-choice-action=\{selected\}/);
   assert.match(sidebar, /key: "free-initiation"/);
   assert.match(layout, /@media\(max-width:720px\)/);
