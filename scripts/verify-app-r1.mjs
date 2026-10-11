@@ -193,8 +193,16 @@ try {
  await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-initial.png',fullPage:true});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
  await page.getByRole('button',{name:'Happy',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect.poll(async()=>((await api('bootstrap')).data.moodCheckins||[]).length).toBe(1);await page.getByRole('button',{name:'Not now',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);passed('signed-in mood tap persists even when the user chooses Not now')
  const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
- await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:/^Clients/})).toBeVisible()
- const practitionerOpen=await api('practitioner/open',{destination:'clients'});assert.equal(practitionerOpen.status,200);assert.equal(practitionerOpen.data.redirectUrl,'/admin/clients');const practitionerPage=await context.newPage();await practitionerPage.goto(origin+practitionerOpen.data.redirectUrl);await expect(practitionerPage.getByRole('heading',{name:'Clients',exact:true})).toBeVisible();await practitionerPage.close();passed('trusted practitioner opens existing client database from My Profile without PIN')
+ // A public Master account must not be allowed to open the owner's global client database.
+ await page.goto(origin+'/en/app/portrait');await ready();
+ await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Master',exact:true})).toBeVisible();
+ await page.getByRole('link',{name:'Master',exact:true}).click();
+ await expect(page).toHaveURL(/\/en\/app\/practice$/);
+ await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toHaveCount(0);
+ const practitionerOpen=await api('practitioner/open',{destination:'clients'});
+ assert.equal(practitionerOpen.status,404);assert.equal(practitionerOpen.data.error,'NOT_FOUND');
+ passed('public Master can open own practice but cannot access owner client database')
  await page.goto(origin+'/en/app');await ready()
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
