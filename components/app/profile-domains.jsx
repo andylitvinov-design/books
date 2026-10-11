@@ -204,7 +204,7 @@ export function ProfileDomains({
 
   return <section className="hh-profile-domains" data-profile-domains>
     <header className="hh-domain-hero">
-      <div><p className="hh-domain-eyebrow">{t.eyebrow}</p><h1>{t.title}<span> / {t.reports}</span></h1><p>{t.intro}</p></div>
+      <div><p className="hh-domain-eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p className="hh-domain-hero-subtitle">{t.reports}</p><p>{t.intro}</p></div>
       <span className="hh-domain-hero-symbol" aria-hidden="true"><Activity size={27} /></span>
     </header>
     <div className="hh-domain-tabs" role="tablist" aria-label={t.title}>

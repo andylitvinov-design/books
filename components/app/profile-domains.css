@@ -4,7 +4,7 @@
 .hh-domain-hero { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:clamp(21px,3.6vw,36px); background:linear-gradient(125deg,#f7ede1 0%,#faf5ed 68%,#e8efe4 100%); border:1px solid #e4d6c7; border-radius:24px; margin-bottom:16px; }
 .hh-domain-eyebrow { color:#926449; text-transform:uppercase; letter-spacing:.13em; font:700 10px/1.5 system-ui,sans-serif; margin:0 0 8px; }
 .hh-domain-hero h1 { font:400 clamp(32px,4.1vw,50px)/1.12 Georgia,serif; letter-spacing:-.035em; margin:0 0 10px; color:#382b23; }
-.hh-domain-hero h1 span { display:block; font:500 clamp(14px,1.7vw,19px)/1.5 system-ui,sans-serif; letter-spacing:0; color:#926e54; }
+.hh-domain-hero-subtitle { font:500 clamp(14px,1.7vw,19px)/1.5 system-ui,sans-serif !important; letter-spacing:0; color:#926e54 !important; margin:0 0 10px !important; }
 .hh-domain-hero p:last-child { color:#6f5e51; font:400 13px/1.65 system-ui,sans-serif; max-width:680px; margin:0; }
 .hh-domain-hero-symbol { display:grid; place-items:center; background:#e7d6c3; border:1px solid #dcc6af; color:#815840; width:58px; height:58px; flex:0 0 58px; border-radius:50%; }
 .hh-domain-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
