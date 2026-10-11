@@ -14,6 +14,7 @@ import { YggdrasilSuperSkillsSourcesPage } from "@/components/yggdrasil-superski
 import { academyCopy, academyDirections, academyDisplayTitle, academyPublicBlocks, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl, type AcademyDirectionId, type AcademyView } from "@/data/academy/catalog";
 import { yggdrasilModuleBySlug } from "@/data/academy/yggdrasil-module-map";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { seoMetaForAcademyRoute } from "@/data/academy/seo-overrides";
 import type { PublicLocale } from "@/lib/public-locales";
 
 type Props = { params: Promise<{ locale: string; slug?: string[] }>; searchParams: Promise<{ view?: string | string[] }> };
@@ -91,7 +92,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           ? "Estructura actual completa de Reiki Yggdrasil: 7 módulos, 37 etapas, 177 sintonizaciones y páginas separadas."
           : "Complete current Reiki Yggdrasil curriculum: 7 modules, 37 steps, 177 attunements, separate landing pages and the video archive."
       : academyCopy[locale].lead;
-  return { metadataBase: metadataBaseFor(), title: title + " — Holistic House", description, alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix } } };
+  const seoOverride = seoMetaForAcademyRoute(locale, routeKey(slug));
+  return { metadataBase: metadataBaseFor(), title: (seoOverride?.title ?? title) + " — Holistic House", description: seoOverride?.description ?? description, alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix } } };
 }
 
 export default async function AcademyPage({ params, searchParams }: Props) {
