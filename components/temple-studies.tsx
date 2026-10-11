@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, BookOpen, Compass, ScrollText } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Compass, ScrollText } from "lucide-react";
 
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TempleStudiesSideNavigation } from "@/components/reiki-course-side-nav";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { TempleInitiationChooser } from "@/components/temple-initiation-chooser";
 import {
   academyDisplayTitle,
   academyPublicBlocks,
@@ -22,48 +23,61 @@ const copy: Record<PublicLocale, {
   eyebrow: string; title: string; lead: string; intro: string; cta: string; stages: string;
   lesson: string; exercise: string; outcome: string; original: string; next: string;
   missing: string; contact: string; contactNote: string; disclaimer: string; archive: string;
+  more: string; learningTitle: string; learningIntro: string; telegram: string;
 }> = {
   en: {
-    eyebrow: "Holistic House Academy · One continuous program",
+    eyebrow: "Holistic House Academy · Personal mysteries",
     title: "Temple Studies",
-    lead: "From ancient mysteries to a meaningful personal practice.",
-    intro: "One connected seven-stage journey through Greek and Egyptian mysteries, cultural traditions, runes, elements, Tarot and archetypal practice. Each step builds on the previous one: first understand, then experience, finally apply.",
-    cta: "Begin with Stage 1", stages: "7 connected stages",
+    lead: "Choose a tradition, a deity’s channel and your initiation.",
+    intro: "Explore a god or goddess through a guided initiation meditation, a personal Mystery Constellation or a group Mystery Constellation. Start with your chosen experience; study the background at your own pace.",
+    cta: "Choose your mystery", stages: "7 optional learning chapters",
     lesson: "In this stage", exercise: "Your practice", outcome: "What you take forward",
     original: "Original course texts and deeper reading", next: "Continue to the next stage",
     missing: "Historical titles without substantial original text are not presented as separate courses. Available complete source pages and videos are preserved below each relevant stage.",
-    contact: "Discuss the Temple Studies path",
-    contactNote: "Ask which stages and guided formats are currently available. Dates, format and fees are confirmed individually.",
+    contact: "Not sure which mystery to choose?",
+    contactNote: "Select a tradition and a deity above, or ask Andrey which channel and format may best suit your question.",
     disclaimer: "This is a newly curated sequence based on historical Academy material, not a claim that the original school taught this exact seven-stage syllabus. Symbolic practices do not promise medical, supernatural or guaranteed personal results.",
     archive: "Historical Academy archive",
+    more: "Explore lessons, practice & source materials",
+    learningTitle: "Explore the teachings",
+    learningIntro: "Seven short chapter previews. Open only the topics that interest you; the detailed lessons, practice, original texts and videos are kept inside.",
+    telegram: "Or ask Andrey on Telegram",
   },
   ru: {
-    eyebrow: "Holistic House · единая учебная программа",
+    eyebrow: "Holistic House · храмовые мистерии и посвящения",
     title: "Temple Studies — Храмовые мистерии",
-    lead: "От древних мистерий к осмысленной личной практике.",
-    intro: "Единый путь из семи последовательных этапов: греческие и египетские мистерии, традиции мира, руны, стихии, Таро и архетипическая практика. Каждый этап опирается на предыдущий: сначала понять, затем пережить и наконец применить.",
-    cta: "Начать с первого этапа", stages: "7 последовательных этапов",
+    lead: "Выберите традицию, канал божества и формат посвящения.",
+    intro: "Войдите в мистерию через медитацию-инициацию, личную или групповую мистерию-расстановку. Начните с интересующего вас канала; теорию можно изучать отдельно.",
+    cta: "Выбрать свою мистерию", stages: "7 дополнительных учебных глав",
     lesson: "Содержание этапа", exercise: "Практическая часть", outcome: "Результат этапа",
     original: "Полные исходные курсы и дополнительные материалы", next: "Следующий этап",
     missing: "Исторические названия без полноценного исходного текста не превращены в пустые страницы. Сохранившиеся материалы и видео доступны внутри соответствующих этапов.",
-    contact: "Узнать о программе Temple Studies",
-    contactNote: "Уточните, какие этапы и форматы обучения сейчас доступны. Даты, стоимость и условия обсуждаются лично.",
+    contact: "Не знаете, какую мистерию выбрать?",
+    contactNote: "Выберите традицию и божество выше или попросите Андрея помочь подобрать канал и формат под ваш запрос.",
     disclaimer: "Это новая редакционная последовательность, составленная из исторических материалов Академии, а не утверждение, что первоначальная школа преподавала именно эти семь этапов. Символические практики не гарантируют медицинских или сверхъестественных результатов.",
     archive: "Исторический архив Академии",
+    more: "Раскрыть уроки, практику и материалы",
+    learningTitle: "Программа и материалы",
+    learningIntro: "Семь коротких обзоров. Подробные уроки, упражнения, исходные тексты и видео раскрываются внутри выбранной главы.",
+    telegram: "Или написать Андрею в Telegram",
   },
   es: {
-    eyebrow: "Holistic House Academia · un solo programa",
+    eyebrow: "Holistic House · misterios e iniciaciones",
     title: "Temple Studies — Misterios del Templo",
-    lead: "De los misterios antiguos a una práctica personal consciente.",
-    intro: "Un recorrido de siete etapas conectadas: misterios griegos y egipcios, tradiciones del mundo, runas, elementos, Tarot y práctica arquetípica. Primero comprender, después experimentar y finalmente aplicar.",
-    cta: "Empezar por la etapa 1", stages: "7 etapas conectadas",
+    lead: "Elige una tradición, el canal de una deidad y tu iniciación.",
+    intro: "Explora una deidad mediante meditación–iniciación, una constelación personal o un misterio grupal. Puedes comenzar con tu experiencia y estudiar la teoría después.",
+    cta: "Elegir mi misterio", stages: "7 capítulos opcionales",
     lesson: "Contenido de esta etapa", exercise: "Práctica personal", outcome: "Lo que aprendes",
     original: "Cursos originales y lecturas complementarias", next: "Siguiente etapa",
     missing: "Los títulos históricos sin texto sustancial no se presentan como cursos vacíos. Los materiales originales y videos conservados siguen disponibles en cada etapa.",
-    contact: "Consultar el programa Temple Studies",
-    contactNote: "Pregunta por las etapas y formatos disponibles. Las fechas y tarifas se confirman personalmente.",
+    contact: "¿No sabes qué misterio elegir?",
+    contactNote: "Elige una tradición y una deidad arriba, o pregunta a Andrey qué canal y formato pueden acompañar tu pregunta.",
     disclaimer: "Es una nueva secuencia editorial basada en archivos de la Academia, no una afirmación de que el programa histórico tuviera exactamente estas siete etapas. Las prácticas simbólicas no garantizan resultados médicos ni sobrenaturales.",
     archive: "Archivo histórico de la Academia",
+    more: "Abrir lecciones, práctica y materiales",
+    learningTitle: "Explora las enseñanzas",
+    learningIntro: "Siete resúmenes breves. Abre los temas que te interesen para leer las lecciones, ejercicios, textos y vídeos originales.",
+    telegram: "O escribir a Andrey por Telegram",
   },
 };
 
@@ -116,7 +130,7 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                 <p className="temple-lead">{t.lead}</p>
                 <p>{t.intro}</p>
                 <div className="temple-hero-actions">
-                  <a className="temple-primary-cta" href="#temple-foundations">
+                  <a className="temple-primary-cta" href="#temple-choose">
                     {t.cta} <ArrowDown size={17} aria-hidden="true" />
                   </a>
                   <span>{t.stages}</span>
@@ -127,14 +141,18 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
               </div>
             </header>
 
+            <TempleInitiationChooser locale={locale} />
+
             {videoIndex.length > 0 ? (
-              <section className="temple-video-index" aria-labelledby="temple-video-index-heading">
-                <div className="temple-video-index-intro">
-                  <p className="homeopathy-kicker">Оригинальные записи • Бесплатная видеотека</p>
-                  <h2 id="temple-video-index-heading">Видеокурсы и медитации</h2>
-                  <p>Все сохранившиеся открытые видеоуроки PsiMaster собраны по темам внутри единой программы. Выберите направление: ссылка ведёт прямо к нужному этапу.</p>
-                  <p className="temple-video-index-total">{totalVideoLessons} уникальная видеозапись · {totalVideoCollections} авторских подборок · {videoIndex.length} тематических этапов</p>
-                </div>
+              <details className="temple-video-index" aria-labelledby="temple-video-index-heading">
+                <summary className="temple-video-index-summary">
+                  <span className="temple-video-index-summary-text">
+                    <span className="homeopathy-kicker">Оригинальные записи · Бесплатно</span>
+                    <strong id="temple-video-index-heading">Видеокурсы и медитации</strong>
+                    <small>{totalVideoLessons} уникальная видеозапись · {totalVideoCollections} подборок · нажмите, чтобы раскрыть</small>
+                  </span>
+                  <ChevronDown size={22} aria-hidden="true" />
+                </summary>
                 <nav className="temple-video-index-links" aria-label="Перейти к видеокурсам">
                   {videoIndex.map((stage) => (
                     <a href={"#temple-" + stage.id} key={stage.id}>
@@ -143,8 +161,14 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                     </a>
                   ))}
                 </nav>
-              </section>
+              </details>
             ) : null}
+
+            <div className="temple-learning-intro">
+              <p className="homeopathy-kicker">{t.stages}</p>
+              <h2>{t.learningTitle}</h2>
+              <p>{t.learningIntro}</p>
+            </div>
 
             <div className="temple-stage-flow" aria-label={t.stages}>
               {courseRecords.map(({ stage, sources }, index) => {
@@ -167,9 +191,12 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                         <p className="homeopathy-kicker">Temple Studies · {String(index + 1).padStart(2, "0")}</p>
                         <h2 id={"temple-title-" + stage.id}>{data.title}</h2>
                         <p className="temple-stage-subtitle">{data.subtitle}</p>
-                        <p className="temple-stage-intro">{data.introduction}</p>
                       </div>
-                      <h3 className="temple-small-heading">{t.lesson}</h3>
+                      <details className="temple-stage-details">
+                        <summary>{t.more}<ChevronDown size={19} aria-hidden="true" /></summary>
+                        <div className="temple-stage-expanded">
+                          <p className="temple-stage-intro">{data.introduction}</p>
+                          <h3 className="temple-small-heading">{t.lesson}</h3>
                       <ol className="temple-lessons">
                         {data.lessons.map((lesson, lessonIndex) => (
                           <li key={lesson.title}>
@@ -241,6 +268,8 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                           <ArrowRight size={20} aria-hidden="true" />
                         </a>
                       ) : null}
+                        </div>
+                      </details>
                     </div>
                   </section>
                 );
@@ -251,9 +280,10 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
               <Compass size={30} aria-hidden="true" />
               <h2>{t.contact}</h2>
               <p>{t.contactNote}</p>
-              <a className="temple-primary-cta" href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer">
-                {t.contact} <ArrowRight size={18} aria-hidden="true" />
+              <a className="temple-primary-cta" href="#temple-choose">
+                {t.cta} <ArrowRight size={18} aria-hidden="true" />
               </a>
+              <p className="temple-telegram-link"><a href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer">{t.telegram} →</a></p>
               <div className="temple-archive-footer">
                 <ScrollText size={16} aria-hidden="true" />
                 <Link href={"/" + locale + "/academy/archive"}>{t.archive}</Link>
