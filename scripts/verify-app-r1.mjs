@@ -30,8 +30,26 @@ async function api(path,body,ctx=context){
 }
 async function ready(){
  const mobile=await page.evaluate(()=>window.innerWidth<=760)
- await expect(page.locator(mobile?'.hh-mobile-app-nav':'.hh-nav')).toBeVisible({timeout:60000})
- await page.waitForLoadState('networkidle')
+ const nav=page.locator(mobile?'.hh-mobile-app-nav':'.hh-nav')
+ for(let attempt=0;attempt<3;attempt++){
+  try {
+   await expect(nav).toBeVisible({timeout:attempt===0?30000:20000})
+   await page.waitForLoadState('networkidle')
+   return
+  } catch(error) {
+   if(attempt===2)throw error
+   // The isolated actor can hit its genuine sliding quota during hundreds of
+   // synthetic test answers. Only retry a signed-in app error, never weaken the
+   // production limit or accidentally sign in another account.
+   const retryShown=await page.getByRole('button',{name:/Try again|Повторить|Retry/}).isVisible().catch(()=>false)
+   if(!retryShown)throw error
+   const probe=await api('bootstrap').catch(()=>({status:0}))
+   if(probe.status!==429&&probe.status!==200)throw error
+   console.log('SYNTHETIC_APP_READ_COOLDOWN',attempt+1,probe.status)
+   if(probe.status===429)await page.waitForTimeout(25000)
+   await page.reload({waitUntil:'domcontentloaded'})
+  }
+ }
 }
 async function chooseVisibleTest(testPage,name){
  const customizer=testPage.getByRole('button',{name:/Choose my own tests and filters/})
