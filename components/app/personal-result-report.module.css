@@ -34,3 +34,10 @@
 .source{display:inline-block;margin-top:8px;font-size:11px;color:#2f6254;text-decoration:underline;text-underline-offset:3px}
 .source:focus-visible{outline:2px solid #2f6254;outline-offset:3px}
 .ruleVersion{display:block;margin-top:7px;color:#77756c}
+
+/* A named scale is observable; skill building is optional and never a clinical target. */
+.observation{margin:9px 0 14px;padding:9px 12px;border-left:2px solid #9bbca9;background:#f7faf4;border-radius:0 9px 9px 0}
+.observation p{margin:4px 0;color:#536459;font-size:12px;line-height:1.5}
+.observation strong{color:#376450;font-weight:750}
+.myCourseLink{display:inline-flex;align-items:center;min-height:37px;margin:10px 0;color:#2f735e;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:750}
+.myCourseLink:focus-visible{outline:3px solid #377662;outline-offset:3px}
