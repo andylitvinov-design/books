@@ -98,3 +98,12 @@
 .retest small{font-size:12px;line-height:1.5;color:#697765}
 .retest a{display:inline-flex;align-items:center;gap:3px;color:#316953;font-size:13px;font-weight:700;flex:none}
 @media(max-width:620px){.retest{align-items:flex-start;flex-direction:column}}
+
+.reportActions{display:flex;justify-content:flex-end;gap:9px;margin-top:12px}
+.reportActions button{font-size:13px;font-weight:700;border-color:#b7cdbb;background:#f1f6ed;color:#355e4f}
+@media print {
+  .reportActions,.actions,.prefs,.footer,.cardHeader,.nextButton {display:none!important}
+  .shell {background:#fff!important;border:0!important;box-shadow:none!important;padding:0!important}
+  .graph,.review,.hero{break-inside:avoid;box-shadow:none!important}
+  .bar{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
