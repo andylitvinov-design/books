@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardCheck, GraduationCap, Sparkles } from "lucide-react";
+import { ClipboardCheck, GraduationCap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

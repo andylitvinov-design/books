@@ -14,11 +14,15 @@ Date: 2026-10-11. Target source: `codex/public-book-library` in `andylitvinov-de
 
 For consenting adults, no assumptions about gender, sexual orientation, partner status or amount of sexual activity. No assertion these are validated scales, no sexual performance scores, diagnosis, consent determination or partner compatibility. Self-report content is sensitive. No raw answers in query strings, logs, analytics or public sharing. Users choose whether to test; no automatic scoring of another person. Seek qualified clinical guidance for medical concerns. Tantra is framed as an optional mindfulness/embodiment approach and cannot replace care.
 
+## Database verification
+
+Applied to the connected Holistic House Supabase project on 2026-10-11 as migration `20261011211746_hh_love_intimacy_assessments`, following isolated integration test success. Readback confirmed 16 language definitions across eight keys (6 items and 2 dimensions per definition, content hashes intact); inventory is now 84 keys / 149 version rows. The matching migration file in this repository uses the applied version number to prevent duplicate drift. **Website publishing is separate and still requires Vercel READY verification.**
+
 ## Release checklist
 
 1. [ ] Node tests pass for definitions / 16 score dimensions / deterministic EN-RU reports / focus filtering / OAuth handoff and profile saving.
 2. [ ] TypeScript/lint/build and synthetic Chrome/WebKit journeys at desktop/mobile; confirm no overlapping nav items.
-3. [ ] Apply and read back new 16 version rows in the **authorized existing Supabase project** using approved migration workflow, without modifying old rows. Verify exact IDs and hashes.
+3. [x] Apply and read back new 16 version rows in the **authorized existing Supabase project** using approved migration workflow, without modifying old rows. Verify exact IDs and hashes.
 4. [ ] Verify cabinet test flow and Insights report for both languages; private Google sign-in and existing RLS, no public answers.
 5. [ ] Deploy exact approved head to existing Vercel project after Hobby build quota resets; do not pay to upgrade without authorization.
 6. [ ] Verify production READY and alias for `holistichouse.vercel.app`, test EN/RU page and 8 links on mobile/desktop. Confirm no public indexing of private /client/tests screens.
