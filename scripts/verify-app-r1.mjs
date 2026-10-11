@@ -271,7 +271,7 @@ try {
   await expect(adminPage.getByRole('button',{name:'Copy material link'})).toBeVisible()
   const clientLink=await adminPage.evaluate(async () => {
     const id=location.pathname.split('/').at(-1)
-    const response=await fetch('/admin/api/clients/'+id+'/access',{method:'POST',credentials:'same-origin'})
+    const response=await fetch('/admin/api/clients/'+id+'/access',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'})
     if (!response.ok) throw new Error('Synthetic cabinet link unavailable: '+response.status)
     const {selector,secret}=await response.json()
     return location.origin+'/en/client/'+selector+'#'+secret
