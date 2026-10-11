@@ -30,7 +30,6 @@ test('complete PDF model includes every runnable public assessment and every sto
   carriedResults:all.slice(0,-1),createdAt:'2026-10-09T12:00:00.000Z',
  })
  const model=buildClientReport({account:{displayName:'Synthetic Client'},results:all,snapshot,locale:'en',now:new Date('2026-10-09T12:00:00.000Z')})
- if(model.counts.tests!==available.length) console.log('REPORT_GROUP_MISMATCH',JSON.stringify({expected:available.map(item=>({key:item.key,id:getAssessmentDefinition(item.key,item.version,item.instrumentLocale==='dynamic'?'en':item.instrumentLocale).id})),actual:model.tests.map(item=>({key:item.key,id:item.id}))}))
  assert.equal(model.counts.tests,available.length)
  assert.equal(model.counts.attempts,available.length)
  assert.equal(model.tests.length,available.length)
