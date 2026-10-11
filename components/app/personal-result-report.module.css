@@ -42,3 +42,7 @@
 .typeSummary p{font-size:13px;line-height:1.55;margin:7px 0;color:#42564a}
 .typeSummary small{display:block;margin-top:10px;color:#6a756d;font-size:11px;line-height:1.55}
 .typeAlternative{font-weight:600;color:#735b44!important}
+
+/* Instrument origin and evidence also accompany the individual result, not only the catalog card. */
+.purpose .methodology{margin-top:10px!important;padding-top:9px;border-top:1px solid #e8e2d9;color:#63594f;font-size:12px;line-height:1.55}
+.purpose .methodology strong{font-size:12px}
