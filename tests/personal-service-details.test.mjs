@@ -48,7 +48,7 @@ test("free diagnostic explains its scope and explicitly excludes diagnoses, pres
   assert.match(css, /@media\(max-width:767px\)/);
 });
 
-test("all personal services have source-backed educational language and no invented price or medical claims", () => {
+test("all personal services have source-backed educational language, approved prices and no medical claims", () => {
   const copy = read("data/personal-service-pages.ts");
   for (const key of ["psychohomeopathy","imagery-therapy","systemic-constellations"]) assert.ok(copy.includes(key), key);
   for (const l of ["ru: {", "en: {", "es: {"]) assert.ok(copy.includes(l));
@@ -70,11 +70,11 @@ test("paid individual services retain contextual handoff without a compulsory in
   const css = read("components/personal-service-landing.module.css");
   assert.match(wrapper, /<ConsultationChoiceCapture locale=\{locale\} variant=\{service \? "service" : "personal"\} service=\{service\}/);
   assert.doesNotMatch(wrapper, /<form|<input|<select|<textarea|FormData/);
-  assert.match(shared, /Request a personal session/);
-  assert.match(shared, /Free introductory conversation/);
-  assert.match(shared, /Ask about format & fees/);
+  assert.match(shared, /60-minute personal session · €100/);
+  assert.match(shared, /Free drawing assessment \+ written report/);
+  assert.match(shared, /30-minute express consultation · €50/);
   assert.match(shared, /t\.serviceField \+ ": " \+ \(service/);
-  assert.match(shared, /This is an enquiry, not a confirmed appointment or payment/);
+  assert.match(shared, /This is an enquiry, not a confirmed booking or payment/);
   assert.match(landing, /id="request-session"/);
   assert.match(landing, /<PersonalConsultationForm locale=\{locale\} service=\{t.orderLabel\}/);
   assert.match(css, /\.order :global\(\[data-consultation-capture="service"\]\)/);
