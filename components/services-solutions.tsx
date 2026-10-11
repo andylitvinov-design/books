@@ -56,7 +56,8 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
       </header>
       <div className={styles.grid}>
         {coreServiceOffers(locale).map((offer, index) => (
-          <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : offer.id === "dao" ? "business" : undefined}>
+          <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : undefined}>
+            {!isHome && offer.id === "alchemy" ? <><span id="business" className={styles.anchor} /><span id="archetypal" className={styles.anchor}/></> : null}
             <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true">
               <Image src={offer.image} alt="" fill sizes="(max-width: 760px) 96px, (max-width: 1080px) 140px, 200px" loading={index === 0 ? "eager" : "lazy"} />
             </Link>
