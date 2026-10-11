@@ -14,6 +14,9 @@ export async function GET(_request, { params }) {
   if (!access) return new NextResponse(null, { status: 404, headers: privateHeaders })
   const detail = await clientAssessmentDetail(access.store, access.client.id, assessmentId)
   if (!detail) return new NextResponse(null, { status: 404, headers: privateHeaders })
-  const { relatedDocuments: _relatedDocuments, ...report } = detail
+  const { id, kind, title, occurredOn, language, sourceName, sourceVersion,
+    description, originalResult, practitionerComment } = detail
+  const report = { id, kind, title, occurredOn, language, sourceName, sourceVersion,
+    description, originalResult, practitionerComment }
   return NextResponse.json({ report }, { headers: { ...privateHeaders, Vary: 'Cookie' } })
 }
