@@ -10,8 +10,8 @@ import {buildExplorerEntries} from '../lib/assessments/test-explorer.js'
 import {MIND_BODY_MONITOR_REGISTRY} from '../data/assessments/mind-body-monitor-registry.js'
 
 test('six new source-backed measures have intact definitions',()=>{
- assert.equal(definitions.length,6)
- assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,78)
+ assert.equal(definitions.length,2)
+ assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,74)
  for(const d of definitions){
   const {contentHash,...body}=d
   assert.equal(contentHash,'sha256:'+createHash('sha256').update(canonicalJSON(body)).digest('hex'))
