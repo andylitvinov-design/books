@@ -94,3 +94,67 @@
   .action { font-size: 13px; min-height: 49px; }
 }
 @media (prefers-reduced-motion: reduce) { .action { transition: none; } }
+
+/* Guided three-step flow. Earlier choices are summarized in the compact step rail. */
+.progress { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 20px; }
+.progressItem {
+  display: flex; min-width: 0; gap: 9px; align-items: center;
+  border: 1px solid #cfdddd; border-radius: 12px;
+  min-height: 57px; padding: 10px;
+  background: rgba(255,255,255,.74); color: #56757b;
+  text-align: left; cursor: pointer;
+}
+.progressItem > span {
+  display: grid; place-items: center; flex: 0 0 30px; height: 30px;
+  border-radius: 50%; background: #dfecea; color: #4f7d81;
+  font: 800 11px Arial, sans-serif;
+}
+.progressItem small { display: block; font: 750 12px/1.36 Arial, sans-serif; }
+.progressItem[data-done="true"] > span { background: #d3ece5; color: #177965; }
+.progressItem[data-active="true"] { border-color: #2c8390; background: #deeff0; color: #1f5664; }
+.progressItem[data-active="true"] > span { background: #28798a; color: #fff; }
+.progressItem:disabled { cursor: not-allowed; opacity: .6; }
+.progressNote { color: #71888a; font: 11px/1.48 Arial, sans-serif; margin: 8px 0 0; }
+.step { margin-top: 13px; padding-top: 16px; border-top-color: #c9ddda; min-width: 0; }
+.stepTitle h3:focus { outline: none; }
+.stepTitle h3:focus-visible { outline: 2px solid #28798a; outline-offset: 3px; border-radius: 4px; }
+.examplesNote { margin: 10px 0; color: #72888a; font: 12px/1.47 Arial, sans-serif; }
+.alternativeActions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.alternative {
+  border: 1px solid #90c7c7; border-radius: 10px; background: #f6fcfb;
+  padding: 10px 14px; min-height: 41px; color: #245e66;
+  font: 750 12px/1.35 Arial, sans-serif; cursor: pointer;
+}
+.alternative:hover, .alternative[aria-pressed="true"] { background: #dcefed; border-color: #35828a; }
+.customEntry { display: grid; justify-items: start; gap: 11px; margin-top: 13px; }
+.customEntry .customLabel { width: min(100%, 470px); }
+.customEntry > small { color: #6a7d7b; font: 11px/1.45 Arial, sans-serif; }
+.continue {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 43px; padding: 10px 15px; border: 0; border-radius: 10px;
+  color: #fff; background: #297d88; cursor: pointer;
+  font: 750 13px/1.3 Arial, sans-serif;
+}
+.continue:hover { background: #196a76; }
+.continue:disabled { opacity: .42; cursor: not-allowed; }
+.formats { gap: 8px; }
+.format { min-height: 102px; padding: 14px 12px; }
+.actionDisabled {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 51px; padding: 10px 14px; border-radius: 10px;
+  background: #e4e9e7; color: #6d7b78; text-align: center;
+  font: 750 12px/1.4 Arial, sans-serif;
+}
+.chooser :is(.alternative, .continue, .progressItem):focus-visible { outline: 3px solid #d69d57; outline-offset: 3px; }
+@media (max-width: 700px) {
+  .progress { gap: 5px; margin-top: 15px; }
+  .progressItem { display: grid; justify-items: center; align-content: center; gap: 6px; min-height: 70px; padding: 8px 4px; text-align: center; }
+  .progressItem > span { flex: none; width: 27px; height: 27px; }
+  .progressItem small { font-size: 10px; line-height: 1.22; }
+  .progressNote { font-size: 10px; }
+  .step { min-height: 0; margin-top: 12px; }
+  .stepTitle { margin-bottom: 11px; }
+  .alternativeActions { flex-direction: column; gap: 6px; }
+  .alternative { width: 100%; text-align: center; }
+  .format { min-height: 78px; padding: 12px; }
+}
