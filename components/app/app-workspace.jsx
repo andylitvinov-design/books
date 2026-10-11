@@ -941,6 +941,44 @@ function TestPlanSummary({ locale, planId, results, onBack }) {
   return <section className="hh-panel hh-test-plan-summary"><p className="hh-kicker">{locale === 'ru' ? 'Набор завершён' : 'Set complete'}</p><h1>{locale === 'ru' ? 'Ваш общий обзор' : 'Your combined overview'}</h1><p>{locale === 'ru' ? 'Каждый инструмент остаётся отдельным результатом: здесь нет синтетического медицинского балла или диагноза.' : 'Each instrument remains a separate result: this page does not create a synthetic medical score or diagnosis.'}</p><div className="hh-history-list">{completed.map((result) => <Link key={result.id} href={`/${locale}/app/results/${result.id}`} prefetch={false}>{getDefinitionById(result.definitionId).title} · {new Date(result.measurementAt).toLocaleDateString(locale)}</Link>)}</div><button type="button" onClick={onBack}>{locale === 'ru' ? 'К базе тестов' : 'Back to test explorer'}</button></section>
 }
 
+
+function RunnerAnswerChoices({ definition, question, selected, onChoose, locale, disabled }) {
+  const min = question.min ?? definition.answerScale?.min
+  const max = question.max ?? definition.answerScale?.max
+  const anchors = question.responseAnchors || definition.responseAnchors
+  if (question.inputType === 'day-count') return (
+    <label className="hh-day-count-select">
+      <span>{locale === 'ru' ? 'Количество дней за последние 30 дней (0–30)' : 'Number of days in the past 30 days (0–30)'}</span>
+      <select aria-label={locale === 'ru' ? 'Количество дней' : 'Number of days'}
+        value={selected ?? ''} disabled={disabled}
+        onChange={event => { if (event.target.value !== '') void onChoose(Number(event.target.value)) }}>
+        <option value="" disabled>{locale === 'ru' ? 'Выберите число дней' : 'Select number of days'}</option>
+        {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(value => (
+          <option value={value} key={value}>{value}</option>
+        ))}
+      </select>
+    </label>
+  )
+  return (
+    <>
+      <div className={anchors ? 'hh-scale hh-scale-words' : 'hh-scale'}>
+        {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(value => (
+          <button key={value} type="button" aria-pressed={selected === value}
+            disabled={disabled} onClick={() => void onChoose(value)}>
+            <strong>{value}</strong>
+            {anchors && <span>{anchors[value - min]}</span>}
+          </button>
+        ))}
+      </div>
+      {question.anchors && !anchors && (
+        <div className="hh-anchors">
+          <span>{question.anchors[0]}</span><span>{question.anchors.at(-1)}</span>
+        </div>
+      )}
+    </>
+  )
+}
+
 function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
   const c = COPY[locale],
     [run, setRun] = useState(null),
@@ -960,12 +998,12 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           intro: 'Выберите темп. Вопросы и расчёт результата в обоих режимах одинаковые.',
           quick: 'Quick',
           quickTitle: 'Быстро',
-          quickText: 'Один ответ — и сразу следующий вопрос. Минимум лишних шагов.',
+          quickText: 'Все вопросы на одной странице. Ответы сохраняются при выборе.',
           guided: 'Guided',
           guidedTitle: 'С сопровождением',
-          guidedText: 'Спокойный пошаговый формат с подсказками и ручным переходом дальше.',
+          guidedText: 'Один вопрос на экране, затем кнопка «Далее».',
           same: 'В обоих режимах используются те же вопросы и тот же расчёт результата.',
-          tap: 'Нажмите на ответ — он сохранится, и тест продолжится автоматически.',
+          tap: 'Ответы сохраняются автоматически, без перехода между вопросами.',
           guidedPrompt: 'Не спешите. Выберите вариант, который ближе всего к вашему ощущению.',
           part: 'Часть',
           question: 'Вопрос',
@@ -976,12 +1014,12 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           intro: 'Choose your pace. Both modes use the same questions and the same scoring.',
           quick: 'Quick',
           quickTitle: 'Fast & simple',
-          quickText: 'One tap saves your answer and moves straight to the next question.',
+          quickText: 'All questions on one scrollable page, with automatic saving.',
           guided: 'Guided',
           guidedTitle: 'Calm & guided',
-          guidedText: 'A slower step-by-step flow with gentle prompts and a clear Next action.',
+          guidedText: 'One question per screen, with a clear Next button.',
           same: 'Both use the same questions and produce the same result.',
-          tap: 'Tap an answer to save it and continue automatically.',
+          tap: 'Answers save automatically without changing pages.',
           guidedPrompt: 'Take your time. Choose the answer that feels closest to your experience.',
           part: 'Part',
           question: 'Question',
@@ -995,7 +1033,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
       setRun(value)
       if (value.safetySignal) setSafetyAcknowledged(false)
       setContext(value.context || {})
-      setStatus(c.saved)
+      setStatus('')
     } catch (e) {
       setError(e)
     }
@@ -1006,7 +1044,21 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
   const def = run ? getDefinitionById(run.definitionId) : null,
     index = run?.progress || 0,
     question = def?.questions[index],
-    isContext = def && index >= def.questions.length
+    isContext = def && index >= def.questions.length,
+    answeredCount = def ? def.questions.filter(item => Object.prototype.hasOwnProperty.call(run.answers || {}, item.id)).length : 0,
+    allAnswered = def ? answeredCount === def.questions.length : false,
+    quickMinutes = def ? Math.max(1, Number(monitoringCatalogItem(def.key)?.durationMinutes) || Math.ceil(def.questions.length / 5)) : 1,
+    guidedMinutes = Math.max(quickMinutes + 1, Math.ceil(quickMinutes * 1.4)),
+    timeUnit = locale === 'ru' ? 'мин' : 'min',
+    timeframe = def?.timeframe === 'past-2-weeks'
+      ? (locale === 'ru' ? 'За последние 2 недели' : 'Over the past 2 weeks')
+      : def?.timeframe === 'past-30-days'
+        ? (locale === 'ru' ? 'За последние 30 дней' : 'Over the past 30 days')
+        : def?.timeframe === 'past-7-days'
+          ? (locale === 'ru' ? 'За последние 7 дней' : 'Over the past 7 days')
+          : def?.timeframe === 'right-now'
+            ? (locale === 'ru' ? 'Как вы чувствуете себя сейчас' : 'How you feel right now')
+            : (locale === 'ru' ? 'В целом, не только сегодня' : 'In general, not only today')
   async function save(answers = {}, progress = index) {
     if (inflight.current) return null
     inflight.current = true
@@ -1039,11 +1091,12 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
       setBusy(false)
     }
   }
-  async function chooseAnswer(value) {
-    if (!question) return
-    const progress =
-      mode === 'quick' ? Math.min(index + 1, def.questions.length) : index
-    await save({ [question.id]: value }, progress)
+  async function chooseAnswer(value, questionId = question?.id) {
+    if (!questionId) return
+    const answers = { ...(run.answers || {}), [questionId]: value }
+    const firstMissing = def.questions.findIndex(item => !Object.prototype.hasOwnProperty.call(answers, item.id))
+    const progress = mode === 'quick' ? (firstMissing < 0 ? def.questions.length : firstMissing) : index
+    await save({ [questionId]: value }, progress)
   }
   async function next() {
     if (!question || run.answers[question.id] === undefined) return
@@ -1136,7 +1189,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           <button className="hh-test-mode-card" type="button" onClick={() => setMode('quick')}>
             <span className="hh-test-mode-icon" aria-hidden="true">⚡</span>
             <span>
-              <small>{modeCopy.quick}</small>
+              <small>{modeCopy.quick} · ~{quickMinutes} {timeUnit}</small>
               <strong>{modeCopy.quickTitle}</strong>
               <em>{modeCopy.quickText}</em>
             </span>
@@ -1144,7 +1197,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           <button className="hh-test-mode-card" type="button" onClick={() => setMode('guided')}>
             <span className="hh-test-mode-icon" aria-hidden="true">✦</span>
             <span>
-              <small>{modeCopy.guided}</small>
+              <small>{modeCopy.guided} · ~{guidedMinutes} {timeUnit}</small>
               <strong>{modeCopy.guidedTitle}</strong>
               <em>{modeCopy.guidedText}</em>
             </span>
@@ -1167,138 +1220,98 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
             {monitoringCatalogItem(def.key)?.title?.[locale] || monitoringCatalogItem(def.key)?.title?.en || def.title} ·{' '}
             {def.instrumentLocale.toUpperCase()}
           </p>
-          {!isContext && (
+          {(!isContext || mode === 'quick') && (
             <div className="hh-test-mode-toggle" role="group" aria-label={modeCopy.switch}>
               <button type="button" aria-pressed={mode === 'quick'} onClick={() => setMode('quick')}>
-                ⚡ {modeCopy.quick}
+                ⚡ {modeCopy.quick} <small>~{quickMinutes} {timeUnit}</small>
               </button>
               <button type="button" aria-pressed={mode === 'guided'} onClick={() => setMode('guided')}>
-                ✦ {modeCopy.guided}
+                ✦ {modeCopy.guided} <small>~{guidedMinutes} {timeUnit}</small>
               </button>
             </div>
           )}
         </div>
-        <div
-          className="hh-runner-segments"
-          role="progressbar"
-          aria-label={c.tests}
-          aria-valuemin="1"
-          aria-valuemax={def.questions.length}
-          aria-valuenow={Math.min(index + 1, def.questions.length)}
-        >
+        <div className="hh-runner-segments" role="progressbar" aria-label={c.tests}
+          aria-valuemin="0" aria-valuemax={def.questions.length}
+          aria-valuenow={mode === 'quick' ? answeredCount : Math.min(index, def.questions.length)}>
           {def.questions.map((item, step) => (
-            <span
-              key={item.id}
-              className={step < index ? 'is-done' : step === index ? 'is-current' : ''}
-              aria-hidden="true"
-            />
+            <span key={item.id}
+              className={mode === 'quick'
+                ? (Object.prototype.hasOwnProperty.call(run.answers || {}, item.id) ? 'is-done' : '')
+                : step < index ? 'is-done' : step === index ? 'is-current' : ''}
+              aria-hidden="true" />
           ))}
         </div>
         <div className="hh-runner-progress-copy">
-          <span>
-            {modeCopy.question} {Math.min(index + 1, def.questions.length)} / {def.questions.length}
-          </span>
-          {mode === 'guided' && !isContext && (
-            <span>{modeCopy.part} {currentPart} / {partCount}</span>
-          )}
+          <span>{mode === 'quick'
+            ? `${answeredCount} / ${def.questions.length} ${locale === 'ru' ? 'ответов' : 'answered'}`
+            : `${modeCopy.question} ${Math.min(index + 1, def.questions.length)} / ${def.questions.length}`}</span>
+          <span role="status" aria-live="polite" className="hh-runner-save-state">{status}</span>
         </div>
       </header>
 
-      {(def.source?.copyright || def.source?.citation) && (
-        <aside className="hh-instrument-attribution">
-          {def.source.copyright && <small>{def.source.copyright}</small>}
-          {def.source.citation && <small>{def.source.citation}</small>}
-          {def.source.url && <a href={def.source.url} target="_blank" rel="noopener noreferrer">{locale === 'ru' ? 'Источник и методика' : 'Source and methodology'}</a>}
-        </aside>
-      )}
-      <p className="hh-muted">
-        {def.timeframe === 'past-2-weeks' ? (locale === 'ru' ? 'За последние две недели' : 'Over the past two weeks') : def.timeframe === 'past-30-days' ? (locale === 'ru' ? 'За последние 30 дней' : 'Over the past 30 days') : def.timeframe === 'past-7-days' ? c.pastWeek : def.timeframe === 'right-now' ? c.rightNow : c.general}
-      </p>
+      <p className="hh-runner-instructions">{timeframe}</p>
 
-      {question ? (
+      {mode === 'quick' ? (
+        <div className="hh-quick-form" aria-label={locale === 'ru' ? 'Все вопросы теста' : 'All test questions'}>
+          {def.questions.map((item, step) => (
+            <fieldset className="hh-quick-question" key={item.id} disabled={busy || Boolean(operation.current)}>
+              <legend>
+                <span className="hh-quick-number">{modeCopy.question} {step + 1} / {def.questions.length}</span>
+                <h2>{item.text}</h2>
+              </legend>
+              {def.key === 'cdc-hrqol-4' && item.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
+                <p className="hh-muted">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
+              )}
+              <RunnerAnswerChoices definition={def} question={item}
+                selected={run.answers[item.id]} onChoose={value => chooseAnswer(value, item.id)}
+                locale={locale} disabled={busy || Boolean(operation.current)} />
+            </fieldset>
+          ))}
+          <p className="hh-quick-hint">{modeCopy.tap}</p>
+        </div>
+      ) : question ? (
         <fieldset className="hh-runner-question" disabled={busy || Boolean(operation.current)}>
-          {mode === 'guided' && <p className="hh-guided-step">{modeCopy.guidedPrompt}</p>}
-          <legend>
-            <h1>{question.text}</h1>
-          </legend>
+          <legend><h1>{question.text}</h1></legend>
           {def.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
             <p className="hh-muted">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
           )}
-          {question.inputType === 'day-count' ? (
-            <label className="hh-day-count-select">
-              <span>{locale === 'ru' ? 'Количество дней за последние 30 дней (0–30)' : 'Number of days in the past 30 days (0–30)'}</span>
-              <select
-                aria-label={locale === 'ru' ? 'Количество дней' : 'Number of days'}
-                value={run.answers[question.id] ?? ''}
-                onChange={(event) => { if (event.target.value !== '') void chooseAnswer(Number(event.target.value)) }}
-                disabled={busy || Boolean(operation.current)}
-              >
-                <option value="" disabled>{locale === 'ru' ? 'Выберите число дней' : 'Select number of days'}</option>
-                {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((value) => (
-                  <option value={value} key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <div className={def.answerScale ? 'hh-scale hh-scale-words' : 'hh-scale'}>
-              {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={run.answers[question.id] === value}
-                  onClick={() => chooseAnswer(value)}
-                >
-                  <strong>{value}</strong>
-                  {(question.responseAnchors || def.responseAnchors) && <span>{(question.responseAnchors || def.responseAnchors)[value - min]}</span>}
-                </button>
-              ))}
-            </div>
-          )}
-          {question.anchors && (
-            <div className="hh-anchors">
-              <span>{question.anchors[0]}</span>
-              <span>{question.anchors.at(-1)}</span>
-            </div>
-          )}
-          {mode === 'quick' && <p className="hh-quick-hint">{modeCopy.tap}</p>}
+          <RunnerAnswerChoices definition={def} question={question}
+            selected={run.answers[question.id]} onChoose={value => chooseAnswer(value)}
+            locale={locale} disabled={busy || Boolean(operation.current)} />
         </fieldset>
       ) : (
         <div className="hh-runner-complete">
           <h1>{def.optionalContext.length ? c.optional : c.result}</h1>
           <p>{def.optionalContext.length ? c.skip : c.nonDiagnostic}</p>
-          {def.optionalContext.length > 0 && (
-            <details className="hh-secondary">
-              <summary>{locale === 'ru' ? 'Добавить необязательный контекст' : 'Add optional context'}</summary>
-              <div className="hh-form">
-                {[
-                  ['current_focus', c.focus],
-                  ['trigger', c.trigger],
-                  ['what_helps', c.helps],
-                  ['desired_change', c.desiredChange],
-                  ['note', c.note],
-                ].map(([key, label]) => (
-                  <label key={key}>
-                    {label}
-                    <textarea
-                      maxLength={1000}
-                      value={context[key] || ''}
-                      disabled={busy}
-                      onChange={(e) => {
-                        setContext((v) => ({ ...v, [key]: e.target.value }))
-                        setStatus(c.unsaved)
-                      }}
-                    />
-                  </label>
-                ))}
-              </div>
-            </details>
-          )}
         </div>
       )}
 
-      <p role="status" aria-live="polite" className="hh-fine hh-runner-save-state">
-        {status}
-      </p>
+      {(mode === 'quick' ? allAnswered : isContext) && def.optionalContext.length > 0 && (
+        <details className="hh-secondary hh-runner-context">
+          <summary>{locale === 'ru' ? 'Добавить необязательный контекст' : 'Add optional context'}</summary>
+          <div className="hh-form">
+            {[
+              ['current_focus', c.focus],
+              ['trigger', c.trigger],
+              ['what_helps', c.helps],
+              ['desired_change', c.desiredChange],
+              ['note', c.note],
+            ].map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <textarea
+                  maxLength={1000}
+                  value={context[key] || ''}
+                  disabled={busy}
+                  onChange={e => { setContext(value => ({ ...value, [key]: e.target.value })); setStatus(c.unsaved) }}
+                />
+              </label>
+            ))}
+          </div>
+        </details>
+      )}
+
       {error && (
         <div role="alert" className="hh-notice">
           <p>{message(error, c)}</p>
@@ -1319,12 +1332,14 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
         </div>
       )}
       <div className="hh-actions hh-runner-actions">
-        <button
-          disabled={busy || index === 0 || Boolean(operation.current)}
-          onClick={() => save({}, index - 1)}
-        >
-          {c.back}
-        </button>
+        {mode !== 'quick' && (
+          <button
+            disabled={busy || index === 0 || Boolean(operation.current)}
+            onClick={() => save({}, index - 1)}
+          >
+            {c.back}
+          </button>
+        )}
         {!isContext && mode === 'guided' && (
           <button
             className="hh-primary"
@@ -1334,12 +1349,10 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
             {c.next}
           </button>
         )}
-        {isContext && (
-          <button
-            className="hh-primary"
-            disabled={busy || Boolean(operation.current)}
-            onClick={finish}
-          >
+        {(isContext || (mode === 'quick' && allAnswered)) && (
+          <button className="hh-primary"
+            disabled={busy || Boolean(operation.current) || !allAnswered}
+            onClick={finish}>
             {c.finish}
           </button>
         )}
@@ -1361,6 +1374,14 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
           <button onClick={() => setShowDiscard(true)}>{c.decline}</button>
         )}
       </details>
+      {(def.source?.copyright || def.source?.citation) && (
+        <details className="hh-secondary hh-runner-methodology">
+          <summary>{locale === 'ru' ? 'Источник и методика' : 'Source and methodology'}</summary>
+          {def.source.copyright && <small>{def.source.copyright}</small>}
+          {def.source.citation && <small>{def.source.citation}</small>}
+          {def.source.url && <a href={def.source.url} target="_blank" rel="noopener noreferrer">{locale === 'ru' ? 'Открыть оригинал' : 'Open original source'}</a>}
+        </details>
+      )}
     </section>
   )
 }

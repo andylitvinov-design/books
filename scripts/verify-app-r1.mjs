@@ -11,7 +11,7 @@ await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
 let page=await context.newPage()
-const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
+const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
 page.on('pageerror',capturePageError)
 const checks=[]
 function passed(name){checks.push(name);console.log('PASS '+name)}
@@ -86,8 +86,11 @@ async function enterTest(name='Current State Check',mode='Guided'){
  // My Tests opens the first question immediately; the optional guided mode stays inside the runner.
  await expect(page.locator('.hh-test-mode-picker')).toHaveCount(0)
  // A saved draft may already be on its final optional-context screen.
- await expect(page.locator('.hh-runner-question, .hh-runner-complete').first()).toBeVisible()
- if(mode==='Guided' && await page.locator('.hh-runner-question').count())await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
+ await expect(page.locator('.hh-runner-question, .hh-runner-complete, .hh-quick-form').first()).toBeVisible()
+ if(mode==='Guided'){
+  await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
+  await expect(page.locator('.hh-runner-question, .hh-runner-complete').first()).toBeVisible()
+ }else await expect(page.locator('.hh-quick-form')).toBeVisible()
 }
 async function savedClick(button){
  const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/save')&&r.request().method()==='POST'),button.click()])
@@ -236,11 +239,44 @@ try {
  let data=(await api('bootstrap')).data;assert.equal(data.results.length,2);assert.equal(data.results[0].id,first.id);assert.equal(new Set(data.snapshot.dimensions.map(d=>d.key)).size,5);passed('second run keeps original baseline and unique profile axes')
  await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await page.screenshot({path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
  await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
- await enterTest('Personality Baseline');await expect(page.getByText('Describe how you generally see yourself',{exact:false})).toBeVisible()
+ await enterTest('Personality Baseline');await expect(page.getByText('In general, not only today',{exact:false})).toBeVisible()
  await page.screenshot({path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
  await page.getByRole('button',{name:'Save my result'}).click();await openCompletedPlanResult();data=(await api('bootstrap')).data;const trait=data.results.find(r=>r.definitionKey==='mini-ipip-20');assert.deepEqual(trait.dimensions.map(d=>d.value),[12,12,12,12,12]);assert.equal(data.snapshot.dimensions.length,10);passed('Mini-IPIP scoring is preserved alongside completed plan summaries')
- await enterTest('Weekly Psychic Health','Quick');await expect(page.getByText('Answer about the past 7 days.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible();await savedClick(page.locator('.hh-scale button').first());await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();passed('Quick mode saves and auto-advances in the signed-in runner');await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await expect(page.locator('#my-tests-list')).toBeVisible();await page.locator('article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})}).getByRole('button',{name:'Continue test'}).click();await expect(page.locator('.hh-runner-question')).toBeVisible();await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Save and exit'}).click();await expect(page).toHaveURL(/\/tests$/);await ready();await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible();passed('Weekly Psychic Health is a resumable sequential plan step')
+ await enterTest('Weekly Psychic Health','Quick')
+ await expect(page.getByText('Over the past 7 days',{exact:false})).toBeVisible()
+ await expect(page.locator('.hh-quick-question')).toHaveCount(8)
+ await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible()
+ await savedClick(page.locator('.hh-quick-question').first().locator('.hh-scale button').first())
+ await expect(page.getByText('1 / 8 answered',{exact:true})).toBeVisible()
+ await expect(page.locator('.hh-quick-question')).toHaveCount(8)
+ await expect(page.locator('.hh-quick-question').first().locator('.hh-scale button').first()).toHaveAttribute('aria-pressed','true')
+ await page.screenshot({path:output+'/quick-all-questions-mobile.png',fullPage:true})
+ passed('Quick mode displays one scrollable form with auto-saved answers and no per-question navigation')
+ await page.getByRole('button',{name:'Save and exit'}).click()
+ await expect(page).toHaveURL(/\/tests$/)
+ await ready()
+ // My Tests now renders the selected list immediately without a separate Start testing gate.
+ await expect(page.locator('#my-tests-list')).toBeVisible()
+ const weeklyResumeRow=page.locator('#my-tests-list article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})})
+ await expect(weeklyResumeRow).toBeVisible()
+ await weeklyResumeRow.getByRole('button',{name:'Continue test'}).click()
+ await expect(page.locator('.hh-quick-question')).toHaveCount(8)
+ await expect(page.getByText('1 / 8 answered',{exact:true})).toBeVisible()
+ await expect(page.locator('.hh-quick-question').first().locator('.hh-scale button').first()).toHaveAttribute('aria-pressed','true')
+ await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
+ await expect(page.locator('.hh-runner-question')).toBeVisible()
+ await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible()
+ await page.screenshot({path:output+'/guided-single-question-mobile.png',fullPage:false})
+ await page.getByRole('button',{name:'Save and exit'}).click()
+ await expect(page).toHaveURL(/\/tests$/)
+ await ready()
+ await page.goto(origin+'/en/app/portrait')
+ await ready()
+ await page.locator('[data-profile-extra-tools] > summary').click()
+ await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible()
+ await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible()
+ passed('Quick draft resumes with its saved answers and can switch to one-question Guided mode')
  await page.goto(origin+'/ru/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Мой профиль',exact:true})).toBeVisible();await page.screenshot({path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Request a consultation',exact:true}).first().click();await page.getByLabel('How should Andy contact you?').fill('synthetic@example.invalid');await page.getByLabel('Your message (optional)').fill('A synthetic request for CI only.')
  await page.screenshot({path:output+'/consultation-request.png',fullPage:true})
