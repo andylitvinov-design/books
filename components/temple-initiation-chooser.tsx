@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Check, ChevronRight, Sparkles } from "lucide-react";
 
 import type { PublicLocale } from "@/lib/public-locales";
@@ -91,6 +91,14 @@ const copy = {
     eyebrow: "YOUR PATH · 3 SIMPLE CHOICES",
     title: "Choose your personal mystery",
     lead: "You can begin with a single deity and initiation. The seven learning chapters below are optional deeper study, not prerequisites.",
+    exampleNote: "These are examples. You can name another deity or ask for a suggestion.",
+    otherDeityOption: "Another deity / channel",
+    helpMeChoose: "Help me choose a deity",
+    continue: "Continue to initiation formats",
+    choosePrompt: "Select a tradition, deity and format to request a mystery.",
+    pending: "Not selected yet",
+    optionNote: "One step at a time: you can change an earlier choice at any moment.",
+    customTraditionHint: "Write the name of your tradition to continue.",
     step1: "Choose a tradition",
     step1Hint: "Each tradition opens a selection of gods and goddesses.",
     step2: "Choose a deity's channel",
@@ -117,6 +125,14 @@ const copy = {
     eyebrow: "ВАШ ПУТЬ · 3 ПРОСТЫХ ВЫБОРА",
     title: "Выберите свою мистерию",
     lead: "Можно начать с одного божества и посвящения. Семь учебных глав ниже — дополнительное изучение, а не обязательные условия.",
+    exampleNote: "Это примеры. Можно указать другое божество или попросить подсказать.",
+    otherDeityOption: "Другое божество / канал",
+    helpMeChoose: "Помогите выбрать божество",
+    continue: "Перейти к выбору формата",
+    choosePrompt: "Выберите традицию, божество и формат, чтобы отправить запрос.",
+    pending: "Пока не выбрано",
+    optionNote: "Вы выбираете по одному шагу. К предыдущему выбору можно вернуться.",
+    customTraditionHint: "Укажите традицию, чтобы продолжить.",
     step1: "Выберите традицию",
     step1Hint: "У каждой традиции — свои боги и богини.",
     step2: "Выберите канал божества",
@@ -143,6 +159,14 @@ const copy = {
     eyebrow: "TU CAMINO · 3 ELECCIONES SENCILLAS",
     title: "Elige tu misterio personal",
     lead: "Puedes empezar con una deidad y una iniciación. Los siete capítulos siguientes son lecturas opcionales, no requisitos.",
+    exampleNote: "Son ejemplos. Puedes proponer otra deidad o pedir orientación.",
+    otherDeityOption: "Otra deidad / canal",
+    helpMeChoose: "Ayúdame a elegir una deidad",
+    continue: "Continuar a formatos de iniciación",
+    choosePrompt: "Elige una tradición, una deidad y un formato para enviar la solicitud.",
+    pending: "Sin seleccionar",
+    optionNote: "Un paso a la vez. Puedes volver y cambiar tu elección.",
+    customTraditionHint: "Escribe la tradición para continuar.",
     step1: "Elige una tradición",
     step1Hint: "Cada tradición ofrece diferentes dioses y diosas.",
     step2: "Elige el canal de una deidad",
@@ -177,18 +201,50 @@ function WhatsAppLogo() {
 
 export function TempleInitiationChooser({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
-  const [traditionId, setTraditionId] = useState<TraditionId>("greek");
-  const [deityId, setDeityId] = useState("aphrodite");
-  const [formatId, setFormatId] = useState<FormatId>("meditation");
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [traditionId, setTraditionId] = useState<TraditionId | null>(null);
+  const [deityId, setDeityId] = useState("");
+  const [formatId, setFormatId] = useState<FormatId | null>(null);
   const [customTradition, setCustomTradition] = useState("");
   const [customDeity, setCustomDeity] = useState("");
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
 
-  const tradition = traditions.find((item) => item.id === traditionId)!;
-  const format = formats.find((item) => item.id === formatId)!;
-  const traditionName = traditionId === "other" ? customTradition.trim() || t.undecided : tradition.name[locale];
-  const deityName = traditionId === "other"
-    ? customDeity.trim() || t.undecided
-    : tradition.deities.find((item) => item.id === deityId)?.name[locale] ?? t.undecided;
+  // After advancing, return keyboard and screen-reader focus to the new step.
+  useEffect(() => {
+    if (step > 1) stepHeadingRef.current?.focus();
+  }, [step]);
+
+  const tradition = traditions.find((item) => item.id === traditionId);
+  const format = formats.find((item) => item.id === formatId);
+  const hasTradition = Boolean(traditionId && (traditionId !== "other" || customTradition.trim()));
+  const hasDeity = deityId === "help" || Boolean(
+    deityId === "custom" ? customDeity.trim() : tradition?.deities.some((item) => item.id === deityId),
+  );
+  const ready = hasTradition && hasDeity && Boolean(format);
+  const traditionName = traditionId === "other"
+    ? customTradition.trim() || t.pending
+    : tradition?.name[locale] ?? t.pending;
+  const deityName = deityId === "help"
+    ? t.helpMeChoose
+    : deityId === "custom"
+      ? customDeity.trim() || t.pending
+      : tradition?.deities.find((item) => item.id === deityId)?.name[locale] ?? t.pending;
+
+  function chooseTradition(id: TraditionId) {
+    setTraditionId(id);
+    setCustomTradition("");
+    setCustomDeity("");
+    setDeityId("");
+    setFormatId(null);
+    setStep(id === "other" ? 1 : 2);
+  }
+
+  function chooseDeity(id: string) {
+    setDeityId(id);
+    setCustomDeity("");
+    setFormatId(null);
+    if (id !== "custom") setStep(3);
+  }
 
   const message = [
     t.messageIntro,
@@ -196,12 +252,18 @@ export function TempleInitiationChooser({ locale }: { locale: PublicLocale }) {
     "Temple Studies — Holistic House",
     t.messageTradition + ": " + traditionName,
     t.messageDeity + ": " + deityName,
-    t.messageFormat + ": " + format.title[locale],
+    t.messageFormat + ": " + (format?.title[locale] ?? t.pending),
     "",
     t.messageClosing,
     "Page: https://holistichouse.vercel.app/" + locale + "/academy/temple-studies",
   ].join("\n");
-  const whatsappUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(message);
+  const whatsappUrl = ready ? "https://wa.me/14376066502?text=" + encodeURIComponent(message) : "";
+
+  const steps = [
+    { number: 1 as const, title: t.step1, enabled: true, done: hasTradition },
+    { number: 2 as const, title: t.step2, enabled: hasTradition, done: hasDeity },
+    { number: 3 as const, title: t.step3, enabled: hasTradition && hasDeity, done: Boolean(format) },
+  ];
 
   return (
     <section className={styles.chooser} id="temple-choose" aria-labelledby="temple-choose-title" data-temple-initiation-chooser>
@@ -211,67 +273,117 @@ export function TempleInitiationChooser({ locale }: { locale: PublicLocale }) {
         <p>{t.lead}</p>
       </div>
 
-      <div className={styles.step}>
-        <div className={styles.stepTitle}><span>01</span><div><h3>{t.step1}</h3><p>{t.step1Hint}</p></div></div>
-        <div className={styles.traditions} role="group" aria-label={t.step1}>
-          {traditions.map((item) => (
-            <button type="button" key={item.id} className={styles.tradition} data-selected={item.id === traditionId} aria-pressed={item.id === traditionId} onClick={() => {
-              setTraditionId(item.id);
-              setDeityId(item.deities[0]?.id ?? "");
-            }}>
-              {item.id === traditionId ? <Check size={16} aria-hidden="true" /> : null}
-              {item.name[locale]}
-            </button>
-          ))}
-        </div>
-        {traditionId === "other" ? (
-          <label className={styles.customLabel}>{t.otherTradition}
-            <input value={customTradition} onChange={(event) => setCustomTradition(event.target.value)} placeholder={t.customTradition} maxLength={80} />
-          </label>
-        ) : null}
-      </div>
+      <nav className={styles.progress} aria-label={t.eyebrow}>
+        {steps.map((item) => (
+          <button key={item.number} type="button" className={styles.progressItem}
+            disabled={!item.enabled} aria-current={step === item.number ? "step" : undefined}
+            data-active={step === item.number} data-done={item.done}
+            onClick={() => setStep(item.number)}>
+            <span>{item.done ? <Check size={15} aria-hidden="true" /> : String(item.number).padStart(2, "0")}</span>
+            <small>{item.title}</small>
+          </button>
+        ))}
+      </nav>
+      <p className={styles.progressNote}>{t.optionNote}</p>
 
-      <div className={styles.step}>
-        <div className={styles.stepTitle}><span>02</span><div><h3>{t.step2}</h3><p>{t.step2Hint}</p></div></div>
-        {traditionId === "other" ? (
-          <label className={styles.customLabel}>{t.otherDeity}
-            <input value={customDeity} onChange={(event) => setCustomDeity(event.target.value)} placeholder={t.customDeity} maxLength={80} />
-          </label>
-        ) : (
-          <div className={styles.deities} role="group" aria-label={t.step2}>
-            {tradition.deities.map((deity) => (
-              <button type="button" key={deity.id} className={styles.deity} aria-pressed={deityId === deity.id} data-selected={deityId === deity.id} onClick={() => setDeityId(deity.id)}>
-                <span className={styles.deityName}>{deityId === deity.id ? <Check size={15} aria-hidden="true" /> : null}{deity.name[locale]}</span>
-                <small>{deity.quality[locale]}</small>
+      {step === 1 ? (
+        <div className={styles.step} data-temple-step="tradition">
+          <div className={styles.stepTitle}><span>01</span><div><h3 ref={stepHeadingRef}>{t.step1}</h3><p>{t.step1Hint}</p></div></div>
+          <div className={styles.traditions} role="group" aria-label={t.step1}>
+            {traditions.map((item) => (
+              <button type="button" key={item.id} className={styles.tradition}
+                data-selected={item.id === traditionId} aria-pressed={item.id === traditionId}
+                onClick={() => chooseTradition(item.id)}>
+                {item.id === traditionId ? <Check size={16} aria-hidden="true" /> : null}
+                {item.name[locale]}
               </button>
             ))}
           </div>
-        )}
-      </div>
-
-      <div className={styles.step}>
-        <div className={styles.stepTitle}><span>03</span><div><h3>{t.step3}</h3><p>{t.step3Hint}</p></div></div>
-        <div className={styles.formats} role="group" aria-label={t.step3}>
-          {formats.map((item) => (
-            <button type="button" key={item.id} className={styles.format} aria-pressed={item.id === formatId} data-selected={item.id === formatId} onClick={() => setFormatId(item.id)}>
-              <span className={styles.formatTitle}>{item.id === formatId ? <Check size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}{item.title[locale]}</span>
-              <small>{item.description[locale]}</small>
-            </button>
-          ))}
+          {traditionId === "other" ? (
+            <div className={styles.customEntry}>
+              <label className={styles.customLabel}>{t.otherTradition}
+                <input value={customTradition} onChange={(event) => setCustomTradition(event.target.value)}
+                  placeholder={t.customTradition} maxLength={80} autoComplete="off" />
+              </label>
+              <button type="button" className={styles.continue} disabled={!customTradition.trim()}
+                onClick={() => setStep(2)}>{t.continue}<ChevronRight size={17} aria-hidden="true" /></button>
+              <small>{t.customTraditionHint}</small>
+            </div>
+          ) : null}
         </div>
-      </div>
+      ) : null}
 
-      <div className={styles.conversion}>
-        <div className={styles.selection}>
-          <span>{t.selected}</span>
-          <strong>{traditionName} <ChevronRight size={13} aria-hidden="true" /> {deityName}</strong>
-          <small>{format.title[locale]}</small>
+      {step === 2 ? (
+        <div className={styles.step} data-temple-step="deity">
+          <div className={styles.stepTitle}><span>02</span><div><h3 tabIndex={-1} ref={stepHeadingRef}>{t.step2}</h3><p>{t.step2Hint}</p></div></div>
+          {tradition?.deities.length ? (
+            <div className={styles.deities} role="group" aria-label={t.step2}>
+              {tradition.deities.map((deity) => (
+                <button type="button" key={deity.id} className={styles.deity}
+                  aria-pressed={deityId === deity.id} data-selected={deityId === deity.id}
+                  onClick={() => chooseDeity(deity.id)}>
+                  <span className={styles.deityName}>{deityId === deity.id ? <Check size={15} aria-hidden="true" /> : null}{deity.name[locale]}</span>
+                  <small>{deity.quality[locale]}</small>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <p className={styles.examplesNote}>{t.exampleNote}</p>
+          <div className={styles.alternativeActions}>
+            <button type="button" data-temple-custom-deity className={styles.alternative}
+              aria-pressed={deityId === "custom"} onClick={() => chooseDeity("custom")}>{t.otherDeityOption}</button>
+            <button type="button" data-temple-help-deity className={styles.alternative}
+              aria-pressed={deityId === "help"} onClick={() => chooseDeity("help")}>{t.helpMeChoose}</button>
+          </div>
+          {deityId === "custom" ? (
+            <div className={styles.customEntry}>
+              <label className={styles.customLabel}>{t.otherDeity}
+                <input value={customDeity} onChange={(event) => setCustomDeity(event.target.value)}
+                  placeholder={t.customDeity} maxLength={80} autoComplete="off" />
+              </label>
+              <button type="button" className={styles.continue} disabled={!customDeity.trim()}
+                onClick={() => setStep(3)}>{t.continue}<ChevronRight size={17} aria-hidden="true" /></button>
+            </div>
+          ) : null}
         </div>
-        <a className={styles.action} href={whatsappUrl} target="_blank" rel="noopener noreferrer" data-temple-whatsapp-request>
-          <WhatsAppLogo /> {t.contact} <ArrowUpRight size={18} aria-hidden="true" />
-        </a>
-        <p className={styles.note}>{t.note} {t.availability}</p>
-      </div>
+      ) : null}
+
+      {step === 3 ? (
+        <div className={styles.step} data-temple-step="initiation">
+          <div className={styles.stepTitle}><span>03</span><div><h3 tabIndex={-1} ref={stepHeadingRef}>{t.step3}</h3><p>{t.step3Hint}</p></div></div>
+          <div className={styles.formats} role="group" aria-label={t.step3}>
+            {formats.map((item) => (
+              <button type="button" key={item.id} className={styles.format}
+                aria-pressed={item.id === formatId} data-selected={item.id === formatId}
+                onClick={() => setFormatId(item.id)}>
+                <span className={styles.formatTitle}>{item.id === formatId
+                  ? <Check size={16} aria-hidden="true" />
+                  : <ChevronRight size={16} aria-hidden="true" />}{item.title[locale]}</span>
+                <small>{item.description[locale]}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {step === 3 ? (
+        <div className={styles.conversion} aria-live="polite">
+          <div className={styles.selection}>
+            <span>{t.selected}</span>
+            <strong>{traditionName} <ChevronRight size={13} aria-hidden="true" /> {deityName}</strong>
+            <small>{format?.title[locale] ?? t.pending}</small>
+          </div>
+          {ready ? (
+            <a className={styles.action} href={whatsappUrl} target="_blank" rel="noopener noreferrer"
+              data-temple-whatsapp-request>
+              <WhatsAppLogo /> {t.contact} <ArrowUpRight size={18} aria-hidden="true" />
+            </a>
+          ) : (
+            <span className={styles.actionDisabled} data-temple-whatsapp-disabled>{t.choosePrompt}</span>
+          )}
+          <p className={styles.note}>{t.note} {t.availability}</p>
+        </div>
+      ) : null}
       <p className={styles.disclaimer}>{t.context}</p>
     </section>
   );
