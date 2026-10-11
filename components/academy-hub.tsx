@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { EnglishGuidedMeditations } from "@/components/english-guided-meditations";
+import { AcademyVideoCourses } from "@/components/academy-video-courses";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -13,7 +13,6 @@ import {
   recordsForDirection,
   mediaForRecord,
   youtubeIdFromUrl,
-  videoRecords,
   type AcademyDirectionId,
   type AcademySourceRecord,
   type AcademyView,
@@ -143,18 +142,7 @@ export function AcademyBackLink({ locale }: { locale: PublicLocale }) {
 export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale; view?: AcademyView }) {
   const text = academyCopy[locale];
   const action = academyActionCopy[locale];
-  const items: CatalogShowcaseItem[] = view === "videos"
-    ? videoRecords(locale).map((record, index) => ({
-        id: "academy-video-" + record.routeKey.replace(/[^a-z0-9]+/gi, "-"),
-        title: academyDisplayTitle(record, locale),
-        subtitle: statusLabel(record, locale),
-        description: action.videoDescription,
-        href: "/" + locale + "/academy/" + record.routeKey,
-        image: recordImage(record, index),
-        actionLabel: action.video,
-        meta: statusLabel(record, locale),
-      }))
-    : [
+  const items: CatalogShowcaseItem[] = [
         {
           id: "academy-featured-yggdrasil",
           title: locale === "ru" ? "Дао Рейки Иггдрасиль" : "DAO Reiki Yggdrasil",
@@ -219,10 +207,13 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
       <header className="library-heading">
         <p className="homeopathy-kicker">Holistic House</p>
         <h1>{text.title}</h1>
-        <p>{text.lead}</p>
+        <p>{view === "videos"
+          ? locale === "ru" ? "Видео по учебным программам, модулям и ступеням — с разделением по языку оригинальной записи."
+            : locale === "es" ? "Vídeos organizados por programas, módulos y niveles, separados por el idioma original."
+              : "Courses, modules and individual lessons, grouped by program and original audio language."
+          : text.lead}</p>
       </header>
-      {locale === "en" && view === "videos" ? <EnglishGuidedMeditations /> : null}
-      <CatalogShowcase items={items} label={view === "videos" ? text.videoCollections : text.allPrograms} />
+      {view === "videos" ? <AcademyVideoCourses locale={locale} /> : <CatalogShowcase items={items} label={text.allPrograms} />}
       {view === "programs" ? (
         <p className="academy-archive-nav">
           <Link href={"/" + locale + "/academy/archive"}>
