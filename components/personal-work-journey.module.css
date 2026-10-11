@@ -63,115 +63,58 @@
 @media(max-width:767px){ .servicePhoto,.compact .servicePhoto,.full .servicePhoto {aspect-ratio:16/9;} .full .service {padding:12px 12px 22px;} .full .service > div:not(.servicePhoto) {padding-inline:8px;} }
 
 
-/* Approved home-page three-service cards — preserve separate full Services layout.
-   All photos are source-owned: local still-life illustration plus original video posters. */
-.compact {
-  position:relative; isolation:isolate; overflow:hidden; width:min(1188px,calc(100% - 40px));
-  margin-block:16px 30px; padding:clamp(22px,3vw,36px);
-  border:1px solid #ead9c5; border-radius:27px;
-  background:linear-gradient(142deg,#f5eddf 0%,#f5eee4 50%,#faf8f3 100%);
-  box-shadow:0 8px 33px rgba(78,51,29,.035);
+/* Home visual fidelity v2 — one authoritative compact layout; full Services untouched. */
+.compact{position:relative;isolation:isolate;width:min(1188px,calc(100% - 32px));margin:18px auto 28px;padding:clamp(18px,3vw,32px);overflow:hidden;border:1px solid #e8d7c5;border-radius:25px;background:linear-gradient(130deg,#faf7ef,#f5ecdf 65%,#f9f7f0);box-shadow:0 12px 36px rgba(70,45,27,.055)}
+.compact .intro{position:relative;isolation:isolate;max-width:800px}
+.compact .intro:before{content:"";position:absolute;z-index:-1;right:-40px;top:-26px;width:175px;height:190px;opacity:.27;background:url("/images/holistic-house/homepage-botanical.svg") center/contain no-repeat;pointer-events:none}
+.compact .intro h2{max-width:790px;font:400 clamp(35px,4.4vw,58px)/1.08 Georgia,serif;letter-spacing:-.035em;color:#37291f;text-wrap:balance}
+.compact .intro>p:last-child{max-width:685px;margin:12px 0 0;color:#655c52;font:14px/1.55 Arial,sans-serif}
+.compact .services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:23px}
+.compact .service,.compact .service:first-child{display:grid;grid-template-columns:minmax(0,42%) minmax(0,58%);grid-template-rows:minmax(0,1fr) auto;align-items:stretch;gap:0 16px;min-width:0;min-height:215px;padding:12px;border:1px solid #e8d8c6;border-radius:20px;background:#fffdf9;box-shadow:0 10px 27px rgba(70,46,30,.055)}
+.compact .service:first-child{grid-column:1/-1;grid-template-columns:minmax(0,42%) minmax(0,58%);min-height:250px;gap:0 24px;border-color:#dec7af}
+.compact .servicePhoto,.compact .service:first-child .servicePhoto{grid-column:1;grid-row:1/span 2;align-self:stretch;width:100%;height:100%;min-height:175px;aspect-ratio:auto;border-radius:14px;background:#e8dfd0;overflow:hidden}
+.compact .service:first-child .servicePhoto{min-height:225px}
+.compact .servicePhoto img{object-fit:cover;object-position:center}
+.compact .service>div:nth-child(2){grid-column:2;grid-row:1;min-width:0;padding:13px 4px 0 0}
+.compact .service>div:last-child{grid-column:2;grid-row:2;min-width:0;padding:0 4px 8px 0}
+.compact .focus{margin:0 0 7px;color:#8c5e43;font:800 10px/1.4 Arial,sans-serif;letter-spacing:.065em;text-transform:uppercase}
+.compact .service h3{max-width:26ch;margin:0;color:#382a20;font:400 clamp(24px,2.7vw,37px)/1.1 Georgia,serif;letter-spacing:-.03em;text-wrap:balance}
+.compact .description{margin:9px 0 0;max-width:36ch;color:#665d52;font:13px/1.53 Arial,sans-serif}
+.compact .serviceLink{display:flex;width:100%;min-height:45px;align-items:center;justify-content:space-between;gap:8px;margin:7px 0 0;padding:10px 0 0;border-top:1px solid #eae0d2;color:#885239;font:800 13px/1.35 Arial,sans-serif;text-decoration:none}
+.compact .service:first-child .serviceLink{width:max-content;max-width:100%;min-height:44px;margin:8px 0 0;padding:10px 15px;border:0;border-radius:999px;background:#85533b;color:#fffaf4}
+.compact .service:first-child .serviceLink:hover{background:#70422e;text-decoration:none}
+.compact .service:not(:first-child) .serviceLink:hover{text-decoration:underline;text-underline-offset:3px}
+.compact .free{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin-top:15px;padding:17px 19px;border:1px solid #bedada;border-radius:18px;background:linear-gradient(110deg,#e9f6fa,#e1f2ea)}
+.compact .free>div{flex:1 1 300px;min-width:0}
+.compact .free .eyebrow{color:#277b83;margin:0 0 5px}
+.compact .free h3{margin:0 0 6px;color:#1b4759;font:400 clamp(23px,2.8vw,30px)/1.17 Georgia,serif}
+.compact .free>div>p:last-child{max-width:570px;color:#4b666b;font:12px/1.5 Arial,sans-serif}
+.compact .primaryLink{min-height:46px;border-radius:999px;padding:10px 15px;background:#1b7389;border-color:#1b7389;color:#fff;font:800 12px/1.4 Arial,sans-serif;white-space:normal}
+.compact .primaryLink:hover{background:#165e71}
+.compact :is(.serviceLink,.primaryLink):focus-visible{outline:3px solid #b38056;outline-offset:3px}
+@media(max-width:950px){.compact .service,.compact .service:first-child{gap:0 12px}.compact .service h3{font-size:clamp(23px,3vw,31px)}}
+@media(max-width:767px){
+ .compact{width:calc(100% - 24px);padding:20px 13px 15px;margin:14px auto 22px;border-radius:22px}
+ .compact .intro:before{right:-24px;top:-18px;width:130px;height:145px;opacity:.18}
+ .compact .intro h2{font-size:clamp(31px,8.3vw,39px)}
+ .compact .intro>p:last-child{font-size:12px;line-height:1.45;margin-top:9px}
+ .compact .services{grid-template-columns:1fr;gap:10px;margin-top:18px}
+ .compact .service,.compact .service:first-child{grid-column:auto;grid-template-columns:minmax(112px,40%) minmax(0,60%);grid-template-rows:minmax(0,1fr) auto;gap:0 11px;min-height:176px;padding:10px;border-radius:18px}
+ .compact .service:first-child{min-height:190px}
+ .compact .servicePhoto,.compact .service:first-child .servicePhoto{grid-column:1;grid-row:1/span 2;width:100%;height:100%;min-height:148px;aspect-ratio:auto;border-radius:12px}
+ .compact .service:first-child .servicePhoto{min-height:169px}
+ .compact .service>div:nth-child(2){grid-column:2;grid-row:1;padding:3px 1px 0 0}
+ .compact .service>div:last-child{grid-column:2;grid-row:2;align-self:end;padding:0 1px 3px 0}
+ .compact .focus{margin-bottom:5px;font-size:9px;line-height:1.25;letter-spacing:.03em}
+ .compact .service h3{font-size:clamp(20px,5.9vw,26px);line-height:1.13}
+ .compact .description{margin-top:7px;font-size:11.5px;line-height:1.42}
+ .compact .serviceLink{min-height:31px;margin-top:6px;padding:6px 0 0;font-size:11px}
+ .compact .service:first-child .serviceLink{width:100%;min-height:38px;margin-top:5px;padding:8px 9px;border-radius:11px;font-size:10.5px}
+ .compact .free{flex-direction:column;align-items:stretch;gap:11px;padding:15px 14px;margin-top:12px}
+ .compact .free>div{flex:initial}
+ .compact .free h3{font-size:24px}
+ .compact .free>div>p:last-child{font-size:11px}
+ .compact .primaryLink{width:100%;min-height:45px}
 }
-.compact .intro { position:relative; isolation:isolate; max-width:100%; padding-right:clamp(0px,8vw,120px); }
-.compact .intro::after {
-  content:""; position:absolute; z-index:-1; pointer-events:none; width:188px; height:197px;
-  right:0; top:-25px; opacity:.40;
-  background:url("/images/holistic-house/homepage-botanical.svg") center/contain no-repeat;
-}
-.compact .intro h2 { max-width:880px; font-size:clamp(36px,4.7vw,60px); line-height:1.08; letter-spacing:-.038em; }
-.compact .intro > p:last-child { max-width:760px; font-size:15px; line-height:1.62; }
-.compact .services { grid-template-columns:repeat(3,minmax(0,1fr)); gap:13px; margin-top:25px; }
-.compact .service {
-  display:flex; flex-direction:column; justify-content:flex-start; gap:12px; min-width:0;
-  padding:12px 12px 20px; border:1px solid #e8d9c8; border-radius:23px;
-  background:#fffdf9; box-shadow:0 10px 26px rgba(66,43,31,.047);
-}
-.compact .servicePhoto { aspect-ratio:16/9; border-radius:15px; background:#e5ded0; }
-.compact .servicePhoto img { object-fit:cover; object-position:center; }
-.compact .service > div:not(.servicePhoto) { padding:0 10px; }
-.compact .focus { margin-bottom:8px; color:#8a5941; font-size:10px; font-weight:800; letter-spacing:.045em; line-height:1.5; }
-.compact .service h3 { font-size:clamp(25px,2.8vw,36px); line-height:1.12; color:#35281f; }
-.compact .description { margin-top:11px; font-size:13px; line-height:1.55; color:#665e56; }
-.compact .service > div:last-child { margin-top:auto; padding:6px 10px 0; }
-.compact .serviceLink {
-  display:flex; width:100%; min-height:48px; align-items:center; justify-content:space-between;
-  gap:10px; margin:0; padding:11px 0 0; border-top:1px solid #efe3d6;
-  color:#8a5238; font-size:13px; font-weight:800; line-height:1.4;
-}
-.compact .free { background:#eee6d7; border:1px solid #e1d0bc; border-radius:20px; padding:20px 22px; margin-top:16px; }
-.compact .free h3 { font-size:clamp(26px,3vw,33px); }
-.compact .primaryLink { background:#85583f; border-color:#85583f; }
-.compact .service:focus-within,.compact .service:hover { border-color:#d3bda6; box-shadow:0 14px 32px rgba(75,50,32,.08); }
-@media(max-width:1000px) { .compact .services { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media(max-width:767px) {
-  .compact { width:calc(100% - 28px); margin-block:12px 22px; padding:23px 16px; border-radius:23px; }
-  .compact .intro { padding-right:0; }
-  .compact .intro::after { right:-25px; top:-12px; width:130px; height:135px; opacity:.19; }
-  .compact .intro h2 { font-size:clamp(34px,8.7vw,43px); }
-  .compact .intro > p:last-child { max-width:95%; font-size:13px; }
-  .compact .services { grid-template-columns:1fr; gap:10px; margin-top:18px; }
-  .compact .service {
-    display:grid; grid-template-columns:clamp(106px,29vw,146px) minmax(0,1fr);
-    grid-template-rows:auto auto; gap:8px 13px; padding:11px;
-    border-radius:18px;
-  }
-  .compact .servicePhoto { aspect-ratio:auto; width:100%; height:158px; grid-column:1; grid-row:1; border-radius:13px; }
-  .compact .service > div:nth-child(2) { grid-column:2; grid-row:1; padding:2px 1px 0 0; }
-  .compact .service > div:last-child { grid-column:1 / -1; margin:0; padding:0 7px 1px; }
-  .compact .focus { font-size:9px; line-height:1.35; margin-bottom:5px; }
-  .compact .service h3 { font-size:clamp(22px,6vw,27px); line-height:1.10; }
-  .compact .description { margin-top:6px; font-size:12px; line-height:1.45; }
-  .compact .serviceLink { min-height:40px; font-size:12px; }
-  .compact .free { margin-top:12px; padding:18px 15px; }
-  .compact .free h3 { font-size:26px; }
-  .compact .free > div > p:last-child { font-size:12px; }
-}
-@media(max-width:359px) {
-  .compact .service { grid-template-columns:95px minmax(0,1fr); gap:7px 9px; }
-  .compact .servicePhoto { height:155px; }
-  .compact .service h3 { font-size:21px; }
-  .compact .description { font-size:11px; }
-}
-@media(prefers-reduced-motion:reduce){ .compact .service,.compact .serviceLink { transition:none; } }
-
-
-/* Home-service teaser: compact photographic choices, same visual rhythm as Services. */
-.compact {padding:clamp(19px,2.5vw,28px);margin-bottom:23px;}
-.compact .intro h2 {font-size:clamp(29px,3.6vw,43px);line-height:1.12;}
-.compact .intro>p:last-child {max-width:550px;font-size:13px;line-height:1.46;margin-top:9px;}
-.compact .services {margin-top:18px;gap:11px;}
-.compact .service {gap:8px;padding:10px 10px 14px;border-radius:18px;}
-.compact .servicePhoto {aspect-ratio:16/7.3;border-radius:12px;}
-.compact .service>div:not(.servicePhoto) {padding:0 7px;}
-.compact .focus {font-size:10px;margin-bottom:5px;}
-.compact .service h3 {font-size:clamp(21px,2.2vw,27px);line-height:1.17;}
-.compact .description {margin-top:7px;font-size:12px;line-height:1.43;}
-.compact .service>div:last-child {padding:0 7px;}
-.compact .serviceLink {font-size:12px;min-height:44px;padding:8px 0 0;}
-.compact .free {padding:16px 18px;margin-top:12px;border-radius:16px;}
-.compact .free h3 {font-size:clamp(22px,2.4vw,27px);}
-.compact .free>div>p:last-child {font-size:12px;line-height:1.5;}
-.compact .primaryLink {min-height:46px;padding:10px 16px;}
-@media(max-width:767px) {
-  .compact {width:calc(100% - 24px);padding:18px 13px;margin-block:10px 21px;border-radius:20px;}
-  .compact .intro h2 {font-size:clamp(29px,8vw,35px);}
-  .compact .intro>p:last-child {font-size:12px;line-height:1.45;margin-top:7px;}
-  .compact .services {margin-top:14px;gap:9px;grid-template-columns:1fr;}
-  .compact .service {
-    display:grid;grid-template-columns:94px minmax(0,1fr);
-    grid-template-rows:auto auto;gap:3px 11px;padding:9px;
-    border-radius:15px;
-  }
-  .compact .servicePhoto {height:103px;min-height:0;aspect-ratio:auto;border-radius:11px;grid-row:1;grid-column:1;}
-  .compact .service>div:nth-child(2) {grid-row:1;grid-column:2;padding:2px 2px 0 0;}
-  .compact .service>div:last-child {grid-row:2;grid-column:1/-1;padding:0 5px;}
-  .compact .focus {display:none;}
-  .compact .service h3 {font-size:clamp(19px,5.5vw,23px);line-height:1.14;}
-  .compact .description {font-size:12px;line-height:1.4;margin-top:6px;}
-  .compact .serviceLink {min-height:42px;padding-top:7px;font-size:12px;}
-  .compact .free {padding:15px 13px;gap:10px;}
-  .compact .free h3 {font-size:23px;}
-  .compact .free>div>p:last-child {font-size:12px;}
-  .compact .primaryLink {width:100%;min-height:46px;}
-}
-@media(max-width:359px){.compact .service{grid-template-columns:84px minmax(0,1fr)}.compact .servicePhoto{height:94px}.compact .service h3{font-size:19px}}
+@media(max-width:355px){.compact .service,.compact .service:first-child{grid-template-columns:98px minmax(0,1fr);gap:0 8px}.compact .service h3{font-size:20px}.compact .description{font-size:10.5px}}
+@media(prefers-reduced-motion:reduce){.compact :is(.serviceLink,.primaryLink){transition:none}}

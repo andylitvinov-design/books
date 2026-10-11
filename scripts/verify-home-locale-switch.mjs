@@ -58,6 +58,44 @@ async function exercise(engine, browserType, width) {
       results.push({ engine, width, from, to, heldRsc: true, firstClickRetained: true });
     }
     assert.deepEqual(errors, []);
+    // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
+    const journey = page.locator('[data-personal-work-journey="compact"]');
+    await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
+    await expect(journey.locator('[data-service-slug]')).toHaveCount(3);
+    await expect(page.locator('[data-home-contact-capture]')).toHaveCount(1);
+    const portrait = page.locator('.service-home-about__image');
+    await portrait.scrollIntoViewIfNeeded();
+    await expect.poll(() => portrait.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
+    const measurements = await page.evaluate(() => {
+      const bounds = selector => document.querySelector(selector)?.getBoundingClientRect();
+      const first = bounds('[data-service-slug="psychohomeopathy"]');
+      const photo = bounds('[data-service-slug="psychohomeopathy"] img');
+      const portrait = bounds('.service-home-about__image');
+      const contact = bounds('[data-home-contact-capture]');
+      const frame = document.querySelector('[data-home-contact-capture]');
+      return {
+        cardCount: document.querySelectorAll('[data-personal-work-journey="compact"] [data-service-slug]').length,
+        overflow: document.documentElement.scrollWidth - innerWidth,
+        featuredCardWidth: first?.width,
+        featuredPhotoWidth: photo?.width,
+        featuredPhotoHeight: photo?.height,
+        portraitWidth: portrait?.width,
+        portraitHeight: portrait?.height,
+        contactWidth: contact?.width,
+        contactButtons: frame?.querySelectorAll('[data-contact-channel]').length,
+        contactHasGenericSelector: !!frame?.querySelector('[data-consultation-capture]'),
+        contactBackground: frame && getComputedStyle(frame).backgroundImage,
+      };
+    });
+    assert.equal(measurements.cardCount, 3);
+    assert.ok(measurements.overflow <= 2, 'Homepage causes horizontal scroll: ' + JSON.stringify(measurements));
+    assert.ok(measurements.featuredPhotoWidth >= 90 && measurements.featuredPhotoHeight >= 115, 'Featured artwork is tiny or hidden: ' + JSON.stringify(measurements));
+    assert.ok(measurements.portraitWidth > (width === 390 ? 180 : 230), 'Real practitioner portrait has collapsed: ' + JSON.stringify(measurements));
+    assert.ok(measurements.portraitHeight >= 160, 'Real practitioner portrait is too short: ' + JSON.stringify(measurements));
+    assert.equal(measurements.contactButtons, 2, 'Homepage must have exactly WhatsApp and Telegram direct-contact channels');
+    assert.equal(measurements.contactHasGenericSelector, false, 'Homepage must not show the long generic consultation form');
+    assert.ok(measurements.contactBackground?.includes('linear-gradient'), 'Approved warm contact card background is missing');
+    results.push({ engine, width, homeVisual: true, ...measurements });
     await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-${engine}-${width}.png`, fullPage: true });
   } catch (error) {
     results.push({ engine, width, failure: error.message, pageErrors: errors });

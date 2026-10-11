@@ -133,11 +133,11 @@ export function PersonalWorkJourney({ locale, variant = "full" }: { locale: Loca
           const ServiceIcon = [HeartPulse, HeartHandshake, Route][index];
           const photos = [
             "/images/holistic-house/homeopathy-still-life.svg",
-            "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
-            "/images/holistic-house/video-posters/constellations-en-v1.webp",
+            "/images/holistic-house/homepage-guided-imagery.svg",
+            "/images/holistic-house/homepage-constellations.svg",
           ];
           return (
-            <article className={styles.service} key={service.slug}>
+            <article className={styles.service} key={service.slug} data-service-slug={service.slug}>
               <div className={styles.servicePhoto}>
                 <Image src={photos[index]} alt="" fill sizes={compact ? "(max-width: 880px) 100vw, 350px" : "(max-width: 880px) 100vw, 360px"} loading="lazy" />
               </div>
