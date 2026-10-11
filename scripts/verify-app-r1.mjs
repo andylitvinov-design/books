@@ -277,7 +277,22 @@ try {
  const weeklyResumeRow=page.locator('#my-tests-list article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})})
  await expect(weeklyResumeRow).toBeVisible()
  await weeklyResumeRow.getByRole('button',{name:'Continue test'}).click()
- await expect(page.locator('.hh-quick-question')).toHaveCount(8)
+ await expect(page).toHaveURL(/\/runs\//)
+ // A long synthetic test battery can temporarily exhaust its own per-minute
+ // account read budget. Retry only this browser step after quota recovery;
+ // never increase or bypass production request limits.
+ const resumedQuestions=page.locator('.hh-quick-question')
+ for(let attempt=0;attempt<4;attempt++){
+  try {
+   await expect(resumedQuestions).toHaveCount(8,{timeout:7000})
+   break
+  } catch(error) {
+   if(attempt===3)throw error
+   console.log('SYNTHETIC_QUICK_RESUME_COOLDOWN',attempt+1)
+   await page.waitForTimeout(24000)
+   await page.reload({waitUntil:'domcontentloaded'})
+  }
+ }
  await expect(page.getByText('1 / 8 answered',{exact:true})).toBeVisible()
  await expect(page.locator('.hh-quick-question').first().locator('.hh-scale button').first()).toHaveAttribute('aria-pressed','true')
  await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
