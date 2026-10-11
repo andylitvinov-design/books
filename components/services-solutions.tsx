@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Compass, HeartHandshake, HeartPulse, Check } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, Check } from "lucide-react";
 import type { Locale } from "@/data/remedies";
 import styles from "./services-solutions.module.css";
 
@@ -8,59 +8,59 @@ const copy = {
   en: {
     eyebrow: "START WITH YOUR SITUATION",
     title: "What would you like to change?",
-    lead: "You don't need to choose between hypnotherapy, constellations or other methods. Choose the question that sounds closest to yours. The first conversation is free.",
-    outcomeLabel: "What we can explore together",
+    lead: "Choose what feels closest to your situation. The first conversation is free.",
+    outcomeLabel: "What we can explore",
     methodsLabel: "Possible approaches",
-    cardAction: "Discuss this for free",
+    cardAction: "Free situation review",
     solutions: [
       {
-        title: "I feel tense, exhausted or out of balance",
-        summary: "You want to understand what's draining your energy and find a more supportive way forward.",
-        outcomes: ["Identify possible sources of strain and patterns worth noticing", "Clarify the resources, boundaries or support you may need"],
-        method: "Reflective imagery and personal-resource exploration; complementary psychohomeopathy only if appropriate.",
+        title: "Low energy or constant tension",
+        summary: "Explore what drains you and where to find support.",
+        outcomes: ["Notice possible sources of strain", "Explore resources and boundaries"],
+        method: "Guided imagery; optional complementary homeopathy discussion.",
         topic: "wellbeing",
         image: "/images/holistic-house/homeopathy-still-life.svg",
       },
       {
-        title: "I struggle with relationships or repeating emotions",
-        summary: "You feel caught in the same reactions, inner conflicts or difficult relationship dynamics.",
-        outcomes: ["Explore triggers, recurring roles and unmet needs", "Look at boundaries, choices and a possible different response"],
-        method: "Guided imagery, parts-oriented reflection and systemic mapping.",
+        title: "Relationships & emotions",
+        summary: "Explore recurring reactions and difficult connections.",
+        outcomes: ["Notice triggers and repeating patterns", "Explore boundaries and options"],
+        method: "Imagery and systemic exploration.",
         topic: "personal",
         image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
       },
       {
-        title: "I have a goal, but I can't move forward",
-        summary: "You know what you want, yet hesitation, uncertainty or familiar obstacles keep returning.",
-        outcomes: ["Clarify the goal and the obstacles you perceive", "Explore realistic next steps and new perspectives"],
-        method: "Personal imagery, systemic and archetypal constellation work.",
+        title: "A goal that feels out of reach",
+        summary: "Clarify what may be holding you back.",
+        outcomes: ["Identify perceived obstacles", "Consider realistic next steps"],
+        method: "Imagery and constellations.",
         topic: "goal",
         image: "/images/holistic-house/hero-olive-incense.webp",
       },
       {
-        title: "I face a business, career or major life decision",
-        summary: "You want to see a complex situation clearly before choosing where to invest your energy.",
-        outcomes: ["Map people, roles, constraints and competing priorities", "Consider alternative directions and questions to verify"],
-        method: "Business and decision constellations, alongside your own research and expert advice.",
+        title: "Work & difficult decisions",
+        summary: "Explore options before an important decision.",
+        outcomes: ["Map roles and priorities", "Compare options and what to verify"],
+        method: "Business constellations; not a substitute for expert advice.",
         topic: "business",
         image: "/images/holistic-house/video-posters/services-en-v2.webp",
       },
     ],
     bridgeEyebrow: "YOUR FIRST STEP",
-    bridgeTitle: "A free conversation, not a commitment to a programme",
-    bridgeText: "Tell me what is happening. We'll clarify the question and look for a sensible next step together. You can stop there — no paid session is required.",
+    bridgeTitle: "Start with a free conversation",
+    bridgeText: "Clarify your question and a possible next step. No obligation to continue.",
     bridgeButton: "Request my free situation review",
     processEyebrow: "HOW IT WORKS",
     processTitle: "What you actually receive",
     steps: [
-      { title: "1. Your question", text: "We start with your actual concern, not a predefined technique or package." },
-      { title: "2. A clearer picture", text: "We discuss patterns, what you've tried and what could be worth exploring further." },
-      { title: "3. An optional next step", text: "You may leave with ideas to consider independently or ask about an individual session." },
+      { title: "1. Your question", text: "Tell me what matters now." },
+      { title: "2. Clarity", text: "Explore patterns and resources." },
+      { title: "3. Next step", text: "Choose what, if anything, comes next." },
     ],
     scope: "This is an introductory conversation, not a medical or mental-health diagnosis. No cure, business outcome or personal change is guaranteed.",
     methodEyebrow: "THE METHODS, EXPLAINED",
     methodTitle: "I choose the approach around your question",
-    methodLead: "These are optional ways of exploring a concern, not four extra services you have to compare before getting in touch.",
+    methodLead: "You don't need to choose a method before we speak.",
     detailAction: "Understand this approach",
     methods: [
       {
@@ -84,59 +84,59 @@ const copy = {
   ru: {
     eyebrow: "НАЧНИТЕ СО СВОЕГО ЗАПРОСА",
     title: "Что вы хотели бы изменить?",
-    lead: "Не нужно разбираться в гипнотерапии, расстановках и других методах. Выберите ситуацию, которая вам близка. Первый разговор — бесплатно.",
-    outcomeLabel: "Что можем прояснить вместе",
+    lead: "Выберите близкую вам ситуацию. Первый разговор — бесплатно.",
+    outcomeLabel: "Что можно прояснить",
     methodsLabel: "Возможные методы",
-    cardAction: "Обсудить бесплатно",
+    cardAction: "Бесплатный разбор",
     solutions: [
       {
-        title: "Не хватает сил, много напряжения",
-        summary: "Хочется понять, что забирает ресурс, и найти более устойчивый способ справляться с ситуацией.",
-        outcomes: ["Рассмотреть возможные причины перегрузки и повторяющиеся реакции", "Прояснить, каких ресурсов, границ или поддержки вам не хватает"],
-        method: "Образная работа и исследование ресурсов; при необходимости — дополнительная беседа о психогомеопатии.",
+        title: "Нет сил и много напряжения",
+        summary: "Исследовать источники напряжения и возможную поддержку.",
+        outcomes: ["Замечать повторяющиеся реакции", "Исследовать ресурсы и границы"],
+        method: "Образная работа; при желании — беседа о гомеопатии.",
         topic: "wellbeing",
         image: "/images/holistic-house/homeopathy-still-life.svg",
       },
       {
-        title: "Трудности в отношениях и повторяющиеся эмоции",
-        summary: "Снова возникают знакомые реакции, внутренние конфликты или сложные ситуации с близкими.",
-        outcomes: ["Исследовать эмоциональные триггеры, роли и потребности", "Посмотреть на границы, варианты выбора и новые способы реагирования"],
-        method: "Образы, работа с внутренними частями и системное исследование.",
+        title: "Отношения и эмоции",
+        summary: "Разобраться в повторяющихся реакциях и отношениях.",
+        outcomes: ["Замечать триггеры и привычные роли", "Рассмотреть границы и варианты"],
+        method: "Образы и системное исследование.",
         topic: "personal",
         image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
       },
       {
-        title: "Есть цель, но не получается двигаться",
-        summary: "Вы знаете, чего хотите, но сталкиваетесь с сомнениями, неясностью или привычными препятствиями.",
-        outcomes: ["Уточнить цель и предполагаемые препятствия", "Найти варианты следующих реалистичных шагов"],
-        method: "Образная работа, системные и архетипические расстановки.",
+        title: "Цель без движения",
+        summary: "Прояснить препятствия и возможный следующий шаг.",
+        outcomes: ["Уточнить цель и затруднения", "Наметить реалистичный шаг"],
+        method: "Образы и расстановки.",
         topic: "goal",
         image: "/images/holistic-house/hero-olive-incense.webp",
       },
       {
-        title: "Сложное решение в бизнесе, карьере или жизни",
-        summary: "Хочется увидеть ситуацию шире, прежде чем выбрать направление и вкладывать силы.",
-        outcomes: ["Разобрать роли, участников, ограничения и приоритеты", "Рассмотреть альтернативы и вопросы, которые нужно проверить"],
-        method: "Бизнес-расстановки и анализ решений как дополнение к вашей экспертизе.",
+        title: "Работа и сложные решения",
+        summary: "Увидеть альтернативы перед важным решением.",
+        outcomes: ["Разобрать роли и приоритеты", "Сравнить варианты и риски"],
+        method: "Бизнес-расстановки как дополнение к экспертной оценке.",
         topic: "business",
         image: "/images/holistic-house/video-posters/services-en-v2.webp",
       },
     ],
     bridgeEyebrow: "ВАШ ПЕРВЫЙ ШАГ",
-    bridgeTitle: "Бесплатный разбор без обязательной покупки сессий",
-    bridgeText: "Расскажите, что происходит. Вместе проясним ваш запрос и возможный следующий шаг. На этом можно остановиться — платная работа необязательна.",
+    bridgeTitle: "Начните с бесплатного разбора",
+    bridgeText: "Проясним ваш запрос и возможный следующий шаг. Продолжать работу необязательно.",
     bridgeButton: "Записаться на бесплатную диагностику",
     processEyebrow: "КАК ЭТО ПРОХОДИТ",
     processTitle: "Что именно вы получите",
     steps: [
-      { title: "1. Ваш запрос", text: "Начинаем с реальной ситуации, а не с готовой техники или программы." },
-      { title: "2. Больше ясности", text: "Обсуждаем повторяющиеся схемы, уже опробованные решения и возможные ресурсы." },
-      { title: "3. Возможный следующий шаг", text: "Вы сможете обдумать варианты самостоятельно или узнать о личной работе." },
+      { title: "1. Ваш запрос", text: "Обсудим, что сейчас важно." },
+      { title: "2. Ясность", text: "Исследуем реакции и ресурсы." },
+      { title: "3. Следующий шаг", text: "Вы решите, нужно ли продолжение." },
     ],
     scope: "Это вводный разбор, а не медицинская или психиатрическая диагностика. Излечение, деловые достижения и личные изменения не гарантируются.",
     methodEyebrow: "МЕТОДЫ — ТОЛЬКО ПОЯСНЕНИЕ",
     methodTitle: "Метод подбирается под задачу",
-    methodLead: "Это дополнительные способы исследования запроса, а не ещё несколько конкурирующих услуг, которые нужно выбрать заранее.",
+    methodLead: "Не нужно выбирать метод до нашей беседы.",
     detailAction: "Подробнее о подходе",
     methods: [
       {
@@ -159,8 +159,6 @@ const copy = {
   },
 } as const;
 
-const solutionIcons = [HeartPulse, HeartHandshake, Compass, BriefcaseBusiness] as const;
-
 export function ServicesSolutions({ locale }: { locale: Locale }) {
   const t = copy[locale];
   return (
@@ -172,8 +170,7 @@ export function ServicesSolutions({ locale }: { locale: Locale }) {
           <p className={styles.intro}>{t.lead}</p>
         </div>
         <div className={styles.grid}>
-          {t.solutions.map((solution, index) => {
-            const Icon = solutionIcons[index];
+          {t.solutions.map((solution) => {
             return (
               <article className={styles.card} key={solution.topic} id={solution.topic}>
                 <div className={styles.cardTop}>
@@ -181,18 +178,19 @@ export function ServicesSolutions({ locale }: { locale: Locale }) {
                     <Image src={solution.image} alt="" fill sizes="(max-width: 760px) 105px, 155px" loading="lazy" />
                   </div>
                   <div className={styles.cardIntro}>
-                    <span className={styles.icon}><Icon size={19} strokeWidth={1.8} aria-hidden="true" /></span>
                     <h3>{solution.title}</h3>
                     <p>{solution.summary}</p>
                   </div>
                 </div>
-                <div className={styles.cardBody}>
-                  <p className={styles.label}>{t.outcomeLabel}</p>
+                <details className={styles.cardMore}>
+                  <summary>{t.outcomeLabel}<ChevronDown size={15} aria-hidden="true" /></summary>
+                  <div className={styles.cardBody}>
                   <ul>
                     {solution.outcomes.map((outcome) => <li key={outcome}><Check size={16} aria-hidden="true" />{outcome}</li>)}
                   </ul>
                   <p className={styles.method}><strong>{t.methodsLabel}:</strong> {solution.method}</p>
-                </div>
+                  </div>
+                </details>
                 <Link
                   className={styles.cardCta}
                   href={"/" + locale + "/services/free-situation-review?topic=" + solution.topic}
