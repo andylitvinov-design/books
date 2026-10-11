@@ -35,7 +35,7 @@ test("services prioritizes concrete client solutions and a free conversation ove
 test("three services are choices with direct real service links, not implied treatment stages", () => {
   const component = source("components", "personal-work-journey.tsx");
   for (const phrase of [
-    "Гомеопатия", "Образная терапия", "Расстановки и архетипическая работа",
+    "Гомеопатия", "Образная терапия", "Расстановки",
     "Homeopathy", "Guided imagery therapy", "Constellations",
     "psychohomeopathy",
     "imagery-therapy",
