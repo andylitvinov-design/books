@@ -31,7 +31,7 @@ test("Services shows the free trio while Home retains four photo-left cards", ()
   assert.match(solutions, /visibleOffers.map/);
   assert.match(solutions, /homeTitle: "How I can help"/);
   assert.match(hero, /href="#free-insights"/);
-  assert.doesNotMatch(home, /Two free ways to begin/);
+  assert.match(home, /heroSecondary: "Explore four services"/);
   assert.doesNotMatch(hero, /two free assessments/i);
 });
 
