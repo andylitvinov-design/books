@@ -91,3 +91,10 @@
  .lessonStep p{font-size:16px}
 }
 @media(prefers-reduced-motion:reduce){.shell *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.retest{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:15px 18px;border:1px solid #c6d5c3;background:#eff5eb;border-radius:15px}
+.retest>div{display:grid;gap:4px;min-width:0}
+.retest strong{font-size:14px;color:#41644e}
+.retest small{font-size:12px;line-height:1.5;color:#697765}
+.retest a{display:inline-flex;align-items:center;gap:3px;color:#316953;font-size:13px;font-weight:700;flex:none}
+@media(max-width:620px){.retest{align-items:flex-start;flex-direction:column}}
