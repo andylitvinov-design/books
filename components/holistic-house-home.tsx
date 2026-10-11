@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
-import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
@@ -100,7 +100,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
   }
 
   return (
-    <main className="house-home house-home--services" lang={locale}>
+    <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
       <header className="house-header house-header--services">
         <Link className="house-wordmark" href="/" aria-label={text.homeLabel}>
           Holistic House
@@ -204,8 +204,10 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <Image
             src="/images/holistic-house/andy-about.png"
             alt={locale === "ru" ? "Андрей Литвинов" : "Andrey Litvinov"}
-            fill
-            sizes="(max-width: 767px) 100vw, 450px"
+            width={900}
+            height={720}
+            className="service-home-about__image"
+            sizes="(max-width: 767px) calc(100vw - 32px), 450px"
             loading="lazy"
           />
           <span className="service-home-about__portrait-caption">
@@ -214,9 +216,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </div>
       </section>
 
-      <div className="home-contact-capture">
-        <PublicConsultationCta locale={locale} />
-      </div>
+      <HomepageContactCta locale={locale} />
 
       <footer className="service-home-footer">
         <Link className="house-wordmark" href="/">Holistic House</Link>

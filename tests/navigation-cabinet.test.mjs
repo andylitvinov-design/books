@@ -188,7 +188,12 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
   assert.match(cta, /Interested in training or the next level/)
   assert.match(cta, /data-conversion-kind=\{mode\}/)
   assert.match(styles, /\.public-consultation-cta__actions/)
-  for (const source of [home, homeopathy, services, spanishServices, library, academy, academyRecord, remedies, remedyPage, bookReader]) {
+  const homeContact = await readFile('components/homepage-contact-cta.tsx', 'utf8')
+  assert.match(home, /<HomepageContactCta locale=\{locale\}/)
+  assert.match(homeContact, /data-home-contact-capture/)
+  assert.match(homeContact, /wa\.me\/14376066502/)
+  assert.match(homeContact, /t\.me\/AndyTherapist/)
+  for (const source of [homeopathy, services, spanishServices, library, academy, academyRecord, remedies, remedyPage, bookReader]) {
     assert.match(source, /PublicConsultationCta/)
   }
 })

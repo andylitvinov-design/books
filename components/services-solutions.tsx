@@ -6,6 +6,14 @@ import { coreServiceOffers } from "@/data/core-service-offers";
 import type { Locale } from "@/data/remedies";
 import styles from "./services-solutions.module.css";
 
+// Homepage-only editorial illustrations. Preserve original source media on Services.
+const homepageMedia = {
+  situation: "/images/holistic-house/hero-olive-incense.webp",
+  dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+  alchemy: "/images/holistic-house/homepage-constellations.svg",
+  hypnotherapy: "/images/holistic-house/homepage-guided-imagery.svg",
+} as const;
+
 const copy = {
   en: {
     eyebrow: "FOUR WAYS TO WORK TOGETHER",
@@ -57,10 +65,10 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
       </header>
       <div className={styles.grid}>
         {coreServiceOffers(locale).map((offer, index) => (
-          <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : undefined}>
+          <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : undefined} data-core-service-id={offer.id}>
             {!isHome && offer.id === "alchemy" ? <><span id="business" className={styles.anchor} /><span id="archetypal" className={styles.anchor}/></> : null}
             <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true">
-              <Image src={offer.image} alt="" fill sizes="(max-width: 760px) 96px, (max-width: 1080px) 140px, 200px" loading={index === 0 ? "eager" : "lazy"} />
+              <Image src={isHome ? homepageMedia[offer.id] : offer.image} alt="" fill sizes={isHome ? "(max-width: 760px) 45vw, (max-width: 1080px) 30vw, 280px" : "(max-width: 760px) 96px, (max-width: 1080px) 140px, 200px"} loading={index === 0 ? "eager" : "lazy"} />
             </Link>
             <div className={styles.cardContent}>
               <span className={styles.cardLabel}>{offer.label}</span>
