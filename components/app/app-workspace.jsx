@@ -356,7 +356,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'documents' && recordId && (
             <SavedDocumentPage key={recordId} id={recordId} locale={locale} reload={load} />
           )}
-          {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
+          {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} />}
           {page === 'settings' && (
             <>
@@ -2074,6 +2074,7 @@ function Portrait({ data, locale }) {
         </div>
         {data.practitioner && <OwnerTools locale={locale} />}
         <ReportsFromAndy data={data} locale={locale} />
+        <ClientMaterialsFromAndy locale={locale} />
       </ProfileAssessmentOverview>
     </section>
   )
@@ -2148,6 +2149,23 @@ function LatestChange({ locale, results }) {
   const changes = latestCompatibleChange(results)
   if (!changes.length) return null
   return <section className="hh-section hh-panel"><h2>{locale === 'ru' ? 'Последнее изменение' : 'Latest change'}</h2><p className="hh-fine">{locale === 'ru' ? 'Последний совместимый замер рядом с предыдущим; это не объяснение причин или тренд.' : 'Latest compatible measurement beside the previous one; this does not state a cause or trend.'}</p><ul className="hh-change-list">{changes.map((change) => <li key={change.key}>{labelFor(change.key, locale)} <strong>{change.previous} → {change.value}</strong></li>)}</ul></section>
+}
+function ClientMaterialsFromAndy({ locale }) {
+  const [materials, setMaterials] = useState([])
+  useEffect(() => {
+    let active = true
+    appFetch('shared-materials')
+      .then(value => { if (active) setMaterials(Array.isArray(value.materials) ? value.materials : []) })
+      .catch(() => { if (active) setMaterials([]) })
+    return () => { active = false }
+  }, [])
+  if (!materials.length) return null
+  return <section className="hh-section hh-client-shared-materials" aria-label={locale === 'ru' ? 'Материалы от специалиста' : 'Materials from practitioner'}>
+    <p className="hh-kicker">{locale === 'ru' ? 'От Andy' : 'From Andy'}</p>
+    <h2>{locale === 'ru' ? 'Материалы для вас' : 'Your study materials'}</h2>
+    <p>{locale === 'ru' ? 'Ссылки от вашего специалиста. Сохранённые рецепты и счета находятся в истории кабинета.' : 'Links shared by your practitioner. Documents you explicitly saved are in your account history.'}</p>
+    <div className="hh-client-shared-materials-grid">{materials.map(material => <a key={material.id} href={material.url} target="_blank" rel="noopener noreferrer"><span>{material.title}</span><span aria-hidden="true">↗</span></a>)}</div>
+  </section>
 }
 function ReportsFromAndy({ data, locale }) {
   const reports = reportTimeline(data.savedReports).filter((report) => report.available !== false).slice(0, 3)
