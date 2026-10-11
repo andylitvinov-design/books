@@ -9,8 +9,6 @@ const nextConfig: NextConfig = {
     // so iOS Safari does not have to hotlink PsiTrends directly.
     { protocol: "https", hostname: "psitrends.com", pathname: "/images/**" },
     { protocol: "https", hostname: "www.psitrends.com", pathname: "/images/**" },
-    // Original Kundalini Reiki photograph from the author-owned PsiMaster archive.
-    { protocol: "https", hostname: "psimaster.net", pathname: "/sites/default/files/**" },
   ] },
   async headers() {
     return [
