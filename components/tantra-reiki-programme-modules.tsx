@@ -100,7 +100,8 @@ const detailedRanges: readonly (readonly [number, number])[] = [
   [70, 74],   // Author's overall philosophy, not the repeated stage paragraphs
   [179, 183], // Tradition and historical learning context
 ];
-const excludedSourceIndices = new Set([5, 6, 7, 8]);
+// Block 182 is already the final sentence of block 181; preserve it in source JSON, not twice in the page.
+const excludedSourceIndices = new Set([5, 6, 7, 8, 182]);
 
 function Modules({ locale, blocks }: { locale: PublicLocale; blocks: AcademyBlock[] }) {
   const captions = copy[locale].chapters;
