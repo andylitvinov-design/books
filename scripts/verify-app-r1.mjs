@@ -381,6 +381,22 @@ try {
  await expect(page.locator('#my-tests-list')).toBeVisible()
  await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
  passed('public test selection starts Google authentication and opens account test battery')
+ // The account shows the entire saved selection immediately, with a direct
+ // remove control per row. Removing does not remove previous saved results.
+ const beforeRemove=(await api('bootstrap')).data
+ const activeBeforeRemove=beforeRemove.activeTestPlan
+ assert.ok(activeBeforeRemove?.definitionIds.length>0)
+ const removeButton=page.locator('[data-remove-selected-test]').first()
+ await expect(removeButton).toBeVisible()
+ await expect(page.locator('#my-tests-list')).toBeVisible()
+ await removeButton.click()
+ await expect.poll(async()=>((await api('bootstrap')).data.activeTestPlan?.definitionIds.length || 0),{timeout:15000})
+  .toBe(activeBeforeRemove.definitionIds.length-1)
+ const afterRemove=(await api('bootstrap')).data
+ assert.equal(afterRemove.results.length,beforeRemove.results.length,'removing a test must not delete results')
+ assert.equal(afterRemove.runs.length,beforeRemove.runs.length,'removing a test must not delete drafts')
+ assert.ok(await page.getByText('Removed from selection.',{exact:false}).count())
+ passed('first-screen test removal updates current plan while preserving private results and drafts')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
