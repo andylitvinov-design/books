@@ -38,7 +38,7 @@ export function ClientCabinet({ name, locale, selector, documents, materials = [
   }
 
   return <main className="client-cabinet">
-    <header className="client-cabinet-header"><div><p>{copy.private}</p><h1>Holistic House</h1></div><div className="client-cabinet-header-actions"><a href={`/${ru ? 'en' : 'ru'}/client/${selector}`}>{ru ? 'EN' : 'RU'}</a><button onClick={logout}>{copy.signOut}</button></div></header>
+    <header className="client-cabinet-header"><div><p>{copy.private}</p><h1>Holistic House</h1></div><div className="client-cabinet-header-actions"><a href={`/${ru ? 'en' : 'ru'}/client/${selector}${view === 'analysis' ? '?view=analysis' : ''}`}>{ru ? 'EN' : 'RU'}</a><button onClick={logout}>{copy.signOut}</button></div></header>
     <nav className="client-cabinet-sections" aria-label={ru ? 'Разделы кабинета' : 'Cabinet sections'}><Link aria-current={view === 'documents' ? 'page' : undefined} href={`/${locale}/client/${selector}`} prefetch={false}>{copy.documentsTab}</Link><Link aria-current={view === 'analysis' ? 'page' : undefined} href={`/${locale}/client/${selector}?view=analysis`} prefetch={false}>{copy.analysisTab}</Link></nav>
     {view === 'analysis' ? <PersonalAnalysisPanel locale={locale} reports={assessments} selector={selector} /> : <>
     <section className="client-cabinet-welcome" aria-label={copy.welcome}><p>{copy.cabinet}</p><h2>{ru ? `Здравствуйте, ${name}` : `Welcome, ${name}`}</h2><span>{copy.welcome}</span>{latestDate ? <div className="client-cabinet-latest"><span>{copy.latest}</span><strong>{formatDate(latestDate)}</strong><small>{latest.length} {latest.length === 1 ? copy.document : copy.documents}</small></div> : <p className="client-cabinet-empty-intro">{copy.empty}</p>}</section>
