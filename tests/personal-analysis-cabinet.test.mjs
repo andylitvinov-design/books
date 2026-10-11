@@ -43,6 +43,7 @@ test('Google Cabinet lists only explicitly saved practitioner reports and downlo
     src('components/app/shared-report-view.jsx'),
   ])
   assert.match(workspace, /reports=\{reportTimeline\(data\.savedReports\)\}/)
+  assert.match(workspace, /PersonalAnalysisPanel key=\{data\.account\.id\}/) // reset metadata on account change
   assert.match(panel, /\/api\/app\/reports\//)
   assert.match(panel, /credentials: 'same-origin'/)
   assert.match(panel, /response\.ok/)
