@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
+import { KundaliniReikiCourse } from "@/components/kundalini-reiki-course";
 import { TempleStudies } from "@/components/temple-studies";
 import { templeLegacyAnchors } from "@/data/academy/temple-studies-curriculum";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
@@ -43,6 +44,7 @@ function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
   if (routeKey(slug) === "temple-studies") return locale === "ru" ? "Temple Studies — Храмовые традиции" : locale === "es" ? "Temple Studies — Tradiciones del Templo" : "Temple Studies";
+  if (routeKey(slug) === "reiki/kundalini-reiki") return locale === "ru" ? "Кундалини Рейки — 3 ступени" : locale === "es" ? "Kundalini Reiki — 3 niveles" : "Kundalini Reiki — 3 levels";
   const child = yggdrasilChild(slug);
   if (routeKey(slug) === "reiki/yggdrasil/basic-course/description") return locale === "ru" ? "Рейки Иггдрасиль — книга базового курса I–V ступени" : locale === "es" ? "Libro: Reiki Yggdrasil — Curso Básico I–V" : "Reiki Yggdrasil — Basic Course Book I–V";
   if (child === "free-initiation") return locale === "ru" ? "Как получить бесплатную инициацию 1-й ступени Рейки Иггдрасиль" : locale === "es" ? "Cómo recibir la iniciación gratis de Reiki Yggdrasil Nivel 1" : "How to receive free Reiki Yggdrasil Level 1 initiation";
@@ -70,7 +72,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
-  const description = child === "superskills-sources"
+  const description = routeKey(slug) === "reiki/kundalini-reiki"
+    ? locale === "ru" ? "Кундалини Рейки: отдельный курс 1–3 ступеней, медитации, практика Баланс, мастерские настройки и первоисточники PsiMaster, SuperSkills и PsiTrends." : locale === "es" ? "Kundalini Reiki: curso independiente de tres niveles, meditación, Balance, práctica de Maestro y fuentes originales." : "Kundalini Reiki: a distinct three-level programme with meditation, Balance, Master-level study and original PsiMaster, SuperSkills and PsiTrends sources."
+    : child === "superskills-sources"
     ? locale === "ru" ? "Упорядоченная библиотека 19 исходных материалов SuperSkills: базовый и инструкторский курсы, практика, FAQ, отзывы, инициация." : locale === "es" ? "Biblioteca de 19 fuentes Reiki Yggdrasil, organizadas por cursos, ejercicios, iniciación y testimonios." : "Nineteen original SuperSkills source pages organized by Basic Course, Instructor Course, exercises, FAQ, initiation and testimonials."
     : child === "free-initiation"
     ? locale === "ru" ? "Как бесплатно получить инициацию 1-й ступени Рейки Иггдрасиль: 3 варианта, материалы для чтения, 7 контрольных вопросов и запись к преподавателю." : locale === "es" ? "Guía de iniciación gratuita Reiki Yggdrasil Nivel 1: tres formas de empezar, lecturas y siete preguntas." : "Free Level 1 Reiki Yggdrasil initiation: three ways to study, reading materials, seven preparation questions and teacher contact."
@@ -104,6 +108,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   }
 
   if (key === "temple-studies") return <TempleStudies locale={locale} />;
+  if (key === "reiki/kundalini-reiki") return <KundaliniReikiCourse locale={locale} />;
   if (key === "reiki/yggdrasil/basic-course/description") return <YggdrasilBasicCourseDescription locale={locale} />;
   if (key === "reiki/master-shamanic-healing") redirect("/" + locale + "/academy/reiki/yggdrasil/basic-course");
   if (child === "archive") return <YggdrasilSourceArchivePage locale={locale} />;
