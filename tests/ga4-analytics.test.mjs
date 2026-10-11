@@ -46,3 +46,18 @@ test("Google collection is limited to the canonical production host and the shar
   assert.doesNotMatch(links, /dataLayer\?\.push/);
   assert.match(middleware, /response\.headers\.set\('Content-Security-Policy', csp\)/);
 });
+
+test("analytics is opt-in through the Privacy page with no sitewide popup", () => {
+  const consent = readFileSync(consentModule, "utf8");
+  const privacy = readFileSync(new URL("../app/privacy/page.tsx", import.meta.url), "utf8");
+  const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
+
+  assert.match(layout, /<AnalyticsConsent\s*\/>/);
+  assert.match(consent, /export function AnalyticsConsent\(\)/);
+  assert.match(consent, /return null;/);
+  assert.doesNotMatch(consent, /<aside\b|className="analytics-consent"/);
+  assert.match(consent, /isPublicAnalyticsPath\(pathname\) \? savedConsent\(\) : "denied"/);
+  assert.match(consent, /window\.gtag\?\.\("consent", "update"/);
+  assert.match(consent, /if \(value === "denied"\) eraseAnalyticsCookies\(\)/);
+  assert.match(privacy, /<AnalyticsPreferences\s*\/>/);
+});
