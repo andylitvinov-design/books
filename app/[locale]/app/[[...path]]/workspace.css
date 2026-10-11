@@ -1678,3 +1678,10 @@
 .hh-result-page>.hh-result-hero{margin-bottom:14px}
 .hh-result-page .hh-result-intro{font-size:15px}
 @media(max-width:600px){.hh-result-raw-details{padding:0 10px}.hh-result-raw-details>summary{font-size:13px}}
+
+/* My Course: six compact equal targets, keep existing five and add the course at the end. */
+@media(max-width:760px){
+  .hh-app .hh-mobile-app-nav { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .hh-app .hh-mobile-app-nav a { font-size:10px; padding-inline:0; min-width:0; }
+  .hh-app .hh-mobile-app-nav a svg { width:19px;height:19px; }
+}
