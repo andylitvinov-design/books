@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
+import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import { YggdrasilTestimonials } from "@/components/yggdrasil-testimonials";
 import { YggdrasilMeditationFeature } from "@/components/yggdrasil-meditation-feature";
 import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
@@ -168,7 +169,7 @@ function SourceVisual({ url, label, className = "" }: { url: string; label: stri
       aria-label={label}
       className={"yggdrasil-source-visual " + className}
       role="img"
-      style={{ backgroundImage: `linear-gradient(180deg, rgba(35,25,20,.03), rgba(35,25,20,.16)), url("${url}")` }}
+      style={{ backgroundImage: `linear-gradient(180deg, rgba(35,25,20,.03), rgba(35,25,20,.16)), url("${reikiPhotoUrl(url, 1200)}")` }}
     />
   );
 }

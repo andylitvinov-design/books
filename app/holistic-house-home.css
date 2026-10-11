@@ -692,7 +692,10 @@ a.service-home-start-card:hover {
   }
   .house-home--services .service-home-about__copy h2 { font-size:clamp(37px,8vw,44px); }
   .house-home--services .service-home-about__copy > p:not(.service-home-kicker) { font-size:13px; line-height:1.6; }
-  .house-home--services .service-home-about__portrait { height:215px; min-height:215px; border-radius:18px; }
+  /* The legacy > div:last-child align-self:center collapsed a fill-image to 1px on phones. */
+  .house-home--services .service-home-about > .service-home-about__portrait {
+    align-self:stretch; width:100%; height:215px; min-height:215px; border-radius:18px;
+  }
   .house-home--services .home-contact-capture { margin:12px 16px 35px; }
   .house-home--services .home-contact-capture .public-consultation-cta {
     grid-template-columns:1fr; gap:14px; padding:21px 19px; border-radius:20px;
@@ -702,4 +705,36 @@ a.service-home-start-card:hover {
 }
 @media(prefers-reduced-motion:reduce) {
   .house-home--services .service-home-start-card { transition:none; }
+}
+
+
+/* Unified compact offer cards on the public homepage (EN and RU). */
+.house-home--services .service-home-start {padding-top:30px;padding-bottom:22px;}
+.house-home--services .service-home-start__heading {margin-bottom:16px;}
+.house-home--services .service-home-start__heading h2 {font-size:clamp(30px,3.6vw,43px);}
+.house-home--services .service-home-start__heading>p:last-child {font-size:13px;line-height:1.48;}
+.house-home--services .service-home-start__grid {gap:11px;}
+.house-home--services .service-home-start-card {min-height:206px;padding:20px;border-radius:18px;}
+.house-home--services .service-home-start-card--learning {min-height:144px;}
+.house-home--services .service-home-start-card__icon {width:42px;height:42px;margin-bottom:9px;}
+.house-home--services .service-home-start-card__icon svg {width:21px;height:21px;}
+.house-home--services .service-home-start-card h3 {font-size:clamp(23px,2.4vw,29px);line-height:1.15;margin-top:5px;}
+.house-home--services .service-home-start-card p {font-size:12px;line-height:1.46;margin-top:6px;}
+.house-home--services .service-home-start-card>strong {padding-top:10px;font-size:13px;min-height:43px;}
+@media(max-width:767px) {
+  .house-home--services .service-home-hero {min-height:360px;}
+  .house-home--services .service-home-hero-copy {padding:28px 21px 29px;}
+  .house-home--services .service-home-intro {font-size:13px;line-height:1.48;}
+  .house-home--services .service-home-start {margin-inline:16px;padding:22px 0 16px;}
+  .house-home--services .service-home-start__heading {margin-bottom:13px;}
+  .house-home--services .service-home-start__heading h2 {font-size:clamp(29px,7.5vw,34px);}
+  .house-home--services .service-home-start__heading>p:last-child {font-size:12px;line-height:1.45;}
+  .house-home--services .service-home-start__grid {gap:8px;}
+  .house-home--services .service-home-start-card {min-height:0;padding:16px;border-radius:16px;}
+  .house-home--services .service-home-start-card h3 {font-size:clamp(22px,6vw,26px);}
+  .house-home--services .service-home-start-card p {font-size:12px;line-height:1.4;}
+  .house-home--services .service-home-start-card__icon {width:37px;height:37px;margin-bottom:8px;}
+  .house-home--services .service-home-start-card__eyebrow {font-size:10px;}
+  .house-home--services .service-home-start-card--learning {min-height:0;gap:5px;}
+  .house-home--services .service-home-start-card__actions {padding-top:9px;}
 }

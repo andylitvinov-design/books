@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
+import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import { aboutBiography } from "@/data/about-biography";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
 
@@ -59,7 +60,7 @@ export function TantraReikiFestivalMoments({locale}:{locale:PublicLocale}) {
         {eventPhotos.map((photo, index) => (
           <figure key={photo.src} className={"tantra-festival-moments__photo tantra-festival-moments__photo--"+index}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo.src} alt={photo.alt} loading="lazy" decoding="async" />
+            <img src={reikiPhotoUrl(photo.src, 640)} alt={photo.alt} loading="lazy" decoding="async" />
           </figure>
         ))}
       </div>

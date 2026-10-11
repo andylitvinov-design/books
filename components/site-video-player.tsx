@@ -97,7 +97,9 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   // SSR may appear before React attaches handlers on a slow connection.
   const [interactive, setInteractive] = useState(false);
   useEffect(() => { setInteractive(true); }, []);
-  const [poster, setPoster] = useState<"maxres" | "hq" | null>("maxres");
+  // Compact testimonial cards reliably use the standard HQ still; maxres is often unavailable.
+  // Optimized posters load from our own origin to avoid mobile third-party image blocking.
+  const [poster, setPoster] = useState<"maxres" | "hq" | "direct" | null>(compact ? "hq" : "maxres");
   const playerRef = useRef<HTMLIFrameElement>(null);
   const titleId = useId();
   const duration = videoDuration(video.durationSeconds);
@@ -114,7 +116,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
     : `https://www.youtube-nocookie.com/embed/${video.youtubeId}?${playerParams.toString()}`;
 
   useEffect(() => { if (playing) playerRef.current?.focus(); }, [playing]);
-  function showFallbackPoster() { setPoster((current) => current === "maxres" ? "hq" : null); }
+  function showFallbackPoster() { setPoster((current) => current === "maxres" ? "hq" : current === "hq" ? "direct" : null); }
 
   const externalLink = <a className="site-video-watch-link" href={watchUrl} target="_blank" rel="noopener noreferrer" aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}>{watchLabel}<ExternalLink aria-hidden="true" /></a>;
 
@@ -130,7 +132,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
             ) : isHeygen ? (
               <Film aria-hidden="true" className="site-video-generic-poster" strokeWidth={0.8} style={{ position: "absolute", width: "50%", height: "70%", opacity: 0.12 }} />
             ) : poster ? (
-              <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
+              <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized={poster === "direct"} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
             ) : null}
             <span className="site-video-shade" aria-hidden="true" />
                 <span className="site-video-poster-title" aria-hidden="true" data-title={video.title} />

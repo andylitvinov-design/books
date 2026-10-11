@@ -1,8 +1,8 @@
 import type { PublicLocale } from "@/lib/public-locales";
-import { ConsultationChoiceCapture } from "@/components/consultation-choice-capture";
+import { FreeDrawingIntake } from "@/components/free-drawing-intake";
 
-// No mandatory name, private history or situation field on first contact.
-// This preserves the approved free-introduction route and its ?topic= deep links.
+// The free offer is an asynchronous drawing assessment with a written report.
+// Coaching answers remain browser-local until the visitor chooses to copy/send.
 export function FreeSituationReviewForm({ locale }: { locale: PublicLocale }) {
-  return <ConsultationChoiceCapture locale={locale} variant="free" />;
+  return <FreeDrawingIntake locale={locale} />;
 }

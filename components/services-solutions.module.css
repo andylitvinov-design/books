@@ -108,3 +108,72 @@
 .archivedClips {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0;}
 .archivedClips :global(.site-video-block) {min-width:0;}
 @media(max-width:760px){.archivedClips{grid-template-columns:1fr;gap:13px;}}
+
+
+/* Compact outcomes-first cards: detail is optional, the free review is immediate. */
+.solutions { margin-top:50px; }
+.header { max-width:670px; }
+.header h2 { font-size:clamp(31px,3.1vw,44px); }
+.header .intro { max-width:590px; font-size:14px; line-height:1.5; }
+.grid { gap:14px; margin-top:21px; }
+.card { border-radius:20px; }
+.cardTop { grid-template-columns:104px minmax(0,1fr); gap:15px; align-items:center; padding:16px 16px 7px; }
+.photo { min-height:102px; aspect-ratio:1/1; border-radius:14px; }
+.card h3 { font-size:clamp(21px,2vw,26px); line-height:1.16; margin:0 0 7px; }
+.cardIntro>p { font-size:13px; line-height:1.47; }
+.cardMore { margin:0 16px 7px; border-top:1px solid #ede4da; }
+.cardMore summary {
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  min-height:37px; padding:7px 1px; list-style:none; cursor:pointer;
+  color:#486d58; font:700 12px/1.35 Arial,Helvetica,sans-serif;
+}
+.cardMore summary::-webkit-details-marker {display:none;}
+.cardMore summary svg {flex:none; transition:transform .15s ease;}
+.cardMore[open] summary svg {transform:rotate(180deg);}
+.cardMore summary:hover {color:#234c3b;}
+.cardMore summary:focus-visible {outline:3px solid #ad784f;outline-offset:2px;border-radius:3px;}
+.cardMore .cardBody {padding:2px 1px 5px;}
+.cardMore .cardBody ul {gap:7px;}
+.cardMore .cardBody li {font-size:12px;line-height:1.5;}
+.cardMore .method {font-size:11px;line-height:1.55;margin:11px 0 5px;padding-top:9px;}
+.cardCta {margin:0 16px 16px;min-height:47px;padding:11px 15px;font-size:13px;border-radius:12px;}
+.bridge {margin-top:21px;padding:27px 31px;}
+.bridge h2 {font-size:clamp(24px,2.4vw,32px);}
+.process {margin-top:40px;}
+.steps {margin-top:18px;gap:10px;}
+.step {padding:20px 22px;}
+.step h3 {font-size:20px;}
+.step p {margin-top:8px;font-size:13px;}
+.methods {margin-top:32px;padding:28px;}
+.methodGrid {margin-top:16px;}
+.methodCard {padding:19px 18px;}
+.methodCard h3 {font-size:20px;}
+.methodCard p {font-size:12px;margin:9px 0 13px;}
+@media(max-width:760px) {
+  .solutions {margin-top:32px;}
+  .header {padding:0 5px;}
+  .header h2 {font-size:clamp(30px,8vw,36px);}
+  .header .intro {font-size:13px;line-height:1.45;margin-top:8px;}
+  .grid {gap:10px;margin-top:16px;}
+  .card {border-radius:17px;}
+  .cardTop {grid-template-columns:84px minmax(0,1fr);gap:12px;padding:13px 13px 7px;}
+  .photo {min-height:90px;width:84px;aspect-ratio:1/1;border-radius:12px;}
+  .card h3 {font-size:clamp(19px,5.4vw,23px);line-height:1.15;margin:0 0 5px;}
+  .cardIntro>p {font-size:12px;line-height:1.4;}
+  .cardMore {margin:0 13px 7px;}
+  .cardMore summary {min-height:34px;font-size:12px;}
+  .cardCta {min-height:47px;margin:0 13px 13px;font-size:13px;padding:10px 14px;}
+  .bridge {margin-top:18px;padding:21px 19px;gap:13px;}
+  .bridge h2 {font-size:25px;}
+  .bridge p:not(.bridgeEyebrow) {font-size:13px;margin-top:6px;}
+  .bridge>a {min-height:48px;}
+  .process {margin-top:33px;}
+  .steps {margin-top:14px;gap:8px;}
+  .step {padding:15px 17px;}
+  .step h3 {font-size:19px;}
+  .step p {font-size:12px;margin-top:5px;}
+  .methods {margin-top:27px;padding:21px 17px;}
+  .methods h2 {font-size:28px;}
+  .methodCard {padding:16px;}
+}
+@media(prefers-reduced-motion:reduce){.cardMore summary svg{transition:none;}}

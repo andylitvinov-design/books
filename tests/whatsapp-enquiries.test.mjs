@@ -99,9 +99,9 @@ test("every site lead surface uses structured service/request WhatsApp links, ne
     assert.doesNotMatch(src,/https:\/\/wa\.me\/14376066502(?!.*enquiry)/i,path);
   }
   const consultation=read("components/consultation-choice-capture.tsx");
-  assert.match(consultation,/topic: isService \? undefined : t\.topicOptions\[topic\]/);
-  assert.match(consultation,/option: isService \? t\.serviceOptions\[serviceChoice\] : t\.freeAction/);
-  assert.match(consultation,/pagePath: publicPath \|\| undefined/);
+  assert.match(consultation,/isPaidRequest = isService && serviceChoice !== "free"/);
+  assert.match(consultation,/option: t\.serviceOptions\[serviceChoice\]/);
+  assert.match(consultation,/const ctaHref = isPaidRequest \? whatsappUrl/);
   assert.doesNotMatch(consultation,/about this topic|по этой теме|sobre este tema/i);
   const cabinet=read("components/client-cabinet.jsx");
   assert.doesNotMatch(cabinet,/https:\/\/wa\.me\/14376066502\b/);

@@ -65,3 +65,20 @@ test("video browser verification selects the managed intro even when testimonial
   assert.match(verifier, /\[data-video-slot="home-intro"\] \.site-video-player/);
   assert.doesNotMatch(verifier, /page\.locator\('\.site-video-play'\)\.click\(\)/);
 });
+
+
+test("mobile video testimonials keep real YouTube thumbnail images with a same-origin and direct fallback", () => {
+  const player = read("components", "site-video-player.tsx");
+  assert.match(player, /compact \? "hq" : "maxres"/);
+  assert.match(player, /unoptimized=\{poster === "direct"\}/);
+  assert.match(player, /current === "hq" \? "direct"/);
+  assert.match(player, /i\.ytimg\.com\/vi\/\$\{video\.youtubeId\}/);
+  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
+});
+
+test("the real practitioner photo stays full-width on mobile", () => {
+  const home = read("components", "holistic-house-home.tsx");
+  const css = read("app", "holistic-house-home.css");
+  assert.match(home, /src="\/images\/holistic-house\/andy-about\.png"/);
+  assert.match(css, /\.house-home--services \.service-home-about > \.service-home-about__portrait \{\s*align-self:stretch; width:100%; height:215px;/);
+});

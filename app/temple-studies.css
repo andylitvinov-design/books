@@ -610,3 +610,96 @@
   .temple-video-series-summary-text strong { font-size: 15px; }
   .temple-video-series-summary-text small { font-size: 12px; }
 }
+
+
+/* 2026-10-10: a concise first-look journey; the seven chapter texts remain complete inside details. */
+.temple-hero { min-height: 325px; }
+.temple-hero-copy { padding: clamp(23px, 3vw, 37px); }
+.temple-hero h1 { margin: 9px 0 10px; font-size: clamp(38px, 4vw, 55px); }
+.temple-hero-copy .temple-lead { font-size: clamp(19px, 2vw, 25px) !important; margin-bottom: 10px !important; }
+.temple-hero-copy > p:not(.homeopathy-kicker) { font-size: 14px; line-height: 1.55; }
+.temple-hero-actions { margin-top: 16px; gap: 13px; }
+.temple-learning-intro { margin: 27px 0 15px; }
+.temple-learning-intro > h2 { font: 500 clamp(27px, 3vw, 37px)/1.18 var(--font-serif, Georgia, serif); color: #3b3028; margin: 5px 0 5px; }
+.temple-learning-intro > p:last-child { color: #7a695b; line-height: 1.5; font-size: 13px; margin: 0; }
+.temple-stage-flow { gap: 14px; margin-top: 0; }
+.temple-stage { display: grid; grid-template-columns: minmax(165px, 29%) minmax(0,1fr); border-radius: 16px; }
+.temple-stage-cover { min-height: 0; height: 195px; align-self: start; }
+.temple-stage-cover-label { left: 16px; bottom: 14px; font-size: 11px; }
+.temple-stage-reading { padding: 21px 24px; }
+.temple-stage-heading { max-width: none; }
+.temple-stage h2 { font-size: clamp(23px, 2.25vw, 30px); margin: 5px 0 5px; letter-spacing: -.015em; }
+.temple-stage-subtitle { font-size: 15px; line-height: 1.4; margin: 5px 0 0; }
+.temple-stage .homeopathy-kicker { font-size: 10px; }
+.temple-stage-details { margin-top: 14px; border-top: 1px solid #eadfd4; }
+.temple-stage-details > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 0 1px; cursor: pointer; color: #2f7882; font-size: 13px; font-weight: 750; list-style: none;
+}
+.temple-stage-details > summary::-webkit-details-marker { display: none; }
+.temple-stage-details > summary svg { flex-shrink: 0; transition: transform .15s ease; }
+.temple-stage-details[open] > summary svg { transform: rotate(180deg); }
+.temple-stage-details > summary:hover { color: #1c5866; }
+.temple-stage-expanded { padding-top: 17px; }
+.temple-stage-expanded .temple-stage-intro { font-size: 14px; line-height: 1.65; margin: 0 0 20px; }
+.temple-stage-expanded .temple-small-heading { padding-top: 17px; }
+.temple-stage-expanded .temple-lessons li { padding: 12px 0; }
+.temple-stage-expanded .temple-lessons h4 { font-size: 17px; }
+.temple-stage-expanded .temple-lessons p { font-size: 13px; line-height: 1.56; }
+.temple-stage-expanded .temple-practice { margin: 17px 0 22px; gap: 9px; }
+.temple-stage-expanded .temple-practice > div { padding: 16px; }
+.temple-stage-expanded .temple-practice p { font-size: 13px; }
+.temple-stage-expanded .temple-next-stage { margin-top: 20px; }
+.temple-video-index { display: block; margin: 15px 0 20px; padding: 0; overflow: hidden; }
+.temple-video-index-summary { display: flex; cursor: pointer; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 22px; list-style: none; }
+.temple-video-index-summary::-webkit-details-marker { display: none; }
+.temple-video-index-summary > svg { flex-shrink: 0; color: #9b7b5e; transition: transform .15s ease; }
+.temple-video-index[open] .temple-video-index-summary > svg { transform: rotate(180deg); }
+.temple-video-index-summary-text { display: grid; gap: 5px; }
+.temple-video-index-summary-text strong { font: 500 24px/1.2 var(--font-serif, Georgia, serif); color: #3d2b20; }
+.temple-video-index-summary-text small { font-size: 12px; color: #7a695a; }
+.temple-video-index .temple-video-index-links { padding: 0 20px 20px; }
+.temple-video-index .temple-video-index-summary:hover { background: #f1e5d8; }
+.temple-finish { padding: 31px clamp(22px, 4vw, 43px); }
+.temple-finish .temple-primary-cta { margin: 18px auto 10px; }
+.temple-finish .temple-telegram-link { margin: 0 auto 19px; }
+.temple-telegram-link a { color: #74533f; text-underline-offset: 3px; font-size: 13px; }
+@media (max-width: 920px) {
+  .temple-stage { grid-template-columns: minmax(135px, 27%) minmax(0,1fr); }
+  .temple-stage-reading { padding: 21px; }
+}
+@media (max-width: 700px) {
+  .temple-hero { min-height: 0; }
+  .temple-hero-image { min-height: 136px; max-height: 136px; }
+  .temple-hero-copy { padding: 20px 19px 22px; }
+  .temple-hero h1 { font-size: 36px; }
+  .temple-hero-copy .temple-lead { font-size: 20px !important; }
+  .temple-hero-copy > p:not(.homeopathy-kicker) { font-size: 13px; line-height: 1.5; }
+  .temple-hero-actions { margin-top: 13px; gap: 8px; }
+  .temple-hero-actions > span { font-size: 11px; }
+  .temple-primary-cta { padding: 11px 14px; font-size: 13px; }
+  .temple-learning-intro { margin: 22px 2px 13px; }
+  .temple-learning-intro > h2 { font-size: 28px; }
+  .temple-stage-flow { gap: 11px; margin-top: 0; }
+  .temple-stage { display: grid; grid-template-columns: 91px minmax(0,1fr); border-radius: 12px; }
+  .temple-stage-cover { height: 100%; min-height: 155px; }
+  .temple-stage-cover-label { font-size: 9px; left: 9px; bottom: 11px; letter-spacing: .03em; }
+  .temple-stage-reading { padding: 14px 12px; }
+  .temple-stage h2 { font-size: clamp(19px, 5.2vw, 25px); line-height: 1.16; margin: 5px 0; }
+  .temple-stage-subtitle { font-size: 12px; line-height: 1.4; margin-top: 3px; }
+  .temple-stage-details { margin-top: 10px; }
+  .temple-stage-details > summary { font-size: 12px; line-height: 1.4; padding-top: 9px; gap: 7px; }
+  .temple-stage-details > summary svg { width: 15px; }
+  .temple-stage-expanded { padding-top: 13px; }
+  .temple-stage-expanded .temple-stage-intro { font-size: 12.5px; }
+  .temple-stage-expanded .temple-practice { grid-template-columns: minmax(0,1fr); }
+  .temple-stage-expanded .temple-lessons li { grid-template-columns: 21px minmax(0,1fr); gap: 7px; }
+  .temple-stage-expanded .temple-lessons h4 { font-size: 15px; }
+  .temple-stage-expanded .temple-lessons p { font-size: 12px; }
+  .temple-stage-expanded .temple-practice > div { padding: 12px; }
+  .temple-video-index-summary { padding: 15px; }
+  .temple-video-index-summary-text strong { font-size: 22px; }
+  .temple-video-index .temple-video-index-links { padding: 0 13px 15px; }
+  .temple-finish { padding: 28px 19px; }
+}
+@media (prefers-reduced-motion: reduce) { .temple-stage-details > summary svg, .temple-video-index-summary > svg { transition: none; } }

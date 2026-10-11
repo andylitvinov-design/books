@@ -1,0 +1,96 @@
+/* Temple Studies journey picker: compact first-look choices and an explicit WhatsApp handoff. */
+.chooser {
+  box-sizing: border-box;
+  scroll-margin-top: 125px;
+  margin: 20px 0 28px;
+  padding: clamp(20px, 3vw, 33px);
+  border: 1px solid #bbd9da;
+  border-radius: 22px;
+  background: linear-gradient(140deg, #eaf6f7 0%, #f3f8f5 42%, #f7eee4 100%);
+  box-shadow: 0 10px 26px rgba(50, 87, 86, .045);
+  color: #254851;
+}
+.chooser * { box-sizing: border-box; }
+.heading { max-width: 780px; }
+.eyebrow { display: flex; gap: 8px; align-items: center; color: #377f86; font: 800 11px/1.4 Arial, sans-serif; letter-spacing: .09em; text-transform: uppercase; margin: 0 0 9px; }
+.heading h2 { margin: 0 0 8px; font: 500 clamp(27px, 3vw, 40px)/1.12 Georgia, serif; letter-spacing: -.02em; color: #254750; }
+.heading > p:last-child { margin: 0; max-width: 710px; color: #5d7677; font: 14px/1.56 Arial, sans-serif; }
+.step { border-top: 1px solid #c9ddda; padding-top: 17px; margin-top: 19px; }
+.stepTitle { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 13px; }
+.stepTitle > span { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 11px; background: #cfe8e6; color: #216676; font: 800 12px Arial, sans-serif; }
+.stepTitle h3 { margin: 0 0 3px; color: #254750; font: 750 17px/1.3 Arial, sans-serif; }
+.stepTitle p { margin: 0; color: #708484; font: 12px/1.43 Arial, sans-serif; }
+.traditions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tradition {
+  border: 1px solid #c2d8d7; border-radius: 999px;
+  background: rgba(255,255,255,.87); color: #3d5c63;
+  display: inline-flex; justify-content: center; align-items: center; gap: 7px;
+  min-height: 42px; padding: 9px 16px;
+  font: 750 13px/1.25 Arial, sans-serif; cursor: pointer;
+}
+.tradition:hover, .deity:hover, .format:hover { border-color: #80b5b8; background: #fff; }
+.tradition[data-selected="true"] { border-color: #28798a; color: #fff; background: #28798a; }
+.deities { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+.deity {
+  min-width: 0; min-height: 87px; padding: 13px 12px; border: 1px solid #d3dfdb;
+  border-radius: 13px; background: rgba(255,255,255,.83);
+  color: #33535c; text-align: left; cursor: pointer;
+}
+.deity[data-selected="true"] { border-color: #2e8492; background: #d8eff0; box-shadow: inset 0 0 0 1px #2e8492; }
+.deityName { display: flex; align-items: center; gap: 6px; font: 750 15px/1.3 Arial, sans-serif; }
+.deityName svg { flex: 0 0 auto; }
+.deity small { display: block; color: #648080; font: 12px/1.45 Arial, sans-serif; margin-top: 6px; }
+.formats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 9px; }
+.format { min-width: 0; min-height: 129px; padding: 16px 14px; border: 1px solid #d5deda; border-radius: 14px; background: rgba(255,255,255,.82); color: #31545e; cursor: pointer; text-align: left; }
+.format[data-selected="true"] { background: #d9edef; border-color: #278092; box-shadow: inset 0 0 0 1px #278092; }
+.formatTitle { display: flex; gap: 7px; align-items: flex-start; font: 750 14px/1.37 Arial, sans-serif; }
+.formatTitle svg { flex: 0 0 auto; margin-top: 1px; }
+.format small { display: block; color: #627b7c; font: 12px/1.48 Arial, sans-serif; padding-left: 24px; margin-top: 7px; }
+.customLabel { display: grid; gap: 7px; color: #31555c; font: 750 13px/1.35 Arial, sans-serif; max-width: 460px; }
+.customLabel input { width: 100%; min-height: 44px; border: 1px solid #afccca; border-radius: 10px; background: #fff; color: #2e4549; padding: 9px 12px; font: 14px Arial, sans-serif; }
+.conversion { display: grid; grid-template-columns: minmax(0,1fr) minmax(210px,auto); align-items: center; gap: 14px 22px; margin-top: 23px; padding: 20px 19px; background: #fffaf6; border: 1px solid #e3d4c7; border-radius: 14px; }
+.selection { display: grid; gap: 5px; min-width: 0; }
+.selection > span { color: #758689; font: 800 11px/1.3 Arial, sans-serif; text-transform: uppercase; letter-spacing: .09em; }
+.selection strong { display: flex; gap: 5px; align-items: center; color: #294c55; font: 750 17px/1.35 Arial, sans-serif; flex-wrap: wrap; }
+.selection strong svg { flex-shrink: 0; }
+.selection small { color: #6f7a79; font: 13px/1.3 Arial, sans-serif; }
+.action {
+  display: flex; gap: 10px; align-items: center; justify-content: center;
+  min-height: 53px; padding: 12px 14px; border-radius: 12px;
+  background: #177965; color: #fff; font: 800 14px/1.35 Arial, sans-serif;
+  text-decoration: none; text-align: center; transition: background .15s ease;
+}
+.action svg { flex: 0 0 auto; }
+.action:hover { background: #0d6656; }
+.note { grid-column: 1/-1; margin: -2px 0 0; font: 11px/1.45 Arial, sans-serif; color: #7e807c; }
+.disclaimer { margin: 13px 2px 0; color: #79908c; font: 11px/1.48 Arial, sans-serif; }
+.chooser button:focus-visible, .chooser a:focus-visible, .chooser input:focus-visible { outline: 3px solid #d69d57; outline-offset: 3px; }
+@media (max-width: 1050px) {
+  .deities { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .formats { grid-template-columns: 1fr; gap: 8px; }
+  .format { min-height: 74px; padding: 12px 14px; }
+  .conversion { grid-template-columns: 1fr; }
+  .action { width: 100%; }
+}
+@media (max-width: 640px) {
+  .chooser { padding: 18px 15px; border-radius: 16px; margin: 14px 0 21px; }
+  .heading h2 { font-size: 29px; }
+  .heading > p:last-child { font-size: 13px; }
+  .step { margin-top: 15px; padding-top: 15px; }
+  .stepTitle { gap: 9px; }
+  .stepTitle > span { flex-basis: 29px; height: 29px; font-size: 11px; }
+  .stepTitle h3 { font-size: 16px; }
+  .traditions { gap: 6px; }
+  .tradition { min-height: 37px; padding: 7px 11px; font-size: 12px; }
+  .deities { gap: 7px; }
+  .deity { min-height: 79px; padding: 11px 9px; }
+  .deityName { font-size: 13px; }
+  .deity small { font-size: 11px; margin-top: 5px; }
+  .format { min-height: 68px; }
+  .formatTitle { font-size: 13px; }
+  .format small { font-size: 11px; }
+  .conversion { padding: 14px; gap: 11px; margin-top: 17px; }
+  .selection strong { font-size: 15px; }
+  .action { font-size: 13px; min-height: 49px; }
+}
+@media (prefers-reduced-motion: reduce) { .action { transition: none; } }
