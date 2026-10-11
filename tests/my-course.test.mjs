@@ -1,0 +1,118 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { readFileSync } from 'node:fs'
+import {
+  GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS,
+  courseDay, courseLesson, growthSuggestions, suggestedCourseTopics,
+} from '../lib/inner-growth/course-model.js'
+
+const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+test('My Course describes exactly four EN/RU sequential steps and six optional goals', () => {
+  assert.equal(COURSE_STEPS.length, 4)
+  assert.equal(Object.keys(GROWTH_GOALS).length, 6)
+  assert.ok(COURSE_TOPICS.every((topic) => topic.title.en && topic.title.ru))
+  assert.ok(COURSE_STEPS.every((step) => step.en && step.ru && step.detail.en && step.detail.ru))
+})
+
+function weeklyResult(values = {}) {
+  return {
+    id: '36c5b778-74ba-4487-bfb9-5ed44ed95710',
+    definitionKey: 'hh-weekly-pulse', definitionVersion: 'v1',
+    scoringKey: 'raw-dimensions', scoringVersion: 'v1',
+    measurementAt: new Date().toISOString(),
+    dimensions: Object.entries(values).map(([key, value]) => ({
+      key, value, min: 0, max: 10,
+      direction: ({
+        'weekly.tension': 'lower-reported-tension',
+        'weekly.load': 'lower-reported-load',
+        'weekly.recovery': 'higher-reported-recovery',
+        'weekly.clarity': 'higher-reported-clarity',
+        'weekly.connection': 'higher-reported-support',
+      })[key],
+    })),
+  }
+}
+
+test('an original HH weekly response may suggest trainable resources with provenance, never a diagnosis', () => {
+  const input = weeklyResult({ 'weekly.tension': 8, 'weekly.clarity': 2, 'weekly.connection': 3 })
+  const suggestions = growthSuggestions([input], 'ru')
+  assert.deepEqual(suggestions.map((s) => s.goal), [
+    'calm_regulation', 'attention_clarity', 'connection_boundaries',
+  ])
+  assert.ok(suggestions.every((s) => s.resultId === input.id && s.measuredAt === input.measurementAt))
+  assert.match(suggestions[0].reason, /не диагноз/)
+})
+
+test('do not invert healthy low symptom scores or assign deficiency to personality traits', () => {
+  assert.deepEqual(growthSuggestions([weeklyResult({ 'weekly.tension': 1, 'weekly.load': 1 })]), [])
+  const trait = { ...weeklyResult({ 'weekly.tension': 8 }), definitionKey: 'mini-ipip-20' }
+  assert.deepEqual(growthSuggestions([trait]), [])
+  const wrongDirection = weeklyResult({ 'weekly.tension': 9 })
+  wrongDirection.dimensions[0].direction = 'higher-reported-wellbeing'
+  assert.deepEqual(growthSuggestions([wrongDirection]), [])
+})
+
+test('personal concerns map to optional, editable topics without clinical inference', () => {
+  const suggested = suggestedCourseTopics('I feel stress and cannot focus')
+  assert.deepEqual(suggested, { urgent:false, topics:['stress','attention'] })
+  assert.equal(suggestedCourseTopics('I want to kill myself').urgent, true)
+  assert.deepEqual(suggestedCourseTopics('hello').topics, [])
+})
+
+test('outdated results do not drive current practice recommendations', () => {
+  const old = weeklyResult({ 'weekly.tension': 8 })
+  old.measurementAt = '2020-01-01T00:00:00Z'
+  assert.deepEqual(growthSuggestions([old]), [])
+})
+
+test('daily sessions are bilingual and distinguish 14-day practice from later integration', () => {
+  const ru = courseLesson('inner_support', 1, 'ru')
+  const en = courseLesson('inner_support', 15, 'en')
+  assert.match(ru.aphorism, /замечать/)
+  assert.match(ru.meditation, /Опору|Заметьте|тело/i)
+  assert.match(ru.ritual, /Запишите/)
+  assert.ok(en.isIntegration)
+  assert.notEqual(en.teaching, courseLesson('inner_support', 1, 'en').teaching)
+  assert.equal(courseLesson('inner_support', 14, 'en').isIntegration, false)
+  assert.equal(courseDay('2026-10-10T12:00:00Z', 14, Date.parse('2026-10-11T12:00:00Z')), 2)
+  assert.equal(courseDay('2026-10-10T12:00:00Z', 14, Date.parse('2027-01-01T00:00:00Z')), 14)
+})
+
+test('one private four-stage route reuses tests, insights and keeps mobile bottom navigation', () => {
+  const page = read('app/[locale]/app/[[...path]]/page.jsx')
+  const shell = read('components/app/app-workspace.jsx')
+  const ui = read('components/app/my-course.jsx')
+  const css = read('app/[locale]/app/[[...path]]/workspace.css')
+  assert.match(page, /'course'/)
+  assert.match(shell, /<MyCourse data=\{data\} locale=\{locale\}/)
+  assert.match(shell, /root \+ '\/course'/)
+  assert.match(shell, /hh-mobile-app-nav/)
+  assert.match(css, /repeat\(6,minmax\(0,1fr\)\)/)
+  assert.match(ui, /href=\{root \+ '\/tests'\}/)
+  assert.match(ui, /href=\{root \+ '\/portfolio'\}/)
+  assert.match(ui, /COURSE_STEPS/)
+})
+
+test('course state is authenticated, encrypted, owner-scoped and not copied to browser storage', () => {
+  const route = read('app/api/app/[...path]/route.js')
+  const service = read('lib/app/growth-course.js')
+  const migration = read('supabase/migrations/20261011184000_hh_my_course_r1.sql')
+  assert.match(route, /const actor = await auth\.verified\(\)/)
+  assert.match(route, /createGrowthCourseRepository/)
+  assert.match(service, /transaction\(config, actor/)
+  assert.match(service, /openSealed\(/)
+  assert.match(service, /seal\(concerns/)
+  assert.match(service, /where account_id=\$1/)
+  assert.match(service, /COURSE_TESTS_REQUIRED/)
+  assert.match(service, /COURSE_TESTS_REMAIN/)
+  assert.match(service, /weeklyChange/)
+  assert.match(service, /URGENT_SUPPORT_NEEDED/)
+  assert.match(service, /REVISION_CONFLICT/)
+  assert.match(migration, /references app\.accounts\(id\) on delete cascade/)
+  assert.match(migration, /enable row level security/)
+  assert.match(migration, /account_id=\(select auth\.uid\(\)\)/)
+  const client = read('components/app/my-course.jsx')
+  assert.doesNotMatch(client, /localStorage|sessionStorage|dangerouslySetInnerHTML/)
+  assert.doesNotMatch(service, /select \* from app\.assessment_runs(?! where account_id)/)
+})
