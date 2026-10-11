@@ -83,3 +83,5 @@
  .listHeading{gap:6px}
  .collapseList{padding:7px!important}
 }
+
+.completedDate{display:block;color:#687369;font-size:.7rem;line-height:1.35;margin:5px 0 0}
