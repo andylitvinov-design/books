@@ -75,7 +75,9 @@ test("text comes from the specified three websites and the uploaded manual, not 
   assert.match(component, /kundalini-manual/);
   assert.doesNotMatch(component, /kundaliniSources\.map|href=\{source\.url\}/);
   assert.doesNotMatch(component, /reiki-yggdrasil\/source/);
-  assert.match(nextConfig, /hostname: "psimaster\.net"/);
+  assert.doesNotMatch(nextConfig, /hostname: "psimaster\\.net"/);
+  assert.match(component, /heroDiagramSet/);
+  assert.match(component, /kundaliniLessons\.map/);
   assert.match(css, /@media \(max-width: 760px\)/);
 });
 
