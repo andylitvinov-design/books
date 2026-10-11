@@ -1382,8 +1382,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
             {c.next}
           </button>
         )}
-        {!(isContext || (mode === 'quick' && allAnswered) ||
-          (mode === 'guided' && index === def.questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
+        {(def.optionalContext.length > 0 || !(isContext || (mode === 'quick' && allAnswered) ||
+          (mode === 'guided' && index === def.questions.length - 1 && allAnswered))) && (
           <button disabled={busy || Boolean(operation.current)} onClick={exit}>
             {c.saveExit}
           </button>
