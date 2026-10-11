@@ -32,17 +32,23 @@ test("new English practice listing has three distinct source-gated entries", asy
   assert.ok(!data.includes("qM_nFUkYJ1k"), "Never substitute the Tantra Reiki testimonial");
 });
 
-test("English-only Academy paths use poster-first playback only after confirmation", async () => {
+test("Academy English videos preserve verified origins and load players only on click", async () => {
   const [page, hub, recording] = await Promise.all([
     readFile("components/english-guided-meditations.tsx", "utf8"),
     readFile("components/academy-hub.tsx", "utf8"),
     readFile("components/academy-record-page.tsx", "utf8"),
   ]);
+  const serverLibrary = await readFile("components/academy-video-courses.tsx", "utf8");
+  const clientLibrary = await readFile("components/academy-video-library-client.tsx", "utf8");
   const reviews = await readFile("components/tantra-reiki-testimonials.tsx", "utf8");
   assert.match(page, /item\.youtubeId \? \(/);
   assert.match(page, /<AcademyVideoPlayer youtubeId=\{item\.youtubeId\}/);
   assert.match(page, /<Image src=\{item\.image\}/);
-  assert.match(hub, /locale === "en" && view === "videos" \? <EnglishGuidedMeditations \/>/);
+  assert.match(hub, /view === "videos" \? <AcademyVideoCourses locale=\{locale\}/);
+  assert.match(serverLibrary, /englishGuidedMeditations.find/);
+  assert.match(serverLibrary, /validVideoId.test\(source.youtubeId\)/);
+  assert.match(clientLibrary, /onClick=\{\(\) => openVideoById\(key\)\}/);
+  assert.match(clientLibrary, /youtube-nocookie.com\/embed/);
   assert.match(recording, /locale === "en" \? <EnglishGuidedMeditations focus="tantra-reiki"/);
   assert.doesNotMatch(recording, /tantra-russian-review/);
   assert.match(recording, /<TantraReikiTestimonials locale=\{locale\} \/>/);
