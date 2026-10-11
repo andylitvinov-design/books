@@ -3,7 +3,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
   GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS,
-  courseDay, courseLesson, growthSuggestions,
+  courseDay, courseLesson, growthSuggestions, suggestedCourseTopics,
 } from '../lib/inner-growth/course-model.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -20,7 +20,7 @@ function weeklyResult(values = {}) {
     id: '36c5b778-74ba-4487-bfb9-5ed44ed95710',
     definitionKey: 'hh-weekly-pulse', definitionVersion: 'v1',
     scoringKey: 'raw-dimensions', scoringVersion: 'v1',
-    measurementAt: '2026-10-11T12:00:00Z',
+    measurementAt: new Date().toISOString(),
     dimensions: Object.entries(values).map(([key, value]) => ({
       key, value, min: 0, max: 10,
       direction: ({
@@ -51,6 +51,19 @@ test('do not invert healthy low symptom scores or assign deficiency to personali
   const wrongDirection = weeklyResult({ 'weekly.tension': 9 })
   wrongDirection.dimensions[0].direction = 'higher-reported-wellbeing'
   assert.deepEqual(growthSuggestions([wrongDirection]), [])
+})
+
+test('personal concerns map to optional, editable topics without clinical inference', () => {
+  const suggested = suggestedCourseTopics('I feel stress and cannot focus')
+  assert.deepEqual(suggested, { urgent:false, topics:['stress','attention'] })
+  assert.equal(suggestedCourseTopics('I want to kill myself').urgent, true)
+  assert.deepEqual(suggestedCourseTopics('hello').topics, [])
+})
+
+test('outdated results do not drive current practice recommendations', () => {
+  const old = weeklyResult({ 'weekly.tension': 8 })
+  old.measurementAt = '2020-01-01T00:00:00Z'
+  assert.deepEqual(growthSuggestions([old]), [])
 })
 
 test('daily sessions are bilingual and distinguish 14-day practice from later integration', () => {
@@ -93,6 +106,8 @@ test('course state is authenticated, encrypted, owner-scoped and not copied to b
   assert.match(service, /where account_id=\$1/)
   assert.match(service, /COURSE_TESTS_REQUIRED/)
   assert.match(service, /COURSE_TESTS_REMAIN/)
+  assert.match(service, /weeklyChange/)
+  assert.match(service, /URGENT_SUPPORT_NEEDED/)
   assert.match(service, /REVISION_CONFLICT/)
   assert.match(migration, /references app\.accounts\(id\) on delete cascade/)
   assert.match(migration, /enable row level security/)
