@@ -215,8 +215,8 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                             <h3>Видеоуроки из архива PsiMaster</h3>
                             <p>Откройте интересующую подборку и выберите видеоурок. Все названия и порядок занятий сохранены из PsiMaster; повторяющиеся записи показаны один раз.</p>
                           </div>
-                          {videoCollections.map((collection, collectionIndex) => (
-                            <details className="temple-video-series" key={collection.key} open={collectionIndex === 0}>
+                          {videoCollections.map((collection) => (
+                            <details className="temple-video-series" key={collection.key}>
                               <summary>
                                 <span className="temple-video-series-summary-text">
                                   <strong>{collection.title}</strong>
