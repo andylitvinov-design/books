@@ -1,6 +1,8 @@
 'use client'
 
 import { ConsultationClientSelector } from './consultation-client-selector'
+import './consultation-studio.css'
+import { ClipboardList, FileCheck2, UsersRound } from 'lucide-react'
 import { ConsultationTextImport } from './consultation-text-import'
 import { useActionState, useEffect, useMemo, useState } from 'react'
 import { initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
@@ -50,6 +52,17 @@ const copy = {
     create: 'СОЗДАТЬ ДОКУМЕНТЫ',
     saving: 'Сохранение…',
     chooseError: 'Выберите каждую позицию из подсказок. Нужна хотя бы одна позиция.',
+    workflow: 'Порядок оформления консультации',
+    clientHeading: 'Клиент и дата',
+    clientHint: 'Выберите клиента из базы или создайте новую карточку.',
+    recommendationsHeading: 'Рекомендации',
+    recommendationsHint: 'Добавьте препараты или эссенции для документа.',
+    documentsHeading: 'Документы и оплата',
+    documentsHint: 'Примечания клиенту и параметры счёта.',
+    createHeading: 'Всё готово к оформлению?',
+    saveHeading: 'Сохранить изменения',
+    invoiceHint: 'Будут подготовлены рекомендация и счёт. Ссылки клиенту передаются отдельно.',
+    receiptHint: 'Будут подготовлены рекомендация и квитанция. Ссылки клиенту передаются отдельно.',
   },
   en: {
     client: 'Client',
@@ -93,6 +106,17 @@ const copy = {
     create: 'CREATE DOCUMENTS',
     saving: 'Saving…',
     chooseError: 'Choose each item from the suggestions. At least one item is required.',
+    workflow: 'Consultation preparation steps',
+    clientHeading: 'Client & date',
+    clientHint: 'Choose an existing client or create a new profile.',
+    recommendationsHeading: 'Recommendations',
+    recommendationsHint: 'Add remedies or essences to the document.',
+    documentsHeading: 'Documents & payment',
+    documentsHint: 'A note for the client and invoice details.',
+    createHeading: 'Ready to prepare documents?',
+    saveHeading: 'Save your changes',
+    invoiceHint: 'A recommendation and invoice will be prepared. Client links are shared separately.',
+    receiptHint: 'A recommendation and receipt will be prepared. Client links are shared separately.',
   },
 }
 
@@ -130,7 +154,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     const [row] = initialConsultationRows(null, remedies, 1)
     return type === 'bach'
       ? { ...row, itemType: 'bach', potency: '', granules: '', timesPerDay: '' }
-      : { ...row, itemType: 'homeopathy', potency: '30', granules: '5', timesPerDay: '3' }
+      : { ...row, itemType: 'homeopathy', potency: '', granules: '', timesPerDay: '' }
   }
 
   function changeItemType(index, nextType) {
@@ -204,7 +228,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     if (parsed.generalInstructions) setNote((current) => [current, parsed.generalInstructions].filter(Boolean).join('\n'))
   }
 
-  return <form action={submit} className="prescription-admin-form consultation-form consultation-form--compact" onSubmit={(event) => {
+  return <form action={submit} className="prescription-admin-form consultation-form consultation-form--compact consultation-studio" onSubmit={(event) => {
     if (!validateConsultationRows(items)) {
       event.preventDefault()
       setError(labels.chooseError)
@@ -219,111 +243,162 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     <input type="hidden" name="followUp" value={consultation?.followUp ?? ''} />
     <input type="hidden" name="recommendationNumber" value={consultation?.recommendationNumber ?? ''} />
 
-    {!consultation
-      ? <ConsultationClientSelector clients={clients} selectedClientId={selectedClientId} uiLocale={uiLocale} />
-      : <div className="consultation-edit-client-row">
-          <label>{labels.client}<input name="patientName" value={consultation.patientName} readOnly /></label>
-          <label>{uiLocale === 'ru' ? 'Язык' : 'Language'}<select name="languagePreference" defaultValue={consultation?.languagePreference === 'ru' ? 'ru' : 'en'}><option value="en">EN</option><option value="ru">RU</option></select></label>
-        </div>}
+    <ol className="consultation-studio-progress" aria-label={labels.workflow}>
+      <li><span>01</span>{labels.client}</li>
+      <li><span>02</span>{labels.items}</li>
+      <li><span>03</span>{labels.documentsHeading}</li>
+    </ol>
 
-    <div className="consultation-quick-meta consultation-quick-meta--date-only">
-      <label>{labels.date}<input type="date" name="dateIssued" required value={dateIssued} onChange={(event) => setDateIssued(event.target.value)} /></label>
-    </div>
+    <section className="consultation-studio-card" aria-labelledby="consultation-client-heading">
+      <div className="consultation-studio-section-head">
+        <span className="consultation-studio-section-index" aria-hidden="true">01</span>
+        <div>
+          <h2 id="consultation-client-heading">{labels.clientHeading}</h2>
+          <p>{labels.clientHint}</p>
+        </div>
+        <UsersRound aria-hidden="true" size={21} strokeWidth={1.5} />
+      </div>
+      <div className="consultation-studio-client-layout">
+        {!consultation
+          ? <ConsultationClientSelector clients={clients} selectedClientId={selectedClientId} uiLocale={uiLocale} />
+          : <div className="consultation-edit-client-row">
+              <label>{labels.client}<input name="patientName" value={consultation.patientName} readOnly /></label>
+              <label>{uiLocale === 'ru' ? 'Язык' : 'Language'}<select name="languagePreference" defaultValue={consultation?.languagePreference === 'ru' ? 'ru' : 'en'}><option value="en">EN</option><option value="ru">RU</option></select></label>
+            </div>}
+        <div className="consultation-quick-meta consultation-quick-meta--date-only">
+          <label>{labels.date}<input type="date" name="dateIssued" required value={dateIssued} onChange={(event) => setDateIssued(event.target.value)} /></label>
+        </div>
+      </div>
+    </section>
 
-    <ConsultationTextImport remedies={remedies} onApply={applyParsed} uiLocale={uiLocale} />
+    <section className="consultation-studio-card" aria-labelledby="consultation-items-heading">
+      <div className="consultation-studio-section-head">
+        <span className="consultation-studio-section-index" aria-hidden="true">02</span>
+        <div>
+          <h2 id="consultation-items-heading">{labels.recommendationsHeading}</h2>
+          <p>{labels.recommendationsHint}</p>
+        </div>
+        <ClipboardList aria-hidden="true" size={21} strokeWidth={1.5} />
+      </div>
+      <p className="consultation-studio-report-type">{labels.reportAuto}: <strong>{reportLabel}</strong></p>
 
-    <fieldset className="consultation-remedy-fieldset consultation-remedy-fieldset--compact"><legend>{labels.items}<span className="consultation-report-badge">{labels.reportAuto}: {reportLabel}</span></legend>
-      <div className="consultation-remedies">{items.map((item, index) => {
-        const type = item.itemType === 'bach' ? 'bach' : 'homeopathy'
-        const matches = focused === index && !item.selected
-          ? type === 'bach'
-            ? item.query.trim() ? [{ id: 'bach-' + index, slug: null, label: item.query.trim(), displayName: item.query.trim(), sourceStatus: 'custom' }] : []
-            : consultationRemedySuggestions(remedies, item.query)
-          : []
-        return <div className={'consultation-remedy-row consultation-remedy-row--stacked ' + (type === 'bach' ? 'consultation-remedy-row--bach' : '')} key={item.rowKey}>
-          <label className="consultation-item-type"><span>{labels.itemType}</span><select value={type} onChange={(event) => changeItemType(index, event.target.value)}>
-            <option value="homeopathy">{labels.homeopathyShort}</option>
-            <option value="bach">{labels.bachShort}</option>
-          </select></label>
+      <fieldset className="consultation-remedy-fieldset consultation-remedy-fieldset--compact">
+        <legend>{labels.items}</legend>
+        <div className="consultation-remedies">{items.map((item, index) => {
+          const type = item.itemType === 'bach' ? 'bach' : 'homeopathy'
+          const matches = focused === index && !item.selected
+            ? type === 'bach'
+              ? item.query.trim() ? [{ id: 'bach-' + index, slug: null, label: item.query.trim(), displayName: item.query.trim(), sourceStatus: 'custom' }] : []
+              : consultationRemedySuggestions(remedies, item.query)
+            : []
+          return <div className={'consultation-remedy-row consultation-remedy-row--stacked ' + (type === 'bach' ? 'consultation-remedy-row--bach' : '')} key={item.rowKey}>
+            <div className="consultation-remedy-row-head">
+              <span className="consultation-remedy-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+              <label className="consultation-item-type"><span>{labels.itemType}</span><select aria-label={labels.itemType + ' ' + (index + 1)} value={type} onChange={(event) => changeItemType(index, event.target.value)}>
+                <option value="homeopathy">{labels.homeopathyShort}</option>
+                <option value="bach">{labels.bachShort}</option>
+              </select></label>
+              <button type="button" className="consultation-remove" aria-label={labels.removeItem + ' ' + (index + 1)} disabled={items.length === 1} onClick={() => setItems((current) => current.filter((_, i) => i !== index))}>×</button>
+            </div>
 
-          <div className="prescription-remedy-search" onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget)) setFocused(null)
-          }}>
-            <input
-              aria-label={(type === 'bach' ? labels.bachShort : labels.homeopathyShort) + ' ' + (index + 1)}
-              placeholder={type === 'bach' ? labels.searchEssence : labels.searchRemedy}
-              autoComplete="off"
-              value={item.query}
-              onFocus={() => setFocused(index)}
-              onChange={(event) => {
-                update(index, { query: event.target.value, remedySlug: null, displayNameOverride: null, sourceStatus: null, selected: false })
-                setFocused(index)
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') setFocused(null)
-                if (event.key === 'Enter' && !item.selected) {
-                  event.preventDefault()
-                  if (matches.length === 1) selectItem(index, matches[0])
-                }
-                if (event.key === 'ArrowDown' && matches.length) {
-                  event.preventDefault()
-                  event.currentTarget.parentElement.querySelector('button')?.focus()
-                }
-              }}
-            />
-            {item.selected && type !== 'bach' && <span className="consultation-source-badge">{statusLabel(item.sourceStatus)}</span>}
-            {matches.length > 0 && <div className="prescription-remedy-results" aria-label={type === 'bach' ? labels.bachShort : labels.homeopathyShort}>
-              {matches.map((candidate) => {
-                const status = candidate.sourceStatus ?? (candidate.slug ? 'canonical' : 'source_only')
-                return <button
-                  key={candidate.id ?? candidate.slug ?? candidate.label}
-                  type="button"
-                  onPointerDown={(event) => {
+            <div className="prescription-remedy-search" onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setFocused(null)
+            }}>
+              <input
+                aria-label={(type === 'bach' ? labels.bachShort : labels.homeopathyShort) + ' ' + (index + 1)}
+                placeholder={type === 'bach' ? labels.searchEssence : labels.searchRemedy}
+                autoComplete="off"
+                value={item.query}
+                onFocus={() => setFocused(index)}
+                onChange={(event) => {
+                  update(index, { query: event.target.value, remedySlug: null, displayNameOverride: null, sourceStatus: null, selected: false })
+                  setFocused(index)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setFocused(null)
+                  if (event.key === 'Enter' && !item.selected) {
                     event.preventDefault()
-                    selectItem(index, candidate)
-                  }}
-                  onClick={() => selectItem(index, candidate)}
-                >
-                  <span>{type === 'bach' ? (uiLocale === 'ru' ? 'Добавить эссенцию: ' : 'Add essence: ') + candidate.label : status === 'custom' ? labels.useCustom + ': ' + candidate.label : candidate.label}</span>
-                  {type !== 'bach' && <small className="consultation-source-status">{statusLabel(status)}</small>}
-                  {type !== 'bach' && status !== 'canonical' && <small>{status === 'source_only' ? labels.sourceCardMissing : labels.descriptionMissing}</small>}
-                </button>
-              })}
+                    if (matches.length === 1) selectItem(index, matches[0])
+                  }
+                  if (event.key === 'ArrowDown' && matches.length) {
+                    event.preventDefault()
+                    event.currentTarget.parentElement.querySelector('button')?.focus()
+                  }
+                }}
+              />
+              {item.selected && type !== 'bach' && <span className="consultation-source-badge">{statusLabel(item.sourceStatus)}</span>}
+              {matches.length > 0 && <div className="prescription-remedy-results" aria-label={type === 'bach' ? labels.bachShort : labels.homeopathyShort}>
+                {matches.map((candidate) => {
+                  const status = candidate.sourceStatus ?? (candidate.slug ? 'canonical' : 'source_only')
+                  return <button
+                    key={candidate.id ?? candidate.slug ?? candidate.label}
+                    type="button"
+                    onPointerDown={(event) => {
+                      event.preventDefault()
+                      selectItem(index, candidate)
+                    }}
+                    onClick={() => selectItem(index, candidate)}
+                  >
+                    <span>{type === 'bach' ? (uiLocale === 'ru' ? 'Добавить эссенцию: ' : 'Add essence: ') + candidate.label : status === 'custom' ? labels.useCustom + ': ' + candidate.label : candidate.label}</span>
+                    {type !== 'bach' && <small className="consultation-source-status">{statusLabel(status)}</small>}
+                    {type !== 'bach' && status !== 'canonical' && <small>{status === 'source_only' ? labels.sourceCardMissing : labels.descriptionMissing}</small>}
+                  </button>
+                })}
+              </div>}
+            </div>
+
+            {type === 'homeopathy' && <div className="consultation-dose-strip">
+              <label className="consultation-remedy-dose"><span>{labels.potency}</span><input aria-label={labels.potency + ' ' + (index + 1)} inputMode="text" maxLength={20} value={item.potency ?? ''} onChange={(event) => update(index, { potency: event.target.value })} /></label>
+              <label className="consultation-remedy-dose"><span>{labels.granules}</span><input aria-label={labels.granules + ' ' + (index + 1)} type="number" inputMode="numeric" min="1" max="99" value={item.granules ?? ''} onChange={(event) => update(index, { granules: event.target.value })} /></label>
+              <label className="consultation-remedy-dose"><span>{labels.timesPerDay}</span><input aria-label={labels.timesPerDay + ' ' + (index + 1)} type="number" inputMode="numeric" min="1" max="99" value={item.timesPerDay ?? ''} onChange={(event) => update(index, { timesPerDay: event.target.value })} /></label>
             </div>}
           </div>
+        })}</div>
 
-          {type === 'homeopathy' && <div className="consultation-dose-strip">
-            <label className="consultation-remedy-dose"><span>{labels.potency}</span><input aria-label={labels.potency + ' ' + (index + 1)} inputMode="text" maxLength={20} value={item.potency ?? ''} onChange={(event) => update(index, { potency: event.target.value })} /></label>
-            <label className="consultation-remedy-dose"><span>{labels.granules}</span><input aria-label={labels.granules + ' ' + (index + 1)} type="number" inputMode="numeric" min="1" max="99" value={item.granules ?? ''} onChange={(event) => update(index, { granules: event.target.value })} /></label>
-            <label className="consultation-remedy-dose"><span>{labels.timesPerDay}</span><input aria-label={labels.timesPerDay + ' ' + (index + 1)} type="number" inputMode="numeric" min="1" max="99" value={item.timesPerDay ?? ''} onChange={(event) => update(index, { timesPerDay: event.target.value })} /></label>
-          </div>}
-
-          <button type="button" className="consultation-remove" aria-label={labels.removeItem + ' ' + (index + 1)} disabled={items.length === 1} onClick={() => setItems((current) => current.filter((_, i) => i !== index))}>×</button>
+        <div className="consultation-add-actions">
+          <button type="button" className="prescription-add" onClick={() => setItems((current) => [...current, makeRow('homeopathy')])}>{labels.addRemedy}</button>
+          <button type="button" className="prescription-add" onClick={() => setItems((current) => [...current, makeRow('bach')])}>{labels.addEssence}</button>
         </div>
-      })}</div>
+      </fieldset>
 
-      <div className="consultation-add-actions">
-        <button type="button" className="prescription-add" onClick={() => setItems((current) => [...current, makeRow('homeopathy')])}>{labels.addRemedy}</button>
-        <button type="button" className="prescription-add" onClick={() => setItems((current) => [...current, makeRow('bach')])}>{labels.addEssence}</button>
+      <ConsultationTextImport remedies={remedies} onApply={applyParsed} uiLocale={uiLocale} />
+      <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Проверьте рекомендации самостоятельно. Потенция и схема приёма остаются пустыми до вашего решения.' : 'Review recommendations yourself. Potency and dosing stay blank until you enter them.'}</p>
+    </section>
+
+    <section className="consultation-studio-card" aria-labelledby="consultation-documents-heading">
+      <div className="consultation-studio-section-head">
+        <span className="consultation-studio-section-index" aria-hidden="true">03</span>
+        <div>
+          <h2 id="consultation-documents-heading">{labels.documentsHeading}</h2>
+          <p>{labels.documentsHint}</p>
+        </div>
+        <FileCheck2 aria-hidden="true" size={21} strokeWidth={1.5} />
       </div>
-    </fieldset>
 
-    <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Указывайте препарат, потенцию и схему приёма только после личной проверки. Поля дозировки намеренно пустые.' : 'Review the recommendation yourself. Potency and dosing are intentionally left blank.'}</p>
-    <label className="consultation-note">{labels.note}<textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} /></label>
+      <label className="consultation-note">{labels.note}<textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} /></label>
 
-    <div className="consultation-payment-row">
-      <label>{labels.payment}<select name="paymentStatus" value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}><option value="received">{labels.paid}</option><option value="unpaid">{labels.unpaid}</option></select></label>
-      <details className="consultation-details consultation-payment-settings"><summary>{labels.paymentSettings}</summary><div className="consultation-two-columns">
+      <div className="consultation-payment-row consultation-studio-payment-grid">
+        <label className="consultation-studio-payment-service">{labels.service}<input name="service" required defaultValue={payment?.service ?? ''} /></label>
         <label>{labels.amount}<input name="amount" inputMode="decimal" required defaultValue={payment ? (payment.amount / 100).toFixed(2) : ''} /></label>
         <label>{labels.currency}<select name="currency" defaultValue={payment?.currency ?? 'CAD'}>{['CAD', 'USD', 'EUR', 'UAH'].map((code) => <option key={code}>{code}</option>)}</select></label>
-        <label>{labels.service}<input name="service" required defaultValue={payment?.service ?? ''} /></label>
-        <label>{labels.paymentStatus}<select aria-label={labels.paymentStatus} value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}><option value="received">{labels.paid}</option><option value="unpaid">{labels.unpaid}</option></select></label>
-        <label>{labels.paymentMethod}<input name="paymentMethod" maxLength={120} defaultValue={payment?.paymentMethod} /></label>
-        <label>{labels.documentNumber}<input name="documentNumber" defaultValue={payment?.documentNumber} /></label>
-      </div></details>
-    </div>
+        <label className="consultation-studio-payment-status">{labels.payment}<select name="paymentStatus" value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}><option value="received">{labels.paid}</option><option value="unpaid">{labels.unpaid}</option></select></label>
+      </div>
+      <details className="consultation-details consultation-payment-settings">
+        <summary>{labels.paymentSettings}</summary>
+        <div className="consultation-two-columns">
+          <label>{labels.paymentMethod}<input name="paymentMethod" maxLength={120} defaultValue={payment?.paymentMethod ?? ''} /></label>
+          <label>{labels.documentNumber}<input name="documentNumber" defaultValue={payment?.documentNumber ?? ''} /></label>
+        </div>
+      </details>
+    </section>
 
-    {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
-    <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>{pending ? labels.saving : consultation ? labels.save : labels.create}</button>
+    <div className="consultation-studio-submit">
+      <div className="consultation-studio-submit-copy">
+        <strong>{consultation ? labels.saveHeading : labels.createHeading}</strong>
+        <span>{paymentStatus === 'received' ? labels.receiptHint : labels.invoiceHint}</span>
+      </div>
+      {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
+      <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>{pending ? labels.saving : consultation ? labels.save : labels.create}</button>
+    </div>
   </form>
 }
