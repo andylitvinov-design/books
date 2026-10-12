@@ -56,6 +56,8 @@ The BFAS history journey also waits for successful, complete `shared-materials` 
 
 Focused independent fixtures cover the full author text, item numbering, all ten numerical keys, all five domain pairs, every single-item contribution, reversed extrema, uniform and mixed responses, missing/invalid answers, exact ID/hash, neutral bilingual reports, source-version mismatch, catalog availability, registration payload and PDF/history model. The prior-definition digest protects all existing forms.
 
+WebKit diagnostics also identified an unsupported `defaultOpen` prop on the account status-filter `<details>`: React's console error immediately preceded the failed development stack-frame request. The disclosure now uses the native `open` attribute with state synchronized by `onToggle`. It starts closed without a requested status, opens for a requested status, and retains the user's toggle across rerenders. Four EN/RU mobile browser cases check those states, Enter/Space operation, retained focus, selected-filter `aria-pressed`, and zero page/console errors in the authenticated scope. The selection and opt-in logic is unchanged; stack-frame errors are not filtered.
+
 Local verification: 1,023 unit tests, 140 app tests, 33 isolated PostgreSQL tests and 10 PKCE tests pass. Production build and TypeScript check pass; lint has zero errors and the same 29 existing warnings. Initial inventory assertions were updated for the one new key and comprehensive-form count. Browser evidence and exact-head CI links are recorded in the draft PR; tests use a synthetic loopback auth protocol double, **not real Google authentication**.
 
 ## Registration and release boundary
