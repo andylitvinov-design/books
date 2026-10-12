@@ -67,7 +67,7 @@ test('localized public page has genuine selection/Google handoff, no premature c
   const explorer = read('components/app/test-explorer.jsx')
   const wrapper = read('components/app/public-test-explorer.jsx')
   assert.match(page, /title: "Free wellbeing monitoring \| Holistic House"/)
-  assert.match(page, /title: "Подбор тестов \| Holistic House"/)
+  assert.match(page, /title: "Бесплатный мониторинг состояния \| Holistic House"/)
   assert.match(explorer, /simpleSelectionChanged/)
   assert.match(wrapper, /auth\/start/)
   assert.match(wrapper, /window\.sessionStorage\.setItem/)
