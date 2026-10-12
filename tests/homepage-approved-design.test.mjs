@@ -107,5 +107,6 @@ test("home restores four approved image-left service cards and their titles", ()
   assert.match(cards, /visibleOffers.map/);
   assert.match(css, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
   assert.match(home, /href="#core-services"/);
-  assert.doesNotMatch(home, /<FreeInsightsPaths locale=/);
+  assert.match(home, /<FreeInsightsPaths locale=\{locale\} testHref=\{entry\.selfCheck\.href\}/);
+  assert.ok(home.indexOf("<FreeInsightsPaths") < home.indexOf("<ServicesSolutions"), "Three free offers must appear before the service cards");
 });

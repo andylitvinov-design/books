@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
+import { FreeInsightsPaths } from "@/components/free-insights-paths";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { RelationshipsSpotlight } from "@/components/relationships-spotlight";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
@@ -21,7 +22,7 @@ const copy = {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
     heroTitle: "Найдите больше ясности и внутренней опоры",
-    heroIntro: "Две бесплатные возможности и два формата личной работы. Выберите подходящий для вашего вопроса.",
+    heroIntro: "Три бесплатных способа начать: анализ ситуации, профиль У-Син и тесты стресса и личности. Личные консультации — по желанию.",
     heroPrimary: "Бесплатный разбор ситуации",
     heroSecondary: "Четыре предложения",
     startKicker: "Другие возможности",
@@ -53,7 +54,7 @@ const copy = {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
     heroTitle: "Explore your question. Find a clearer way forward.",
-    heroIntro: "Two free ways to begin and two personal-work options. Choose the one that fits your question.",
+    heroIntro: "Three free ways to begin: a situation review, a Wu Xing resource profile, or stress and personality tests. Personal sessions are optional.",
     heroPrimary: "Free situation review",
     heroSecondary: "Explore four services",
     startKicker: "Other ways to explore",
@@ -138,6 +139,8 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           </div>
         </div>
       </section>
+
+      <FreeInsightsPaths locale={locale} testHref={entry.selfCheck.href} />
 
       <ServicesSolutions locale={locale} variant="home" />
       <RelationshipsSpotlight locale={locale} />
