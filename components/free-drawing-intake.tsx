@@ -172,6 +172,7 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
       setCopied(true);
       setCopyFailed(false);
     } catch {
+      setCopied(false);
       setCopyFailed(true);
     }
   }
