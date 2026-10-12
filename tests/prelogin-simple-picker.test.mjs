@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { HOME_TEST_TOPICS } from '../lib/assessments/insights-categories.js'
 
 const read = (file) => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 
@@ -40,8 +41,9 @@ test('topics immediately update the existing catalog while detailed selection st
   assert.match(explorer, /maxMinutes=\{maxMinutes\}/)
   assert.match(explorer, /professionalOnly=\{stylesFilter\.length === 1/)
   assert.match(css, /\.advanced\[open\] \.chevron/)
-  for (const key of ['stress','anxiety','mood','sleep','body','relationships','resources','attention'])
-    assert.match(picker, new RegExp("key:'" + key + "'"))
+  assert.match(picker, /TOPICS = HOME_TEST_TOPICS\.map/)
+  assert.deepEqual(HOME_TEST_TOPICS.map(({ key }) => key),
+    ['stress','anxiety','mood','sleep','body','relationships','resources','attention'])
 })
 
 test('preview and selected time are derived from live executable test definitions', () => {
