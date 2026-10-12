@@ -15,8 +15,9 @@ export function harness({ pathname = "/en", consent = "granted", hostname = "hol
   let cursor = 0;
   let cleanup;
   const scripts = [];
+  let reloads = 0;
   const window = new EventTarget();
-  window.location = { hostname, origin: `https://${hostname}`, pathname, href: `https://${hostname}${pathname}?private_query=SYNTHETIC#private_fragment` };
+  window.location = { hostname, origin: `https://${hostname}`, pathname, href: `https://${hostname}${pathname}?private_query=SYNTHETIC#private_fragment`, reload() { reloads++; } };
   const document = {
     documentElement: { dataset: { analyticsConsent: consent } },
     title: "Public synthetic page",
@@ -61,6 +62,7 @@ export function harness({ pathname = "/en", consent = "granted", hostname = "hol
   }
   return {
     window, document, scripts, render,
+    reloads: () => reloads,
     commands: () => Array.from(window.dataLayer ?? [], (command) => Array.from(command)),
     events: () => Array.from(window.dataLayer ?? []).filter((command) => command[0] === "event"),
     consent(value) { document.documentElement.dataset.analyticsConsent = value; window.dispatchEvent(new Event("holistic-house:analytics-consent")); },
@@ -183,14 +185,17 @@ test("live ga-disable getter checks consent and canonical host without rerender"
   assert.equal(h.window["ga-disable-G-SYNTHETIC"], true);
 });
 
-test("public to private to same public route records the return view and restores safe defaults", () => {
+test("public to private requests one document reset and only a fresh public document resumes", () => {
   const h = harness(); h.render(); h.render("/en/app"); h.syncConsent();
   assert.equal(h.window["ga-disable-G-SYNTHETIC"], true);
   h.document.title = "PRIVATE SYNTHETIC CLIENT TITLE";
   h.render("/en"); h.syncConsent();
-  assert.equal(h.window["ga-disable-G-SYNTHETIC"], false);
-  assert.equal(h.events().filter((event) => event[1] === "page_view").length, 2);
+  assert.equal(h.window["ga-disable-G-SYNTHETIC"], true);
+  assert.equal(h.reloads(), 1);
+  assert.equal(h.events().filter((event) => event[1] === "page_view").length, 1);
   assert.doesNotMatch(JSON.stringify(h.commands()), /PRIVATE SYNTHETIC/);
+  const fresh = harness(); fresh.render();
+  assert.equal(fresh.events().filter(event => event[1] === "page_view").length, 1);
 });
 
 test("stale handler cannot attach old page context after any synchronous URL change", () => {
@@ -243,16 +248,28 @@ test("tag shutdown getter remains active after effect cleanup on a private URL",
 test("a foreign gtag is not trusted as an initialized matching destination", () => {
   const h = harness(); const calls = [];
   h.window.gtag = (...args) => calls.push(args);
-  h.render(); h.acquisition("free_situation_assessment_click");
+  h.render(); h.syncConsent(); h.acquisition("free_situation_assessment_click");
   assert.equal(h.scripts.length, 0);
   assert.equal(calls.length, 0);
+  assert.equal(h.window["ga-disable-G-SYNTHETIC"], true);
 });
 
-test("withdrawal resets page dedupe and regrant records exactly one resumed view", () => {
+test("withdrawal requests one reset and regrant cannot resume the old SDK document", () => {
   const h = harness(); h.render();
   h.document.cookie = "holistic_house_analytics_consent=denied"; h.syncConsent();
   h.document.cookie = "holistic_house_analytics_consent=granted"; h.syncConsent(); h.syncConsent();
-  assert.equal(h.events().filter(event => event[1] === "page_view").length, 2);
+  assert.equal(h.events().filter(event => event[1] === "page_view").length, 1);
   assert.equal(h.scripts.length, 1);
+  assert.equal(h.reloads(), 1);
+  const fresh = harness(); fresh.render(); fresh.syncConsent();
+  assert.equal(fresh.events().filter(event => event[1] === "page_view").length, 1);
+});
+
+test("private or denied documents without an owned SDK never reload", () => {
+  for (const options of [{ pathname: "/en/app" }, { consent: "denied" }]) {
+    const h = harness(options); h.render(); h.syncConsent(); h.render(); h.syncConsent();
+    assert.equal(h.scripts.length, 0);
+    assert.equal(h.reloads(), 0);
+  }
 });
 

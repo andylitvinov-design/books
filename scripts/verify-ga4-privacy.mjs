@@ -40,7 +40,7 @@ const fixture = `<!doctype html><html><head><title>Public synthetic fixture</tit
  let fixtureVisibility='visible';
  Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>fixtureVisibility});
  document.documentElement.dataset.analyticsConsent='denied';
- window.fixture={render,syncConsent,
+ window.fixture={documentId:crypto.randomUUID(),render,syncConsent,
   grant(){document.cookie='holistic_house_analytics_consent=granted; Path=/; Secure';consent.applyConsentForFixture('granted');},
   revoke(){document.cookie='holistic_house_analytics_consent=denied; Path=/; Secure';consent.applyConsentForFixture('denied');},
   navigateOnly(url){history.pushState({},'',url);},
@@ -60,7 +60,7 @@ const browser = await chromium.launch({
   proxy: { server: "http://127.0.0.1:9" },
   args: ["--disable-background-networking", "--disable-component-update", "--disable-sync", "--disable-default-apps", "--no-first-run"],
 });
-const requests = [], errors = [], results = [], contexts = [];
+const requests = [], errors = [], results = [], contexts = [], cookieChecks = [];
 const collection = (entries = requests) => entries.filter(entry => /(?:^|\.)google-analytics\.com$|^analytics\.google\.com$/.test(new URL(entry.url).hostname));
 function decodedEvents(entries = requests) {
   return collection(entries).flatMap(entry => {
@@ -86,7 +86,11 @@ async function scenario(name, { holdSdk = false, path = "/en?private_query=SYNTH
   // Register before page creation. NEVER continue or fetch a routed request.
   await context.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
-    const headers = request.headers();
+    const headers = await request.allHeaders();
+    // Assert before redaction: omitted security headers are not a valid test.
+    if (!(url.hostname === "holistichouse.vercel.app" && request.isNavigationRequest())) {
+      assert.doesNotMatch(JSON.stringify(headers), sentinel, "sensitive sentinel in complete request headers");
+    }
     if (headers.cookie) headers.cookie = "[isolated synthetic cookies omitted]";
     const entry = { scenario: name, phase, url: request.url(), method: request.method(), resourceType: request.resourceType(), body: request.postData(), headers };
     own.push(entry); requests.push(entry);
@@ -97,6 +101,7 @@ async function scenario(name, { holdSdk = false, path = "/en?private_query=SYNTH
     } else if (url.hostname === "www.googletagmanager.com" && url.pathname === "/gtag/js" && [id, "GT-KTPSQT8C"].includes(url.searchParams.get("id"))) {
       entry.action = "local-frozen-sdk";
       await sdkGate;
+      if (request.failure()) { entry.action = "sdk-cancelled-by-document-reset"; return; }
       await route.fulfill({ status: 200, contentType: "application/javascript", body: sdk });
     } else if (collection([entry]).length) {
       entry.action = "intercepted-local-204";
@@ -124,6 +129,20 @@ async function scenario(name, { holdSdk = false, path = "/en?private_query=SYNTH
   };
 }
 async function settled(page, ms = 2300) { await page.waitForTimeout(ms); }
+async function resetAction(s, action) {
+  const documentId = await s.page.evaluate(() => window.fixture.documentId);
+  const navigation = s.page.waitForNavigation({ waitUntil: "domcontentloaded" });
+  await s.page.evaluate(action);
+  await navigation;
+  assert.notEqual(await s.page.evaluate(() => window.fixture.documentId), documentId, "fresh document clears the SDK lifecycle");
+}
+async function inspectCookies(s, label, expectedPresent) {
+  const all = await s.context.cookies();
+  const ga = all.filter(cookie => cookie.name === "_ga" || cookie.name.startsWith("_ga_"));
+  cookieChecks.push({ scenario: label, count: ga.length, cookies: ga.map(({ name, domain, path }) => ({ name, domain, path })) });
+  assert.equal(ga.length > 0, expectedPresent, label);
+  return all;
+}
 function assertSafe(entries) {
   const outbound = entries.filter(entry => entry.action !== "local-fixture");
   assert.doesNotMatch(JSON.stringify(outbound), sentinel, "no synthetic sensitive values in external URL, body or headers");
@@ -143,12 +162,20 @@ try {
   await settled(page, 800);
   assert.equal(s.own.filter(entry => entry.action === "local-frozen-sdk").length, 0);
   assert.equal(s.collects().length, 0); s.checkpoint("no script or collection without consent");
+  await inspectCookies(s, "initial-denied", false);
+  await s.context.addCookies([{ name: "hh_synthetic_auth_guard", value: "synthetic-preserve", url: "https://holistichouse.vercel.app" }]);
 
   s.phase("public-grant");
   await page.evaluate(() => window.fixture.grant());
   await waitUntil(() => s.events().some(event => event.en === "page_view"), "positive control: full SDK public pageview");
   await settled(page);
   assert.equal(s.events().filter(event => event.en === "page_view").length, 1); s.checkpoint("exactly one initial manual pageview");
+  await inspectCookies(s, "public-granted", true);
+  // Exercise both legacy domain and host-only cookie cleanup, never real cookies.
+  await s.context.addCookies([
+    { name: "_ga_legacy_host", value: "synthetic-host", url: "https://holistichouse.vercel.app" },
+    { name: "_ga_legacy_domain", value: "synthetic-domain", domain: ".holistichouse.vercel.app", path: "/", secure: true },
+  ]);
 
   s.phase("public-acquisition");
   await page.evaluate(() => window.fixture.acquire());
@@ -172,9 +199,12 @@ try {
   assert.equal(s.collects().length, beforePrivate); s.checkpoint("private route blocks stale handlers, autonomous timers and lifecycle before React effects");
 
   s.phase("private-after-consent-sync");
-  await page.evaluate(() => { window.fixture.render(); window.fixture.syncConsent(); window.fixture.lifecycle("visible"); window.fixture.lifecycle("hidden"); });
+  await resetAction(s, () => { window.fixture.render(); window.fixture.syncConsent(); });
+  await page.evaluate(() => { window.fixture.lifecycle("visible"); window.fixture.lifecycle("hidden"); });
   await settled(page);
   assert.equal(s.collects().length, beforePrivate); s.checkpoint("private consent synchronization creates no collection");
+  const privateCookies = await inspectCookies(s, "private-after-reset", false);
+  assert.ok(privateCookies.some(cookie => cookie.name === "hh_synthetic_auth_guard"), "unrelated/auth cookie preserved");
 
   s.phase("return-same-public");
   await page.evaluate(() => { window.fixture.navigate("/en?private_query=SYNTHETIC_RETURN_QUERY"); window.fixture.lifecycle("visible"); window.fixture.acquire(); });
@@ -182,12 +212,17 @@ try {
   await settled(page);
   assert.equal(s.events().filter(event => event.en === "page_view").length, 2);
   assert.equal(s.events().filter(event => event.en === "free_situation_assessment_click").length, 2); s.checkpoint("same public return restores exactly one view and event");
+  const returnView = s.events().filter(event => event.en === "page_view").at(-1);
+  assert.ok(Number(returnView._et || 0) < 5000, "65 seconds of private dwell must not appear as public engagement");
 
   s.phase("withdrawal");
   const beforeWithdrawal = s.collects().length;
-  await page.evaluate(() => { window.fixture.revoke(); window.fixture.acquire(); window.fixture.lifecycle("hidden"); });
+  await resetAction(s, () => { window.fixture.revoke(); });
+  await page.evaluate(() => { window.fixture.acquire(); window.fixture.lifecycle("hidden"); });
   await settled(page);
   assert.equal(s.collects().length, beforeWithdrawal); s.checkpoint("withdrawal suppresses collection");
+  const deniedCookies = await inspectCookies(s, "withdrawal-after-reset", false);
+  assert.ok(deniedCookies.some(cookie => cookie.name === "hh_synthetic_auth_guard"));
 
   s.phase("regrant-public");
   await page.evaluate(() => { window.fixture.grant(); window.fixture.lifecycle("visible"); window.fixture.acquire(); });
@@ -195,6 +230,8 @@ try {
   await settled(page);
   assert.equal(s.events().filter(event => event.en === "page_view").length, 3);
   assert.equal(s.events().filter(event => event.en === "free_situation_assessment_click").length, 3); s.checkpoint("regrant resumes exactly once");
+  assert.ok(Number(s.events().filter(event => event.en === "page_view").at(-1)._et || 0) < 5000);
+  await inspectCookies(s, "regrant-public", true);
   assertSafe(s.own);
   await s.context.close();
 
@@ -205,26 +242,86 @@ try {
     await waitUntil(() => q.own.some(entry => entry.action === "local-frozen-sdk"), "SDK request is held before execution");
     assert.equal(q.collects().length, 0);
     q.phase(`change-${transition}-before-sdk-execution`);
-    await q.page.evaluate(transition => {
-      if (transition === "private") { window.fixture.navigateOnly("/en/app/SYNTHETIC_PRIVATE_QUEUED?token=SYNTHETIC_PRIVATE_QUERY"); document.title = "SYNTHETIC_PRIVATE_TITLE"; }
-      else window.fixture.revoke();
-    }, transition);
+    if (transition === "private") {
+      await q.page.evaluate(() => { window.fixture.navigateOnly("/en/app/SYNTHETIC_PRIVATE_QUEUED?token=SYNTHETIC_PRIVATE_QUERY"); document.title = "SYNTHETIC_PRIVATE_TITLE"; });
+    } else {
+      await resetAction(q, () => window.fixture.revoke());
+    }
     q.releaseSdk();
-    await q.page.waitForFunction(() => window.fixtureSdkLoaded === true);
+    if (transition === "private") await q.page.waitForFunction(() => window.fixtureSdkLoaded === true);
     await settled(q.page);
     await q.page.evaluate(() => window.fixture.lifecycle("hidden"));
     await settled(q.page);
     assert.equal(q.collects().length, 0);
     assertSafe(q.own); q.checkpoint("queued initial commands are blocked after state changes before SDK execution");
+    if (transition === "private") {
+      await resetAction(q, () => { window.fixture.render(); window.fixture.syncConsent(); });
+    }
+    await inspectCookies(q, `queued-${transition}-blocked`, false);
+    q.phase("positive-resume-after-queued-block");
+    await q.page.evaluate(() => { window.fixture.navigate("/en"); window.fixture.grant(); window.fixture.acquire(); });
+    await waitUntil(() => q.events().some(event => event.en === "page_view") && q.events().some(event => event.en === "free_situation_assessment_click"), "blocked delayed-SDK flow must recover with a fresh SDK");
+    await settled(q.page);
+    assert.equal(q.events().filter(event => event.en === "page_view").length, 1);
+    assert.equal(q.events().filter(event => event.en === "free_situation_assessment_click").length, 1);
+    assertSafe(q.own); q.checkpoint("delayed-SDK negative control has a positive resumed flow");
+    await q.context.close();
+  }
+
+  for (const transition of ["private", "withdrawal"]) {
+    const q = await scenario(`loaded-sdk-pending-public-batch-then-${transition}`);
+    q.phase("positive-loaded-sdk");
+    await q.page.evaluate(() => window.fixture.grant());
+    await waitUntil(() => q.events().some(event => event.en === "page_view"), "loaded SDK positive control");
+    await settled(q.page);
+    q.phase("queue-consented-public-event-then-change-state");
+    if (transition === "private") {
+      await q.page.evaluate(() => {
+        window.fixture.acquire(); // Explicitly consented public event before URL change.
+        window.fixture.navigateOnly("/en/app/SYNTHETIC_PRIVATE_BATCH?token=SYNTHETIC_PRIVATE_QUERY");
+        document.title = "SYNTHETIC_PRIVATE_TITLE";
+        window.fixture.acquire(); // Must be dropped after the URL change.
+        window.fixture.lifecycle("hidden");
+      });
+    } else {
+      await resetAction(q, () => { window.fixture.acquire(); window.fixture.revoke(); });
+      await q.page.evaluate(() => window.fixture.acquire());
+    }
+    await settled(q.page);
+    const previouslyConsentedPublicEvents = q.events().filter(event => event.en === "free_situation_assessment_click").length;
+    assert.ok(previouslyConsentedPublicEvents <= 1, "no extra private/off event; at most the earlier consented public event may drain");
+    assertSafe(q.own);
+    results.push({ scenario: `loaded-sdk-pending-public-batch-then-${transition}`, checkpoint: "previously consented public batch distinguished from prohibited private/off events", passed: true, previouslyConsentedPublicEvents });
+    if (transition === "private") await resetAction(q, () => { window.fixture.render(); window.fixture.syncConsent(); });
+    await inspectCookies(q, `loaded-batch-${transition}-after-reset`, false);
+    q.phase("positive-resume-after-pending-batch");
+    await q.page.evaluate(() => { window.fixture.navigate("/en"); window.fixture.grant(); window.fixture.acquire(); });
+    await waitUntil(() => q.events().filter(event => event.en === "page_view").length >= 2 && q.events().filter(event => event.en === "free_situation_assessment_click").length >= previouslyConsentedPublicEvents + 1, "pending-batch flow resumes after document reset");
+    await settled(q.page);
+    assert.equal(q.events().filter(event => event.en === "page_view").length, 2);
+    assert.equal(q.events().filter(event => event.en === "free_situation_assessment_click").length, previouslyConsentedPublicEvents + 1);
+    assert.ok(Number(q.events().filter(event => event.en === "page_view").at(-1)._et || 0) < 5000);
+    assertSafe(q.own); q.checkpoint("pending-batch boundary has a positive resumed flow");
     await q.context.close();
   }
 
   const foreign = await scenario("foreign-gtag");
-  await foreign.page.evaluate(() => { window.foreignCalls = []; window.gtag = (...args) => window.foreignCalls.push(args); window.fixture.grant(); window.fixture.acquire(); });
+  await foreign.page.evaluate(id => {
+    window.foreignCalls = []; window.dataLayer = [];
+    window.gtag = function () { window.foreignCalls.push(Array.from(arguments)); window.dataLayer.push(arguments); };
+    window.gtag("consent", "default", { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+    window.gtag("js", new Date()); window.gtag("config", id, { send_page_view: false });
+    const script = document.createElement("script"); script.async = true; script.src = "https://www.googletagmanager.com/gtag/js?id=" + id;
+    script.onload = () => { window.foreignSdkLoaded = true; }; document.head.appendChild(script);
+  }, id);
+  await foreign.page.waitForFunction(() => window.foreignSdkLoaded === true);
+  const foreignBootstrapCommands = await foreign.page.evaluate(() => window.foreignCalls.length);
+  await foreign.page.evaluate(() => { window.fixture.grant(); window.fixture.acquire(); window.fixture.navigate("/en/app/SYNTHETIC_PRIVATE_FOREIGN"); window.fixture.grant(); });
   await settled(foreign.page);
   assert.equal(foreign.collects().length, 0);
-  assert.equal(foreign.own.filter(entry => entry.action === "local-frozen-sdk").length, 0);
-  assert.ok(await foreign.page.evaluate(() => window.foreignCalls.every(args => args[0] === "consent")));
+  assert.equal(await foreign.page.evaluate(() => window.foreignCalls.length), foreignBootstrapCommands, "app sends no consent or event commands to a foreign real SDK");
+  assert.equal(await foreign.page.evaluate(id => window["ga-disable-" + id], id), true);
+  await inspectCookies(foreign, "foreign-tag-stays-disabled", false);
   foreign.checkpoint("unknown global cannot masquerade as initialized destination");
   await foreign.context.close();
   assertSafe(requests);
@@ -234,7 +331,7 @@ try {
 } finally {
   await Promise.all(contexts.map(context => context.close().catch(() => {})));
   // All browser state is freshly synthetic. Cookies themselves are never saved.
-  const evidence = { testedAt: new Date().toISOString(), testedCommit: process.env.GITHUB_SHA || "local-unpublished", browserVersion: browser.version(), googleScriptSha256: createHash("sha256").update(sdk).digest("hex"), everyPageRequestFulfilledOrAbortedBeforeSend: true, deadProxyDefense: "127.0.0.1:9", transmittedAnalyticsRequests: 0, results, errors, requests, decodedEvents: decodedEvents() };
+  const evidence = { testedAt: new Date().toISOString(), testedCommit: process.env.GITHUB_SHA || "local-unpublished", browserVersion: browser.version(), googleScriptSha256: createHash("sha256").update(sdk).digest("hex"), everyPageRequestFulfilledOrAbortedBeforeSend: true, deadProxyDefense: "127.0.0.1:9", transmittedAnalyticsRequests: 0, results, errors, cookieChecks, requests, decodedEvents: decodedEvents() };
   writeFileSync(new URL("full-sdk-intercept-results.json", output), JSON.stringify(evidence, null, 2) + "\n");
   console.log(JSON.stringify({ results, errors, requestCount: requests.length, collectionCount: collection().length }, null, 2));
   await browser.close();

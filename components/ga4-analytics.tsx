@@ -2,17 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { PUBLIC_ANALYTICS_EVENTS, isPublicAnalyticsPath, type PublicAnalyticsEvent } from "@/lib/public-analytics";
+import { PUBLIC_ANALYTICS_EVENTS, analyticsDocumentResetPending, isPublicAnalyticsPath, ownsPublicAnalyticsTag, registerPublicAnalyticsTag, resetAnalyticsDocument, type PublicAnalyticsEvent, type PublicAnalyticsGtag } from "@/lib/public-analytics";
 
-type Gtag = (...args: unknown[]) => void;
-
-declare global {
-  interface Window { dataLayer?: unknown[]; gtag?: Gtag; [key: `ga-disable-${string}`]: boolean | undefined; }
-}
-
-const protectedMeasurements = new Set<string>();
-let ownedGtag: Gtag | undefined;
-let ownedMeasurementId: string | undefined;
+const protectedMeasurements = new Map<string, { externallyDisabled: boolean }>();
 
 function hasConsent() {
   return document.documentElement.dataset.analyticsConsent === "granted";
@@ -28,25 +20,27 @@ function installCollectionBoundary(measurementId: string) {
   const descriptor = Object.getOwnPropertyDescriptor(window, key);
   // Do not override somebody else's accessor or non-configurable opt-out.
   if (descriptor && (!descriptor.configurable || descriptor.get || descriptor.set)) return false;
-  let externallyDisabled = window[key] === true;
+  const state = { externallyDisabled: window[key] === true };
   Object.defineProperty(window, key, {
     configurable: false,
     get() {
       // Google reads this at event processing time. Inspect the real URL so an
       // SPA navigation is protected even before React's route effect runs.
-      return externallyDisabled || !isCanonicalProductionHost() || !hasConsent()
+      return state.externallyDisabled || analyticsDocumentResetPending() || !ownsPublicAnalyticsTag(measurementId)
+        || !isCanonicalProductionHost() || !hasConsent()
         || !isPublicAnalyticsPath(window.location.pathname);
     },
-    set(value: boolean) { externallyDisabled = value === true; },
+    set(value: boolean) { state.externallyDisabled = value === true; },
   });
-  protectedMeasurements.add(measurementId);
+  protectedMeasurements.set(measurementId, state);
   return true;
 }
 
 function collectionAllowed(measurementId: string, pathname: string) {
   return isCanonicalProductionHost() && hasConsent()
     && pathname === window.location.pathname && isPublicAnalyticsPath(pathname)
-    && window[`ga-disable-${measurementId}`] === false;
+    && !analyticsDocumentResetPending() && !protectedMeasurements.get(measurementId)?.externallyDisabled
+    && (!window.gtag || (ownsPublicAnalyticsTag(measurementId) && window[`ga-disable-${measurementId}`] === false));
 }
 
 function publicPageContext(pathname: string) {
@@ -64,24 +58,23 @@ function loadGoogleTag(measurementId: string, nonce?: string) {
   if (window.gtag) {
     // An unrelated/old global does not prove this destination was initialized.
     // Fail closed rather than inheriting unknown queues or routing elsewhere.
-    if (window.gtag !== ownedGtag || measurementId !== ownedMeasurementId) return null;
+    if (!ownsPublicAnalyticsTag(measurementId)) return null;
     window.gtag("set", publicPageContext(window.location.pathname));
     return window.gtag;
   }
   window.dataLayer = window.dataLayer || [];
-  const gtag: Gtag = function () {
+  const gtag: PublicAnalyticsGtag = function () {
     // Google dispatches Arguments as gtag commands; arrays are data-model calls.
     // eslint-disable-next-line prefer-rest-params -- The Google tag requires Arguments.
     window.dataLayer?.push(arguments);
   };
   window.gtag = gtag;
-  ownedGtag = gtag;
-  ownedMeasurementId = measurementId;
+  registerPublicAnalyticsTag(measurementId, gtag);
   gtag("consent", "default", { ad_storage: "denied", analytics_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
   // Set sanitized defaults before config, including for Google-generated events.
   gtag("set", publicPageContext(window.location.pathname));
   gtag("js", new Date());
-  gtag("config", measurementId, { send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false });
+  gtag("config", measurementId, { send_page_view: false, cookie_domain: "none", allow_google_signals: false, allow_ad_personalization_signals: false });
   const script = document.createElement("script");
   script.id = "holistic-house-google-tag";
   script.async = true;
@@ -105,6 +98,7 @@ export function Ga4Analytics({ nonce }: { nonce?: string }) {
     if (!measurementId || !/^G-[A-Z0-9]+$/.test(measurementId) || !installCollectionBoundary(measurementId)) return;
     if (!isCanonicalProductionHost() || !isPublicAnalyticsPath(pathname)) {
       lastPage.current = null;
+      resetAnalyticsDocument();
       return;
     }
     const sendPageView = () => {

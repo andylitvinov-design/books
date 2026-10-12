@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { isPublicAnalyticsPath } from "@/lib/public-analytics";
+import { isPublicAnalyticsPath, resetAnalyticsDocument, updatePublicAnalyticsConsent } from "@/lib/public-analytics";
 
 const consentCookie = "holistic_house_analytics_consent";
 type ConsentChoice = "granted" | "denied";
@@ -17,6 +17,10 @@ function eraseAnalyticsCookies() {
     const name = item.split("=")[0];
     if (name === "_ga" || name.startsWith("_ga_")) {
       document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax; Secure`;
+      // Remove legacy Google auto-domain cookies as well as new host-only ones.
+      if (window.location.hostname === "holistichouse.vercel.app") {
+        document.cookie = `${name}=; Domain=holistichouse.vercel.app; Path=/; Max-Age=0; SameSite=Lax; Secure`;
+      }
     }
   }
 }
@@ -24,13 +28,11 @@ function eraseAnalyticsCookies() {
 function applyConsent(value: ConsentChoice) {
   document.documentElement.dataset.analyticsConsent = value;
   // A loaded Google tag must also respect withdrawal and private-page navigation.
-  window.gtag?.("consent", "update", {
-    analytics_storage: value,
-    ad_storage: "denied",
-    ad_user_data: "denied",
-    ad_personalization: "denied",
-  });
-  if (value === "denied") eraseAnalyticsCookies();
+  updatePublicAnalyticsConsent(value);
+  if (value === "denied") {
+    eraseAnalyticsCookies();
+    resetAnalyticsDocument();
+  }
   window.dispatchEvent(new Event("holistic-house:analytics-consent"));
 }
 
