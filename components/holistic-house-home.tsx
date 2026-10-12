@@ -9,7 +9,6 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { RelationshipsSpotlight } from "@/components/relationships-spotlight";
-import { FreeInsightsPaths } from "@/components/free-insights-paths";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
@@ -22,20 +21,20 @@ const copy = {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
     heroTitle: "Найдите больше ясности и внутренней опоры",
-    heroIntro: "Три бесплатных способа лучше понять себя и два формата личной работы — начните с того, что сейчас актуально.",
+    heroIntro: "Две бесплатные возможности и два формата личной работы. Выберите подходящий для вашего вопроса.",
     heroPrimary: "Бесплатный разбор ситуации",
-    heroSecondary: "Все 3 бесплатных варианта",
+    heroSecondary: "Четыре предложения",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте самостоятельно",
-    startIntro: "Тесты, книги и программы — в дополнение к личной работе.",
+    startIntro: "Мониторинг состояния, книги и программы — в дополнение к личной работе.",
     personalEyebrow: "1 · Личная работа",
     personalTitle: "Личная консультация",
     personalText: "Разобраться в вашем вопросе и вариантах действий.",
     personalAction: "Посмотреть форматы",
-    checkEyebrow: "2 · Бесплатно",
-    checkTitle: "Каталог тестов и отчёты",
-    checkText: "Выбрать дополнительные тесты и посмотреть историю результатов.",
-    checkAction: "Начать self-check",
+    checkEyebrow: "2 · Бесплатный мониторинг",
+    checkTitle: "Психологическое состояние и ресурсы",
+    checkText: "Оцените стресс, настроение, сон и внутреннюю опору. Получите рекомендации и отслеживайте изменения.",
+    checkAction: "Начать бесплатный мониторинг",
     learnEyebrow: "3 · Учиться и исследовать",
     learnTitle: "Курсы и библиотека",
     learnText: "Курсы, книги и практические материалы.",
@@ -54,20 +53,20 @@ const copy = {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
     heroTitle: "Explore your question. Find a clearer way forward.",
-    heroIntro: "Three free ways to understand yourself, plus two personal-work options when you want to go deeper.",
+    heroIntro: "Two free ways to begin and two personal-work options. Choose the one that fits your question.",
     heroPrimary: "Free situation review",
-    heroSecondary: "Explore 3 free options",
+    heroSecondary: "Explore four services",
     startKicker: "Other ways to explore",
     startTitle: "Explore at your own pace",
-    startIntro: "Tests, courses and books to complement personal work.",
+    startIntro: "Free wellbeing monitoring, courses and books to complement personal work.",
     personalEyebrow: "1 · Personal work",
     personalTitle: "Personal sessions",
     personalText: "Explore your question and possible next steps.",
     personalAction: "Explore personal work",
-    checkEyebrow: "2 · Free",
-    checkTitle: "Test library & reports",
-    checkText: "Explore more assessments and your saved results.",
-    checkAction: "Start the self-check",
+    checkEyebrow: "2 · Free monitoring",
+    checkTitle: "Wellbeing & inner resources",
+    checkText: "Check stress, mood, sleep and resilience. Get practical guidance and track changes over time.",
+    checkAction: "Start free monitoring",
     learnEyebrow: "3 · Learn & explore",
     learnTitle: "Courses & Library",
     learnText: "Courses, books and practical guides.",
@@ -131,7 +130,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
             </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--secondary"
-              href="#free-insights"
+              href="#core-services"
               event="service_view"
             >
               {text.heroSecondary}<span aria-hidden="true">→</span>
@@ -140,7 +139,6 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </div>
       </section>
 
-      <FreeInsightsPaths locale={locale} />
       <ServicesSolutions locale={locale} variant="home" />
       <RelationshipsSpotlight locale={locale} />
 

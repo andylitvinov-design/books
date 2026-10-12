@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { buildClientReport } from '../lib/profile/client-report.js'
 import { RELATIONSHIPS_INTIMACY_KEYS, RELATIONSHIPS_INTIMACY_DEFINITIONS, RELATIONSHIP_DIMENSION_ROWS } from '../data/assessments/relationships-intimacy-v1.js'
 import { getAssessmentDefinition, validateAnswers } from '../lib/assessments/definitions.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
@@ -59,7 +61,7 @@ test('eight adult EN/RU questionnaires have stable provenance, six questions and
 })
 test('catalog selection, privacy and recommended focus discover intimacy and sexuality without any diagnosis',()=>{
   const count=MONITORING_CATALOG.filter(item=>item.startable).length
-  assert.ok(count>=84)
+  assert.equal(count,104)
   const coverage=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual(coverage.uncovered,[])
   assert.equal(coverage.registered,coverage.total)
@@ -76,5 +78,49 @@ test('catalog selection, privacy and recommended focus discover intimacy and sex
     assert.ok(sexuality.some(row=>row.key==='hh-intimacy-consent'))
     const tantra=filterExplorerEntries(entries,{focus:['tantra']})
     assert.ok(tantra.some(row=>row.key==='hh-tantra-presence'))
+  }
+})
+
+
+test('independent identity, item-group and numeric fixtures preserve zero and reject missing answers', async () => {
+  const expected=JSON.parse(await readFile('tests/fixtures/relationships-intimacy-identities.json','utf8'))
+  assert.deepEqual(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>({id:d.id,key:d.key,locale:d.instrumentLocale,hash:d.contentHash})),expected)
+  const sql=await readFile('supabase/migrations/20261011211746_hh_love_intimacy_assessments.sql','utf8')
+  const tag=sql.match(/jsonb_array_elements\((\$[^$]+\$)/)[1]
+  assert.deepEqual(JSON.parse(sql.split(tag)[1]),RELATIONSHIPS_INTIMACY_DEFINITIONS)
+  for(const d of RELATIONSHIPS_INTIMACY_DEFINITIONS){
+    assert.equal(MONITORING_CATALOG.find(x=>x.key===d.key).testStyle,'engaging')
+    const ids=Array.from({length:6},(_,i)=>d.key+'.'+String(i+1).padStart(2,'0'))
+    assert.deepEqual(d.questions.map(q=>q.id),ids)
+    assert.deepEqual(d.scoring.dimensions.map(s=>s.items),[ids.slice(0,3),ids.slice(3)])
+    for(const [values,wanted] of [
+      [[0,0,0,4,4,4],[0,4]],[[4,4,4,0,0,0],[4,0]],
+      [[0,1,4,4,2,0],[1.67,2]],[[0,0,4,0,4,4],[1.33,2.67]],
+    ]){
+      const answers=Object.fromEntries(ids.map((id,i)=>[id,values[i]]))
+      assert.deepEqual(scoreAssessment(d,answers).dimensions.map(s=>s.value),wanted)
+    }
+    for(const invalid of [undefined,null,-1,5,1.5,'2',NaN]){
+      const answers=Object.fromEntries(ids.map(id=>[id,0]))
+      if(invalid===undefined)delete answers[ids[0]];else answers[ids[0]]=invalid
+      assert.throws(()=>scoreAssessment(d,answers),d.key+': '+invalid)
+    }
+  }
+})
+
+test('bilingual saved report and PDF models retain experimental status and consent limits', () => {
+  for(const d of RELATIONSHIPS_INTIMACY_DEFINITIONS){
+    const result={...scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,0]))),id:d.id,measurementAt:'2026-10-12T06:00:00.000Z'}
+    for(const locale of ['en','ru']){
+      const report=buildAssessmentResultReport(result,locale)
+      assert.match(report.contextNote,locale==='ru'?/Экспериментальные.*Holistic House/:/experimental Holistic House/)
+      assert.match(report.contextNote,locale==='ru'?/без клинической валидации/:/not clinically validated/)
+      assert.match(report.contextNote,locale==='ru'?/согласие/:/consent/)
+      assert.ok(report.sections.every(s=>s.bandBasis==='descriptive'&&!s.recommendedReview))
+      const pdf=buildClientReport({results:[result],locale})
+      assert.equal(pdf.tests[0].interpretation.contextNote,report.contextNote)
+      assert.deepEqual(pdf.tests[0].dimensions.map(s=>s.value),[0,0])
+    }
+    assert.equal(buildAssessmentResultReport({...result,definitionVersion:'v999'},'en').contextNote,null)
   }
 })

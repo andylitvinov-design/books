@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Trash2, Zap } from 'lucide-react'
 import { TestExplorer } from './test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
@@ -13,6 +13,7 @@ import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
+import { INSIGHTS_TEST_CATEGORIES } from '@/lib/assessments/insights-categories'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
 import styles from './account-test-battery.module.css'
 
@@ -28,6 +29,8 @@ const COPY = {
     keep: 'Keep existing set', replace: 'Use new selection', error: 'Could not save your test selection. Please try again.',
     retry: 'Try again', account: 'My tests', history: 'Results history', privacy: 'Your responses and results stay private in your personal Cabinet. These self-checks are not a diagnosis.',
     signInFailed: 'Google sign-in was not completed. You can retry when you are ready.',
+    added: 'New tests were added to My tests. Your earlier tests and progress are safe.',
+    capacity: 'Your saved test list has reached 100 tests. Remove an unused test to add more.',
     remove: 'Remove from my tests', removed: 'Removed from selection. Saved results and answers are unchanged.',
     stale: 'Your selection was updated elsewhere. Refreshed the current list; please try again.',
     filters: 'Edit test filters', closeFilters: 'Close filters', pendingReview: 'Review your proposed test selection',
@@ -44,6 +47,8 @@ const COPY = {
     keep: 'Оставить текущий', replace: 'Использовать новый', error: 'Не удалось сохранить подборку. Повторите попытку.',
     retry: 'Повторить', account: 'Мои тесты', history: 'История результатов', privacy: 'Ваши ответы и результаты приватны и хранятся в личном кабинете. Эти тесты не являются диагнозом.',
     signInFailed: 'Вход через Google не завершён. При необходимости повторите вход.',
+    added: 'Новые тесты добавлены в «Мои тесты». Предыдущие тесты и прогресс сохранены.',
+    capacity: 'В списке уже 100 тестов. Уберите ненужный тест, чтобы добавить новый.',
     remove: 'Убрать из набора', removed: 'Тест убран из подборки. Ответы и результаты сохранены.',
     stale: 'Подборка уже изменилась. Список обновлён; попробуйте ещё раз.',
     filters: 'Изменить фильтры тестов', closeFilters: 'Закрыть фильтры', pendingReview: 'Проверить новую подборку тестов',
@@ -109,11 +114,31 @@ function planRows(plan, data, locale) {
 export function AccountTestBattery({ data, locale, requestedPlanId, recommendedKey = null, initialStatusFilter = null, reload }) {
   const c = COPY[locale] || COPY.en
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const openFromInsights = searchParams.get('explore') === '1'
+  const requestedCategory = searchParams.get('category')
+  const insightsCategory = INSIGHTS_TEST_CATEGORIES.some((item) => item.key === requestedCategory) ? requestedCategory : null
   const once = useRef(false)
   const [plan, setPlan] = useState(null)
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
-  const [exploring, setExploring] = useState(false)
+  const [exploring, setExploring] = useState(openFromInsights)
+  useEffect(() => {
+    if (!openFromInsights) return
+    setExploring(true)
+    // The existing in-account explorer opens at its actual filters, not the top
+    // of the saved-test dashboard. A new URL requires no extra click.
+    let childFrame
+    const frame = window.requestAnimationFrame(() => {
+      childFrame = window.requestAnimationFrame(() => {
+        document.getElementById('hh-test-customizer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      if (childFrame !== undefined) window.cancelAnimationFrame(childFrame)
+    }
+  }, [openFromInsights, insightsCategory])
   const allowedFilters = ['all', 'notStarted', 'inProgress', 'completed', 'remaining']
   const requestedFilter = allowedFilters.includes(initialStatusFilter) ? initialStatusFilter : null
   const [showList, setShowList] = useState(true)
@@ -146,6 +171,14 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }, [data, locale])
   const root = '/' + locale + '/app'
   const selectionPreferences = currentPlan?.selectionPreferences || data.latestTestPlan?.selectionPreferences || {}
+  // A category-scoped invitation starts a fresh *filter view*, never modifies
+  // stored selections. Saving uses the existing appendActive flow.
+  const categoryFocus = TEST_RECOMMENDATION_FOCUS.some((item) => item.key === insightsCategory) ? [insightsCategory] : []
+  const explorerPreferences = openFromInsights
+    ? { focus: categoryFocus, areas: insightsCategory === 'wu-xing' ? ['wu-xing'] : [] }
+    : selectionPreferences
+  const initialFilterGroup = !openFromInsights || !insightsCategory ? null
+    : insightsCategory === 'wu-xing' ? 'areas' : categoryFocus.length ? 'topics' : null
   const priorityLabels = (selectionPreferences.focus || []).map((key) => TEST_RECOMMENDATION_FOCUS.find((item) => item.key === key)?.label?.[locale] || key)
   const axisLabels = (selectionPreferences.axes || []).map((key) => TEST_EXPLORER_AXIS_LABELS[key]?.[locale] || TEST_EXPLORER_AXIS_LABELS[key]?.en || key)
   const savedPriorities = [...priorityLabels, ...axisLabels]
@@ -175,11 +208,13 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         })),
         operationId: crypto.randomUUID(),
         replaceActive,
+        appendActive: !replaceActive,
         ...(selectionPreferences === undefined ? {} : { selectionPreferences }),
       })
       try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Storage may be blocked. */ }
       setConflict(null)
       setPlan(created)
+      setNotice(c.added)
       setExploring(false)
       setShowList(true)
       // Reconcile the saved account state before replacing the handoff URL.
@@ -187,7 +222,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       await reload()
       router.replace(root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
-      if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
+      if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
+      else if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
       else setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
     } finally {
       setBusy(false)
@@ -214,14 +250,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         if (!pending) window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY)
       } catch { /* Browser may disable tab storage. */ }
       if (!pending) return
-      if (data.activeTestPlan) {
-        const ids = pending.keys.map((key) => entries.find((entry) => entry.key === key)?.definition?.id)
-        if (JSON.stringify(ids) === JSON.stringify(data.activeTestPlan.definitionIds)) {
-          // Same tests, new priorities: persist preferences without discarding progress.
-          await create(pending.keys, false, pending.preferences)
-        } else setConflict({ keys: pending.keys, preferences: pending.preferences })
-        return
-      }
+      // Add all new tests after Google OAuth, regardless of any existing plan.
+      // The server merges under the account lock and preserves draft/completion.
       await create(pending.keys, false, pending.preferences)
     }
     // Do not reset the guard in cleanup: a StrictMode replay is not a new
@@ -230,18 +260,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }, []) // eslint-disable-line react-hooks/exhaustive-deps -- one handoff per mounted selection, including StrictMode.
 
   async function choose(entriesToStart, selectionPreferences) {
-    const keys = entriesToStart.map((entry) => entry.key)
-    if (data.activeTestPlan) {
-      const ids = entriesToStart.map((entry) => entry.definition?.id)
-      if (JSON.stringify(ids) !== JSON.stringify(data.activeTestPlan.definitionIds)) {
-        setConflict({ keys, preferences: selectionPreferences })
-        setExploring(true)
-        return
-      }
-      await create(keys, false, selectionPreferences)
-      return
-    }
-    await create(keys, false, selectionPreferences)
+    await create(entriesToStart.map((entry) => entry.key), false, selectionPreferences)
   }
   function openFilters() {
     setExploring((open) => !open)
@@ -426,7 +445,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         </MyTestsDashboard>
         {initializing && <p role="status" className={styles.inlineNotice}>{c.preparing}</p>}
         {error && <p role="alert" className={styles.inlineError}>{error}
-          <button type="button" onClick={()=>setError('')}>{c.retry}</button></p>}
+          <button type="button" onClick={() => {
+            let pending = null
+            try { pending = readTestSelectionIntent(window.sessionStorage.getItem(PENDING_TEST_SELECTION_KEY)) } catch {}
+            if (pending) void create(pending.keys, false, pending.preferences)
+            else setError('')
+          }}>{c.retry}</button></p>}
         {notice && <p role="status" className={styles.inlineNotice}>{notice}</p>}
       </section>
       <details className={styles.portraitDetails}>
@@ -448,8 +472,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
           </div>
         </aside>}
-        <TestExplorer key={currentPlan?.id || 'new'} locale={locale}
-          audience="account" onStart={choose} initialPreferences={selectionPreferences}
+        <TestExplorer key={(currentPlan?.id || 'new') + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
+          audience="account" onStart={choose} initialPreferences={explorerPreferences}
+          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
           onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>

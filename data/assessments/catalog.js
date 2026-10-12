@@ -7,6 +7,8 @@ import { PROFESSIONAL_BATTERY_2026_CATALOG } from './professional-battery-2026.j
 import { CDC_HEALTHY_DAYS_CATALOG } from './cdc-healthy-days-2026.js'
 import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from './professional-battery-2026-b.js'
 import { IPIP_BIG_FIVE_50_CATALOG } from './ipip-big-five-50-en-v1.js'
+import { COMPASSION_CATALOG } from './compassion-2026.js'
+import { OPEN_PROFESSIONAL_2026_CATALOG } from './open-professional-2026.js'
 
 export const MONITORING_AXES = deepFreeze([
   'state',
@@ -695,6 +697,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...CDC_HEALTHY_DAYS_CATALOG,
   ...PROFESSIONAL_BATTERY_2026_B_CATALOG,
   ...IPIP_BIG_FIVE_50_CATALOG,
+  ...OPEN_PROFESSIONAL_2026_CATALOG,
   {
     key: 'mspss',
     version: 'v1',
@@ -719,27 +722,7 @@ export const MONITORING_CATALOG = deepFreeze([
       ru: 'Профессиональный MSPSS-профиль воспринимаемой поддержки; вопросы на английском.',
     },
   },
-  {
-    key: 'scs-sf',
-    version: 'source-controlled',
-    instrumentLocale: 'source-controlled',
-    axis: 'resources',
-    topics: ['self-support', 'recovery'],
-    moodAffinities: ['happy', 'neutral'],
-    categoryAffinities: ['emotions', 'other'],
-    questionCount: 12,
-    durationMinutes: 3,
-    suggestedRepeatDays: 30,
-    cooldownDays: 14,
-    startable: false,
-    access: 'account',
-    rightsStatus: 'review_required',
-    title: { en: 'Self-Compassion', ru: 'Внутренняя поддержка' },
-    description: {
-      en: 'Resource measure metadata; start remains disabled until source and rights review.',
-      ru: 'Метаданные ресурсной шкалы; запуск отключён до проверки источника и прав.',
-    },
-  },
+  ...COMPASSION_CATALOG,
   {
     key: 'functioning-review',
     version: 'planned',

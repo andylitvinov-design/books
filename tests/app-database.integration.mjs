@@ -1197,6 +1197,72 @@ test('durable guest and account assessment plans enforce ordered private sequent
 })
 
 
+test('a fresh selection appends to existing saved tests and keeps draft/completed progress', async () => {
+  const toItem = (def) => ({
+    definitionKey: def.key, definitionVersion: def.version,
+    instrumentLocale: def.instrumentLocale,
+  })
+  const original = await repo.createTestPlan(v2Actor, {
+    items: [enV2, weekly].map(toItem), operationId: randomUUID(), replaceActive: true,
+  })
+  const draft = await start(v2Actor, weekly)
+  const run = await start(v2Actor, enV2)
+  const saved = await save(run, v2Actor)
+  const result = await repo.submitRun(v2Actor, run.id, { expectedRevision: saved.revision })
+  const progressed = await repo.advanceTestPlan(v2Actor, original.id, {
+    completedRunId: result.runId, expectedRevision: original.revision,
+  })
+  assert.equal(progressed.status, 'active')
+  const added = await repo.createTestPlan(v2Actor, {
+    items: [mini, weekly].map(toItem), operationId: randomUUID(),
+    appendActive: true, selectionPreferences: { focus: ['anxiety'] },
+  })
+  assert.equal(added.id, original.id, 'preserves the active plan identity')
+  assert.deepEqual(added.definitionIds, [enV2.id, weekly.id, mini.id])
+  assert.deepEqual(added.completedRunIds, [result.runId])
+  assert.equal(added.currentIndex, progressed.currentIndex)
+  const retry = await repo.createTestPlan(v2Actor, {
+    items: [mini, weekly].map(toItem), operationId: randomUUID(), appendActive: true,
+    selectionPreferences: { focus: ['anxiety'] },
+  })
+  assert.deepEqual(retry.definitionIds, added.definitionIds, 'retry adds no duplicates')
+  assert.equal(retry.revision, added.revision, 'unchanged append is idempotent')
+  const after = await repo.bootstrap(v2Actor)
+  assert.equal(after.activeTestPlan.id, original.id)
+  assert.ok(after.runs.some((row) => row.id === draft.id), 'unfinished answers are not removed')
+  assert.ok(after.results.some((row) => row.id === result.id), 'completed result is not removed')
+  await assert.rejects(
+    () => repo.getTestPlan(a, original.id),
+    (error) => error.code === 'NOT_FOUND',
+  )
+})
+
+test('new tests reactivate an already completed selection, preserving its recorded result', async () => {
+  const toItem = (def) => ({
+    definitionKey: def.key, definitionVersion: def.version,
+    instrumentLocale: def.instrumentLocale,
+  })
+  const original = await repo.createTestPlan(v2Actor, {
+    items: [mini].map(toItem), operationId: randomUUID(), replaceActive: true,
+  })
+  const run = await start(v2Actor, mini)
+  const saved = await save(run, v2Actor)
+  const result = await repo.submitRun(v2Actor, run.id, { expectedRevision: saved.revision })
+  const completed = await repo.advanceTestPlan(v2Actor, original.id, {
+    completedRunId: result.runId, expectedRevision: original.revision,
+  })
+  assert.equal(completed.status, 'completed')
+  const reactivated = await repo.createTestPlan(v2Actor, {
+    items: [weekly].map(toItem), operationId: randomUUID(), appendActive: true,
+  })
+  assert.equal(reactivated.id, completed.id)
+  assert.equal(reactivated.status, 'active')
+  assert.deepEqual(reactivated.definitionIds, [mini.id, weekly.id])
+  assert.deepEqual(reactivated.completedRunIds, [result.runId])
+  assert.equal(reactivated.currentIndex, 1)
+  assert.equal((await repo.bootstrap(v2Actor)).activeTestPlan.id, original.id)
+})
+
 test('owner can remove saved selections atomically without erasing answers, results or other plan items', async () => {
   const chosen=[enV2,weekly,mini]
   const plan=await repo.createTestPlan(v2Actor,{
@@ -1292,4 +1358,89 @@ test('Bach Flower Emotional Profile saves 115 answers in the authorized Google a
     displayName:'Bach isolation test', uiLocale:'en', timezone:'America/Toronto', goal:'explore' })
   await assert.rejects(() => repo.getResult(outsider, submitted.id), error =>
     error.code === 'NOT_FOUND')
+})
+
+test('compassion registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { COMPASSION_DEFINITIONS } = await import('../data/assessments/compassion-2026.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261012033100_hh_compassion_research_measures.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const d of COMPASSION_DEFINITIONS) {
+      const rows = (await db.query('select id, definition, content_hash from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3', [d.key, d.version, d.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      assert.equal(rows[0].id, d.id)
+      assert.equal(rows[0].content_hash, d.contentHash)
+      assert.deepEqual(rows[0].definition, d)
+    }
+    const first = COMPASSION_DEFINITIONS[0]
+    for (const broken of [sql.replace(first.id, randomUUID()), sql.replace(first.contentHash, 'sha256:'+'0'.repeat(64)), sql.replace('HOW I TYPICALLY', 'CHANGED I TYPICALLY')]) {
+      await assert.rejects(() => db.query(broken), /Conflicting professional assessment ID|Different content already published/)
+      await db.query('rollback')
+    }
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[first.id])).rows[0].definition, first)
+  } finally { await db.end() }
+})
+
+test('both compassion instruments preserve source means in private guest saves and reports', async () => {
+  const { buildAssessmentResultReport } = await import('../lib/assessments/result-report.js')
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential(), other = createGuestCredential()
+  for (const who of [credential, other]) await guestRepo.createSession(who, {adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+  for (const [key,expected] of [['scs-sf',[3]],['compassion-scale',[2,1,1,1,5]]]) {
+    const d = getAssessmentDefinition(key,'v1','en')
+    let run = await guestRepo.startRun(credential,{definitionKey:key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
+    run = await guestRepo.saveRun(credential,run.id,{answers:answer(d,1),context:{},progress:d.questions.length,expectedRevision:run.revision,operationId:randomUUID()})
+    const result = await guestRepo.submitRun(credential,run.id,{expectedRevision:run.revision})
+    assert.deepEqual(result.dimensions.map(s=>s.value),expected)
+    assert.equal(result.contentHash,d.contentHash)
+    assert.deepEqual((await guestRepo.getResult(credential,result.id)).dimensions,result.dimensions)
+    await assert.rejects(()=>guestRepo.getResult(other,result.id),/NOT_FOUND/)
+    for (const locale of ['en','ru']) {
+      const report=buildAssessmentResultReport(result,locale)
+      assert.equal(report.sections.length,expected.length)
+      assert.ok(report.sections.every(s=>s.source===d.source.scoringUrl))
+    }
+  }
+})
+
+
+test('existing relationship registration is exact and idempotent for all sixteen published forms', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { RELATIONSHIPS_INTIMACY_DEFINITIONS: defs } = await import('../data/assessments/relationships-intimacy-v1.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261011211746_hh_love_intimacy_assessments.sql', import.meta.url),'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for(const d of defs){
+      const rows=(await db.query('select id,definition,content_hash,status from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3',[d.key,d.version,d.instrumentLocale])).rows
+      assert.equal(rows.length,1)
+      assert.equal(rows[0].id,d.id)
+      assert.equal(rows[0].status,'published')
+      assert.equal(rows[0].content_hash,d.contentHash)
+      assert.deepEqual(rows[0].definition,d)
+    }
+    await assert.rejects(()=>db.query(sql.replace(defs[0].contentHash,'sha256:'+'0'.repeat(64))),/Refusing to overwrite published intimacy questionnaire/)
+    await db.query('rollback')
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[defs[0].id])).rows[0].definition,defs[0])
+  } finally { await db.end() }
+})
+
+test('all relationship forms save independent means privately and reject another guest', async () => {
+  const { RELATIONSHIPS_INTIMACY_DEFINITIONS: defs } = await import('../data/assessments/relationships-intimacy-v1.js')
+  const guestRepo=createGuestRepository(config)
+  const owner=createGuestCredential(),other=createGuestCredential()
+  for(const who of [owner,other])await guestRepo.createSession(who,{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+  for(const d of defs){
+    let run=await guestRepo.startRun(owner,{definitionKey:d.key,definitionVersion:d.version,instrumentLocale:d.instrumentLocale,operationId:randomUUID()})
+    run=await guestRepo.saveRun(owner,run.id,{answers:Object.fromEntries(d.questions.map((q,i)=>[q.id,[0,1,4,4,2,0][i]])),context:{},progress:6,expectedRevision:run.revision,operationId:randomUUID()})
+    const result=await guestRepo.submitRun(owner,run.id,{expectedRevision:run.revision})
+    assert.equal(result.contentHash,d.contentHash)
+    assert.deepEqual(result.dimensions.map(s=>s.value),[1.67,2])
+    assert.deepEqual((await guestRepo.getResult(owner,result.id)).dimensions,result.dimensions)
+    await assert.rejects(()=>guestRepo.getResult(other,result.id),/NOT_FOUND/)
+  }
 })

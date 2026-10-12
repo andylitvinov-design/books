@@ -9,12 +9,28 @@ if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error('Only
 const output='artifacts/app-r1'
 await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
-const browser=await engine.launch(),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
+const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{}),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
 let page=await context.newPage()
 const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
 page.on('pageerror',capturePageError)
 const checks=[]
 function passed(name){checks.push(name);console.log('PASS '+name)}
+/**
+ * Playwright/WebKit cannot screenshot a full page taller than 32767 device pixels.
+ * Clinical test catalogs and complete Reports may naturally exceed that height.
+ * Keep the underlying route/assertions intact; use a viewport-sized evidence
+ * image only when a full-page artifact would exceed the browser pixel limit.
+ */
+async function screenshotEvidence(target, options) {
+  if (options.fullPage !== true) return target.screenshot(options)
+  const tooTall = await target.evaluate(() => {
+    const px = Math.max(document.documentElement?.scrollHeight || 0, document.body?.scrollHeight || 0)
+    return px * Math.max(1, window.devicePixelRatio || 1) >= 30000
+  }).catch(() => true)
+  if (tooTall) console.log('SYNTHETIC_SCREENSHOT_VIEWPORT_FALLBACK', options.path)
+  return target.screenshot({ ...options, fullPage: !tooTall })
+}
+
 async function api(path,body,ctx=context){
  let error
  for(let attempt=0;attempt<3;attempt++){
@@ -79,7 +95,7 @@ async function enterTest(name='Current State Check',mode='Guided'){
  if(await page.locator('[data-saved-test]').count()){
   await expect(page.locator('#my-tests-list')).toBeVisible()
   assert.equal(await page.getByRole('button',{name:/^Start testing/}).count(),0)
-  await page.screenshot({path:output+'/my-tests-choose-test.png',fullPage:false})
+  await screenshotEvidence(page,{path:output+'/my-tests-choose-test.png',fullPage:false})
  }
  const candidate=()=>page.locator('article').filter({
    has:page.getByRole('heading',{name,exact:true}),
@@ -88,13 +104,8 @@ async function enterTest(name='Current State Check',mode='Guided'){
   const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
   if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
-  await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
-  if(await page.getByRole('button',{name:/Review test filters/}).count()){
-   if(!(await page.locator('[data-pending-selection]').isVisible().catch(()=>false)))
-     await page.getByRole('button',{name:/Review test filters/}).click()
-   await expect(page.locator('[data-pending-selection]')).toBeVisible()
-   await page.locator('[data-pending-selection]').getByRole('button',{name:'Use new selection'}).click()
-  }
+  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+  await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
   await expect(page.locator('#my-tests-list')).toBeVisible()
  }
  await expect(candidate()).toBeVisible({timeout:15000})
@@ -111,6 +122,9 @@ async function enterTest(name='Current State Check',mode='Guided'){
  }else await expect(page.locator('.hh-quick-form')).toBeVisible()
 }
 async function savedClick(button){
+ // Keep this long synthetic journey below the unchanged account request quota.
+ // Faster CI machines otherwise exhaust it during Mini-IPIP and the next draft.
+ await page.waitForTimeout(750)
  const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/save')&&r.request().method()==='POST'),button.click()])
  assert.equal(response.status(),200,'Server must acknowledge each save')
  await expect(page.getByRole('status')).toHaveText('Saved securely')
@@ -210,7 +224,7 @@ try {
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
  await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
- await page.screenshot({path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'My profile',exact:true})).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
+ await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'My profile',exact:true})).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
  const profileOfferCases=[
    ['psychology','alchemy-of-soul','Alchemy of the Soul'],
    ['homeopathy','psychohomeopathy','homeopathy'],
@@ -239,7 +253,7 @@ try {
  }
  await verifyProfileServiceOffers(page)
  passed('every Google Cabinet profile has one working service-specific WhatsApp enquiry and matching landing link')
- await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-initial.png',fullPage:false});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
+ await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-initial.png',fullPage:false});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
  await page.getByRole('button',{name:'Happy',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect.poll(async()=>((await api('bootstrap')).data.moodCheckins||[]).length).toBe(1);await page.getByRole('button',{name:'Not now',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);passed('signed-in mood tap persists even when the user chooses Not now')
  const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
  // A public Master account must not be allowed to open the owner's global client database.
@@ -252,7 +266,7 @@ try {
  await expect(page.locator('.hh-practice-dashboard')).toBeVisible({timeout:25000});
  await expect(page.getByRole('button',{name:'Create report',exact:true})).toHaveCount(0);
  await expect(page.locator('.hh-practice-more-tools')).toHaveCount(0);
- await page.screenshot({path:output+'/master-compact-practice-mobile.png',fullPage:false});
+ await screenshotEvidence(page,{path:output+'/master-compact-practice-mobile.png',fullPage:false});
  const practitionerOpen=await api('practitioner/open',{destination:'clients'});
  assert.equal(practitionerOpen.status,404);assert.equal(practitionerOpen.data.error,'NOT_FOUND');
  passed('public Master can open own practice but cannot access owner client database')
@@ -264,11 +278,11 @@ try {
   await expect(page.getByRole('link',{name:'Request free analysis'})).toHaveAttribute('href','/en/services/dao-health-profile')
   await expect(page.getByText('No personal reports have been pinned here yet.')).toBeVisible()
   await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Analysis'})).toHaveAttribute('aria-current','page')
-  await page.screenshot({path:output+'/client-personal-analysis-en.png',fullPage:true})
+  await screenshotEvidence(page,{path:output+'/client-personal-analysis-en.png',fullPage:true})
   passed('Google Cabinet Personal Analysis shows both verified free services and pinned-reports empty state')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
- await page.screenshot({path:output+'/current-state-runner.png',fullPage:true})
+ await screenshotEvidence(page,{path:output+'/current-state-runner.png',fullPage:true})
  await answerCurrent(7);await saveAndExit()
  await page.reload();await ready();await enterTest();await expect(page.getByRole('heading',{name:'How much energy and inner support do you feel right now?'})).toBeVisible();passed('saved answers and progress resume after reload')
  for(const v of[3,6,8,5])await answerCurrent(v)
@@ -298,7 +312,7 @@ try {
   await expect(page.locator('#my-tests-list')).toBeVisible();
   await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-extra-tools] > summary').click();
   await expect(page.getByRole('heading',{name:'Add your baseline profile',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:/Results portfolio/})).toBeVisible()
- for(const width of[320,360,390,430,768,1280]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${output}/portrait-en-${width}.png`,fullPage:true})}
+ for(const width of[320,360,390,430,768,1280]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await screenshotEvidence(page,{path:`${output}/portrait-en-${width}.png`,fullPage:true})}
  assert.equal(await page.locator('.mobile-bottom-navigation').count(),0);passed('action-first profile dashboard and responsive no-overflow screenshots 320–1280')
  await page.goto(origin+'/en/app/portfolio');await ready();
  await expect(page.getByRole('heading',{name:'My completed tests',exact:true})).toBeVisible()
@@ -309,14 +323,40 @@ try {
  await expect(page.locator('.hh-metric')).toHaveCount(5)
  await page.locator('.hh-metric').first().click()
  await expect(page.locator('.hh-detail')).toBeVisible()
- await page.screenshot({path:output+'/insights-completed-tests-en.png',fullPage:false})
+ await screenshotEvidence(page,{path:output+'/insights-completed-tests-en.png',fullPage:false})
  passed('completed tests lead Insights; detailed measurements remain available in optional advanced view')
  await page.setViewportSize({width:390,height:844});await enterTest();for(const v of[4,6,3,5,2])await answerCurrent(v);await page.getByRole('button',{name:'Save results and get recommendations'}).click();await openCompletedPlanResult()
  let data=(await api('bootstrap')).data;assert.equal(data.results.length,2);assert.equal(data.results[0].id,first.id);assert.equal(new Set(data.snapshot.dimensions.map(d=>d.key)).size,5);passed('second run keeps original baseline and unique profile axes')
- await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await page.screenshot({path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
- await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
+ // Use an isolated context so the real service worker cannot bypass route
+ // interception. The main journey keeps its worker and private-cache checks.
+ const recoveryContext=await browser.newContext({storageState:await context.storageState(),serviceWorkers:'block',viewport:{width:390,height:844}})
+ const recoveryPage=await recoveryContext.newPage()
+ recoveryPage.on('pageerror',capturePageError)
+ try {
+  for (const body of ['{"account":', '{"error":"SERVICE_UNAVAILABLE"}', '{"account":null}']) {
+   let intercepted=0
+   await recoveryPage.route('**/api/app/bootstrap', route => {
+    intercepted++
+    return route.fulfill({status:200,contentType:'application/json',body})
+   })
+   await recoveryPage.goto(origin+'/en/app/history')
+   const retry=recoveryPage.getByRole('button',{name:'Try again',exact:true})
+   await expect(retry).toBeVisible({timeout:15000})
+   assert.ok(intercepted>0,'invalid bootstrap response must actually reach the client')
+   await expect(recoveryPage.locator('main [role="alert"]')).toBeVisible()
+   await expect(recoveryPage.locator('.hh-account-menu')).toHaveCount(0)
+   await recoveryPage.unroute('**/api/app/bootstrap')
+   await retry.click()
+   await expect(recoveryPage.locator('.hh-mobile-app-nav')).toBeVisible({timeout:15000})
+   await expect(recoveryPage.locator('.hh-change')).toContainText('7 → 4')
+   assert.deepEqual(errors,[])
+  }
+ } finally { await recoveryContext.close() }
+ passed('invalid HTTP 200 bootstrap bodies show retry and recover without uncaught browser errors')
+ await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await screenshotEvidence(page,{path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
+ await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
  await enterTest('Personality Baseline');await expect(page.getByText('In general, not only today',{exact:false})).toBeVisible()
- await page.screenshot({path:output+'/personality-runner.png',fullPage:true})
+ await screenshotEvidence(page,{path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));if(i<19)await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
  await page.getByRole('button',{name:'Save results and get recommendations'}).click();await openCompletedPlanResult();data=(await api('bootstrap')).data;const trait=data.results.find(r=>r.definitionKey==='mini-ipip-20');assert.deepEqual(trait.dimensions.map(d=>d.value),[12,12,12,12,12]);assert.equal(data.snapshot.dimensions.length,10);passed('Mini-IPIP scoring is preserved alongside completed plan summaries')
  await enterTest('Weekly Psychic Health','Quick')
@@ -327,7 +367,7 @@ try {
  await expect(page.getByText('1 / 8 answered',{exact:true})).toBeVisible()
  await expect(page.locator('.hh-quick-question')).toHaveCount(8)
  await expect(page.locator('.hh-quick-question').first().locator('.hh-scale button').first()).toHaveAttribute('aria-pressed','true')
- await page.screenshot({path:output+'/quick-all-questions-mobile.png',fullPage:true})
+ await screenshotEvidence(page,{path:output+'/quick-all-questions-mobile.png',fullPage:true})
  passed('Quick mode displays one scrollable form with auto-saved answers and no per-question navigation')
  await page.getByRole('button',{name:'Save and exit'}).click()
  await expect(page).toHaveURL(/\/tests$/)
@@ -358,7 +398,7 @@ try {
  await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
  await expect(page.locator('.hh-runner-question')).toBeVisible()
  await expect(page.getByText('Question 2 / 8',{exact:true})).toBeVisible()
- await page.screenshot({path:output+'/guided-single-question-mobile.png',fullPage:false})
+ await screenshotEvidence(page,{path:output+'/guided-single-question-mobile.png',fullPage:false})
  await page.getByRole('button',{name:'Save and exit'}).click()
  await expect(page).toHaveURL(/\/tests$/)
  await ready()
@@ -368,11 +408,11 @@ try {
  await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible()
  await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible()
  passed('Quick draft resumes with its saved answers and can switch to one-question Guided mode')
- await page.goto(origin+'/ru/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Мой профиль',exact:true})).toBeVisible();await page.screenshot({path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
+ await page.goto(origin+'/ru/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Мой профиль',exact:true})).toBeVisible();await screenshotEvidence(page,{path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Request a consultation',exact:true}).first().click();await page.getByLabel('How should Andy contact you?').fill('synthetic@example.invalid');await page.getByLabel('Your message (optional)').fill('A synthetic request for CI only.')
- await page.screenshot({path:output+'/consultation-request.png',fullPage:true})
+ await screenshotEvidence(page,{path:output+'/consultation-request.png',fullPage:true})
  await page.getByRole('button',{name:'Send request',exact:true}).click();await expect(page.getByText('Received',{exact:true})).toBeVisible();data=(await api('bootstrap')).data;assert.equal(data.requests.length,1);assert.equal(data.requests[0].sharedExcerpt,null);passed('real consultation request without implicit profile sharing')
- const admin=await browser.newContext();await admin.addCookies([{name:'prescriptions_admin',value:createHmac('sha256',process.env.PRESCRIPTIONS_ADMIN_TOKEN).update('prescriptions-admin-v1').digest('base64url'),url:origin+'/admin',httpOnly:true,sameSite:'Strict'}]);const adminPage=await admin.newPage();await adminPage.goto(origin+'/admin/app-requests');await expect(adminPage.getByText('synthetic@example.invalid',{exact:true})).toBeVisible();await adminPage.getByRole('button',{name:'Contacted',exact:true}).click();await expect(adminPage.locator('.hh-badge')).toHaveText('Contacted');await adminPage.screenshot({path:output+'/practitioner-inbox.png',fullPage:true});passed('existing practitioner authorization and real request status inbox')
+ const admin=await browser.newContext();await admin.addCookies([{name:'prescriptions_admin',value:createHmac('sha256',process.env.PRESCRIPTIONS_ADMIN_TOKEN).update('prescriptions-admin-v1').digest('base64url'),url:origin+'/admin',httpOnly:true,sameSite:'Strict'}]);const adminPage=await admin.newPage();await adminPage.goto(origin+'/admin/app-requests');await expect(adminPage.getByText('synthetic@example.invalid',{exact:true})).toBeVisible();await adminPage.getByRole('button',{name:'Contacted',exact:true}).click();await expect(adminPage.locator('.hh-badge')).toHaveText('Contacted');await screenshotEvidence(adminPage,{path:output+'/practitioner-inbox.png',fullPage:true});passed('existing practitioner authorization and real request status inbox')
   // Separate tab: avoid racing a pending redirect from the preceding inbox mutation on WebKit.
   // Synthetic end-to-end Master → client → resource → recipient link. No real records.
   const handoffPage = await admin.newPage()
@@ -426,22 +466,22 @@ try {
   await clientPage.getByRole('link',{name:'My profile (Reports)'}).click()
   await expect(clientPage.getByRole('heading',{name:'My profile',exact:true})).toBeVisible()
   await verifyProfileServiceOffers(clientPage)
-  await clientPage.screenshot({path:output+'/private-client-profile-cta.png',fullPage:false})
+  await screenshotEvidence(clientPage,{path:output+'/private-client-profile-cta.png',fullPage:false})
   passed('all four legacy private-client profile CTAs open a precise, privacy-safe order request')
   await clientPage.getByRole('link',{name:'Personal analysis'}).click()
   await expect(clientPage.getByRole('heading',{name:'Personal analysis',exact:true})).toBeVisible()
   await expect(clientPage.getByRole('link',{name:'Start free analysis'})).toHaveAttribute('href','/en/services/free-situation-review')
   await expect(clientPage.getByRole('link',{name:'Request free analysis'})).toHaveAttribute('href','/en/services/dao-health-profile')
   await expect(clientPage.getByText('No personal reports have been pinned here yet.')).toBeVisible()
-  await clientPage.screenshot({path:output+'/private-client-personal-analysis.png',fullPage:true})
+  await screenshotEvidence(clientPage,{path:output+'/private-client-personal-analysis.png',fullPage:true})
   await clientPage.getByRole('link',{name:'My materials'}).click()
   await expect(clientPage.getByRole('heading',{name:'Study materials from Andy'})).toBeVisible()
-  await clientPage.screenshot({path:output+'/master-client-material-handoff.png',fullPage:true})
+  await screenshotEvidence(clientPage,{path:output+'/master-client-material-handoff.png',fullPage:true})
   await clientContext.close()
   passed('Master creates synthetic client, attaches study link and recipient opens private cabinet')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
  const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();await expect(otherPage).toHaveURL(/\/en\/app$/,{timeout:15000});assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
- // The public Start free testing button must transfer the exact selection into an existing Google account.
+ // The public Start free monitoring button must transfer the exact selection into an existing Google account.
  // Open a fresh tab in the same authenticated cookie context: the onboarding page
  // can still have a queued router.replace('/en/app') after its nav becomes visible.
  // Reusing it races Playwright's navigation against that pending redirect in WebKit.
@@ -450,14 +490,14 @@ try {
  selectionPage.on('response',response=>{ if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST') selectionWrites.push(response.status()) })
  await selectionPage.goto(origin+'/en/client/tests')
  await expect(selectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
-  await expect(selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first()).toBeEnabled()
+  await expect(selectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first()).toBeEnabled()
  await chooseVisibleTest(selectionPage,'Personality Baseline')
  const selectionGuided=selectionPage.locator('#hh-test-customizer')
  if(!(await selectionGuided.isVisible()))await selectionPage.getByRole('button',{name:/Choose my own tests and filters/}).click()
  await selectionGuided.getByRole('button',{name:/Topics that matter/}).click()
  await selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true}).click()
  await expect(selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true})).toHaveAttribute('aria-pressed','true')
- await selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
+ await selectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  await expect(selectionPage.locator('#my-tests-list')).toBeVisible()
  await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
@@ -469,14 +509,14 @@ try {
  assert.equal(new URL(selectionPage.url()).searchParams.get('plan'),selectedPlan.id)
  assert.deepEqual(selectionWrites,[201],'single selected battery creates exactly one plan, even with React StrictMode')
  await selectionPage.close()
- passed('public Start free testing preserves the selected test in authenticated personal Cabinet')
+ passed('public Start free monitoring preserves the selected test in authenticated personal Cabinet')
  // Re-selecting the same assessment should reuse the existing battery, not
  // leave the OAuth handoff query pending or create a second plan.
  const repeatSelectionPage=await other.newPage()
  await repeatSelectionPage.goto(origin+'/en/client/tests')
  await expect(repeatSelectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
  await chooseVisibleTest(repeatSelectionPage,'Personality Baseline')
- await repeatSelectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
+ await repeatSelectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(repeatSelectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  assert.equal(new URL(repeatSelectionPage.url()).searchParams.get('plan'),selectedPlan.id)
  assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.id,selectedPlan.id)
@@ -485,6 +525,10 @@ try {
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
  const storage=await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),caches:await Promise.all((await caches.keys()).map(async k=>(await(await caches.open(k)).keys()).map(r=>new URL(r.url).pathname)))}));assert.ok(!JSON.stringify(storage).match(/hh-app-auth|profile:first|\/api\/app|\/en\/app|\/ru\/app/));passed('no private browser storage or service-worker response cache')
  const exported=await api('export');assert.equal(exported.status,200);assert.ok(exported.data.runs.every(r=>r.accountId===first.accountId));assert.equal(exported.data.results.length,3);passed('own complete data export')
+ // Remember the active owner selection before the separate Google sign-in flow.
+ // It must still be present after the public selector adds another test.
+ const savedBeforeSignout=(await api('bootstrap')).data.activeTestPlan
+ assert.ok(savedBeforeSignout?.definitionIds?.length>0,'synthetic owner has a saved battery')
  await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
@@ -551,7 +595,7 @@ try {
  await expect(quickAnxiety).toHaveAttribute('aria-pressed','true')
  await expect.poll(async()=>resultCount.innerText()).not.toBe(before)
  assert.ok((await headCard.locator('svg[class*="focusRays"] line').count())>0, 'selected topic has illustrated focus rays')
- await page.screenshot({path:output+'/client-mobile-filters-portrait.png',fullPage:false})
+ await screenshotEvidence(page,{path:output+'/client-mobile-filters-portrait.png',fullPage:false})
  await quickAnxiety.click()
  await expect(quickAnxiety).toHaveAttribute('aria-pressed','false')
  passed('390px mobile: head asset loads, instant chips reduce test count and highlight real coverage axes')
@@ -561,20 +605,24 @@ try {
  assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null)
  passed('Cabinet entry has a prominent Google sign-in and one integrated battery builder')
 
- await chooseVisibleTest(page,'Personality Baseline')
- await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
- // An existing in-progress battery must not be discarded silently.
- // Choose the newly requested set through the explicit replacement confirmation.
- await expect(page.getByRole('button',{name:'Review test filters'})).toBeVisible()
- await page.getByRole('button',{name:'Review test filters'}).click()
- await expect(page.locator('[data-pending-selection]')).toBeVisible()
- await page.locator('[data-pending-selection]').getByRole('button',{name:'Use new selection'}).click()
+ await chooseVisibleTest(page,'Monthly Life Profile')
+ await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+ // The public selector must ADD selected tests to the existing Google account,
+ // never discard earlier tests or display a replacement confirmation.
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  const reopenedPlan=(await api('bootstrap')).data.activeTestPlan
- assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'after replacement URL must identify saved plan')
+ assert.equal(reopenedPlan.id,savedBeforeSignout.id,'same original plan remains active')
+ assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'saved plan URL identifies the original account plan')
+ assert.ok(savedBeforeSignout.definitionIds.every(id=>reopenedPlan.definitionIds.includes(id)),
+   'every earlier saved test remains in the account')
+ assert.ok(reopenedPlan.definitionIds.length>savedBeforeSignout.definitionIds.length,
+   'the newly selected public test is added to My Tests')
+ assert.deepEqual(reopenedPlan.completedRunIds,savedBeforeSignout.completedRunIds,
+   'adding tests must not discard completed progress')
+ await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
  await expect(page.locator('#my-tests-list')).toBeVisible()
- await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
- passed('public test selection starts Google authentication and opens account test battery')
+ await expect(page.getByRole('heading',{name:'Monthly Life Profile',exact:true})).toBeVisible()
+ passed('public test selection adds new tests without replacing the previous account battery')
  // The account shows the entire saved selection immediately, with a direct
  // remove control per row. Removing does not remove previous saved results.
  const beforeRemove=(await api('bootstrap')).data
@@ -594,5 +642,5 @@ try {
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
-} catch(error){await page.screenshot({path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
+} catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
 finally{await browser.close()}

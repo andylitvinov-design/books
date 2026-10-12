@@ -12,14 +12,14 @@ const COPY: Record<Locale, { eyebrow: string; title: string; intro: string; path
   en: {
     eyebrow: "START HERE · COMPLIMENTARY",
     title: "Three free ways to understand yourself",
-    intro: "Try a self-check or request a personal written reflection. Choose just the one you need — there is no obligation to book a session.",
+    intro: "Start free wellbeing monitoring or request a personal written reflection. Choose what helps you now — no obligation to book a session.",
     paths: [
       {
         id: "stress",
-        label: "Free self-check",
-        title: "Stress & psychological profile",
-        description: "Explore your stress level and psychological patterns with guided tests. Save your results if you wish.",
-        action: "Explore free tests",
+        label: "Free monitoring",
+        title: "Mental wellbeing & inner resources",
+        description: "Check stress, mood, sleep and inner resilience. See clear results and practical guidance; save them if you want to track changes over time.",
+        action: "Start free monitoring",
       },
       {
         id: "situation",
@@ -40,14 +40,14 @@ const COPY: Record<Locale, { eyebrow: string; title: string; intro: string; path
   ru: {
     eyebrow: "НАЧНИТЕ ЗДЕСЬ · БЕСПЛАТНО",
     title: "Три бесплатных способа лучше понять себя",
-    intro: "Пройдите тест самостоятельно или закажите личный письменный разбор. Выберите только то, что сейчас полезно — без обязательства записываться на сессию.",
+    intro: "Начните бесплатный мониторинг состояния или закажите личный письменный разбор. Выберите то, что полезно сейчас, без обязательства записываться на сессию.",
     paths: [
       {
         id: "stress",
-        label: "Бесплатные тесты",
-        title: "Стресс и психопрофиль",
-        description: "Исследуйте уровень стресса и психологические особенности. Результаты можно сохранить в кабинете.",
-        action: "Пройти бесплатные тесты",
+        label: "Бесплатный мониторинг",
+        title: "Психологическое состояние и ресурсы",
+        description: "Оцените стресс, настроение, сон и внутреннюю устойчивость. Получите результаты и рекомендации; при желании сохраняйте их, чтобы видеть динамику.",
+        action: "Начать бесплатный мониторинг",
       },
       {
         id: "situation",

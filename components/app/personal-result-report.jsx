@@ -2,12 +2,15 @@ import Link from 'next/link'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
+import { CompactAssessmentReport } from './compact-assessment-report'
 
-export function PersonalResultReport({ result, locale = 'en' }) {
+export function PersonalResultReport({ result, locale = 'en', previous = null }) {
   const report = buildAssessmentResultReport(result, locale)
   if (!report.sections.length) return null
   const ru = locale === 'ru'
   const bach = result?.definitionKey === 'hh-bach-flower-profile'
+  // Keep the bespoke Bach ranking presentation; numeric tests use the concise dial layout.
+  if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} />
   const scaleGuide = getTestScaleGuide(result?.definitionKey, locale)
   const byScale = new Map((scaleGuide?.scales || []).map(scale=>[scale.key,scale]))
   const hasTrainableSkills = Boolean(scaleGuide?.skillAxes?.length)

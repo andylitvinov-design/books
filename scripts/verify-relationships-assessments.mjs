@@ -1,0 +1,186 @@
+// Synthetic loopback-only browser verification. No Google or production requests.
+import { chromium, webkit, expect } from '@playwright/test'
+import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
+import { RELATIONSHIPS_INTIMACY_DEFINITIONS, RELATIONSHIPS_INTIMACY_CATALOG } from '../data/assessments/relationships-intimacy-v1.js'
+const defs=RELATIONSHIPS_INTIMACY_DEFINITIONS.filter(d=>d.instrumentLocale==='en')
+const localized=(key,locale)=>RELATIONSHIPS_INTIMACY_DEFINITIONS.find(d=>d.key===key&&d.instrumentLocale===locale)
+assertIsolated()
+const origin=process.env.HH_TEST_APP_ORIGIN || 'http://127.0.0.1:3100'
+assert.match(origin,/^http:\/\/(127\.0\.0\.1|localhost):\d+$/)
+const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
+const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{})
+const output='artifacts/app-r1/relationships-'+engine.name()
+await mkdir(output,{recursive:true})
+const checks=[], errors=[]
+const passed=name=>{checks.push(name);console.log('PASS '+name)}
+async function navigate(page,url){
+ // Let mounted account panels finish their reads before a hard navigation.
+ // WebKit otherwise reports an interrupted same-origin fetch as an access-control error.
+ // Keep the final zero-page-error assertion: do not suppress actual request failures.
+ await page.waitForLoadState('networkidle')
+ await page.goto(url)
+ await page.waitForLoadState('networkidle')
+}
+async function api(context,path,body){
+ const response=await context.request.fetch(origin+'/api/app/'+path,{method:body?'POST':'GET',headers:body?{Origin:origin,'Content-Type':'application/json'}:{},data:body})
+ const value=await response.json();assert.ok(response.ok(),path+': '+JSON.stringify(value));return value
+}
+async function fill(page,d,mode,guest,locale){
+ const quick=guest?'.cabinet-quick-question':'.hh-quick-question'
+ for(let i=0;i<d.questions.length;i++){
+  // Pace synthetic saves within unchanged production account/guest request limits.
+  await page.waitForTimeout(mode==='guided'?750:400)
+  const scope=mode==='quick'?page.locator(quick).nth(i):page.locator(guest?'.cabinet-guided-question':'.hh-runner-question')
+  await expect(scope.getByRole('heading',{name:d.questions[i].text,exact:true})).toBeVisible()
+  const buttons=scope.locator(guest?'.cabinet-answer-list button':'.hh-scale button')
+  await expect(buttons).toHaveCount(5)
+  const saved=page.waitForResponse(r=>r.url().includes('/runs/')&&r.url().endsWith('/save')&&r.request().method()==='POST')
+  await buttons.nth([0,1,4,4,2,0][i]).click()
+  assert.ok((await saved).ok())
+  if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
+ }
+ const finish=page.getByRole('button',{name:locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
+ await expect(finish).toBeEnabled()
+ await finish.click()
+ const report=page.locator('[data-personal-result-report]')
+ await expect(report).toBeVisible({timeout:20000})
+ await expect(report.locator('article')).toHaveCount(d.scoring.dimensions.length)
+ const context=report.locator('[data-assessment-context]')
+ await expect(context).toBeVisible()
+ await expect(context).toContainText(locale==='ru'?'Экспериментальные авторские анкеты':'Original experimental Holistic House')
+ await expect(context).toContainText(locale==='ru'?'без клинической валидации':'not clinically validated')
+ await expect(context).toContainText(locale==='ru'?'согласие':'consent')
+ await context.scrollIntoViewIfNeeded()
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
+ await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:false})
+}
+let page
+try{
+ const publicContext=await browser.newContext({viewport:{width:390,height:844}})
+ page=await publicContext.newPage()
+ page.on('pageerror',e=>errors.push(e.message))
+ for(const locale of ['en','ru']){
+  await navigate(page,origin+'/'+locale+'/relationships')
+  await expect(page.locator('[data-relationships-category]')).toHaveCount(3)
+  const links=page.locator('a[href*="/client/tests?test=hh-"]')
+  await expect(links).toHaveCount(8)
+  assert.deepEqual((await links.evaluateAll(nodes=>nodes.map(n=>new URL(n.href).searchParams.get('test')))).sort(),defs.map(d=>d.key).sort())
+  for(const width of [320,360,390,430,768,1280]){
+   await page.setViewportSize({width,height:844})
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),locale+' hub overflow at '+width)
+   if(width<768)await expect(page.locator('.mobile-bottom-navigation a')).toHaveCount(6)
+   await page.screenshot({path:output+'/hub-'+locale+'-'+width+'.png',fullPage:false})
+  }
+  await page.setViewportSize({width:390,height:844})
+  // Keyboard activation also works when Next's development-only badge overlaps Home.
+  const home=page.locator('.mobile-bottom-navigation [data-nav-item="home"]')
+  await home.focus()
+  await home.press('Enter')
+  await page.waitForLoadState('networkidle')
+  const spotlight=page.locator('section[aria-labelledby="relationships-spotlight-title"]')
+  await expect(spotlight).toBeVisible()
+  await spotlight.locator('a[href$="/relationships"]').click()
+  await expect(page.locator('#relationships-title')).toBeVisible()
+  passed(locale+' hub: eight routes, three groups, six mobile slots, 320–1280px and home route')
+  for(const entry of RELATIONSHIPS_INTIMACY_CATALOG){
+   await navigate(page,origin+'/'+locale+'/client/tests?test='+entry.key)
+   const chosen=page.locator('article').filter({has:page.locator('input[type="checkbox"]:checked')})
+   await expect(chosen).toHaveCount(1)
+   await expect(chosen).toContainText(entry.title[locale])
+   assert.equal(new URL(page.url()).searchParams.get('test'),entry.key)
+  }
+  passed(locale+' all eight deep links select exactly their intended questionnaire')
+ }
+ // A real keyboard selection remains reversible without changing the chosen ID.
+ const selected=page.locator('article input[type="checkbox"]:checked')
+ await selected.focus()
+ await page.keyboard.press('Space')
+ await expect(page.locator('article input[type="checkbox"]:checked')).toHaveCount(0)
+ await page.keyboard.press('Space')
+ await expect(page.locator('article input[type="checkbox"]:checked')).toHaveCount(1)
+ await publicContext.close()
+ const account=await browser.newContext({viewport:{width:390,height:844}})
+ page=await account.newPage()
+ page.on('pageerror',e=>errors.push(e.message))
+ await navigate(page,origin+'/en/app')
+ await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
+ await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
+ // Works with a fresh isolated DB or after the main regression journey.
+ if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){
+  await page.getByLabel('I am 18 or older.').check()
+  await page.getByLabel('I agree to private processing',{exact:false}).check()
+  await page.getByRole('button',{name:'Create my private space',exact:true}).click()
+ }
+ await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ for(const [i,base] of defs.entries()){
+  const locale=i%2?'ru':'en',mode=i%2?'guided':'quick',d=localized(base.key,locale)
+  const run=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale,operationId:randomUUID()})
+  await navigate(page,origin+'/'+locale+'/app/runs/'+run.id+'?mode='+mode)
+  if(mode==='guided')await page.locator('.hh-test-mode-grid button').nth(1).click()
+  await fill(page,d,mode,false,locale)
+  const data=await api(account,'bootstrap'),result=data.results.find(r=>r.runId===run.id)
+  assert.ok(result);assert.equal(result.contentHash,d.contentHash)
+  assert.deepEqual(result.dimensions.map(x=>x.value),[1.67,2])
+  await page.waitForLoadState('networkidle')
+  await page.reload()
+  await expect(page.locator('[data-personal-result-report]')).toBeVisible()
+  passed(d.key+' account '+locale+' '+mode+': save, original items, score, report and reload')
+ }
+ await navigate(page,origin+'/en/client/tests?test=hh-love-affection')
+ const selectionResponse=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
+ await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+ const selection=await selectionResponse
+ assert.ok(selection.ok())
+ const savedPlan=await selection.json()
+ assert.ok(savedPlan.definitionIds.includes(localized('hh-love-affection','en').id))
+ await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/)
+ await expect(page.locator('#my-tests-list')).toBeVisible()
+ passed('keyboard selection and signed-in hub selection preserve the intended questionnaire in the private plan')
+ const d=defs[0]
+ let repeat=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
+ repeat=await api(account,'runs/'+repeat.id+'/save',{answers:Object.fromEntries(d.questions.map(q=>[q.id,3])),context:{},progress:6,expectedRevision:repeat.revision,operationId:randomUUID()})
+ await api(account,'runs/'+repeat.id+'/submit',{expectedRevision:repeat.revision})
+ const snapshot=await api(account,'bootstrap')
+ assert.ok(snapshot.results.filter(r=>r.definitionKey===d.key).length>=2)
+ await navigate(page,origin+'/en/app/history')
+ await expect(page.getByRole('heading',{name:d.title,exact:true}).first()).toBeVisible({timeout:20000})
+ for(const locale of ['en','ru']){
+  await navigate(page,origin+'/'+locale+'/app/portfolio')
+  for(const entry of RELATIONSHIPS_INTIMACY_CATALOG)await expect(page.locator('.hh-insights-test-card').filter({hasText:entry.title[locale]}).first()).toBeVisible({timeout:20000})
+  await page.screenshot({path:output+'/insights-'+locale+'.png',fullPage:false})
+ }
+ passed('all eight original questionnaires appear in bilingual Insights; compatible repeat appears in history')
+ // The existing client-only PDF pipeline includes the same bilingual interpretation model.
+ for(const locale of ['en','ru']){
+  await navigate(page,origin+'/'+locale+'/app')
+  const download=page.waitForEvent('download',{timeout:60000})
+  await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()
+  const file=await download,bytes=await readFile(await file.path())
+  assert.equal(bytes.subarray(0,8).toString(),'%PDF-1.4');assert.ok(bytes.length>12000)
+  await file.saveAs(output+'/report-'+locale+'.pdf')
+  passed(locale+' PDF download includes persisted experimental relationship report model')
+ }
+ for(const [i,base] of defs.entries()){
+  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale),guest=await browser.newContext({viewport:{width:390,height:844}})
+  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
+  const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale}],operationId:randomUUID()})
+  page=await guest.newPage();page.on('pageerror',e=>errors.push(e.message))
+  await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
+  const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
+  await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()
+  await fill(page,d,mode,true,locale)
+  const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key)
+  assert.deepEqual(result.dimensions.map(x=>x.value),[1.67,2])
+  assert.equal(result.instrumentLocale,locale);assert.equal(result.contentHash,d.contentHash)
+  passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
+  await guest.close()
+ }
+ assert.deepEqual(errors,[])
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,browser:await browser.version(),checks,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
+} catch(error){
+ await page?.screenshot({path:output+'/failure.png',fullPage:false}).catch(()=>{})
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message},null,2));throw error
+} finally{await browser.close()}

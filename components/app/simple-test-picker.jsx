@@ -5,15 +5,14 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
-import { SCALE_FOCUS } from '@/lib/assessments/scale-guides'
 import { TestScaleGuide } from './test-scale-guide'
+import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 
 const TEXT = {
   en: {
-    kicker:'TEST SELECTION', title:'Choose your tests',
-    scaleTitle:'1 · Choose the scales to observe', scaleHelp:'Tests will be ranked first by the measures they actually score. You can later choose related skills to practise; a score is not a diagnosis.',
-    lead:'Find questionnaires that fit what you would like to explore. Your recommendations update as you select topics.',
-    first:'What would you like to explore?', firstHelp:'Select one or more areas that matter to you right now.',
+    kicker:'FREE WELLBEING MONITORING', title:'Choose your tests',
+    lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
+    first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Choose the level of detail or add time and format filters.',
     depth:'How deep do you want to go?', depthHelp:'This helps prioritize recommendations. It does not limit your options.',
     quick:'Quick check-in', quickNote:'Short introductory tests',
@@ -25,17 +24,16 @@ const TEXT = {
     why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
-    build:'Start free testing', buildHelp:'Save your selection and get started',
-    browse:'Browse full database', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
+    build:'Start free monitoring', buildHelp:'Save your selection and get started',
+    browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
     noTests:'Choose a test to continue.', reset:'Use suggested set', back:'Back to easy selection', saved:'Already have a plan? Open my saved tests',
     more:'Show {count} more tests', showing:'Showing {shown} of {total} matching tests', fit:'match', fitInfo:'Estimated relevance from your selected topics and concerns — not a clinical score or diagnosis.',
     problemsTitle:'Which problems are most important?', problemsHelp:'Optional: choose what specifically troubles you. These suggestions come from the topics above.', problemsEmpty:'Choose a topic above to see relevant concerns.', problemsClear:'Clear problems', problemsMore:'Show more problems', problemsLess:'Show fewer problems',
   },
   ru: {
-    kicker:'ПОДБОР ТЕСТОВ', title:'Подберите свои тесты',
-    scaleTitle:'1 · Выберите показатели для наблюдения', scaleHelp:'Первыми будут тесты, которые действительно измеряют выбранные шкалы. Позже можно добровольно выбрать связанные навыки для практики; балл не является диагнозом.',
-    lead:'Найдите тесты по интересующим вас темам. Подходящие рекомендации меняются сразу.',
-    first:'Что вы хотите исследовать?', firstHelp:'Отметьте одну или несколько важных для вас тем.',
+    kicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', title:'Подберите свои тесты',
+    lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
+    first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Глубина, время прохождения и формат — при желании.',
     depth:'Насколько глубоко хотите исследовать?', depthHelp:'Меняет порядок рекомендаций, не закрывая другие тесты.',
     quick:'Быстрый обзор', quickNote:'Короткие вводные тесты',
@@ -47,17 +45,16 @@ const TEXT = {
     why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
-    build:'Пройти тестирование бесплатно', buildHelp:'Сохранить подборку и начать',
-    browse:'Открыть всю базу тестов', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
+    build:'Начать бесплатный мониторинг', buildHelp:'Сохранить подборку и начать',
+    browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
     noTests:'Выберите тест для продолжения.', reset:'Вернуть рекомендованный набор', back:'Назад к простому подбору', saved:'Уже есть подборка? Открыть мои тесты',
     more:'Показать ещё {count} тестов', showing:'Показано {shown} из {total} подходящих тестов', fit:'соответствие', fitInfo:'Ориентировочная релевантность по выбранным темам и проблемам — не диагноз и не показатель здоровья.',
     problemsTitle:'Какие проблемы беспокоят?', problemsHelp:'Необязательно: уточните запрос. Варианты зависят от выбранных тем.', problemsEmpty:'Сначала выберите тему — появятся соответствующие проблемы.', problemsClear:'Очистить проблемы', problemsMore:'Показать больше проблем', problemsLess:'Показать меньше проблем',
   },
   es: {
-    kicker:'SELECCIÓN DE PRUEBAS', title:'Elige tus pruebas',
-    scaleTitle:'1 · Elige qué observar', scaleHelp:'Primero aparecen las pruebas que miden esas dimensiones; los resultados no son un diagnóstico.',
-    lead:'Encuentra cuestionarios que se ajusten a tus intereses. Las recomendaciones cambian al elegir temas.',
-    first:'¿Qué te gustaría explorar?', firstHelp:'Elige uno o varios temas importantes para ti.',
+    kicker:'MONITOREO GRATUITO', title:'Elige tus pruebas',
+    lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
+    first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Profundidad, tiempo y formato.',
     depth:'¿Cuánto quieres profundizar?', depthHelp:'Ajusta la prioridad, sin excluir los demás tests.',
     quick:'Revisión rápida', quickNote:'Pruebas introductorias',
@@ -69,25 +66,18 @@ const TEXT = {
     why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
-    build:'Comenzar pruebas gratuitas', buildHelp:'Guardar selección y empezar',
-    browse:'Explorar base completa', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
+    build:'Iniciar monitoreo gratuito', buildHelp:'Guardar selección y empezar',
+    browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
     noTests:'Elige una prueba para continuar.', reset:'Usar selección sugerida', back:'Volver al selector sencillo', saved:'¿Ya tienes pruebas? Abrir mis pruebas',
     more:'Mostrar {count} pruebas más', showing:'Mostrando {shown} de {total} pruebas', fit:'coincidencia', fitInfo:'Relevancia estimada por temas y dificultades seleccionadas; no es un diagnóstico.',
     problemsTitle:'¿Qué dificultades te preocupan?', problemsHelp:'Opcional: concreta tus inquietudes según los temas elegidos.', problemsEmpty:'Elige primero un tema para ver dificultades relacionadas.', problemsClear:'Borrar dificultades', problemsMore:'Mostrar más dificultades', problemsLess:'Mostrar menos dificultades',
   },
 }
 
-const TOPICS = [
-  { key:'stress', en:'Stress', ru:'Стресс', es:'Estrés', Icon:Zap },
-  { key:'anxiety', en:'Anxiety', ru:'Тревога', es:'Ansiedad', Icon:Heart },
-  { key:'mood', en:'Mood', ru:'Настроение', es:'Ánimo', Icon:Smile },
-  { key:'sleep', en:'Sleep', ru:'Сон', es:'Sueño', Icon:Moon },
-  // These keys are deliberately mapped to existing, validated focus facets.
-  { key:'body', en:'Energy', ru:'Энергия', es:'Energía', Icon:Sun },
-  { key:'relationships', en:'Relationships', ru:'Отношения', es:'Relaciones', Icon:Users },
-  { key:'resources', en:'Self-support', ru:'Внутренняя опора', es:'Apoyo interior', Icon:Leaf },
-  { key:'attention', en:'Focus', ru:'Концентрация', es:'Atención', Icon:Target },
-]
+// These keys are mapped to existing test facets and shared with Insights.
+const TOPIC_ICONS = { stress: Zap, anxiety: Heart, mood: Smile, sleep: Moon,
+  body: Sun, relationships: Users, resources: Leaf, attention: Target }
+const TOPICS = HOME_TEST_TOPICS.map((topic) => ({ ...topic, Icon: TOPIC_ICONS[topic.key] }))
 
 function iconFor(entry) {
   const topics = entry.topics || []
@@ -103,20 +93,18 @@ function iconFor(entry) {
 export function SimpleTestPicker({
   locale = 'en',
   focus, onToggleFocus,
-  axes = [], onToggleAxis,
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   professionalOnly, onProfessional,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
-  matchCount, onStart, onBrowseFull,
+  matchCount, onStart, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
   const c = TEXT[locale] || TEXT.en
   const [visibleCount, setVisibleCount] = useState(5)
   const [showAllProblems, setShowAllProblems] = useState(false)
   const focusKey = [...focus].sort().join('|')
-  const scaleKey = [...axes].sort().join('|')
   const problemKey = [...problems].sort().join('|')
   const allProblems = problemsForTopics(focus)
   const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
@@ -126,7 +114,7 @@ export function SimpleTestPicker({
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
     setShowAllProblems(false)
-  }, [focusKey, scaleKey, depth, maxMinutes, professionalOnly, problemKey])
+  }, [focusKey, depth, maxMinutes, professionalOnly, problemKey])
   const visibleRecommendations = recommendations.slice(0, visibleCount)
   const remainingCount = Math.max(0, recommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
@@ -145,18 +133,9 @@ export function SimpleTestPicker({
       <Leaf className={styles.heroLeaf} size={78} strokeWidth={0.8} aria-hidden="true" />
     </header>
 
-    <section className={styles.scalesSection} aria-labelledby="hh-simple-scale-title" data-scale-first-selection>
-      <div><h2 id="hh-simple-scale-title">{c.scaleTitle}</h2><p>{c.scaleHelp}</p></div>
-      <div className={styles.scalesRail} role="group" aria-label={c.scaleTitle}>
-        {Object.entries(SCALE_FOCUS).map(([key,scale])=><button type="button" key={key}
-          aria-pressed={axes.includes(key)} onClick={()=>onToggleAxis?.(key)}>
-          {axes.includes(key)?'✓ ':''}{scale[locale==='ru'?'ru':'en']}
-        </button>)}
-      </div>
-    </section>
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">2</span>
+        <span className={styles.step} aria-hidden="true">1</span>
         <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
       </div>
       <div className={styles.topicGrid} role="group" aria-label={c.first}>
@@ -174,7 +153,7 @@ export function SimpleTestPicker({
 
     <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">3</span>
+        <span className={styles.step} aria-hidden="true">2</span>
         <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
       </div>
       {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> :
@@ -233,7 +212,7 @@ export function SimpleTestPicker({
 
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations">
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">4</span>
+        <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
       <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
@@ -262,7 +241,7 @@ export function SimpleTestPicker({
               <small><Clock3 size={14} aria-hidden="true"/> ~{entry.durationMinutes ?? '—'} min</small>
             </span>
           </label>
-          <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={onToggleAxis} /></div>
+          <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>
           </div>
         })}
       </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
@@ -290,6 +269,9 @@ export function SimpleTestPicker({
       </button>
       {actionError && <p className={styles.error} role="alert">{actionError.code || actionError.message || String(actionError)}</p>}
       {!activeBattery.length && <p className={styles.noMatches} role="status">{c.noTests}</p>}
+      <button type="button" className={styles.fullDatabase} onClick={onBrowseCore}>
+        <Compass size={20} aria-hidden="true"/>{c.core100}<ArrowRight size={17} aria-hidden="true" className={styles.browseArrow}/>
+      </button>
       <button type="button" className={styles.fullDatabase} onClick={onBrowseFull}>
         <Compass size={20} aria-hidden="true"/>{c.browse}<ChevronDown size={17} aria-hidden="true" className={styles.browseArrow}/>
       </button>

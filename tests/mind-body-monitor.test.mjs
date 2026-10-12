@@ -10,10 +10,10 @@ import {
   registryCount,
 } from '../data/assessments/mind-body-monitor-registry.js'
 
-test('Mind–Body Monitor registry contains 128 unique research instruments', () => {
-  assert.equal(registryCount(), 128)
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 128)
-  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 128)
+test('Mind–Body Monitor registry contains 143 unique research instruments', () => {
+  assert.equal(registryCount(), 143)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 143)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 143)
   assert.equal(MONITOR_AREAS.length, 14)
 })
 
@@ -59,9 +59,9 @@ test('public monitor discovery is wired without adding a seventh main navigation
   ])
   assert.match(header, /MindBodyMonitorStrip/)
   assert.match(home, /entry\.selfCheck\.href/)
-  assert.match(home, /<FreeInsightsPaths locale=\{locale\} \/>/)
-  assert.match(home, /Test library & reports/)
-  assert.match(home, /Каталог тестов и отчёты/)
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/)
+  assert.match(home, /Wellbeing & inner resources/)
+  assert.match(home, /Психологическое состояние и ресурсы/)
   assert.doesNotMatch(home, /<MindBodyMonitorHome/)
   assert.doesNotMatch(home, /<MindBodyMonitorStrip/)
   assert.match(wuXing, /DAOIST ALCHEMY/)

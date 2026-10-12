@@ -16,15 +16,20 @@ For consenting adults, no assumptions about gender, sexual orientation, partner 
 
 ## Database verification
 
-Applied to the connected Holistic House Supabase project on 2026-10-11 as migration `20261011211746_hh_love_intimacy_assessments`, following isolated integration test success. Readback confirmed 16 language definitions across eight keys (6 items and 2 dimensions per definition, content hashes intact); inventory is now 84 keys / 149 version rows. The matching migration file in this repository uses the applied version number to prevent duplicate drift. **Website publishing is separate and still requires Vercel READY verification.**
+Issue #363 records the original application as migration `20261011211746_hh_love_intimacy_assessments` on 2026-10-11. A bounded technical readback on 2026-10-12 at 05:59 UTC confirmed all **16 IDs, content hashes and complete definition objects** exactly match PR head `b01bb9f9fd4488f697c4642e9345481ac5cec61a`, with status `published`. No client records were read and no database write was performed. **Do not repeat registration.** The existing applied SQL file and all sixteen scored definitions remain unchanged.
+
+Recovery is based on canonical `10871d5473b912eeda39f51bc3c89e3d9395dd80`: source inventory **96 → 104 runnable instrument keys**, **153 → 169 immutable definitions**, **41 professional / 63 original reflection instruments**. EN/RU versions and the sixteen subscales are not counted as separate tests. The separate unmerged typology, BFAS and MHC-SF PRs are not included. These source counts do not describe a newly queried production aggregate.
+
+Desktop navigation has seven EN/RU entries; the mobile bar intentionally retains six. The localized Home spotlight provides a visible route to the relationship hub. The browser contract checks that distinction rather than adding a seventh mobile button.
+
 
 ## Release checklist
 
-1. [ ] Node tests pass for definitions / 16 score dimensions / deterministic EN-RU reports / focus filtering / OAuth handoff and profile saving.
+1. [x] Local unit (1019), app (136) and isolated database (33) checks pass, including independent scores, immutable identities and private saves for all sixteen forms.
 2. [ ] TypeScript/lint/build and synthetic Chrome/WebKit journeys at desktop/mobile; confirm no overlapping nav items.
-3. [x] Apply and read back new 16 version rows in the **authorized existing Supabase project** using approved migration workflow, without modifying old rows. Verify exact IDs and hashes.
-4. [ ] Verify cabinet test flow and Insights report for both languages; private Google sign-in and existing RLS, no public answers.
-5. [ ] Deploy exact approved head to existing Vercel project after Hobby build quota resets; do not pay to upgrade without authorization.
+3. [x] Read back the 16 existing published definitions, IDs and hashes. No re-registration or production mutation.
+4. [x] Local Chromium: 24 relationship journeys cover EN/RU hub and all 16 forms across account/guest runners, selection, saved reports, compatible history, Insights and PDF. EN/RU PDFs (15/16 pages with synthetic repeat history) visually checked. Authentication uses an isolated provider protocol double, not real Google. Exact-head CI remains required.
+5. [ ] After independent exact-head review, CI and separate release approval, deploy through the existing production process. No production deployment or settings changes are part of this recovery; a preview quota failure alone is not a code-merge blocker.
 6. [ ] Verify production READY and alias for `holistichouse.vercel.app`, test EN/RU page and 8 links on mobile/desktop. Confirm no public indexing of private /client/tests screens.
 
 **Source branch or merged code alone is NOT a live release.**

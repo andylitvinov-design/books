@@ -76,6 +76,47 @@ export default async function ServicesPage({ params }: PageProps) {
       <FreeInsightsPaths locale={locale as Locale} />
       <ServicesSolutions locale={locale as Locale} />
 
+      <details className={solutionStyles.extra} id="method-videos" open>
+        <summary className={solutionStyles.extraSummary}>
+          <span>
+            <strong>{locale === "ru" ? "Видео: как я работаю" : "Watch how I work"}</strong>
+            <small>{locale === "ru" ? "Видео доступны сразу — нажмите Play для просмотра" : "Videos are visible below — tap Play to watch"}</small>
+          </span>
+          <span className={solutionStyles.expandSymbol} aria-hidden="true">+</span>
+        </summary>
+        <div className={solutionStyles.extraVideos}>
+          <PageVideo slot="services-intro" locale={locale} />
+
+          {locale === "en" ? (
+            <section className="services-method-videos" id="methods-video-explainers" aria-labelledby="services-method-videos-title">
+              <div className="services-method-videos-heading">
+                <p className="homeopathy-kicker">More about the approaches</p>
+                <h2 id="services-method-videos-title">Two short explanations</h2>
+              </div>
+              <div className="services-method-videos-grid">
+                <article className="services-method-video" id="service-video-hypnotherapy">
+                  <h3>Hypnotherapy</h3>
+                  <PageVideo slot="method-hypnotherapy" locale="en" />
+                </article>
+                <article className="services-method-video" id="service-video-alchemy">
+                  <h3>Systemic constellations</h3>
+                  <PageVideo slot="method-constellations" locale="en" />
+                </article>
+              </div>
+            </section>
+          ) : null}
+          <div className={solutionStyles.archivedClips}>
+            {(["business", "alchemy", "archetypal"] as const).map((id) => (
+              <PageVideo key={id} slot={"service-" + id} locale={locale} />
+            ))}
+          </div>
+          <PageVideo slot="consultation" locale={locale} />
+          <p className={solutionStyles.extraAbout}>
+            <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true"> →</span></Link>
+          </p>
+        </div>
+      </details>
+
       <PersonalTestimonials locale={locale as Locale} variant="services" />
 
       <details className={solutionStyles.extra} id="available-services">
@@ -213,46 +254,7 @@ export default async function ServicesPage({ params }: PageProps) {
       </section>
       </details>
 
-      <details className={solutionStyles.extra} id="method-videos">
-        <summary className={solutionStyles.extraSummary}>
-          <span>
-            <strong>{locale === "ru" ? "Видео: как я работаю" : "Watch how I work"}</strong>
-            <small>{locale === "ru" ? "Короткие объяснения методов — по желанию" : "Short explanations of methods, if you'd like more detail"}</small>
-          </span>
-          <span className={solutionStyles.expandSymbol} aria-hidden="true">+</span>
-        </summary>
-        <div className={solutionStyles.extraVideos}>
-          <PageVideo slot="services-intro" locale={locale} />
 
-          {locale === "en" ? (
-            <section className="services-method-videos" id="methods-video-explainers" aria-labelledby="services-method-videos-title">
-              <div className="services-method-videos-heading">
-                <p className="homeopathy-kicker">More about the approaches</p>
-                <h2 id="services-method-videos-title">Two short explanations</h2>
-              </div>
-              <div className="services-method-videos-grid">
-                <article className="services-method-video">
-                  <h3>Hypnotherapy</h3>
-                  <PageVideo slot="method-hypnotherapy" locale="en" />
-                </article>
-                <article className="services-method-video">
-                  <h3>Systemic constellations</h3>
-                  <PageVideo slot="method-constellations" locale="en" />
-                </article>
-              </div>
-            </section>
-          ) : null}
-          <div className={solutionStyles.archivedClips}>
-            {(["business", "alchemy", "archetypal"] as const).map((id) => (
-              <PageVideo key={id} slot={"service-" + id} locale={locale} />
-            ))}
-          </div>
-          <PageVideo slot="consultation" locale={locale} />
-          <p className={solutionStyles.extraAbout}>
-            <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true"> →</span></Link>
-          </p>
-        </div>
-      </details>
 
 
       <PublicConsultationCta locale={locale as Locale} id="consultation" />

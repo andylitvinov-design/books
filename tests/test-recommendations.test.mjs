@@ -99,7 +99,7 @@ test('public and signed-in routes share the complete Test Explorer rather than a
   assert.match(route, /PublicSiteHeader/)
   assert.match(route, /PublicTestExplorer/)
   assert.match(route, /robots: \{ index: false, follow: false \}/)
-  for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free testing']) assert.match(explorer, new RegExp(token))
+  for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free monitoring']) assert.match(explorer, new RegExp(token))
   assert.match(publicExplorer, /auth\/start/)
   assert.match(publicExplorer, /makeTestSelectionIntent/)
   assert.doesNotMatch(publicExplorer, /localStorage/)
@@ -109,12 +109,12 @@ test('public and signed-in routes share the complete Test Explorer rather than a
 
 test('active assessment inventory is classified for style and length filters', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 84)
+  assert.equal(active.length, 104)
   assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 63)
-  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 21)
-  assert.equal(active.filter((item) => item.testLength === 'short').length, 29)
-  assert.equal(active.filter((item) => item.testLength === 'medium').length, 46)
-  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 9)
+  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 41)
+  assert.equal(active.filter((item) => item.testLength === 'short').length, 40)
+  assert.equal(active.filter((item) => item.testLength === 'medium').length, 53)
+  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 11)
   assert.ok(active.every((item) => TEST_STYLE_FILTERS.some((filter) => filter.key === item.testStyle)))
   assert.ok(active.every((item) => TEST_LENGTH_FILTERS.some((filter) => filter.key === item.testLength)))
 })
@@ -136,7 +136,9 @@ test('style and length filters combine before recommendation ranking', () => {
   })
   assert.deepEqual(
     professionalMedium.map((definition) => definition.key).sort(),
-    ['cbi-client','cbi-personal','cbi-work','cdc-healthy-days-symptoms','cdc-hrqol-4','erq', 'gad-7', 'phq-9', 'rses-10'].sort(),
+    ['cbi-client','cbi-personal','cbi-work','cdc-healthy-days-symptoms','cdc-hrqol-4','erq', 'gad-7', 'phq-9', 'rses-10',
+      'ipip-aspect-volatility-10','ipip-aspect-withdrawal-10','ipip-aspect-compassion-10',
+      'ipip-aspect-industriousness-10','ipip-aspect-orderliness-10','ipip-aspect-intellect-10','ipip-aspect-openness-10'].sort(),
   )
 
   const engagingComprehensive = rankAssessmentDefinitions(definitions, {

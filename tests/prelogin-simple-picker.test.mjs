@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { HOME_TEST_TOPICS } from '../lib/assessments/insights-categories.js'
 
 const read = (file) => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 
@@ -40,8 +41,9 @@ test('topics immediately update the existing catalog while detailed selection st
   assert.match(explorer, /maxMinutes=\{maxMinutes\}/)
   assert.match(explorer, /professionalOnly=\{stylesFilter\.length === 1/)
   assert.match(css, /\.advanced\[open\] \.chevron/)
-  for (const key of ['stress','anxiety','mood','sleep','body','relationships','resources','attention'])
-    assert.match(picker, new RegExp("key:'" + key + "'"))
+  assert.match(picker, /TOPICS = HOME_TEST_TOPICS\.map/)
+  assert.deepEqual(HOME_TEST_TOPICS.map(({ key }) => key),
+    ['stress','anxiety','mood','sleep','body','relationships','resources','attention'])
 })
 
 test('preview and selected time are derived from live executable test definitions', () => {
@@ -66,8 +68,8 @@ test('localized public page has genuine selection/Google handoff, no premature c
   const page = read('app/[locale]/client/page.tsx')
   const explorer = read('components/app/test-explorer.jsx')
   const wrapper = read('components/app/public-test-explorer.jsx')
-  assert.match(page, /title: "Choose your tests \| Holistic House"/)
-  assert.match(page, /title: "Подбор тестов \| Holistic House"/)
+  assert.match(page, /title: "Free wellbeing monitoring \| Holistic House"/)
+  assert.match(page, /title: "Бесплатный мониторинг состояния \| Holistic House"/)
   assert.match(explorer, /simpleSelectionChanged/)
   assert.match(wrapper, /auth\/start/)
   assert.match(wrapper, /window\.sessionStorage\.setItem/)

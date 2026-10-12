@@ -18,17 +18,20 @@ test("three free paths use real, existing local service and test routes", () => 
   assert.match(offer, /prefetch=\{false\}/);
 });
 
-test("public surfaces show the trio once, and personal service cards do not repeat two free offers", () => {
+test("Services shows the free trio while Home retains four photo-left cards", () => {
   const home = read("components/holistic-house-home.tsx");
   const services = read("app/[locale]/services/page.tsx");
   const solutions = read("components/services-solutions.tsx");
   const hero = read("components/services-conversion-hero.tsx");
-  assert.match(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
+  assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.match(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   assert.match(solutions, /offer.id === "alchemy" \|\| offer.id === "hypnotherapy"/);
-  assert.match(solutions, /personalOffers.map/);
+  assert.match(solutions, /const visibleOffers = isHome \? allOffers : personalOffers/);
+  assert.match(solutions, /visibleOffers.map/);
+  assert.match(solutions, /homeTitle: "How I can help"/);
   assert.match(hero, /href="#free-insights"/);
-  assert.doesNotMatch(home, /Two free ways to begin/);
+  assert.match(home, /heroSecondary: "Explore four services"/);
   assert.doesNotMatch(hero, /two free assessments/i);
 });
 
@@ -39,6 +42,21 @@ test("private profile keeps the three free paths opt-in without private data in 
   assert.match(offer, /<Link className=\{styles.action\} href=\{href\} prefetch=\{false\}/);
   assert.doesNotMatch(offer, /selector|clientId|reportId|testResult|\?score=/);
   assert.match(offer, /not free live calls/);
+});
+
+test("the public and cabinet offers describe free wellbeing and resources monitoring, not a diagnosis", () => {
+  for (const label of ["Free monitoring", "Start free monitoring", "Mental wellbeing & inner resources", "Бесплатный мониторинг", "Начать бесплатный мониторинг", "Психологическое состояние и ресурсы"]) {
+    assert.ok(offer.includes(label), label);
+  }
+  assert.match(offer, /not medical diagnoses/);
+});
+
+test("Services hero advertises wellbeing monitoring alongside the two other distinct free offers", () => {
+  const hero = read("components/services-conversion-hero.tsx");
+  assert.match(hero, /free mental wellbeing and inner resources monitoring/);
+  assert.match(hero, /мониторинг психологического состояния и внутренних ресурсов/);
+  assert.match(hero, /a personal situation review/);
+  assert.match(hero, /профиль У-Син/);
 });
 
 test("the design stays compact, accessible and mobile-first in the existing warm palette", () => {

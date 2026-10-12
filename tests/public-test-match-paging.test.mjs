@@ -70,5 +70,5 @@ test('public picker defaults to 5 visible cards and first 3 selected; each tap a
   assert.match(styles, /\.showFiveMore/)
   assert.match(styles, /\.matchBadge/)
   assert.match(picker, /not a clinical probability/)
-  assert.match(picker, /Start free testing/)
+  assert.match(picker, /Start free monitoring/)
 })

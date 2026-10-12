@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, MessageCircle, ShieldCheck } from "lucide-react";
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
+import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import {
   personalServiceCopy, personalServiceImages, servicePageShared,
@@ -36,6 +37,12 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
             <span className={styles.mediaCaption}>{t.title}</span>
           </div>
         </section>
+
+        <ServiceVideoShowcase
+          locale={locale}
+          topic={service === "psychohomeopathy" ? "homeopathy" : service === "imagery-therapy" ? "hypnotherapy" : "constellations"}
+          id="service-video"
+        />
 
         <div className={styles.mainColumns}>
           <div className={styles.reading}>

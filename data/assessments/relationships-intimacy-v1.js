@@ -730,6 +730,6 @@ export const RELATIONSHIP_DIMENSION_ROWS = deepFreeze(CONFIGS.flatMap(cfg=>
 export const RELATIONSHIP_DIMENSION_AXES = deepFreeze(Object.fromEntries(CONFIGS.flatMap(cfg=>
   cfg.scales.map(s=>[dimensionKey(cfg,s),s.axis]))))
 export const RELATIONSHIP_CONTEXT_COPY = deepFreeze({
-  en:'These Holistic House reflections are original, non-diagnostic self-checks for adults. Scores describe your answers, not your worth, sexual functioning, compatibility, consent or anyone else. Skip any test you do not wish to answer; seek qualified help if you have health or safety concerns.',
-  ru:'Это авторские тесты самонаблюдения для взрослых, не диагностика. Баллы описывают ответы, а не вашу ценность, сексуальную функцию, совместимость, согласие или другого человека. Вы вправе не проходить тест; при вопросах здоровья и безопасности обращайтесь к профильным специалистам.',
+  en:'Original experimental Holistic House self-reflections (2026) for adults, not clinically validated or diagnostic instruments. Scores describe your answers, not your worth, sexual functioning, compatibility, consent or anyone else. Skip any test you do not wish to answer; seek qualified help if you have health or safety concerns.',
+  ru:'Экспериментальные авторские анкеты Holistic House (2026) для взрослых: без клинической валидации, не диагностика. Баллы описывают ответы, а не вашу ценность, сексуальную функцию, совместимость, согласие или другого человека. Вы вправе не проходить тест; при вопросах здоровья и безопасности обращайтесь к профильным специалистам.',
 })
