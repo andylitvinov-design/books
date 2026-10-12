@@ -5,7 +5,7 @@
 .heroMark{display:grid;place-items:center;width:118px;height:118px;border:1px solid #d8d8c5;border-radius:999px;color:#657d64;background:#edf0e4}
 .meta{display:flex;gap:8px 14px;flex-wrap:wrap;margin-top:17px;font-weight:700;font-size:13px;color:#4d715f}
 .meta span{display:inline-flex;align-items:center;gap:7px}
-.timeline{list-style:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:0;margin:0}
+.timeline{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:0;margin:0}
 .timeline li{display:flex;gap:9px;align-items:flex-start;padding:13px 9px;border:1px solid var(--course-line);background:#fffdf9;border-radius:14px;min-width:0}
 .timeline li strong,.timeline li small{display:block;line-height:1.33;overflow-wrap:anywhere}
 .timeline li strong{font-size:13px;margin-bottom:4px}
