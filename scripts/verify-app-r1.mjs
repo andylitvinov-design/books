@@ -548,6 +548,14 @@ try {
   await handoffPage.locator('.master-client-create input[name="fullName"]').fill('Synthetic Handoff Client')
   await handoffPage.locator('.master-client-create input[name="email"]').fill('synthetic-recipient@example.invalid')
   await handoffPage.locator('.master-client-create-form button[type="submit"]').click()
+  // Client creation must open the consultation editor, not the client's Cabinet.
+  // After checking the approved workflow, follow the explicit client-history link
+  // to finish the separate private-materials handoff acceptance scenario.
+  await expect(handoffPage).toHaveURL(/\/admin\/consultations\/new\?clientId=[a-f0-9-]{36}&created=1$/,{timeout:20000})
+  await expect(handoffPage.getByRole('heading',{name:'New consultation',exact:true})).toBeVisible()
+  await expect(handoffPage.getByText('Client saved.')).toBeVisible()
+  await expect(handoffPage.getByRole('link',{name:'Client details and history'})).toHaveAttribute('href',/\/admin\/clients\/[a-f0-9-]{36}$/)
+  await handoffPage.getByRole('link',{name:'Client details and history'}).click()
   await expect(handoffPage).toHaveURL(/\/admin\/clients\/[a-f0-9-]{36}$/,{timeout:20000})
   await expect(handoffPage.getByRole('heading',{name:'Synthetic Handoff Client',exact:true})).toBeVisible()
    // Owner's Create report path selects a real private client record; it never
