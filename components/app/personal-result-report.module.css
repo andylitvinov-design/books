@@ -41,3 +41,7 @@
 .observation strong{color:#376450;font-weight:750}
 .myCourseLink{display:inline-flex;align-items:center;min-height:37px;margin:10px 0;color:#2f735e;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:750}
 .myCourseLink:focus-visible{outline:3px solid #377662;outline-offset:3px}
+
+/* Origin and limits of psychological/scientific evidence, separate from score training. */
+.purpose .methodology{margin-top:10px!important;padding-top:9px;border-top:1px solid #e8e2d9;color:#63594f;font-size:12px;line-height:1.55}
+.purpose .methodology strong{font-size:12px}

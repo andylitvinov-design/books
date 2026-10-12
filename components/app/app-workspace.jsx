@@ -27,6 +27,7 @@ import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-e
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
+import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import {
   TEST_LENGTH_FILTERS,
   TEST_RECOMMENDATION_FOCUS,
@@ -816,6 +817,7 @@ function TestCatalog({ data, locale, onStarted }) {
     const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
     const title = item?.title?.[locale] || item?.title?.en || def.title
     const description = item?.description?.[locale] || item?.description?.en || ''
+    const methodology = assessmentMethodology({key: def.key, catalog: item, definition: def, locale}).text
     const image =
       item?.axis === 'baseline'
         ? (ru ? '/images/holistic-house/video-posters/services-ru-v1.webp' : '/images/holistic-house/video-posters/services-en-v2.webp')
@@ -835,6 +837,8 @@ function TestCatalog({ data, locale, onStarted }) {
           </p>
           <h2>{title}</h2>
           <p>{description}</p>
+          <p className="hh-fine">{methodology}</p>
+          {/^https:\/\//.test(def.source?.url || '') && <a className="hh-fine" href={def.source.url} rel="noopener noreferrer" target="_blank">{ru ? 'Источник методики' : 'Instrument source'}</a>}
           {def.source?.copyright && <p className="hh-fine">{def.source.copyright}</p>}
           {completed && <p className="hh-fine">{c.latest}: {dateLabel(completed.measurementAt, locale)}</p>}
           <div className="hh-actions">
@@ -3423,3 +3427,4 @@ function Privacy({ locale, logout, onDeleted }) {
     </section>
   )
 }
+

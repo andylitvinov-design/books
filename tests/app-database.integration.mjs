@@ -1445,6 +1445,30 @@ test('all relationship forms save independent means privately and reject another
   }
 })
 
+test('original typology registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { PERSONALITY_TYPE_DEFINITIONS } = await import('../data/assessments/personality-types-original-2026.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261011230000_hh_personality_types_original.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const d of PERSONALITY_TYPE_DEFINITIONS) {
+      const rows = (await db.query('select id, definition, content_hash from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3', [d.key, d.version, d.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      assert.equal(rows[0].id, d.id)
+      assert.equal(rows[0].content_hash, d.contentHash)
+      assert.deepEqual(rows[0].definition, d)
+    }
+    const first = PERSONALITY_TYPE_DEFINITIONS[0]
+    for (const broken of [sql.replace(first.id, randomUUID()), sql.replace(first.contentHash, 'sha256:'+'0'.repeat(64)), sql.replace('Exchanging ideas with others', 'CHANGED original question')]) {
+      await assert.rejects(() => db.query(broken), /Conflicting immutable assessment version|Different content already published/)
+      await db.query('rollback')
+    }
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[first.id])).rows[0].definition, first)
+  } finally { await db.end() }
+})
+
 test('MHC-SF registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
   const { readFile } = await import('node:fs/promises')
   const { MHC_SF_DEFINITIONS } = await import('../data/assessments/mhc-sf-adult-dec2011.js')
@@ -1492,6 +1516,7 @@ test('MHC-SF guest persistence retains zero, source sums and private bilingual r
     }
   }
 })
+
 
 // Ratings share the existing isolated database setup and synthetic auth fixtures.
 import { registerTestRatingTests } from './test-ratings.integration.mjs'
