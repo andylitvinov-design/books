@@ -125,8 +125,17 @@ try{
  // Both account runs are the same exact form and remain compatible in history.
  const snapshot=await api(account,'bootstrap')
  assert.ok(snapshot.results.filter(r=>r.definitionKey==='bfas-100').length>=2)
+ const historyMaterials=page.waitForResponse(response=>response.url().endsWith('/api/app/shared-materials')&&response.request().method()==='GET')
  await navigate(page,origin+'/en/app/history')
  await expect(page.getByRole('heading',{name:d.title,exact:true}).first()).toBeVisible({timeout:20000})
+ // History renders from bootstrap before the materials panel's passive effect
+ // starts. Complete its real read (including StrictMode's second request)
+ // before leaving this document; a visible result heading is not readiness.
+ const materialsResponse=await historyMaterials
+ assert.ok(materialsResponse.ok())
+ assert.ok(Array.isArray((await materialsResponse.json()).materials))
+ await materialsResponse.finished()
+ await page.waitForLoadState('networkidle')
  await navigate(page,origin+'/ru/app/portfolio')
  await expect(page.locator('.hh-insights-test-card').filter({hasText:'BFAS-100'})).toHaveCount(1,{timeout:20000})
  passed('full BFAS appears once as an instrument in Insights and compatible history retains both attempts')
