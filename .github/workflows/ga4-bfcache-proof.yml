@@ -24,11 +24,14 @@ permissions:
   contents: read
 jobs:
   genuine-bfcache-research:
-    runs-on: ubuntu-latest
+    # Limited research environment: deprecated 2026-09-17, retires 2027-04-17.
+    # Do not make production depend on this image or weaken its sandbox policy.
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
+      HH_GA4_BROWSER_SOURCE: private-playwright-download
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
@@ -36,12 +39,15 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - run: node --test tests/ga4-bfcache-proof-harness.test.mjs tests/ga4-safety-hold.test.mjs
-      - name: Verify preinstalled official Chrome with existing vendor sandbox profile
+      - name: Install pinned official browser in a new owner-private directory
         run: |
-          test -x /opt/google/chrome/chrome
-          test -r /etc/apparmor.d/chrome
-          /opt/google/chrome/chrome --version
-          dpkg-query -W google-chrome-stable
+          TOOLS=$(node -e "process.stdout.write(require('node:fs').mkdtempSync('/tmp/hh-ga4-browser-'))")
+          export PLAYWRIGHT_BROWSERS_PATH="$TOOLS/browsers"
+          npm install --prefix "$TOOLS" --registry=https://registry.npmjs.org --ignore-scripts --no-audit --no-fund playwright@1.57.0
+          "$TOOLS/node_modules/.bin/playwright" install chromium
+          printf 'HH_GA4_BROWSER_ROOT=%s\nPLAYWRIGHT_BROWSERS_PATH=%s\n' "$TOOLS" "$PLAYWRIGHT_BROWSERS_PATH" >> "$GITHUB_ENV"
+          mkdir -p artifacts/ga4-bfcache-proof
+          cp "$TOOLS/package-lock.json" artifacts/ga4-bfcache-proof/browser-install-lock.json
       - name: Read official SDK without analytics execution
         run: |
           mkdir -p artifacts/ga4-bfcache-proof

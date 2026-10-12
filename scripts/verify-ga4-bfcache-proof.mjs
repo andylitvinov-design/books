@@ -7,7 +7,7 @@ import {assertFallbackPairs,assertNoSensitiveFields,assertCdpHeaderCoverage} fro
 import {readFileSync,writeFileSync,mkdtempSync,statSync,lstatSync,realpathSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {spawn,execFileSync} from 'node:child_process';
-import {join} from 'node:path';
+import {join,dirname} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
@@ -28,6 +28,22 @@ function vendorEvidence(executable,vendorProfile){
  const read=path=>{try{return {path,value:readFileSync(path,'utf8').trim()};}catch(error){return {path,error:error.message};}};
  writeFileSync(join(output,'vendor-browser-preflight.json'),JSON.stringify({readOnly:true,uid:process.getuid(),gid:process.getgid(),files:paths.map(inspect),commands:[command('dpkg-query',['-W','google-chrome-stable','apparmor']),command('dpkg-query',['-S',executable,vendorProfile]),command('dpkg',['--verify','google-chrome-stable']),command('dpkg',['--verify','apparmor'])],namespacePolicy:read('/proc/sys/kernel/apparmor_restrict_unprivileged_userns'),currentProcessProfile:read('/proc/self/attr/current')},null,2)+'\n');
 }
+function privateBrowser(){
+ const toolsRoot=process.env.HH_GA4_BROWSER_ROOT;
+ assert.match(toolsRoot||'',/^\/tmp\/hh-ga4-browser-[A-Za-z0-9]+$/,'only the workflow-created private install is accepted');
+ assert.equal(realpathSync(toolsRoot),toolsRoot);const rootInfo=statSync(toolsRoot);
+ assert.equal(rootInfo.uid,process.getuid());assert.equal(rootInfo.mode&0o077,0,'installation root remains owner-private');
+ const packageInfo=JSON.parse(readFileSync(join(toolsRoot,'node_modules/playwright/package.json'),'utf8'));
+ assert.equal(packageInfo.version,'1.57.0');
+ const executable=require(join(toolsRoot,'node_modules/playwright')).chromium.executablePath();
+ assert.ok(executable.startsWith(join(toolsRoot,'browsers')+'/'));assert.equal(realpathSync(executable),executable);
+ vendorEvidence(executable,'/etc/apparmor.d/chrome');
+ const files=[];for(let path=executable;;path=dirname(path)){const info=statSync(path);files.push({path,uid:info.uid,mode:(info.mode&0o7777).toString(8)});if(path===toolsRoot)break;}
+ const lock=readFileSync(join(toolsRoot,'package-lock.json'));
+ writeFileSync(join(output,'private-browser-provenance.json'),JSON.stringify({source:'pinned npm Playwright, official default browser CDN',packageVersion:packageInfo.version,lockSha256:createHash('sha256').update(lock).digest('hex'),browsers:JSON.parse(readFileSync(join(toolsRoot,'node_modules/playwright-core/browsers.json'),'utf8')),os:readFileSync('/etc/os-release','utf8'),files,limitedResearchImage:'ubuntu-22.04; deprecated 2026-09-17, retires 2027-04-17'},null,2)+'\n');
+ for(const file of files){assert.equal(file.uid,process.getuid(),file.path+' must belong to the installing runner');assert.equal(parseInt(file.mode,8)&0o022,0,file.path+' must not be writable by group/others');}
+ return executable;
+}
 const server=spawn(process.execPath,[require.resolve('next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3220'],{cwd:fixture,env:{PATH:process.env.PATH,HOME:tmpdir(),NODE_ENV:'production',NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_GA_MEASUREMENT_ID:id},stdio:['ignore','pipe','pipe']});
 for(const stream of [server.stdout,server.stderr])stream.on('data',data=>{serverLog+=data;});
 function on(method,fn){listeners.set(method,fn);}
@@ -47,11 +63,16 @@ try{
  await until(async()=>{try{return(await fetch(local+'/privacy')).ok;}catch{return false;}},'isolated Next ready',60000);
  // Ubuntu's existing vendor profile covers this installed Chrome path, unlike
  // downloaded developer builds. Never install/modify a profile or disable sandbox.
- const executable='/opt/google/chrome/chrome',vendorProfile='/etc/apparmor.d/chrome';
- vendorEvidence(executable,vendorProfile);
- assert.equal(realpathSync(executable),executable);
- for(const path of [executable,vendorProfile]){const info=statSync(path);assert.equal(info.uid,0,path+' must be root-owned');assert.equal(info.mode&0o022,0,path+' must not be writable by runner or group');}
- vendorProfileSha256=createHash('sha256').update(readFileSync(vendorProfile)).digest('hex');
+ let executable;
+ if(process.env.HH_GA4_BROWSER_SOURCE==='private-playwright-download')executable=privateBrowser();
+ else{
+  assert.ok(!process.env.HH_GA4_BROWSER_SOURCE,'unknown browser source is forbidden');
+  executable='/opt/google/chrome/chrome';const vendorProfile='/etc/apparmor.d/chrome';
+  vendorEvidence(executable,vendorProfile);
+  assert.equal(realpathSync(executable),executable);
+  for(const path of [executable,vendorProfile]){const info=statSync(path);assert.equal(info.uid,0,path+' must be root-owned');assert.equal(info.mode&0o022,0,path+' must not be writable by runner or group');}
+  vendorProfileSha256=createHash('sha256').update(readFileSync(vendorProfile)).digest('hex');
+ }
  const profile=mkdtempSync(join(tmpdir(),'hh-ga4-cdp-profile-'));
  // No --disable-back-forward-cache, no Playwright connect/page objects and no
  // unload listeners. Dead proxy exists before the first browser process starts.

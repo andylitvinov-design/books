@@ -33,9 +33,17 @@ test('incomplete header coverage cannot become a navigation-only overall pass',(
  assert.doesNotMatch(code,/Fetch\.continueRequest|fetch\(r\.url/);assert.match(code,/env:\{PATH:process\.env\.PATH,HOME:tmpdir\(\)/);
  assert.match(code,/bfcache-browser\.log/);assert.match(code,/browser\.on\('exit'/);assert.match(code,/browser\.on\('error'/);
  assert.match(code,/executable='\/opt\/google\/chrome\/chrome'/);assert.match(code,/vendorProfile='\/etc\/apparmor\.d\/chrome'/);assert.match(code,/info\.uid,0/);assert.match(code,/Browser\.getVersion/);
- const workflow=read('.github/workflows/ga4-bfcache-proof.yml');assert.doesNotMatch(workflow,/playwright install|sysctl|apparmor reload|chmod|sudo/);assert.doesNotMatch(code,/--no-sandbox|--disable-setuid-sandbox/);
+ const workflow=read('.github/workflows/ga4-bfcache-proof.yml');assert.doesNotMatch(workflow,/sysctl|apparmor reload|chmod|sudo|install-deps|--with-deps/);assert.doesNotMatch(code,/--no-sandbox|--disable-setuid-sandbox/);
  assert.match(code,/vendor-browser-preflight\.json/);assert.match(code,/lstatSync\(path\)/);assert.match(code,/\['--verify','google-chrome-stable'\]/);assert.match(code,/info\.mode&0o022,0/);
- assert.ok(code.indexOf('vendorEvidence(executable,vendorProfile);')<code.indexOf('assert.equal(realpathSync(executable)'));
+ assert.ok(code.indexOf('vendorEvidence(executable,vendorProfile);')<code.lastIndexOf('assert.equal(realpathSync(executable)'));
+});
+test('limited hosted-runner alternative retains strict private-install provenance and sandbox gates',()=>{
+ const code=read('scripts/verify-ga4-bfcache-proof.mjs'),workflow=read('.github/workflows/ga4-bfcache-proof.yml');
+ assert.match(workflow,/runs-on: ubuntu-22\.04/);assert.match(workflow,/deprecated 2026-09-17, retires 2027-04-17/);
+ assert.match(workflow,/--registry=https:\/\/registry\.npmjs\.org --ignore-scripts/);assert.match(workflow,/playwright@1\.57\.0/);assert.match(workflow,/mkdtempSync/);
+ assert.match(code,/rootInfo\.mode&0o077,0/);assert.match(code,/parseInt\(file\.mode,8\)&0o022,0/);assert.match(code,/file\.uid,process\.getuid\(\)/);
+ assert.match(code,/private-browser-provenance\.json/);assert.match(code,/lockSha256/);assert.match(code,/unknown browser source is forbidden/);
+ assert.match(code,/info\.uid,0/,'original vendor guard remains intact');assert.match(code,/info\.mode&0o022,0/);
 });
 test('raw commit parent headers remain provable with shallow checkout',()=>{
  const dir=mkdtempSync(join(tmpdir(),'ga4-shallow-parent-'));
