@@ -60,7 +60,6 @@ export async function verifyAboutPlayerHydration(browserType, { origin, evidence
             assert.equal(row.before.cursor, 'wait');
           }
         }
-        await page.screenshot({ path: `${evidence}/${label}-about-hydration-${browserType.name()}-${delayed ? 'delayed' : 'ready'}.png` });
         // A physical click also tests the browser's suppression of disabled
         // buttons; Playwright's enabled-control auto-wait would hide this phase.
         const box = await button.boundingBox();
@@ -78,6 +77,10 @@ export async function verifyAboutPlayerHydration(browserType, { origin, evidence
           await frame.waitFor({ state: 'visible' });
           row.oneHydratedClickWorks = true;
         }
+        // WebKit screenshot font readiness can await the deliberately held
+        // document load. Capture only after release; pre-hydration busy state
+        // is still asserted above from the real rendered control and styles.
+        await page.screenshot({ path: `${evidence}/${label}-about-hydration-${browserType.name()}-${delayed ? 'delayed-released' : 'ready'}.png` });
         assert.deepEqual(row.pageErrors, []);
       } finally {
         release();
