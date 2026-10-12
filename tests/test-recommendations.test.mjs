@@ -99,7 +99,7 @@ test('public and signed-in routes share the complete Test Explorer rather than a
   assert.match(route, /PublicSiteHeader/)
   assert.match(route, /PublicTestExplorer/)
   assert.match(route, /robots: \{ index: false, follow: false \}/)
-  for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free testing']) assert.match(explorer, new RegExp(token))
+  for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free monitoring']) assert.match(explorer, new RegExp(token))
   assert.match(publicExplorer, /auth\/start/)
   assert.match(publicExplorer, /makeTestSelectionIntent/)
   assert.doesNotMatch(publicExplorer, /localStorage/)
