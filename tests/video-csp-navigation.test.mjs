@@ -4,11 +4,12 @@ import test from "node:test";
 
 const source = (path) => readFile(new URL("../" + path, import.meta.url), "utf8");
 
-test("public video CSP allows only reviewed embed origins and scopes native Tantra media", async () => {
+test("public video CSP allows only reviewed origins and scopes native media to Tantra", async () => {
   const middleware = await source("middleware.ts");
   assert.match(middleware, /const publicDocument = !privateDocument && !pathname\.startsWith\('\/api\/'\)/);
   assert.match(middleware, /frame-src https:\/\/www\.youtube-nocookie\.com https:\/\/app\.heygen\.com/);
-  assert.match(middleware, /tantraReikiPage \? "media-src 'self' https:\/\/www\.psitrends\.com" : "media-src 'self'"/);
+  assert.match(middleware, /"media-src 'self'"/);
+  assert.match(middleware, /tantraReikiPage \? "media-src 'self' https:\/\/psitrends\.com" : "media-src 'self'"/);
   assert.match(middleware, /privateDocument \? 'private'/);
   assert.doesNotMatch(middleware, /frame-src \*/);
   assert.doesNotMatch(middleware, /media-src \*/);
@@ -123,4 +124,34 @@ test('parser-time history guard pins the destination before hydration and can ha
   const { readFileSync } = await import('node:fs');
   const layout = readFileSync(new URL('../app/layout.tsx', import.meta.url), 'utf8');
   assert.match(layout, /nonce=\{nonce\}[^>]*dangerouslySetInnerHTML=\{\{ __html: CSP_PREHYDRATION_SCRIPT \}\}/);
+});
+
+test("Tantra videos use canonical originals and posters match first-party hashes", async () => {
+  const archive = JSON.parse(await source("data/academy/tantra-reiki-full.generated.json"));
+  const { createHash } = await import('node:crypto');
+  const manifest = JSON.parse(await source("data/academy/tantra-native-assets.json"));
+  assert.equal(manifest.assets.length, 2);
+  assert.deepEqual(archive.html5Videos.ru, [
+    { src: "https://psitrends.com/images/video_2024-01-16_11-06-01.mp4", poster: "/images/tantra-reiki/participant-1-poster.png", type: "video/mp4" },
+    { src: "https://psitrends.com/images/video.mp4", poster: "/images/tantra-reiki/participant-2-poster.png", type: "video/mp4" },
+  ]);
+  assert.equal(new Set(manifest.assets.map(asset => asset.path)).size, 2);
+  for (const asset of manifest.assets) {
+    assert.ok(asset.path.startsWith('/images/tantra-reiki/'));
+    const bytes = await readFile(new URL('../public' + asset.path, import.meta.url));
+    assert.equal(bytes.length, asset.bytes, asset.path);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), asset.sha256, asset.path);
+  }
+  const middleware = await source("middleware.ts");
+  assert.match(middleware, /tantraReikiPage \? "media-src 'self' https:\/\/psitrends\.com" : "media-src 'self'"/);
+});
+
+test("English Tantra testimonials prioritize Litten and Margaret and disclose Russian video audio", async () => {
+  const component = await source("components/tantra-reiki-testimonials.tsx");
+  assert.match(component, /id="tantra-original-english-testimonials" open=\{locale === "en"\}/);
+  assert.match(component, /id="tantra-russian-video-testimonials" open=\{locale !== "en"\}/);
+  assert.match(component, /<summary>\{l.video\} · \{l.language\}<\/summary>/);
+  assert.match(component, /Alena · Tantra Reiki testimonial · Russian audio/);
+  assert.match(component, /locale === "en" \? " · Russian audio" : ""/);
+  assert.ok(component.indexOf('id="tantra-original-english-testimonials"') < component.indexOf('id="tantra-russian-video-testimonials"'));
 });

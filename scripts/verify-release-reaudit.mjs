@@ -523,7 +523,7 @@ try {
         assert.ok(csp, 'Missing document policy');
         const directives = Object.fromEntries(csp.split(';').map(value => value.trim().split(/\s+/)).map(([name, ...values]) => [name, values]));
         assert.deepEqual(directives['frame-src'], policy === 'private' ? ["'none'"] : ['https://www.youtube-nocookie.com', 'https://app.heygen.com']);
-        assert.deepEqual(directives['media-src'], policy === 'tantra' ? ["'self'", 'https://www.psitrends.com'] : ["'self'"]);
+        assert.deepEqual(directives['media-src'], policy === 'tantra' ? ["'self'", 'https://psitrends.com'] : ["'self'"]);
         for (const directive of ['object-src', 'base-uri', 'frame-ancestors']) assert.deepEqual(directives[directive], ["'none'"]);
         return { exactAllowlist: true, nativeMediaScoped: true };
       });
