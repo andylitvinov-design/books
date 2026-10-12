@@ -71,6 +71,7 @@ test('all active published monitoring tests resolve to executable definitions', 
     ...PROFESSIONAL_BATTERY_2026_B_CATALOG.map((item) => item.key),
     ...CDC_HEALTHY_DAYS_CATALOG.map((item) => item.key),
     ...IPIP_BIG_FIVE_50_CATALOG.map((item) => item.key),
+    ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
   ].sort(),
   )
   for (const item of items) {
