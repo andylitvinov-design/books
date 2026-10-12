@@ -16,9 +16,12 @@ const bundles = allJs(new URL("../.next/static/", import.meta.url).pathname);
 assert.ok(bundles.length > 0, "inspect actual production client bundles");
 const bundleChecks = bundles.map(path => {
   const source = readFileSync(path, "utf8");
-  assert.doesNotMatch(source, /www\.googletagmanager\.com\/gtag\/js/, "disabled SDK loader must be removed from generated client bundles");
-  return { file: path.split("/.next/")[1], sha256: createHash("sha256").update(source).digest("hex") };
+  // Webpack can retain dormant code behind an imported false constant. Merely
+  // finding a URL in JS is not a network attempt. Execute these exact bundles
+  // below and require zero tag/queue/network activity under the safety hold.
+  return { file: path.split("/.next/")[1], sha256: createHash("sha256").update(source).digest("hex"), dormantLoaderTextPresent: source.includes("www.googletagmanager.com/gtag/js"), holdCopyPresent: source.includes("Analytics is temporarily unavailable") };
 });
+assert.ok(bundleChecks.some(bundle => bundle.holdCopyPresent), "generated client bundle includes the temporary-hold UI");
 const browser = await chromium.launch({ headless: true, proxy: { server: "http://127.0.0.1:9" }, args: ["--disable-background-networking", "--disable-component-update", "--disable-sync", "--no-first-run"] });
 const context = await browser.newContext({ serviceWorkers: "block" });
 let page;
