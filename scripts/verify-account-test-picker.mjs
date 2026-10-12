@@ -107,7 +107,12 @@ try {
     assert.ok(before.results.every(result => after.results.some(saved => saved.id === result.id)))
     assert.deepEqual((await api('runs/' + draft.id)).answers, draft.answers)
     assert.ok(after.activeTestPlan.selectionPreferences.focus.includes('sleep'))
-    await navigate('/' + locale + '/app/tests')
+    // Saving includes an asynchronous router.replace after bootstrap refresh.
+    // Wait for that actual completion before testing reload; do not race goto
+    // against a legitimate in-flight post-save navigation in WebKit.
+    await expect(page).toHaveURL(origin + '/' + locale + '/app/tests?plan=' + after.activeTestPlan.id)
+    await page.waitForLoadState('networkidle')
+    await page.reload(); await page.waitForLoadState('networkidle')
     await open.click()
     await expect(picker.getByRole('button', { name: ru ? 'Сон' : 'Sleep', exact: true })).toHaveAttribute('aria-pressed', 'true')
     await expect(add).toBeDisabled()
