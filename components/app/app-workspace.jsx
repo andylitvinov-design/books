@@ -37,23 +37,9 @@ import MyCourse from '@/components/app/my-course'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
-export async function appFetch(path, body, method) {
-  const response = await fetch(`/api/app/${path}`, {
-    method: method || (body ? 'POST' : 'GET'),
-    cache: 'no-store',
-    credentials: 'same-origin',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const value = await response.json().catch(() => ({ error: 'SERVICE_UNAVAILABLE' }))
-  if (!response.ok) {
-    const error = new Error(value.error || 'SERVICE_UNAVAILABLE')
-    error.code = value.error
-    error.status = response.status
-    throw error
-  }
-  return value
-}
+import { appFetch } from '@/lib/app/client-fetch'
+export { appFetch }
+
 function message(error, c) {
   return error?.code === 'REVISION_CONFLICT' || error?.code === 'CONFLICT'
     ? c.conflict
