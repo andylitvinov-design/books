@@ -118,6 +118,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const router = useRouter()
   const searchParams = useSearchParams()
   const openFromInsights = searchParams.get('explore') === '1'
+  const fromCourse = searchParams.get('course') === '1'
   const requestedCategory = searchParams.get('category')
   const insightsCategory = INSIGHTS_TEST_CATEGORIES.some((item) => item.key === requestedCategory) ? requestedCategory : null
   const once = useRef(false)
@@ -125,6 +126,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
   const [exploring, setExploring] = useState(openFromInsights)
+  const [explorerHasOpened, setExplorerHasOpened] = useState(openFromInsights)
+  const [pickerDismissed, setPickerDismissed] = useState(false)
   useEffect(() => {
     if (!openFromInsights) return
     setExploring(true)
@@ -133,7 +136,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     let childFrame
     const frame = window.requestAnimationFrame(() => {
       childFrame = window.requestAnimationFrame(() => {
-        document.getElementById('hh-test-customizer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        document.getElementById('my-test-explorer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
     })
     return () => {
@@ -224,7 +227,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       // Reconcile the saved account state before replacing the handoff URL.
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
-      router.replace(root + '/tests?plan=' + encodeURIComponent(created.id))
+      router.replace(fromCourse ? root + '/course' : root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
       if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
       else if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
@@ -267,8 +270,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     await create(entriesToStart.map((entry) => entry.key), false, selectionPreferences)
   }
   function openFilters() {
-    setExploring((open) => !open)
-    if (!exploring) window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+    setExploring(!showExplorer)
+    setPickerDismissed(showExplorer)
+    if (!showExplorer) window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
       document.getElementById('my-test-explorer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }))
   }
@@ -349,13 +353,20 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setBusy(false)
     }
   }
+  const showExplorer = exploring || (!rows.length && !initializing && !conflict && !pickerDismissed)
+  useEffect(() => { if (showExplorer) setExplorerHasOpened(true) }, [showExplorer])
+  function backToMyTests() {
+    setExploring(false)
+    setPickerDismissed(true)
+    document.querySelector('[data-my-tests-dashboard]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   return <>
     <div className={styles.batteryLayout}>
       <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
         <MyTestsDashboard
           locale={locale} rows={rows} completed={completed}
           results={data.results} snapshot={data.snapshot} data={data}
-          onOpenFilters={openFilters} filtersOpen={exploring}
+          onOpenFilters={openFilters} filtersOpen={showExplorer}
           hasNewSelection={Boolean(conflict)}
           hasList={Boolean(rows.length || (statusFilter === 'completed' && pastRows.length))}
         >
@@ -470,8 +481,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           portrait={buildPsychPortrait(data.results)}/>
       </details>
     </div>
-    {(exploring || (!rows.length && !initializing && !conflict)) &&
-      <section id="my-test-explorer" className={styles.explorerSection} aria-label={c.filters}>
+    {(showExplorer || explorerHasOpened) &&
+      <section id="my-test-explorer" hidden={!showExplorer} className={styles.explorerSection} aria-label={c.filters}>
         {conflict && <aside className={styles.reviewSelection} data-pending-selection>
           <div>
             <strong>{c.pendingReview}</strong>
@@ -482,8 +493,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
           </div>
         </aside>}
-        <TestExplorer key={(currentPlan?.id || 'new') + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
-          audience="account" onStart={choose} initialPreferences={explorerPreferences}
+        <TestExplorer key={(currentPlan?.id || 'new') + ':' + (currentPlan?.revision || 0) + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
+          audience="account" embedded simpleMode accountPicker explicitSelectionOnly onBack={backToMyTests}
+          onStart={choose} initialPreferences={explorerPreferences}
           openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
@@ -491,3 +503,4 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       </section>}
   </>
 }
+

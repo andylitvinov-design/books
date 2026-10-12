@@ -3,7 +3,7 @@ import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { actor, adminClient, assertIsolated } from '../tests/helpers/app-db-setup.mjs'
+import { actor, adminClient, assertIsolated, A } from '../tests/helpers/app-db-setup.mjs'
 import { getAppConfig } from '../lib/app/config.js'
 import { createAppRepository } from '../lib/app/repository.js'
 import { createTestRatingRepository } from '../lib/app/test-ratings.js'
@@ -15,10 +15,15 @@ const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
 assert.match(origin,/^http:\/\/(127\.0\.0\.1|localhost):\d+$/)
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{})
-const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage()
+// Disable workers only in this fault-injection context: routing cannot reliably
+// intercept worker-controlled requests. Separate baseline PWA checks keep workers.
+const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}),page=await context.newPage()
 const output='artifacts/app-r1/test-ratings-'+engine.name(),checks=[],errors=[],fixtureActors=[]
 await mkdir(output,{recursive:true})
 const config=getAppConfig(),repo=createAppRepository(config),ratings=createTestRatingRepository(config)
+const setupAdmin=await adminClient()
+const accountExisted=Boolean((await setupAdmin.query('select 1 from app.accounts where id=$1',[A])).rowCount)
+await setupAdmin.end()
 const cbi=getAssessmentDefinition('cbi-personal','v1','en'),secondTest=getAssessmentDefinition('phq-4','v1','en'),current=getAssessmentDefinition('hh-current-state','v2','en')
 page.on('pageerror',error=>errors.push(error.message))
 const passed=name=>{checks.push(name);console.log('PASS '+name)}
@@ -32,6 +37,11 @@ async function completeViaAPI(def){
  return api('runs/'+run.id+'/submit',{expectedRevision:saved.revision})
 }
 async function navigate(url){await page.waitForLoadState('networkidle');await page.goto(url);await page.waitForLoadState('networkidle')}
+async function assertFits(label){
+ const layout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].map(el=>({el,rect:el.getBoundingClientRect()})).filter(({rect})=>rect.width&&rect.right>innerWidth+1).slice(-20).map(({el,rect})=>({tag:el.tagName,class:el.className,right:rect.right,width:rect.width,text:el.textContent.slice(0,70)}))}))
+ assert.ok(layout.scroll<=layout.width+1,label+': '+JSON.stringify(layout))
+}
+
 try{
  await page.goto(origin+'/en/app')
  await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
@@ -56,7 +66,7 @@ try{
   await page.waitForLoadState('networkidle');await page.reload();await expect(rating.getByRole('radio').nth(2)).toBeChecked()
   for(const width of [320,390,1280]){
    await page.setViewportSize({width,height:900});await rating.scrollIntoViewIfNeeded()
-   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
+   await assertFits(locale+': viewport fits')
    const rect=await rating.getByRole('radio').first().boundingBox();assert.ok(rect.width>=44&&rect.height>=44,`Radio target at ${locale}/${width}: ${JSON.stringify(rect)}`)
    await page.screenshot({path:output+'/rating-'+locale+'-'+width+'.png',fullPage:false})
   }
@@ -66,10 +76,15 @@ try{
   await expect(rating.getByRole('alert')).toContainText(c.conflict);await expect(rating.getByRole('radio').first()).toBeDisabled()
   await rating.getByRole('button',{name:c.reload,exact:true}).click();await expect(rating.getByRole('radio').nth(4)).toBeChecked();await expect(rating.getByRole('radio').first()).toBeEnabled()
   // An interrupted service response must keep the changed input and allow retry.
-  await page.route('**/api/app/results/*/rating',async route=>route.request().method()==='POST'?route.fulfill({status:503,json:{error:'SERVICE_UNAVAILABLE'}}):route.continue())
-  await rating.getByRole('radio').nth(3).check();await rating.getByRole('button',{name:c.update,exact:true}).click();await expect(rating.getByRole('alert')).toContainText(c.error)
+  const endpoint=origin+'/api/app/results/'+result.id+'/rating';let interrupted=0
+  const interruptPost=async route=>{if(route.request().method()==='POST'){interrupted++;await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'SERVICE_UNAVAILABLE'})})}else await route.continue()}
+  await context.route(endpoint,interruptPost)
+  const interruptedResponse=page.waitForResponse(response=>response.url()===endpoint&&response.request().method()==='POST')
+  await rating.getByRole('radio').nth(3).check();await rating.getByRole('button',{name:c.update,exact:true}).click()
+  assert.equal((await interruptedResponse).status(),503,'fault-injection route must handle the actual request')
+  assert.equal(interrupted,1);await expect(rating.getByRole('alert')).toContainText(c.error)
   assert.equal((await api('results/'+result.id+'/rating')).stars,5)
-  await page.unroute('**/api/app/results/*/rating')
+  await context.unroute(endpoint,interruptPost)
   await rating.getByRole('button',{name:c.update,exact:true}).click();await expect(rating.getByRole('status')).toContainText(c.saved)
   await rating.getByRole('button',{name:c.remove,exact:true}).click();await expect(rating.getByRole('status')).toContainText(c.removed)
   assert.equal((await api('results/'+result.id+'/rating')).stars,null)
@@ -132,7 +147,7 @@ try{
   await page.getByRole('button',{name:c.chooseTop,exact:true}).click()
   await expect(page.locator('[data-test-match="cbi-personal"] input')).toBeChecked()
   await expect(page.locator('[data-test-match="phq-4"] input')).toBeChecked()
-  await page.setViewportSize({width:320,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
+  await page.setViewportSize({width:320,height:900});await assertFits(locale+': viewport fits')
   await page.screenshot({path:output+'/ranked-picker-'+locale+'-320.png',fullPage:false})
   await navigate(origin+'/'+locale+'/client/tests')
   await page.locator('select').filter({has:page.locator('option[value="rating"]')}).selectOption('rating')
@@ -175,6 +190,6 @@ try{
 }catch(error){await page.screenshot({path:output+'/failure.png',fullPage:false}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,errors,failure:error.message},null,2));throw error}
 finally{
  const admin=await adminClient()
- try{const ids=fixtureActors.map(a=>a.id);if(ids.length){await admin.query('delete from app.accounts where id=any($1::uuid[])',[ids]);await admin.query('delete from auth.users where id=any($1::uuid[])',[ids])}}finally{await admin.end()}
+ try{const ids=fixtureActors.map(a=>a.id);if(!accountExisted)await admin.query('delete from app.accounts where id=$1',[A]);if(ids.length){await admin.query('delete from app.accounts where id=any($1::uuid[])',[ids]);await admin.query('delete from auth.users where id=any($1::uuid[])',[ids])}}finally{await admin.end()}
  await closeDatabase();await browser.close()
 }

@@ -104,11 +104,17 @@ const GUIDED_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null, accountPicker = false, onBack, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
   const ratings = useTestRatings(), ratingText = ratingCopy(locale)
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
-  const quick = QUICK_COPY[locale] || QUICK_COPY.en
+  const quickBase = QUICK_COPY[locale] || QUICK_COPY.en
+  const quick = accountPicker ? { ...quickBase,
+    title: locale === 'ru' ? 'Подберите новые тесты' : 'Choose more tests',
+    intro: locale === 'ru' ? 'Выберите нужные тесты и добавьте их к своему набору. Прежние тесты и прогресс сохранятся.' : 'Choose tests to add to your set. Your existing tests and progress stay safe.',
+    resetSet: locale === 'ru' ? 'Очистить выбор' : 'Clear selection',
+    summary: locale === 'ru' ? 'выбрано тестов' : 'selected tests',
+  } : quickBase
   const [availability, setAvailability] = useState('available')
   const [concern, setConcern] = useState('')
   const [voiceSupported, setVoiceSupported] = useState(false)
@@ -164,7 +170,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [depth, setDepth] = useState(() => initialPreferences?.depth ?? 'balanced')
   const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
   const [details, setDetails] = useState(() => initialPreferences?.details ?? [])
-  const [axes, setAxes] = useState(() => simpleMode ? [] : (initialPreferences?.axes ?? []))
+  const [axes, setAxes] = useState(() => initialPreferences?.axes ?? [])
   const [maxMinutes, setMaxMinutes] = useState(() => initialPreferences?.maxMinutes ?? 0)
   const [language, setLanguage] = useState(() => initialPreferences?.language ?? 'any')
   const [tracking, setTracking] = useState(() => initialPreferences?.tracking ?? 'any')
@@ -242,7 +248,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)),
     { focus, details, axes, depth, styles: stylesFilter, lengths },
   ), [matching, axisFilter, focus, details, axes, depth, stylesFilter, lengths])
-  const activeBattery = simpleMode
+  const activeBattery = explicitSelectionOnly ? selected : simpleMode
     ? (simpleSelectionChanged ? selected : simpleAuto)
     : (selected.length ? selected : autoBattery)
   const activeCoverage = selected.length ? coverage : coverageForSelection(entries, activeBattery.map((entry) => entry.key))
@@ -275,7 +281,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
     setSelectedKeys((current) => {
-      const baseline = simpleMode && !simpleSelectionChanged && !current.length
+      const baseline = simpleMode && !explicitSelectionOnly && !simpleSelectionChanged && !current.length
         ? simpleAuto.map((entry) => entry.key) : current
       return baseline.includes(key)
         ? baseline.filter((item) => item !== key)
@@ -286,7 +292,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     // In the uncomplicated initial view, the automatically recommended plan is
     // already selected. The first manual click edits the full suggested set.
     setSelectedKeys((current) => {
-      const baseline = !simpleSelectionChanged && !current.length
+      const baseline = !explicitSelectionOnly && !simpleSelectionChanged && !current.length
         ? simpleAuto.map((entry) => entry.key) : current
       return baseline.includes(key)
         ? baseline.filter((item) => item !== key)
@@ -306,6 +312,14 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
       locale={locale}
+      accountMode={accountPicker}
+      onBack={onBack}
+      onResetFilters={resetFilters}
+      activeFilterLabels={[
+        ...focus.map(key => TEST_RECOMMENDATION_FOCUS.find(item => item.key === key)?.label?.[locale === 'ru' ? 'ru' : 'en'] || key),
+        ...areas.map(key => MONITOR_AREAS.find(item => item.key === key)?.[locale === 'ru' ? 'ru' : 'en'] || key),
+        ...axes.map(key => TEST_EXPLORER_AXIS_LABELS[key]?.[locale === 'ru' ? 'ru' : 'en'] || key),
+      ]}
       focus={focus}
       onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
       problems={problems}
@@ -331,13 +345,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       topCount={topRated.length}
       activeBattery={activeBattery}
       onToggleTest={toggleSimpleSelected}
-      onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
+      onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(explicitSelectionOnly) }}
       matchCount={simpleRecommendations.length}
       onStart={start}
       onBrowseCore={() => { setBrowseFull(true); setAvailability('core') }}
       onBrowseFull={() => {
         // Carry the three implicit selections into the full catalog editor.
-        if (!simpleSelectionChanged) {
+        if (!explicitSelectionOnly && !simpleSelectionChanged) {
           setSelectedKeys(simpleAuto.map((entry) => entry.key))
           setSimpleSelectionChanged(true)
         }
@@ -350,7 +364,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   }
 
   return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
-    {simpleMode && browseFull && <button type="button" className={styles.simpleBack} onClick={() => { setAxes([]); setBrowseFull(false); setCustomizeOpen(false) }}>
+    {simpleMode && browseFull && <button type="button" className={styles.simpleBack} onClick={() => { setBrowseFull(false); setCustomizeOpen(false) }}>
       ← {locale === 'ru' ? 'Назад к простому подбору' : locale === 'es' ? 'Volver al selector sencillo' : 'Back to easy selection'}
     </button>}
     <div className={styles.explorerHero}>
@@ -360,7 +374,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       <p className={styles.quickIntro}>{quick.intro}</p>
       {activePlan?.status === 'active' && <button className={styles.resumeButton} type="button" onClick={() => onResume?.(activePlan)}>{locale === 'ru' ? `Продолжить набор: шаг ${activePlan.currentIndex + 1}` : locale === 'es' ? `Continuar selección: paso ${activePlan.currentIndex + 1}` : `Resume set: step ${activePlan.currentIndex + 1}`}</button>}
       <div className={styles.quickActions}>
-        <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : c.start}</button>
+        <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : accountPicker ? (locale === 'ru' ? 'Добавить выбранные тесты' : 'Add selected tests') : c.start}</button>
         <span>{activeBattery.length} {quick.summary} · {questions} {c.questions} · ~{minutes} {c.minutes}</span>
       </div>
       {actionError && <p role="alert" className={styles.quickError}>{actionError.code || actionError.message}</p>}
@@ -513,7 +527,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
         </div>
         <div>
           <button type="button" onClick={() => setSelectedKeys([])}>{quick.resetSet}</button>
-          <button className={styles.primary} type="button" disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : c.start}</button>
+          <button className={styles.primary} type="button" disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : accountPicker ? (locale === 'ru' ? 'Добавить выбранные тесты' : 'Add selected tests') : c.start}</button>
         </div>
       </footer>
   </section>

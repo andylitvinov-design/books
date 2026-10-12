@@ -69,6 +69,8 @@ async function ready(){
  }
 }
 async function chooseVisibleTest(testPage,name){
+ const modern=testPage.locator('[data-modern-test-picker="account"]')
+ if(await modern.isVisible().catch(()=>false)) await modern.getByRole('button',{name:'Browse full database',exact:true}).click()
  const customizer=testPage.getByRole('button',{name:/Choose my own tests and filters/})
  if(!(await customizer.count())){
   const toggle=testPage.getByRole('button',{name:'Choose or change tests',exact:true})
@@ -105,7 +107,7 @@ async function enterTest(name='Current State Check',mode='Guided'){
   const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
   if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
-  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+  await page.getByRole('button',{name:'Add selected tests',exact:true}).first().click()
   await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
   await expect(page.locator('#my-tests-list')).toBeVisible()
  }
@@ -389,12 +391,21 @@ try {
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
   await page.goto(origin+'/en/app/analysis');await ready()
   await expect(page.getByRole('heading',{name:'Personal analysis',exact:true})).toBeVisible()
-  await expect(page.getByRole('link',{name:'Start free analysis'})).toHaveAttribute('href','/en/services/free-situation-review')
-  await expect(page.getByRole('link',{name:'Request free analysis'})).toHaveAttribute('href','/en/services/dao-health-profile')
-  await expect(page.getByText('No personal reports have been pinned here yet.')).toBeVisible()
+  await expect(page.locator('[data-analysis-offer]')).toHaveCount(3)
+  await expect(page.locator('[data-analysis-offer="stress"]').getByRole('link',{name:'Start free testing'})).toHaveAttribute('href','/en/app/tests?mode=recommendations')
+  await expect(page.locator('[data-analysis-offer="situation"]').getByRole('link',{name:'Request free review'})).toHaveAttribute('href','/en/services/free-situation-review')
+  await expect(page.locator('[data-analysis-offer="resource"]').getByRole('link',{name:'Get my free profile'})).toHaveAttribute('href','/en/services/dao-health-profile')
+  await expect(page.locator('[data-analysis-offer] img')).toHaveCount(3)
+  await expect(page.getByText('No saved reports yet')).toBeVisible()
+  await expect(page.getByRole('link',{name:'Request a consultation'})).toHaveAttribute('href','/en/services/alchemy-of-soul')
   await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Analysis'})).toHaveAttribute('aria-current','page')
-  await screenshotEvidence(page,{path:output+'/client-personal-analysis-en.png',fullPage:true})
-  passed('Google Cabinet Personal Analysis shows both verified free services and pinned-reports empty state')
+  for(const width of [320,390,768,1280]){
+    await page.setViewportSize({width,height:900})
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Analysis must not overflow viewport at '+width+'px')
+    await screenshotEvidence(page,{path:output+'/client-personal-analysis-en-'+width+'.png',fullPage:true})
+  }
+  await page.setViewportSize({width:390,height:844})
+  passed('Google Cabinet Analysis has three free photo offers, private reports and a responsive optional consultation CTA')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
  await screenshotEvidence(page,{path:output+'/current-state-runner.png',fullPage:true})
@@ -585,9 +596,12 @@ try {
   passed('all four legacy private-client profile CTAs open a precise, privacy-safe order request')
   await clientPage.getByRole('link',{name:'Personal analysis'}).click()
   await expect(clientPage.getByRole('heading',{name:'Personal analysis',exact:true})).toBeVisible()
-  await expect(clientPage.getByRole('link',{name:'Start free analysis'})).toHaveAttribute('href','/en/services/free-situation-review')
-  await expect(clientPage.getByRole('link',{name:'Request free analysis'})).toHaveAttribute('href','/en/services/dao-health-profile')
-  await expect(clientPage.getByText('No personal reports have been pinned here yet.')).toBeVisible()
+  await expect(clientPage.locator('[data-analysis-offer]')).toHaveCount(3)
+  await expect(clientPage.locator('[data-analysis-offer="stress"]').getByRole('link',{name:'Start free testing'})).toHaveAttribute('href','/en/client/tests')
+  await expect(clientPage.locator('[data-analysis-offer="situation"]').getByRole('link',{name:'Request free review'})).toHaveAttribute('href','/en/services/free-situation-review')
+  await expect(clientPage.locator('[data-analysis-offer="resource"]').getByRole('link',{name:'Get my free profile'})).toHaveAttribute('href','/en/services/dao-health-profile')
+  await expect(clientPage.getByText('No saved reports yet')).toBeVisible()
+  await expect(clientPage.getByRole('link',{name:'Request a consultation'})).toHaveAttribute('href','/en/services/alchemy-of-soul')
   await screenshotEvidence(clientPage,{path:output+'/private-client-personal-analysis.png',fullPage:true})
   await clientPage.getByRole('link',{name:'My materials'}).click()
   await expect(clientPage.getByRole('heading',{name:'Study materials from Andy'})).toBeVisible()
@@ -759,4 +773,5 @@ try {
  await other.close();await admin.close()
 } catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
 finally{await browser.close()}
+
 

@@ -112,8 +112,9 @@ test('simple picker uses topic cards as measured-scale intent, without a duplica
   assert.match(simple,/onToggleFocus\(key\)/)
   assert.match(simple,/data-topic-problem-filter/)
   assert.match(simple,/TestScaleGuide guide=\{entry\.scaleGuide\} locale=\{locale\}/)
-  assert.match(full,/simpleMode \? \[\] : \(initialPreferences\?\.axes \?\? \[\]\)/)
-  assert.match(full,/setAxes\(\[\]\); setBrowseFull\(false\)/)
+  assert.match(full,/const \[axes, setAxes\] = useState\(\(\) => initialPreferences\?\.axes \?\? \[\]\)/)
+  assert.doesNotMatch(full,/setAxes\(\[\]\); setBrowseFull\(false\)/)
+  assert.match(full,/setBrowseFull\(false\); setCustomizeOpen\(false\)/)
   // The full database keeps its explicit measured-scale refinement controls.
   assert.match(full,/data-scale-first-selection/)
   assert.match(full,/measurementAxes\?\.includes\(key\)/)

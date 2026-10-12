@@ -5,7 +5,7 @@ import { HOME_TEST_TOPICS } from '../lib/assessments/insights-categories.js'
 
 const read = (file) => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 
-test('the approved simple picker replaces the intimidating embedded explorer only before sign-in', () => {
+test('the approved modern picker is shared by public and account entrypoints', () => {
   const page = read('app/[locale]/client/page.tsx')
   const cabinet = read('components/app/cabinet-landing.jsx')
   const wrapper = read('components/app/public-test-explorer.jsx')
@@ -14,6 +14,7 @@ test('the approved simple picker replaces the intimidating embedded explorer onl
   assert.match(page, /<CabinetLanding/)
   assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded\s*\/>/)
   assert.match(wrapper, /simpleMode=\{embedded\}/)
+  assert.match(read('components/app/account-test-battery.jsx'), /audience="account" embedded simpleMode accountPicker explicitSelectionOnly/)
   assert.match(explorer, /if \(simpleMode && !browseFull\)/)
   assert.match(explorer, /return <SimpleTestPicker/)
   assert.match(explorer, /onBrowseFull=\{\(\) => \{/)
@@ -58,7 +59,7 @@ test('preview and selected time are derived from live executable test definition
   assert.match(explorer, /compareTestRatings/)
   assert.match(explorer, /matching\.filter\(\(entry\) => entry\.selectable\)/)
   assert.match(explorer, /onToggleTest=\{toggleSimpleSelected\}/)
-  assert.match(explorer, /onResetSuggested=\{\(\) => \{ setSelectedKeys\(\[\]\); setSimpleSelectionChanged\(false\) \}\}/)
+  assert.match(explorer, /onResetSuggested=\{\(\) => \{ setSelectedKeys\(\[\]\); setSimpleSelectionChanged\(explicitSelectionOnly\) \}\}/)
   assert.match(picker, /activeBattery\.reduce\(\(total, item\) => total \+ \(item\.durationMinutes \|\| 0\), 0\)/)
   assert.match(picker, /type="checkbox" checked=\{checked\}/)
   assert.match(picker, /<button type="button" className=\{styles\.cta\} disabled=\{!activeBattery\.length \|\| starting\} onClick=\{onStart\}>/)

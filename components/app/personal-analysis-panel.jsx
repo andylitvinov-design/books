@@ -1,89 +1,138 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowDownToLine, ArrowUpRight, ClipboardPenLine, Flower2, FileText, LockKeyhole, Pin } from 'lucide-react'
+import Image from 'next/image'
+import { ArrowDownToLine, ArrowUpRight, FileText, LockKeyhole, Pin } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import './personal-analysis.css'
 import { generatePractitionerReportPdf } from '@/lib/profile/practitioner-report-pdf'
 
 const WORDS = {
   ru: {
-    eyebrow: 'ЛИЧНЫЙ АНАЛИЗ · HOLISTIC HOUSE',
+    eyebrow: '3 БЕСПЛАТНЫХ ВОЗМОЖНОСТИ · ЛИЧНЫЕ ОТЧЁТЫ',
     title: 'Личный анализ',
-    intro: 'Два бесплатных способа лучше понять свою ситуацию и внутренние ресурсы. Полученные письменные отчёты сохраняйте здесь.',
-    situation: 'Диагностика ситуации',
-    situationTag: 'Символическая расстановка',
-    situationCopy: 'Опишите проблему в анкете и нарисуйте от руки «Я — Цель — Проблема». Andy подготовит персональный письменный разбор, без обязательной личной сессии.',
-    situationAction: 'Начать бесплатный анализ',
-    resource: 'Диагностика ресурсов',
-    resourceTag: 'Дао · У-Син · пять элементов',
-    resourceCopy: 'Исследуйте самочувствие, личную опору и баланс через авторскую китайскую модель У-Син. Символический профиль, а не медицинский диагноз.',
-    resourceAction: 'Запросить бесплатный анализ',
+    intro: 'Выберите, с чего начать: пройти тесты или запросить личный письменный разбор. Полученные отчёты будут ниже.',
+    offerLabel: 'Бесплатные способы анализа',
+    stress: 'Стресс и психологический профиль',
+    stressTag: 'Тесты · Стресс · Личность',
+    stressCopy: 'Пройдите бесплатные тесты, посмотрите свои показатели и получите рекомендации.',
+    stressBenefit: 'Вы сами выбираете нужные тесты',
+    stressAction: 'Начать бесплатные тесты',
+    situation: 'Личный анализ ситуации',
+    situationTag: 'Анкета · Рисунок',
+    situationCopy: 'Опишите свой вопрос и отправьте рисунок «Я — Цель — Проблема». Я подготовлю письменный разбор.',
+    situationBenefit: 'Личный отчёт · Без обязательного созвона',
+    situationAction: 'Заказать бесплатно',
+    resource: 'Анализ ресурсов У-Син',
+    resourceTag: 'Дао · Пять стихий',
+    resourceCopy: 'Исследуйте внутреннюю опору и баланс через мою символическую модель пяти стихий. Это не медицинская диагностика.',
+    resourceBenefit: 'Индивидуальный письменный профиль',
+    resourceAction: 'Получить в подарок',
     free: 'БЕСПЛАТНО',
-    reportsTitle: 'Мои отчёты от Andy',
-    reportsIntro: 'Личные отчёты, которыми Andy поделился именно с вами. Вы можете открыть их и сохранить в PDF.',
-    empty: 'Здесь пока нет закреплённых отчётов.',
-    emptyGoogle: 'Когда Andy пришлёт приватную ссылку на отчёт, откройте её и нажмите «Сохранить отчёт в личном кабинете». После подтверждения отчёт появится здесь.',
-    emptyLegacy: 'Когда Andy откроет вам доступ к персональному отчёту, он появится в этом разделе.',
+    reportsTitle: 'Мои отчёты',
+    reportsIntro: 'Ваши персональные разборы и документы от Andy.',
+    private: 'ЛИЧНОЕ',
+    empty: 'Пока нет сохранённых отчётов',
+    emptyGoogle: 'Получив приватную ссылку, откройте отчёт и сохраните его в кабинете.',
+    emptyLegacy: 'Когда Andy поделится отчётом, он появится здесь.',
     report: 'Персональный отчёт',
-    open: 'Читать',
+    open: 'Открыть',
     download: 'Скачать PDF',
     downloading: 'Готовим PDF…',
     failed: 'PDF не удалось сформировать. Откройте отчёт и попробуйте снова.',
-    saved: 'Закреплён',
+    saved: 'Сохранён',
     withdrawn: 'Отчёт отозван или больше недоступен',
     legacy: 'Архивный формат: попросите Andy повторно отправить отчёт',
     contact: 'Связаться с Andy',
-    privacy: 'Ваши отчёты приватны. Другие клиенты их не видят. Бесплатные услуги не заменяют медицинскую или психиатрическую помощь.',
+    moreEyebrow: 'ДОПОЛНИТЕЛЬНАЯ ПОМОЩЬ',
+    moreTitle: 'Хотите разобрать ситуацию глубже?',
+    moreCopy: 'Можно заказать отдельную платную личную консультацию, чтобы обсудить ваш вопрос или результаты.',
+    moreAction: 'Заказать консультацию',
+    privacy: 'Отчёты приватны и не видны другим клиентам. Тесты и символические разборы не заменяют медицинскую или психиатрическую помощь.',
   },
   en: {
-    eyebrow: 'PERSONAL ANALYSIS · HOLISTIC HOUSE',
+    eyebrow: '3 FREE STARTING POINTS · PERSONAL REPORTS',
     title: 'Personal analysis',
-    intro: 'Two free ways to explore your situation and personal resources. Keep the written reports you receive together here.',
-    situation: 'Situation analysis',
-    situationTag: 'Symbolic constellations',
-    situationCopy: 'Describe your concern in a short form and draw ME · GOAL · PROBLEM on paper. Andy prepares a personal written reflection, not a free live consultation.',
-    situationAction: 'Start free analysis',
-    resource: 'Resource analysis',
-    resourceTag: 'Dao · Wu Xing · five elements',
-    resourceCopy: 'Explore your sense of energy, support and balance through the author’s Chinese Wu Xing framework. A symbolic profile, not a medical diagnosis.',
-    resourceAction: 'Request free analysis',
+    intro: 'Choose how to begin: take free tests or request a personal written review. Your reports will appear below.',
+    offerLabel: 'Free ways to explore your situation',
+    stress: 'Stress & personality profile',
+    stressTag: 'Tests · Stress · Personality',
+    stressCopy: 'Take free self-assessments, explore your results and get practical guidance.',
+    stressBenefit: 'Choose the tests that matter to you',
+    stressAction: 'Start free testing',
+    situation: 'Personal situation analysis',
+    situationTag: 'Questionnaire · Drawing',
+    situationCopy: 'Share your concern and a Me · Goal · Problem drawing. I will prepare a personal written reflection.',
+    situationBenefit: 'Personal report · No call required',
+    situationAction: 'Request free review',
+    resource: 'Wu Xing resource profile',
+    resourceTag: 'Dao · Five elements',
+    resourceCopy: 'Explore your inner resources and sense of balance through my symbolic five-element approach. This is not a medical diagnosis.',
+    resourceBenefit: 'Personal written profile',
+    resourceAction: 'Get my free profile',
     free: 'FREE',
-    reportsTitle: 'My reports from Andy',
-    reportsIntro: 'Reports Andy has shared specifically with you. Open any available report or download your own PDF copy.',
-    empty: 'No personal reports have been pinned here yet.',
-    emptyGoogle: 'When Andy sends a private report link, open it and choose “Save this report to my Cabinet”. After you confirm, the report will appear here.',
-    emptyLegacy: 'Once Andy shares a personal report with you, it will appear here.',
+    reportsTitle: 'My reports',
+    reportsIntro: 'Personal reflections and documents Andy has shared with you.',
+    private: 'PRIVATE',
+    empty: 'No saved reports yet',
+    emptyGoogle: 'When you receive a private report link, open it and save the report to your Cabinet.',
+    emptyLegacy: 'When Andy shares a report with you, it will appear here.',
     report: 'Personal report',
-    open: 'Read',
+    open: 'Open report',
     download: 'Download PDF',
     downloading: 'Preparing PDF…',
     failed: 'The PDF could not be prepared. Open the report and try again.',
-    saved: 'Pinned',
+    saved: 'Saved',
     withdrawn: 'This report was withdrawn or is no longer available',
     legacy: 'Older report format: please ask Andy to share an updated copy',
     contact: 'Contact Andy',
-    privacy: 'Your reports are private and not visible to other clients. Free services do not replace medical or mental-health care.',
+    moreEyebrow: 'FURTHER SUPPORT',
+    moreTitle: 'Want to explore this more deeply?',
+    moreCopy: 'You can book a separate paid personal consultation to discuss your situation or results together.',
+    moreAction: 'Request a consultation',
+    privacy: 'Your reports are private and not visible to other clients. Self-checks and symbolic reviews are not medical or mental-health diagnoses.',
   },
 }
 
-export function PersonalAnalysisOffers({ locale = 'en' }) {
+export function PersonalAnalysisOffers({ locale = 'en', selector = null }) {
   const t = WORDS[locale === 'ru' ? 'ru' : 'en']
-  return <div className="hh-analysis-offers">
-    <article className="hh-analysis-offer hh-analysis-offer--situation">
-      <div className="hh-analysis-offer-top"><span className="hh-analysis-offer-icon"><ClipboardPenLine size={24} aria-hidden="true" /></span><strong>{t.free}</strong></div>
-      <p className="hh-analysis-offer-tag">{t.situationTag}</p>
-      <h2>{t.situation}</h2>
-      <p>{t.situationCopy}</p>
-      <Link href={`/${locale}/services/free-situation-review`} prefetch={false}>{t.situationAction}<ArrowUpRight size={17} aria-hidden="true" /></Link>
-    </article>
-    <article className="hh-analysis-offer hh-analysis-offer--resource">
-      <div className="hh-analysis-offer-top"><span className="hh-analysis-offer-icon"><Flower2 size={24} aria-hidden="true" /></span><strong>{t.free}</strong></div>
-      <p className="hh-analysis-offer-tag">{t.resourceTag}</p>
-      <h2>{t.resource}</h2>
-      <p>{t.resourceCopy}</p>
-      <Link href={`/${locale}/services/dao-health-profile`} prefetch={false}>{t.resourceAction}<ArrowUpRight size={17} aria-hidden="true" /></Link>
-    </article>
+  const offers = [
+    {
+      id: 'stress', title: t.stress, tag: t.stressTag, copy: t.stressCopy,
+      benefit: t.stressBenefit, action: t.stressAction,
+      href: selector ? '/' + locale + '/client/tests' : '/' + locale + '/app/tests?mode=recommendations',
+      image: locale === 'ru'
+        ? '/images/holistic-house/video-posters/home-ru-v1.webp'
+        : '/images/holistic-house/video-posters/home-en-v2.webp',
+    },
+    {
+      id: 'situation', title: t.situation, tag: t.situationTag, copy: t.situationCopy,
+      benefit: t.situationBenefit, action: t.situationAction,
+      href: '/' + locale + '/services/free-situation-review',
+      image: '/images/holistic-house/hero-olive-incense.webp',
+    },
+    {
+      id: 'resource', title: t.resource, tag: t.resourceTag, copy: t.resourceCopy,
+      benefit: t.resourceBenefit, action: t.resourceAction,
+      href: '/' + locale + '/services/dao-health-profile',
+      image: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
+    },
+  ]
+  return <div className="hh-analysis-offers" aria-label={t.offerLabel}>
+    {offers.map(offer => <article className={'hh-analysis-offer hh-analysis-offer--' + offer.id} key={offer.id} data-analysis-offer={offer.id}>
+      <Link href={offer.href} className="hh-analysis-offer-photo" tabIndex={-1} aria-hidden="true" prefetch={false}>
+        <Image src={offer.image} alt="" fill sizes="(max-width: 520px) 105px, (max-width: 850px) 145px, 260px" />
+      </Link>
+      <div className="hh-analysis-offer-content">
+        <div className="hh-analysis-offer-meta"><strong>{t.free}</strong><span>{offer.tag}</span></div>
+        <h2>{offer.title}</h2>
+        <p className="hh-analysis-offer-description">{offer.copy}</p>
+        <p className="hh-analysis-offer-benefit">{offer.benefit}</p>
+        <Link href={offer.href} className="hh-analysis-offer-cta" prefetch={false}>
+          {offer.action}<ArrowUpRight size={18} aria-hidden="true" />
+        </Link>
+      </div>
+    </article>)}
   </div>
 }
 
@@ -144,7 +193,7 @@ export function PersonalAnalysisReportList({ locale = 'en', reports = [], select
       : ''
   }
   return <section className="hh-analysis-reports" aria-labelledby="hh-analysis-reports-title">
-    <div className="hh-analysis-reports-head"><span className="hh-analysis-reports-pin"><Pin size={19} aria-hidden="true" /></span><div><h2 id="hh-analysis-reports-title">{t.reportsTitle}</h2><p>{t.reportsIntro}</p></div></div>
+    <div className="hh-analysis-reports-head"><span className="hh-analysis-reports-pin"><Pin size={19} aria-hidden="true" /></span><div><h2 id="hh-analysis-reports-title">{t.reportsTitle}</h2><p>{t.reportsIntro}</p></div><span className="hh-analysis-reports-count">{items.length || t.private}</span></div>
     {items.length ? <div className="hh-analysis-report-list">{items.map(item => {
       const unavailable = item.available === false || item.legacy === true
       const href = selector
@@ -180,8 +229,12 @@ export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyRepor
   }, [selector, reports.length])
   const visibleReports = selector ? reports : (verified ?? reports)
   return <section className="hh-personal-analysis" aria-label={t.title}>
-    <div className="hh-personal-analysis-header"><p>{t.eyebrow}</p><h1>{t.title}</h1><div>{t.intro}</div></div>
-    <PersonalAnalysisOffers locale={locale} />
+    <header className="hh-personal-analysis-header"><p>{t.eyebrow}</p><h1>{t.title}</h1><div>{t.intro}</div></header>
+    <PersonalAnalysisOffers locale={locale} selector={selector} />
     <PersonalAnalysisReportList reports={[...visibleReports, ...legacyReports]} locale={locale} selector={selector} />
+    <aside className="hh-analysis-more">
+      <div><p className="hh-analysis-more-eyebrow">{t.moreEyebrow}</p><h2>{t.moreTitle}</h2><p>{t.moreCopy}</p></div>
+      <Link href={'/' + locale + '/services/alchemy-of-soul'} prefetch={false}>{t.moreAction}<ArrowUpRight size={18} aria-hidden="true" /></Link>
+    </aside>
   </section>
 }
