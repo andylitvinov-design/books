@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-capture";
+import { coreOfferDetailData, type DetailKind } from "@/components/core-service-detail";
 import { ConsultationChoiceCapture } from "@/components/consultation-choice-capture";
 import styles from "./sitewide-lead-capture.module.css";
 
@@ -124,6 +125,10 @@ export function SitewideLeadCapture() {
   const kind = route.kind as "training" | "reading" | "personal" | "network";
   const c = copy[locale][kind];
   const relative = pathname.replace(/^\/(en|ru|es)(?=\/|$)/, "");
+  const coreMatch = relative.match(/^\/services\/(dao-health-profile|alchemy-of-soul|hypnotherapy-course)\/?$/);
+  const coreSlugToKind: Record<string, DetailKind> = { "dao-health-profile": "dao", "alchemy-of-soul": "alchemy", "hypnotherapy-course": "hypnotherapy" };
+  const coreKind = coreMatch ? coreSlugToKind[coreMatch[1]] || null : null;
+  const coreDetail = coreKind && locale !== "es" ? coreOfferDetailData(locale, coreKind) : null;
   const networkService = kind === "network" && /^\/services\/[a-z0-9-]+\/[a-z0-9-]+/.test(relative);
   const networkMaster = kind === "network" && /^\/masters\/[a-z0-9-]+/.test(relative);
   const primary = kind === "training" ? trainingEnquiryUrl(locale, pathname)
@@ -142,6 +147,33 @@ export function SitewideLeadCapture() {
               : pathname.includes("wu-xing") ? "/academy/reiki-yggdrasil/source/temple-studies.png"
               : "/images/holistic-house/books-library.webp"
             : "/images/holistic-house/andy-about.png";
+  if (coreDetail && coreKind) {
+    const alternative = locale === "ru"
+      ? { summary: "Предпочитаете сначала бесплатный письменный разбор ситуации?", action: "Открыть бесплатный разбор" }
+      : { summary: "Prefer to start with a free written situation review?", action: "Open the free written review" };
+    const coreWhatsappUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(coreDetail.actionMessage);
+    return (
+      <aside className={styles.section} aria-labelledby="sitewide-capture-title" data-sitewide-capture="core-service" data-core-service-capture={coreKind} lang={locale}>
+        <div className={styles.inner}>
+          <div className={styles.copy}>
+            <p className={styles.eyebrow}>{locale === "ru" ? "ЛИЧНАЯ РАБОТА · С АНДРЕЕМ" : "PERSONAL WORK · WITH ANDREY"}</p>
+            <h2 id="sitewide-capture-title">{coreDetail.action}</h2>
+            <p className={styles.description}>{coreDetail.note}</p>
+            <div className={styles.actions}>
+              <AcquisitionEventLink prefetch={false} className={styles.primary} event="service_request_start" href={coreWhatsappUrl} target="_blank" rel="noopener noreferrer" attributes={{ "data-contact-channel": "whatsapp", "data-service-request": coreKind }}>
+                {coreDetail.action} <ArrowUpRight aria-hidden="true" size={19} />
+              </AcquisitionEventLink>
+            </div>
+            <details className={styles.alternative}>
+              <summary>{alternative.summary}</summary>
+              <Link prefetch={false} href={"/" + locale + "/services/free-situation-review"}>{alternative.action} <ArrowRight aria-hidden="true" size={16}/></Link>
+            </details>
+          </div>
+          <div className={styles.portrait}><Image src={coreDetail.image} alt="" fill sizes="(max-width: 767px) 110px, 224px" /></div>
+        </div>
+      </aside>
+    );
+  }
   if (kind === "personal" || kind === "reading") {
     return (
       <aside className={styles.consultationPanel} data-sitewide-capture={kind} lang={locale}>

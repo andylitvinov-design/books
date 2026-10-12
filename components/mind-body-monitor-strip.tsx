@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowUpRight, Compass } from "lucide-react";
 
 import type { PublicLocale } from "@/lib/public-locales";
@@ -12,7 +15,7 @@ const copy = {
   ru: {
     title: "Бесплатная диагностика ситуации",
     note: "Проясним цель, проблему или точку ступора и найдём следующий шаг.",
-    action: "Записаться бесплатно",
+    action: "Получить бесплатный письменный разбор",
   },
   es: {
     title: "Evaluación inicial gratuita",
@@ -23,10 +26,14 @@ const copy = {
 
 export function MindBodyMonitorStrip({ locale }: { locale: PublicLocale }) {
   const text = copy[locale];
+  const pathname = usePathname();
+  const isFreeReviewPage = /^\/(?:en|ru|es)\/services\/free-situation-review\/?$/.test(pathname);
   // The detailed introductory assessment currently has EN/RU routes only.
-  const href = locale === "es"
-    ? "/en/services/free-situation-review"
-    : `/${locale}/services/free-situation-review`;
+  const href = isFreeReviewPage
+    ? "#request-free-review"
+    : locale === "es"
+      ? "/en/services/free-situation-review"
+      : `/${locale}/services/free-situation-review`;
 
   return (
     <aside className="mind-body-monitor-strip" aria-label={text.title} data-monitor-strip>
