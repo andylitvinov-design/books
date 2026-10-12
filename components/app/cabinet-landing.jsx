@@ -258,12 +258,11 @@ function localZone() {
   }
 }
 
-async function guestFetch(path, body, method, signal) {
+async function guestFetch(path, body, method) {
   const response = await fetch('/api/app/' + path, {
     method: method || (body ? 'POST' : 'GET'),
     cache: 'no-store',
     credentials: 'same-origin',
-    signal,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   })
@@ -344,18 +343,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   useEffect(() => {
     let live = true
-    const controller = new AbortController()
-    const cancelRestore = () => controller.abort()
-    // Full CSP-boundary navigation can leave while this optional restore is
-    // pending. Cancel it explicitly before WebKit tears down the document.
-    window.addEventListener('pagehide', cancelRestore)
-    guestFetch('guest/bootstrap', undefined, undefined, controller.signal)
+    guestFetch('guest/bootstrap')
       .then(async (bootstrap) => {
         if (!live) return
         setSessionExpires(bootstrap.expiresAt)
         setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
         if (!planId) return
-        const plan = await guestFetch('guest/test-plans/' + encodeURIComponent(planId), undefined, undefined, controller.signal)
+        const plan = await guestFetch('guest/test-plans/' + encodeURIComponent(planId))
         if (!live) return
         setActivePlan(plan)
         const planResultRows = (bootstrap.results || []).filter((result) => plan.completedRunIds?.includes(result.runId))
@@ -380,8 +374,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       .catch(() => {})
     return () => {
       live = false
-      window.removeEventListener('pagehide', cancelRestore)
-      controller.abort()
     }
   }, [locale, planId])
 
@@ -1044,4 +1036,3 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     </>
   )
 }
-

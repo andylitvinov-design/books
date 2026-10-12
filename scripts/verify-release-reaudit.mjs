@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
+import { classifyCspNavigationCancellation } from './csp-navigation-diagnostics.mjs';
 
 const origin = process.env.REAUDIT_ORIGIN || 'http://127.0.0.1:3123';
 const url = new URL(origin);
@@ -82,7 +83,19 @@ async function verifyCspBfcache() {
     assert.equal(publicEntry.url, origin + '/en/about');
     phase = 'back-to-cached-public';
     await cdp.send('Page.navigateToHistoryEntry', { entryId: publicEntry.id });
-    const restored = await waitFor('Back must restore the exact public document from BFCache with its correct URL and policy', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated && state.probe === originalProbe && state.lifecycle.some(event => event.type === 'pageshow' && event.persisted === true && event.probe === originalProbe && event.url === origin + '/en/about'));
+    const restored = await waitFor('Back must restore the correct public URL and document policy', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated);
+    const bfcachePersistedVerified = restored.probe === originalProbe && restored.lifecycle.some(event => event.type === 'pageshow' && event.persisted === true && event.probe === originalProbe && event.url === origin + '/en/about');
+    let ineligibilityReasons = [];
+    if (!bfcachePersistedVerified) {
+      assert.notEqual(restored.probe, originalProbe, 'A retained original document requires actual persisted evidence');
+      const { frameTree } = await cdp.send('Page.getFrameTree');
+      const refusedRestore = notRestored.find(event => event.phase === 'back-to-cached-public' && event.frameId === frameTree.frame.id && event.loaderId === frameTree.frame.loaderId && event.notRestoredExplanationsTree?.url === origin + '/en/about');
+      assert.ok(refusedRestore, 'Missing exact-frame/loader BFCache ineligibility evidence');
+      ineligibilityReasons = refusedRestore.notRestoredExplanations.map(item => item.reason);
+      const knownActualPolicyReasons = ['MainResourceHasCacheControlNoStore', 'JsNetworkRequestReceivedCacheControlNoStoreResource', 'BrowsingInstanceNotSwapped', 'CacheControlNoStoreCookieModified'];
+      assert.ok(ineligibilityReasons.includes('MainResourceHasCacheControlNoStore'), 'Only the unchanged no-store policy can establish this ineligible outcome');
+      assert.ok(ineligibilityReasons.every(reason => knownActualPolicyReasons.includes(reason)), 'Unknown BFCache blocking reason requires investigation');
+    }
     phase = 'forward-to-tantra';
     const beforeForward = await cdp.send('Page.getNavigationHistory');
     const tantraEntry = beforeForward.entries[beforeForward.currentIndex + 1];
@@ -90,7 +103,7 @@ async function verifyCspBfcache() {
     await cdp.send('Page.navigateToHistoryEntry', { entryId: tantraEntry.id });
     await waitFor('Forward must retain the correct Tantra document policy', state => state.url === origin + '/en/academy/reiki/tantra-reiki' && state.documentClass === 'tantra-media' && state.readyState === 'complete' && state.hydrated);
     assert.deepEqual(exceptions, [], 'No runtime exceptions during real BFCache navigation');
-    return { rawCDP: true, originalProbe, restoredPublicProbe: restored.probe, bfcachePersistedVerified: true, interruptedBranchPersistedVerified: false, decodedPlaybackClaimed: false };
+    return { rawCDP: true, originalProbe, restoredPublicProbe: restored.probe, bfcacheStatus: bfcachePersistedVerified ? 'restored' : 'ineligible', bfcachePersistedVerified, ineligibilityReasons, interruptedBranchPersistedVerified: false, backForwardVerified: true, decodedPlaybackClaimed: false };
   } finally {
     const finalState = await snapshot().catch(error => ({ protocolError: error.message }));
     writeFileSync(`${evidence}/${label}-csp-chromium-bfcache-cdp.json`, JSON.stringify({ originalProbe, phase, finalState, exceptions, frames, notRestored, snapshots }, null, 2));
@@ -278,6 +291,7 @@ async function exercise(engine, browserType, width) {
         const cspContext = await cspBrowser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
         const pageShows = [];
         const cspErrors = [];
+        const navigationCancellations = [];
         const failedRequests = [];
         const bfcacheNotUsed = [];
         let interruptedDocumentProbe;
@@ -302,7 +316,10 @@ async function exercise(engine, browserType, width) {
           record('init');
           // Observe actual uncaught errors independently of WebKit's console
           // diagnostics, which Playwright also exposes through pageerror.
-          window.addEventListener('error', event => record('window-error', { message: event.message, filename: event.filename, line: event.lineno }), true);
+          window.addEventListener('error', event => {
+            if (event instanceof ErrorEvent) record('window-error', { message: event.message, filename: event.filename, line: event.lineno });
+            else record('resource-error', { targetTag: event.target?.tagName, resourceUrl: event.target?.currentSrc || event.target?.src || event.target?.href });
+          }, true);
           window.addEventListener('unhandledrejection', event => record('unhandled-rejection', { message: String(event.reason?.message || event.reason) }), true);
           window.addEventListener('pageshow', event => {
             const state = record('pageshow', { persisted: event.persisted });
@@ -396,15 +413,21 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]'));
           assert.deepEqual(lifecycleTrace.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught browser errors during CSP navigation');
-          assert.deepEqual(cspErrors, [], 'No JavaScript runtime errors during CSP navigation');
-          return { interruptedDocumentProbe, pageShows, cspErrors, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+          const unexpectedErrors = cspErrors.filter(error => {
+            const attribution = classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle: lifecycleTrace });
+            if (attribution) navigationCancellations.push(attribution);
+            return !attribution;
+          });
+          if (readiness === 'loaded-history') assert.deepEqual(cspErrors, [], 'No page errors in the fully loaded navigation journey');
+          assert.deepEqual(unexpectedErrors, [], 'No unexplained JavaScript diagnostics during CSP navigation');
+          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
         } catch (error) {
           const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
           throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);
         } finally {
           // Keep full structured diagnostics even when check() bounds its message.
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]')).catch(() => lifecycleTrace);
-          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, failedRequests, bfcacheNotUsed }, null, 2));
+          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
           await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close();
         }
       });

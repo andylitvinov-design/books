@@ -87,16 +87,6 @@ test("client CSP classification exactly follows middleware including encoded and
 });
 
 
-test("background cabinet restore is cancelled on document leave without changing transport credentials", async () => {
-  const cabinet = await source("components/app/cabinet-landing.jsx");
-  assert.match(cabinet, /async function guestFetch\(path, body, method, signal\)/);
-  assert.match(cabinet, /credentials: 'same-origin',\s+signal,/);
-  assert.match(cabinet, /guestFetch\('guest\/bootstrap', undefined, undefined, controller\.signal\)/);
-  assert.match(cabinet, /addEventListener\('pagehide', cancelRestore\)/);
-  assert.match(cabinet, /removeEventListener\('pagehide', cancelRestore\)/);
-  assert.match(cabinet, /controller\.abort\(\)/);
-});
-
 test("Yggdrasil copy distinguishes public sources from the unavailable recording", async () => {
   const curriculum = JSON.parse(await source("data/academy/yggdrasil-curriculum.json"));
   const recordings = curriculum.levels.flatMap(level => level.steps.flatMap(step => step.video?.videos ?? []));
