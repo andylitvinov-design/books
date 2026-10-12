@@ -2,13 +2,26 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { isNativePsiAlchemy } from "@/lib/native/client";
+
+function privatePath(pathname: string) {
+  const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
+  return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
+    || /^\/(ru|en)\/report(?:\/|$)/.test(decoded)
+    || /^\/(ru|en)\/prescriptions\//.test(decoded)
+    || /^\/(ru|en)\/app(?:\/|$)/.test(decoded)
+    || /^\/api\/app(?:\/|$)/.test(decoded)
+    || decoded.startsWith('/api/client')
+    || decoded.startsWith('/api/prescriptions/')
+    || decoded.startsWith('/api/prescription-access')
+    || decoded.startsWith('/api/admin/')
+    || /^\/admin(?:\/|$)/.test(decoded)
+    || decoded.startsWith('/document-preview/')
+}
 
 function cspClassForPath(pathname: string) {
   if (pathname === "/admin/videos") return "video-manager";
-  if (/^\/(en|ru|es)\/(client|app)(?:\/|$)/.test(pathname)
-    || /^\/(en|ru)\/(report|prescriptions)(?:\/|$)/.test(pathname)
-    || /^\/(api\/app|api\/client|api\/prescriptions|api\/prescription-access|api\/admin)(?:\/|$)/.test(pathname)
-    || /^\/(admin|document-preview)(?:\/|$)/.test(pathname)) return "private";
+  if (privatePath(pathname)) return "private";
   if (/^\/(en|ru|es)\/academy\/reiki\/tantra-reiki(?:\/|$)/.test(pathname)) return "tantra-media";
   if (pathname.startsWith("/api/")) return "restricted";
   return "public-video";
@@ -26,10 +39,40 @@ export function CspNavigationBoundary() {
 
   useEffect(() => {
     documentClass.current ??= document.body.dataset.cspClass;
+    const crossesPolicy = (url: URL) => url.origin === window.location.origin
+      && documentClass.current && documentClass.current !== cspClassForPath(url.pathname);
+    const onClick = (event: MouseEvent) => {
+      // Native links keep their existing private-link and external-browser policy.
+      if (isNativePsiAlchemy() || event.defaultPrevented || event.button !== 0
+        || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!anchor || anchor.hasAttribute("download") || (anchor.target && anchor.target !== "_self")) return;
+      const url = new URL(anchor.href, window.location.href);
+      if (!crossesPolicy(url)) return;
+      // Capture before Next's link handler commits a page under the old policy.
+      event.preventDefault();
+      window.location.assign(url.href);
+    };
+    const onPopState = () => {
+      if (crossesPolicy(new URL(window.location.href))) window.location.reload();
+    };
+    document.addEventListener("click", onClick, true);
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    documentClass.current ??= document.body.dataset.cspClass;
     if (documentClass.current && documentClass.current !== cspClassForPath(pathname)) {
-      window.location.assign(window.location.href);
+      // Programmatic router/history navigation also needs a fresh document.
+      // Reload, rather than assign, preserves the existing Back/Forward entry.
+      window.location.reload();
     }
   }, [pathname]);
 
   return null;
 }
+

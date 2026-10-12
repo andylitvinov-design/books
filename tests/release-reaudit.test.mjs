@@ -100,3 +100,20 @@ test('long Maya readers wait for rendered content instead of global network idle
   assert.match(block, /reader-article'\)\.waitFor/);
   assert.doesNotMatch(block, /waitUntil: 'networkidle'/);
 });
+
+
+
+test('release browser audit preserves separate free-topic and paid-service safety contracts', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  assert.match(verifier, /check\('consultation-safe-handoff'/);
+  assert.match(verifier, /check\('paid-consultation-safe-handoff'/);
+  assert.match(verifier, /data-consultation-action/);
+  assert.match(verifier, /searchParams\.get\('topic'\)/);
+  assert.match(verifier, /assertPaidUrl\('session', '60', '€100'\)/);
+  assert.match(verifier, /assertPaidUrl\('questions', '30', '€50'\)/);
+  assert.match(verifier, /Reset must restore the exact paid request/);
+  assert.match(verifier, /check\('csp-navigation-and-history'/);
+  assert.match(verifier, /privateIframeBlocked: true/);
+  assert.match(verifier, /decodedPlaybackClaimed: false/);
+  assert.match(verifier, /check\('api-video-csp-restrictive'/);
+});

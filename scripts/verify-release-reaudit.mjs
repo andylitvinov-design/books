@@ -124,25 +124,125 @@ async function exercise(engine, browserType, width) {
         await expect(capture).toHaveCount(1);
         await expect(capture.locator('[role="group"] button')).toHaveCount(4);
         assert.equal(await capture.locator('form, input, textarea').count(), 0, 'Personal details must not be required');
-        const action = capture.locator('[data-contact-channel="whatsapp"]');
-        const originalUrl = new URL(await action.getAttribute('href'));
-        assert.equal(originalUrl.origin, 'https://wa.me');
-        assert.equal(originalUrl.pathname, '/14376066502');
-        assert.ok(originalUrl.searchParams.get('text').trim(), 'Prepared message must not be empty');
-        const selected = capture.locator('[role="group"] button').nth(1);
-        await selected.click();
-        await expect(selected).toHaveAttribute('aria-pressed', 'true');
-        const changedUrl = new URL(await action.getAttribute('href'));
-        assert.equal(changedUrl.origin, 'https://wa.me');
-        assert.equal(changedUrl.pathname, '/14376066502');
-        assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'), 'Selecting a topic must change the prepared message');
-        assert.ok(changedUrl.searchParams.get('text').includes(await selected.innerText()), 'Prepared message must mention the chosen topic');
+        // Personal topics start the free internal assessment. WhatsApp is reserved
+        // for paid service enquiries, not this first step of the free flow.
+        const action = capture.locator('[data-consultation-action]');
+        const assertFreeUrl = raw => {
+          const target = new URL(raw, origin);
+          assert.equal(target.origin, origin);
+          assert.equal(target.pathname, `/${locale}/services/free-situation-review`);
+          assert.deepEqual([...target.searchParams.keys()], ['topic'], 'Only the non-sensitive topic may be in the URL');
+          return target;
+        };
+        const originalUrl = assertFreeUrl(await action.getAttribute('href'));
+        assert.equal(originalUrl.searchParams.get('topic'), 'personal');
+        assert.equal(await capture.locator('[data-contact-channel="whatsapp"]').count(), 0);
+        for (const [index, topic] of ['goal', 'business', 'wellbeing'].entries()) {
+          const selected = capture.locator('[role="group"] button').nth(index + 1);
+          await selected.click();
+          await expect(selected).toHaveAttribute('aria-pressed', 'true');
+          await expect(action).toHaveAttribute('data-consultation-action', topic);
+          assert.equal(assertFreeUrl(await action.getAttribute('href')).searchParams.get('topic'), topic);
+        }
         await capture.locator('[role="group"] button').nth(0).click();
-        const resetUrl = new URL(await action.getAttribute('href'));
-        assert.equal(resetUrl.searchParams.get('text'), originalUrl.searchParams.get('text'), 'Resetting topic must restore the original message');
-        assert.equal(await page.locator('[data-consultation-capture="personal"] form').count(), 0);
+        await expect(action).toHaveAttribute('data-consultation-action', 'personal');
+        assert.equal(assertFreeUrl(await action.getAttribute('href')).href, originalUrl.href, 'Resetting topic must restore the original destination');
         assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
-        return { externalNavigationIntercepted: false, messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true };
+        return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
+      });
+      await check('paid-consultation-safe-handoff', { engine, width, locale }, async () => {
+        await page.goto(origin + `/${locale}/services/psychohomeopathy`, { waitUntil: 'networkidle' });
+        const capture = page.locator('[data-consultation-capture="service"]');
+        await expect(capture).toHaveCount(1);
+        await expect(capture.locator('[role="group"] button')).toHaveCount(3);
+        assert.equal(await capture.locator('form, input, textarea').count(), 0, 'No private intake fields in the enquiry selector');
+        const action = capture.locator('[data-consultation-action]');
+        const assertPaidUrl = async (choice, minutes, price) => {
+          await expect(action).toHaveAttribute('data-consultation-action', choice);
+          await expect(action).toHaveAttribute('data-contact-channel', 'whatsapp');
+          await expect(action).toHaveAttribute('target', '_blank');
+          await expect(action).toHaveAttribute('rel', /noopener/);
+          const target = new URL(await action.getAttribute('href'));
+          assert.equal(target.origin, 'https://wa.me');
+          assert.equal(target.pathname, '/14376066502');
+          assert.deepEqual([...target.searchParams.keys()], ['text']);
+          const message = target.searchParams.get('text');
+          assert.ok(message?.trim(), 'Prepared message must not be empty');
+          assert.ok(message.includes(minutes) && message.includes(price), 'Prepared message must include the selected duration and price');
+          assert.ok(message.includes(await capture.locator('[aria-pressed="true"]').innerText()), 'Prepared message must mention the selected offer');
+          return target;
+        };
+        const originalUrl = await assertPaidUrl('session', '60', '€100');
+        await capture.locator('[role="group"] button').nth(1).click();
+        const changedUrl = await assertPaidUrl('questions', '30', '€50');
+        assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'));
+        await capture.locator('[role="group"] button').nth(2).click();
+        await expect(action).toHaveAttribute('data-consultation-action', 'free');
+        assert.equal(await action.getAttribute('data-contact-channel'), null);
+        assert.equal(await action.getAttribute('target'), null);
+        const freeUrl = new URL(await action.getAttribute('href'), origin);
+        assert.equal(freeUrl.href, origin + `/${locale}/services/free-situation-review`);
+        await capture.locator('[role="group"] button').nth(0).click();
+        assert.equal((await assertPaidUrl('session', '60', '€100')).href, originalUrl.href, 'Reset must restore the exact paid request');
+        assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
+        return { messageSent: false, privateFieldsAbsent: true, paidPricesVerified: true, freeAssessmentInternal: true, resetVerified: true };
+      });
+    }
+    if (width === 390) {
+      await check('csp-navigation-and-history', { engine, width }, async () => {
+        // New context isolates document policies and service-worker caching. This
+        // checks real navigation/CSP enforcement, not third-party video decoding.
+        const cspContext = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
+        const cspPage = await cspContext.newPage();
+        await cspPage.route('https://app.heygen.com/embeds/**', route => route.fulfill({ contentType: 'text/html', body: '<p data-csp-probe>Allowed embed reached</p>' }));
+        try {
+          await cspPage.goto(origin + '/en/about', { waitUntil: 'networkidle' });
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await cspPage.locator('#psychic-alchemy-video button').click();
+          await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'same-public-document'; });
+          await cspPage.locator('.site-navigation a[href="/en/services"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/services');
+          await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
+          await cspPage.locator('.site-navigation a[href="/en/client"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/client');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Entering private must load a new document');
+          await cspPage.evaluate(() => {
+            window.__cspViolations = [];
+            document.addEventListener('securitypolicyviolation', event => window.__cspViolations.push(event.effectiveDirective));
+            const frame = document.createElement('iframe');
+            frame.src = 'https://app.heygen.com/embeds/csp-private-probe';
+            document.body.append(frame);
+          });
+          await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
+          await cspPage.locator('.site-navigation a[href="/en/about"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/about');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await cspPage.locator('#psychic-alchemy-video button').click();
+          await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'before-tantra'; });
+          // Next supports native history navigation; exercise the programmatic
+          // fallback too, rather than relying only on the anchor interceptor.
+          await cspPage.evaluate(() => history.pushState(null, '', '/en/academy/reiki/tantra-reiki'));
+          await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Tantra media policy requires a fresh document');
+          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/about');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/client');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/about');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
+          return { samePolicySoftNavigation: true, privatePublicReload: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+        } finally { await cspContext.close(); }
       });
     }
     if (width === 390) {
@@ -223,6 +323,30 @@ await Promise.all([exercise('chromium', chromium, 390), exercise('chromium', chr
 const browser = await chromium.launch();
 const context = await browser.newContext();
 try {
+  for (const locale of ['en', 'ru', 'es']) {
+    for (const [path, policy] of [[`/${locale}/about`, 'public'], [`/${locale}/academy/reiki/tantra-reiki`, 'tantra'], [`/${locale}/client`, 'private']]) {
+      await check('scoped-video-csp-headers', { path, policy }, async () => {
+        const response = await context.request.get(origin + path);
+        assert.equal(response.status(), 200);
+        const csp = response.headers()['content-security-policy'];
+        assert.ok(csp, 'Missing document policy');
+        const directives = Object.fromEntries(csp.split(';').map(value => value.trim().split(/\s+/)).map(([name, ...values]) => [name, values]));
+        assert.deepEqual(directives['frame-src'], policy === 'private' ? ["'none'"] : ['https://www.youtube-nocookie.com', 'https://app.heygen.com']);
+        assert.deepEqual(directives['media-src'], policy === 'tantra' ? ["'self'", 'https://www.psitrends.com'] : ["'self'"]);
+        for (const directive of ['object-src', 'base-uri', 'frame-ancestors']) assert.deepEqual(directives[directive], ["'none'"]);
+        return { exactAllowlist: true, nativeMediaScoped: true };
+      });
+    }
+  }
+  await check('api-video-csp-restrictive', {}, async () => {
+    const response = await context.request.get(origin + '/api/csp-regression-nonexistent');
+    assert.equal(response.status(), 404);
+    const csp = response.headers()['content-security-policy'] || '';
+    assert.match(csp, /(?:^|;)\s*frame-src 'none'(?:;|$)/);
+    assert.match(csp, /(?:^|;)\s*media-src 'self'(?:;|$)/);
+    assert.doesNotMatch(csp, /youtube-nocookie|app\.heygen|psitrends/);
+    return { privateDataRead: false, apiEmbedBlocked: true };
+  });
   await check('consultation-SSR-privacy', {}, async () => {
     const response = await context.request.get(origin + '/en/about');
     const html = await response.text();
@@ -262,3 +386,4 @@ const failed = results.filter(row => !row.ok);
 writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results }, null, 2));
 console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed }, null, 2));
 if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');
+
