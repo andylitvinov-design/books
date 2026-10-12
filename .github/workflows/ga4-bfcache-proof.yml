@@ -29,8 +29,6 @@ jobs:
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
-      PLAYWRIGHT_BROWSERS_PATH: /tmp/hh-ga4-proof-browsers
-      HH_GA4_PLAYWRIGHT_MODULE: /tmp/hh-ga4-proof-tools/node_modules/playwright
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
@@ -38,10 +36,12 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - run: node --test tests/ga4-bfcache-proof-harness.test.mjs tests/ga4-safety-hold.test.mjs
-      - name: Install official isolated Chromium
+      - name: Verify preinstalled official Chrome with existing vendor sandbox profile
         run: |
-          npm install --prefix /tmp/hh-ga4-proof-tools --no-audit --no-fund playwright@1.57.0
-          /tmp/hh-ga4-proof-tools/node_modules/.bin/playwright install --with-deps chromium
+          test -x /opt/google/chrome/chrome
+          test -r /etc/apparmor.d/chrome
+          /opt/google/chrome/chrome --version
+          dpkg-query -W google-chrome-stable
       - name: Read official SDK without analytics execution
         run: |
           mkdir -p artifacts/ga4-bfcache-proof
