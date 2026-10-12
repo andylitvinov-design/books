@@ -18,8 +18,8 @@ test("three free entrances plus two personal services retain all original local 
     assert.ok(offers.includes('id: "' + key + '"'), key);
   for (const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + route + '"'), route);
-  assert.match(offers, /Free DAO Health & Resource Profile/);
-  assert.match(offers, /Дао-диагностика здоровья/);
+  assert.match(offers, /Free Wu Xing Resource Profile/);
+  assert.match(offers, /Бесплатный профиль ресурсов У-Син/);
   assert.match(offers, /Alchemy of the Soul/);
   assert.match(offers, /Курс гипнотерапии/);
   assert.match(ui, /id="methods"/);
@@ -72,6 +72,8 @@ test("free diagnostic retains private-data-safe explicit WhatsApp send, with few
   assert.match(intake, /Copy answers & open WhatsApp/);
   assert.match(intake, /onClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
   assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
+  assert.match(intake, /readyRef\.current\?\.focus\(\)/);
+  assert.match(intake, /Nothing has been sent/);
   assert.match(intake, /Only the broad topic and the generic request enter the WhatsApp URL/);
   assert.match(tracking, /onClick\?\.\(\); emit\(event\)/);
   assert.match(freePage, /sampleCopy/);
