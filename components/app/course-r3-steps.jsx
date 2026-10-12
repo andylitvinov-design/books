@@ -135,7 +135,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     try {
       const selected=chosenTests.map(key=>optionByKey.get(key))
       if(selected.some(item=>!item)) throw new Error('INVALID_PLAN_ITEM')
-      const existing=new Set(assessment.planKeys||[])
+      const existing=new Set(assessment.planStatus==='cancelled'?[]:(assessment.planKeys||[]))
       const missing=selected.filter(item=>!existing.has(item.key))
       if(missing.length) await saveExistingAccountPlan(missing.map(item=>({
         definitionKey:item.key,definitionVersion:item.definitionVersion,instrumentLocale:item.instrumentLocale,
@@ -236,7 +236,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         <div className={styles.allScales}>{profile.scales.map(item=><div key={item.id} className={styles.scaleRow}>
           <div><strong>{item.label}</strong><small>{item.testTitle} · {formatDate(item.measuredAt,locale)}</small>
             <small>{item.recent?'':t.older} {item.axisLabel}</small></div>
-          <div className={styles.score}><strong>{item.score} / {item.max}</strong>
+          <div className={styles.score}><strong>{item.score}<small>{item.min}–{item.max}</small></strong>
             <Link href={root+'/results/'+encodeURIComponent(item.resultId)}>{t.report}</Link></div>
         </div>)}</div>
       </details>:<p>{t.profileNone}</p>}
@@ -249,7 +249,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
             <input type="checkbox" checked={chosenScales.includes(item.id)} disabled={busy||(!chosenScales.includes(item.id)&&chosenScales.length>=5)}
               onChange={()=>toggleScale(item.id)}/>
             <span><strong>{item.label}</strong>
-              <small>{item.testTitle} · {item.score} / {item.max}</small>
+              <small>{item.testTitle} · {item.score} ({item.min}–{item.max})</small>
               <small>{item.practice}</small></span>
             <em>{item.priorityPercent}%<small>{t.relativePriority}</small></em>
           </label>)}
