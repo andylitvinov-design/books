@@ -137,9 +137,7 @@ async function assertPublicViewportFits(target,label){
 }
 async function verifyPublicServiceConversionJourneys(){
  const publicContext=await browser.newContext({viewport:{width:390,height:844}})
- const publicPage=await publicContext.newPage()
  const publicErrors=[]
- publicPage.on('pageerror',error=>publicErrors.push(error.message))
  const services=[
   ['dao-health-profile','dao',{en:'Free Wu Xing Resource Profile',ru:'Бесплатный профиль ресурсов У-Син'}],
   ['alchemy-of-soul','alchemy',{en:'Alchemy of the Soul',ru:'Алхимия души'}],
@@ -147,14 +145,16 @@ async function verifyPublicServiceConversionJourneys(){
  ]
  for(const locale of ['en','ru']){
   for(const [slug,kind,names] of services){
+   const servicePage=await publicContext.newPage()
+   servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
-    await publicPage.setViewportSize({width,height:844})
-    await publicPage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
-    await expect(publicPage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
-    await assertPublicViewportFits(publicPage,locale+'/'+slug+'/'+width)
-    if(width===390||width===1280)await publicPage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
+    await servicePage.setViewportSize({width,height:844})
+    await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
+    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
+    if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
     if(width!==390)continue
-    const capture=publicPage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
+    const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
     await capture.scrollIntoViewIfNeeded()
     await expect(capture).toBeVisible({timeout:30000})
     const cta=capture.locator('a[data-contact-channel="whatsapp"]')
@@ -167,8 +167,11 @@ async function verifyPublicServiceConversionJourneys(){
     await alternative.locator('summary').click()
     await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
    }
+   await servicePage.close()
   }
  }
+ const publicPage=await publicContext.newPage()
+ publicPage.on('pageerror',error=>publicErrors.push(error.message))
  for(const locale of ['en','ru']){
   const copy=locale==='ru'
    ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
