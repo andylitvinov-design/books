@@ -10,6 +10,52 @@ await mkdir(evidence, { recursive: true });
 const results = [];
 let app;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const navigationTraceKey = 'hh-home-entry-navigation-trace';
+
+async function installEntryDiagnostics(context, page) {
+  const requests = [];
+  await context.addInitScript(({ key }) => {
+    const probe = Math.random().toString(36).slice(2);
+    const record = (type, details = {}) => {
+      try {
+        const items = JSON.parse(sessionStorage.getItem(key) || '[]');
+        items.push({ type, time: Date.now(), probe, url: location.href, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), ...details });
+        sessionStorage.setItem(key, JSON.stringify(items.slice(-500)));
+      } catch {}
+    };
+    record('init');
+    for (const event of ['pageshow', 'pagehide', 'popstate', 'DOMContentLoaded', 'load']) {
+      window.addEventListener(event, value => record(event, { persisted: Boolean(value.persisted) }), true);
+    }
+    document.addEventListener('click', event => {
+      const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+      if (!link) return;
+      const details = { href: link.href, offer: link.closest('[data-free-insights-offer]')?.dataset.freeInsightsOffer || null, trusted: event.isTrusted, x: event.clientX, y: event.clientY };
+      record('click-capture', { ...details, prevented: event.defaultPrevented });
+      queueMicrotask(() => record('click-after', { ...details, prevented: event.defaultPrevented }));
+    }, true);
+    for (const method of ['pushState', 'replaceState']) {
+      const original = history[method];
+      history[method] = function (...args) {
+        record(`history-${method}`, { destination: args[2] == null ? null : String(args[2]) });
+        return Reflect.apply(original, this, args);
+      };
+    }
+  }, { key: navigationTraceKey });
+  const relevant = request => {
+    const url = new URL(request.url());
+    return url.origin === origin && (request.isNavigationRequest() || url.searchParams.has('_rsc') || url.pathname === '/api/app/guest/bootstrap');
+  };
+  for (const event of ['request', 'requestfinished', 'requestfailed']) {
+    page.on(event, request => {
+      if (relevant(request)) requests.push({ event, time: Date.now(), pageUrl: page.url(), url: request.url(), method: request.method(), failure: request.failure()?.errorText || null });
+    });
+  }
+  page.on('response', response => {
+    if (relevant(response.request())) requests.push({ event: 'response', time: Date.now(), pageUrl: page.url(), url: response.url(), status: response.status() });
+  });
+  return requests;
+}
 
 async function verifyFreeOffers(page, locale, engine, width) {
   const free = page.locator('[data-free-insights="public"]');
@@ -60,7 +106,10 @@ async function exerciseFreeJourneys(page, engine, width) {
           assert.deepEqual(await response.json(), { expiresAt: null, moodCheckins: [], results: [] });
         })
         : Promise.resolve();
-      await page.locator(`[data-free-insights="public"] [data-free-insights-offer="${id}"] a`).click();
+      const cta = page.locator(`[data-free-insights="public"] [data-free-insights-offer="${id}"] a`);
+      const beforeClick = await cta.evaluate(element => ({ url: location.href, href: element.href, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), reactProps: Object.keys(element).some(key => key.startsWith('__reactProps$')) }));
+      results.push({ engine, width, locale, entryClickAttempt: id, time: Date.now(), beforeClick });
+      await cta.click();
       await expect(page).toHaveURL(`${origin}/${locale}${suffix}`);
       await expect(page.locator(target)).toBeVisible();
       if (id === 'stress') await expect(page.locator('#cabinet-tests')).toHaveCount(1);
@@ -82,6 +131,7 @@ async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
   const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
   const page = await context.newPage();
+  const navigationRequests = await installEntryDiagnostics(context, page);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   let delayedLocale = null;
@@ -213,6 +263,8 @@ async function exercise(engine, browserType, width) {
     await page.screenshot({ path: `${evidence}/failed-${engine}-${width}.png`, fullPage: true }).catch(() => {});
     throw error;
   } finally {
+    const lifecycle = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key) || '[]'), navigationTraceKey).catch(() => []);
+    await writeFile(`${evidence}/${live ? 'live' : 'local'}-${engine}-${width}-navigation-diagnostics.json`, JSON.stringify({ engine, width, lifecycle, requests: navigationRequests, errors }, null, 2));
     await context.close();
     await browser.close();
   }
