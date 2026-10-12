@@ -71,7 +71,10 @@ test("free review and imagery therapy have real EN/RU/ES pages and honest contac
   assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
   assert.match(intake, /wa\.me/);
   assert.match(intake, /Nothing is sent automatically/);
-  assert.doesNotMatch(form + intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
+  assert.doesNotMatch(form + intake, /localStorage|sessionStorage|sendBeacon/);
+  assert.match(intake, /fetch\("\/api\/public-leads"/);
+  assert.match(intake, /JSON\.stringify\(\{[\s\S]*email,[\s\S]*preferredContact,[\s\S]*topic,[\s\S]*locale,[\s\S]*consentToContact/);
+  assert.match(intake, /body: JSON\.stringify\(\{ email, preferredContact, topic, locale, consentToContact \}\)/);
 });
 
 test("service links remain tappable, mobile-safe and keyboard accessible", () => {

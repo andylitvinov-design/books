@@ -16,7 +16,7 @@ test("iteration 1: home hero leads directly to a free handwritten drawing assess
   assert.doesNotMatch(home, /href="#start-here"/);
 });
 
-test("iteration 2: first contact is a real coaching form with a drawing requirement, without server-side storage", () => {
+test("iteration 2: first contact keeps the coaching form local and records only a minimal first-party receipt", () => {
   const intake = readFileSync(new URL("../components/free-drawing-intake.tsx", import.meta.url), "utf8");
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
   assert.match(intake, /useState<Topic>\("personal"\)/);
@@ -25,7 +25,10 @@ test("iteration 2: first contact is a real coaching form with a drawing requirem
   assert.match(intake, /not a medical or mental-health diagnosis/i);
   assert.match(intake, /Nothing is sent automatically/);
   assert.match(intake, /handwritten drawing/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|new FormData|sendBeacon|fetch\(/);
+  assert.doesNotMatch(intake, /localStorage|sessionStorage|new FormData|sendBeacon/);
+  assert.match(intake, /fetch\("\/api\/public-leads"/);
+  assert.match(intake, /JSON\.stringify\(\{ email, preferredContact, topic, locale, consentToContact \}\)/);
+  assert.doesNotMatch(intake, /JSON\.stringify\([^)]*(?:problem|goal|obstacle|tried|answers|drawing)/);
 });
 
 test("iteration 3: grounded personal introduction and contextual testimonial CTA", () => {

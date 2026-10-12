@@ -37,6 +37,17 @@ const copy = {
     copyFallback: "Select and copy the text below, then paste it into WhatsApp.",
     openWhatsapp: "Copy answers & open WhatsApp",
     sendNote: "Paste the copied answers and attach your drawing photo. If copying was blocked, use Copy answers here. Nothing is sent automatically.",
+    receiptTitle: "Step 1 — record my request",
+    receiptLead: "Leave an email so Andrey can acknowledge your request. Your questionnaire answers and drawing are not sent or stored here.",
+    emailLabel: "Email for a reply",
+    contactLabel: "Preferred reply channel",
+    emailOption: "Email",
+    whatsappOption: "WhatsApp after I send my materials",
+    receiptConsent: "I agree that Holistic House may use this email only to reply about this free written review.",
+    receiptSubmit: "Record my request",
+    receiptSending: "Recording request…",
+    receiptReceived: "Your request has been received. Next, paste your answers and attach the drawing photo in WhatsApp. Opening WhatsApp does not change this receipt status.",
+    receiptError: "We could not record your request. Please try again; do not assume a WhatsApp click is a received request.",
     privacy: "This page does not upload or store your answers or drawing. You choose what to send in WhatsApp. The written report is a symbolic situation review, not a medical or mental-health diagnosis.",
     questionLabel: "Coaching questionnaire — free drawing assessment",
     request: "Request: Please review my coaching answers and handwritten drawing (ME / MY GOAL / MY PROBLEM) and send me a personal written report.",
@@ -71,6 +82,17 @@ const copy = {
     copyFallback: "Выделите и скопируйте текст ниже, затем вставьте его в WhatsApp.",
     openWhatsapp: "Скопировать ответы и открыть WhatsApp",
     sendNote: "Вставьте скопированные ответы и фото рисунка. Если копирование заблокировано, вернитесь к кнопке «Скопировать ответы». Автоматически ничего не отправляется.",
+    receiptTitle: "Шаг 1 — зафиксировать запрос",
+    receiptLead: "Оставьте email, чтобы Андрей мог подтвердить запрос. Ответы анкеты и рисунок здесь не отправляются и не хранятся.",
+    emailLabel: "Email для ответа",
+    contactLabel: "Предпочтительный канал ответа",
+    emailOption: "Email",
+    whatsappOption: "WhatsApp после отправки материалов",
+    receiptConsent: "Я согласен(-на), чтобы Holistic House использовал этот email только для ответа о бесплатном письменном разборе.",
+    receiptSubmit: "Зафиксировать мой запрос",
+    receiptSending: "Фиксируем запрос…",
+    receiptReceived: "Ваш запрос получен. Теперь вставьте ответы и приложите фото рисунка в WhatsApp. Открытие WhatsApp не меняет статус получения запроса.",
+    receiptError: "Не удалось зафиксировать запрос. Повторите попытку; не считайте клик по WhatsApp полученной заявкой.",
     privacy: "Страница не загружает и не хранит ваши ответы и рисунок. Вы сами выбираете, что отправить через WhatsApp. Отчёт — символический разбор ситуации, а не медицинский или психиатрический диагноз.",
     questionLabel: "Коучинг-форма — бесплатная диагностика по рисунку",
     request: "Запрос: прошу провести диагностику по моим ответам и рисунку (Я / МОЯ ЦЕЛЬ / МОЯ ПРОБЛЕМА) и прислать персональный письменный отчёт.",
@@ -105,6 +127,17 @@ const copy = {
     copyFallback: "Selecciona y copia el texto siguiente y pégalo en WhatsApp.",
     openWhatsapp: "Copiar respuestas y abrir WhatsApp",
     sendNote: "Pega las respuestas copiadas y adjunta la foto. Si falla la copia, usa el botón Copiar respuestas. Nada se envía automáticamente.",
+    receiptTitle: "Paso 1 — registrar mi solicitud",
+    receiptLead: "Deja un email para que Andrey pueda confirmar tu solicitud. Tus respuestas y dibujo no se envían ni se guardan aquí.",
+    emailLabel: "Email para responder",
+    contactLabel: "Canal de respuesta preferido",
+    emailOption: "Email",
+    whatsappOption: "WhatsApp después de enviar mis materiales",
+    receiptConsent: "Acepto que Holistic House use este email solo para responder sobre esta revisión escrita gratuita.",
+    receiptSubmit: "Registrar mi solicitud",
+    receiptSending: "Registrando solicitud…",
+    receiptReceived: "Tu solicitud se recibió. Ahora pega las respuestas y adjunta la foto del dibujo en WhatsApp. Abrir WhatsApp no cambia este estado.",
+    receiptError: "No pudimos registrar tu solicitud. Inténtalo de nuevo; no consideres un clic en WhatsApp como una solicitud recibida.",
     privacy: "Esta página no sube ni guarda tus respuestas ni tu dibujo. Tú decides qué enviar por WhatsApp. El informe es una reflexión simbólica sobre la situación, no un diagnóstico médico ni de salud mental.",
     questionLabel: "Formulario de coaching — evaluación gratuita mediante dibujo",
     request: "Solicitud: analiza mis respuestas y mi dibujo a mano (YO / MI META / MI PROBLEMA) y envíame un informe escrito personal.",
@@ -127,6 +160,10 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
   const [prepared, setPrepared] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
+  const [email, setEmail] = useState("");
+  const [preferredContact, setPreferredContact] = useState<"email" | "whatsapp">("email");
+  const [consentToContact, setConsentToContact] = useState(false);
+  const [receiptState, setReceiptState] = useState<"idle" | "sending" | "received" | "error">("idle");
   const questionnaireStarted = useRef(false);
 
   useEffect(() => {
@@ -169,6 +206,23 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
       setCopyFailed(false);
     } catch {
       setCopyFailed(true);
+    }
+  }
+
+  async function recordRequest(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setReceiptState("sending");
+    try {
+      const response = await fetch("/api/public-leads" + window.location.search, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, preferredContact, topic, locale, consentToContact }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.status !== "PUBLIC_LEAD_RECEIVED") throw new Error("receipt unavailable");
+      setReceiptState("received");
+    } catch {
+      setReceiptState("error");
     }
   }
 
@@ -219,6 +273,22 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
         <h3>{t.ready}</h3>
         <textarea className={styles.preview} readOnly value={answers} rows={7} aria-label={t.ready}
           onFocus={event => event.currentTarget.select()} />
+        <form className={styles.receipt} onSubmit={recordRequest}>
+          <h4>{t.receiptTitle}</h4>
+          <p>{t.receiptLead}</p>
+          <label className={styles.field}>{t.emailLabel}
+            <input required type="email" autoComplete="email" maxLength={254} value={email} onChange={event => { setEmail(event.target.value); setReceiptState("idle"); }} />
+          </label>
+          <label className={styles.field}>{t.contactLabel}
+            <select value={preferredContact} onChange={event => setPreferredContact(event.target.value as "email" | "whatsapp")}>
+              <option value="email">{t.emailOption}</option>
+              <option value="whatsapp">{t.whatsappOption}</option>
+            </select>
+          </label>
+          <label className={styles.consent}><input required type="checkbox" checked={consentToContact} onChange={event => setConsentToContact(event.target.checked)} />{t.receiptConsent}</label>
+          <button className={styles.receiptButton} type="submit" disabled={receiptState === "sending" || receiptState === "received"}>{receiptState === "sending" ? t.receiptSending : t.receiptSubmit}</button>
+          <p className={styles.receiptStatus} aria-live="polite" data-status={receiptState}>{receiptState === "received" ? t.receiptReceived : receiptState === "error" ? t.receiptError : null}</p>
+        </form>
         <AcquisitionEventLink className={styles.whatsapp} href={whatsappUrl} prefetch={false} target="_blank" rel="noopener noreferrer"
           event="whatsapp_handoff_click" onClick={() => { void copyAnswers(); }} attributes={{ "data-contact-channel": "whatsapp" }}>
           <Send size={18} aria-hidden="true" />{t.openWhatsapp}<ArrowUpRight size={18} aria-hidden="true" />
