@@ -146,9 +146,13 @@ try{
   await file.saveAs(output+'/report-'+locale+'.pdf')
   passed(locale+' PDF download includes persisted original typology report model')
  }
+ // One consented guest completes four instruments, retaining the same private
+ // cookie while changing UI language and runner mode. Creating a new guest for
+ // every instrument exhausts the unchanged 12/IP/hour limit after earlier suites.
+ const guest=await browser.newContext({viewport:{width:390,height:844}})
+ await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
  for(const [i,base] of defs.entries()){
-  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale),guest=await browser.newContext({viewport:{width:390,height:844}})
-  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
+  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale)
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale}],operationId:randomUUID()})
   page=await guest.newPage();observePage(page,'guest-'+locale+'-'+mode)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
@@ -159,10 +163,14 @@ try{
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(d.scoring.dimensions.length).fill(d.key==='hh-disc-style-20'?15:12))
   assert.equal(result.instrumentLocale,locale);assert.equal(result.contentHash,d.contentHash)
   passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
-  await guest.close()
+  await page.waitForLoadState('networkidle')
+  await page.close()
  }
+ const guestResults=(await api(guest,'guest/bootstrap')).results
+ assert.deepEqual(guestResults.map(result=>result.definitionKey).sort(),defs.map(d=>d.key).sort())
+ await guest.close()
  assert.deepEqual(errors,[])
- await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,browser:await browser.version(),checks,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,browser:await browser.version(),checks,guestSessions:1,guestResults:guestResults.length,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
 } catch(error){
  await page?.screenshot({path:output+'/failure.png',fullPage:false}).catch(()=>{})
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message},null,2));throw error
