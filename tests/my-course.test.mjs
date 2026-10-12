@@ -116,3 +116,37 @@ test('course state is authenticated, encrypted, owner-scoped and not copied to b
   assert.doesNotMatch(client, /localStorage|sessionStorage|dangerouslySetInnerHTML/)
   assert.doesNotMatch(service, /select \* from app\.assessment_runs(?! where account_id)/)
 })
+
+test('first-screen free start and user-directed tests remain distinct from course intake', () => {
+  const ui = read('components/app/my-course.jsx')
+  const css = read('components/app/my-course.module.css')
+  const explorer = read('components/app/test-explorer.jsx')
+  const battery = read('components/app/account-test-battery.jsx')
+
+  const landing = ui.indexOf('stage === 0 && <header')
+  const firstCta = ui.indexOf('{t.start}<ArrowRight', landing)
+  const details = ui.indexOf('id="course-details"', landing)
+  const intake = ui.indexOf('stage === 1 && <section')
+  assert.ok(landing >= 0 && firstCta > landing && details > firstCta)
+  assert.ok(intake > details, 'concerns and test suggestions belong after consented start')
+  assert.equal((ui.match(/\{t\.start\}<ArrowRight/g) || []).length, 2)
+  assert.match(ui, /ref=\{startDialogRef\}/)
+  assert.match(ui, /startDialogRef\.current\?\.showModal\(\)/)
+  assert.match(ui, /disabled=\{!optIn \|\| busy\}/)
+  assert.match(ui, /void act\('start', \{ consent: true \}\)/)
+  assert.match(css, /\.heroActions/)
+  assert.match(css, /\.details/)
+
+  // Suggestions only lead to a review; the explicitly chosen list is
+  // saved by the account's existing, server-backed test-plan API.
+  assert.match(ui, /showSuggestions && <div/)
+  assert.match(ui, /openTestFinder\(item\.key\)/)
+  assert.match(ui, /course: '1'/)
+  assert.match(ui, /router\.push\(root \+ '\/tests\?' \+ params\.toString\(\)\)/)
+  assert.match(battery, /const fromCourse = searchParams\.get\('course'\) === '1'/)
+  assert.match(battery, /explicitSelectionOnly=\{fromCourse\}/)
+  assert.match(battery, /router\.replace\(fromCourse \? root \+ '\/course'/)
+  assert.match(explorer, /const activeBattery = explicitSelectionOnly\s*\? selected/)
+  assert.match(explorer, /!activeBattery\.length \|\| starting \|\| !onStart/)
+  assert.doesNotMatch(ui, /localStorage|sessionStorage|dangerouslySetInnerHTML/)
+})
