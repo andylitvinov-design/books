@@ -648,7 +648,8 @@ try {
  const afterRemove=(await api('bootstrap')).data
  assert.equal(afterRemove.results.length,beforeRemove.results.length,'removing a test must not delete results')
  assert.equal(afterRemove.runs.length,beforeRemove.runs.length,'removing a test must not delete drafts')
- assert.ok(await page.getByText('Removed from selection.',{exact:false}).count())
+ // The server poll can finish before reload() renders the removal notice.
+ await expect(page.getByText('Removed from selection.',{exact:false})).toBeVisible({timeout:15000})
  passed('first-screen test removal updates current plan while preserving private results and drafts')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
