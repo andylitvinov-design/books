@@ -126,7 +126,8 @@ export function SitewideLeadCapture() {
   const c = copy[locale][kind];
   const relative = pathname.replace(/^\/(en|ru|es)(?=\/|$)/, "");
   const coreMatch = relative.match(/^\/services\/(dao-health-profile|alchemy-of-soul|hypnotherapy-course)\/?$/);
-  const coreKind: DetailKind | null = coreMatch ? ({ "dao-health-profile": "dao", "alchemy-of-soul": "alchemy", "hypnotherapy-course": "hypnotherapy" } as const)[coreMatch[1]] : null;
+  const coreSlugToKind: Record<string, DetailKind> = { "dao-health-profile": "dao", "alchemy-of-soul": "alchemy", "hypnotherapy-course": "hypnotherapy" };
+  const coreKind = coreMatch ? coreSlugToKind[coreMatch[1]] || null : null;
   const coreDetail = coreKind && locale !== "es" ? coreOfferDetailData(locale, coreKind) : null;
   const networkService = kind === "network" && /^\/services\/[a-z0-9-]+\/[a-z0-9-]+/.test(relative);
   const networkMaster = kind === "network" && /^\/masters\/[a-z0-9-]+/.test(relative);
