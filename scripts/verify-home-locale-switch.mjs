@@ -61,7 +61,20 @@ async function exercise(engine, browserType, width) {
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
     const offers = page.locator('[data-core-service-offers="home"]');
     await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
-    await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
+    const freeInsights = page.locator('[data-free-insights="public"]');
+    await expect(freeInsights).toHaveCount(1);
+    const freeOfferCards = freeInsights.locator('[data-free-insights-offer]');
+    await expect(freeOfferCards).toHaveCount(3);
+    assert.deepEqual(await freeOfferCards.evaluateAll(cards => cards.map(card => card.getAttribute('data-free-insights-offer'))), ['situation', 'wu', 'stress']);
+    for (const [id, route] of [
+      ['situation', '/en/services/free-situation-review'],
+      ['wu', '/en/services/dao-health-profile'],
+      ['stress', '/en/client#cabinet-tests'],
+    ]) {
+      const cta = freeInsights.locator('[data-free-insights-offer="' + id + '"] a');
+      await expect(cta).toHaveAttribute('href', route);
+      await expect(cta).toBeVisible();
+    }
     await expect(offers.locator('[data-core-service-id]')).toHaveCount(4);
     for (const id of ['situation', 'dao', 'alchemy', 'hypnotherapy']) {
       await expect(offers.locator('[data-core-service-id="' + id + '"]')).toHaveCount(1);
