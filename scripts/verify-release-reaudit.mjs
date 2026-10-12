@@ -194,6 +194,9 @@ async function exercise(engine, browserType, width) {
         // checks real navigation/CSP enforcement, not third-party video decoding.
         const cspContext = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
         const cspPage = await cspContext.newPage();
+        const navigationTrace = [];
+        cspPage.on('framenavigated', frame => { if (frame === cspPage.mainFrame()) navigationTrace.push(frame.url()); });
+        cspPage.on('pageerror', error => navigationTrace.push('JS: ' + error.message));
         await cspPage.route('https://app.heygen.com/embeds/**', route => route.fulfill({ contentType: 'text/html', body: '<p data-csp-probe>Allowed embed reached</p>' }));
         try {
           await cspPage.goto(origin + '/en/about', { waitUntil: 'networkidle' });
@@ -242,6 +245,9 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
           return { samePolicySoftNavigation: true, privatePublicReload: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+        } catch (error) {
+          const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
+          throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}`);
         } finally { await cspContext.close(); }
       });
     }

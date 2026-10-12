@@ -34,6 +34,9 @@ test("CSP class boundary reloads only cross-policy client navigation", async () 
   assert.match(boundary, /removeEventListener\("click", onClick, true\)/);
   assert.match(boundary, /addEventListener\("popstate", onPopState\)/);
   assert.match(boundary, /removeEventListener\("popstate", onPopState\)/);
+  assert.match(boundary, /addEventListener\("pageshow", onPopState\)/);
+  assert.match(boundary, /removeEventListener\("pageshow", onPopState\)/);
+  assert.match(boundary, /cspClassForPath\(window\.location\.pathname\)/);
   assert.match(boundary, /tantra-media/);
   assert.match(boundary, /private/);
 });

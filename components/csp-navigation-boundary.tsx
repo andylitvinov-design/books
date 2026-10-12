@@ -58,15 +58,20 @@ export function CspNavigationBoundary() {
     };
     document.addEventListener("click", onClick, true);
     window.addEventListener("popstate", onPopState);
+    window.addEventListener("pageshow", onPopState);
+    // Back can occur before hydration installs listeners, and bfcache restores
+    // a document without remounting React. Always compare the actual address.
+    onPopState();
     return () => {
       document.removeEventListener("click", onClick, true);
       window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("pageshow", onPopState);
     };
   }, []);
 
   useEffect(() => {
     documentClass.current ??= document.body.dataset.cspClass;
-    if (documentClass.current && documentClass.current !== cspClassForPath(pathname)) {
+    if (documentClass.current && documentClass.current !== cspClassForPath(window.location.pathname)) {
       // Programmatic router/history navigation also needs a fresh document.
       // Reload, rather than assign, preserves the existing Back/Forward entry.
       window.location.reload();
