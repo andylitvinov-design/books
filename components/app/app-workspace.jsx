@@ -14,6 +14,7 @@ import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
+import { TestRating } from '@/components/app/test-rating'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
 import { periodComparison, periodWindow, resultsForPeriod } from '@/lib/assessments/dashboard-gauges'
@@ -2476,6 +2477,7 @@ function ResultPage({ id, locale, data }) {
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
       <PersonalResultReport result={result} locale={locale} previous={previous} />
+      <TestRating result={result} locale={locale} />
       <div className="hh-result-repeat">
         {canRepeat
           ? <button type="button" onClick={repeatTest} disabled={retaking}>

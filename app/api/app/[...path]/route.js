@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
+import { createTestRatingRepository } from '@/lib/app/test-ratings'
 import { createAppRepository } from '@/lib/app/repository'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
@@ -240,6 +241,10 @@ async function handle(request, { params }) {
       return json(await readSaveIntent(config, path[1], proof, getPrescriptionStore()))
     }
 
+    if (joined === 'test-ratings' && method === 'GET') {
+      await consumeRate(config, { op: 'test-rating-summary', ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown' }, 120, 60)
+      return json(await createTestRatingRepository(config).summaries())
+    }
     const guestRepo = createGuestRepository(config)
     if (joined === 'guest/session' && method === 'POST') {
       if (!config.guestEnabled) throw new AppError('GUEST_UNAVAILABLE', 503)
@@ -409,11 +414,22 @@ async function handle(request, { params }) {
         }
       }
       exported.savedReports = savedReports
+      exported.testRatings = await createTestRatingRepository(config).export(actor)
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
       const response = json(exported)
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
       return response
+    }
+    if (path[0] === 'results' && path.length === 3 && path[2] === 'rating') {
+      const ratings = createTestRatingRepository(config)
+      if (method === 'GET') return json(await ratings.read(actor, path[1]))
+      if (method === 'POST' || method === 'DELETE') {
+        await consumeRate(config, { op: 'test-rating-write', actor: actor.id }, 30, 600)
+        const input = await readBody(request, 1024)
+        return json(await (method === 'DELETE' ? ratings.remove(actor, path[1], input) : ratings.save(actor, path[1], input)))
+      }
+      throw new AppError('NOT_FOUND', 404)
     }
     if (path[0] === 'runs' && path.length === 2 && method === 'GET')
       return json(await repo.getRun(actor, path[1]))
@@ -491,4 +507,4 @@ async function handle(request, { params }) {
     return auth ? auth.apply(response) : response
   }
 }
-export { handle as GET, handle as POST }
+export { handle as GET, handle as POST, handle as DELETE }

@@ -7,6 +7,7 @@ import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
+import { TestRating } from '@/components/app/test-rating'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
@@ -965,6 +966,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             </section>
 
             <PersonalResultReport result={guestResult} locale={locale} />
+            <TestRating result={guestResult} locale={locale} audience="guest" onSaveResult={saveToCabinet} disabled={busy} />
             <div className="cabinet-result-actions-grid">
               <section className="cabinet-result-save-panel">
                 <p className="about-kicker">{locale === 'ru' ? 'Сохранить динамику' : 'Keep your history'}</p>

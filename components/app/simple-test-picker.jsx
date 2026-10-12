@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
+import { TestRatingSummary, TestRatingSort } from './test-rating'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 
@@ -97,6 +98,7 @@ export function SimpleTestPicker({
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   professionalOnly, onProfessional,
+  ratingData = { summaries: {}, loading: false, unavailable: false }, sort = 'recommended', onSort,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
   matchCount, onStart, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
@@ -215,6 +217,7 @@ export function SimpleTestPicker({
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
+      <TestRatingSort value={sort} onChange={onSort} locale={locale} unavailable={ratingData.unavailable} loading={ratingData.loading} />
       <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
       <details className={styles.why}>
         <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
@@ -241,7 +244,7 @@ export function SimpleTestPicker({
               <small><Clock3 size={14} aria-hidden="true"/> ~{entry.durationMinutes ?? '—'} min</small>
             </span>
           </label>
-          <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>
+          <div className={styles.testGuide}><TestRatingSummary summary={ratingData.summaries[entry.definition?.id]} locale={locale} unavailable={ratingData.unavailable} loading={ratingData.loading} /><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>
           </div>
         })}
       </div> : <p className={styles.noMatches} role="status">{c.none}</p>}

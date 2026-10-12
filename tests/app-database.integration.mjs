@@ -1492,3 +1492,7 @@ test('MHC-SF guest persistence retains zero, source sums and private bilingual r
     }
   }
 })
+
+// Ratings share the existing isolated database setup and synthetic auth fixtures.
+import { registerTestRatingTests } from './test-ratings.integration.mjs'
+registerTestRatingTests({ config, repo })
