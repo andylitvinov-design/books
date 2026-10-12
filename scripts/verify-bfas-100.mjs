@@ -125,6 +125,9 @@ try{
  // Both account runs are the same exact form and remain compatible in history.
  const snapshot=await api(account,'bootstrap')
  assert.ok(snapshot.results.filter(r=>r.definitionKey==='bfas-100').length>=2)
+ const historyReads=[]
+ const collectHistoryRead=request=>{if(request.url().endsWith('/api/app/shared-materials')&&request.method()==='GET')historyReads.push(request)}
+ page.on('request',collectHistoryRead)
  const historyMaterials=page.waitForResponse(response=>response.url().endsWith('/api/app/shared-materials')&&response.request().method()==='GET')
  await navigate(page,origin+'/en/app/history')
  await expect(page.getByRole('heading',{name:d.title,exact:true}).first()).toBeVisible({timeout:20000})
@@ -135,7 +138,16 @@ try{
  assert.ok(materialsResponse.ok())
  assert.ok(Array.isArray((await materialsResponse.json()).materials))
  await materialsResponse.finished()
- await page.waitForLoadState('networkidle')
+ // networkidle can already have fired before these passive-effect reads.
+ // Join every request that actually started, including StrictMode's replay.
+ await Promise.all(historyReads.map(async request=>{
+  const response=await request.response()
+  assert.ok(response?.ok())
+  assert.ok(Array.isArray((await response.json()).materials))
+  await response.finished()
+ }))
+ page.off('request',collectHistoryRead)
+ console.log('BFAS_HISTORY_MATERIALS_READY',historyReads.length)
  await navigate(page,origin+'/ru/app/portfolio')
  await expect(page.locator('.hh-insights-test-card').filter({hasText:'BFAS-100'})).toHaveCount(1,{timeout:20000})
  passed('full BFAS appears once as an instrument in Insights and compatible history retains both attempts')
