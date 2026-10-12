@@ -90,8 +90,9 @@ test('one private six-milestone route reuses tests, insights and keeps mobile bo
   assert.match(shell, /root \+ '\/course'/)
   assert.match(shell, /hh-mobile-app-nav/)
   assert.match(css, /repeat\(6,minmax\(0,1fr\)\)/)
-  assert.match(ui, /href=\{root \+ '\/tests'\}/)
-  assert.match(ui, /href=\{root \+ '\/portfolio'\}/)
+  const r3=read('components/app/course-r3-steps.jsx')
+  assert.match(r3, /root\+'\/tests/)
+  assert.match(r3, /root\+'\/portfolio/)
   assert.match(ui, /COURSE_STEPS/)
 })
 
