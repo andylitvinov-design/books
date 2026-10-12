@@ -158,8 +158,9 @@ try{
  for(let batch=0;await voluntary.count()===0&&batch<21;batch++)
   await picker.getByRole('button',{name:/^Show \d+ more tests$/}).click()
  await expect(voluntary).toBeChecked()
+ await expect(picker.locator('[data-public-selected-tests]')).toContainText('Love & Affection')
  const saveVoluntary=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
- await picker.getByRole('button',{name:'Start free monitoring',exact:true}).click()
+ await picker.getByRole('button',{name:/^Start free monitoring/}).click()
  const voluntaryResponse=await saveVoluntary
  assert.ok(voluntaryResponse.ok())
  const voluntaryPlan=await voluntaryResponse.json()
