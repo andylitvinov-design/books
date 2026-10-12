@@ -42,6 +42,9 @@ test("coaching form is real, ephemeral, mobile-friendly and does not leak respon
   assert.match(intake, /<textarea required/);
   assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
   assert.match(intake, /setPrepared\(true\)/);
+  assert.match(intake, /readyRef\.current\?\.focus\(\)/);
+  assert.match(intake, /Nothing has been sent/);
+  assert.match(intake, /aria-live="polite"/);
   assert.match(intake, /"https:\/\/wa\.me\/" \+ phone/);
   assert.match(intake, /encodeURIComponent\(\s*\[t\.whatsappIntro/);
   assert.doesNotMatch(intake, /encodeURIComponent\((?:answers|problem|goal|obstacle|tried)\)/);
