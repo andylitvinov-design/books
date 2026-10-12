@@ -122,6 +122,9 @@ async function enterTest(name='Current State Check',mode='Guided'){
  }else await expect(page.locator('.hh-quick-form')).toBeVisible()
 }
 async function savedClick(button){
+ // Keep this long synthetic journey below the unchanged account request quota.
+ // Faster CI machines otherwise exhaust it during Mini-IPIP and the next draft.
+ await page.waitForTimeout(750)
  const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/save')&&r.request().method()==='POST'),button.click()])
  assert.equal(response.status(),200,'Server must acknowledge each save')
  await expect(page.getByRole('status')).toHaveText('Saved securely')
