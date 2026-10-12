@@ -5,7 +5,7 @@ import { generatePractitionerReportPdf } from '../lib/profile/practitioner-repor
 
 const src = path => readFile(path, 'utf8')
 
-test('both authorized cabinets expose Personal Analysis and the two existing first-party free services', async () => {
+test('both authorized cabinets expose three photo-led free Analysis offers and report links', async () => {
   const [google, route, legacy, legacyRoute, panel, style] = await Promise.all([
     src('components/app/app-workspace.jsx'),
     src('app/[locale]/app/[[...path]]/page.jsx'),
@@ -28,12 +28,18 @@ test('both authorized cabinets expose Personal Analysis and the two existing fir
   assert.match(legacyRoute, /\['analysis', 'profile'\]\.includes\(requestedView\)/)
   assert.match(panel, /services\/free-situation-review/)
   assert.match(panel, /services\/dao-health-profile/)
+  assert.match(panel, /\/app\/tests\?mode=recommendations/)
+  assert.match(panel, /\/client\/tests/)
+  assert.match(panel, /data-analysis-offer=\{offer\.id\}/)
+  assert.match(panel, /<Image src=\{offer\.image\}/)
+  assert.match(panel, /services\/alchemy-of-soul/)
   assert.match(panel, /Я — Цель — Проблема/)
   assert.match(panel, /У-Син/)
   assert.match(panel, /not a medical diagnosis/)
   assert.match(panel, /БЕСПЛАТНО/)
-  assert.match(style, /@media \(max-width:760px\)/)
+  assert.match(style, /@media \(max-width: 620px\)/)
   assert.match(style, /\.hh-analysis-offers \{ grid-template-columns: 1fr/)
+  assert.match(style, /\.hh-analysis-reports-empty/)
 })
 
 test('Google Cabinet lists only explicitly saved practitioner reports and downloads authenticated current versions', async () => {
