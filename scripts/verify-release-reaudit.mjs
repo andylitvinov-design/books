@@ -149,9 +149,35 @@ async function exercise(engine, browserType, width) {
     try { frameUrl = request.frame()?.url() ?? null; } catch { /* Service-worker requests do not have a frame. */ }
     return { phase: publicPhase, time: Date.now(), url: request.url(), method: request.method(), resourceType: request.resourceType(), frameUrl };
   };
-  page.on('request', request => publicDiagnostics.requests.push(requestDetails(request)));
-  page.on('requestfinished', request => publicDiagnostics.responses.push({ ...requestDetails(request), event: 'requestfinished' }));
-  page.on('requestfailed', request => publicDiagnostics.failedRequests.push({ ...requestDetails(request), error: request.failure()?.errorText }));
+  const pendingPublicRequests = new Set();
+  let lastPublicRequestActivity = Date.now();
+  const finishPublicRequest = request => {
+    if (pendingPublicRequests.delete(request)) lastPublicRequestActivity = Date.now();
+  };
+  page.on('request', request => {
+    publicDiagnostics.requests.push(requestDetails(request));
+    if (new URL(request.url()).origin === origin) {
+      pendingPublicRequests.add(request);
+      lastPublicRequestActivity = Date.now();
+    }
+  });
+  page.on('requestfinished', request => {
+    publicDiagnostics.responses.push({ ...requestDetails(request), event: 'requestfinished' });
+    finishPublicRequest(request);
+  });
+  page.on('requestfailed', request => {
+    publicDiagnostics.failedRequests.push({ ...requestDetails(request), error: request.failure()?.errorText });
+    finishPublicRequest(request);
+  });
+  const settlePublicDocument = async stage => {
+    // A previously reached Playwright networkidle state can precede hydration's
+    // queued Next prefetches. Observe their actual completion after hydration,
+    // including requests triggered by poster scrolling, before replacing a page.
+    await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')), { timeout: 15000 }).toBe(true);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await expect.poll(() => pendingPublicRequests.size === 0 && Date.now() - lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
+    publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: pendingPublicRequests.size, lastRequestActivity: lastPublicRequestActivity });
+  };
   try {
     for (const [path, locale] of routes) {
       await check('public-page', { engine, width, path }, async () => {
@@ -161,6 +187,7 @@ async function exercise(engine, browserType, width) {
         const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
+        await settlePublicDocument('before-assertions');
         const state = await page.evaluate(() => ({ lang: document.querySelector('main')?.lang, htmlLang: document.documentElement.lang, overflow: document.documentElement.scrollWidth - innerWidth, title: document.querySelector('h1')?.textContent, players: document.querySelectorAll('.site-video-player').length, iframesBeforeClick: document.querySelectorAll('.site-video-player iframe').length }));
         assert.equal(state.htmlLang, locale, 'Document language must match the visible page locale');
         assert.equal(state.lang || state.htmlLang, locale, 'Effective page language (including valid inheritance)');
@@ -197,6 +224,10 @@ async function exercise(engine, browserType, width) {
           await page.evaluate(() => scrollTo(0, 0));
           await page.screenshot({ path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`, fullPage: true });
         }
+        await settlePublicDocument('before-next-navigation');
+        assert.deepEqual(errors, [], 'No page errors after public poster decoding and scrolling');
+        publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
+        assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors before leaving the public document');
         return state;
       });
     }
