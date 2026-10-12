@@ -110,3 +110,60 @@
 .scoreGrid span strong{font-size:12px;color:#655649}
 .scoreGrid span small{font-size:14px;color:#446b57;font-weight:700}
 @media(max-width:530px){.scoreGrid{grid-template-columns:1fr 1fr}.scoreGrid span{padding:8px}}
+
+/* My Course conversion: the first mobile viewport is a promise and a usable CTA,
+   while the steps/details live in the next section. Personal questions stay post-opt-in. */
+.hero{padding:clamp(21px,3vw,34px);background:linear-gradient(125deg,#fffcf6,#eff3e9)}
+.hero h1{font-size:clamp(32px,4.4vw,44px);line-height:1.12;margin:7px 0 13px}
+.hero .heroLead{font-size:clamp(16px,2vw,18px)!important;line-height:1.5!important;max-width:550px}
+.heroActions{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:23px}
+.heroActions .hh-primary,.details>.hh-primary{min-height:50px;display:inline-flex;justify-content:center;align-items:center;gap:10px}
+.details{display:grid;gap:14px;padding:clamp(20px,3vw,30px);scroll-margin-top:30px}
+.details h2{font-size:clamp(23px,3vw,30px);margin:0}
+.details>p:not(.hh-kicker){margin:0;color:#726559;font-size:15px;line-height:1.55}
+.details .timeline{margin:6px 0 2px}
+.details>.hh-primary{justify-self:start}
+.startDialog{border:1px solid #dccdbd;border-radius:22px;background:#fffcf7;color:var(--hh-ink);padding:clamp(22px,4vw,34px);width:min(92vw,490px);max-height:min(85dvh,650px);overflow:auto;box-shadow:0 24px 70px #34291d30}
+.startDialog[open]{display:grid;gap:18px}
+.startDialog::backdrop{background:#2d342fa6}
+.startDialog h2{margin:0;font-size:clamp(23px,4vw,29px)}
+.startDialog p{font-size:15px;line-height:1.55;color:#6c5e53;margin:0}
+.startDialog .consent{font-size:14px}
+.dialogActions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.dialogActions button{min-height:45px}
+.dialogActions .hh-primary{display:inline-flex;align-items:center;gap:9px}
+.activeProgress{display:flex;align-items:center;justify-content:space-between;gap:20px;color:#547361;font-size:13px;padding:0 4px}
+.activeProgress progress{height:9px;flex:1;max-width:260px;border:none;border-radius:999px;overflow:hidden;accent-color:#35695b}
+.activeProgress progress::-webkit-progress-bar{background:#e9dfd2;border-radius:999px}
+.activeProgress progress::-webkit-progress-value{background:#35695b;border-radius:999px}
+.themes{display:grid;gap:4px}
+.themes>strong,.testChoices>strong{font-size:16px}
+.optionalDetails{border:1px solid var(--course-line);border-radius:15px;background:#fffdf9;padding:12px 15px}
+.optionalDetails summary{font-weight:700;color:#4c5f52;cursor:pointer}
+.optionalDetails[open]{display:grid;gap:13px}
+.optionalDetails label{display:block;margin-top:6px}
+.optionalDetails .suggestButton{margin-top:4px}
+.optionalDetails textarea{min-height:95px}
+.testChoices{display:grid;gap:10px;padding:17px 18px;border:1px solid #d9e5d8;background:#f5f9f3;border-radius:17px}
+.testChoices>p{line-height:1.45}
+.testChoices>.hh-primary{width:100%;min-height:51px;display:flex;justify-content:center;gap:10px}
+.suggestionToggle{justify-self:start;background:transparent!important;color:#35695b!important;border:0!important;text-decoration:underline;text-underline-offset:3px;padding:6px 0!important;min-height:32px!important;font-size:14px!important;font-weight:700}
+.testChoices .testMatches{margin-top:4px}
+.testChoices .testMatch{width:100%;border:1px solid #eadfd2;cursor:pointer;text-align:left;min-height:53px}
+.testChoices .testMatch:hover,.testChoices .testMatch:focus-visible{border-color:#87ae94;background:#f4f8f1}
+.testChoices .testMatch span{min-width:0}
+.testChoices .testMatch svg{flex-shrink:0}
+@media(max-width:530px){
+  .hero{padding:22px 20px}
+  .hero h1{font-size:34px}
+  .heroActions{display:grid;gap:10px;margin-top:21px}
+  .heroActions .hh-primary,.details>.hh-primary{width:100%;min-height:54px}
+  .heroActions .textLink{justify-self:center}
+  .details{gap:15px;padding:20px}
+  .details .timeline{gap:8px}
+  .details .timeline li{min-height:92px}
+  .dialogActions{display:grid}
+  .dialogActions button{width:100%}
+  .testChoices{padding:16px 14px}
+  .activeProgress{padding:3px 0}
+}
