@@ -165,6 +165,7 @@ try{
  await expect(voluntary).toBeChecked()
  await expect(picker.locator('[data-public-selected-tests]')).toContainText('Love & Affection')
  const saveVoluntary=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
+ const loadVoluntary=page.waitForResponse(r=>/\/api\/app\/test-plans\/[^/?]+$/.test(r.url())&&r.request().method()==='GET')
  await picker.getByRole('button',{name:/^Start free monitoring/}).click()
  const voluntaryResponse=await saveVoluntary
  assert.ok(voluntaryResponse.ok())
@@ -173,14 +174,22 @@ try{
  assert.ok(!voluntaryPlan.definitionIds.includes(localized('hh-sexual-self-kindness','en').id))
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/)
  await expect(page.locator('#my-tests-list')).toBeVisible()
+ const loadedVoluntary=await loadVoluntary
+ assert.ok(loadedVoluntary.ok());assert.equal((await loadedVoluntary.json()).id,voluntaryPlan.id)
+ await loadedVoluntary.finished()
  await page.waitForLoadState('networkidle')
+ const reloadVoluntary=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans/'+voluntaryPlan.id)&&r.request().method()==='GET')
  await page.reload()
  await expect(page.locator('#my-tests-list')).toBeVisible()
+ const reloadedVoluntary=await reloadVoluntary
+ assert.ok(reloadedVoluntary.ok());assert.equal((await reloadedVoluntary.json()).id,voluntaryPlan.id)
+ await reloadedVoluntary.finished()
  const savedChoice=await api(account,'bootstrap')
  assert.ok(savedChoice.activeTestPlan.definitionIds.includes(localized('hh-love-affection','en').id))
  passed('explicit relationship choice survives broader filters, private plan saving and reload without adding other intimate forms')
  await navigate(page,origin+'/en/client/tests?test=hh-love-affection')
  const selectionResponse=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
+ const selectionLoaded=page.waitForResponse(r=>/\/api\/app\/test-plans\/[^/?]+$/.test(r.url())&&r.request().method()==='GET')
  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  const selection=await selectionResponse
  assert.ok(selection.ok())
@@ -188,6 +197,11 @@ try{
  assert.ok(savedPlan.definitionIds.includes(localized('hh-love-affection','en').id))
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/)
  await expect(page.locator('#my-tests-list')).toBeVisible()
+ // The dashboard shell renders before its requested plan finishes loading.
+ // Verify the real read before leaving, so WebKit never aborts it mid-request.
+ const loadedSelection=await selectionLoaded
+ assert.ok(loadedSelection.ok());assert.equal((await loadedSelection.json()).id,savedPlan.id)
+ await loadedSelection.finished()
  passed('keyboard selection and signed-in hub selection preserve the intended questionnaire in the private plan')
  const d=defs[0]
  let repeat=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})

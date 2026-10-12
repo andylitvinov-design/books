@@ -41,6 +41,7 @@ const result = (def, value, day) => ({
 test('monitoring catalog exposes the cleared active checks and keeps uncleared measures metadata-only', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable).map((item) => item.key).sort()
   assert.deepEqual(active, [
+    'mhc-sf',
     'scs-sf',
     'compassion-scale',
     'brcs',
