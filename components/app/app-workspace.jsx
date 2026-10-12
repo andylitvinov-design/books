@@ -1786,8 +1786,8 @@ function PortfolioPage({ data, locale }) {
           <p className="hh-kicker">Insights · Holistic House</p>
           <h1 id="hh-insights-title">{ru ? 'Мои пройденные тесты' : 'My completed tests'}</h1>
           <p>{ru
-            ? 'Выберите тест, чтобы прочитать именно его результаты, объяснение и рекомендации. Измерения остаются приватными.'
-            : 'Choose a completed test to read its results, interpretation and practical recommendations. Your results stay private.'}</p>
+            ? 'Ваши пройденные тесты — как панель приборов. Каждый спидометр показывает отдельную шкалу, а не процент здоровья.'
+            : 'Your tests, displayed like a dashboard. Each dial shows its own scale, not an overall health percentage.'}</p>
         </div>
         <span className="hh-insights-total">{groups.length} {ru ? 'пройдено' : 'completed'}</span>
       </header>
@@ -1809,6 +1809,9 @@ function PortfolioPage({ data, locale }) {
         <label>{ru ? 'С' : 'From'} <input type="date" value={periodStart} onChange={event => setPeriodStart(event.target.value)} /></label>
         <label>{ru ? 'По' : 'To'} <input type="date" value={periodEnd} onChange={event => setPeriodEnd(event.target.value)} /></label>
       </div>}
+      <p className="hh-insights-period-guide">{ru
+        ? 'Стрелки сравнивают последний результат с первым совместимым замером за выбранный период. Личностные шкалы нейтральны.'
+        : 'Trend arrows compare your latest result with the earliest compatible measure in this period. Personality traits are neutral.'}</p>
       {!validPeriod ? (
         <div className="hh-insights-empty hh-panel" role="status">
           <p>{ru ? 'Выберите корректные даты начала и конца периода.' : 'Choose valid start and end dates for comparison.'}</p>
@@ -1830,7 +1833,7 @@ function PortfolioPage({ data, locale }) {
                     </div>
                     <h2>{group.title}</h2>
                     {first && <p className="hh-insights-test-summary">{first.construct}: <strong>{first.value}</strong> · {first.band}</p>}
-                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} compact />}
+                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} />}
                     {latest.dimensions?.length > 1 &&
                       <p className="hh-insights-test-scores">+ {latest.dimensions.length - 1} {ru ? 'дополнительных шкал' : 'more scales'}</p>}
                     <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
@@ -2414,9 +2417,7 @@ function ResultPage({ id, locale, data }) {
           <p className="hh-kicker">{c.result}</p>
           <h1>{title}</h1>
           <p className="hh-result-intro">
-            {monitoringCatalogItem(result.definitionKey)?.description?.[locale] ||
-              monitoringCatalogItem(result.definitionKey)?.description?.en ||
-              (locale === 'ru' ? 'Ваши ответы по этому конкретному тесту, с пояснениями и рекомендациями ниже.' : 'Your responses to this specific assessment, with interpretation and recommendations below.')}
+            {locale === 'ru' ? 'Ваш результат и два практических шага на неделю.' : 'Your score and two practical next steps for this week.'}
           </p>
         </div>
         <div className="hh-result-meta">
