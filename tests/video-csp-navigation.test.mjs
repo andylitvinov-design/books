@@ -33,3 +33,14 @@ test("library video cards use existing public destinations", async () => {
   assert.match(library, /href: "\/ru\/homeopathy"/);
   assert.doesNotMatch(library, /href: "\/ru\/"/);
 });
+
+test("private Yggdrasil recording stays listed without a playable provider id", async () => {
+  const [curriculum, courses, player] = await Promise.all([
+    source("data/academy/yggdrasil-curriculum.json"), source("components/academy-video-courses.tsx"), source("components/academy-video-library-client.tsx"),
+  ]);
+  assert.doesNotMatch(curriculum, /FxOE-cEAnP4/);
+  assert.match(curriculum, /"availability": "unavailable"/);
+  assert.match(courses, /video\.availability === "unavailable"/);
+  assert.match(player, /lesson\.unavailable/);
+  assert.match(player, /not publicly playable/);
+});

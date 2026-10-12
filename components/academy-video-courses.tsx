@@ -74,7 +74,7 @@ type YggdrasilCourseSource = {
       id: string;
       number: number;
       title: Record<PublicLocale, string>;
-      video?: { videos?: Array<{ youtubeId?: string; title?: string }> };
+      video?: { videos?: Array<{ youtubeId?: string; title?: string; availability?: "unavailable" }> };
     }>;
   }>;
 };
@@ -126,17 +126,19 @@ function yggdrasilCourses(locale: PublicLocale): AcademyVideoCourse[] {
   return curriculum.levels.map((module) => {
     const chapters = module.steps.flatMap((step) => {
       const found = (step.video?.videos ?? []).filter(
-        (video): video is { youtubeId: string; title?: string } =>
-          typeof video.youtubeId === "string" && validVideoId.test(video.youtubeId),
+        (video): video is { youtubeId?: string; title?: string; availability?: "unavailable" } =>
+          (typeof video.youtubeId === "string" && validVideoId.test(video.youtubeId)) || video.availability === "unavailable",
       );
       const seen = new Set<string>();
       const videos: AcademyVideoLesson[] = [];
       found.forEach((video) => {
-        if (seen.has(video.youtubeId)) return;
-        seen.add(video.youtubeId);
+        const id = video.youtubeId ?? "unavailable-" + step.id + "-" + videos.length;
+        if (seen.has(id)) return;
+        seen.add(id);
         videos.push({
-          id: video.youtubeId,
+          id,
           title: t.clip + " " + (videos.length + 1) + (found.length > 1 ? " / " + found.length : ""),
+          unavailable: video.availability === "unavailable",
         });
       });
       return videos.length ? [{
@@ -145,7 +147,7 @@ function yggdrasilCourses(locale: PublicLocale): AcademyVideoCourse[] {
         videos,
       }] : [];
     });
-    const first = chapters[0]?.videos[0]?.id;
+    const first = chapters.flatMap((chapter) => chapter.videos).find((video) => !video.unavailable)?.id;
     return {
       id: "yggdrasil-module-" + module.id,
       title: module.title[locale],
