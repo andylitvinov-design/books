@@ -25,7 +25,7 @@ const UI = {
     allDone: 'All selected tests have compatible completed results.', review: 'See my measured profile',
     reviewDisabled: 'Complete each remaining selected test to see your full profile.',
     profileTitle: 'Your current measured profile', profileIntro: 'These are the latest compatible scales from the tests you selected. Select any report to read its interpretation.',
-    profileLink: 'Open full results portfolio', profileNone: 'No eligible measurements yet. Choose other questionnaires or review existing reports.',
+    profileLink: 'Open full results portfolio', scaleGuide: 'Each bar shows the raw position in that questionnaire’s own range, not a health grade.', profileNone: 'No eligible measurements yet. Choose other questionnaires or review existing reports.',
     priorities: 'Seven possible focus areas', prioritiesHint: 'Ranked by position inside each individual questionnaire’s range, with symptom/resource directions interpreted correctly. This is not a clinical norm or comparable health percentage.',
     chooseScales: 'Choose 3–5 scales to practise', chooseScalesShort: 'Fewer valid scales are available. You can choose the available ones or take more tests.',
     share: 'areas selected', showOthers: 'Show all other eligible scales', noGoals: 'No suitable directional scales are available yet. You may choose a general skill, clearly not inferred from test results.',
@@ -55,7 +55,7 @@ const UI = {
     allDone: 'Все выбранные тесты уже пройдены в совместимых версиях.', review: 'Посмотреть мой профиль',
     reviewDisabled: 'Для полного профиля сначала пройдите недостающие выбранные тесты.',
     profileTitle: 'Мой текущий профиль по тестам', profileIntro: 'Здесь реальные шкалы из выбранных тестов и последние совместимые результаты. Нажмите на отчёт, чтобы увидеть подробности.',
-    profileLink: 'Открыть полный профиль результатов', profileNone: 'Пока нет подходящих измерений. Можно подобрать дополнительные тесты или посмотреть прошлые отчёты.',
+    profileLink: 'Открыть полный профиль результатов', scaleGuide: 'Полоска показывает положение балла внутри шкалы конкретного теста, а не уровень здоровья.', profileNone: 'Пока нет подходящих измерений. Можно подобрать дополнительные тесты или посмотреть прошлые отчёты.',
     priorities: 'Семь возможных направлений работы', prioritiesHint: 'Сортировка по положению внутри шкалы с учётом направления симптомов и ресурсов. Это не медицинская норма и не общий процент психического здоровья.',
     chooseScales: 'Выберите 3–5 шкал для практики', chooseScalesShort: 'Доступно меньше трёх корректных шкал. Можно выбрать имеющиеся или пройти дополнительные тесты.',
     share: 'шкал выбрано', showOthers: 'Показать остальные доступные шкалы', noGoals: 'Пока нет подходящих шкал с однозначным направлением. Можно выбрать общие навыки, но они не считаются выводом из тестов.',
@@ -231,15 +231,22 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     return <section className={'hh-panel '+styles.section} data-course-profile>
       <h2>{t.profileTitle}</h2><p>{t.profileIntro}</p>
       <Link className={styles.link} href={root+'/portfolio'}>{t.profileLink}<ArrowRight size={16}/></Link>
-      {profile.scales.length>0?<details className={styles.details}>
-        <summary>{t.otherScales} ({profile.scales.length})</summary>
+      {profile.scales.length>0?<section className={styles.measuredPanel} aria-label={t.otherScales}>
+        <div className={styles.profileHeading}>
+          <h3>{t.otherScales} ({profile.scales.length})</h3><p className={styles.small}>{t.scaleGuide}</p>
+        </div>
         <div className={styles.allScales}>{profile.scales.map(item=><div key={item.id} className={styles.scaleRow}>
-          <div><strong>{item.label}</strong><small>{item.testTitle} · {formatDate(item.measuredAt,locale)}</small>
-            <small>{item.recent?'':t.older} {item.axisLabel}</small></div>
+          <div className={styles.scaleDetail}>
+            <strong>{item.label}</strong>
+            <small>{item.testTitle} · {formatDate(item.measuredAt,locale)}</small>
+            <meter className={styles.scaleMeter} min={item.min} max={item.max} value={item.score}
+              aria-label={item.label+' · '+item.score+' / '+item.max}/>
+            <small>{item.recent?'':t.older} {item.axisLabel}</small>
+          </div>
           <div className={styles.score}><strong>{item.score}<small>{item.min}–{item.max}</small></strong>
             <Link href={root+'/results/'+encodeURIComponent(item.resultId)}>{t.report}</Link></div>
         </div>)}</div>
-      </details>:<p>{t.profileNone}</p>}
+      </section>:<p>{t.profileNone}</p>}
       {direct?<><h3>{t.priorities}</h3><p className={styles.small}>{t.prioritiesHint}</p>
         <h3>{t.chooseScales}</h3>
         {profile.eligible.length<3&&<p className={styles.small}>{t.chooseScalesShort}</p>}
