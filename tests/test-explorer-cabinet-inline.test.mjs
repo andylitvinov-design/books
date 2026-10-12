@@ -146,3 +146,17 @@ test('Client lead block offers local choice and pre-fills existing reviewed enqu
   assert.match(css, /background:radial-gradient/)
   assert.match(css, /@media\(max-width:600px\)/)
 })
+
+test('signed-in and full database test selector use the same monitoring CTA as the easy pre-login picker', () => {
+  const full = read('components/app/test-explorer.jsx')
+  const simple = read('components/app/simple-test-picker.jsx')
+  for (const label of [
+    'Start free monitoring',
+    'Начать бесплатный мониторинг',
+    'Iniciar monitoreo gratuito',
+  ]) {
+    assert.ok(full.includes(label), 'Full explorer: ' + label)
+    assert.ok(simple.includes(label), 'Simple explorer: ' + label)
+  }
+  assert.doesNotMatch(full, /Start free testing|Пройти тестирование бесплатно|Comenzar pruebas gratuitas/)
+})
