@@ -4,9 +4,9 @@
 // Failure to observe pageshow.persisted=true is a blocker, never a pass.
 import assert from 'node:assert/strict';
 import {assertFallbackPairs,assertNoSensitiveFields,assertCdpHeaderCoverage} from '../tests/fixtures/ga4-rewrite-root/network-checks.mjs';
-import {readFileSync,writeFileSync,mkdtempSync,statSync,realpathSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdtempSync,statSync,lstatSync,realpathSync} from 'node:fs';
 import {createRequire} from 'node:module';
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
@@ -21,6 +21,13 @@ async function until(fn,message,timeout=30000){const end=Date.now()+timeout;whil
 const requests=[],snapshots=[],failures=[],caseResults=[],notRestored=[],extraHeaders=new Map(),networkRequests=new Map();
 let browser,browserExit,browserSpawnError,browserVersion,vendorProfileSha256,ws,sessionId,scenario='setup',phase='setup',serverLog='',browserLog='',counter=0;
 const pending=new Map(),listeners=new Map(),inflightHandlers=new Set();
+function vendorEvidence(executable,vendorProfile){
+ const paths=[executable,'/opt/google/chrome/chrome-sandbox','/opt/google/chrome','/opt/google',vendorProfile,'/etc/apparmor.d','/var/lib/dpkg/info/google-chrome-stable.md5sums'];
+ const inspect=path=>{try{const brief=info=>({mode:(info.mode&0o7777).toString(8),uid:info.uid,gid:info.gid,size:info.size,symlink:info.isSymbolicLink()});const lstat=lstatSync(path),stat=statSync(path);return {path,realpath:realpathSync(path),lstat:brief(lstat),stat:brief(stat),...(stat.isFile()?{sha256:createHash('sha256').update(readFileSync(path)).digest('hex')}: {})};}catch(error){return {path,error:error.message};}};
+ const command=(file,args)=>{try{return {file,args,status:0,stdout:execFileSync(file,args,{encoding:'utf8',timeout:30000,maxBuffer:1024*1024,env:{PATH:process.env.PATH,HOME:tmpdir(),LANG:'C'},stdio:['ignore','pipe','pipe']})};}catch(error){return {file,args,status:error.status,error:error.message,stdout:String(error.stdout||''),stderr:String(error.stderr||'')};}};
+ const read=path=>{try{return {path,value:readFileSync(path,'utf8').trim()};}catch(error){return {path,error:error.message};}};
+ writeFileSync(join(output,'vendor-browser-preflight.json'),JSON.stringify({readOnly:true,uid:process.getuid(),gid:process.getgid(),files:paths.map(inspect),commands:[command('dpkg-query',['-W','google-chrome-stable','apparmor']),command('dpkg-query',['-S',executable,vendorProfile]),command('dpkg',['--verify','google-chrome-stable']),command('dpkg',['--verify','apparmor'])],namespacePolicy:read('/proc/sys/kernel/apparmor_restrict_unprivileged_userns'),currentProcessProfile:read('/proc/self/attr/current')},null,2)+'\n');
+}
 const server=spawn(process.execPath,[require.resolve('next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3220'],{cwd:fixture,env:{PATH:process.env.PATH,HOME:tmpdir(),NODE_ENV:'production',NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_GA_MEASUREMENT_ID:id},stdio:['ignore','pipe','pipe']});
 for(const stream of [server.stdout,server.stderr])stream.on('data',data=>{serverLog+=data;});
 function on(method,fn){listeners.set(method,fn);}
@@ -41,8 +48,9 @@ try{
  // Ubuntu's existing vendor profile covers this installed Chrome path, unlike
  // downloaded developer builds. Never install/modify a profile or disable sandbox.
  const executable='/opt/google/chrome/chrome',vendorProfile='/etc/apparmor.d/chrome';
+ vendorEvidence(executable,vendorProfile);
  assert.equal(realpathSync(executable),executable);
- for(const path of [executable,vendorProfile]){const info=statSync(path);assert.equal(info.uid,0);assert.equal(info.mode&0o022,0,'vendor files must not be writable by runner or group');}
+ for(const path of [executable,vendorProfile]){const info=statSync(path);assert.equal(info.uid,0,path+' must be root-owned');assert.equal(info.mode&0o022,0,path+' must not be writable by runner or group');}
  vendorProfileSha256=createHash('sha256').update(readFileSync(vendorProfile)).digest('hex');
  const profile=mkdtempSync(join(tmpdir(),'hh-ga4-cdp-profile-'));
  // No --disable-back-forward-cache, no Playwright connect/page objects and no

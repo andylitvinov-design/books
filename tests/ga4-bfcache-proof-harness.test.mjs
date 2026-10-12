@@ -34,6 +34,8 @@ test('incomplete header coverage cannot become a navigation-only overall pass',(
  assert.match(code,/bfcache-browser\.log/);assert.match(code,/browser\.on\('exit'/);assert.match(code,/browser\.on\('error'/);
  assert.match(code,/executable='\/opt\/google\/chrome\/chrome'/);assert.match(code,/vendorProfile='\/etc\/apparmor\.d\/chrome'/);assert.match(code,/info\.uid,0/);assert.match(code,/Browser\.getVersion/);
  const workflow=read('.github/workflows/ga4-bfcache-proof.yml');assert.doesNotMatch(workflow,/playwright install|sysctl|apparmor reload|chmod|sudo/);assert.doesNotMatch(code,/--no-sandbox|--disable-setuid-sandbox/);
+ assert.match(code,/vendor-browser-preflight\.json/);assert.match(code,/lstatSync\(path\)/);assert.match(code,/\['--verify','google-chrome-stable'\]/);assert.match(code,/info\.mode&0o022,0/);
+ assert.ok(code.indexOf('vendorEvidence(executable,vendorProfile);')<code.indexOf('assert.equal(realpathSync(executable)'));
 });
 test('raw commit parent headers remain provable with shallow checkout',()=>{
  const dir=mkdtempSync(join(tmpdir(),'ga4-shallow-parent-'));
