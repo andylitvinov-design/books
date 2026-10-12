@@ -51,15 +51,27 @@ export function middleware(request: NextRequest) {
   requestHeaders.set('x-public-page-locale', pageLocale)
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
-  const videoManager = request.nextUrl.pathname === '/admin/videos'
-  const academyVideoPage = /^\/(en|ru|es)\/academy(?:\/|$)/.test(request.nextUrl.pathname)
+  const videoManager = pathname === '/admin/videos'
+  const privateDocument = privatePath(pathname)
+  const publicDocument = !privateDocument && !pathname.startsWith('/api/')
+  const tantraReikiPage = /^\/(en|ru|es)\/academy\/reiki\/tantra-reiki(?:\/|$)/.test(pathname)
+  // Public video pages use only these two reviewed embed providers. Keep the
+  // cabinet, reports, APIs and document previews on the restrictive policy.
+  const publicVideoDocument = publicDocument || videoManager
+  const cspClass = videoManager ? 'video-manager'
+    : privateDocument ? 'private'
+      : tantraReikiPage ? 'tantra-media'
+        : publicDocument ? 'public-video'
+          : 'restricted'
   const csp = [
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${developmentEval}`, "style-src 'self' 'unsafe-inline'",
-    videoManager || academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
-    videoManager ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : academyVideoPage ? "frame-src https://www.youtube-nocookie.com" : "frame-src 'none'",
+    publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
+    publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : "frame-src 'none'",
+    tantraReikiPage ? "media-src 'self' https://www.psitrends.com" : "media-src 'self'",
     "font-src 'self'", "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
+  requestHeaders.set('x-csp-class', cspClass)
   requestHeaders.set('Content-Security-Policy', csp)
   const response = NextResponse.next({ request: { headers: requestHeaders } })
   response.headers.set('Content-Security-Policy', csp)
