@@ -38,3 +38,4 @@ This remains a candidate, not a proof that root layouts disable every Google sub
 ## Release decision
 
 The transport must remain unactivated until the final exact head passes route parity, full tests/build, synthetic full-SDK network checks and independent review. If the complete boundary cannot be established in this scope, the safe deliverable is explicit SDK-disabled behavior with a clear explanation that analytics cannot yet be enabled, not a partially working transport with known private-path telemetry.
+

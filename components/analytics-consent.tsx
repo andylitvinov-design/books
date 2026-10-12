@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { isPublicAnalyticsPath, resetAnalyticsDocument, updatePublicAnalyticsConsent } from "@/lib/public-analytics";
+import { PUBLIC_ANALYTICS_AVAILABLE, isPublicAnalyticsPath } from "@/lib/public-analytics";
 
 const consentCookie = "holistic_house_analytics_consent";
 type ConsentChoice = "granted" | "denied";
@@ -17,26 +17,24 @@ function eraseAnalyticsCookies() {
     const name = item.split("=")[0];
     if (name === "_ga" || name.startsWith("_ga_")) {
       document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax; Secure`;
-      // Remove legacy Google auto-domain cookies as well as new host-only ones.
-      if (window.location.hostname === "holistichouse.vercel.app") {
-        document.cookie = `${name}=; Domain=holistichouse.vercel.app; Path=/; Max-Age=0; SameSite=Lax; Secure`;
-      }
     }
   }
 }
 
 function applyConsent(value: ConsentChoice) {
-  document.documentElement.dataset.analyticsConsent = value;
+  document.documentElement.dataset.analyticsConsent = PUBLIC_ANALYTICS_AVAILABLE ? value : "denied";
   // A loaded Google tag must also respect withdrawal and private-page navigation.
-  updatePublicAnalyticsConsent(value);
-  if (value === "denied") {
-    eraseAnalyticsCookies();
-    resetAnalyticsDocument();
-  }
-  window.dispatchEvent(new Event("holistic-house:analytics-consent"));
+  if (PUBLIC_ANALYTICS_AVAILABLE) window.gtag?.("consent", "update", {
+    analytics_storage: value,
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+  if (!PUBLIC_ANALYTICS_AVAILABLE || value === "denied") eraseAnalyticsCookies();
+  if (PUBLIC_ANALYTICS_AVAILABLE && value === "granted") window.dispatchEvent(new Event("holistic-house:analytics-consent"));
 }
 
-// Synchronize saved consent; an owned SDK is reset on the private boundary.
+// Synchronize previously saved consent without ever interrupting a visitor.
 // No analytics tag is loaded for new visitors: the default is denied.
 export function AnalyticsConsent() {
   const pathname = usePathname();
@@ -65,13 +63,14 @@ export function AnalyticsPreferences() {
   return (
     <section className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-4" aria-label="Analytics preferences">
       <p className="m-0 text-sm">
-        Analytics is optional and off by default. If enabled, it measures public page visits and selected enquiry steps only,
-        never questionnaire answers, names, email addresses, drawings, test scores, reports or health information.
+        Analytics is temporarily unavailable while privacy safeguards are verified.
+        This version does not load Google Analytics. Your saved preference is kept.
       </p>
       <div className="mt-4 flex flex-wrap gap-3" role="group" aria-label="Choose analytics setting">
         <button
           type="button"
           onClick={() => decide("granted")}
+          disabled={!PUBLIC_ANALYTICS_AVAILABLE}
           aria-pressed={choice === "granted"}
           className="min-h-11 rounded-full border border-stone-500 bg-white px-4 py-2 text-sm text-stone-800"
         >
@@ -87,9 +86,8 @@ export function AnalyticsPreferences() {
         </button>
       </div>
       <p aria-live="polite" className="mb-0 mt-3 text-sm">
-        Current setting: <strong>{choice === "granted" ? "On" : "Off"}</strong>
+        Saved preference: <strong>{choice === "granted" ? "On" : "Off"}</strong>
       </p>
     </section>
   );
 }
-

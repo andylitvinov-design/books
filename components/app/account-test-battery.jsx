@@ -118,6 +118,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const router = useRouter()
   const searchParams = useSearchParams()
   const openFromInsights = searchParams.get('explore') === '1'
+  const fromCourse = searchParams.get('course') === '1'
   const requestedCategory = searchParams.get('category')
   const insightsCategory = INSIGHTS_TEST_CATEGORIES.some((item) => item.key === requestedCategory) ? requestedCategory : null
   const once = useRef(false)
@@ -221,10 +222,25 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setNotice(c.added)
       setExploring(false)
       setShowList(true)
+      // When the person came from My Course, these are the EXACT tests they
+      // deliberately checked in the full Explorer. Explicitly bind them to
+      // that private course, not the default five or the account's entire
+      // (possibly much larger) historical test-plan selection.
+      if (fromCourse) {
+        const current = await api('course')
+        if (current.course?.stage !== 2) {
+          throw Object.assign(new Error('COURSE_STAGE_CHANGED'), { code: 'COURSE_STAGE_CHANGED' })
+        }
+        await api('course', {
+          action: 'confirm-tests',
+          expectedRevision: current.course.revision,
+          testKeys: valid,
+        })
+      }
       // Reconcile the saved account state before replacing the handoff URL.
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
-      router.replace(root + '/tests?plan=' + encodeURIComponent(created.id))
+      router.replace(fromCourse ? root + '/course' : root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
       if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
       else if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
@@ -483,7 +499,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           </div>
         </aside>}
         <TestExplorer key={(currentPlan?.id || 'new') + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
-          audience="account" onStart={choose} initialPreferences={explorerPreferences}
+          audience="account" onStart={choose} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
           openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
