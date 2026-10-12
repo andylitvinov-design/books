@@ -5,11 +5,12 @@ import {
   GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS,
   courseDay, courseLesson, growthSuggestions, suggestedCourseTopics,
 } from '../lib/inner-growth/course-model.js'
+import { courseRecommendedTests, courseMeasuredProfile, goalForChosenScale } from '../lib/inner-growth/course-strategy.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('My Course describes exactly four EN/RU sequential steps and six optional goals', () => {
-  assert.equal(COURSE_STEPS.length, 4)
+test('My Course describes exactly six EN/RU sequential steps and six optional goals', () => {
+  assert.equal(COURSE_STEPS.length, 6)
   assert.equal(Object.keys(GROWTH_GOALS).length, 6)
   assert.ok(COURSE_TOPICS.every((topic) => topic.title.en && topic.title.ru))
   assert.ok(COURSE_STEPS.every((step) => step.en && step.ru && step.detail.en && step.detail.ru))
@@ -79,7 +80,7 @@ test('daily sessions are bilingual and distinguish 14-day practice from later in
   assert.equal(courseDay('2026-10-10T12:00:00Z', 14, Date.parse('2027-01-01T00:00:00Z')), 14)
 })
 
-test('one private four-stage route reuses tests, insights and keeps mobile bottom navigation', () => {
+test('one private six-milestone route reuses tests, insights and keeps mobile bottom navigation', () => {
   const page = read('app/[locale]/app/[[...path]]/page.jsx')
   const shell = read('components/app/app-workspace.jsx')
   const ui = read('components/app/my-course.jsx')
@@ -117,8 +118,9 @@ test('course state is authenticated, encrypted, owner-scoped and not copied to b
   assert.doesNotMatch(service, /select \* from app\.assessment_runs(?! where account_id)/)
 })
 
-test('first-screen free start and user-directed tests remain distinct from course intake', () => {
+test('first-screen free start is separate from optional account-owned course intake', () => {
   const ui = read('components/app/my-course.jsx')
+  const r3 = read('components/app/course-r3-steps.jsx')
   const css = read('components/app/my-course.module.css')
   const explorer = read('components/app/test-explorer.jsx')
   const battery = read('components/app/account-test-battery.jsx')
@@ -126,10 +128,9 @@ test('first-screen free start and user-directed tests remain distinct from cours
   const landing = ui.indexOf('stage === 0 && <header')
   const firstCta = ui.indexOf('{t.start}<ArrowRight', landing)
   const details = ui.indexOf('id="course-details"', landing)
-  const intake = ui.indexOf('stage === 1 && <section')
-  assert.ok(landing >= 0 && firstCta > landing && details > firstCta)
-  assert.ok(intake > details, 'concerns and test suggestions belong after consented start')
-  assert.equal((ui.match(/\{t\.start\}<ArrowRight/g) || []).length, 2)
+  const intake = ui.indexOf('stage >= 1 && stage <= 3 && <CourseR3Steps', details)
+  assert.ok(landing>=0 && firstCta>landing && details>firstCta && intake>details)
+  assert.equal((ui.match(/\{t\.start\}<ArrowRight/g)||[]).length, 2)
   assert.match(ui, /ref=\{startDialogRef\}/)
   assert.match(ui, /startDialogRef\.current\?\.showModal\(\)/)
   assert.match(ui, /disabled=\{!optIn \|\| busy\}/)
@@ -137,16 +138,58 @@ test('first-screen free start and user-directed tests remain distinct from cours
   assert.match(css, /\.heroActions/)
   assert.match(css, /\.details/)
 
-  // Suggestions only lead to a review; the explicitly chosen list is
-  // saved by the account's existing, server-backed test-plan API.
-  assert.match(ui, /showSuggestions && <div/)
-  assert.match(ui, /openTestFinder\(item\.key\)/)
-  assert.match(ui, /course: '1'/)
-  assert.match(ui, /router\.push\(root \+ '\/tests\?' \+ params\.toString\(\)\)/)
+  assert.match(r3, /stage===1/)
+  assert.match(r3, /onAct\('intake',\{concerns,focusTags\}\)/)
+  assert.match(r3, /courseRecommendedTests/)
+  assert.match(r3, /matchPercent/)
+  assert.match(r3, /saveExistingAccountPlan/)
+  assert.match(r3, /onCourseCommand\('confirm-tests',\{testKeys:chosenTests\}\)/)
+  assert.match(r3, /stage===3/)
+  assert.match(r3, /courseMeasuredProfile/)
+  assert.match(r3, /chosenScales/)
+  assert.match(r3, /role="alert"/)
   assert.match(battery, /const fromCourse = searchParams\.get\('course'\) === '1'/)
-  assert.match(battery, /explicitSelectionOnly=\{fromCourse\}/)
-  assert.match(battery, /router\.replace\(fromCourse \? root \+ '\/course'/)
   assert.match(explorer, /const activeBattery = explicitSelectionOnly\s*\? selected/)
-  assert.match(explorer, /!activeBattery\.length \|\| starting \|\| !onStart/)
   assert.doesNotMatch(ui, /localStorage|sessionStorage|dangerouslySetInnerHTML/)
+  assert.doesNotMatch(r3, /localStorage|sessionStorage|dangerouslySetInnerHTML/)
+})
+
+test('five auto-proposed test choices credit compatible historical results, but do not save automatically', () => {
+  const history=weeklyResult({ 'weekly.tension': 8 })
+  const proposed=courseRecommendedTests({focusTags:['stress','attention'],results:[history],locale:'en'})
+  assert.ok(proposed.length>=5)
+  assert.equal(proposed.filter(test=>test.recommended).length,5)
+  assert.ok(proposed.every(test=>test.matchPercent>=0 && test.matchPercent<=99))
+  assert.ok(proposed.every(test=>test.definitionVersion && test.instrumentLocale))
+  const existing=proposed.find(test=>test.key==='hh-weekly-pulse')
+  assert.ok(existing?.completed)
+  assert.equal(existing.resultId,history.id)
+  assert.equal(courseRecommendedTests({focusTags:['stress'],results:[{...history,definitionVersion:'bad'}]})
+    .find(test=>test.key==='hh-weekly-pulse')?.completed,false)
+})
+
+test('measured profile prioritizes high difficulties and low resources without ranking traits as deficits', () => {
+  const history=weeklyResult({
+    'weekly.tension': 8,'weekly.recovery': 2,'weekly.clarity': 3,'weekly.connection': 4,
+  })
+  const direction={
+    'weekly.tension':'lower-reported-tension','weekly.recovery':'higher-reported-recovery',
+    'weekly.clarity':'higher-reported-clarity','weekly.connection':'higher-reported-support',
+  }
+  history.dimensions.forEach(d=>{d.direction=direction[d.key]})
+  const profile=courseMeasuredProfile({results:[history],testKeys:['hh-weekly-pulse']})
+  const tension=profile.scales.find(item=>item.id==='hh-weekly-pulse::weekly.tension')
+  const recovery=profile.scales.find(item=>item.id==='hh-weekly-pulse::weekly.recovery')
+  assert.equal(tension?.priorityPercent,80)
+  assert.equal(recovery?.priorityPercent,80)
+  assert.equal(tension?.eligible,true)
+  assert.equal(recovery?.eligible,true)
+  assert.equal(profile.priority.length,profile.eligible.length)
+  assert.ok(profile.priority.length<=7)
+  assert.equal(goalForChosenScale(tension.id),'calm_regulation')
+  const traits=courseMeasuredProfile({results:[{...history,definitionKey:'mini-ipip-20'}],testKeys:['mini-ipip-20']})
+  assert.equal(traits.eligible.length,0)
+  const wrong=weeklyResult({'weekly.tension':8})
+  wrong.dimensions[0].direction='higher-reported-wellbeing'
+  assert.equal(courseMeasuredProfile({results:[wrong],testKeys:['hh-weekly-pulse']}).eligible.length,0)
 })
