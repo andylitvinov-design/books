@@ -27,31 +27,76 @@ export function registerTestRatingTests({ config, repo }) {
       const first = await complete(a), second = await complete(b)
       assert.deepEqual(await ratings.read(a, first.id), { stars: null, revision: 0 })
       await assert.rejects(ratings.read(b, first.id), { code: 'NOT_FOUND' })
-      await assert.rejects(ratings.save(b, first.id, { stars: 5, expectedRevision: 0 }), { code: 'NOT_FOUND' })
-      await assert.rejects(ratings.save(a, randomUUID(), { stars: 5, expectedRevision: 0 }), { code: 'NOT_FOUND' })
-      const concurrent = await Promise.all([ratings.save(a, first.id, { stars: 5, expectedRevision: 0 }), ratings.save(a, first.id, { stars: 5, expectedRevision: 0 })])
+      await assert.rejects(ratings.save(b, first.id, { uiLocale: 'en', stars: 5, expectedRevision: 0 }), { code: 'NOT_FOUND' })
+      await assert.rejects(ratings.save(a, randomUUID(), { uiLocale: 'en', stars: 5, expectedRevision: 0 }), { code: 'NOT_FOUND' })
+      // Published content in another UI language must not authorize this one.
+      await admin.query("update app.assessment_interpretation_versions set status='retired' where assessment_version_id=$1 and ui_locale='en'", [first.definitionId])
+      try {
+        await assert.rejects(ratings.save(a, first.id, { uiLocale: 'en', stars: 5, expectedRevision: 0 }), { code: 'INTERPRETATION_UNAVAILABLE' })
+        assert.deepEqual(await ratings.read(a, first.id), { stars: null, revision: 0 })
+      } finally {
+        await admin.query("update app.assessment_interpretation_versions set status='published' where assessment_version_id=$1 and ui_locale='en'", [first.definitionId])
+      }
+      await admin.query('revoke select on app.assessment_interpretation_versions from hh_app_backend')
+      try {
+        await assert.rejects(ratings.save(a, first.id, { uiLocale: 'en', stars: 5, expectedRevision: 0 }), { code: 'INTERPRETATION_UNAVAILABLE' })
+      } finally {
+        await admin.query('grant select on app.assessment_interpretation_versions to hh_app_backend')
+      }
+      // This suite runs only on the disposable loopback DB. A pre-schema rollout
+      // must fail closed, not fall through to an unchecked vote.
+      await admin.query('alter table app.assessment_interpretation_versions rename to rating_test_hidden_interpretations')
+      try {
+        await assert.rejects(ratings.save(a, first.id, { uiLocale: 'en', stars: 5, expectedRevision: 0 }), { code: 'INTERPRETATION_UNAVAILABLE' })
+      } finally {
+        await admin.query('alter table app.rating_test_hidden_interpretations rename to assessment_interpretation_versions')
+      }
+      // Deliberate catalog-corruption fixture, never a production write. Restore
+      // the original metadata and immutability trigger before leaving this test.
+      async function setFixtureHash(value) {
+        await admin.query('begin')
+        try {
+          await admin.query('alter table app.assessment_interpretation_versions disable trigger immutable_interpretation_version')
+          await admin.query("update app.assessment_interpretation_versions set instrument_content_hash=$2 where assessment_version_id=$1 and ui_locale='en'", [first.definitionId, value])
+          await admin.query('alter table app.assessment_interpretation_versions enable trigger immutable_interpretation_version')
+          await admin.query('commit')
+        } catch (error) { await admin.query('rollback'); throw error }
+      }
+      const originalHash = (await admin.query("select instrument_content_hash from app.assessment_interpretation_versions where assessment_version_id=$1 and ui_locale='en'", [first.definitionId])).rows[0].instrument_content_hash
+      try {
+        await setFixtureHash('sha256:' + '0'.repeat(64))
+        await assert.rejects(ratings.save(a, first.id, { uiLocale: 'en', stars: 5, expectedRevision: 0 }), { code: 'INTERPRETATION_UNAVAILABLE' })
+      } finally { await setFixtureHash(originalHash) }
+      const concurrent = await Promise.all([ratings.save(a, first.id, { uiLocale: 'en', stars: 5, expectedRevision: 0 }), ratings.save(a, first.id, { uiLocale: 'en', stars: 5, expectedRevision: 0 })])
       assert.deepEqual(concurrent, [{ stars: 5, revision: 1 }, { stars: 5, revision: 1 }])
-      await ratings.save(b, second.id, { stars: 3, expectedRevision: 0 })
+      await ratings.save(b, second.id, { uiLocale: 'en', stars: 3, expectedRevision: 0 })
       let summary = (await ratings.summaries()).summaries[first.definitionId]
       assert.equal(summary.count, 2); assert.equal(summary.average, 4); assert.equal(summary.ranked, false)
-      const edited = await ratings.save(a, first.id, { stars: 4, expectedRevision: 1 })
+      const edited = await ratings.save(a, first.id, { uiLocale: 'en', stars: 4, expectedRevision: 1 })
       assert.equal(edited.revision, 2)
-      await assert.rejects(ratings.save(a, first.id, { stars: 2, expectedRevision: 1 }), { code: 'RATING_CONFLICT' })
+      await assert.rejects(ratings.save(a, first.id, { uiLocale: 'en', stars: 2, expectedRevision: 1 }), { code: 'RATING_CONFLICT' })
       const sameTestAgain = await complete(a)
       assert.deepEqual(await ratings.read(a, sameTestAgain.id), { stars: 4, revision: 2 })
-      await ratings.save(a, sameTestAgain.id, { stars: 4, expectedRevision: 2 })
+      await ratings.save(a, sameTestAgain.id, { uiLocale: 'en', stars: 4, expectedRevision: 2 })
       assert.equal((await ratings.summaries()).summaries[first.definitionId].count, 2)
       const otherLanguage = await complete(a, 'ru')
-      await ratings.save(a, otherLanguage.id, { stars: 5, expectedRevision: 2 })
+      await ratings.save(a, otherLanguage.id, { uiLocale: 'en', stars: 5, expectedRevision: 2 })
       assert.equal((await ratings.summaries()).summaries[first.definitionId].count, 1)
       assert.equal((await ratings.summaries()).summaries[otherLanguage.definitionId].count, 1)
       assert.deepEqual(await ratings.read(a, first.id), { stars: null, revision: 3 })
       assert.equal((await ratings.export(a)).length, 1)
-      const removed = await ratings.remove(a, otherLanguage.id, { expectedRevision: 3 })
+      await admin.query("update app.assessment_interpretation_versions set status='retired' where assessment_version_id=$1", [otherLanguage.definitionId])
+      let removed
+      try {
+        assert.equal((await ratings.read(a, otherLanguage.id)).stars, 5)
+        removed = await ratings.remove(a, otherLanguage.id, { expectedRevision: 3 })
+      } finally {
+        await admin.query("update app.assessment_interpretation_versions set status='published' where assessment_version_id=$1", [otherLanguage.definitionId])
+      }
       assert.deepEqual(removed, { stars: null, revision: 4 })
       assert.equal((await ratings.summaries()).summaries[otherLanguage.definitionId], undefined)
-      await ratings.save(a, otherLanguage.id, { stars: 4, expectedRevision: 4 })
-      await assert.rejects(ratings.save(a, otherLanguage.id, { stars: 2, expectedRevision: 3 }), { code: 'RATING_CONFLICT' })
+      await ratings.save(a, otherLanguage.id, { uiLocale: 'en', stars: 4, expectedRevision: 4 })
+      await assert.rejects(ratings.save(a, otherLanguage.id, { uiLocale: 'en', stars: 2, expectedRevision: 3 }), { code: 'RATING_CONFLICT' })
       // RLS protects the source even if future backend code forgets its WHERE.
       const own = await rawAs(a, 'hh_app_backend', async db => (await db.query('select account_id from app_private.test_ratings')).rows)
       assert.ok(own.every(row => row.account_id === a.id))
@@ -65,7 +110,7 @@ export function registerTestRatingTests({ config, repo }) {
       await admin.query("update app.accounts set status='deleting' where id=$1", [a.id])
       assert.equal((await ratings.summaries()).summaries[otherLanguage.definitionId], undefined)
       await admin.query('delete from auth.sessions where id=$1', [b.claims.session_id])
-      await assert.rejects(ratings.save(b, second.id, { stars: 5, expectedRevision: 1 }), { code: 'SIGN_IN_REQUIRED' })
+      await assert.rejects(ratings.save(b, second.id, { uiLocale: 'en', stars: 5, expectedRevision: 1 }), { code: 'SIGN_IN_REQUIRED' })
     } finally {
       await admin.query('delete from app.accounts where id=any($1::uuid[])', [[a.id, b.id]])
       await admin.query('delete from auth.users where id=any($1::uuid[])', [[a.id, b.id]])

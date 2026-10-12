@@ -98,7 +98,7 @@ export function SimpleTestPicker({
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   professionalOnly, onProfessional,
-  ratingData = { summaries: {}, loading: false, unavailable: false }, sort = 'recommended', onSort,
+  ratingData = { summaries: {}, loading: false, unavailable: false }, sort = 'recommended', onSort, onChooseTop, topCount = 0,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
   matchCount, onStart, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
@@ -217,7 +217,7 @@ export function SimpleTestPicker({
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
-      <TestRatingSort value={sort} onChange={onSort} locale={locale} unavailable={ratingData.unavailable} loading={ratingData.loading} />
+      <TestRatingSort value={sort} onChange={onSort} locale={locale} unavailable={ratingData.unavailable} loading={ratingData.loading} onChooseTop={onChooseTop} topCount={topCount} />
       <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
       <details className={styles.why}>
         <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>

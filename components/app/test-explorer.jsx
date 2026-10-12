@@ -13,7 +13,7 @@ import { normalizeProblemsForTopics } from '@/lib/assessments/test-problems'
 import { SimpleTestPicker } from './simple-test-picker'
 import { useTestRatings } from './use-test-ratings'
 import { TestRatingSummary } from './test-rating'
-import { compareTestRatings, ratingCopy } from '@/lib/assessments/test-ratings'
+import { compareTestRatings, ratingCopy, topRatedSelection } from '@/lib/assessments/test-ratings'
 import { TestScaleGuide } from './test-scale-guide'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import styles from './test-explorer.module.css'
@@ -229,6 +229,11 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const displayRecommendations = useMemo(() => sort === 'rating'
     ? [...simpleRecommendations].sort((a, b) => compareTestRatings(a, b, ratings.summaries))
     : simpleRecommendations, [simpleRecommendations, sort, ratings.summaries])
+  const topRated = useMemo(() => topRatedSelection(matching.filter(entry => !axisFilter || entry.measurementAxes?.includes(axisFilter)), ratings.summaries), [matching, axisFilter, ratings.summaries])
+  const chooseTopRated = () => {
+    if (!topRated.length || ratings.loading || ratings.unavailable) return
+    setSelectedKeys(topRated.map(entry => entry.key)); setSimpleSelectionChanged(true)
+  }
   const simpleAuto = useMemo(() => buildPublicStarterBattery(simpleRecommendations), [simpleRecommendations])
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
@@ -322,6 +327,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       ratingData={ratings}
       sort={sort}
       onSort={setSort}
+      onChooseTop={chooseTopRated}
+      topCount={topRated.length}
       activeBattery={activeBattery}
       onToggleTest={toggleSimpleSelected}
       onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
@@ -482,16 +489,17 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
           <span>{locale === 'ru' ? 'Найти тест' : locale === 'es' ? 'Buscar pruebas' : 'Search tests'}</span>
       <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={c.search} aria-label={c.search} />
         </label>
-      {sort === 'rating' && <p role="status">{ratings.unavailable ? ratingText.unavailable : ratingText.method}</p>}
+      {(sort === 'rating' || ratings.unavailable) && <p role="status">{ratings.unavailable ? ratingText.unavailable : ratingText.method}</p>}
+      {sort === 'rating' && <><button type="button" onClick={chooseTopRated} disabled={ratings.loading || ratings.unavailable || !topRated.length}>{ratingText.chooseTop}</button>{!ratings.loading && !ratings.unavailable && !topRated.length && <p>{ratingText.notEnough}</p>}</>}
       <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="rating" disabled={ratings.loading || ratings.unavailable}>{ratingText.top}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option></select></label>
       </div>
     </section>
     <div className={styles.workspace}><div className={styles.database}><div className={styles.databaseHeader}><div className={styles.countBlock}><strong role="status" aria-live="polite">{matchCount} {c.matching}</strong><small>{c.of} {availability === 'available' ? entries.filter((entry) => entry.selectable).length : availability === 'core' ? entries.filter((entry) => entry.psychotherapyCore).length : entries.length} · {c.totalAvailable}{selectedKeys.length > 0 && ` · ${selectedKeys.length} ${c.kept}`}</small></div><button type="button" onClick={chooseSuggested}>{c.suggested}</button></div>
       {visible.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
-      <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
+      <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article data-test-key={entry.key} key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <TestArtwork entry={entry} />
-        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}<TestRatingSummary summary={ratings.summaries[entry.definition?.id]} locale={locale} unavailable={ratings.unavailable} loading={ratings.loading} /><TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
+        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2>{sort === 'recommended' && index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}<TestRatingSummary summary={ratings.summaries[entry.definition?.id]} locale={locale} unavailable={ratings.unavailable} loading={ratings.loading} /><TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
 
       </article>)}</div>
         {visible.length > 8 && <button className={styles.showMore} type="button" onClick={() => setShowAll((value) => !value)}>{showAll ? quick.showLess : `${quick.showAll} (${visible.length})`}</button>}
@@ -512,4 +520,3 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
 }
 
 function Filter({ label, items, selected, onToggle, locale, single = false }) { return <fieldset className={styles.filter}><legend>{label}</legend>{items.map((item) => <button type="button" key={item.key} aria-pressed={selected.includes(item.key)} onClick={() => onToggle(item.key)}>{item.label[locale] || item.label.en}</button>)}</fieldset> }
-

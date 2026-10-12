@@ -36,3 +36,13 @@
 .typeSummary h3{margin:8px 0;color:#304832}
 .typeSummary p,.typeSummary small{line-height:1.55}
 .contextNote{margin:0;color:#675e55;font-size:.85rem;line-height:1.55;padding:12px;border:1px solid #e2ddd4;border-radius:12px;background:#faf8f3}
+
+.purpose{font-size:.92rem;line-height:1.5;margin:0 0 14px;color:#5b6159}
+.explanation{margin:16px 0 0;padding-top:13px;border-top:1px solid #e4e5df}
+.explanation h4{font:750 .97rem/1.4 system-ui,sans-serif!important;margin:12px 0 5px!important;color:#394f43}
+.explanation p{font-size:.97rem!important;line-height:1.55!important;margin:5px 0 10px!important}
+.explanation .anchors,.explanation .limit{font-size:.85rem!important;line-height:1.5!important;color:#5d665c}
+.explanation a{display:inline-block;color:#286952;font-size:.9rem;text-decoration:underline;padding:7px 0;overflow-wrap:anywhere}
+.recommendationNote{font-size:.8rem!important;line-height:1.45!important;color:#5b695d;margin:0 0 9px!important}
+
+.explanation .origin{font-size:.78rem!important;line-height:1.4!important;color:#6a7066}

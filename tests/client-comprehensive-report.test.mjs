@@ -1,3 +1,4 @@
+import {withInterpretationFixture} from './helpers/interpretation-fixture.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { randomUUID } from 'node:crypto'
@@ -12,10 +13,10 @@ const accountId='10000000-0000-4000-8000-000000000001'
 const valueFor=(question,definition)=>question.min ?? definition.answerScale?.min ?? 0
 function fakeResult(definition,date='2026-10-08T12:00:00.000Z',override={}) {
  const answers=Object.fromEntries(definition.questions.map(q=>[q.id, valueFor(q,definition)]))
- return {
+ return withInterpretationFixture({
   id:randomUUID(),accountId,measurementAt:date,
   ...scoreAssessment(definition,{...answers,...override}),
- }
+ })
 }
 test('complete PDF model includes every runnable public assessment and every stored profile scale',()=>{
  const available=MONITORING_CATALOG.filter(item=>item.startable&&item.rightsStatus==='cleared')
@@ -40,6 +41,8 @@ test('complete PDF model includes every runnable public assessment and every sto
   assert.ok(testResult.description)
   assert.ok(testResult.conclusion.length>40)
   assert.ok(testResult.dimensions.length>0)
+  assert.equal(testResult.interpretation.status,'available')
+  assert.equal(testResult.interpretation.sections.length,testResult.dimensions.length)
   assert.equal(testResult.attempts.length,1)
   assert.ok(testResult.dimensions.every(d=>Number.isFinite(d.value)&&Number.isFinite(d.min)&&Number.isFinite(d.max)))
  }

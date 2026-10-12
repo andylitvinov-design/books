@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { ASSESSMENT_DEFINITIONS } from '../lib/assessments/definitions.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 
 const source = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const enabled = new Set(MONITORING_CATALOG.filter(item => item.startable).map(item => item.key + ':' + item.version))
@@ -43,9 +43,12 @@ test('CBI Personal Burnout is interpreted as exhaustion, not just a 0–100 numb
   assert.equal(high.sections[0].domain, 'burnout')
   assert.match(high.sections[0].title, /Exhaustion/)
   assert.match(high.sections[0].steps.join(' '), /7 days/)
-  assert.match(high.sections[0].meaning, /upper part/)
-  assert.match(low.sections[0].meaning, /lower part/)
-  assert.match(low.sections[0].steps[0], /maintain your balance/)
+  assert.match(high.sections[0].meaning, /physical and psychological exhaustion/)
+  assert.match(high.sections[0].meaning, /Mean across 6 items: 100/)
+  assert.match(high.sections[0].meaning, /100 \(always\)/)
+  assert.match(low.sections[0].meaning, /0 \(never \/ almost never\)/)
+  assert.doesNotMatch(low.sections[0].meaning, /part of (this|the).*scale/)
+  assert.match(low.sections[0].steps[0], /physical tiredness, emotional depletion/)
   assert.match(high.sections[0].steps[0], /For 7 days/)
   assert.match(high.sections[0].followUp, /healthcare professional/)
   assert.match(buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'ru').sections[0].steps.join(' '), /7 дней/)
@@ -55,7 +58,8 @@ test('high resource measurements receive maintenance rather than deficit advice'
   const def = tests.find(item => item.key === 'hh-role-freedom')
   assert.ok(def)
   const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max')), 'en')
-  assert.ok(report.sections.some(section => /source of support or strength/.test(section.steps[0])))
+  assert.ok(report.sections.some(section => /role|interest|choice|identity/.test(section.steps[0])))
+  assert.ok(report.sections.every(section => !/upper part|lower part|middle part/.test(section.steps.join(' '))))
 })
 
 test('neutral personality scales are not interpreted as a clinical severity or universal good/bad score', () => {
@@ -127,21 +131,20 @@ test('full report appears before the optional raw score panel; no overall unrela
 test('PDF report includes personal interpretation and next steps for each individual assessment', () => {
   const building = source('lib/profile/client-report.js')
   const rendering = source('lib/profile/client-report-pdf.js')
-  assert.match(building, /interpretation:buildAssessmentResultReport\(latest, lang\)/)
+  assert.match(building, /const interpretation = buildAssessmentResultReport\(latest, lang\)/)
   assert.match(rendering, /test\.interpretation\?\.sections\?\.length/)
   assert.match(rendering, /for \(const section of test\.interpretation\.sections\)/)
   assert.match(rendering, /section\.steps\.slice\(0,2\)/)
 })
 test('each per-test report explains purpose and has human-readable labels rather than machine keys', () => {
   const component = source('components/app/personal-result-report.jsx')
-  const engine = source('lib/assessments/result-report.js')
+  const engine = source('lib/assessments/result-report-authoring.js')
   assert.match(component, /report\.purpose/)
   assert.match(component, /section\.value/)
   assert.match(engine, /visibleConstruct\(dimension, language\)/)
-  const report = buildAssessmentResultReport({
-    definitionKey:'hh-current-state',
-    dimensions:[{key:'state.fatigue',value:6,min:0,max:10,direction:'lower-reported-difficulty'}],
-  },'ru')
-  assert.equal(report.sections[0].construct, 'Усталость')
-  assert.equal(report.sections[0].value, 6)
+  const def = ASSESSMENT_DEFINITIONS.find(item => item.key === 'hh-current-state' && item.instrumentLocale === 'ru')
+  const report = buildAssessmentResultReport(scoreAssessment(def, {...answersFor(def), 'state.fatigue': 6}), 'ru')
+  const fatigue = report.sections.find(section => section.key === 'state.fatigue')
+  assert.equal(fatigue.construct, 'Усталость')
+  assert.equal(fatigue.value, 6)
 })

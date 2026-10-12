@@ -155,3 +155,7 @@
   .hh-app .hh-insights-category-filter{font-size:.77rem!important}
   .hh-app .hh-insights-category-filter svg{width:17px}
 }
+
+.hh-app .hh-insights-explanation{padding:0 16px 15px;overflow-wrap:anywhere}
+.hh-app .hh-insights-explanation p{font-size:.9rem!important;line-height:1.5!important;margin:9px 0!important;color:#485a4c}
+.hh-app .hh-insights-explanation small{display:block;font-size:.78rem;line-height:1.4;color:#6b7268}

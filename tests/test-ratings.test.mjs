@@ -1,15 +1,16 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
-import { compareTestRatings, ratingSummary, RATING_COPY, RATING_MINIMUM_COUNT } from '../lib/assessments/test-ratings.js'
+import { compareTestRatings, ratingSummary, RATING_COPY, RATING_MINIMUM_COUNT, topRatedSelection } from '../lib/assessments/test-ratings.js'
 import { validateRatingInput } from '../lib/assessments/test-ratings.js'
 const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const entry = key => ({ key, definition: { id: key } })
 test('ratings validate integer stars and concurrency revision without coercion or client identity fields', () => {
-  for (let stars = 1; stars <= 5; stars++) assert.deepEqual(validateRatingInput({ stars, expectedRevision: 0 }), { stars, expectedRevision: 0 })
-  for (const stars of [0, 6, -1, 4.5, '5', null, true, undefined, NaN]) assert.throws(() => validateRatingInput({ stars, expectedRevision: 0 }))
-  for (const expectedRevision of [-1, 0.5, '0', undefined, Infinity]) assert.throws(() => validateRatingInput({ stars: 4, expectedRevision }))
-  for (const key of ['accountId', 'definitionId', 'resultId', 'ratingCount']) assert.throws(() => validateRatingInput({ stars: 4, expectedRevision: 0, [key]: 'forged' }))
+  for (let stars = 1; stars <= 5; stars++) assert.deepEqual(validateRatingInput({ uiLocale: 'en', stars, expectedRevision: 0 }), { uiLocale: 'en', stars, expectedRevision: 0 })
+  for (const stars of [0, 6, -1, 4.5, '5', null, true, undefined, NaN]) assert.throws(() => validateRatingInput({ uiLocale: 'en', stars, expectedRevision: 0 }))
+  for (const expectedRevision of [-1, 0.5, '0', undefined, Infinity]) assert.throws(() => validateRatingInput({ uiLocale: 'en', stars: 4, expectedRevision }))
+  for (const uiLocale of ['es', 'EN', '', null, undefined]) assert.throws(() => validateRatingInput({ stars: 4, expectedRevision: 0, uiLocale }))
+  for (const key of ['accountId', 'definitionId', 'resultId', 'ratingCount']) assert.throws(() => validateRatingInput({ uiLocale: 'en', stars: 4, expectedRevision: 0, [key]: 'forged' }))
 })
 test('aggregate DTO accepts only honest counts and means', () => {
   assert.deepEqual(ratingSummary({ rating_count: '5', rating_sum: '23', account_id: 'private' }), { count: 5, average: 4.6, ranked: true })
@@ -29,7 +30,7 @@ test('EN/RU/ES labels cover the same accessible feedback states and explain the 
   assert.match(RATING_COPY.ru.note, /не научной достоверности/)
   assert.match(RATING_COPY.en.method, /at least 5/)
   const ui = source('components/app/test-rating.jsx')
-  for (const expected of ['type="radio"', '<fieldset', '<legend', 'aria-label', 'role="status"', 'expectedRevision', 'busy.current', 'mounted.current', "status !== 'available'"]) assert.ok(ui.includes(expected), expected)
+  for (const expected of ['type="radio"', '<fieldset', '<legend', 'aria-label', 'role="status"', 'expectedRevision', 'busy.current', 'mounted.current', "status === 'available'"]) assert.ok(ui.includes(expected), expected)
   assert.match(source('components/app/test-rating.module.css'), /min-width:44px;min-height:48px/)
   assert.match(source('components/app/test-rating.module.css'), /focus-visible/)
   for (const file of ['components/app/app-workspace.jsx', 'components/app/cabinet-landing.jsx']) assert.match(source(file), /<TestRating /)
@@ -51,6 +52,9 @@ test('private storage, database eligibility and narrow aggregate interface are e
   const repo = source('lib/app/test-ratings.js')
   assert.match(repo, /run.status='completed'/)
   assert.match(repo, /RATING_CONFLICT/)
+  assert.match(repo, /requirePublishedInterpretation\(db, source, input.uiLocale\)/)
+  assert.match(repo, /i.ui_locale=\$2 and i.interpretation_version=\$3/)
+  assert.match(repo, /i.instrument_content_hash=v.content_hash/)
   assert.match(repo, /where r.id=\$1 and r.account_id=\$2/)
   assert.match(repo, /for update/)
   assert.doesNotMatch(repo, /db\.query\([\x27\x60]select [^\x27\x60]*\b(answers|dimensions|provenance)\b/)
@@ -58,4 +62,16 @@ test('private storage, database eligibility and narrow aggregate interface are e
   assert.match(route, /test-rating-write/)
   assert.match(route, /30, 600/)
   assert.match(route, /readBody\(request, 1024\)/)
+})
+
+test('explicit top-rated set respects current filtered input, availability, minimum count and opt-in safety', () => {
+  const entries = ['a','b','c','low','opt-in','unavailable'].map(key => ({...entry(key), selectable:key!=='unavailable', starterEligible:key!=='opt-in'}))
+  const summaries=Object.fromEntries(entries.map(e=>[e.key,{count:e.key==='low'?1:10,average:5}]))
+  assert.deepEqual(topRatedSelection(entries,summaries).map(e=>e.key),['a','b','c'])
+  assert.deepEqual(topRatedSelection(entries.filter(e=>e.key==='b'),summaries).map(e=>e.key),['b'])
+  assert.deepEqual(topRatedSelection(entries,{}),[])
+})
+
+test('highest-rated mode does not relabel rating rank as a best clinical/topic match', () => {
+  assert.match(source('components/app/test-explorer.jsx'), /sort === 'recommended' && index === 0/)
 })

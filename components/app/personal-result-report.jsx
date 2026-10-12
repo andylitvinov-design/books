@@ -1,17 +1,17 @@
 import Link from 'next/link'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
-import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
 import { CompactAssessmentReport } from './compact-assessment-report'
 
 export function PersonalResultReport({ result, locale = 'en', previous = null }) {
   const report = buildAssessmentResultReport(result, locale)
+  if (report.status === 'unavailable') return <section className={styles.report} data-report-unavailable role="status"><h2>{report.title}</h2><p>{report.note}</p></section>
   if (!report.sections.length) return null
   const ru = locale === 'ru'
   const bach = result?.definitionKey === 'hh-bach-flower-profile'
   // Keep the bespoke Bach ranking presentation; numeric tests use the concise dial layout.
   if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} />
-  const scaleGuide = getTestScaleGuide(result?.definitionKey, locale)
+  const scaleGuide = report.scaleGuide
   const byScale = new Map((scaleGuide?.scales || []).map(scale=>[scale.key,scale]))
   const hasTrainableSkills = Boolean(scaleGuide?.skillAxes?.length)
   const featured = bach ? report.sections.slice(0, report.highlightedCount) : report.sections

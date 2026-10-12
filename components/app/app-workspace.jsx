@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, FileText, Heart, House, Leaf, Moon, Smile, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { COPY, labelFor, explanationFor } from './copy'
+import { COPY, labelFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { assessmentHistoryGroups, nextPersonalRecommendation, resultChangeSummary } from '@/lib/assessments/personal-guidance'
@@ -51,6 +51,12 @@ function message(error, c) {
       : error?.code === 'NOT_FOUND'
         ? c.notFound
         : c.error
+}
+function preparedScaleMeaning(result, key, locale) {
+  const report = buildAssessmentResultReport(result, locale)
+  if (report.status !== 'available') return report.note
+  const section = report.sections.find(item => item.key === key)
+  return section?.explanation?.construct || section?.meaning || report.note
 }
 function dateLabel(value, locale) {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
@@ -1863,23 +1869,29 @@ function PortfolioPage({ data, locale }) {
             const latest = group.latest
             const report = buildAssessmentResultReport(latest, locale)
             const first = report.sections[0]
-            const main = latest.dimensions?.[0]
+            const main = report.status === 'unavailable' ? null : latest.dimensions?.[0]
+            const displayMain = first?.explanation?.mixed ? {...main, direction: 'non-normative'} : main
             return (
               <article className="hh-insights-test-card" key={group.key}>
                 <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}>
-                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact /></div>
+                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={displayMain} locale={locale} compact /></div>
                   <div className="hh-insights-test-body">
                     <div className="hh-insights-test-meta">
                       <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
                     </div>
                     <h2>{group.title}</h2>
                     {first && <p className="hh-insights-test-summary">{first.construct}: <strong>{first.value}</strong> · {first.band}</p>}
-                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} />}
+                    {main && !first?.explanation?.mixed && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} />}
                     {latest.dimensions?.length > 1 &&
                       <p className="hh-insights-test-scores">+ {latest.dimensions.length - 1} {ru ? 'дополнительных шкал' : 'more scales'}</p>}
                     <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
                   </div>
                 </Link>
+                {first && <div className="hh-insights-explanation" data-insights-explanation={latest.definitionKey}>
+                  <p><strong>{ru ? 'Что означает шкала:' : 'What the scale means:'}</strong> {first.explanation?.construct || first.meaning}</p>
+                  {first.steps[0] && <p><strong>{ru ? 'Практический шаг:' : 'Practical next step:'}</strong> {first.steps[0]}</p>}
+                  <small>{ru ? 'Пояснения всех шкал, подсчёт и источники — в полном отчёте.' : 'All scale explanations, scoring and sources are in the full report.'}</small>
+                </div>}
                 {group.count > 1 && (
                   <details className="hh-insights-history">
                     <summary>{ru ? `История прохождений (${group.count})` : `Assessment history (${group.count})`}</summary>
@@ -1947,7 +1959,7 @@ function PortfolioPage({ data, locale }) {
             <div className="hh-panel hh-detail">
               <button type="button" onClick={() => setSelected(null)}>{ru ? 'Закрыть' : 'Close'}</button>
               <h2>{readableScaleName(selected, locale)}</h2>
-              <p>{explanationFor(selected.key, locale)}</p>
+              <p>{preparedScaleMeaning(data.results.find(result => result.id === selected.sourceResultId), selected.key, locale)}</p>
               <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{ru ? 'Полный отчёт' : 'Full report'}</Link>
             </div>
           )}
@@ -2519,7 +2531,7 @@ function ResultPage({ id, locale, data }) {
               <section className="hh-result-metric" key={d.key}>
                 <div className="hh-result-metric-copy">
                   <h3>{readableScaleName(d, locale)}</h3>
-                  {explanationFor(d.key, locale) && <p>{explanationFor(d.key, locale)}</p>}
+                  <p>{preparedScaleMeaning(result, d.key, locale)}</p>
                 </div>
                 <div className="hh-result-score">
                   <strong>{d.value}</strong>

@@ -5,7 +5,7 @@ import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { ASSESSMENT_DEFINITIONS } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { safetySignal } from '../lib/assessments/safety.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 import {
   INTERPRETATION_PLANS,
   interpretationPlan,
@@ -194,8 +194,8 @@ test('invalid and impossible scores never trigger interpretation or safety reass
   assert.equal(interpretationForDimension(r,{...valid,min:10,max:0},'en').basis,'unavailable')
   assert.equal(interpretationForDimension(r,{...valid,max:24},'en').basis,'descriptive')
   const report = buildAssessmentResultReport({...r,dimensions:[{...valid,value:null}]},'en')
-  assert.deepEqual(report.sections[0].steps,[])
-  assert.equal(report.sections[0].recommendedReview,false)
+  assert.deepEqual(report.sections,[])
+  assert.equal(report.status,'unavailable')
 })
 
 test('item-level PHQ-9 safety remains independent from total-score interpretation', () => {
