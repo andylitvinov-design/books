@@ -76,7 +76,7 @@ const browser = await chromium.launch({
   proxy: { server: "http://127.0.0.1:9" },
   args: ["--disable-background-networking", "--disable-component-update", "--disable-sync", "--disable-default-apps", "--no-first-run"],
 });
-const requests = [], errors = [], results = [], contexts = [], cookieChecks = [];
+const requests = [], errors = [], results = [], contexts = [], cookieChecks = [], historyChecks = [];
 // Google currently retries a failed GA transport on this exact fallback URL.
 // It is not a blanket allowance for google.com traffic: each retry must match
 // an earlier primary request byte-for-byte, apart from the host and gaf=1.
@@ -208,9 +208,25 @@ function assertSafe(entries) {
     assert.equal(event.dl, "https://holistichouse.vercel.app/en");
     assert.ok(!event.dr);
     assert.equal(event.dt, "Holistic House");
-    assert.ok(["page_view", "free_situation_assessment_click"].includes(event.en), "only intended manual synthetic events");
+    const departingPublicEngagement = event.en === "user_engagement" && event.scenario.startsWith("csp-and-ga-")
+      && ["joint-public-to-private", "joint-history-forward-private"].includes(event.phase);
+    assert.ok(["page_view", "free_situation_assessment_click"].includes(event.en) || departingPublicEngagement, "only manual controls or classified old-public engagement");
     for (const key of Object.keys(event)) assert.ok(!/^(?:user_data|user_id|uid|em|ph|phone_number|email|sha256_email_address|sha256_phone_number)$/.test(key), "no user-identifying event parameters");
   }
+}
+
+function assertPublicDeparture(s, before) {
+  const events = s.events();
+  const departing = events.slice(before);
+  assert.ok(departing.length <= 1, "at most one earlier public engagement event may flush");
+  const sourceView = events.slice(0, before).filter(event => event.en === "page_view").at(-1);
+  for (const event of departing) {
+    assert.equal(event.en, "user_engagement");
+    assert.equal(event._p, sourceView._p, "engagement belongs to the old public document");
+    assert.ok(Number(event._et) > 0 && Number(event._et) < 5000, "only the short public dwell belongs to this departure");
+  }
+  assertSafe(s.own);
+  return departing.length;
 }
 
 try {
@@ -418,7 +434,7 @@ try {
     await paired.page.evaluate(() => window.fixture.grant());
     await waitUntil(() => paired.events().some(event => event.en === "page_view"), "joint boundaries public positive control");
     await settled(paired.page);
-    const beforePrivate = paired.collects().length;
+    const beforePrivate = paired.events().length;
     paired.phase("joint-public-to-private");
     if (navigationKind === "click") {
       await resetAction(paired, () => {
@@ -429,23 +445,30 @@ try {
     }
     await settled(paired.page);
     assert.equal(new URL(paired.page.url()).pathname, "/en/app/SYNTHETIC_PRIVATE_PAIRED");
-    assert.equal(paired.collects().length, beforePrivate);
+    const publicDepartureEvents = assertPublicDeparture(paired, beforePrivate);
+    const privateCollectionCount = paired.collects().length;
     const privateDocument = await paired.page.evaluate(() => window.fixture.documentId);
     await paired.page.evaluate(() => {window.fixture.render();window.fixture.syncConsent();});
-    await settled(paired.page);
+    await settled(paired.page, 7500);
+    assert.equal(paired.collects().length, privateCollectionCount, "no events during private dwell");
     assert.equal(await paired.page.evaluate(() => window.fixture.documentId), privateDocument, "no private rerender reload loop");
     await inspectCookies(paired, "joint-private-after-navigation", false);
     paired.phase("joint-history-return-public");
     await paired.page.goBack({ waitUntil: "domcontentloaded" });
+    historyChecks.push({ scenario: `csp-and-ga-${navigationKind}`, direction: "back", ...(await paired.page.evaluate(() => ({documentId:window.fixture.documentId, pageShows:window.fixturePageShows, pathname:location.pathname}))) });
     await waitUntil(() => paired.events().filter(event => event.en === "page_view").length >= 2, "Back restores a public pageview with both boundaries");
     await settled(paired.page);
     assert.equal(paired.events().filter(event => event.en === "page_view").length, 2);
     paired.phase("joint-history-forward-private");
-    const beforeForward = paired.collects().length;
+    const beforeForward = paired.events().length;
     await paired.page.goForward({ waitUntil: "domcontentloaded" });
     await settled(paired.page);
     assert.equal(new URL(paired.page.url()).pathname, "/en/app/SYNTHETIC_PRIVATE_PAIRED");
-    assert.equal(paired.collects().length, beforeForward);
+    const forwardDepartureEvents = assertPublicDeparture(paired, beforeForward);
+    const forwardPrivateCount = paired.collects().length;
+    await settled(paired.page);
+    assert.equal(paired.collects().length, forwardPrivateCount);
+    historyChecks.push({ scenario: `csp-and-ga-${navigationKind}`, direction: "forward", publicDepartureEvents, forwardDepartureEvents, ...(await paired.page.evaluate(() => ({documentId:window.fixture.documentId, pageShows:window.fixturePageShows, pathname:location.pathname}))) });
     assertSafe(paired.own);
     paired.checkpoint("joint boundaries preserve destinations, no private rerender loop, Back pageview and private Forward suppression");
     await paired.context.close();
@@ -457,7 +480,7 @@ try {
 } finally {
   await Promise.all(contexts.map(context => context.close().catch(() => {})));
   // All browser state is freshly synthetic. Cookies themselves are never saved.
-  const evidence = { testedAt: new Date().toISOString(), testedCommit: process.env.GITHUB_SHA || "local-unpublished", browserVersion: browser.version(), googleScriptSha256: createHash("sha256").update(sdk).digest("hex"), everyPageRequestFulfilledOrAbortedBeforeSend: true, deadProxyDefense: "127.0.0.1:9", transmittedAnalyticsRequests: 0, results, errors, cookieChecks, requests, decodedEvents: decodedEvents(), decodedTransportAttempts: decodedEvents(requests, true), fallbackRequestCount: requests.filter(isFallback).length };
+  const evidence = { testedAt: new Date().toISOString(), testedCommit: process.env.GITHUB_SHA || "local-unpublished", browserVersion: browser.version(), googleScriptSha256: createHash("sha256").update(sdk).digest("hex"), everyPageRequestFulfilledOrAbortedBeforeSend: true, deadProxyDefense: "127.0.0.1:9", transmittedAnalyticsRequests: 0, results, errors, cookieChecks, historyChecks, requests, decodedEvents: decodedEvents(), decodedTransportAttempts: decodedEvents(requests, true), fallbackRequestCount: requests.filter(isFallback).length };
   writeFileSync(new URL("full-sdk-intercept-results.json", output), JSON.stringify(evidence, null, 2) + "\n");
   console.log(JSON.stringify({ results, errors, requestCount: requests.length, collectionCount: collection().length }, null, 2));
   await browser.close();
