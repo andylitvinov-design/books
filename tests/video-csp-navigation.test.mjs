@@ -20,6 +20,10 @@ test("About's Psychic Alchemy renderer uses the reviewed HeyGen embed", async ()
   assert.match(aboutVideo, /https:\/\/app\.heygen\.com\/embeds\/\$\{VIDEO_ID\}/);
   assert.match(aboutVideo, /referrerPolicy="strict-origin-when-cross-origin"/);
   assert.match(aboutVideo, /aria-label=\{`Open video: \$\{video\.title\}`\}/);
+  assert.match(aboutVideo, /const \[interactive, setInteractive\] = useState\(false\)/);
+  assert.match(aboutVideo, /useEffect\(\(\) => \{ setInteractive\(true\); \}, \[\]\)/);
+  assert.match(aboutVideo, /disabled=\{!interactive\} aria-busy=\{!interactive\}/);
+  assert.match(aboutVideo, /interactive \? "Watch introduction" : "Loading player…"/);
 });
 
 test("CSP class boundary reloads only cross-policy client navigation", async () => {

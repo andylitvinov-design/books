@@ -50,11 +50,17 @@ export async function verifyAboutPlayerHydration(browserType, { origin, evidence
           await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         }
         await button.scrollIntoViewIfNeeded();
-        row.before = await button.evaluate(element => ({ disabled: element.disabled, ariaBusy: element.getAttribute('aria-busy'), readyState: document.readyState, hydrated: history.pushState.toString().includes('__NA') }));
+        row.before = await button.evaluate(element => ({ disabled: element.disabled, ariaBusy: element.getAttribute('aria-busy'), text: element.textContent, cursor: getComputedStyle(element).cursor, readyState: document.readyState, hydrated: history.pushState.toString().includes('__NA') }));
         if (delayed) {
           assert.ok(row.heldScripts.length > 0, 'The delayed fixture must actually withhold application scripts');
           assert.equal(row.before.hydrated, false, 'Capture the actual pre-hydration SSR button');
+          if (row.before.disabled) {
+            assert.equal(row.before.ariaBusy, 'true');
+            assert.match(row.before.text, /Loading player/);
+            assert.equal(row.before.cursor, 'wait');
+          }
         }
+        await page.screenshot({ path: `${evidence}/${label}-about-hydration-${browserType.name()}-${delayed ? 'delayed' : 'ready'}.png` });
         // A physical click also tests the browser's suppression of disabled
         // buttons; Playwright's enabled-control auto-wait would hide this phase.
         const box = await button.boundingBox();
