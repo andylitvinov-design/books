@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Trash2, Zap } from 'lucide-react'
 import { TestExplorer } from './test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
@@ -13,6 +13,7 @@ import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
+import { INSIGHTS_TEST_CATEGORIES } from '@/lib/assessments/insights-categories'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
 import styles from './account-test-battery.module.css'
 
@@ -113,11 +114,31 @@ function planRows(plan, data, locale) {
 export function AccountTestBattery({ data, locale, requestedPlanId, recommendedKey = null, initialStatusFilter = null, reload }) {
   const c = COPY[locale] || COPY.en
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const openFromInsights = searchParams.get('explore') === '1'
+  const requestedCategory = searchParams.get('category')
+  const insightsCategory = INSIGHTS_TEST_CATEGORIES.some((item) => item.key === requestedCategory) ? requestedCategory : null
   const once = useRef(false)
   const [plan, setPlan] = useState(null)
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
-  const [exploring, setExploring] = useState(false)
+  const [exploring, setExploring] = useState(openFromInsights)
+  useEffect(() => {
+    if (!openFromInsights) return
+    setExploring(true)
+    // The existing in-account explorer opens at its actual filters, not the top
+    // of the saved-test dashboard. A new URL requires no extra click.
+    let childFrame
+    const frame = window.requestAnimationFrame(() => {
+      childFrame = window.requestAnimationFrame(() => {
+        document.getElementById('hh-test-customizer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      if (childFrame !== undefined) window.cancelAnimationFrame(childFrame)
+    }
+  }, [openFromInsights, insightsCategory])
   const allowedFilters = ['all', 'notStarted', 'inProgress', 'completed', 'remaining']
   const requestedFilter = allowedFilters.includes(initialStatusFilter) ? initialStatusFilter : null
   const [showList, setShowList] = useState(true)
@@ -150,6 +171,14 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }, [data, locale])
   const root = '/' + locale + '/app'
   const selectionPreferences = currentPlan?.selectionPreferences || data.latestTestPlan?.selectionPreferences || {}
+  // A category-scoped invitation starts a fresh *filter view*, never modifies
+  // stored selections. Saving uses the existing appendActive flow.
+  const categoryFocus = TEST_RECOMMENDATION_FOCUS.some((item) => item.key === insightsCategory) ? [insightsCategory] : []
+  const explorerPreferences = openFromInsights
+    ? { focus: categoryFocus, areas: insightsCategory === 'wu-xing' ? ['wu-xing'] : [] }
+    : selectionPreferences
+  const initialFilterGroup = !openFromInsights || !insightsCategory ? null
+    : insightsCategory === 'wu-xing' ? 'areas' : categoryFocus.length ? 'topics' : null
   const priorityLabels = (selectionPreferences.focus || []).map((key) => TEST_RECOMMENDATION_FOCUS.find((item) => item.key === key)?.label?.[locale] || key)
   const axisLabels = (selectionPreferences.axes || []).map((key) => TEST_EXPLORER_AXIS_LABELS[key]?.[locale] || TEST_EXPLORER_AXIS_LABELS[key]?.en || key)
   const savedPriorities = [...priorityLabels, ...axisLabels]
@@ -443,8 +472,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
           </div>
         </aside>}
-        <TestExplorer key={currentPlan?.id || 'new'} locale={locale}
-          audience="account" onStart={choose} initialPreferences={selectionPreferences}
+        <TestExplorer key={(currentPlan?.id || 'new') + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
+          audience="account" onStart={choose} initialPreferences={explorerPreferences}
+          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
           onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>

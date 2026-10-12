@@ -6,6 +6,7 @@ import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Pla
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
+import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 
 const TEXT = {
   en: {
@@ -73,17 +74,10 @@ const TEXT = {
   },
 }
 
-const TOPICS = [
-  { key:'stress', en:'Stress', ru:'Стресс', es:'Estrés', Icon:Zap },
-  { key:'anxiety', en:'Anxiety', ru:'Тревога', es:'Ansiedad', Icon:Heart },
-  { key:'mood', en:'Mood', ru:'Настроение', es:'Ánimo', Icon:Smile },
-  { key:'sleep', en:'Sleep', ru:'Сон', es:'Sueño', Icon:Moon },
-  // These keys are deliberately mapped to existing, validated focus facets.
-  { key:'body', en:'Energy', ru:'Энергия', es:'Energía', Icon:Sun },
-  { key:'relationships', en:'Relationships', ru:'Отношения', es:'Relaciones', Icon:Users },
-  { key:'resources', en:'Self-support', ru:'Внутренняя опора', es:'Apoyo interior', Icon:Leaf },
-  { key:'attention', en:'Focus', ru:'Концентрация', es:'Atención', Icon:Target },
-]
+// These keys are mapped to existing test facets and shared with Insights.
+const TOPIC_ICONS = { stress: Zap, anxiety: Heart, mood: Smile, sleep: Moon,
+  body: Sun, relationships: Users, resources: Leaf, attention: Target }
+const TOPICS = HOME_TEST_TOPICS.map((topic) => ({ ...topic, Icon: TOPIC_ICONS[topic.key] }))
 
 function iconFor(entry) {
   const topics = entry.topics || []

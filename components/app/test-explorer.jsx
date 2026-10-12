@@ -101,7 +101,7 @@ const GUIDED_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null }) {
   const c = COPY[locale] || COPY.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const quick = QUICK_COPY[locale] || QUICK_COPY.en
@@ -171,8 +171,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [axisFilter, setAxisFilter] = useState(null)
   const [actionError, setActionError] = useState(null)
   const [starting, setStarting] = useState(false)
-  const [customizeOpen, setCustomizeOpen] = useState(false)
-  const [activeFilterGroup, setActiveFilterGroup] = useState(null)
+  const [customizeOpen, setCustomizeOpen] = useState(Boolean(openFiltersInitially))
+  const [activeFilterGroup, setActiveFilterGroup] = useState(initialFilterGroup)
   const [showAll, setShowAll] = useState(false)
   const [browseFull, setBrowseFull] = useState(false)
   const [simpleSelectionChanged, setSimpleSelectionChanged] = useState(false)

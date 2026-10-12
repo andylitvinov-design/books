@@ -88,3 +88,70 @@
   .hh-app .hh-insights-test-card .hh-insights-open{font-size:.86rem!important}
   .hh-app .hh-insights-period-guide{font-size:.81rem!important}
 }
+
+
+/* The eight Insights category tiles share the homepage test picker's topic
+   labels and visual language. A category contains real assessment cards, not
+   a new derived clinical score. */
+.hh-app .hh-insights-category-filters{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:13px 0 16px;
+}
+.hh-app .hh-insights-category-filter{
+  display:flex;align-items:center;gap:8px;min-width:0;min-height:54px;
+  padding:10px 12px!important;border:1px solid #e1d9cc!important;border-radius:14px!important;
+  background:#fffdf9!important;color:#3f3934!important;text-align:left!important;
+  font-size:.88rem!important;cursor:pointer;
+}
+.hh-app .hh-insights-category-filter svg{flex:none}
+.hh-app .hh-insights-category-filter span{flex:1;min-width:0}
+.hh-app .hh-insights-category-filter small{font-size:.73rem;color:#6f756e}
+.hh-app .hh-insights-category-filter[aria-pressed=true]{
+  border-color:#b7d5ca!important;background:#e4f0ec!important;
+  color:#215f55!important;font-weight:750!important;
+}
+.hh-app .hh-insights-category-filter:focus-visible,
+.hh-app .hh-insights-add-test:focus-visible{
+  outline:3px solid #25776d!important;outline-offset:2px;
+}
+.hh-app .hh-insights-categories{display:grid;gap:22px}
+.hh-app .hh-insights-category{min-width:0}
+.hh-app .hh-insights-category-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  margin:12px 0 13px;border-bottom:1px solid #e5e1d8;padding-bottom:8px;
+}
+.hh-app .hh-insights-category-heading-title{display:flex;gap:11px;align-items:center;min-width:0}
+.hh-app .hh-insights-category-icon{
+  width:36px;height:36px;border-radius:12px;background:#e7f1ea;
+  color:#2a7466;display:grid;place-items:center;flex:none;
+}
+.hh-app .hh-insights-category-heading h2{
+  font-family:Georgia,serif;font-weight:500;
+  font-size:clamp(1.26rem,2.7vw,1.65rem);margin:0!important;
+}
+.hh-app .hh-insights-category-heading>span{font-size:.8rem;color:#6e766e;white-space:nowrap}
+.hh-app .hh-insights-category-empty{font-size:.9rem;color:#6d685f;line-height:1.45}
+.hh-app .hh-insights-add-test{
+  display:flex;justify-content:space-between;align-items:center;gap:14px;
+  padding:14px 17px;margin:11px 0 5px;border:1px dashed #a4c4b5;
+  border-radius:16px;background:#f5faf5;color:#286e58;text-decoration:none!important;
+}
+.hh-app .hh-insights-add-test:hover{background:#e9f5ed;border-style:solid}
+.hh-app .hh-insights-add-test .hh-insights-add-mark{
+  font-size:1.7rem;line-height:1;width:33px;height:33px;
+  display:grid;place-items:center;border-radius:50%;background:#e1efe3;flex:none;
+}
+.hh-app .hh-insights-add-test>span:nth-child(2){display:grid;gap:3px;flex:1}
+.hh-app .hh-insights-add-test strong{font-size:.95rem}
+.hh-app .hh-insights-add-test small{color:#687d6e;font-size:.79rem}
+@media(max-width:880px){
+  .hh-app .hh-insights-category-filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .hh-app .hh-insights-category-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .hh-app .hh-insights-category-filter{min-height:49px;padding:8px 9px!important;font-size:.81rem!important}
+  .hh-app .hh-insights-add-test{padding:11px 12px;gap:9px}
+}
+@media(max-width:360px){
+  .hh-app .hh-insights-category-filter{font-size:.77rem!important}
+  .hh-app .hh-insights-category-filter svg{width:17px}
+}
