@@ -28,6 +28,8 @@ const COPY = {
     keep: 'Keep existing set', replace: 'Use new selection', error: 'Could not save your test selection. Please try again.',
     retry: 'Try again', account: 'My tests', history: 'Results history', privacy: 'Your responses and results stay private in your personal Cabinet. These self-checks are not a diagnosis.',
     signInFailed: 'Google sign-in was not completed. You can retry when you are ready.',
+    added: 'New tests were added to My tests. Your earlier tests and progress are safe.',
+    capacity: 'Your saved test list has reached 100 tests. Remove an unused test to add more.',
     remove: 'Remove from my tests', removed: 'Removed from selection. Saved results and answers are unchanged.',
     stale: 'Your selection was updated elsewhere. Refreshed the current list; please try again.',
     filters: 'Edit test filters', closeFilters: 'Close filters', pendingReview: 'Review your proposed test selection',
@@ -44,6 +46,8 @@ const COPY = {
     keep: 'Оставить текущий', replace: 'Использовать новый', error: 'Не удалось сохранить подборку. Повторите попытку.',
     retry: 'Повторить', account: 'Мои тесты', history: 'История результатов', privacy: 'Ваши ответы и результаты приватны и хранятся в личном кабинете. Эти тесты не являются диагнозом.',
     signInFailed: 'Вход через Google не завершён. При необходимости повторите вход.',
+    added: 'Новые тесты добавлены в «Мои тесты». Предыдущие тесты и прогресс сохранены.',
+    capacity: 'В списке уже 100 тестов. Уберите ненужный тест, чтобы добавить новый.',
     remove: 'Убрать из набора', removed: 'Тест убран из подборки. Ответы и результаты сохранены.',
     stale: 'Подборка уже изменилась. Список обновлён; попробуйте ещё раз.',
     filters: 'Изменить фильтры тестов', closeFilters: 'Закрыть фильтры', pendingReview: 'Проверить новую подборку тестов',
@@ -175,11 +179,13 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         })),
         operationId: crypto.randomUUID(),
         replaceActive,
+        appendActive: !replaceActive,
         ...(selectionPreferences === undefined ? {} : { selectionPreferences }),
       })
       try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Storage may be blocked. */ }
       setConflict(null)
       setPlan(created)
+      setNotice(c.added)
       setExploring(false)
       setShowList(true)
       // Reconcile the saved account state before replacing the handoff URL.
@@ -187,7 +193,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       await reload()
       router.replace(root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
-      if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
+      if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
+      else if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
       else setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
     } finally {
       setBusy(false)
@@ -214,14 +221,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         if (!pending) window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY)
       } catch { /* Browser may disable tab storage. */ }
       if (!pending) return
-      if (data.activeTestPlan) {
-        const ids = pending.keys.map((key) => entries.find((entry) => entry.key === key)?.definition?.id)
-        if (JSON.stringify(ids) === JSON.stringify(data.activeTestPlan.definitionIds)) {
-          // Same tests, new priorities: persist preferences without discarding progress.
-          await create(pending.keys, false, pending.preferences)
-        } else setConflict({ keys: pending.keys, preferences: pending.preferences })
-        return
-      }
+      // Add all new tests after Google OAuth, regardless of any existing plan.
+      // The server merges under the account lock and preserves draft/completion.
       await create(pending.keys, false, pending.preferences)
     }
     // Do not reset the guard in cleanup: a StrictMode replay is not a new
@@ -230,18 +231,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }, []) // eslint-disable-line react-hooks/exhaustive-deps -- one handoff per mounted selection, including StrictMode.
 
   async function choose(entriesToStart, selectionPreferences) {
-    const keys = entriesToStart.map((entry) => entry.key)
-    if (data.activeTestPlan) {
-      const ids = entriesToStart.map((entry) => entry.definition?.id)
-      if (JSON.stringify(ids) !== JSON.stringify(data.activeTestPlan.definitionIds)) {
-        setConflict({ keys, preferences: selectionPreferences })
-        setExploring(true)
-        return
-      }
-      await create(keys, false, selectionPreferences)
-      return
-    }
-    await create(keys, false, selectionPreferences)
+    await create(entriesToStart.map((entry) => entry.key), false, selectionPreferences)
   }
   function openFilters() {
     setExploring((open) => !open)
@@ -426,7 +416,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         </MyTestsDashboard>
         {initializing && <p role="status" className={styles.inlineNotice}>{c.preparing}</p>}
         {error && <p role="alert" className={styles.inlineError}>{error}
-          <button type="button" onClick={()=>setError('')}>{c.retry}</button></p>}
+          <button type="button" onClick={() => {
+            let pending = null
+            try { pending = readTestSelectionIntent(window.sessionStorage.getItem(PENDING_TEST_SELECTION_KEY)) } catch {}
+            if (pending) void create(pending.keys, false, pending.preferences)
+            else setError('')
+          }}>{c.retry}</button></p>}
         {notice && <p role="status" className={styles.inlineNotice}>{notice}</p>}
       </section>
       <details className={styles.portraitDetails}>

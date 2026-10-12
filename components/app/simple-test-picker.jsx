@@ -24,7 +24,7 @@ const TEXT = {
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'Save your selection and get started',
-    browse:'Browse full database', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
+    browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
     noTests:'Choose a test to continue.', reset:'Use suggested set', back:'Back to easy selection', saved:'Already have a plan? Open my saved tests',
     more:'Show {count} more tests', showing:'Showing {shown} of {total} matching tests', fit:'match', fitInfo:'Estimated relevance from your selected topics and concerns — not a clinical score or diagnosis.',
     problemsTitle:'Which problems are most important?', problemsHelp:'Optional: choose what specifically troubles you. These suggestions come from the topics above.', problemsEmpty:'Choose a topic above to see relevant concerns.', problemsClear:'Clear problems', problemsMore:'Show more problems', problemsLess:'Show fewer problems',
@@ -45,7 +45,7 @@ const TEXT = {
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Сохранить подборку и начать',
-    browse:'Открыть всю базу тестов', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
+    browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
     noTests:'Выберите тест для продолжения.', reset:'Вернуть рекомендованный набор', back:'Назад к простому подбору', saved:'Уже есть подборка? Открыть мои тесты',
     more:'Показать ещё {count} тестов', showing:'Показано {shown} из {total} подходящих тестов', fit:'соответствие', fitInfo:'Ориентировочная релевантность по выбранным темам и проблемам — не диагноз и не показатель здоровья.',
     problemsTitle:'Какие проблемы беспокоят?', problemsHelp:'Необязательно: уточните запрос. Варианты зависят от выбранных тем.', problemsEmpty:'Сначала выберите тему — появятся соответствующие проблемы.', problemsClear:'Очистить проблемы', problemsMore:'Показать больше проблем', problemsLess:'Показать меньше проблем',
@@ -66,7 +66,7 @@ const TEXT = {
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Guardar selección y empezar',
-    browse:'Explorar base completa', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
+    browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
     noTests:'Elige una prueba para continuar.', reset:'Usar selección sugerida', back:'Volver al selector sencillo', saved:'¿Ya tienes pruebas? Abrir mis pruebas',
     more:'Mostrar {count} pruebas más', showing:'Mostrando {shown} de {total} pruebas', fit:'coincidencia', fitInfo:'Relevancia estimada por temas y dificultades seleccionadas; no es un diagnóstico.',
     problemsTitle:'¿Qué dificultades te preocupan?', problemsHelp:'Opcional: concreta tus inquietudes según los temas elegidos.', problemsEmpty:'Elige primero un tema para ver dificultades relacionadas.', problemsClear:'Borrar dificultades', problemsMore:'Mostrar más dificultades', problemsLess:'Mostrar menos dificultades',
@@ -104,7 +104,7 @@ export function SimpleTestPicker({
   maxMinutes, onMaxMinutes,
   professionalOnly, onProfessional,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
-  matchCount, onStart, onBrowseFull,
+  matchCount, onStart, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
   const c = TEXT[locale] || TEXT.en
@@ -275,6 +275,9 @@ export function SimpleTestPicker({
       </button>
       {actionError && <p className={styles.error} role="alert">{actionError.code || actionError.message || String(actionError)}</p>}
       {!activeBattery.length && <p className={styles.noMatches} role="status">{c.noTests}</p>}
+      <button type="button" className={styles.fullDatabase} onClick={onBrowseCore}>
+        <Compass size={20} aria-hidden="true"/>{c.core100}<ArrowRight size={17} aria-hidden="true" className={styles.browseArrow}/>
+      </button>
       <button type="button" className={styles.fullDatabase} onClick={onBrowseFull}>
         <Compass size={20} aria-hidden="true"/>{c.browse}<ChevronDown size={17} aria-hidden="true" className={styles.browseArrow}/>
       </button>

@@ -28,10 +28,9 @@ export function PublicTestExplorer({ locale, embedded = false }) {
   const submit = async (entries, selectionPreferences) => {
     setError('')
     try {
-      // Only cleared test identifiers are retained in this tab; never answers, email or tokens.
-      // The explicit Start action authorizes this short-lived handoff to the user's own account.
-      window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY,
-        makeTestSelectionIntent(entries.map((entry) => entry.key), Date.now(), selectionPreferences))
+      // Validate the selection before navigating. Account users are saved on
+      // the server immediately; only guests need a short same-tab OAuth intent.
+      const intent = makeTestSelectionIntent(entries.map((entry) => entry.key), Date.now(), selectionPreferences)
       let signedIn = false
       try {
         const session = await request('bootstrap', undefined, 'GET')
@@ -40,9 +39,22 @@ export function PublicTestExplorer({ locale, embedded = false }) {
         if (cause.status !== 401) throw cause
       }
       if (signedIn) {
-        router.push('/' + effectiveLocale + '/app/tests?selection=pending')
+        const saved = await request('test-plans', {
+          items: entries.map((entry) => ({
+            definitionKey: entry.definition.key,
+            definitionVersion: entry.definition.version,
+            instrumentLocale: entry.definition.instrumentLocale,
+          })),
+          operationId: crypto.randomUUID(),
+          appendActive: true,
+          selectionPreferences,
+        })
+        router.push('/' + effectiveLocale + '/app/tests?plan=' + encodeURIComponent(saved.id))
         return
       }
+      // No answers, personal data or account details are placed in browser
+      // storage. Keep the selected identifiers only for the Google round-trip.
+      window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY, intent)
       const { redirectUrl } = await request('auth/start', {
         locale: effectiveLocale, continueTo: 'tests',
       })

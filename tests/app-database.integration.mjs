@@ -1197,6 +1197,72 @@ test('durable guest and account assessment plans enforce ordered private sequent
 })
 
 
+test('a fresh selection appends to existing saved tests and keeps draft/completed progress', async () => {
+  const toItem = (def) => ({
+    definitionKey: def.key, definitionVersion: def.version,
+    instrumentLocale: def.instrumentLocale,
+  })
+  const original = await repo.createTestPlan(v2Actor, {
+    items: [enV2, weekly].map(toItem), operationId: randomUUID(), replaceActive: true,
+  })
+  const draft = await start(v2Actor, weekly)
+  const run = await start(v2Actor, enV2)
+  const saved = await save(run, v2Actor)
+  const result = await repo.submitRun(v2Actor, run.id, { expectedRevision: saved.revision })
+  const progressed = await repo.advanceTestPlan(v2Actor, original.id, {
+    completedRunId: result.runId, expectedRevision: original.revision,
+  })
+  assert.equal(progressed.status, 'active')
+  const added = await repo.createTestPlan(v2Actor, {
+    items: [mini, weekly].map(toItem), operationId: randomUUID(),
+    appendActive: true, selectionPreferences: { focus: ['anxiety'] },
+  })
+  assert.equal(added.id, original.id, 'preserves the active plan identity')
+  assert.deepEqual(added.definitionIds, [enV2.id, weekly.id, mini.id])
+  assert.deepEqual(added.completedRunIds, [result.runId])
+  assert.equal(added.currentIndex, progressed.currentIndex)
+  const retry = await repo.createTestPlan(v2Actor, {
+    items: [mini, weekly].map(toItem), operationId: randomUUID(), appendActive: true,
+    selectionPreferences: { focus: ['anxiety'] },
+  })
+  assert.deepEqual(retry.definitionIds, added.definitionIds, 'retry adds no duplicates')
+  assert.equal(retry.revision, added.revision, 'unchanged append is idempotent')
+  const after = await repo.bootstrap(v2Actor)
+  assert.equal(after.activeTestPlan.id, original.id)
+  assert.ok(after.runs.some((row) => row.id === draft.id), 'unfinished answers are not removed')
+  assert.ok(after.results.some((row) => row.id === result.id), 'completed result is not removed')
+  await assert.rejects(
+    () => repo.getTestPlan(a, original.id),
+    (error) => error.code === 'NOT_FOUND',
+  )
+})
+
+test('new tests reactivate an already completed selection, preserving its recorded result', async () => {
+  const toItem = (def) => ({
+    definitionKey: def.key, definitionVersion: def.version,
+    instrumentLocale: def.instrumentLocale,
+  })
+  const original = await repo.createTestPlan(v2Actor, {
+    items: [mini].map(toItem), operationId: randomUUID(), replaceActive: true,
+  })
+  const run = await start(v2Actor, mini)
+  const saved = await save(run, v2Actor)
+  const result = await repo.submitRun(v2Actor, run.id, { expectedRevision: saved.revision })
+  const completed = await repo.advanceTestPlan(v2Actor, original.id, {
+    completedRunId: result.runId, expectedRevision: original.revision,
+  })
+  assert.equal(completed.status, 'completed')
+  const reactivated = await repo.createTestPlan(v2Actor, {
+    items: [weekly].map(toItem), operationId: randomUUID(), appendActive: true,
+  })
+  assert.equal(reactivated.id, completed.id)
+  assert.equal(reactivated.status, 'active')
+  assert.deepEqual(reactivated.definitionIds, [mini.id, weekly.id])
+  assert.deepEqual(reactivated.completedRunIds, [result.runId])
+  assert.equal(reactivated.currentIndex, 1)
+  assert.equal((await repo.bootstrap(v2Actor)).activeTestPlan.id, original.id)
+})
+
 test('owner can remove saved selections atomically without erasing answers, results or other plan items', async () => {
   const chosen=[enV2,weekly,mini]
   const plan=await repo.createTestPlan(v2Actor,{
