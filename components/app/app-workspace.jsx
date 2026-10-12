@@ -16,6 +16,8 @@ import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
+import { periodWindow, resultsForPeriod, periodComparison } from '@/lib/assessments/dashboard-gauges'
+import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
 import { periodComparison, periodWindow, resultsForPeriod } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
@@ -1765,83 +1767,94 @@ function readableScaleName(dimension, locale) {
 
 function PortfolioPage({ data, locale }) {
   const ru = locale === 'ru'
-  const allGroups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
   const [period, setPeriod] = useState('all')
-  const [periodStart, setPeriodStart] = useState('')
-  const [periodEnd, setPeriodEnd] = useState('')
-  const validPeriod = periodWindow(period, periodStart, periodEnd).valid
-  const groups = allGroups.map(group => {
-    const history = resultsForPeriod(group.history, period, periodStart, periodEnd)
-    const { current, previous } = periodComparison(history)
-    return { ...group, latest: current, periodPrior: previous, history, count: history.length }
-  }).filter(group => group.latest)
+  const [rangeStart, setRangeStart] = useState('')
+  const [rangeEnd, setRangeEnd] = useState('')
+  const [selected, setSelected] = useState(null)
+  const window = periodWindow(period, rangeStart, rangeEnd)
+  const periodResults = resultsForPeriod(data.results || [], period, rangeStart, rangeEnd)
+  const groups = assessmentHistoryGroups(periodResults, [], locale).filter(group => group.latest)
   const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
   const dimensions = data.snapshot?.dimensions || []
-  const [selected, setSelected] = useState(null)
+  const periods = [
+    ['all', ru ? 'Всё время' : 'All time'],
+    ['week', ru ? '7 дней' : '7 days'],
+    ['month', ru ? 'Месяц' : '30 days'],
+    ['quarter', ru ? '3 месяца' : '90 days'],
+    ['custom', ru ? 'Свои даты' : 'Custom'],
+  ]
 
   return (
     <section className="hh-insights-page" aria-labelledby="hh-insights-title" data-testid="completed-test-insights">
       <header className="hh-insights-intro">
         <div>
           <p className="hh-kicker">Insights · Holistic House</p>
-          <h1 id="hh-insights-title">{ru ? 'Мои пройденные тесты' : 'My completed tests'}</h1>
+          <h1 id="hh-insights-title">{ru ? 'Панель моих результатов' : 'My results dashboard'}</h1>
           <p>{ru
-            ? 'Выберите тест, чтобы прочитать именно его результаты, объяснение и рекомендации. Измерения остаются приватными.'
-            : 'Choose a completed test to read its results, interpretation and practical recommendations. Your results stay private.'}</p>
+            ? 'Спидометры ваших пройденных тестов. Каждый показывает свою шкалу, а не общий процент здоровья.'
+            : 'A dashboard of your completed tests. Each dial shows its own questionnaire scale, not an overall health score.'}</p>
         </div>
-        <span className="hh-insights-total">{groups.length} {ru ? 'пройдено' : 'completed'}</span>
+        <span className="hh-insights-total">{groups.length} {ru ? 'тестов' : 'tests'}</span>
       </header>
 
-      <div className="hh-insights-period" role="group" aria-label={ru ? 'Период анализа' : 'Analysis period'}>
-        <span>{ru ? 'Период:' : 'Period:'}</span>
-        {[
-          ['all', ru ? 'Всё время' : 'All time'],
-          ['week', ru ? 'Неделя' : '7 days'],
-          ['month', ru ? 'Месяц' : '30 days'],
-          ['quarter', ru ? '3 месяца' : '3 months'],
-          ['custom', ru ? 'Свой период' : 'Custom'],
-        ].map(([key, title]) => (
-          <button key={key} type="button" aria-pressed={period === key}
-            onClick={() => setPeriod(key)}>{title}</button>
-        ))}
-      </div>
-      {period === 'custom' && <div className="hh-insights-date-range">
-        <label>{ru ? 'С' : 'From'} <input type="date" value={periodStart} onChange={event => setPeriodStart(event.target.value)} /></label>
-        <label>{ru ? 'По' : 'To'} <input type="date" value={periodEnd} onChange={event => setPeriodEnd(event.target.value)} /></label>
-      </div>}
-      {!validPeriod ? (
-        <div className="hh-insights-empty hh-panel" role="status">
-          <p>{ru ? 'Выберите корректные даты начала и конца периода.' : 'Choose valid start and end dates for comparison.'}</p>
+      <fieldset className="hh-insights-period" data-insights-period>
+        <legend>{ru ? 'Период наблюдения' : 'Review period'}</legend>
+        <div className="hh-insights-period-buttons" role="group" aria-label={ru ? 'Выберите период' : 'Choose a period'}>
+          {periods.map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={period === value}
+              onClick={() => setPeriod(value)}>{label}</button>
+          ))}
         </div>
-      ) : groups.length ? (
-        <div className="hh-insights-test-list">
+        {period === 'custom' && <div className="hh-insights-custom-dates">
+          <label>{ru ? 'С' : 'From'}
+            <input type="date" value={rangeStart} onChange={event => setRangeStart(event.target.value)} />
+          </label>
+          <label>{ru ? 'По' : 'To'}
+            <input type="date" value={rangeEnd} onChange={event => setRangeEnd(event.target.value)} />
+          </label>
+        </div>}
+        {!window.valid && <p role="status" className="hh-insights-period-alert">{ru
+          ? 'Укажите две действительные даты: начало не позже окончания.'
+          : 'Choose valid start and end dates, with the start no later than the end.'}</p>}
+        <p className="hh-insights-period-note">{ru
+          ? 'Стрелка сравнивает последний результат с первым совместимым замером за выбранный период. Серые шкалы не означают «лучше» или «хуже».'
+          : 'Arrows compare the latest result with the earliest compatible measurement in this period. Neutral scales do not imply better or worse.'}</p>
+      </fieldset>
+
+      {groups.length ? (
+        <div className="hh-insights-test-list hh-insights-dash-grid">
           {groups.map(group => {
-            const latest = group.latest
+            const { current, previous } = periodComparison(group.history)
+            const latest = current || group.latest
             const report = buildAssessmentResultReport(latest, locale)
             const first = report.sections[0]
-            const main = latest.dimensions?.[0]
+            const primary = latest.dimensions?.[0]
             return (
-              <article className="hh-insights-test-card" key={group.key}>
-                <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}>
-                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact /></div>
-                  <div className="hh-insights-test-body">
-                    <div className="hh-insights-test-meta">
-                      <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
+              <article className="hh-insights-test-card hh-insights-dash-card" key={group.key} data-insights-gauge-card>
+                <Link href={'/' + locale + '/app/results/' + encodeURIComponent(latest.id)} className="hh-insights-test-link" prefetch={false}>
+                  <div className="hh-insights-dash-body">
+                    <div className="hh-insights-dial">
+                      {primary ? <ScoreGauge dimension={primary} locale={locale} compact />
+                        : <span>{ru ? 'Без шкалы' : 'No scale'}</span>}
                     </div>
-                    <h2>{group.title}</h2>
-                    {first && <p className="hh-insights-test-summary">{first.construct}: <strong>{first.value}</strong> · {first.band}</p>}
-                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} compact />}
-                    {latest.dimensions?.length > 1 &&
-                      <p className="hh-insights-test-scores">+ {latest.dimensions.length - 1} {ru ? 'дополнительных шкал' : 'more scales'}</p>}
-                    <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
+                    <div className="hh-insights-dash-info">
+                      <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
+                      <h2>{group.title}</h2>
+                      {first && <p className="hh-insights-dash-construct">{first.construct || first.title}</p>}
+                      {primary && <ScoreTrend current={latest} previous={previous} dimensionKey={primary.key} locale={locale} />}
+                      {latest.dimensions?.length > 1 && <span className="hh-insights-extra-measures">
+                        {ru ? 'Ещё шкал: ' : 'Other scales: '}{latest.dimensions.length - 1}
+                      </span>}
+                      <strong className="hh-insights-dash-open">{ru ? 'Отчёт и рекомендации' : 'Report & next steps'} <span aria-hidden="true">→</span></strong>
+                    </div>
                   </div>
                 </Link>
                 {group.count > 1 && (
                   <details className="hh-insights-history">
-                    <summary>{ru ? `История прохождений (${group.count})` : `Assessment history (${group.count})`}</summary>
+                    <summary>{ru ? 'История прохождений (' + group.count + ')' : 'Assessment history (' + group.count + ')'}</summary>
                     <ul>{group.history.map(attempt => <li key={attempt.id}>
                       <time dateTime={attempt.measurementAt}>{dateLabel(attempt.measurementAt, locale)}</time>
-                      <Link href={`/${locale}/app/results/${encodeURIComponent(attempt.id)}`} prefetch={false}>{ru ? 'Посмотреть отчёт' : 'View report'}</Link>
+                      <Link href={'/' + locale + '/app/results/' + encodeURIComponent(attempt.id)} prefetch={false}>{ru ? 'Посмотреть отчёт' : 'View report'}</Link>
                     </li>)}</ul>
                   </details>
                 )}
@@ -1851,32 +1864,31 @@ function PortfolioPage({ data, locale }) {
         </div>
       ) : (
         <div className="hh-insights-empty hh-panel">
-          <h2>{allGroups.length
-            ? (ru ? 'Нет тестов за выбранный период' : 'No assessments in this period')
-            : (ru ? 'Отчётов пока нет' : 'No reports yet')}</h2>
-          <p>{allGroups.length
-            ? (ru ? 'Выберите более длинный период — сохранённые результаты не удалены.' : 'Try a longer time range. Your past results are still saved.')
-            : (ru ? 'Завершите первый тест — здесь появятся показатели и рекомендации.' : 'Finish your first assessment to see your gauges and recommendations here.')}</p>
-          {allGroups.length
-            ? <button type="button" onClick={() => setPeriod('all')}>{ru ? 'Всё время' : 'Show all time'}</button>
-            : <Link href={`/${locale}/app/tests`} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>}
+          <h2>{!window.valid
+            ? (ru ? 'Выберите правильный период' : 'Choose a valid period')
+            : (ru ? 'В этот период тестов нет' : 'No tests in this period')}</h2>
+          <p>{ru
+            ? 'Выберите другой период или пройдите тест. Уже сохранённые результаты не удаляются.'
+            : 'Select a different period or complete a test. Your existing results are not deleted.'}</p>
+          <Link href={'/' + locale + '/app/tests'} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>
         </div>
       )}
 
-      {allGroups.length > 0 && (
+      {(data.results || []).length > 0 && (
         <details className="hh-insights-export">
-          <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>
+          <summary>{ru ? 'Скачать полный отчёт (PDF, все даты)' : 'Download complete PDF (all dates)'}</summary>
           <ClientReportActions data={data} locale={locale} />
         </details>
       )}
       <div className="hh-insights-links">
-        <Link href={`/${locale}/app/history`} prefetch={false}>{ru ? 'История и динамика' : 'History & progress'}</Link>
-        <Link href={`/${locale}/app/tests`} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
+        <Link href={'/' + locale + '/app/history'} prefetch={false}>{ru ? 'История и динамика' : 'History & progress'}</Link>
+        <Link href={'/' + locale + '/app/tests'} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
       </div>
 
-      {allGroups.length > 0 && (
+      {(data.results || []).length > 0 && (
         <details className="hh-insights-advanced">
           <summary>{ru ? 'Дополнительно: общие графики и таблица измерений' : 'Advanced: combined charts and measurements'}</summary>
+          <p className="hh-insights-period-note">{ru ? 'Ниже показаны все сохранённые результаты независимо от фильтра периода.' : 'The advanced overview below includes all saved results, regardless of period.'}</p>
           <ProfileOverview profile={profile} locale={locale} />
           {dimensions.length > 0 && (
             <div className="hh-insights-advanced-metrics">
@@ -1893,7 +1905,7 @@ function PortfolioPage({ data, locale }) {
               <button type="button" onClick={() => setSelected(null)}>{ru ? 'Закрыть' : 'Close'}</button>
               <h2>{readableScaleName(selected, locale)}</h2>
               <p>{explanationFor(selected.key, locale)}</p>
-              <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{ru ? 'Полный отчёт' : 'Full report'}</Link>
+              <Link href={'/' + locale + '/app/results/' + selected.sourceResultId} prefetch={false}>{ru ? 'Полный отчёт' : 'Full report'}</Link>
             </div>
           )}
         </details>
@@ -1901,7 +1913,6 @@ function PortfolioPage({ data, locale }) {
     </section>
   )
 }
-
 function ProfileOverview({ profile, locale }) {
   const ru = locale === 'ru'
   const axisCopy = {
