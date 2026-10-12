@@ -22,8 +22,15 @@ const mixed = [2, 2, 2, 3, 0, 0] // Classic count 4; continuous sum 9 is not use
 const passed = label => { checks.push(label); console.log('PASS ' + label) }
 let page
 
-async function isolatedContext() {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'UTC' })
+async function isolatedContext(fixtureIp = '192.0.2.61') {
+  // RFC 5737 TEST-NET-1 fixtures, sent only to the asserted loopback app.
+  // Keep this suite independent from the other suites' 12/IP/hour budget.
+  // The application limiter and its headers contract remain unchanged.
+  assert.ok(['192.0.2.61', '192.0.2.62', '192.0.2.63'].includes(fixtureIp))
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 }, timezoneId: 'UTC',
+    extraHTTPHeaders: { 'X-Forwarded-For': fixtureIp },
+  })
   // Keep all browser traffic on loopback, including the synthetic auth provider.
   await context.route('**/*', route => {
     const url = new URL(route.request().url())
@@ -151,6 +158,21 @@ function assertStored(result, definition, expected) {
 }
 
 try {
+  // Negative control: fixture isolation must not disable or raise the limiter.
+  const limited = await isolatedContext('192.0.2.62')
+  for (let attempt = 0; attempt < 12; attempt++) {
+    await api(limited, 'guest/session', { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
+  }
+  const rejected = await limited.request.post(origin + '/api/app/guest/session', {
+    headers: { Origin: origin, 'Content-Type': 'application/json' },
+    data: { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' },
+  })
+  assert.equal(rejected.status(), 429)
+  assert.equal((await rejected.json()).error, 'RATE_LIMITED')
+  const independent = await isolatedContext('192.0.2.63')
+  await api(independent, 'guest/session', { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
+  await limited.close(); await independent.close()
+  passed('Unchanged guest rate limit rejects the 13th same-IP session; an independent synthetic IP remains available')
   for (const locale of ['en', 'ru']) for (const audience of ['guest', 'account']) {
     const full = buildExplorerEntries({ locale, audience }).find(entry => entry.key === 'asrs-v1-18')
     assert.ok(full); assert.equal(full.selectable, false)
@@ -213,7 +235,7 @@ try {
   assert.equal(resultIds.size, 4)
   await guest.close()
   assert.deepEqual(errors, [])
-  await writeFile(output + '/verification.json', JSON.stringify({ commit: process.env.GITHUB_SHA, browser: await browser.version(), checks, blockedRemoteOrigins: [...new Set(blockedRemote)], guestSessions: 1, guestResults: resultIds.size, auth: 'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE', production: 'UNCHANGED' }, null, 2))
+  await writeFile(output + '/verification.json', JSON.stringify({ commit: process.env.GITHUB_SHA, browser: await browser.version(), checks, blockedRemoteOrigins: [...new Set(blockedRemote)], guestSessions: 14, guestJourneySessions: 1, rateControlSessions: 13, guestResults: resultIds.size, auth: 'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE', production: 'UNCHANGED' }, null, 2))
 } catch (error) {
   await page?.screenshot({ path: output + '/failure.png', fullPage: true }).catch(() => {})
   await writeFile(output + '/verification.json', JSON.stringify({ commit: process.env.GITHUB_SHA, checks, failure: error.message }, null, 2))
