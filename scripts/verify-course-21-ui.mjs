@@ -9,8 +9,11 @@ assertIsolated()
 const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
 assert.match(origin,/^http:\/\/(127\.0\.0\.1|localhost):\d+$/)
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium,browser=await engine.launch()
-const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true}),page=await context.newPage()
-const output='artifacts/app-r1/course-21-'+engine.name(),checks=[],pageErrors=[],posts=[]
+// page.route cannot intercept service-worker-owned fetches. Only this mocked-DTO
+// UI context blocks workers; production SW and full database journeys are unchanged.
+// https://playwright.dev/docs/api/class-page#page-route
+const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,serviceWorkers:'block'}),page=await context.newPage()
+const output='artifacts/app-r1/course-21-'+engine.name(),checks=[],pageErrors=[],posts=[],requests=[]
 await mkdir(output,{recursive:true})
 const course={id:'synthetic-21-course',sourceCourseId:'synthetic-r3-course',revision:1,status:'active',durationDays:21,contentVersion:COURSE_CONTENT_21_VERSION,timeZone:'UTC'}
 const rows=['mood','tension','clarity','recovery','connection','energy','load','functioning'].map((key,index)=>({
@@ -34,6 +37,7 @@ await page.route('**/api/app/course**',async route=>{
  }
  const value=path==='/api/app/course'?r3:path.endsWith('/preview')?proposal:{...fixture,outline:courseOutline21(locale)}
  await route.fulfill({status:200,contentType:'application/json',headers:{'Cache-Control':'private, no-store'},body:JSON.stringify(value)})
+ requests.push({path,method:route.request().method(),locale:url.searchParams.get('locale'),fulfilledStatus:200,responseStage:value.course?.stage,responseAvailable:value.available,responseEnrollmentReady:value.enrollmentReady,responseStatus:value.status,profileCount:value.profile?.rows.length})
 })
 const passed=label=>{checks.push(label);console.log('PASS '+label)}
 async function show(lang,view){locale=lang;fixture=view;await page.goto(origin+'/'+lang+'/app/course');await expect(page.locator('[data-my-course]')).toBeVisible({timeout:30000});await page.waitForLoadState('networkidle')}
@@ -46,8 +50,11 @@ try{
  }
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
  await show('en',{available:true,enrollmentReady:true,course:null})
+ assert.ok(requests.some(r=>r.path==='/api/app/course'&&r.method==='GET'&&r.fulfilledStatus===200&&r.responseStage===3),'R3 mock GET must be observed')
+ assert.ok(requests.some(r=>r.path==='/api/app/course-21'&&r.method==='GET'&&r.fulfilledStatus===200&&r.responseAvailable===true&&r.responseEnrollmentReady===true),'21-day mock GET must be observed')
  await page.getByRole('button',{name:'Review the 21-day programme',exact:true}).click()
  const component=page.locator('[data-course-daily-21]');await expect(component.locator('[data-course-scale]')).toHaveCount(8)
+ assert.ok(requests.some(r=>r.path==='/api/app/course-21/preview'&&r.method==='GET'&&r.fulfilledStatus===200&&r.responseAvailable===true&&r.responseStatus==='ready-to-review'&&r.profileCount===8),'Exact synthetic preview GET must be observed before scale interaction')
  for(const key of ['mood','tension','clarity'])await component.getByRole('checkbox',{name:'Synthetic scale '+key,exact:true}).check()
  await component.getByRole('button',{name:'Review and start 21 learning days',exact:true}).click()
  await expect(component.getByRole('dialog')).toBeVisible();await expect(component.getByRole('button',{name:'Agree and start',exact:true})).toBeDisabled()
@@ -87,7 +94,12 @@ try{
  assert.equal('comment' in sent.feedback,false);assert.equal('reflectionAnswer' in sent.feedback,false)
  passed('409 retains both drafts; unchecked private text omitted from POST')
  assert.deepEqual(pageErrors,[])
+}catch(error){
+ await page.screenshot({path:output+'/failure.png',fullPage:true}).catch(()=>{})
+ await writeFile(output+'/failure-dom.html',await page.content()).catch(()=>{})
+ console.log('COURSE21_FAILURE_DIAGNOSTICS '+JSON.stringify({url:page.url(),requests,buttons:await page.getByRole('button').allTextContents(),pageErrors}))
+ throw error
 }finally{
- await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,pageErrors,scope:'SYNTHETIC_COURSE_DTO_BROWSER_UI_NOT_DATABASE_OR_REAL_INTERPRETATIONS',auth:'ISOLATED_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2))
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,pageErrors,requests,scope:'SYNTHETIC_COURSE_DTO_BROWSER_UI_NOT_DATABASE_OR_REAL_INTERPRETATIONS',serviceWorkerCoverage:'EXCLUDED_FOR_MOCKED_DTO_INTERCEPTION; REAL_SW_ENABLED_RELEASE_PATH_REQUIRED',auth:'ISOLATED_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2))
  await browser.close()
 }

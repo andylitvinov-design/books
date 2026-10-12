@@ -10,58 +10,58 @@ type OfferId = "stress" | "situation" | "wu";
 type OfferCopy = { id: OfferId; label: string; title: string; description: string; action: string };
 const COPY: Record<Locale, { eyebrow: string; title: string; intro: string; paths: OfferCopy[] }> = {
   en: {
-    eyebrow: "START HERE · COMPLIMENTARY",
-    title: "Three free ways to understand yourself",
-    intro: "Start free wellbeing monitoring or request a personal written reflection. Choose what helps you now — no obligation to book a session.",
+    eyebrow: "THREE FREE STARTING POINTS",
+    title: "Start with a free personal assessment",
+    intro: "Choose a personal written review or a self-check with clear results. No paid session is required.",
     paths: [
       {
-        id: "stress",
-        label: "Free monitoring",
-        title: "Mental wellbeing & inner resources",
-        description: "Check stress, mood, sleep and inner resilience. See clear results and practical guidance; save them if you want to track changes over time.",
-        action: "Start free monitoring",
-      },
-      {
         id: "situation",
-        label: "Free written review",
-        title: "Personal situation analysis",
-        description: "Describe your question and draw Me / Goal / Problem. Request Andrey's personal written reflection.",
-        action: "Request free review",
+        label: "Free · Written review",
+        title: "Free situation analysis",
+        description: "Describe your question, complete a short form and draw Me / Goal / Problem. Request Andrey's personal written reflection.",
+        action: "Request free situation analysis",
       },
       {
         id: "wu",
-        label: "Complimentary gift",
-        title: "Wu Xing resource profile",
-        description: "Request a personal reflection on your resources using Andrey's symbolic five-element model.",
-        action: "Explore free resource profile",
+        label: "Free · Five Elements",
+        title: "Free Wu Xing resources & wellbeing profile",
+        description: "Explore energy, balance and inner resources through a symbolic Five Elements model. Request a personal written profile.",
+        action: "Request free Wu Xing profile",
+      },
+      {
+        id: "stress",
+        label: "Free · Self-tests",
+        title: "Stress assessment & personality portrait",
+        description: "Take stress, wellbeing and personality questionnaires. See scores, explanations and practical recommendations, and save results to track changes.",
+        action: "Start free tests",
       },
     ],
   },
   ru: {
-    eyebrow: "НАЧНИТЕ ЗДЕСЬ · БЕСПЛАТНО",
-    title: "Три бесплатных способа лучше понять себя",
-    intro: "Начните бесплатный мониторинг состояния или закажите личный письменный разбор. Выберите то, что полезно сейчас, без обязательства записываться на сессию.",
+    eyebrow: "ТРИ БЕСПЛАТНЫЕ ВОЗМОЖНОСТИ",
+    title: "Начните с бесплатного анализа",
+    intro: "Выберите личный письменный разбор или пройдите тесты с понятными результатами. Платная сессия не требуется.",
     paths: [
       {
-        id: "stress",
-        label: "Бесплатный мониторинг",
-        title: "Психологическое состояние и ресурсы",
-        description: "Оцените стресс, настроение, сон и внутреннюю устойчивость. Получите результаты и рекомендации; при желании сохраняйте их, чтобы видеть динамику.",
-        action: "Начать бесплатный мониторинг",
-      },
-      {
         id: "situation",
-        label: "Бесплатный разбор",
-        title: "Личный анализ ситуации",
-        description: "Опишите вопрос, нарисуйте «Я / Цель / Проблема» и запросите персональный письменный разбор.",
-        action: "Заказать бесплатный анализ",
+        label: "Бесплатно · Письменный разбор",
+        title: "Бесплатный анализ ситуации",
+        description: "Опишите вопрос, заполните короткую анкету и сделайте рисунок «Я / Цель / Проблема». Запросите персональный письменный разбор.",
+        action: "Заказать анализ ситуации",
       },
       {
         id: "wu",
-        label: "Подарок",
-        title: "Профиль ресурсов У-Син",
-        description: "Закажите личный обзор ресурсов по авторской символической модели пяти стихий.",
-        action: "Открыть профиль ресурсов",
+        label: "Бесплатно · Пять стихий",
+        title: "Бесплатный анализ ресурсов и самочувствия по У-Син",
+        description: "Исследуйте энергию, баланс и внутренние ресурсы через символическую модель пяти стихий. Запросите личный письменный профиль.",
+        action: "Заказать профиль У-Син",
+      },
+      {
+        id: "stress",
+        label: "Бесплатно · Тестирование",
+        title: "Анализ стресса и психологический портрет",
+        description: "Пройдите опросники о стрессе, самочувствии и чертах личности. Получите показатели, объяснения и рекомендации, сохраняйте результаты в кабинете.",
+        action: "Пройти бесплатные тесты",
       },
     ],
   },
@@ -125,8 +125,8 @@ export function FreeInsightsPaths({
       </div>
       <p className={styles.note}>
         {locale === "ru"
-          ? "Тесты не ставят медицинский диагноз. Личные разборы выполняются письменно после получения вашего запроса; это не бесплатный звонок."
-          : "Self-checks are not medical diagnoses. Personal reviews are written after your request is received, not free live calls."}
+          ? "У-Син — символическая модель ресурсов, не медицинская диагностика. Тесты не ставят диагноз. Личные разборы письменные, это не бесплатный звонок."
+          : "Wu Xing is a symbolic reflection, not a health diagnosis. Self-checks are not medical diagnoses. Personal reviews are written after a request, not free live calls."}
       </p>
     </section>
   );
