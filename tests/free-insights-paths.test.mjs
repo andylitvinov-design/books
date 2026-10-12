@@ -51,6 +51,14 @@ test("the public and cabinet offers describe free wellbeing and resources monito
   assert.match(offer, /not medical diagnoses/);
 });
 
+test("Services hero advertises wellbeing monitoring alongside the two other distinct free offers", () => {
+  const hero = read("components/services-conversion-hero.tsx");
+  assert.match(hero, /free mental wellbeing and inner resources monitoring/);
+  assert.match(hero, /мониторинг психологического состояния и внутренних ресурсов/);
+  assert.match(hero, /a personal situation review/);
+  assert.match(hero, /профиль У-Син/);
+});
+
 test("the design stays compact, accessible and mobile-first in the existing warm palette", () => {
   assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:760px\)/);
