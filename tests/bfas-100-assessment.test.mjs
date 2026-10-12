@@ -126,13 +126,16 @@ test('BFAS reports and scale guides cover every construct in both UI languages w
 })
 
 test('BFAS adds one selectable professional instrument; existing immutable forms are byte-for-byte unchanged',()=>{
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,105)
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,42)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,106)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,43)
  const prior=ASSESSMENT_DEFINITIONS.filter(x=>x.key!=='bfas-100')
- assert.equal(prior.length,169)
- assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
+ assert.equal(prior.length,170)
+ assert.equal(digest(prior),'2b7a4c102bbcf65ed0b6f3d3530d803c93dfa8f27456b5c2bf4a490ea6fc3e93')
+ const earlierPrior=prior.filter(d=>d.key!=='mhc-sf')
+ assert.equal(earlierPrior.length,169)
+ assert.equal(digest(earlierPrior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
  const relationshipIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))
- const originalPrior=prior.filter(d=>!relationshipIds.has(d.id))
+ const originalPrior=earlierPrior.filter(d=>!relationshipIds.has(d.id))
  assert.equal(originalPrior.length,153)
  assert.equal(digest(originalPrior),'1743fb49e9f78bde406bc5055349a95c8b961961b21ab9d1a0fcb05fca1fb0bc')
  for(const locale of ['en','ru'])for(const audience of ['guest','account']){

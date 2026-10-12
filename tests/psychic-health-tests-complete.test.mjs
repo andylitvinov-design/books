@@ -19,10 +19,11 @@ const answers = (definition, value) =>
 
 test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 46 + RELATIONSHIPS_INTIMACY_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length)
+  assert.equal(items.length, 47 + RELATIONSHIPS_INTIMACY_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length)
   assert.deepEqual(
     items.map((item) => item.key).sort(),
     [
+    'mhc-sf',
     'scs-sf',
     'compassion-scale',
     'bfas-100',
