@@ -35,12 +35,12 @@ const offers = {
     {
       id: "dao",
       label: "Free · DAO / Wu Xing",
-      title: "Free DAO Health & Resource Profile",
-      promise: "Explore vitality and body–mind resource patterns through a symbolic Daoist model.",
+      title: "Free Wu Xing Resource Profile",
+      promise: "Explore personal resource patterns through an author-led symbolic Daoist model.",
       benefit: "Personal resource overview, not a medical diagnosis",
       image: images.dao,
       route: "dao-health-profile",
-      action: "Explore free profile",
+      action: "Explore free resource profile",
     },
     {
       id: "alchemy",
@@ -77,12 +77,12 @@ const offers = {
     {
       id: "dao",
       label: "Бесплатно · Дао / У-Син",
-      title: "Дао-диагностика здоровья",
+      title: "Бесплатный профиль ресурсов У-Син",
       promise: "Исследовать жизненный ресурс и баланс в авторской символической модели Дао.",
       benefit: "Профиль ресурсов, не медицинский диагноз",
       image: images.dao,
       route: "dao-health-profile",
-      action: "Узнать о диагностике",
+      action: "Открыть профиль ресурсов",
     },
     {
       id: "alchemy",
