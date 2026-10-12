@@ -4,6 +4,12 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { isNativePsiAlchemy } from "@/lib/native/client";
 
+declare global {
+  interface Window {
+    __cspPreHydration?: { destination: string | null; dispose: () => void };
+  }
+}
+
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
   return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
@@ -68,9 +74,17 @@ export function CspNavigationBoundary() {
     document.addEventListener("click", onClick, true);
     window.addEventListener("popstate", onPopState, true);
     window.addEventListener("pageshow", onPopState, true);
-    // Back can occur before hydration installs listeners, and bfcache restores
-    // a document without remounting React. Always compare the actual address.
-    onPopState();
+    // Take over only after listeners exist. The parser-time guard preserves a
+    // Back/Forward destination if Next hydration replays its old canonical URL.
+    const earlyNavigation = window.__cspPreHydration;
+    earlyNavigation?.dispose();
+    delete window.__cspPreHydration;
+    if (earlyNavigation?.destination) {
+      interruptedRouterNavigation.current = true;
+      window.location.replace(earlyNavigation.destination);
+    } else {
+      onPopState();
+    }
     return () => {
       document.removeEventListener("click", onClick, true);
       window.removeEventListener("popstate", onPopState, true);

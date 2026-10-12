@@ -109,3 +109,28 @@ test("Yggdrasil copy distinguishes public sources from the unavailable recording
   assert.match(copy, /78 fuentes de video públicas y una grabación no disponible/);
   assert.doesNotMatch(copy, /79 verified public video lectures|79 проверенных публичных видеолекций|79 videoclases públicas verificadas/);
 });
+
+test('parser-time history guard pins the destination before hydration and can hand off', async () => {
+  const { runInNewContext } = await import('node:vm');
+  const { CSP_PREHYDRATION_SCRIPT } = await import('../lib/csp-prehydration.js');
+  const listeners = new Map();
+  const replacements = [];
+  const window = {
+    location: { href: 'https://example.test/en/about', replace: value => replacements.push(value) },
+    addEventListener: (type, handler, capture) => listeners.set(type, { handler, capture }),
+    removeEventListener: (type, handler, capture) => { assert.equal(listeners.get(type).handler, handler); assert.equal(capture, true); listeners.delete(type); },
+  };
+  runInNewContext(CSP_PREHYDRATION_SCRIPT, { window });
+  assert.equal(listeners.get('popstate').capture, true);
+  let stopped = false;
+  listeners.get('popstate').handler({ stopImmediatePropagation() { stopped = true; } });
+  window.location.href = 'https://example.test/en/academy/reiki/tantra-reiki';
+  assert.equal(stopped, true);
+  assert.equal(window.__cspPreHydration.destination, 'https://example.test/en/about');
+  assert.deepEqual(replacements, ['https://example.test/en/about']);
+  window.__cspPreHydration.dispose();
+  assert.equal(listeners.size, 0);
+  const { readFileSync } = await import('node:fs');
+  const layout = readFileSync(new URL('../app/layout.tsx', import.meta.url), 'utf8');
+  assert.match(layout, /nonce=\{nonce\}[^>]*dangerouslySetInnerHTML=\{\{ __html: CSP_PREHYDRATION_SCRIPT \}\}/);
+});

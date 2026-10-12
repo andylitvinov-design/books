@@ -9,6 +9,7 @@ import { Ga4Analytics } from "@/components/ga4-analytics";
 import { NativeLinkHandler } from "@/components/native-link-handler";
 import { NativeExternalLinks } from "@/components/native-external-links";
 import { CspNavigationBoundary } from "@/components/csp-navigation-boundary";
+import { CSP_PREHYDRATION_SCRIPT } from "@/lib/csp-prehydration";
 import "./globals.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
@@ -45,6 +46,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={lang}>
       <head>
+        <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: CSP_PREHYDRATION_SCRIPT }} />
         {/* Browsers hide the nonce content attribute before hydration while
             preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
         <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
@@ -53,3 +55,4 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     </html>
   );
 }
+
