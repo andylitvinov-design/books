@@ -222,7 +222,7 @@ async function verifyPublicServiceConversionJourneys(){
   await expect(ready).toBeVisible()
   await expect(ready.getByRole('heading')).toHaveText(copy.ready)
   assert.equal(await ready.getAttribute('aria-live'),'polite')
-  assert.equal(await publicPage.evaluate(()=>document.activeElement?.getAttribute('role')),'region')
+  await expect(ready).toBeFocused({timeout:15000})
   await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
   const whatsapp=ready.locator('a[data-contact-channel="whatsapp"]')
   const whatsappHref=await whatsapp.getAttribute('href')
@@ -752,10 +752,11 @@ try {
  const afterRemove=(await api('bootstrap')).data
  assert.equal(afterRemove.results.length,beforeRemove.results.length,'removing a test must not delete results')
  assert.equal(afterRemove.runs.length,beforeRemove.runs.length,'removing a test must not delete drafts')
- assert.ok(await page.getByText('Removed from selection.',{exact:false}).count())
+ await expect(page.getByText('Removed from selection.',{exact:false})).toBeVisible({timeout:15000})
  passed('first-screen test removal updates current plan while preserving private results and drafts')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
 } catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
 finally{await browser.close()}
+
