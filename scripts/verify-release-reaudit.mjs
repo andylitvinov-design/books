@@ -74,15 +74,15 @@ async function verifyCspBfcache() {
     await cdp.send('Page.navigate', { url: origin + '/en/about' });
     const initial = await waitFor('Initial public document must hydrate', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated);
     originalProbe = initial.probe;
-    phase = 'programmatic-to-tantra';
-    await evaluate(`history.pushState(null, '', '/en/academy/reiki/tantra-reiki')`);
-    await waitFor('Cross-policy programmatic navigation must load a fresh Tantra document', state => state.url === origin + '/en/academy/reiki/tantra-reiki' && state.documentClass === 'tantra-media' && state.probe !== originalProbe && state.readyState === 'complete' && state.hydrated);
+    phase = 'full-document-to-tantra';
+    await evaluate(`location.assign('/en/academy/reiki/tantra-reiki')`);
+    await waitFor('Full cross-policy navigation must load a fresh Tantra document', state => state.url === origin + '/en/academy/reiki/tantra-reiki' && state.documentClass === 'tantra-media' && state.probe !== originalProbe && state.readyState === 'complete' && state.hydrated);
     const beforeBack = await cdp.send('Page.getNavigationHistory');
     const publicEntry = beforeBack.entries[beforeBack.currentIndex - 1];
     assert.equal(publicEntry.url, origin + '/en/about');
-    phase = 'back-to-interrupted-public';
+    phase = 'back-to-cached-public';
     await cdp.send('Page.navigateToHistoryEntry', { entryId: publicEntry.id });
-    const restored = await waitFor('Back must restore the exact interrupted public document from BFCache, then replace it with a fresh correct document', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated && state.probe !== originalProbe && state.lifecycle.some(event => event.type === 'pageshow' && event.persisted === true && event.probe === originalProbe && event.url === origin + '/en/about'));
+    const restored = await waitFor('Back must restore the exact public document from BFCache with its correct URL and policy', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated && state.probe === originalProbe && state.lifecycle.some(event => event.type === 'pageshow' && event.persisted === true && event.probe === originalProbe && event.url === origin + '/en/about'));
     phase = 'forward-to-tantra';
     const beforeForward = await cdp.send('Page.getNavigationHistory');
     const tantraEntry = beforeForward.entries[beforeForward.currentIndex + 1];
@@ -90,7 +90,7 @@ async function verifyCspBfcache() {
     await cdp.send('Page.navigateToHistoryEntry', { entryId: tantraEntry.id });
     await waitFor('Forward must retain the correct Tantra document policy', state => state.url === origin + '/en/academy/reiki/tantra-reiki' && state.documentClass === 'tantra-media' && state.readyState === 'complete' && state.hydrated);
     assert.deepEqual(exceptions, [], 'No runtime exceptions during real BFCache navigation');
-    return { rawCDP: true, originalProbe, freshPublicProbe: restored.probe, bfcachePersistedVerified: true, decodedPlaybackClaimed: false };
+    return { rawCDP: true, originalProbe, restoredPublicProbe: restored.probe, bfcachePersistedVerified: true, interruptedBranchPersistedVerified: false, decodedPlaybackClaimed: false };
   } finally {
     const finalState = await snapshot().catch(error => ({ protocolError: error.message }));
     writeFileSync(`${evidence}/${label}-csp-chromium-bfcache-cdp.json`, JSON.stringify({ originalProbe, phase, finalState, exceptions, frames, notRestored, snapshots }, null, 2));
@@ -293,13 +293,17 @@ async function exercise(engine, browserType, width) {
           // replacement; the asynchronous exposed binding alone may be lost.
           const record = (type, extra = {}) => {
             const navigation = performance.getEntriesByType('navigation')[0];
-            const state = { type, time: performance.timeOrigin + performance.now(), documentProbe: window.__cspInitDocumentProbe, url: location.href, readyState: document.readyState, documentClass: document.body?.dataset.cspClass, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null, ...extra };
+            const state = { type, time: performance.timeOrigin + performance.now(), documentProbe: window.__cspInitDocumentProbe, url: location.href, readyState: document.readyState, visibilityState: document.visibilityState, documentClass: document.body?.dataset.cspClass, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null, ...extra };
             const entries = JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]');
             entries.push(state);
             sessionStorage.setItem('__cspLifecycleTrace', JSON.stringify(entries));
             return state;
           };
           record('init');
+          // Observe actual uncaught errors independently of WebKit's console
+          // diagnostics, which Playwright also exposes through pageerror.
+          window.addEventListener('error', event => record('window-error', { message: event.message, filename: event.filename, line: event.lineno }), true);
+          window.addEventListener('unhandledrejection', event => record('unhandled-rejection', { message: String(event.reason?.message || event.reason) }), true);
           window.addEventListener('pageshow', event => {
             const state = record('pageshow', { persisted: event.persisted });
             void window.__recordCspPageShow(state);
@@ -308,6 +312,7 @@ async function exercise(engine, browserType, width) {
           window.addEventListener('popstate', () => record('popstate'), true);
           window.addEventListener('load', () => record('load'), true);
           document.addEventListener('DOMContentLoaded', () => record('domcontentloaded'), true);
+          document.addEventListener('visibilitychange', () => record('visibilitychange'), true);
           window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
         });
         const cspPage = await cspContext.newPage();
@@ -327,7 +332,7 @@ async function exercise(engine, browserType, width) {
         }
         cspPage.on('requestfailed', request => failedRequests.push({ phase: historyPhase, url: request.url(), method: request.method(), error: request.failure()?.errorText }));
         cspPage.on('framenavigated', frame => { if (frame === cspPage.mainFrame()) navigationTrace.push(frame.url()); });
-        cspPage.on('pageerror', error => { cspErrors.push({ phase: historyPhase, message: error.message, stack: error.stack }); navigationTrace.push('JS: ' + error.message); });
+        cspPage.on('pageerror', error => { cspErrors.push({ phase: historyPhase, time: Date.now(), message: error.message, stack: error.stack }); navigationTrace.push('JS: ' + error.message); });
         await cspPage.route('https://app.heygen.com/embeds/**', route => route.fulfill({ contentType: 'text/html', body: '<p data-csp-probe>Allowed embed reached</p>' }));
         try {
           await cspPage.goto(origin + '/en/about', { waitUntil: 'networkidle' });
@@ -389,6 +394,8 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
           await waitForDocument();
+          lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]'));
+          assert.deepEqual(lifecycleTrace.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught browser errors during CSP navigation');
           assert.deepEqual(cspErrors, [], 'No JavaScript runtime errors during CSP navigation');
           return { interruptedDocumentProbe, pageShows, cspErrors, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
         } catch (error) {
