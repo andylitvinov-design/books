@@ -75,7 +75,7 @@ test('account report and Insights use the same measured dial with selectable tim
  const css=readFileSync(new URL('../app/[locale]/app/[[...path]]/assessment-dashboard.css',import.meta.url),'utf8')
  assert.match(account,/periodWindow\(period,\s*periodStart,\s*periodEnd\)/)
  assert.match(account,/resultsForPeriod\(group\.history,\s*period,\s*periodStart,\s*periodEnd\)/)
- assert.match(account,/<ScoreGauge dimension=\{main\}/)
+ assert.match(account,/<ScoreGauge dimension=\{displayMain\}/)
  assert.match(account,/<ScoreTrend current=\{latest\}/)
  assert.match(account,/<PersonalResultReport result=\{result\} locale=\{locale\} previous=\{previous\}/)
  assert.match(account,/onClick=\{repeatTest\}/)

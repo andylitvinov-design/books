@@ -1858,23 +1858,29 @@ function PortfolioPage({ data, locale }) {
             const latest = group.latest
             const report = buildAssessmentResultReport(latest, locale)
             const first = report.sections[0]
-            const main = latest.dimensions?.[0]
+            const main = report.status === 'unavailable' ? null : latest.dimensions?.[0]
+            const displayMain = first?.explanation?.mixed ? {...main, direction: 'non-normative'} : main
             return (
               <article className="hh-insights-test-card" key={group.key}>
                 <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}>
-                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact /></div>
+                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={displayMain} locale={locale} compact /></div>
                   <div className="hh-insights-test-body">
                     <div className="hh-insights-test-meta">
                       <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
                     </div>
                     <h2>{group.title}</h2>
                     {first && <p className="hh-insights-test-summary">{first.construct}: <strong>{first.value}</strong> · {first.band}</p>}
-                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} />}
+                    {main && !first?.explanation?.mixed && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} />}
                     {latest.dimensions?.length > 1 &&
                       <p className="hh-insights-test-scores">+ {latest.dimensions.length - 1} {ru ? 'дополнительных шкал' : 'more scales'}</p>}
                     <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
                   </div>
                 </Link>
+                {first && <div className="hh-insights-explanation" data-insights-explanation={latest.definitionKey}>
+                  <p><strong>{ru ? 'Что означает шкала:' : 'What the scale means:'}</strong> {first.explanation?.construct || first.meaning}</p>
+                  {first.steps[0] && <p><strong>{ru ? 'Практический шаг:' : 'Practical next step:'}</strong> {first.steps[0]}</p>}
+                  <small>{ru ? 'Пояснения всех шкал, подсчёт и источники — в полном отчёте.' : 'All scale explanations, scoring and sources are in the full report.'}</small>
+                </div>}
                 {group.count > 1 && (
                   <details className="hh-insights-history">
                     <summary>{ru ? `История прохождений (${group.count})` : `Assessment history (${group.count})`}</summary>

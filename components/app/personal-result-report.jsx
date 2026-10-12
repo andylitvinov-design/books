@@ -6,6 +6,7 @@ import { CompactAssessmentReport } from './compact-assessment-report'
 
 export function PersonalResultReport({ result, locale = 'en', previous = null }) {
   const report = buildAssessmentResultReport(result, locale)
+  if (report.status === 'unavailable') return <section className={styles.report} data-report-unavailable role="status"><h2>{report.title}</h2><p>{report.note}</p></section>
   if (!report.sections.length) return null
   const ru = locale === 'ru'
   const bach = result?.definitionKey === 'hh-bach-flower-profile'
