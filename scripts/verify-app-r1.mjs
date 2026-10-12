@@ -548,8 +548,22 @@ try {
   await handoffPage.locator('.master-client-create input[name="fullName"]').fill('Synthetic Handoff Client')
   await handoffPage.locator('.master-client-create input[name="email"]').fill('synthetic-recipient@example.invalid')
   await handoffPage.locator('.master-client-create-form button[type="submit"]').click()
-  await expect(handoffPage).toHaveURL(/\/admin\/clients\/[a-f0-9-]{36}$/,{timeout:20000})
+  await expect(handoffPage).toHaveURL(/\/admin\/consultations\/new\?clientId=[a-f0-9-]{36}&created=1$/,{timeout:20000})
+  await expect(handoffPage.getByRole('heading',{name:'New consultation',exact:true})).toBeVisible()
+  await expect(handoffPage.locator('.consultation-client-selected-row')).toContainText('Synthetic Handoff Client')
+  const handoffClientId=new URL(handoffPage.url()).searchParams.get('clientId')
+  assert.match(handoffClientId,/^[a-f0-9-]{36}$/)
+  await handoffPage.setViewportSize({width:390,height:844})
+  await expect(handoffPage.locator('.consultation-studio')).toBeVisible()
+  await screenshotEvidence(handoffPage,{path:output+'/practitioner-new-consultation-handoff-mobile.png',fullPage:false})
+  passed('new client opens the preselected owner consultation editor, not the private client Cabinet')
+  await handoffPage.goto(origin+'/admin/clients/'+handoffClientId)
   await expect(handoffPage.getByRole('heading',{name:'Synthetic Handoff Client',exact:true})).toBeVisible()
+  await expect(handoffPage.locator('.client-detail-action-primary')).toHaveAttribute('href','/admin/consultations/new?clientId='+handoffClientId)
+  await expect(handoffPage.locator('.client-detail-private-access')).not.toHaveAttribute('open','')
+  assert.equal(await handoffPage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),false,'practitioner mobile client workspace must not overflow')
+  await screenshotEvidence(handoffPage,{path:output+'/practitioner-client-workspace-mobile.png',fullPage:true})
+  await handoffPage.setViewportSize({width:1280,height:720})
    // Owner's Create report path selects a real private client record; it never
    // creates or publishes a report before explicit Save/Share in the editor.
    const reportPickerPage=await admin.newPage();
@@ -581,6 +595,8 @@ try {
     const {selector,secret}=await response.json()
     return location.origin+'/en/client/'+selector+'#'+secret
   })
+  await handoffPage.locator('.client-detail-private-access > summary').click()
+  await expect(handoffPage.locator('.consultation-cabinet-primary')).toBeVisible()
   await handoffPage.locator('.consultation-cabinet-primary').click()
   await expect(handoffPage.locator('.consultation-cabinet-status')).toContainText('Link copied')
   assert.equal(await handoffPage.evaluate(() => window.__syntheticCopiedLink), clientLink)
