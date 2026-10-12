@@ -1,0 +1,54 @@
+name: GA4 temporary safety hold
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/ga4-analytics.tsx'
+      - 'components/analytics-consent.tsx'
+      - 'lib/public-analytics.ts'
+      - 'tests/ga4-safety-hold.test.mjs'
+      - 'scripts/verify-ga4-safety-hold.mjs'
+      - '.github/workflows/ga4-safety-hold.yml'
+permissions:
+  contents: read
+concurrency:
+  group: ga4-safety-hold-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  no-sdk-production-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: G-SYNTHETIC
+      HH_GA4_PLAYWRIGHT_MODULE: /tmp/hh-ga4-safety-tools/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/ga4-safety-hold.test.mjs tests/ga4-analytics.test.mjs
+      - run: npx --no-install eslint components/ga4-analytics.tsx components/analytics-consent.tsx lib/public-analytics.ts tests/ga4-safety-hold.test.mjs scripts/verify-ga4-safety-hold.mjs
+      - name: Install isolated browser tools
+        run: |
+          npm install --prefix /tmp/hh-ga4-safety-tools --no-audit --no-fund playwright@1.57.0
+          /tmp/hh-ga4-safety-tools/node_modules/.bin/playwright install --with-deps chromium
+      - name: Check generated application with saved consent and no external browser network
+        run: |
+          mkdir -p artifacts/ga4-safety-hold
+          npm run build > artifacts/ga4-safety-hold/build.log 2>&1
+          npm run start -- --hostname 127.0.0.1 --port 3218 > artifacts/ga4-safety-hold/server.log 2>&1 & SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 90); do
+            if curl --silent --fail http://127.0.0.1:3218/privacy >/dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/verify-ga4-safety-hold.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ga4-safety-hold-evidence
+          path: artifacts/ga4-safety-hold/
+          retention-days: 7
