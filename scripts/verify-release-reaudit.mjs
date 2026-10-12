@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
 import { classifyCspNavigationCancellation } from './csp-navigation-diagnostics.mjs';
+import { verifyAboutPlayerHydration } from './about-player-hydration-probe.mjs';
 
 const origin = process.env.REAUDIT_ORIGIN || 'http://127.0.0.1:3123';
 const url = new URL(origin);
@@ -582,6 +583,11 @@ async function exercise(engine, browserType, width) {
     publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => publicDiagnostics.lifecycle);
     writeFileSync(`${evidence}/${label}-public-${engine}-${width}-diagnostics.json`, JSON.stringify(publicDiagnostics, null, 2));
     await context.close(); await browser.close();
+  }
+}
+if (label === 'local' && ['127.0.0.1', 'localhost'].includes(url.hostname)) {
+  for (const browserType of [chromium, webkit]) {
+    await check('about-player-hydration', { engine: browserType.name(), providerStubbed: true }, () => verifyAboutPlayerHydration(browserType, { origin, evidence, label }));
   }
 }
 await Promise.all([exercise('chromium', chromium, 390), exercise('chromium', chromium, 1365), exercise('webkit', webkit, 390), exercise('webkit', webkit, 1365)]);

@@ -563,3 +563,312 @@
     transition: none !important;
   }
 }
+
+
+/* 2026 owner studio visual refresh
+   Harmonizes with the current blue-mint capture cards and coral primary CTA.
+   Every selector remains scoped to the practitioner consultation studio. */
+.consultation-studio-shell {
+  --studio-ink: #21465a;
+  --studio-muted: #52727a;
+  --studio-accent: #17728b;
+  --studio-border: #d6e6e7;
+  max-width: 1040px;
+}
+.consultation-studio-shell .prescription-admin-titleblock {
+  padding-top: 20px;
+  padding-bottom: 12px;
+}
+.consultation-studio-shell .prescription-admin-titleblock h1 {
+  color: #293c43;
+  font-size: clamp(30px, 4.3vw, 43px) !important;
+  font-weight: 400;
+}
+.consultation-studio-shell .prescription-admin-description {
+  max-width: 680px;
+  color: #62747b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.consultation-studio-shell .prescription-admin-navigation--tabs {
+  margin-top: 7px;
+}
+.consultation-studio-shell .prescription-admin-navigation--tabs a {
+  border: 1px solid transparent;
+  color: #54707a !important;
+}
+.consultation-new-shell .prescription-admin-navigation--tabs a[href="/admin/consultations/new"] {
+  border-color: #b9dcdf;
+  background: #ddf3f4;
+  color: #195d6e !important;
+}
+
+/* Confirmation is about the selected patient and next action, not their portal. */
+.consultation-new-shell .consultation-client-created-banner {
+  gap: 14px;
+  margin: 18px 0 18px;
+  padding: clamp(16px, 3vw, 23px);
+  border: 1px solid #b7dbe0;
+  border-radius: 19px;
+  background: linear-gradient(125deg, #e9f7fe 0%, #ddf5f2 55%, #dcf6ea 100%);
+  box-shadow: 0 9px 27px rgba(26, 91, 105, .075);
+}
+.consultation-client-created-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.consultation-client-created-avatar {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  place-items: center;
+  border: 1px solid rgba(23, 114, 139, .16);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .83);
+  color: #26717b;
+  font: 400 29px/1 Georgia, serif;
+}
+.consultation-client-created-identity > div { min-width: 0; }
+.consultation-client-created-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #237a82;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .075em;
+}
+.consultation-client-created-identity strong {
+  display: block;
+  color: #1c465e;
+  font: 400 clamp(22px, 3vw, 30px)/1.13 Georgia, serif;
+  letter-spacing: -.02em;
+  overflow-wrap: anywhere;
+}
+.consultation-client-created-identity p {
+  margin: 6px 0 0;
+  color: #52727a;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.consultation-client-created-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-left: 66px;
+}
+.consultation-client-created-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 39px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.consultation-client-created-links .consultation-client-created-report-link {
+  border: 1px solid #bcd9dd;
+  background: rgba(255, 255, 255, .82);
+  color: #245b6d;
+}
+.consultation-client-created-links .consultation-client-created-history-link {
+  padding-inline: 7px;
+  color: #2e6674;
+}
+.consultation-client-created-links a:focus-visible {
+  outline: 3px solid #b6804c;
+  outline-offset: 3px;
+}
+
+/* Three concise steps, no clipped text or horizontal swipe to find the stage. */
+.consultation-studio-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  overflow: visible;
+  padding: 0;
+  margin: 1px 0 2px;
+}
+.consultation-studio-progress li {
+  display: flex;
+  flex: initial;
+  align-items: center;
+  min-width: 0;
+  min-height: 50px;
+  gap: 8px;
+  border: 1px solid #d9e7e9;
+  border-radius: 13px;
+  background: #fffdfb;
+  padding: 9px 11px;
+  color: #50707a;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.3;
+  white-space: normal;
+}
+.consultation-studio-progress li:not(:last-child)::after { display: none; }
+.consultation-studio-progress li span {
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  border-color: #b6d8dd;
+  border-radius: 9px;
+  background: #e6f6f7;
+  color: #207088;
+  font-size: 11px;
+}
+.consultation-studio-progress li:nth-child(2) span {
+  border-color: #a5d7cb;
+  background: #dff4ee;
+  color: #25675c;
+}
+.consultation-studio-progress li:nth-child(3) span {
+  border-color: #edd3c9;
+  background: #fff0e9;
+  color: #bb6048;
+}
+
+/* Calm white cards and clearly defined input fields. */
+.consultation-studio-card {
+  border-color: #dce8e9;
+  border-radius: 19px;
+  background: #fffdfb;
+  box-shadow: 0 4px 16px rgba(31, 82, 87, .025);
+}
+.consultation-studio-section-head { margin-bottom: 16px; }
+.consultation-studio-section-index {
+  border-color: #cee6e5;
+  background: #e7f5f3;
+  color: #28717e;
+}
+.consultation-studio-section-head h2 { color: #253f4c; }
+.consultation-studio-section-head p {
+  color: #657e86;
+  font-size: 13px;
+}
+.consultation-studio-section-head > svg { color: #5b999e; }
+.consultation-studio .consultation-client-selected-row {
+  border: 1px solid #cce4e2;
+  background: #f0faf8;
+}
+.consultation-studio .consultation-client-selected-row strong { color: #275265; }
+.consultation-studio .consultation-create-client { color: #267084; }
+.consultation-studio .consultation-client-search label,
+.consultation-studio .consultation-quick-meta > label,
+.consultation-studio-payment-grid > label { color: #456b78; }
+.consultation-studio.prescription-admin-form input:not([type="hidden"]),
+.consultation-studio.prescription-admin-form select,
+.consultation-studio.prescription-admin-form textarea {
+  border-color: #cde0e2;
+  background: #fff;
+  color: #264757;
+}
+.consultation-studio.prescription-admin-form input:focus-visible,
+.consultation-studio.prescription-admin-form select:focus-visible,
+.consultation-studio.prescription-admin-form textarea:focus-visible,
+.consultation-studio button:focus-visible,
+.consultation-studio summary:focus-visible {
+  outline: 3px solid #b6804c;
+  outline-offset: 3px;
+}
+.consultation-studio-report-type {
+  background: #e9f7f5;
+  color: #477a7c;
+  font-size: 12px;
+}
+.consultation-studio-report-type strong { color: #245e6d; }
+.consultation-studio .consultation-remedy-row--stacked,
+.consultation-studio .consultation-remedy-row--stacked.consultation-remedy-row--bach {
+  border-color: #e1ebeb;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(30, 86, 91, .025);
+}
+.consultation-studio .consultation-item-type > select {
+  border-color: #c9e0e1 !important;
+  background: #eaf7f6 !important;
+  color: #286575 !important;
+}
+.consultation-studio .consultation-remedy-index { color: #6c9aa3; }
+.consultation-studio .consultation-dose-strip .consultation-remedy-dose > span {
+  color: #587984;
+  font-size: 12px;
+}
+.consultation-studio .consultation-add-actions .prescription-add {
+  min-height: 44px;
+  border: 1px solid #c4e0e2;
+  border-radius: 11px;
+  background: #ecf9f8;
+  color: #27697b;
+  font-size: 13px;
+}
+.consultation-studio .consultation-text-import {
+  border-color: #c9dfe2;
+  background: #f5fbfb;
+}
+.consultation-studio .consultation-text-import > summary { color: #2e6d7f; }
+.consultation-studio .consultation-clinical-note {
+  border-color: #81bbc0;
+  color: #68828a;
+  font-size: 12px;
+}
+.consultation-studio .consultation-payment-settings { border-color: #e0ebed; }
+.consultation-studio .consultation-payment-settings summary { color: #2e6d7f; }
+
+/* Final action uses the same coral emphasis as contemporary capture flows. */
+.consultation-studio-submit {
+  border: 1px solid #b7dbe0;
+  border-radius: 19px;
+  background: linear-gradient(125deg, #e9f7fe 0%, #ddf5f2 55%, #dcf6ea 100%);
+  box-shadow: 0 9px 25px rgba(26, 91, 105, .055);
+}
+.consultation-studio-submit-copy strong { color: #1c465e; }
+.consultation-studio-submit-copy span { color: #547982; }
+.consultation-studio-submit .consultation-primary-action {
+  min-height: 54px;
+  border: 0;
+  border-radius: 13px;
+  background: #e66d50;
+  box-shadow: 0 7px 18px rgba(222, 97, 66, .14);
+  padding: 12px 20px;
+  color: #fff;
+  font-size: 14px;
+}
+.consultation-studio-submit .consultation-primary-action:hover:not(:disabled) { background: #d95b40; }
+
+@media (max-width: 600px) {
+  .consultation-studio-shell .prescription-admin-titleblock h1 { font-size: 32px !important; }
+  .consultation-studio-shell .prescription-admin-description { font-size: 12px; }
+  .consultation-new-shell .consultation-client-created-banner { border-radius: 17px; padding: 15px; }
+  .consultation-client-created-avatar { width: 42px; height: 42px; flex-basis: 42px; border-radius: 12px; font-size: 24px; }
+  .consultation-client-created-identity { gap: 10px; }
+  .consultation-client-created-identity strong { font-size: 24px; }
+  .consultation-client-created-links { margin-left: 0; }
+  .consultation-client-created-links a { min-height: 44px; }
+  .consultation-studio-progress { gap: 6px; }
+  .consultation-studio-progress li {
+    min-height: 53px;
+    gap: 5px;
+    padding: 7px;
+    border-radius: 11px;
+    font-size: 10px;
+  }
+  .consultation-studio-progress li span {
+    width: 23px;
+    height: 23px;
+    flex-basis: 23px;
+    border-radius: 8px;
+  }
+  .consultation-studio-card { border-radius: 17px; }
+  .consultation-studio-section-head p { font-size: 12px; }
+  .consultation-studio .consultation-dose-strip .consultation-remedy-dose > span { font-size: 11px; }
+  .consultation-studio-submit { border-radius: 17px; padding: 17px; }
+  .consultation-studio-submit .consultation-primary-action { width: 100%; font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .consultation-studio-submit .consultation-primary-action { transition: none; }
+}
