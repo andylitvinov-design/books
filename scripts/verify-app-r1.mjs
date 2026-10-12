@@ -150,7 +150,111 @@ async function openCompletedPlanResult(){
  await resultLink.click()
  await expect(page).toHaveURL(/\/results\//,{timeout:20000})
 }
+async function assertPublicViewportFits(target,label){
+ const width=await target.evaluate(()=>window.innerWidth)
+ const scroll=await target.evaluate(()=>document.documentElement.scrollWidth)
+ assert.ok(scroll<=width+1,`Public overflow: ${label} (${scroll} > ${width})`)
+}
+async function verifyPublicServiceConversionJourneys(){
+ const publicContext=await browser.newContext({viewport:{width:390,height:844}})
+ const publicErrors=[]
+ const services=[
+  ['dao-health-profile','dao',{en:'Free Wu Xing Resource Profile',ru:'Бесплатный профиль ресурсов У-Син'}],
+  ['alchemy-of-soul','alchemy',{en:'Alchemy of the Soul',ru:'Алхимия души'}],
+  ['hypnotherapy-course','hypnotherapy',{en:'Guided Imagery Hypnotherapy',ru:'Курс гипнотерапии'}],
+ ]
+ for(const locale of ['en','ru']){
+  for(const [slug,kind,names] of services){
+   const servicePage=await publicContext.newPage()
+   servicePage.on('pageerror',error=>publicErrors.push(error.message))
+   for(const width of [320,360,390,1280]){
+    await servicePage.setViewportSize({width,height:844})
+    await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
+    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
+    if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
+    if(width!==390)continue
+    const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
+    await capture.scrollIntoViewIfNeeded()
+    await expect(capture).toBeVisible({timeout:30000})
+    const cta=capture.locator('a[data-contact-channel="whatsapp"]')
+    await expect(cta).toBeVisible()
+    const href=await cta.getAttribute('href')
+    const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
+    assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
+    const alternative=capture.locator('details')
+    assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
+    await alternative.locator('summary').click()
+    await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+   }
+   await servicePage.close()
+  }
+ }
+ for(const locale of ['en','ru']){
+  const publicPage=await publicContext.newPage()
+  publicPage.on('pageerror',error=>publicErrors.push(error.message))
+  const copy=locale==='ru'
+   ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
+   : {ready:'Your answers are ready to copy. Nothing has been sent.',copied:'Copied',fallback:'Select and copy the text below'}
+  for(const width of [320,360,390,1280]){
+   await publicPage.setViewportSize({width,height:844})
+   await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+   const intake=publicPage.locator('[data-free-drawing-intake]')
+   await expect(intake).toBeVisible({timeout:30000})
+   await assertPublicViewportFits(publicPage,locale+'/free-review/'+width)
+   if(width===390||width===1280)await publicPage.screenshot({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})
+  }
+  await publicPage.setViewportSize({width:390,height:844})
+  await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+  await publicPage.evaluate(()=>{
+   document.documentElement.dataset.analyticsConsent='granted'
+   window.__publicAcquisition=[]
+   window.addEventListener('holistic-house:acquisition',event=>window.__publicAcquisition.push(event.detail))
+  })
+  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboard=value}}}))
+  const intake=publicPage.locator('[data-free-drawing-intake]')
+  const uniqueProblem='Synthetic public form value — '+locale
+  const uniqueGoal='Synthetic public goal value — '+locale
+  await intake.locator('textarea').nth(0).fill(uniqueProblem)
+  await intake.locator('textarea').nth(1).fill(uniqueGoal)
+  await intake.locator('form button[type="submit"]').click()
+  const ready=intake.locator('[role="region"]')
+  await expect(ready).toBeVisible()
+  await expect(ready.getByRole('heading')).toHaveText(copy.ready)
+  assert.equal(await ready.getAttribute('aria-live'),'polite')
+  assert.equal(await publicPage.evaluate(()=>document.activeElement?.getAttribute('role')),'region')
+  await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
+  const whatsapp=ready.locator('a[data-contact-channel="whatsapp"]')
+  const whatsappHref=await whatsapp.getAttribute('href')
+  const whatsappText=new URL(whatsappHref||'').searchParams.get('text')||''
+  const decodedPageUrl=decodeURIComponent(publicPage.url())
+  for(const marker of [uniqueProblem,uniqueGoal]){
+   assert.ok(!whatsappText.includes(marker),'Answers never enter decoded WhatsApp text')
+   assert.ok(!decodedPageUrl.includes(marker),'Answers never enter decoded page URL')
+  }
+  await ready.getByRole('button').click()
+  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
+  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('synthetic clipboard denial')}}}))
+  await ready.getByRole('button').click()
+  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.fallback)
+  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboardRecovery=value}}}))
+  await ready.getByRole('button').click()
+  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
+  const events=await publicPage.evaluate(()=>window.__publicAcquisition)
+  assert.ok(events.some(item=>item.event==='free_questionnaire_started'))
+  assert.ok(events.some(item=>item.event==='free_questionnaire_prepared'))
+  assert.ok(!JSON.stringify(events).includes(uniqueProblem),'Analytics event metadata never contains answers')
+  assert.ok(!JSON.stringify(events).includes(uniqueGoal),'Analytics event metadata never contains answers')
+  await publicPage.screenshot({path:output+'/free-review-'+locale+'-prepared-390.png',fullPage:false})
+  await publicPage.close()
+ }
+ assert.deepEqual(publicErrors,[])
+ await publicContext.close()
+ passed('public EN/RU service conversion journeys: mobile/desktop layout, hydrated same-service footer, disclosure, private free-review handoff and screenshots')
+}
+
 try {
+ await verifyPublicServiceConversionJourneys()
  // Public test picker must work anonymously before OAuth.
  const guestPickerContext=await browser.newContext({viewport:{width:390,height:844}})
  const guestPickerPage=await guestPickerContext.newPage()
@@ -648,10 +752,12 @@ try {
  const afterRemove=(await api('bootstrap')).data
  assert.equal(afterRemove.results.length,beforeRemove.results.length,'removing a test must not delete results')
  assert.equal(afterRemove.runs.length,beforeRemove.runs.length,'removing a test must not delete drafts')
- assert.ok(await page.getByText('Removed from selection.',{exact:false}).count())
+ // The server poll can finish before reload() renders the removal notice.
+ await expect(page.getByText('Removed from selection.',{exact:false})).toBeVisible({timeout:15000})
  passed('first-screen test removal updates current plan while preserving private results and drafts')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
 } catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
 finally{await browser.close()}
+

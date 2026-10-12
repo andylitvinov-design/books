@@ -12,7 +12,7 @@ const copy = {
   en: {
     dao: {
       eyebrow: "FREE · DAO / WU XING RESOURCE REVIEW",
-      title: "Free DAO Health & Resource Profile",
+      title: "Free Wu Xing Resource Profile",
       lead: "Explore how you experience your energy, balance and personal resources through the author's DAO / Wu Xing model. This is a symbolic self-reflection profile, not a diagnosis of health conditions.",
       benefit: "A fresh perspective on your present resources and which areas you may wish to explore.",
       sectionsTitle: "What this free profile explores",
@@ -21,8 +21,8 @@ const copy = {
         { title: "DAO / Wu Xing perspective", text: "Explore your experience using the author's symbolic Five Elements and resource-stage framework." },
         { title: "Reflection and next questions", text: "Consider possible areas for attention without assigning a clinical score or diagnosis." },
       ],
-      action: "Request my free DAO profile",
-      actionMessage: "Service: FREE DAO Health & Resource Profile (Wu Xing)\nRequest: I would like to request the free symbolic DAO / Wu Xing resource profile. Please tell me how to start.",
+      action: "Request my free Wu Xing profile",
+      actionMessage: "Service: Free Wu Xing Resource Profile\nRequest: I would like to request the free symbolic Wu Xing resource profile. Please tell me how to start.",
       note: "The profile is free. A WhatsApp request opens with the service named; it is not sent until you choose Send.",
       safety: "The DAO model is an author's symbolic framework, not a validated medical diagnostic test. Do not use it to diagnose illness, adjust medicines or replace medical or mental-health care.",
       secondary: "Read about the DAO / Wu Xing model",
@@ -32,7 +32,7 @@ const copy = {
     alchemy: {
       eyebrow: "ONE-TO-ONE · INTEGRATED SESSION",
       title: "Alchemy of the Soul",
-      lead: "Explore a personal, relational or business situation from several angles in one session. We look at what feels blocked and consider new choices, without promising a particular outcome.",
+      lead: "One-to-one exploration of a personal, relationship or business question from several angles in one session. We look at what feels blocked and consider new choices, without promising a particular outcome.",
       benefit: "A clearer map of your situation, your patterns and possible next steps.",
       sectionsTitle: "Three approaches in one session",
       sections: [
@@ -41,7 +41,7 @@ const copy = {
         { title: "3. Complementary homeopathic selection", text: "If relevant to your interests, we can explore homeopathic remedy selection as a complementary personal practice, not established treatment for physical or mental illness." },
       ],
       action: "Ask about an Alchemy of the Soul session",
-      actionMessage: "Service: Alchemy of the Soul — integrated personal session\nRequest: I would like to discuss an individual session involving situation analysis, systemic constellations and optional complementary homeopathic selection. Please confirm availability and format.",
+      actionMessage: "Service: Alchemy of the Soul — integrated personal session\nRequest: I would like to discuss an individual session involving situation analysis, systemic constellations and optional complementary homeopathic selection. Please confirm format, availability and cost.",
       note: "This is a service enquiry, not a confirmed booking. We agree the format and scope before any session.",
       safety: "Homeopathy has no reliable evidence of effectiveness for treating health conditions. No diagnosis, dosage or medication changes are provided here. Constellations are exploratory and do not replace professional legal, financial or clinical advice.",
       secondary: "How systemic constellations work",
@@ -51,16 +51,16 @@ const copy = {
     hypnotherapy: {
       eyebrow: "INDIVIDUAL COURSE · GUIDED IMAGERY",
       title: "Guided Imagery Hypnotherapy",
-      lead: "A personal course of guided-imagery sessions for exploring unconscious images, emotional patterns and questions that are difficult to answer by thinking alone.",
+      lead: "A course of one-to-one guided-imagery sessions for exploring unconscious images, emotional patterns and questions that are difficult to answer by thinking alone. It is personal reflective work, not training to practise hypnotherapy.",
       benefit: "Explore a steadier inner foundation and possible answers in your own imagery and experience.",
       sectionsTitle: "What we can work on",
       sections: [
         { title: "Strengthen inner resources", text: "Explore imagery connected with safety, boundaries, stability and personal support." },
         { title: "Understand repeating patterns", text: "Use gentle guided imagery and dialogue with inner parts to reflect on your responses and relationships." },
-        { title: "Find your own next steps", text: "Integrate observations from the imagery work into realistic everyday choices." },
+        { title: "Find your own next steps", text: "Integrate observations from the imagery work into realistic everyday choices. You can pause, ask questions or change direction during the work." },
       ],
       action: "Ask about the guided imagery course",
-      actionMessage: "Service: Guided Imagery Hypnotherapy — individual course\nRequest: I would like to explore a personal course of guided imagery sessions focused on inner resources and finding answers. Please let me know the format and availability.",
+      actionMessage: "Service: Guided Imagery Hypnotherapy — individual course\nRequest: I would like to explore a personal course of guided imagery sessions focused on inner resources and finding answers. Please let me know the format, availability and cost.",
       note: "The number and frequency of sessions are discussed individually. No automatic booking or payment.",
       safety: "This reflective practice is not a guaranteed treatment for anxiety, depression or other health conditions and does not replace licensed mental-health, psychiatric or crisis care.",
       secondary: "Read about guided imagery",
@@ -71,8 +71,8 @@ const copy = {
   ru: {
     dao: {
       eyebrow: "БЕСПЛАТНО · ДАО / У-СИН",
-      title: "Бесплатная дао-диагностика здоровья",
-      lead: "Исследуйте самочувствие, личный ресурс и баланс через авторскую модель Дао / У-Син. Это символическая диагностика ресурса, а не медицинское обследование.",
+      title: "Бесплатный профиль ресурсов У-Син",
+      lead: "Исследуйте самочувствие, личный ресурс и баланс через авторскую модель Дао / У-Син. Это символический профиль ресурсов, а не медицинское обследование.",
       benefit: "Взгляд на текущий ресурс и качества, которым можно уделить внимание.",
       sectionsTitle: "Что исследуем в бесплатном разборе",
       sections: [
@@ -80,8 +80,8 @@ const copy = {
         { title: "Авторская модель Дао / У-Син", text: "Рассматриваем переживания через символическую модель пяти элементов и ступеней ресурса." },
         { title: "Направление для размышления", text: "Проясняем, на какие качества стоит обратить внимание, без медицинских диагнозов." },
       ],
-      action: "Запросить бесплатную дао-диагностику",
-      actionMessage: "Услуга: БЕСПЛАТНАЯ дао-диагностика здоровья и ресурса (У-Син)\nЗапрос: хочу получить бесплатный символический профиль ресурса по модели Дао / У-Син. Подскажите, как начать.",
+      action: "Запросить бесплатный профиль У-Син",
+      actionMessage: "Услуга: Бесплатный профиль ресурсов У-Син\nЗапрос: хочу получить бесплатный символический профиль ресурса по модели Дао / У-Син. Подскажите, как начать.",
       note: "Бесплатная услуга. WhatsApp подготовит запрос с названием услуги; сообщение отправляется только после вашего подтверждения.",
       safety: "Модель Дао — авторская символическая система, не подтверждённый диагностический медицинский тест. Она не заменяет врача, обследование или лечение и не предназначена для изменения лекарств.",
       secondary: "Подробнее о модели Дао / У-Син",
@@ -91,7 +91,7 @@ const copy = {
     alchemy: {
       eyebrow: "ЛИЧНАЯ СЕССИЯ · 3 ПОДХОДА",
       title: "Алхимия души",
-      lead: "Одна сессия для более глубокого исследования личной, семейной или деловой ситуации: что мешает и какие другие варианты можно рассмотреть.",
+      lead: "Индивидуальное исследование личного, семейного или делового вопроса в одной сессии: что мешает и какие другие варианты можно рассмотреть.",
       benefit: "Больше ясности в вашей ситуации, связях и следующих шагах.",
       sectionsTitle: "Три подхода в одной сессии",
       sections: [
@@ -100,7 +100,7 @@ const copy = {
         { title: "3. Дополнительный гомеопатический подбор", text: "При необходимости исследуем индивидуальный подбор гомеопатических средств как дополнительную практику, без обещаний лечебного эффекта." },
       ],
       action: "Запросить сессию «Алхимия души»",
-      actionMessage: "Услуга: Алхимия души — комплексная личная сессия\nЗапрос: интересует анализ ситуации, системная расстановка и возможный дополнительный гомеопатический подбор. Подскажите формат и доступное время.",
+      actionMessage: "Услуга: Алхимия души — комплексная личная сессия\nЗапрос: интересует анализ ситуации, системная расстановка и возможный дополнительный гомеопатический подбор. Подскажите формат, доступное время и стоимость.",
       note: "Это запрос на сессию, не подтверждённая запись или оплата. Формат согласуем отдельно.",
       safety: "Надёжных доказательств эффективности гомеопатии для лечения заболеваний нет. Эта услуга не заменяет диагностику, назначенные лекарства, медицинскую помощь или профессиональную юридическую/финансовую экспертизу.",
       secondary: "Подробнее о расстановках",
@@ -110,16 +110,16 @@ const copy = {
     hypnotherapy: {
       eyebrow: "ИНДИВИДУАЛЬНЫЙ КУРС · ОБРАЗЫ ПОДСОЗНАНИЯ",
       title: "Курс гипнотерапии",
-      lead: "Индивидуальный цикл сессий для исследования образов подсознания, внутренних реакций и личных вопросов, на которые трудно найти ответ только разумом.",
+      lead: "Индивидуальный курс сессий с направленной образной работой для исследования образов подсознания, внутренних реакций и личных вопросов, на которые трудно найти ответ только разумом. Это личная рефлексивная работа, не обучение гипнотерапии.",
       benefit: "Исследование внутренней опоры, ресурсов и собственных вариантов дальнейших действий.",
       sectionsTitle: "Основные направления работы",
       sections: [
         { title: "Укрепление внутренней опоры", text: "Через образы исследуем чувство безопасности, границы и личный ресурс." },
         { title: "Работа с повторяющимися сценариями", text: "Бережно исследуем чувства, реакции и отношения через направленное воображение." },
-        { title: "Поиск собственных ответов", text: "Связываем найденные образы и наблюдения с реальными жизненными решениями." },
+        { title: "Поиск собственных ответов", text: "Связываем найденные образы и наблюдения с реальными жизненными решениями. По ходу работы можно сделать паузу, задать вопросы или изменить направление." },
       ],
       action: "Узнать о курсе гипнотерапии",
-      actionMessage: "Услуга: Курс гипнотерапии — работа с образами подсознания\nЗапрос: интересует индивидуальный курс для укрепления внутреннего ресурса и поиска ответов. Подскажите формат и доступность.",
+      actionMessage: "Услуга: Курс гипнотерапии — работа с образами подсознания\nЗапрос: интересует индивидуальный курс для укрепления внутреннего ресурса и поиска ответов. Подскажите формат, доступность и стоимость.",
       note: "Количество и частота сессий определяются индивидуально. Никакой автоматической записи или оплаты.",
       safety: "Работа с образами не гарантирует лечение тревоги, депрессии или других состояний и не заменяет помощь лицензированного специалиста в области психического здоровья или кризисную помощь.",
       secondary: "Подробнее об образной работе",
@@ -147,6 +147,11 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
           <p className={styles.benefit}><Check size={17} aria-hidden="true"/>{t.benefit}</p>
           <AcquisitionEventLink className={styles.primary} href={whatsappUrl} target="_blank" rel="noopener noreferrer" prefetch={false} event="service_request_start" attributes={{ "data-contact-channel":"whatsapp", "data-service-request":kind }}>{t.action}<ArrowUpRight size={20} aria-hidden="true"/></AcquisitionEventLink>
           <p className={styles.note}>{t.note}</p>
+          <aside className={styles.andrey}>
+            <strong>{locale === "ru" ? "С Андреем Литвиновым" : "With Andrey Litvinov"}</strong>
+            <span>{locale === "ru" ? "После запроса уточняем вопрос и формат; затем можно посмотреть короткое видео о подходе ниже." : "After your enquiry, we clarify your question and format; then you can watch the short approach video below."}</span>
+            <Link href={"/" + locale + "/about"}>{locale === "ru" ? "Об Андрее" : "About Andrey"}<ArrowUpRight size={14} aria-hidden="true"/></Link>
+          </aside>
         </div>
         <div className={styles.photo}><Image src={t.image} alt="" fill priority sizes="(max-width: 760px) 100vw, 38vw" /></div>
       </section>
@@ -161,8 +166,12 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
         <p className={styles.safety}><ShieldCheck size={19} aria-hidden="true"/>{t.safety}</p>
         <div className={styles.links}>
           <Link href={t.secondaryHref}>{t.secondary}<ArrowUpRight size={16} aria-hidden="true"/></Link>
-          <Link href={"/" + locale + "/services/free-situation-review"}>{locale === "ru" ? "Сначала бесплатный разбор ситуации" : "Prefer a free situation review?"}<ArrowUpRight size={16} aria-hidden="true"/></Link>
+          <AcquisitionEventLink className={styles.footerCta} href={whatsappUrl} target="_blank" rel="noopener noreferrer" prefetch={false} event="service_request_start" attributes={{ "data-contact-channel":"whatsapp", "data-service-request":kind }}>{t.action}<ArrowUpRight size={16} aria-hidden="true"/></AcquisitionEventLink>
         </div>
+        <details className={styles.freeAlternative}>
+          <summary>{locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?"}</summary>
+          <Link href={"/" + locale + "/services/free-situation-review"}>{locale === "ru" ? "Открыть бесплатный разбор" : "Open the free written review"}<ArrowUpRight size={16} aria-hidden="true"/></Link>
+        </details>
       </section>
     </main>
   );

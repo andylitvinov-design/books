@@ -15,7 +15,7 @@ const defFor = (item, locale) => getAssessmentDefinition(item.key,item.version,i
 const allAnswers = d => Object.fromEntries(d.questions.map(q=>[q.id,q.min??d.answerScale?.min??0]))
 
 test('every active test has a bilingual short purpose/origin/evidence paragraph without changing scoring hashes',()=>{
-  assert.equal(active.length,108)
+  assert.equal(active.length,109)
   for(const locale of ['en','ru']){
     for(const item of active){
       const def=defFor(item,item.instrumentLocale==='dynamic'?locale:'en')
@@ -37,6 +37,20 @@ test('every active test has a bilingual short purpose/origin/evidence paragraph 
       assert.ok(report.methodology?.length>65,item.key+':'+locale+' report')
       assert.equal(report.methodology,assessmentMethodology({key:item.key,catalog:item,locale}).text)
     }
+  }
+})
+
+test('MHC-SF explanation preserves accepted source, language and non-diagnostic limits',()=>{
+  const catalog=active.find(x=>x.key==='mhc-sf')
+  const definition=defFor(catalog,'en')
+  for(const locale of ['en','ru']){
+    const about=assessmentMethodology({key:'mhc-sf',catalog,definition,locale})
+    assert.equal(about.status,'research')
+    assert.equal(about.sourceUrl,definition.source.url)
+    assert.match(about.text,/Corey L\. M\. Keyes/)
+    assert.match(about.text,/2011/)
+    assert.match(about.text,locale==='ru'?/не является валидированным переводом/:/not a validated questionnaire translation/)
+    assert.match(about.text,locale==='ru'?/не исключает психическое расстройство/:/does not rule out mental illness/)
   }
 })
 

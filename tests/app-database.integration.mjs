@@ -1468,3 +1468,51 @@ test('original typology registration is identical, idempotent and rejects ID/has
     assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[first.id])).rows[0].definition, first)
   } finally { await db.end() }
 })
+
+test('MHC-SF registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { MHC_SF_DEFINITIONS } = await import('../data/assessments/mhc-sf-adult-dec2011.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261012041529_hh_mhc_sf_adult_dec2011.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const d of MHC_SF_DEFINITIONS) {
+      const rows = (await db.query('select id, definition, content_hash from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3', [d.key, d.version, d.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      assert.equal(rows[0].id, d.id)
+      assert.equal(rows[0].content_hash, d.contentHash)
+      assert.deepEqual(rows[0].definition, d)
+    }
+    const first = MHC_SF_DEFINITIONS[0]
+    for (const broken of [sql.replace(first.id, randomUUID()), sql.replace(first.contentHash, 'sha256:'+'0'.repeat(64)), sql.replace('Adult MHC-SF', 'CHANGED MHC-SF')]) {
+      await assert.rejects(() => db.query(broken), /Conflicting professional assessment ID|Different content already published/)
+      await db.query('rollback')
+    }
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[first.id])).rows[0].definition, first)
+  } finally { await db.end() }
+})
+
+
+test('MHC-SF guest persistence retains zero, source sums and private bilingual reports', async () => {
+  const { buildAssessmentResultReport } = await import('../lib/assessments/result-report.js')
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential(), other = createGuestCredential()
+  for (const who of [credential, other]) await guestRepo.createSession(who, {adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+  const d = getAssessmentDefinition('mhc-sf','v1','en')
+  for (const [value,expected] of [[0,[0,0,0,0]],[5,[70,15,25,30]]]) {
+    let run = await guestRepo.startRun(credential,{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
+    run = await guestRepo.saveRun(credential,run.id,{answers:answer(d,value),context:{},progress:14,expectedRevision:run.revision,operationId:randomUUID()})
+    assert.deepEqual((await guestRepo.getRun(credential,run.id)).answers,answer(d,value))
+    const result = await guestRepo.submitRun(credential,run.id,{expectedRevision:run.revision})
+    assert.deepEqual(result.dimensions.map(s=>s.value),expected)
+    assert.equal(result.contentHash,d.contentHash)
+    assert.deepEqual((await guestRepo.getResult(credential,result.id)).dimensions,result.dimensions)
+    await assert.rejects(()=>guestRepo.getResult(other,result.id),/NOT_FOUND/)
+    for (const locale of ['en','ru']) {
+      const report=buildAssessmentResultReport(result,locale)
+      assert.equal(report.sections.length,4)
+      assert.ok(report.sections.every(s=>s.source===d.source.scoringUrl && s.bandBasis==='descriptive'))
+    }
+  }
+})

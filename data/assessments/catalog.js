@@ -9,6 +9,7 @@ import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from './professional-battery-2026
 import { IPIP_BIG_FIVE_50_CATALOG } from './ipip-big-five-50-en-v1.js'
 import { PERSONALITY_TYPE_CATALOG } from './personality-types-original-2026.js'
 import { COMPASSION_CATALOG } from './compassion-2026.js'
+import { MHC_SF_CATALOG } from './mhc-sf-adult-dec2011.js'
 import { OPEN_PROFESSIONAL_2026_CATALOG } from './open-professional-2026.js'
 
 export const MONITORING_AXES = deepFreeze([
@@ -725,6 +726,7 @@ export const MONITORING_CATALOG = deepFreeze([
     },
   },
   ...COMPASSION_CATALOG,
+  ...MHC_SF_CATALOG,
   {
     key: 'functioning-review',
     version: 'planned',

@@ -33,7 +33,7 @@ test('four original EN/RU questionnaires are unique, content-hashed and genuinel
   assert.equal(PERSONALITY_TYPE_DEFINITIONS.length,8)
   assert.equal(PERSONALITY_TYPE_CATALOG.length,4)
   assert.equal(new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id)).size,8)
-  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,108)
+  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,109)
   for(const [key,,questionCount,scaleCount] of CASES){
     const item=MONITORING_CATALOG.find(c=>c.key===key)
     assert.ok(item?.startable && item.rightsStatus==='cleared' && item.guestEligible)
@@ -218,14 +218,17 @@ test('all sixteen socionics mappings use an explicit independent code fixture',(
 })
 
 
-test('canonical 169 prior definitions and earlier 153-definition baseline remain unchanged',()=>{
+test('canonical 170 prior definitions and earlier 169/153-definition baselines remain unchanged',()=>{
   const ids=new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id))
   const prior=ASSESSMENT_DEFINITIONS.filter(d=>!ids.has(d.id))
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
-  assert.equal(prior.length,169)
-  assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
+  assert.equal(prior.length,170)
+  assert.equal(digest(prior),'2b7a4c102bbcf65ed0b6f3d3530d803c93dfa8f27456b5c2bf4a490ea6fc3e93')
+  const earlierPrior=prior.filter(d=>d.key!=='mhc-sf')
+  assert.equal(earlierPrior.length,169)
+  assert.equal(digest(earlierPrior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
   const relationIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))
-  const originalPrior=prior.filter(d=>!relationIds.has(d.id))
+  const originalPrior=earlierPrior.filter(d=>!relationIds.has(d.id))
   assert.equal(originalPrior.length,153)
   assert.equal(digest(originalPrior),'1743fb49e9f78bde406bc5055349a95c8b961961b21ab9d1a0fcb05fca1fb0bc')
 })

@@ -31,7 +31,8 @@ const copy = {
     drawingText: "On one sheet, draw three elements in any way that feels natural: ME, MY GOAL and MY PROBLEM. Take a clear photo of your drawing. Do not use a digital illustration.",
     drawLabels: ["ME", "MY GOAL", "MY PROBLEM"],
     prepare: "Prepare my coaching answers",
-    ready: "Your coaching answers are ready",
+    ready: "Your answers are ready to copy. Nothing has been sent.",
+    readyNote: "Copy the text below, then open WhatsApp.",
     copyButton: "Copy answers",
     copied: "Copied — paste them into WhatsApp",
     copyFallback: "Select and copy the text below, then paste it into WhatsApp.",
@@ -65,7 +66,8 @@ const copy = {
     drawingText: "На одном листе изобразите три элемента так, как вам подсказывает ощущение: Я, МОЯ ЦЕЛЬ и МОЯ ПРОБЛЕМА. Чётко сфотографируйте рисунок. Это рисунок ручкой на бумаге, не цифровая картинка.",
     drawLabels: ["Я", "МОЯ ЦЕЛЬ", "МОЯ ПРОБЛЕМА"],
     prepare: "Подготовить ответы анкеты",
-    ready: "Ответы коучинг-формы готовы",
+    ready: "Ответы готовы к копированию. Пока ничего не отправлено.",
+    readyNote: "Скопируйте текст ниже, затем откройте WhatsApp.",
     copyButton: "Скопировать ответы",
     copied: "Скопировано — вставьте в WhatsApp",
     copyFallback: "Выделите и скопируйте текст ниже, затем вставьте его в WhatsApp.",
@@ -99,7 +101,8 @@ const copy = {
     drawingText: "En una hoja, dibuja tres elementos como prefieras: YO, MI META y MI PROBLEMA. Haz una foto clara del dibujo; no utilices una ilustración digital.",
     drawLabels: ["YO", "MI META", "MI PROBLEMA"],
     prepare: "Preparar mis respuestas",
-    ready: "Tus respuestas están listas",
+    ready: "Tus respuestas están listas para copiar. Todavía no se ha enviado nada.",
+    readyNote: "Copia el texto siguiente y abre WhatsApp.",
     copyButton: "Copiar respuestas",
     copied: "Copiado — pega las respuestas en WhatsApp",
     copyFallback: "Selecciona y copia el texto siguiente y pégalo en WhatsApp.",
@@ -128,6 +131,7 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const questionnaireStarted = useRef(false);
+  const readyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("topic");
@@ -168,6 +172,7 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
       setCopied(true);
       setCopyFailed(false);
     } catch {
+      setCopied(false);
       setCopyFailed(true);
     }
   }
@@ -177,7 +182,7 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
       <p className={styles.eyebrow}><FileText size={17} aria-hidden="true" />{t.eyebrow}</p>
       <h2 id={titleId}>{t.title}</h2>
       <p className={styles.lead}>{t.lead}</p>
-      <form onSubmit={(event) => { event.preventDefault(); setPrepared(true); emitPublicAnalyticsEvent("free_questionnaire_prepared"); }} className={styles.form}>
+      <form onSubmit={(event) => { event.preventDefault(); setPrepared(true); emitPublicAnalyticsEvent("free_questionnaire_prepared"); requestAnimationFrame(() => readyRef.current?.focus()); }} className={styles.form}>
         <fieldset className={styles.topics}>
           <legend>{t.topicQuestion}</legend>
           <div className={styles.topicGrid}>
@@ -215,8 +220,9 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
         </div>
         <button className={styles.prepare} type="submit">{t.prepare}<ArrowUpRight size={20} aria-hidden="true" /></button>
       </form>
-      {prepared ? <div className={styles.ready} role="region" aria-label={t.ready}>
+      {prepared ? <div ref={readyRef} className={styles.ready} role="region" aria-label={t.ready} aria-live="polite" tabIndex={-1}>
         <h3>{t.ready}</h3>
+        <p className={styles.readyNote}>{t.readyNote}</p>
         <textarea className={styles.preview} readOnly value={answers} rows={7} aria-label={t.ready}
           onFocus={event => event.currentTarget.select()} />
         <AcquisitionEventLink className={styles.whatsapp} href={whatsappUrl} prefetch={false} target="_blank" rel="noopener noreferrer"

@@ -1167,10 +1167,13 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   .mind-body-monitor-strip__action {
     grid-column: 2;
     justify-self: start;
+    max-width: 100%;
     min-height: 36px;
     border-radius: 9px;
     padding: 7px 12px;
     font-size: 11px;
+    white-space: normal;
+    text-align: center;
   }
   .monitor-home-start {
     width: calc(100% - 20px);
