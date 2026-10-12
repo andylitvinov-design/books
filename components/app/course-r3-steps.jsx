@@ -95,7 +95,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [showOtherScales,setShowOtherScales]=useState(false)
   const [fallbackGoals,setFallbackGoals]=useState([])
   const [problemLabel,setProblemLabel]=useState((current.concerns||'').trim().slice(0,160))
-  const [intention,setIntention]=useState('')
+  const [intention]=useState('')
   const [goalsAccepted,setGoalsAccepted]=useState(false)
   const [localBusy,setLocalBusy]=useState(false)
   const predicted=useMemo(()=>suggestedCourseTopics(concerns),[concerns])
