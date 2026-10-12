@@ -14,7 +14,7 @@ test('new client goes to recommendations after persistence', async () => {
   assert.ok(create.includes('/admin/consultations/new?clientId='))
   assert.ok(create.includes('encodeURIComponent(client.id)'))
   assert.ok(create.includes('&created=1'))
-  assert.ok(!create.includes('redirect(/admin/clients/'))
+  assert.ok(!create.includes('/admin/clients/'))
 })
 
 test('new client form explains the next step in both languages', async () => {
