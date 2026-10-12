@@ -1292,6 +1292,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
       </header>
 
       <p className="hh-runner-instructions">{timeframe}</p>
+      {def.instructions && <p className="hh-runner-instructions" lang={def.instrumentLocale}>{def.instructions}</p>}
 
       {mode === 'quick' ? (
         <div className="hh-quick-form" aria-label={locale === 'ru' ? 'Все вопросы теста' : 'All test questions'}>

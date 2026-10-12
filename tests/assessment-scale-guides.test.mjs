@@ -130,6 +130,6 @@ test('simple picker uses topic cards as measured-scale intent, without a duplica
 
 test('unknown/restricted catalog items never gain runnable test guides',()=>{
   assert.equal(getTestScaleGuide('mmpi-3','en'),null)
-  assert.equal(getTestScaleGuide('scs-sf','en'),null)
+  assert.equal(getTestScaleGuide('functioning-review','en'),null)
   assert.equal(getTestScaleGuide('not-a-real-instrument','en'),null)
 })

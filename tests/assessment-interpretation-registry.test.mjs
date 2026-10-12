@@ -22,13 +22,13 @@ const answersFor = (def, extreme) => Object.fromEntries(def.questions.map(q => [
   q.id, extreme === 'max' ? (q.max ?? def.answerScale?.max) : (q.min ?? def.answerScale?.min),
 ]))
 
-test('all 94 runnable tests have exact-version plans; unavailable licensed tests remain excluded', () => {
+test('all 96 runnable tests have exact-version plans; unavailable licensed tests remain excluded', () => {
   const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
-  assert.equal(coverage.total, 94)
-  assert.equal(coverage.registered, 94)
+  assert.equal(coverage.total, 96)
+  assert.equal(coverage.registered, 96)
   assert.deepEqual(coverage.uncovered, [])
   assert.deepEqual(coverage.obsolete, [])
-  assert.equal(new Set(runnable.map(d => d.key)).size, 94)
+  assert.equal(new Set(runnable.map(d => d.key)).size, 96)
   assert.equal(interpretationPlan('hh-current-state', 'v2')?.key, 'hh-current-state')
   assert.equal(interpretationPlan('hh-current-state', 'v1')?.key, 'hh-current-state')
   assert.equal(interpretationPlan('hh-current-state', 'v3'), null)
