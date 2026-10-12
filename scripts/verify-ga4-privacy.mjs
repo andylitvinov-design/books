@@ -11,9 +11,10 @@ const output = new URL("../artifacts/ga4-privacy/", import.meta.url);
 mkdirSync(output, { recursive: true });
 const sdk = readFileSync(process.env.HH_GA4_SDK_PATH || new URL("google-tag-readonly.js", output), "utf8");
 const compiled = {};
-for (const path of ["lib/public-analytics.ts", "components/ga4-analytics.tsx", "components/analytics-consent.tsx"]) {
+for (const path of ["lib/public-analytics.ts", "components/ga4-analytics.tsx", "components/analytics-consent.tsx", "components/csp-navigation-boundary.tsx"]) {
   let source = readFileSync(new URL(path, base), "utf8");
   if (path.includes("analytics-consent")) source += "\nexport const applyConsentForFixture = applyConsent;\n";
+  if (path.includes("csp-navigation")) source += "\nexport const cspClassForFixture = cspClassForPath;\n";
   compiled[path] = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
 }
 const id = "G-3WX7PDD52N";
@@ -22,23 +23,32 @@ const fixture = `<!doctype html><html><head><title>Public synthetic fixture</tit
 (() => {
  const compiled = ${JSON.stringify(compiled)};
  const modules = new Map();
- let pathname = location.pathname, effects = [], refs = [], cursor = 0, cleanup;
- const react = { useEffect: fn => effects.push(fn), useRef: null, useState: initial => [initial,()=>{}] };
- // Preserve hook indexes across renders without mounting React or Next.
- react.useRef = initial => { const i=cursor++; return refs[i] ??= {current:initial}; };
+ const withCsp = __HH_WITH_CSP__;
+ let pathname = location.pathname, effects = [], cursor = 0, hooks;
+ const gaHooks=[], consentHooks=[], cspHooks=[];
+ // Per-component dependency/cleanup tracking models effect ordering, not React
+ // or the Next router itself. Browser history and document navigation are real.
+ const react = {
+  useEffect(fn,deps){const i=cursor++, scope=hooks, previous=scope[i];if(!previous||deps.some((value,index)=>value!==previous.deps[index])) effects.push(()=>{previous?.cleanup?.();scope[i]={deps,cleanup:fn()};});},
+  useRef(initial){const i=cursor++;return hooks[i]??={current:initial};},
+  useState: initial=>[initial,()=>{}]
+ };
+ const flush=()=>{const pending=effects;effects=[];pending.forEach(fn=>fn());};
  function evaluate(path) {
   if(modules.has(path)) return modules.get(path);
   const exports={};
-  const require=name => name==='react'?react:name==='react/jsx-runtime'?{jsx:()=>null,jsxs:()=>null}:name==='next/navigation'?{usePathname:()=>pathname}:name==='@/lib/public-analytics'?evaluate('lib/public-analytics.ts'):(()=>{throw Error(name)})();
+  const require=name => name==='react'?react:name==='react/jsx-runtime'?{jsx:()=>null,jsxs:()=>null}:name==='next/navigation'?{usePathname:()=>pathname}:name==='@/lib/public-analytics'?evaluate('lib/public-analytics.ts'):name==='@/lib/native/client'?{isNativePsiAlchemy:()=>false}:(()=>{throw Error(name)})();
   new Function('require','exports','process',compiled[path])(require,exports,{env:{NEXT_PUBLIC_GA_MEASUREMENT_ID:'${id}'}});
   modules.set(path,exports);return exports;
  }
+ const csp=evaluate('components/csp-navigation-boundary.tsx');
+ if(withCsp)document.body.dataset.cspClass=csp.cspClassForFixture(location.pathname);
  const analytics=evaluate('components/ga4-analytics.tsx');
  const consent=evaluate('components/analytics-consent.tsx');
  const events=evaluate('lib/public-analytics.ts');
  document.getElementById('synthetic-form').addEventListener('submit',event=>event.preventDefault());
- function render(){cleanup?.(); pathname=location.pathname; cursor=0;effects=[];analytics.Ga4Analytics({nonce:'fixture'});cleanup=effects[0]?.();}
- function syncConsent(){effects=[];consent.AnalyticsConsent();effects[0]?.();}
+ function render(){pathname=location.pathname;if(withCsp){hooks=cspHooks;cursor=0;csp.CspNavigationBoundary();}hooks=gaHooks;cursor=0;analytics.Ga4Analytics({nonce:'fixture'});flush();}
+ function syncConsent(){hooks=consentHooks;cursor=0;consent.AnalyticsConsent();flush();}
  let fixtureVisibility='visible';
  Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>fixtureVisibility});
  document.documentElement.dataset.analyticsConsent='denied';
@@ -50,16 +60,19 @@ const fixture = `<!doctype html><html><head><title>Public synthetic fixture</tit
   acquire(){events.emitPublicAnalyticsEvent('free_situation_assessment_click');},
   formInteractions(){const form=document.getElementById('synthetic-form');for(const field of form.querySelectorAll('input,textarea')){field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));field.dispatchEvent(new Event('blur',{bubbles:true}));}form.requestSubmit();},
   lifecycle(state){fixtureVisibility=state;document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new PageTransitionEvent(state==='hidden'?'pagehide':'pageshow',{persisted:false}));},
-  unmount(){cleanup?.();cleanup=undefined;},
+  unmount(){[gaHooks,consentHooks,cspHooks].flat().forEach(hook=>hook?.cleanup?.());},
   queue(){return (window.dataLayer||[]).filter(x=>Object.prototype.toString.call(x)==='[object Arguments]').map(x=>Array.from(x));}
  };
  render(); syncConsent();
+ // Registered after the real CSP capture listener, as Next history handling is.
+ if(withCsp)window.addEventListener('popstate',()=>{render();syncConsent();});
 })();</script></body></html>`;
 
 // A dead local proxy is a second boundary if any request ever misses routing.
 const browser = await chromium.launch({
   ...(process.env.HH_GA4_CHROMIUM_PATH ? { executablePath: process.env.HH_GA4_CHROMIUM_PATH } : {}),
   headless: true,
+  ignoreDefaultArgs: ["--disable-back-forward-cache"],
   proxy: { server: "http://127.0.0.1:9" },
   args: ["--disable-background-networking", "--disable-component-update", "--disable-sync", "--disable-default-apps", "--no-first-run"],
 });
@@ -115,7 +128,7 @@ async function waitUntil(predicate, message, timeout = 10000) {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 }
-async function scenario(name, { holdSdk = false, path = "/en?private_query=SYNTHETIC_QUERY#SYNTHETIC_FRAGMENT" } = {}) {
+async function scenario(name, { holdSdk = false, withCsp = false, path = "/en?private_query=SYNTHETIC_QUERY#SYNTHETIC_FRAGMENT" } = {}) {
   const context = await browser.newContext({ serviceWorkers: "block" });
   contexts.push(context);
   const own = [];
@@ -135,7 +148,7 @@ async function scenario(name, { holdSdk = false, path = "/en?private_query=SYNTH
     if (url.hostname === "holistichouse.vercel.app" && request.isNavigationRequest()) {
       entry.action = "local-fixture";
       // Do not impose a safer response referrer policy than the application.
-      await route.fulfill({ status: 200, contentType: "text/html", body: fixture });
+      await route.fulfill({ status: 200, contentType: "text/html", body: fixture.replace("__HH_WITH_CSP__", String(withCsp)) });
     } else if (url.hostname === "www.googletagmanager.com" && url.pathname === "/gtag/js" && [id, "GT-KTPSQT8C"].includes(url.searchParams.get("id"))) {
       entry.action = "local-frozen-sdk";
       await sdkGate;
@@ -153,6 +166,10 @@ async function scenario(name, { holdSdk = false, path = "/en?private_query=SYNTH
   await context.routeWebSocket("**/*", socket => {
     errors.push({ scenario: name, phase, message: `Unexpected WebSocket: ${socket.url()}` });
     socket.close();
+  });
+  await context.addInitScript(() => {
+    window.fixturePageShows=[];
+    window.addEventListener("pageshow",event=>window.fixturePageShows.push({persisted:event.persisted}));
   });
   const page = await context.newPage();
   page.on("pageerror", error => errors.push({ scenario: name, phase, message: error.message }));
@@ -380,6 +397,59 @@ try {
   await inspectCookies(foreignQueue, "foreign-queue-not-activated", false);
   foreignQueue.checkpoint("unowned queued destination never activates a new SDK");
   await foreignQueue.context.close();
+  const staleConsent = await scenario("stale-restored-dom-consent");
+  await staleConsent.page.evaluate(() => window.fixture.grant());
+  await waitUntil(() => staleConsent.events().some(event => event.en === "page_view"), "stale consent public positive control");
+  await settled(staleConsent.page);
+  const beforeStale = staleConsent.collects().length;
+  // A second same-origin document can change the cookie while this DOM retains
+  // its old granted snapshot, including after a BFCache restore.
+  await staleConsent.context.addCookies([{ name: "holistic_house_analytics_consent", value: "denied", url: "https://holistichouse.vercel.app", secure: true }]);
+  staleConsent.phase("persisted-cookie-off-stale-dom-granted");
+  await staleConsent.page.evaluate(() => {window.fixture.acquire();window.fixture.lifecycle("hidden");});
+  await settled(staleConsent.page);
+  assert.equal(await staleConsent.page.evaluate(id=>window["ga-disable-"+id],id), true);
+  assert.equal(staleConsent.collects().length, beforeStale);
+  assertSafe(staleConsent.own);staleConsent.checkpoint("new persisted denial wins over a stale granted DOM snapshot");
+  await staleConsent.context.close();
+
+  for (const navigationKind of ["click", "programmatic"]) {
+    const paired = await scenario(`csp-and-ga-${navigationKind}`, { withCsp: true });
+    await paired.page.evaluate(() => window.fixture.grant());
+    await waitUntil(() => paired.events().some(event => event.en === "page_view"), "joint boundaries public positive control");
+    await settled(paired.page);
+    const beforePrivate = paired.collects().length;
+    paired.phase("joint-public-to-private");
+    if (navigationKind === "click") {
+      await resetAction(paired, () => {
+        const anchor=document.createElement("a");anchor.href="/en/app/SYNTHETIC_PRIVATE_PAIRED";document.body.appendChild(anchor);anchor.click();
+      });
+    } else {
+      await resetAction(paired, () => window.fixture.navigate("/en/app/SYNTHETIC_PRIVATE_PAIRED"));
+    }
+    await settled(paired.page);
+    assert.equal(new URL(paired.page.url()).pathname, "/en/app/SYNTHETIC_PRIVATE_PAIRED");
+    assert.equal(paired.collects().length, beforePrivate);
+    const privateDocument = await paired.page.evaluate(() => window.fixture.documentId);
+    await paired.page.evaluate(() => {window.fixture.render();window.fixture.syncConsent();});
+    await settled(paired.page);
+    assert.equal(await paired.page.evaluate(() => window.fixture.documentId), privateDocument, "no private rerender reload loop");
+    await inspectCookies(paired, "joint-private-after-navigation", false);
+    paired.phase("joint-history-return-public");
+    await paired.page.goBack({ waitUntil: "domcontentloaded" });
+    await waitUntil(() => paired.events().filter(event => event.en === "page_view").length >= 2, "Back restores a public pageview with both boundaries");
+    await settled(paired.page);
+    assert.equal(paired.events().filter(event => event.en === "page_view").length, 2);
+    paired.phase("joint-history-forward-private");
+    const beforeForward = paired.collects().length;
+    await paired.page.goForward({ waitUntil: "domcontentloaded" });
+    await settled(paired.page);
+    assert.equal(new URL(paired.page.url()).pathname, "/en/app/SYNTHETIC_PRIVATE_PAIRED");
+    assert.equal(paired.collects().length, beforeForward);
+    assertSafe(paired.own);
+    paired.checkpoint("joint boundaries preserve destinations, no private rerender loop, Back pageview and private Forward suppression");
+    await paired.context.close();
+  }
   assertSafe(requests);
   assert.equal(errors.length, 0, JSON.stringify(errors));
 } catch (error) {

@@ -65,7 +65,7 @@ export function harness({ pathname = "/en", consent = "granted", hostname = "hol
     reloads: () => reloads,
     commands: () => Array.from(window.dataLayer ?? [], (command) => Array.from(command)),
     events: () => Array.from(window.dataLayer ?? []).filter((command) => command[0] === "event"),
-    consent(value) { document.documentElement.dataset.analyticsConsent = value; window.dispatchEvent(new Event("holistic-house:analytics-consent")); },
+    consent(value) { document.cookie = `holistic_house_analytics_consent=${value}`; document.documentElement.dataset.analyticsConsent = value; window.dispatchEvent(new Event("holistic-house:analytics-consent")); },
     acquisition(event, extra = {}) { window.dispatchEvent(new CustomEvent("holistic-house:acquisition", { detail: { event, ...extra } })); },
     syncConsent() { effects = []; consentComponent.AnalyticsConsent(); effects[0]?.(); },
     unmount() { cleanup?.(); cleanup = undefined; },
@@ -306,4 +306,17 @@ test("fallback fixture accepts only byte-identical one-step transport retries", 
   assert.throws(() => validate([primary, { ...retry, url: retry.url + "&gaf=1" }]));
   assert.throws(() => validate([primary, retry, retry]));
   assert.throws(() => validate([retry]));
+});
+
+
+test("a restored granted DOM cannot override a newer denied or missing consent cookie", () => {
+  for (const cookie of ["holistic_house_analytics_consent=denied", ""]) {
+    const h = harness(); h.render();
+    const count = h.events().length;
+    h.document.cookie = cookie;
+    assert.equal(h.document.documentElement.dataset.analyticsConsent, "granted");
+    assert.equal(h.window["ga-disable-G-SYNTHETIC"], true);
+    h.acquisition("free_situation_assessment_click");
+    assert.equal(h.events().length, count);
+  }
 });

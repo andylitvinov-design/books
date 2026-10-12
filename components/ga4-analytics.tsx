@@ -7,7 +7,10 @@ import { PUBLIC_ANALYTICS_EVENTS, analyticsDocumentResetPending, isPublicAnalyti
 const protectedMeasurements = new Map<string, { externallyDisabled: boolean }>();
 
 function hasConsent() {
-  return document.documentElement.dataset.analyticsConsent === "granted";
+  // BFCache restores an old DOM snapshot; another document may have since
+  // changed the persisted choice. A stale dataset must never re-enable a tag.
+  return document.documentElement.dataset.analyticsConsent === "granted"
+    && document.cookie.split(";").some(item => item.trim() === "holistic_house_analytics_consent=granted");
 }
 
 function isCanonicalProductionHost() {
