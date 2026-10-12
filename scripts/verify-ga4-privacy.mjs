@@ -186,9 +186,12 @@ async function scenario(name, { holdSdk = false, withCsp = false, path = "/en?pr
 async function settled(page, ms = 2300) { await page.waitForTimeout(ms); }
 async function resetAction(s, action) {
   const documentId = await s.page.evaluate(() => window.fixture.documentId);
-  const navigation = s.page.waitForNavigation({ waitUntil: "domcontentloaded" });
+  // A router pushState can resolve waitForNavigation before the subsequent
+  // hard navigation. Wait for an actual new document, not that intermediate URL.
+  const freshDocument = s.page.waitForFunction(previous => Boolean(window.fixture?.documentId)
+    && window.fixture.documentId !== previous, documentId);
   await s.page.evaluate(action);
-  await navigation;
+  await freshDocument;
   assert.notEqual(await s.page.evaluate(() => window.fixture.documentId), documentId, "fresh document clears the SDK lifecycle");
 }
 async function inspectCookies(s, label, expectedPresent) {
@@ -455,6 +458,7 @@ try {
     await inspectCookies(paired, "joint-private-after-navigation", false);
     paired.phase("joint-history-return-public");
     await paired.page.goBack({ waitUntil: "domcontentloaded" });
+    await paired.page.waitForFunction(()=>window.fixturePageShows.length>0);
     historyChecks.push({ scenario: `csp-and-ga-${navigationKind}`, direction: "back", ...(await paired.page.evaluate(() => ({documentId:window.fixture.documentId, pageShows:window.fixturePageShows, pathname:location.pathname}))) });
     await waitUntil(() => paired.events().filter(event => event.en === "page_view").length >= 2, "Back restores a public pageview with both boundaries");
     await settled(paired.page);
