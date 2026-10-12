@@ -7,6 +7,7 @@ import { PROFESSIONAL_BATTERY_2026_CATALOG } from '../data/assessments/professio
 import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from '../data/assessments/professional-battery-2026-b.js'
 import { CDC_HEALTHY_DAYS_CATALOG } from '../data/assessments/cdc-healthy-days-2026.js'
 import { IPIP_BIG_FIVE_50_CATALOG } from '../data/assessments/ipip-big-five-50-en-v1.js'
+import { PERSONALITY_TYPE_CATALOG } from '../data/assessments/personality-types-original-2026.js'
 import { RELATIONSHIPS_INTIMACY_KEYS } from '../data/assessments/relationships-intimacy-v1.js'
 import { OPEN_PROFESSIONAL_2026_CATALOG } from '../data/assessments/open-professional-2026.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
@@ -19,7 +20,7 @@ const answers = (definition, value) =>
 
 test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 46 + RELATIONSHIPS_INTIMACY_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length)
+  assert.equal(items.length, 46 + RELATIONSHIPS_INTIMACY_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length + PERSONALITY_TYPE_CATALOG.length)
   assert.deepEqual(
     items.map((item) => item.key).sort(),
     [
@@ -75,6 +76,7 @@ test('all active published monitoring tests resolve to executable definitions', 
     ...PROFESSIONAL_BATTERY_2026_B_CATALOG.map((item) => item.key),
     ...CDC_HEALTHY_DAYS_CATALOG.map((item) => item.key),
     ...IPIP_BIG_FIVE_50_CATALOG.map((item) => item.key),
+    ...PERSONALITY_TYPE_CATALOG.map((item) => item.key),
     ...RELATIONSHIPS_INTIMACY_KEYS,
     ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
   ].sort(),

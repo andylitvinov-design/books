@@ -38,7 +38,7 @@ const fixture = `<!doctype html><html><head><title>Public synthetic fixture</tit
   if(modules.has(path)) return modules.get(path);
   const exports={};
   const require=name => name==='react'?react:name==='react/jsx-runtime'?{jsx:()=>null,jsxs:()=>null}:name==='next/navigation'?{usePathname:()=>pathname}:name==='@/lib/public-analytics'?evaluate('lib/public-analytics.ts'):name==='@/lib/native/client'?{isNativePsiAlchemy:()=>false}:(()=>{throw Error(name)})();
-  new Function('require','exports','process',compiled[path])(require,exports,{env:{NEXT_PUBLIC_GA_MEASUREMENT_ID:'${id}'}});
+  new Function('require','exports','process',compiled[path]+'\\n//# sourceURL=https://synthetic-fixture.invalid/'+path)(require,exports,{env:{NEXT_PUBLIC_GA_MEASUREMENT_ID:'${id}'}});
   modules.set(path,exports);return exports;
  }
  const csp=evaluate('components/csp-navigation-boundary.tsx');
@@ -172,7 +172,7 @@ async function scenario(name, { holdSdk = false, withCsp = false, path = "/en?pr
     window.addEventListener("pageshow",event=>window.fixturePageShows.push({persisted:event.persisted}));
   });
   const page = await context.newPage();
-  page.on("pageerror", error => errors.push({ scenario: name, phase, message: error.message }));
+  page.on("pageerror", error => errors.push({ scenario: name, phase, message: error.message, stack: error.stack }));
   await page.goto("https://holistichouse.vercel.app" + path);
   return {
     page, own, context,
@@ -459,7 +459,7 @@ try {
     paired.phase("joint-history-return-public");
     await paired.page.goBack({ waitUntil: "domcontentloaded" });
     await paired.page.waitForFunction(()=>window.fixturePageShows.length>0);
-    historyChecks.push({ scenario: `csp-and-ga-${navigationKind}`, direction: "back", ...(await paired.page.evaluate(() => ({documentId:window.fixture.documentId, pageShows:window.fixturePageShows, pathname:location.pathname}))) });
+    historyChecks.push({ scenario: `csp-and-ga-${navigationKind}`, direction: "back", ...(await paired.page.evaluate(() => ({documentId:window.fixture.documentId, pageShows:window.fixturePageShows, pathname:location.pathname, cspClass:document.body.dataset.cspClass, gtagPresent:typeof window.gtag === "function", consentDataset:document.documentElement.dataset.analyticsConsent}))) });
     await waitUntil(() => paired.events().filter(event => event.en === "page_view").length >= 2, "Back restores a public pageview with both boundaries");
     await settled(paired.page);
     assert.equal(paired.events().filter(event => event.en === "page_view").length, 2);
@@ -472,7 +472,7 @@ try {
     const forwardPrivateCount = paired.collects().length;
     await settled(paired.page);
     assert.equal(paired.collects().length, forwardPrivateCount);
-    historyChecks.push({ scenario: `csp-and-ga-${navigationKind}`, direction: "forward", publicDepartureEvents, forwardDepartureEvents, ...(await paired.page.evaluate(() => ({documentId:window.fixture.documentId, pageShows:window.fixturePageShows, pathname:location.pathname}))) });
+    historyChecks.push({ scenario: `csp-and-ga-${navigationKind}`, direction: "forward", publicDepartureEvents, forwardDepartureEvents, ...(await paired.page.evaluate(() => ({documentId:window.fixture.documentId, pageShows:window.fixturePageShows, pathname:location.pathname, cspClass:document.body.dataset.cspClass, gtagPresent:typeof window.gtag === "function", consentDataset:document.documentElement.dataset.analyticsConsent}))) });
     assertSafe(paired.own);
     paired.checkpoint("joint boundaries preserve destinations, no private rerender loop, Back pageview and private Forward suppression");
     await paired.context.close();

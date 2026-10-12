@@ -14,7 +14,7 @@ const answersFor = (def, value = 'min') => Object.fromEntries(def.questions.map(
 ]))
 
 test('every runnable, versioned assessment produces EN/RU score-tied advice without fabricated diagnostic categories', () => {
-  assert.ok(tests.length >= 75, 'All current runnable definitions must be covered')
+  assert.ok(tests.length >= 80, 'All current runnable definitions must be covered')
   for (const def of tests) {
     const scored = scoreAssessment(def, answersFor(def))
     assert.ok(scored.dimensions.length > 0, def.key)

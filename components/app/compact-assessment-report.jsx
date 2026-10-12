@@ -15,6 +15,14 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       <h2>{ru ? 'Ваш результат' : 'Your results'}</h2>
       <span>{report.sections.length} {ru ? 'показателей' : 'measures'}</span>
     </header>
+    {report.methodology && <p className={styles.methodology} data-assessment-methodology><strong>{ru ? 'Происхождение и профессиональный статус' : 'Origin & evidence'}:</strong> {report.methodology}</p>}
+    {report.personalityType && <aside className={styles.typeSummary} role="note" data-personality-type-summary>
+      <p>{ru ? 'Гипотеза для самопознания' : 'Self-reflection hypothesis'}</p>
+      <h3>{report.personalityType.headline}</h3>
+      <p>{report.personalityType.description}</p>
+      {report.personalityType.alternatives?.map(alternative => <p key={alternative}>{alternative}</p>)}
+      <small>{report.personalityType.warning}</small>
+    </aside>}
     {report.contextNote && <p className={styles.contextNote} data-assessment-context>{report.contextNote}</p>}
     <div className={styles.cards}>
       {report.sections.map((section, index) => {

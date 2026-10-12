@@ -60,6 +60,7 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
         <div className={styles.purpose}>
           <strong>{ru ? 'Что измеряет тест' : 'What this test measures'}</strong>
           <p>{report.purpose}</p>
+          {report.methodology && <p className={styles.methodology}><strong>{ru ? 'Происхождение и профессиональный статус' : 'Origin & evidence'}:</strong> {report.methodology}</p>}
         </div>
       </header>
       {bach && featured.length > 0 && (
