@@ -44,17 +44,22 @@ export default async function NewConsultation({ searchParams }) {
       }}
     />
     {createdClient && <section className="consultation-client-created-banner" role="status">
-      <p><strong>{ru ? 'Клиент сохранён.' : 'Client saved.'}</strong>{' '}
-        {ru
-          ? 'Заполните назначения и комментарии ниже. Готовые документы будут привязаны к этому клиенту.'
-          : 'Add remedies and notes below. The documents you create will be linked to this client.'}
-      </p>
+      <div className="consultation-client-created-identity">
+        <span className="consultation-client-created-avatar" aria-hidden="true">{createdClient.fullName.slice(0, 1).toUpperCase()}</span>
+        <div>
+          <span className="consultation-client-created-label">{ru ? 'КЛИЕНТ СОХРАНЁН' : 'CLIENT SAVED'}</span>
+          <strong>{createdClient.fullName}</strong>
+          <p>{ru
+            ? 'Теперь добавьте препараты и рекомендации. Документы будут сохранены в истории этого клиента.'
+            : 'Add remedies and recommendations next. Documents will be saved to this client’s history.'}</p>
+        </div>
+      </div>
       <div className="consultation-client-created-links">
-        <Link href={`/admin/clients/${createdClient.id}/assessments/new?kind=research_result`} prefetch={false}>
-          {ru ? 'Создать отдельный диагностический отчёт ↗' : 'Write a separate diagnostic report ↗'}
+        <Link className="consultation-client-created-report-link" href={`/admin/clients/${createdClient.id}/assessments/new?kind=research_result`} prefetch={false}>
+          {ru ? 'Отдельный диагностический отчёт ↗' : 'Separate diagnostic report ↗'}
         </Link>
-        <Link href={`/admin/clients/${createdClient.id}`} prefetch={false}>
-          {ru ? 'Карточка и история клиента' : 'Client details and history'}
+        <Link className="consultation-client-created-history-link" href={`/admin/clients/${createdClient.id}`} prefetch={false}>
+          {ru ? 'История клиента' : 'Client history'}
         </Link>
       </div>
     </section>}
