@@ -42,7 +42,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   };
   return (
     <html lang={lang}>
-      <head><script nonce={nonce} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} /></head>
+      <head>
+        {/* Browsers hide the nonce content attribute before hydration while
+            preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
+        <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      </head>
       <body className="font-sans"><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><Ga4Analytics nonce={nonce} />{children}<SitewideLeadCapture /><AnalyticsConsent /><MobileBottomNavigation initialLocale={lang} /></body>
     </html>
   );

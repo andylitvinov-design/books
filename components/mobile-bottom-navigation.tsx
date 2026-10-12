@@ -1,5 +1,5 @@
 "use client";
-import { BookOpen, House, Sparkles, UserRound, GraduationCap, CircleUserRound } from 'lucide-react';
+import { BookOpen, House, Sparkles, UserRound, GraduationCap, CircleUserRound, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
@@ -7,7 +7,7 @@ import type { PublicLocale } from '@/lib/public-locales';
 import { activeNavigationId, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 
-const icons = { home: House, library: BookOpen, services: Sparkles, academy: GraduationCap, about: UserRound, cabinet: CircleUserRound };
+const icons = { home: House, library: BookOpen, services: Sparkles, relationships: Heart, academy: GraduationCap, about: UserRound, cabinet: CircleUserRound };
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname();
@@ -25,7 +25,9 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   if (hidden) return null;
   const current = activeNavigationId(pathname);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
-    {getSiteNavigation(locale).map(item => {
+    {/* Keep the six high-priority destinations on the compact bottom bar. The
+        new love/intimacy hub remains prominent in the desktop menu and homepage. */}
+    {getSiteNavigation(locale).filter(item => item.id !== 'relationships').map(item => {
       const Icon = icons[item.id];
       const content = <><Icon aria-hidden="true" /><span>{item.label}</span></>;
       return item.external
