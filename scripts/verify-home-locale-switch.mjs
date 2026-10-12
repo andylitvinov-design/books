@@ -23,7 +23,14 @@ async function verifyFreeOffers(page, locale, engine, width) {
     const size = await cta.evaluate(element => ({ height: element.getBoundingClientRect().height, font: parseFloat(getComputedStyle(element).fontSize) }));
     assert.ok(size.height >= 46 && size.font >= 14, `Small ${locale} ${id} CTA: ${JSON.stringify(size)}`);
   }
-  assert.ok(await free.evaluate(element => Boolean(element.compareDocumentPosition(document.querySelector('[data-core-service-offers="home"]')) & Node.DOCUMENT_POSITION_FOLLOWING)), 'Free offers must precede the four service cards');
+  const order = await free.evaluate(element => {
+    const services = document.querySelector('[data-core-service-offers="home"]');
+    return {
+      freeBeforeServices: (element.compareDocumentPosition(services) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+      servicesBeforeFree: (services.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    };
+  });
+  assert.deepEqual(order, { freeBeforeServices: true, servicesBeforeFree: false }, 'Free offers must precede the four service cards');
   results.push({ engine, width, locale, freeOffers: ['situation', 'wu', 'stress'], touchTargets: true });
 }
 
@@ -34,7 +41,7 @@ async function exerciseFreeJourneys(page, engine, width) {
     for (const [id, suffix, target] of [
       ['situation', '/services/free-situation-review', '#review-hero-title'],
       ['wu', '/services/dao-health-profile', '[data-core-service-detail="dao"] h1'],
-      ['stress', '/client#cabinet-tests', '#cabinet-tests #hh-test-list'],
+      ['stress', '/client#cabinet-tests', '#cabinet-tests [data-prelogin-test-picker]'],
     ]) {
       await page.goto(`${origin}/?lang=${locale}`, { waitUntil: 'domcontentloaded' });
       await page.locator(`[data-free-insights="public"] [data-free-insights-offer="${id}"] a`).click();
