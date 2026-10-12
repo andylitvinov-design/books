@@ -1849,7 +1849,7 @@ function PortfolioPage({ data, locale }) {
         <div className="hh-insights-empty hh-panel" role="status">
           <p>{ru ? 'Выберите корректные даты начала и конца периода.' : 'Choose valid start and end dates for comparison.'}</p>
         </div>
-      ) : groups.length || (selectedCategories.length > 0 && allGroups.length > 0) ? (
+      ) : groups.length || selectedCategories.length > 0 ? (
         <div className="hh-insights-categories">
           {categorySections.map(({ category, groups: categoryGroups }) => {
             const CategoryIcon = INSIGHTS_CATEGORY_ICONS[category.key] || ClipboardList
