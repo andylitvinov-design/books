@@ -37,12 +37,13 @@ test('publishes paired localized About routes with complete, Ontario-safe editor
   assert.ok(existsSync(new URL('../public/images/holistic-house/andy-about.png', import.meta.url)))
 })
 
-test('shares all six public destinations between mobile and header navigation without administration', async () => {
+test('shares all public destinations with six mobile shortcuts and no administration', async () => {
   const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'academy', 'about', 'cabinet'])
+  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'relationships', 'academy', 'about', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
-    assert.equal(items.length, 6)
+    assert.equal(items.length, locale === 'es' ? 6 : 7)
+    if (locale !== 'es') assert.equal(items.find(item=>item.id==='relationships')?.href, `/${locale}/relationships`)
     assert.equal(items.find((item) => item.id === 'about').href, `/${locale}/about`)
     assert.equal(items.find((item) => item.id === 'cabinet').href, `/${locale}/client`)
   }

@@ -133,7 +133,13 @@ try {
       const expected = getSiteNavigation(locale)
       for (const selector of ['.site-navigation', '.mobile-bottom-navigation']) {
         const nav = page.locator(selector)
-        assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expected.map(x => ({ id: x.id, href: x.href })))
+        // Desktop includes the EN/RU relationship hub. The compact mobile bar
+        // intentionally keeps six destinations; Home exposes the hub spotlight.
+        const mobileIds = ['home', 'library', 'services', 'academy', 'about', 'cabinet']
+        const expectedItems = selector === '.mobile-bottom-navigation'
+          ? expected.filter(item => mobileIds.includes(item.id)) : expected
+        assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
+        if (selector === '.mobile-bottom-navigation') await expect(nav.locator('[data-nav-item]')).toHaveCount(6)
         await expect(nav.locator('[data-nav-item="library"]')).toHaveAttribute('aria-current', 'page')
       }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Overflow: ${locale}/${width}`)
@@ -149,7 +155,7 @@ try {
       await page.screenshot({ path: `${evidence}/library-${locale}-${width}.png`, fullPage: true })
     }
   }
-  pass('Both six-item menus, Library EN/RU/ES, active states, 320–1280px, tap targets and bottom spacing')
+  pass('Desktop hub entry and six-slot mobile navigation, Library EN/RU/ES, active states, 320–1280px, tap targets and bottom spacing')
   for (const path of ['/en/books', '/ru/books', '/es/books', '/en/homeopathy', '/ru/homeopathy', '/es/homeopathy', '/en/services', '/ru/services', '/es/services', '/en/about', '/ru/about', '/es/about']) assert.equal((await go(page, path)).status(), 200, path)
   const sitemap = await (await fetch(origin + '/sitemap.xml')).text()
   for (const locale of ['en', 'ru', 'es']) assert.ok(sitemap.includes(`/${locale}/library`))
