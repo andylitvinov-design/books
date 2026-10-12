@@ -8,6 +8,7 @@ on:
       - 'lib/public-analytics.ts'
       - 'tests/ga4-transport.test.mjs'
       - 'scripts/verify-ga4-privacy.mjs'
+      - 'scripts/verify-ga4-document-boundary.mjs'
       - '.github/workflows/ga4-privacy.yml'
 permissions:
   contents: read
@@ -17,7 +18,7 @@ concurrency:
 jobs:
   intercepted-network:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
@@ -45,6 +46,9 @@ jobs:
           sha256sum artifacts/ga4-privacy/google-tag-readonly.js > artifacts/ga4-privacy/google-tag.sha256
       - name: Full SDK with every browser request intercepted before sending
         run: node scripts/verify-ga4-privacy.mjs
+      - name: Real Next root-layout boundary architecture proof
+        if: always()
+        run: node scripts/verify-ga4-document-boundary.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

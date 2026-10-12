@@ -1,3 +1,5 @@
+> RELEASE HOLD (2026-10-12 15:15 UTC): exact head 3455275 and CI 38268525318 prove that the unmodified Google SDK can emit a private pathname via `/td` diagnostics after delayed loading crosses a same-document SPA transition. The live ga-disable getter does not protect this endpoint. All attempts were intercepted; no analytics hit was transmitted. The earlier passing checkpoint results below are limited evidence, not approval to release. See `ga4-document-boundary-plan-2026-10-12.md` for the proposed architectural proof.
+
 # GA4 transport and privacy repair
 
 ## Why this changes the implementation

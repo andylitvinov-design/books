@@ -1,0 +1,1163 @@
+{
+  "status": "planned-not-applied",
+  "canonical": "575f87639fbecd4b503e899124ac5b24c2e37429",
+  "filesMoved": 96,
+  "routesMoved": 75,
+  "moves": [
+    {
+      "from": "app/[locale]/app/[[...path]]/assessment-dashboard.css",
+      "to": "app/(private)/[locale]/app/[[...path]]/assessment-dashboard.css",
+      "group": "private",
+      "blobSha": "3d31af85cc7c1dd1c4d2045740ceeaf63774c9fa"
+    },
+    {
+      "from": "app/[locale]/app/[[...path]]/loading.jsx",
+      "to": "app/(private)/[locale]/app/[[...path]]/loading.jsx",
+      "group": "private",
+      "blobSha": "dd7be47921d24786671f8b190d5e0bc451202ac6"
+    },
+    {
+      "from": "app/[locale]/app/[[...path]]/page.jsx",
+      "to": "app/(private)/[locale]/app/[[...path]]/page.jsx",
+      "group": "private",
+      "blobSha": "12cd28d426d2611ddb7024b12126c54c682cc893"
+    },
+    {
+      "from": "app/[locale]/app/[[...path]]/workspace.css",
+      "to": "app/(private)/[locale]/app/[[...path]]/workspace.css",
+      "group": "private",
+      "blobSha": "1c8a8001770e7d9a1395f55da67558ff26c31032"
+    },
+    {
+      "from": "app/[locale]/client/[selector]/assessments/[assessmentId]/page.js",
+      "to": "app/(private)/[locale]/client/[selector]/assessments/[assessmentId]/page.js",
+      "group": "private",
+      "blobSha": "e6102c3efb2f3edcdc1b2e5e20e93752e86e48b1"
+    },
+    {
+      "from": "app/[locale]/client/[selector]/documents/[id]/page.js",
+      "to": "app/(private)/[locale]/client/[selector]/documents/[id]/page.js",
+      "group": "private",
+      "blobSha": "ab81278b22708d37adb4a6d5bc369752349dd837"
+    },
+    {
+      "from": "app/[locale]/client/[selector]/page.js",
+      "to": "app/(private)/[locale]/client/[selector]/page.js",
+      "group": "private",
+      "blobSha": "12c24571ab636d66b2d7c30990b24bcc5eeca21b"
+    },
+    {
+      "from": "app/[locale]/client/page.tsx",
+      "to": "app/(private)/[locale]/client/page.tsx",
+      "group": "private",
+      "blobSha": "1f01fd333632df8c3ba1e23fe1ce8e7c6080387b"
+    },
+    {
+      "from": "app/[locale]/client/tests/page.tsx",
+      "to": "app/(private)/[locale]/client/tests/page.tsx",
+      "group": "private",
+      "blobSha": "19019306544713ea4ee9a59586bb215b8409ba34"
+    },
+    {
+      "from": "app/[locale]/prescriptions/[selector]/not-found.js",
+      "to": "app/(private)/[locale]/prescriptions/[selector]/not-found.js",
+      "group": "private",
+      "blobSha": "131ae2442dfe5d5dfe9916c8d8a29276dda98600"
+    },
+    {
+      "from": "app/[locale]/prescriptions/[selector]/page.js",
+      "to": "app/(private)/[locale]/prescriptions/[selector]/page.js",
+      "group": "private",
+      "blobSha": "b363f135d8b1bd2451f70bede1a1729c07a864f5"
+    },
+    {
+      "from": "app/[locale]/report/[assessmentId]/page.jsx",
+      "to": "app/(private)/[locale]/report/[assessmentId]/page.jsx",
+      "group": "private",
+      "blobSha": "f4aaae4c3d22dd22498cb0a11364e76a043af146"
+    },
+    {
+      "from": "app/admin/api/clients/[id]/access/route.js",
+      "to": "app/(private)/admin/api/clients/[id]/access/route.js",
+      "group": "private",
+      "blobSha": "5c3bf21544bbb7db481090d39265c7a0591c6446"
+    },
+    {
+      "from": "app/admin/api/documents/[id]/client-link/route.js",
+      "to": "app/(private)/admin/api/documents/[id]/client-link/route.js",
+      "group": "private",
+      "blobSha": "bb338493d4a58a0f6caf6c7810f9737ebbcb28b3"
+    },
+    {
+      "from": "app/admin/api/documents/[id]/pdf/route.js",
+      "to": "app/(private)/admin/api/documents/[id]/pdf/route.js",
+      "group": "private",
+      "blobSha": "83ca3b8b36e885c0576fc369e17d9ed809ed7aad"
+    },
+    {
+      "from": "app/admin/api/prescriptions/[id]/access/route.js",
+      "to": "app/(private)/admin/api/prescriptions/[id]/access/route.js",
+      "group": "private",
+      "blobSha": "6ae9400a832590a0093fa68192f3906b891b47b3"
+    },
+    {
+      "from": "app/admin/app-requests/data/route.js",
+      "to": "app/(private)/admin/app-requests/data/route.js",
+      "group": "private",
+      "blobSha": "762aa57656b08fbc5e560f18a016a5e206eea31b"
+    },
+    {
+      "from": "app/admin/app-requests/page.jsx",
+      "to": "app/(private)/admin/app-requests/page.jsx",
+      "group": "private",
+      "blobSha": "ea89262e41aac33eec7a5020746fc5e62c945958"
+    },
+    {
+      "from": "app/admin/clients/[id]/assessments/[assessmentId]/edit/page.js",
+      "to": "app/(private)/admin/clients/[id]/assessments/[assessmentId]/edit/page.js",
+      "group": "private",
+      "blobSha": "f0ae8225c9d75ce2616af50902e4820014f391af"
+    },
+    {
+      "from": "app/admin/clients/[id]/assessments/actions.js",
+      "to": "app/(private)/admin/clients/[id]/assessments/actions.js",
+      "group": "private",
+      "blobSha": "4758aef19f86997c299b6bc373514263422d1d50"
+    },
+    {
+      "from": "app/admin/clients/[id]/assessments/new/page.js",
+      "to": "app/(private)/admin/clients/[id]/assessments/new/page.js",
+      "group": "private",
+      "blobSha": "2ea3926cdea174569e384fa54e2f4c6cf254c23c"
+    },
+    {
+      "from": "app/admin/clients/[id]/page.js",
+      "to": "app/(private)/admin/clients/[id]/page.js",
+      "group": "private",
+      "blobSha": "f2d5d23f47a7919f858473187cdb4848a5c13478"
+    },
+    {
+      "from": "app/admin/clients/actions.js",
+      "to": "app/(private)/admin/clients/actions.js",
+      "group": "private",
+      "blobSha": "28dcaf25b3b0d6d4b8668e37c74d7b1682829d9b"
+    },
+    {
+      "from": "app/admin/clients/legacy/page.js",
+      "to": "app/(private)/admin/clients/legacy/page.js",
+      "group": "private",
+      "blobSha": "be6483a6b5a802bbe3f7b7eb05abf9e6e7eaeea1"
+    },
+    {
+      "from": "app/admin/clients/page.js",
+      "to": "app/(private)/admin/clients/page.js",
+      "group": "private",
+      "blobSha": "0488df18bb5780dfab67ee4e72905ba33627f9ab"
+    },
+    {
+      "from": "app/admin/consultations/[id]/edit/page.js",
+      "to": "app/(private)/admin/consultations/[id]/edit/page.js",
+      "group": "private",
+      "blobSha": "26078497af708fe433b91f280414518de46705cb"
+    },
+    {
+      "from": "app/admin/consultations/[id]/page.js",
+      "to": "app/(private)/admin/consultations/[id]/page.js",
+      "group": "private",
+      "blobSha": "14deee2413bd27429d958f6186cc3a58b8845b28"
+    },
+    {
+      "from": "app/admin/consultations/actions.js",
+      "to": "app/(private)/admin/consultations/actions.js",
+      "group": "private",
+      "blobSha": "c850ad2c05d6d6e63a7bbbee4abab7258298b3a5"
+    },
+    {
+      "from": "app/admin/consultations/new/page.js",
+      "to": "app/(private)/admin/consultations/new/page.js",
+      "group": "private",
+      "blobSha": "24369b5b19d9158be945f52238d8f2d67c1086e6"
+    },
+    {
+      "from": "app/admin/documents/[id]/page.js",
+      "to": "app/(private)/admin/documents/[id]/page.js",
+      "group": "private",
+      "blobSha": "5161bf7778c2476374f8e67fef539fe4777a38d4"
+    },
+    {
+      "from": "app/admin/login/actions.js",
+      "to": "app/(private)/admin/login/actions.js",
+      "group": "private",
+      "blobSha": "d48deb9b5d7758e2b5774752c005df77b14bbab4"
+    },
+    {
+      "from": "app/admin/login/page.js",
+      "to": "app/(private)/admin/login/page.js",
+      "group": "private",
+      "blobSha": "35453c2b08eb13a363f01a873bd02d54b842f2dc"
+    },
+    {
+      "from": "app/admin/logout/actions.js",
+      "to": "app/(private)/admin/logout/actions.js",
+      "group": "private",
+      "blobSha": "94720e01d38af8dd11e2924550b776e1a8bafcc4"
+    },
+    {
+      "from": "app/admin/page.js",
+      "to": "app/(private)/admin/page.js",
+      "group": "private",
+      "blobSha": "421d246b11ced86c28071e0b367ac8387eea51dc"
+    },
+    {
+      "from": "app/admin/payments/[id]/page.js",
+      "to": "app/(private)/admin/payments/[id]/page.js",
+      "group": "private",
+      "blobSha": "049e87c6a6c6b202c4388857b8e0892b35663b0a"
+    },
+    {
+      "from": "app/admin/payments/actions.js",
+      "to": "app/(private)/admin/payments/actions.js",
+      "group": "private",
+      "blobSha": "3305d029873285faa8e5439b53d980646be20fc5"
+    },
+    {
+      "from": "app/admin/payments/new/page.js",
+      "to": "app/(private)/admin/payments/new/page.js",
+      "group": "private",
+      "blobSha": "fa7fd53460696cad14fb76f1117fd595a7bdc49b"
+    },
+    {
+      "from": "app/admin/practitioners/data/route.js",
+      "to": "app/(private)/admin/practitioners/data/route.js",
+      "group": "private",
+      "blobSha": "845015d67b3855f5b25ac4c0228339f52b0c5ce4"
+    },
+    {
+      "from": "app/admin/practitioners/page.jsx",
+      "to": "app/(private)/admin/practitioners/page.jsx",
+      "group": "private",
+      "blobSha": "347087c02ee3031b1bd0d39354f104eb0ffcfe7b"
+    },
+    {
+      "from": "app/admin/prescriptions/[id]/page.js",
+      "to": "app/(private)/admin/prescriptions/[id]/page.js",
+      "group": "private",
+      "blobSha": "12ab3fd41e4e155d34bb8fbeecdb1ba0ef0c7844"
+    },
+    {
+      "from": "app/admin/prescriptions/actions.js",
+      "to": "app/(private)/admin/prescriptions/actions.js",
+      "group": "private",
+      "blobSha": "295bb07a1aa5083b2fb9b01caa8654c90a0f8b2d"
+    },
+    {
+      "from": "app/admin/prescriptions/new/page.js",
+      "to": "app/(private)/admin/prescriptions/new/page.js",
+      "group": "private",
+      "blobSha": "30b68fedd872b46acf2fb964986f0611b5c14bba"
+    },
+    {
+      "from": "app/admin/reports/new/page.js",
+      "to": "app/(private)/admin/reports/new/page.js",
+      "group": "private",
+      "blobSha": "64ddf727719952b37f9d8cdb46d56ce580280b4f"
+    },
+    {
+      "from": "app/admin/videos/actions.js",
+      "to": "app/(private)/admin/videos/actions.js",
+      "group": "private",
+      "blobSha": "e5a82e4e410a87d8b192bd87a99ace802243d4eb"
+    },
+    {
+      "from": "app/admin/videos/page.tsx",
+      "to": "app/(private)/admin/videos/page.tsx",
+      "group": "private",
+      "blobSha": "dae966514a1969119dfd29d8fbb86f1bb224b046"
+    },
+    {
+      "from": "app/document-preview/[kind]/page.js",
+      "to": "app/(private)/document-preview/[kind]/page.js",
+      "group": "private",
+      "blobSha": "0582abb06d66ab9fc04ed3106fb3b3905fc79c49"
+    },
+    {
+      "from": "app/document-preview/[kind]/pdf/route.js",
+      "to": "app/(private)/document-preview/[kind]/pdf/route.js",
+      "group": "private",
+      "blobSha": "11f535551a117a0fa8adde0e98aef8f6a83c2344"
+    },
+    {
+      "from": "app/es/client/page.tsx",
+      "to": "app/(private)/es/client/page.tsx",
+      "group": "private",
+      "blobSha": "9d707fbdc2749f8613fcf7043333233a523cc886"
+    },
+    {
+      "from": "app/es/client/tests/page.tsx",
+      "to": "app/(private)/es/client/tests/page.tsx",
+      "group": "private",
+      "blobSha": "569d62cd2a25ed09e29151d85f2bb962aa109d00"
+    },
+    {
+      "from": "app/[locale]/about/page.tsx",
+      "to": "app/(public)/[locale]/about/page.tsx",
+      "group": "public",
+      "blobSha": "882eccb1cf16c64a20ddc5ad3c8368e4d1f20fd9"
+    },
+    {
+      "from": "app/[locale]/academy/[[...slug]]/page.tsx",
+      "to": "app/(public)/[locale]/academy/[[...slug]]/page.tsx",
+      "group": "public",
+      "blobSha": "4d0f11335040f05453ab82087b5e87bed04e14c7"
+    },
+    {
+      "from": "app/[locale]/books/page.tsx",
+      "to": "app/(public)/[locale]/books/page.tsx",
+      "group": "public",
+      "blobSha": "00fbea02538b9c73b5c0bbea95edf2d102246e80"
+    },
+    {
+      "from": "app/[locale]/homeopathy/page.tsx",
+      "to": "app/(public)/[locale]/homeopathy/page.tsx",
+      "group": "public",
+      "blobSha": "c40a4b7bd8ab532f6684e02a805ee6e346d93fa2"
+    },
+    {
+      "from": "app/[locale]/homeopathy/remedies/[slug]/not-found.tsx",
+      "to": "app/(public)/[locale]/homeopathy/remedies/[slug]/not-found.tsx",
+      "group": "public",
+      "blobSha": "cc42cb83c7ae24e9af08cdb6f967e064279966c2"
+    },
+    {
+      "from": "app/[locale]/homeopathy/remedies/[slug]/page.tsx",
+      "to": "app/(public)/[locale]/homeopathy/remedies/[slug]/page.tsx",
+      "group": "public",
+      "blobSha": "c29ac6f806a83798645848586ae75f7fa6fb5631"
+    },
+    {
+      "from": "app/[locale]/homeopathy/remedies/page.tsx",
+      "to": "app/(public)/[locale]/homeopathy/remedies/page.tsx",
+      "group": "public",
+      "blobSha": "87fca3bcbb6aef1f139e0c75e96ccbf32f7b38da"
+    },
+    {
+      "from": "app/[locale]/library/distance-homeopathy/page.tsx",
+      "to": "app/(public)/[locale]/library/distance-homeopathy/page.tsx",
+      "group": "public",
+      "blobSha": "50efd178d0e486e9b26a9531fdb853a84d2108b7"
+    },
+    {
+      "from": "app/[locale]/library/page.tsx",
+      "to": "app/(public)/[locale]/library/page.tsx",
+      "group": "public",
+      "blobSha": "85ddb02325478ed1c9cb1cdb37f624261fcc93c7"
+    },
+    {
+      "from": "app/[locale]/masters/[slug]/page.tsx",
+      "to": "app/(public)/[locale]/masters/[slug]/page.tsx",
+      "group": "public",
+      "blobSha": "09bab66b563233630dcbe7351b4dbbfb792e294c"
+    },
+    {
+      "from": "app/[locale]/masters/page.tsx",
+      "to": "app/(public)/[locale]/masters/page.tsx",
+      "group": "public",
+      "blobSha": "1608b4a65ba942bd5502763106629d2ed139f96f"
+    },
+    {
+      "from": "app/[locale]/relationships/page.tsx",
+      "to": "app/(public)/[locale]/relationships/page.tsx",
+      "group": "public",
+      "blobSha": "0873de0ebf21f0a39417db19a5cc3c7ad0353072"
+    },
+    {
+      "from": "app/[locale]/relationships/relationships.module.css",
+      "to": "app/(public)/[locale]/relationships/relationships.module.css",
+      "group": "public",
+      "blobSha": "66aecf832ca0817526588f2131117c6c16d00744"
+    },
+    {
+      "from": "app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx",
+      "to": "app/(public)/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx",
+      "group": "public",
+      "blobSha": "21b825c3863f21a4f51fc924180670e59e06d8e6"
+    },
+    {
+      "from": "app/[locale]/services/alchemy-of-soul/page.tsx",
+      "to": "app/(public)/[locale]/services/alchemy-of-soul/page.tsx",
+      "group": "public",
+      "blobSha": "6a1d4607071a45d5634d648123a6228237dfcae4"
+    },
+    {
+      "from": "app/[locale]/services/dao-health-profile/page.tsx",
+      "to": "app/(public)/[locale]/services/dao-health-profile/page.tsx",
+      "group": "public",
+      "blobSha": "d9da801e21b1488a8ad3e14069aecf6dbb74cfe2"
+    },
+    {
+      "from": "app/[locale]/services/free-situation-review/page.tsx",
+      "to": "app/(public)/[locale]/services/free-situation-review/page.tsx",
+      "group": "public",
+      "blobSha": "38762e031f972aff9103ec00454dd6b4854139ec"
+    },
+    {
+      "from": "app/[locale]/services/free-situation-review/review.module.css",
+      "to": "app/(public)/[locale]/services/free-situation-review/review.module.css",
+      "group": "public",
+      "blobSha": "51e871c2ac6f86ca23bbc07dfe271ec34c9cf3b0"
+    },
+    {
+      "from": "app/[locale]/services/hypnotherapy-course/page.tsx",
+      "to": "app/(public)/[locale]/services/hypnotherapy-course/page.tsx",
+      "group": "public",
+      "blobSha": "bc7ba35052ae99f3bf3263f8896a111ebe7fa16d"
+    },
+    {
+      "from": "app/[locale]/services/imagery-therapy/page.tsx",
+      "to": "app/(public)/[locale]/services/imagery-therapy/page.tsx",
+      "group": "public",
+      "blobSha": "37dc168a5d6a38061ce4607c6e499b87b58738ae"
+    },
+    {
+      "from": "app/[locale]/services/offerings.module.css",
+      "to": "app/(public)/[locale]/services/offerings.module.css",
+      "group": "public",
+      "blobSha": "5271fa4b5f10f9bba0dac17f020532a72067349f"
+    },
+    {
+      "from": "app/[locale]/services/page.tsx",
+      "to": "app/(public)/[locale]/services/page.tsx",
+      "group": "public",
+      "blobSha": "341baba314203c885b9b982b43fc5ee7d60c988b"
+    },
+    {
+      "from": "app/[locale]/services/psychohomeopathy/page.tsx",
+      "to": "app/(public)/[locale]/services/psychohomeopathy/page.tsx",
+      "group": "public",
+      "blobSha": "ae0c776e2562bffc295106f86ac51ba178079c53"
+    },
+    {
+      "from": "app/[locale]/services/systemic-constellations/page.tsx",
+      "to": "app/(public)/[locale]/services/systemic-constellations/page.tsx",
+      "group": "public",
+      "blobSha": "6d2273df4d231028bbc93a57af08586df9b6616a"
+    },
+    {
+      "from": "app/[locale]/wu-xing/page.tsx",
+      "to": "app/(public)/[locale]/wu-xing/page.tsx",
+      "group": "public",
+      "blobSha": "64eabbe83ed98d6b3f085b8c274186745b87406d"
+    },
+    {
+      "from": "app/[locale]/wu-xing/wu-xing-manual.module.css",
+      "to": "app/(public)/[locale]/wu-xing/wu-xing-manual.module.css",
+      "group": "public",
+      "blobSha": "48470738e09c4a9a4d0e5dadcd74194bb78598dd"
+    },
+    {
+      "from": "app/books/[bookId]/not-found.tsx",
+      "to": "app/(public)/books/[bookId]/not-found.tsx",
+      "group": "public",
+      "blobSha": "a85edff4e6eb2be6cbaf06a41a2bacfc202c96a3"
+    },
+    {
+      "from": "app/books/[bookId]/page.tsx",
+      "to": "app/(public)/books/[bookId]/page.tsx",
+      "group": "public",
+      "blobSha": "7ca0e4ef7eb9581a5080efdb1318565649e98be8"
+    },
+    {
+      "from": "app/books/maya-tradition/maya-tradition.module.css",
+      "to": "app/(public)/books/maya-tradition/maya-tradition.module.css",
+      "group": "public",
+      "blobSha": "b21f195f3c8d99375e239a38163155aefab9b3a1"
+    },
+    {
+      "from": "app/books/maya-tradition/page.tsx",
+      "to": "app/(public)/books/maya-tradition/page.tsx",
+      "group": "public",
+      "blobSha": "8c7a1a2b7cf0bafac6fbd4ee9db8f8003792718d"
+    },
+    {
+      "from": "app/books/page.tsx",
+      "to": "app/(public)/books/page.tsx",
+      "group": "public",
+      "blobSha": "cc02421b8e0269f643076f454ded010e2198a573"
+    },
+    {
+      "from": "app/es/about/page.tsx",
+      "to": "app/(public)/es/about/page.tsx",
+      "group": "public",
+      "blobSha": "80906f1459c139cd7e5e7f7750eb6799c0690f70"
+    },
+    {
+      "from": "app/es/books/page.tsx",
+      "to": "app/(public)/es/books/page.tsx",
+      "group": "public",
+      "blobSha": "64a7364b14bfe4bae08ab61ee9995acd354b045e"
+    },
+    {
+      "from": "app/es/homeopathy/page.tsx",
+      "to": "app/(public)/es/homeopathy/page.tsx",
+      "group": "public",
+      "blobSha": "e01c7f56873251d21e92c8258d42ecc7d312bf07"
+    },
+    {
+      "from": "app/es/homeopathy/remedies/[slug]/not-found.tsx",
+      "to": "app/(public)/es/homeopathy/remedies/[slug]/not-found.tsx",
+      "group": "public",
+      "blobSha": "80565fa7541691ab0cacb4ab519b8bbc49623f48"
+    },
+    {
+      "from": "app/es/homeopathy/remedies/[slug]/page.tsx",
+      "to": "app/(public)/es/homeopathy/remedies/[slug]/page.tsx",
+      "group": "public",
+      "blobSha": "0331fde22dd581b55c4df120fb8c03d03e0bcfa7"
+    },
+    {
+      "from": "app/es/homeopathy/remedies/page.tsx",
+      "to": "app/(public)/es/homeopathy/remedies/page.tsx",
+      "group": "public",
+      "blobSha": "e1cb6f4ad86fac8e86f10771dcedac111c2cb9e0"
+    },
+    {
+      "from": "app/es/layout.tsx",
+      "to": "app/(public)/es/layout.tsx",
+      "group": "public",
+      "blobSha": "f3973e6162b8b914910982951e5f203ec4b02a02"
+    },
+    {
+      "from": "app/es/library/distance-homeopathy/page.tsx",
+      "to": "app/(public)/es/library/distance-homeopathy/page.tsx",
+      "group": "public",
+      "blobSha": "3a27e3b8e20bdab5ed0202c2e3cee38503c02a63"
+    },
+    {
+      "from": "app/es/library/page.tsx",
+      "to": "app/(public)/es/library/page.tsx",
+      "group": "public",
+      "blobSha": "1f466562bcba8d23ab3afe68bccf0b8dbf32bb45"
+    },
+    {
+      "from": "app/es/page.tsx",
+      "to": "app/(public)/es/page.tsx",
+      "group": "public",
+      "blobSha": "c6040a686c59271bc62b6feb96d52b31f5ddb789"
+    },
+    {
+      "from": "app/es/privacy/page.tsx",
+      "to": "app/(public)/es/privacy/page.tsx",
+      "group": "public",
+      "blobSha": "7ced3d51b0eed3728aae9d46df9cb4a185c5e5ab"
+    },
+    {
+      "from": "app/es/services/page.tsx",
+      "to": "app/(public)/es/services/page.tsx",
+      "group": "public",
+      "blobSha": "f42d8ece152e5db3201739af02af5f1ecbeecf5f"
+    },
+    {
+      "from": "app/es/terms/page.tsx",
+      "to": "app/(public)/es/terms/page.tsx",
+      "group": "public",
+      "blobSha": "e9d6d1164a55ecea8255a0d5842fcf936eb0b596"
+    },
+    {
+      "from": "app/page.tsx",
+      "to": "app/(public)/page.tsx",
+      "group": "public",
+      "blobSha": "73fad063a89a5a23d410c32d0bcda3488d354169"
+    },
+    {
+      "from": "app/privacy/page.tsx",
+      "to": "app/(public)/privacy/page.tsx",
+      "group": "public",
+      "blobSha": "a7e333d186560d32ab635c034726c71e819fe4e2"
+    },
+    {
+      "from": "app/terms/page.tsx",
+      "to": "app/(public)/terms/page.tsx",
+      "group": "public",
+      "blobSha": "809ab0931e3fd8e8c8021c93e0c2cd5b2b9af2a5"
+    }
+  ],
+  "routes": [
+    {
+      "from": "app/[locale]/app/[[...path]]/page.jsx",
+      "to": "app/(private)/[locale]/app/[[...path]]/page.jsx",
+      "before": "/[locale]/app/[[...path]]",
+      "after": "/[locale]/app/[[...path]]",
+      "group": "private"
+    },
+    {
+      "from": "app/[locale]/client/[selector]/assessments/[assessmentId]/page.js",
+      "to": "app/(private)/[locale]/client/[selector]/assessments/[assessmentId]/page.js",
+      "before": "/[locale]/client/[selector]/assessments/[assessmentId]",
+      "after": "/[locale]/client/[selector]/assessments/[assessmentId]",
+      "group": "private"
+    },
+    {
+      "from": "app/[locale]/client/[selector]/documents/[id]/page.js",
+      "to": "app/(private)/[locale]/client/[selector]/documents/[id]/page.js",
+      "before": "/[locale]/client/[selector]/documents/[id]",
+      "after": "/[locale]/client/[selector]/documents/[id]",
+      "group": "private"
+    },
+    {
+      "from": "app/[locale]/client/[selector]/page.js",
+      "to": "app/(private)/[locale]/client/[selector]/page.js",
+      "before": "/[locale]/client/[selector]",
+      "after": "/[locale]/client/[selector]",
+      "group": "private"
+    },
+    {
+      "from": "app/[locale]/client/page.tsx",
+      "to": "app/(private)/[locale]/client/page.tsx",
+      "before": "/[locale]/client",
+      "after": "/[locale]/client",
+      "group": "private"
+    },
+    {
+      "from": "app/[locale]/client/tests/page.tsx",
+      "to": "app/(private)/[locale]/client/tests/page.tsx",
+      "before": "/[locale]/client/tests",
+      "after": "/[locale]/client/tests",
+      "group": "private"
+    },
+    {
+      "from": "app/[locale]/prescriptions/[selector]/page.js",
+      "to": "app/(private)/[locale]/prescriptions/[selector]/page.js",
+      "before": "/[locale]/prescriptions/[selector]",
+      "after": "/[locale]/prescriptions/[selector]",
+      "group": "private"
+    },
+    {
+      "from": "app/[locale]/report/[assessmentId]/page.jsx",
+      "to": "app/(private)/[locale]/report/[assessmentId]/page.jsx",
+      "before": "/[locale]/report/[assessmentId]",
+      "after": "/[locale]/report/[assessmentId]",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/api/clients/[id]/access/route.js",
+      "to": "app/(private)/admin/api/clients/[id]/access/route.js",
+      "before": "/admin/api/clients/[id]/access",
+      "after": "/admin/api/clients/[id]/access",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/api/documents/[id]/client-link/route.js",
+      "to": "app/(private)/admin/api/documents/[id]/client-link/route.js",
+      "before": "/admin/api/documents/[id]/client-link",
+      "after": "/admin/api/documents/[id]/client-link",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/api/documents/[id]/pdf/route.js",
+      "to": "app/(private)/admin/api/documents/[id]/pdf/route.js",
+      "before": "/admin/api/documents/[id]/pdf",
+      "after": "/admin/api/documents/[id]/pdf",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/api/prescriptions/[id]/access/route.js",
+      "to": "app/(private)/admin/api/prescriptions/[id]/access/route.js",
+      "before": "/admin/api/prescriptions/[id]/access",
+      "after": "/admin/api/prescriptions/[id]/access",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/app-requests/data/route.js",
+      "to": "app/(private)/admin/app-requests/data/route.js",
+      "before": "/admin/app-requests/data",
+      "after": "/admin/app-requests/data",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/app-requests/page.jsx",
+      "to": "app/(private)/admin/app-requests/page.jsx",
+      "before": "/admin/app-requests",
+      "after": "/admin/app-requests",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/clients/[id]/assessments/[assessmentId]/edit/page.js",
+      "to": "app/(private)/admin/clients/[id]/assessments/[assessmentId]/edit/page.js",
+      "before": "/admin/clients/[id]/assessments/[assessmentId]/edit",
+      "after": "/admin/clients/[id]/assessments/[assessmentId]/edit",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/clients/[id]/assessments/new/page.js",
+      "to": "app/(private)/admin/clients/[id]/assessments/new/page.js",
+      "before": "/admin/clients/[id]/assessments/new",
+      "after": "/admin/clients/[id]/assessments/new",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/clients/[id]/page.js",
+      "to": "app/(private)/admin/clients/[id]/page.js",
+      "before": "/admin/clients/[id]",
+      "after": "/admin/clients/[id]",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/clients/legacy/page.js",
+      "to": "app/(private)/admin/clients/legacy/page.js",
+      "before": "/admin/clients/legacy",
+      "after": "/admin/clients/legacy",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/clients/page.js",
+      "to": "app/(private)/admin/clients/page.js",
+      "before": "/admin/clients",
+      "after": "/admin/clients",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/consultations/[id]/edit/page.js",
+      "to": "app/(private)/admin/consultations/[id]/edit/page.js",
+      "before": "/admin/consultations/[id]/edit",
+      "after": "/admin/consultations/[id]/edit",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/consultations/[id]/page.js",
+      "to": "app/(private)/admin/consultations/[id]/page.js",
+      "before": "/admin/consultations/[id]",
+      "after": "/admin/consultations/[id]",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/consultations/new/page.js",
+      "to": "app/(private)/admin/consultations/new/page.js",
+      "before": "/admin/consultations/new",
+      "after": "/admin/consultations/new",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/documents/[id]/page.js",
+      "to": "app/(private)/admin/documents/[id]/page.js",
+      "before": "/admin/documents/[id]",
+      "after": "/admin/documents/[id]",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/login/page.js",
+      "to": "app/(private)/admin/login/page.js",
+      "before": "/admin/login",
+      "after": "/admin/login",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/page.js",
+      "to": "app/(private)/admin/page.js",
+      "before": "/admin",
+      "after": "/admin",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/payments/[id]/page.js",
+      "to": "app/(private)/admin/payments/[id]/page.js",
+      "before": "/admin/payments/[id]",
+      "after": "/admin/payments/[id]",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/payments/new/page.js",
+      "to": "app/(private)/admin/payments/new/page.js",
+      "before": "/admin/payments/new",
+      "after": "/admin/payments/new",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/practitioners/data/route.js",
+      "to": "app/(private)/admin/practitioners/data/route.js",
+      "before": "/admin/practitioners/data",
+      "after": "/admin/practitioners/data",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/practitioners/page.jsx",
+      "to": "app/(private)/admin/practitioners/page.jsx",
+      "before": "/admin/practitioners",
+      "after": "/admin/practitioners",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/prescriptions/[id]/page.js",
+      "to": "app/(private)/admin/prescriptions/[id]/page.js",
+      "before": "/admin/prescriptions/[id]",
+      "after": "/admin/prescriptions/[id]",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/prescriptions/new/page.js",
+      "to": "app/(private)/admin/prescriptions/new/page.js",
+      "before": "/admin/prescriptions/new",
+      "after": "/admin/prescriptions/new",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/reports/new/page.js",
+      "to": "app/(private)/admin/reports/new/page.js",
+      "before": "/admin/reports/new",
+      "after": "/admin/reports/new",
+      "group": "private"
+    },
+    {
+      "from": "app/admin/videos/page.tsx",
+      "to": "app/(private)/admin/videos/page.tsx",
+      "before": "/admin/videos",
+      "after": "/admin/videos",
+      "group": "private"
+    },
+    {
+      "from": "app/document-preview/[kind]/page.js",
+      "to": "app/(private)/document-preview/[kind]/page.js",
+      "before": "/document-preview/[kind]",
+      "after": "/document-preview/[kind]",
+      "group": "private"
+    },
+    {
+      "from": "app/document-preview/[kind]/pdf/route.js",
+      "to": "app/(private)/document-preview/[kind]/pdf/route.js",
+      "before": "/document-preview/[kind]/pdf",
+      "after": "/document-preview/[kind]/pdf",
+      "group": "private"
+    },
+    {
+      "from": "app/es/client/page.tsx",
+      "to": "app/(private)/es/client/page.tsx",
+      "before": "/es/client",
+      "after": "/es/client",
+      "group": "private"
+    },
+    {
+      "from": "app/es/client/tests/page.tsx",
+      "to": "app/(private)/es/client/tests/page.tsx",
+      "before": "/es/client/tests",
+      "after": "/es/client/tests",
+      "group": "private"
+    },
+    {
+      "from": "app/[locale]/about/page.tsx",
+      "to": "app/(public)/[locale]/about/page.tsx",
+      "before": "/[locale]/about",
+      "after": "/[locale]/about",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/academy/[[...slug]]/page.tsx",
+      "to": "app/(public)/[locale]/academy/[[...slug]]/page.tsx",
+      "before": "/[locale]/academy/[[...slug]]",
+      "after": "/[locale]/academy/[[...slug]]",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/books/page.tsx",
+      "to": "app/(public)/[locale]/books/page.tsx",
+      "before": "/[locale]/books",
+      "after": "/[locale]/books",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/homeopathy/page.tsx",
+      "to": "app/(public)/[locale]/homeopathy/page.tsx",
+      "before": "/[locale]/homeopathy",
+      "after": "/[locale]/homeopathy",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/homeopathy/remedies/[slug]/page.tsx",
+      "to": "app/(public)/[locale]/homeopathy/remedies/[slug]/page.tsx",
+      "before": "/[locale]/homeopathy/remedies/[slug]",
+      "after": "/[locale]/homeopathy/remedies/[slug]",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/homeopathy/remedies/page.tsx",
+      "to": "app/(public)/[locale]/homeopathy/remedies/page.tsx",
+      "before": "/[locale]/homeopathy/remedies",
+      "after": "/[locale]/homeopathy/remedies",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/library/distance-homeopathy/page.tsx",
+      "to": "app/(public)/[locale]/library/distance-homeopathy/page.tsx",
+      "before": "/[locale]/library/distance-homeopathy",
+      "after": "/[locale]/library/distance-homeopathy",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/library/page.tsx",
+      "to": "app/(public)/[locale]/library/page.tsx",
+      "before": "/[locale]/library",
+      "after": "/[locale]/library",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/masters/[slug]/page.tsx",
+      "to": "app/(public)/[locale]/masters/[slug]/page.tsx",
+      "before": "/[locale]/masters/[slug]",
+      "after": "/[locale]/masters/[slug]",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/masters/page.tsx",
+      "to": "app/(public)/[locale]/masters/page.tsx",
+      "before": "/[locale]/masters",
+      "after": "/[locale]/masters",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/relationships/page.tsx",
+      "to": "app/(public)/[locale]/relationships/page.tsx",
+      "before": "/[locale]/relationships",
+      "after": "/[locale]/relationships",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx",
+      "to": "app/(public)/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx",
+      "before": "/[locale]/services/[practitionerSlug]/[serviceSlug]",
+      "after": "/[locale]/services/[practitionerSlug]/[serviceSlug]",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/services/alchemy-of-soul/page.tsx",
+      "to": "app/(public)/[locale]/services/alchemy-of-soul/page.tsx",
+      "before": "/[locale]/services/alchemy-of-soul",
+      "after": "/[locale]/services/alchemy-of-soul",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/services/dao-health-profile/page.tsx",
+      "to": "app/(public)/[locale]/services/dao-health-profile/page.tsx",
+      "before": "/[locale]/services/dao-health-profile",
+      "after": "/[locale]/services/dao-health-profile",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/services/free-situation-review/page.tsx",
+      "to": "app/(public)/[locale]/services/free-situation-review/page.tsx",
+      "before": "/[locale]/services/free-situation-review",
+      "after": "/[locale]/services/free-situation-review",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/services/hypnotherapy-course/page.tsx",
+      "to": "app/(public)/[locale]/services/hypnotherapy-course/page.tsx",
+      "before": "/[locale]/services/hypnotherapy-course",
+      "after": "/[locale]/services/hypnotherapy-course",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/services/imagery-therapy/page.tsx",
+      "to": "app/(public)/[locale]/services/imagery-therapy/page.tsx",
+      "before": "/[locale]/services/imagery-therapy",
+      "after": "/[locale]/services/imagery-therapy",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/services/page.tsx",
+      "to": "app/(public)/[locale]/services/page.tsx",
+      "before": "/[locale]/services",
+      "after": "/[locale]/services",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/services/psychohomeopathy/page.tsx",
+      "to": "app/(public)/[locale]/services/psychohomeopathy/page.tsx",
+      "before": "/[locale]/services/psychohomeopathy",
+      "after": "/[locale]/services/psychohomeopathy",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/services/systemic-constellations/page.tsx",
+      "to": "app/(public)/[locale]/services/systemic-constellations/page.tsx",
+      "before": "/[locale]/services/systemic-constellations",
+      "after": "/[locale]/services/systemic-constellations",
+      "group": "public"
+    },
+    {
+      "from": "app/[locale]/wu-xing/page.tsx",
+      "to": "app/(public)/[locale]/wu-xing/page.tsx",
+      "before": "/[locale]/wu-xing",
+      "after": "/[locale]/wu-xing",
+      "group": "public"
+    },
+    {
+      "from": "app/books/[bookId]/page.tsx",
+      "to": "app/(public)/books/[bookId]/page.tsx",
+      "before": "/books/[bookId]",
+      "after": "/books/[bookId]",
+      "group": "public"
+    },
+    {
+      "from": "app/books/maya-tradition/page.tsx",
+      "to": "app/(public)/books/maya-tradition/page.tsx",
+      "before": "/books/maya-tradition",
+      "after": "/books/maya-tradition",
+      "group": "public"
+    },
+    {
+      "from": "app/books/page.tsx",
+      "to": "app/(public)/books/page.tsx",
+      "before": "/books",
+      "after": "/books",
+      "group": "public"
+    },
+    {
+      "from": "app/es/about/page.tsx",
+      "to": "app/(public)/es/about/page.tsx",
+      "before": "/es/about",
+      "after": "/es/about",
+      "group": "public"
+    },
+    {
+      "from": "app/es/books/page.tsx",
+      "to": "app/(public)/es/books/page.tsx",
+      "before": "/es/books",
+      "after": "/es/books",
+      "group": "public"
+    },
+    {
+      "from": "app/es/homeopathy/page.tsx",
+      "to": "app/(public)/es/homeopathy/page.tsx",
+      "before": "/es/homeopathy",
+      "after": "/es/homeopathy",
+      "group": "public"
+    },
+    {
+      "from": "app/es/homeopathy/remedies/[slug]/page.tsx",
+      "to": "app/(public)/es/homeopathy/remedies/[slug]/page.tsx",
+      "before": "/es/homeopathy/remedies/[slug]",
+      "after": "/es/homeopathy/remedies/[slug]",
+      "group": "public"
+    },
+    {
+      "from": "app/es/homeopathy/remedies/page.tsx",
+      "to": "app/(public)/es/homeopathy/remedies/page.tsx",
+      "before": "/es/homeopathy/remedies",
+      "after": "/es/homeopathy/remedies",
+      "group": "public"
+    },
+    {
+      "from": "app/es/library/distance-homeopathy/page.tsx",
+      "to": "app/(public)/es/library/distance-homeopathy/page.tsx",
+      "before": "/es/library/distance-homeopathy",
+      "after": "/es/library/distance-homeopathy",
+      "group": "public"
+    },
+    {
+      "from": "app/es/library/page.tsx",
+      "to": "app/(public)/es/library/page.tsx",
+      "before": "/es/library",
+      "after": "/es/library",
+      "group": "public"
+    },
+    {
+      "from": "app/es/page.tsx",
+      "to": "app/(public)/es/page.tsx",
+      "before": "/es",
+      "after": "/es",
+      "group": "public"
+    },
+    {
+      "from": "app/es/privacy/page.tsx",
+      "to": "app/(public)/es/privacy/page.tsx",
+      "before": "/es/privacy",
+      "after": "/es/privacy",
+      "group": "public"
+    },
+    {
+      "from": "app/es/services/page.tsx",
+      "to": "app/(public)/es/services/page.tsx",
+      "before": "/es/services",
+      "after": "/es/services",
+      "group": "public"
+    },
+    {
+      "from": "app/es/terms/page.tsx",
+      "to": "app/(public)/es/terms/page.tsx",
+      "before": "/es/terms",
+      "after": "/es/terms",
+      "group": "public"
+    },
+    {
+      "from": "app/page.tsx",
+      "to": "app/(public)/page.tsx",
+      "before": "/",
+      "after": "/",
+      "group": "public"
+    },
+    {
+      "from": "app/privacy/page.tsx",
+      "to": "app/(public)/privacy/page.tsx",
+      "before": "/privacy",
+      "after": "/privacy",
+      "group": "public"
+    },
+    {
+      "from": "app/terms/page.tsx",
+      "to": "app/(public)/terms/page.tsx",
+      "before": "/terms",
+      "after": "/terms",
+      "group": "public"
+    }
+  ],
+  "unchangedSpecialFiles": [
+    "app/academy.css",
+    "app/api/academy/reiki-guide/route.js",
+    "app/api/app/[...path]/route.js",
+    "app/api/client-access/logout/route.js",
+    "app/api/client-access/route.js",
+    "app/api/client/[selector]/assessments/[assessmentId]/route.js",
+    "app/api/client/[selector]/documents/[id]/pdf/route.js",
+    "app/api/internal/housekeeping/route.js",
+    "app/api/prescription-access/logout/route.js",
+    "app/api/prescription-access/route.js",
+    "app/api/prescriptions/[selector]/pdf/route.js",
+    "app/api/public-translate/route.js",
+    "app/catalog-showcase.css",
+    "app/es/spanish-public.css",
+    "app/globals.css",
+    "app/holistic-house-home.css",
+    "app/ia-v2.css",
+    "app/icon.svg",
+    "app/manifest.ts",
+    "app/media/[series]/[file]/route.ts",
+    "app/public-wide-layout.css",
+    "app/reader-responsive.css",
+    "app/robots.ts",
+    "app/site-video-admin.css",
+    "app/site-videos.css",
+    "app/sitemap.ts",
+    "app/sitewide-capture.css",
+    "app/temple-studies.css",
+    "app/yggdrasil-basic-description.css"
+  ],
+  "additionalChanges": [
+    "replace app/layout.tsx with shared server shell and two independent group root layouts",
+    "add private Spanish layout preserving current Spanish CSS",
+    "adjust only necessary relative imports and source-path test assertions"
+  ],
+  "activePRImpact": [
+    {
+      "number": 388,
+      "head": "d3b7b1213f8636181af18499f52043da0d847188",
+      "movedFiles": [
+        "app/[locale]/app/[[...path]]/assessment-dashboard.css"
+      ],
+      "note": "shared components stay in place; tests may have app-path literals. Integrate updated CSS before move, never discard branch work."
+    },
+    {
+      "number": 389,
+      "head": "28d0d2bb199a4dc1a701f26660e4bf123b8416f1",
+      "movedFiles": [],
+      "note": "app/api/app/[...path]/route.js deliberately stays in place; components/lib stay stable; inspect tests for app path references."
+    }
+  ]
+}
