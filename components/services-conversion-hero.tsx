@@ -13,6 +13,8 @@ const copy = {
     cta: "Бесплатный разбор ситуации",
     secondary: "Все три бесплатных варианта",
     small: "Бесплатный разбор — письменный, без обязательного созвона",
+    workWith: "Личная работа с Андреем Литвиновым, в Торонто и онлайн",
+    solutions: "Личные форматы работы",
     imageLabel: "Лично с Андреем Литвиновым",
     caption: "Начните со своего вопроса",
   },
@@ -24,6 +26,8 @@ const copy = {
     cta: "Get a free situation review",
     secondary: "See all three free options",
     small: "The free situation review is written, not a free call",
+    workWith: "Personal work with Andrey Litvinov, in Toronto and online",
+    solutions: "Explore personal work options",
     imageLabel: "Personal work with Andrey Litvinov",
     caption: "Start with your question",
   },
@@ -42,8 +46,10 @@ export function ServicesConversionHero({ locale }: { locale: Locale }) {
             {t.cta}<ArrowUpRight size={20} aria-hidden="true" />
           </Link>
           <Link className={styles.secondary} href="#free-insights">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>
+          <Link className={styles.secondary} href="#solutions">{t.solutions}<ArrowRight size={17} aria-hidden="true" /></Link>
         </div>
         <p className={styles.small}>{t.small}</p>
+        <p className={styles.small}>{t.workWith}</p>
         <ul className={styles.benefits}>
           {t.benefits.map(benefit => <li key={benefit}><Check size={16} strokeWidth={2.2} aria-hidden="true" />{benefit}</li>)}
         </ul>
