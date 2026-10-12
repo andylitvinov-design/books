@@ -147,6 +147,8 @@ test('first-screen free start is separate from optional account-owned course int
   assert.match(r3, /onCourseCommand\('confirm-tests',\{testKeys:chosenTests\}\)/)
   assert.match(r3, /stage===3/)
   assert.match(r3, /courseMeasuredProfile/)
+  assert.match(r3, /className=\{styles\.measuredPanel\}/)
+  assert.match(r3, /<meter className=\{styles\.scaleMeter\} min=\{item\.min\} max=\{item\.max\} value=\{item\.score\}/)
   assert.match(r3, /chosenScales/)
   assert.match(r3, /role="alert"/)
   assert.match(battery, /const fromCourse = searchParams\.get\('course'\) === '1'/)
