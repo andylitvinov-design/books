@@ -193,19 +193,25 @@ async function verifyPublicServiceConversionJourneys(){
   })
   await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboard=value}}}))
   const intake=publicPage.locator('[data-free-drawing-intake]')
-  const unique='Synthetic public form value — '+locale
-  await intake.locator('textarea').nth(0).fill(unique)
-  await intake.locator('textarea').nth(1).fill('Synthetic goal — '+locale)
+  const uniqueProblem='Synthetic public form value — '+locale
+  const uniqueGoal='Synthetic public goal value — '+locale
+  await intake.locator('textarea').nth(0).fill(uniqueProblem)
+  await intake.locator('textarea').nth(1).fill(uniqueGoal)
   await intake.locator('form button[type="submit"]').click()
   const ready=intake.locator('[role="region"]')
   await expect(ready).toBeVisible()
   await expect(ready.getByRole('heading')).toHaveText(copy.ready)
   assert.equal(await ready.getAttribute('aria-live'),'polite')
   assert.equal(await publicPage.evaluate(()=>document.activeElement?.getAttribute('role')),'region')
+  await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
   const whatsapp=ready.locator('a[data-contact-channel="whatsapp"]')
   const whatsappHref=await whatsapp.getAttribute('href')
-  assert.ok(!whatsappHref.includes(unique),'Answers never enter WhatsApp URL')
-  assert.ok(!publicPage.url().includes(unique),'Answers never enter page URL')
+  const whatsappText=new URL(whatsappHref||'').searchParams.get('text')||''
+  const decodedPageUrl=decodeURIComponent(publicPage.url())
+  for(const marker of [uniqueProblem,uniqueGoal]){
+   assert.ok(!whatsappText.includes(marker),'Answers never enter decoded WhatsApp text')
+   assert.ok(!decodedPageUrl.includes(marker),'Answers never enter decoded page URL')
+  }
   await ready.getByRole('button').click()
   await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
   await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('synthetic clipboard denial')}}}))
@@ -217,7 +223,8 @@ async function verifyPublicServiceConversionJourneys(){
   const events=await publicPage.evaluate(()=>window.__publicAcquisition)
   assert.ok(events.some(item=>item.event==='free_questionnaire_started'))
   assert.ok(events.some(item=>item.event==='free_questionnaire_prepared'))
-  assert.ok(!JSON.stringify(events).includes(unique),'Analytics event metadata never contains answers')
+  assert.ok(!JSON.stringify(events).includes(uniqueProblem),'Analytics event metadata never contains answers')
+  assert.ok(!JSON.stringify(events).includes(uniqueGoal),'Analytics event metadata never contains answers')
   await publicPage.screenshot({path:output+'/free-review-'+locale+'-prepared-390.png',fullPage:false})
   await publicPage.close()
  }
