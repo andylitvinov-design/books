@@ -100,8 +100,12 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [localBusy,setLocalBusy]=useState(false)
   const predicted=useMemo(()=>suggestedCourseTopics(concerns),[concerns])
   const ranked=useMemo(()=>courseRecommendedTests({
-    focusTags:current.focusTags||[],results:data.results||[],locale,
-  }),[current.focusTags,data.results,locale])
+    // A written concern may be the only confirmed request. Derive its
+    // descriptive topic tags locally when no explicit sectors were selected.
+    focusTags:current.focusTags?.length ? current.focusTags
+      : suggestedCourseTopics(current.concerns||'').topics,
+    results:data.results||[],locale,
+  }),[current.focusTags,current.concerns,data.results,locale])
   const profile=useMemo(()=>courseMeasuredProfile({
     results:data.results||[],testKeys:current.testKeys||[],locale,
   }),[data.results,current.testKeys,locale])
@@ -188,7 +192,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
             <small className={item.completed?styles.completed:styles.pending}>
               {item.completed?<><Check size={13}/> {t.completed} · {formatDate(item.completedAt,locale)}</>
                 :<>{t.needed} · ~{item.durationMinutes||'?'} min</>}
-              {index<5&&<> · {t.recommended}</>}
+              {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
           <span className={styles.match}>{item.matchPercent}%<small>{t.relevance}</small></span>
