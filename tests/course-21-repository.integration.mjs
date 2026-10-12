@@ -5,6 +5,7 @@ import {createCourse21Repository} from '../lib/app/course-21.js'
 import {getAssessmentDefinition,provenance} from '../lib/assessments/definitions.js'
 import {scoreAssessment} from '../lib/assessments/scoring.js'
 import {openSealed} from '../lib/app/crypto.js'
+import {lessonFor21} from '../lib/inner-growth/lesson-library-21.js'
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222'
 const actor=(id=A)=>({id,claims:{sub:id}})
 const config={test:true,encryptionKey:Buffer.alloc(32,7),encryptionKeyId:'synthetic-only',course21Enabled:true}
@@ -60,6 +61,8 @@ function setup(){
 test('activation adds only a private daily state; R3 course, plan, results and14-day state stay unchanged',async()=>{
  const s=setup(),before={courses:structuredClone(s.courses),plans:structuredClone(s.plans),results:structuredClone(s.resultRows)}
  const v=await s.daily();assert.equal(v.course.durationDays,21);assert.equal(v.today.day,1);assert.equal(v.profile.rows.length,8)
+ assert.equal(v.outline.mode,'personal');assert.equal(v.outline.weeks.flatMap(w=>w.days).length,21)
+ for(const day of v.outline.weeks.flatMap(w=>w.days)){const card=lessonFor21(day.track,day.day,'en');assert.equal(day.skill,card.title);assert.equal(day.learningOutcome,card.curriculum.learningOutcome);assert.equal(day.lessonId,card.id)}
  assert.equal(v.profile.status,'ready-to-review');assert.ok(v.profile.rows.every(r=>r.meaning.startsWith('Synthetic DB')))
  assert.deepEqual(s.courses,before.courses);assert.deepEqual(s.plans,before.plans);assert.deepEqual(s.resultRows,before.results)
  assert.ok(s.queries.filter(q=>/^(insert|update)/.test(q.sql)).every(q=>q.sql.includes('growth_course_daily_21')))

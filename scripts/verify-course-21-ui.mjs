@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {assertIsolated} from '../tests/helpers/app-db-setup.mjs'
 import {courseOutline21,lessonFor21,COURSE_CONTENT_21_VERSION} from '../lib/inner-growth/lesson-library-21.js'
+import {createCourseJourney} from '../lib/inner-growth/course-progression-21.js'
 assertIsolated()
 const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
 assert.match(origin,/^http:\/\/(127\.0\.0\.1|localhost):\d+$/)
@@ -26,6 +27,7 @@ const rows=['mood','tension','clarity','recovery','connection','energy','load','
 const profile={status:'ready-to-review',rows,priorityScaleIds:rows.slice(0,7).map(r=>r.id),minimumChoices:3,maximumChoices:5}
 const proposal={available:true,status:'ready-to-review',profile,source:{courseRevision:3,selectedForms:[]},consentVersion:'synthetic-consent-v1',activationToken:'synthetic-preview-token'}
 let locale='en',fixture={available:true,enrollmentReady:true,course:null},conflict=false
+const syntheticJourney=createCourseJourney({id:'synthetic-outline',choices:{confirmed:true,durationDays:21,topics:[{scaleId:rows[0].id,track:'inner_support'}]},consent:true,timeZone:'UTC',contentVersion:COURSE_CONTENT_21_VERSION,now:'2026-10-12T12:00:00Z'})
 const r3={course:{id:'synthetic-r3-course',stage:3,revision:3,testKeys:['hh-weekly-pulse'],scaleKeys:[],focusTags:[],goals:[]},assessments:{selectedTests:[],pendingSelected:[]}}
 page.on('pageerror',e=>pageErrors.push(e.message))
 await page.route('**/api/app/course**',async route=>{
@@ -33,15 +35,16 @@ await page.route('**/api/app/course**',async route=>{
  if(!['/api/app/course','/api/app/course-21','/api/app/course-21/preview'].includes(path)){await route.continue();return}
  const body=route.request().method()==='POST'?route.request().postDataJSON():null
  if(body){posts.push(body);if(conflict){conflict=false;await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'REVISION_CONFLICT'})});return}
+  if(body.action==='preferences')fixture={...fixture,preferences:{length:body.length,alternativeRequested:body.alternativeRequested,stopOffer:body.stopOffer},today:{...fixture.today,lesson:lessonFor21('inner_support',fixture.today.day,locale,body.alternativeRequested?'grounding':body.length)}}
   if(body.action==='activate')fixture={available:true,course,today:{status:'check-in-required',day:1,week:1,completedDays:0,skippedDays:0},history:[],profile}
  }
- const value=path==='/api/app/course'?r3:path.endsWith('/preview')?proposal:{...fixture,outline:courseOutline21(locale)}
+ const value=path==='/api/app/course'?r3:path.endsWith('/preview')?proposal:{...fixture,outline:fixture.outline||courseOutline21(locale)}
  await route.fulfill({status:200,contentType:'application/json',headers:{'Cache-Control':'private, no-store'},body:JSON.stringify(value)})
  requests.push({path,method:route.request().method(),locale:url.searchParams.get('locale'),fulfilledStatus:200,responseStage:value.course?.stage,responseAvailable:value.available,responseEnrollmentReady:value.enrollmentReady,responseStatus:value.status,profileCount:value.profile?.rows.length})
 })
 const passed=label=>{checks.push(label);console.log('PASS '+label)}
 async function show(lang,view){locale=lang;fixture=view;await page.goto(origin+'/'+lang+'/app/course');await expect(page.locator('[data-my-course]')).toBeVisible({timeout:30000});await page.waitForLoadState('networkidle')}
-function daily(lang,day=15){return {available:true,course,profile,today:{status:'ready',day,week:Math.ceil(day/7),completedDays:day-1,skippedDays:0,lesson:lessonFor21('inner_support',day,lang)},history:[],preferences:{length:'standard',alternativeRequested:false,stopOffer:false}}}
+function daily(lang,day=15){return {available:true,course,profile,today:{status:'ready',day,week:Math.ceil(day/7),completedDays:day-1,skippedDays:0,lesson:lessonFor21('inner_support',day,lang)},history:[{day:1,status:'completed',localDate:'2026-10-12',feedbackApplied:false,feedback:{helpfulness:'helpful',difficulty:'manageable',comfort:'comfortable',comment:'SYNTHETIC SAVED NOTE',reflectionAnswer:'SYNTHETIC SAVED REFLECTION'}}],outline:courseOutline21(lang,syntheticJourney),preferences:{length:'standard',alternativeRequested:false,stopOffer:false}}}
 try{
  await page.goto(origin+'/en/app');await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
@@ -78,12 +81,29 @@ try{
   // Prefer exact visible text; this fallback also covers ordinary spacing edits.
   const outline=await summary.count()?summary:component.locator('summary').filter({hasText:'21'})
   await outline.focus();await page.keyboard.press('Enter');await expect(outline.locator('..')).toHaveJSProperty('open',true);await expect(outline).toBeFocused()
+  await expect(outline.locator('..')).toContainText(lesson.title)
+  await expect(outline.locator('..')).toContainText(lesson.curriculum.learningOutcome)
   await page.keyboard.press('Space');await expect(outline.locator('..')).toHaveJSProperty('open',false)
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1),false)
   await page.screenshot({path:output+'/'+lang+'-'+width+'.png',fullPage:true})
   passed(lang+' '+width+'px: day15 specific outcome, keyboard outline, no horizontal overflow')
  }
  await show('en',daily('en',1))
+ await component.getByLabel('My note',{exact:false}).fill('This exercise takes too long.')
+ const priorPosts=posts.length
+ await component.getByRole('button',{name:'Suggest an adjustment from this note',exact:true}).click()
+ assert.equal(posts.length,priorPosts)
+ await component.getByRole('button',{name:'Keep my current preferences',exact:true}).click()
+ assert.equal(posts.length,priorPosts)
+ await component.getByRole('button',{name:'Suggest an adjustment from this note',exact:true}).click()
+ await component.getByRole('button',{name:'Confirm this practice adjustment',exact:true}).click()
+ await expect.poll(()=>posts.length).toBe(priorPosts+1)
+ assert.deepEqual(Object.keys(posts.at(-1)).sort(),['action','alternativeRequested','expectedRevision','length','operationId','stopOffer'])
+ assert.equal(posts.at(-1).length,'quick')
+ await expect(component.getByLabel('Save this reflection and note privately in my account',{exact:true})).not.toBeChecked()
+ const savedNotes=component.locator('[data-course-saved-observations]');await savedNotes.locator('summary').click()
+ await expect(savedNotes).toContainText('SYNTHETIC SAVED NOTE');await expect(savedNotes).toContainText('SYNTHETIC SAVED REFLECTION')
+ passed('local phrase preview/cancel send nothing; confirmation sends prefs only; saved observations remain readable')
  await component.getByLabel('My note',{exact:false}).fill('SYNTHETIC UNSENT PRIVATE NOTE')
  await component.getByLabel('My reflection',{exact:false}).fill('SYNTHETIC UNSENT REFLECTION')
  conflict=true;await component.getByRole('button',{name:'Save completed learning day',exact:true}).click()

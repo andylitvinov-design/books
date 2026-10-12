@@ -81,3 +81,5 @@
 .safety{font-size:12px;line-height:1.7;color:#706559;padding:0 8px 8px}
 @media(max-width:700px){.scaleGrid,.formGrid{grid-template-columns:minmax(0,1fr)}.root{gap:15px}.hero,.card{border-radius:17px}.actions{align-items:stretch}.actions button{flex:1 1 190px}.dialog .actions{flex-direction:column}.dialog .actions button{flex:auto}.checkin,.feedback{padding:14px}.row{align-items:flex-start}.root .primary{width:100%}.score{font-size:26px}}
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important}}
+
+.history li > details{flex-basis:100%;min-width:0}

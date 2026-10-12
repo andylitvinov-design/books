@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './course-daily-21.module.css'
+import { suggestCourseFeedbackAdjustment, confirmCourseFeedbackAdjustment, courseFeedbackAdjustmentAvailability } from '@/lib/inner-growth/course-feedback-phrases'
 
 const WORDS = {
   en: {
@@ -61,12 +62,25 @@ const WORDS = {
     feedback: 'Optional feedback', helpfulness: 'Was this useful?', helpOptions: ['Prefer not to say', 'Helpful', 'Neutral', 'Not helpful'],
     difficulty: 'How manageable was it?', difficultyOptions: ['Prefer not to say', 'Manageable', 'Too difficult'],
     comfort: 'How comfortable was it?', comfortOptions: ['Prefer not to say', 'Comfortable', 'Neutral', 'Uncomfortable'],
+    notePreferenceDirty: 'Save or discard your unsaved practice preferences before checking this note.', notePreferenceDiscard: 'Discard unsaved preference changes',
+    noteAlreadyApplied: 'This preference is already active. Nothing changed.',
+    noteSameAlternative: 'The current short practice already uses this eyes-open option. A distinct alternative is not available here. You can rest, stop, or choose practice preferences yourself.',
+    noteAlreadyShort: 'Today’s practice is already shortened. This choice keeps a shorter preference for subsequent lessons.',
+    noteExistingGrounding: 'The eyes-open option is the same one used in your current short practice; the new choice is the offer to rest first.',
+    noteAdjustment: 'Suggest an adjustment from this note',
+    noteAdjustmentHint: 'Optional simple phrase matching on this device, only when you press the button. It recognizes a few complete exercise preferences up to 240 characters, not the meaning of a journal entry. Nothing is sent by checking the note.',
+    noteAdjustmentExample: 'For example: “This exercise takes too long.” You can always choose lesson preferences yourself.',
+    noteAdjustmentNone: 'No complete supported practice preference matched. Nothing changed. You can use the lesson preferences yourself; this is not a judgment about your note or wellbeing.',
+    noteAdjustmentScope: 'Only this confirmed setting will be sent, without your note. It applies to the current unfinished practice and subsequent lessons. Completed lessons stay unchanged. You can reverse it in Practice preferences.',
+    noteAdjustmentConfirm: 'Confirm this practice adjustment', noteAdjustmentCancel: 'Keep my current preferences',
     reflectionAnswer: 'My reflection', comment: 'My note', saveText: 'Save this reflection and note privately in my account',
     textHint: 'Unchecked: written text stays only in this open page and is not sent. Leaving or reloading the page can lose unsaved text. Saved notes are private journal entries, not automatically interpreted or monitored for urgent help.',
-    applyFeedback: 'Use my structured feedback to adjust prepared practice options', applyHint: 'Only the selected helpfulness, difficulty and comfort answers are used for this choice. Written notes are not analyzed. Changes can suggest a shorter or grounding option; intensity is not increased automatically.',
+    applyFeedback: 'Use my structured feedback to adjust prepared practice options', applyHint: 'Only the selected helpfulness, difficulty and comfort answers are used for this choice. This checkbox does not interpret written notes. Changes can suggest a shorter or grounding option; intensity is not increased automatically.',
     finish: 'Save completed learning day', skipDay: 'Skip this learning day', skipConfirm: 'Record this learning day as skipped? You can revisit it later. No ratings or written notes will be sent with this action.',
     history: 'Your learning days', reviewDay: 'Revisit day', repeatNote: 'Optional review. Reading or repeating this lesson does not add a completed day or change progress.', closeReview: 'Close review',
     draftNotes: 'Unsent notes kept in this open page', draftHint: 'These notes were not sent with a skipped or completed day. They remain available here until this page is left or reloaded.',
+    savedObservations: 'Saved observations for this day', noSavedText: 'No written note or reflection was saved for this day.', savedReflection: 'Saved reflection', savedNote: 'Saved note', noAnswer: 'Not answered', feedbackWasApplied: 'These selected feedback answers were used to adjust prepared options.', feedbackWasNotApplied: 'These answers were saved without applying an adjustment.',
+    outlineOverview: 'This is a general weekly overview. Your exact daily lessons will appear after you choose your scales and confirm the programme.',
     outline: 'The 21-day learning route', safe: 'If an exercise increases distress, stop. For severe or persistent distress, seek qualified support. If you are in immediate danger, contact local emergency or crisis support services; this course is not monitored.',
   },
   ru: {
@@ -124,12 +138,25 @@ const WORDS = {
     feedback: 'Необязательная обратная связь', helpfulness: 'Это было полезно?', helpOptions: ['Не хочу отвечать', 'Полезно', 'Нейтрально', 'Не полезно'],
     difficulty: 'Насколько это было посильно?', difficultyOptions: ['Не хочу отвечать', 'Посильно', 'Слишком трудно'],
     comfort: 'Насколько было комфортно?', comfortOptions: ['Не хочу отвечать', 'Комфортно', 'Нейтрально', 'Некомфортно'],
+    notePreferenceDirty: 'Сначала сохраните или отмените несохранённые настройки практики, затем проверьте заметку.', notePreferenceDiscard: 'Отменить несохранённые изменения настроек',
+    noteAlreadyApplied: 'Эта настройка уже действует. Ничего не изменилось.',
+    noteSameAlternative: 'Текущая короткая практика уже использует этот вариант с открытыми глазами. Другого отдельного варианта здесь пока нет. Можно отдохнуть, остановиться или выбрать настройки самостоятельно.',
+    noteAlreadyShort: 'Сегодняшняя практика уже сокращена. Этот выбор сохраняет короткий вариант для следующих уроков.',
+    noteExistingGrounding: 'Вариант с открытыми глазами совпадает с текущей короткой практикой; новое изменение — сначала предлагать отдых.',
+    noteAdjustment: 'Предложить настройку по этой заметке',
+    noteAdjustmentHint: 'Необязательное сравнение с несколькими фразами на этом устройстве, только после нажатия кнопки. Распознаются целые предпочтения об упражнении до 240 символов, а не смысл дневника. При проверке заметка не отправляется.',
+    noteAdjustmentExample: 'Например: «Хочу более короткое упражнение». Настройки урока всегда можно выбрать самостоятельно.',
+    noteAdjustmentNone: 'Целая поддерживаемая фраза о практике не найдена. Ничего не изменилось. Можно выбрать настройки урока самостоятельно; это не оценка заметки или самочувствия.',
+    noteAdjustmentScope: 'Будет отправлена только подтверждённая настройка, без заметки. Она действует для текущей незавершённой практики и следующих уроков. Пройденные уроки не меняются. Вы сможете отменить её в разделе «Настройки практики».',
+    noteAdjustmentConfirm: 'Подтвердить настройку практики', noteAdjustmentCancel: 'Оставить мои настройки',
     reflectionAnswer: 'Моё размышление', comment: 'Моя заметка', saveText: 'Приватно сохранить это размышление и заметку в моём аккаунте',
     textHint: 'Без отметки письменный текст остаётся только на открытой странице и не отправляется. Уход или перезагрузка могут удалить несохранённый текст. Сохранённые заметки — личный дневник; они не интерпретируются автоматически и не отслеживаются для экстренной помощи.',
-    applyFeedback: 'Настроить подготовленные практики по моим выбранным ответам', applyHint: 'Используются только ответы о пользе, трудности и комфорте. Письменные заметки не анализируются. Можно предложить короткий вариант или заземление; интенсивность автоматически не увеличивается.',
+    applyFeedback: 'Настроить подготовленные практики по моим выбранным ответам', applyHint: 'Используются только ответы о пользе, трудности и комфорте. Этот пункт не интерпретирует письменные заметки. Можно предложить короткий вариант или заземление; интенсивность автоматически не увеличивается.',
     finish: 'Сохранить выполненный учебный день', skipDay: 'Пропустить этот учебный день', skipConfirm: 'Отметить этот учебный день как пропущенный? К нему можно вернуться позже. При этом действии оценки и письменные заметки не отправляются.',
     history: 'Мои учебные дни', reviewDay: 'Вернуться к дню', repeatNote: 'Необязательный повтор. Чтение или повторение урока не добавляет выполненный день и не меняет прогресс.', closeReview: 'Закрыть повтор',
     draftNotes: 'Неотправленные заметки на этой странице', draftHint: 'Эти заметки не отправлялись при завершении или пропуске дня. Они доступны здесь до ухода со страницы или перезагрузки.',
+    savedObservations: 'Сохранённые наблюдения за этот день', noSavedText: 'За этот день письменная заметка и размышление не сохранялись.', savedReflection: 'Сохранённое размышление', savedNote: 'Сохранённая заметка', noAnswer: 'Без ответа', feedbackWasApplied: 'Эти выбранные ответы использовались для настройки подготовленных вариантов.', feedbackWasNotApplied: 'Эти ответы сохранены без применения настройки.',
+    outlineOverview: 'Это общий обзор недель. Точные ежедневные уроки появятся после выбора шкал и подтверждения программы.',
     outline: 'Маршрут на 21 учебный день', safe: 'Если упражнение усиливает дискомфорт, остановитесь. При тяжёлом или длительном неблагополучии обратитесь к специалисту. При непосредственной опасности — в местную экстренную или кризисную службу; курс не отслеживается в реальном времени.',
   },
 }
@@ -147,6 +174,24 @@ function Select({ label, value, onChange, options, labels, disabled }) {
   return <label className={styles.field}><span>{label}</span><select value={value} onChange={event => onChange(event.target.value)} disabled={disabled}>
     {options.map((option, index) => <option key={option} value={option}>{labels[index]}</option>)}
   </select></label>
+}
+function SavedObservations({ entry, t }) {
+  const feedback = entry.feedback || {}
+  const reflection = typeof feedback.reflectionAnswer === 'string' ? feedback.reflectionAnswer : ''
+  const note = typeof feedback.comment === 'string' ? feedback.comment : ''
+  const values = [
+    [t.helpfulness, feedback.helpfulness, ['', 'helpful', 'neutral', 'not-helpful'], t.helpOptions],
+    [t.difficulty, feedback.difficulty, ['', 'manageable', 'too-hard'], t.difficultyOptions],
+    [t.comfort, feedback.comfort, ['', 'comfortable', 'neutral', 'uncomfortable'], t.comfortOptions],
+  ]
+  return <details className={styles.details} data-course-saved-observations><summary>{t.savedObservations}</summary>
+    {entry.localDate && <p className={styles.small}>{entry.localDate}</p>}
+    <dl className={styles.curriculum}>{values.map(([label, value, keys, labels]) => <div key={label}><dt>{label}</dt><dd>{keys.indexOf(value) > 0 ? labels[keys.indexOf(value)] : t.noAnswer}</dd></div>)}</dl>
+    <p className={styles.small}>{entry.feedbackApplied ? t.feedbackWasApplied : t.feedbackWasNotApplied}</p>
+    {reflection && <section><h5>{t.savedReflection}</h5><p className={styles.preserveText}>{reflection}</p></section>}
+    {note && <section><h5>{t.savedNote}</h5><p className={styles.preserveText}>{note}</p></section>}
+    {!reflection && !note && <p className={styles.small}>{t.noSavedText}</p>}
+  </details>
 }
 function Lesson({ lesson, t, titleId }) {
   return <article className={styles.lesson} aria-labelledby={titleId}>
@@ -187,6 +232,7 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState(null)
   const [selected, setSelected] = useState([]), [consent, setConsent] = useState(false), [consentOpen, setConsentOpen] = useState(false)
   const [drafts, setDrafts] = useState({}), [preferenceDraft, setPreferenceDraft] = useState(null)
+  const [noteProposal, setNoteProposal] = useState(null)
   const [editCheckin, setEditCheckin] = useState(false), [skipConfirm, setSkipConfirm] = useState(false)
   const dialog = useRef(null), mounted = useRef(false), lock = useRef(false), sequence = useRef(0)
   const pending = useRef(null), current = useRef(null), unavailableNotified = useRef(false), alternative = useRef(false)
@@ -224,6 +270,7 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
     finally { lock.current = false; if (mounted.current && token === sequence.current) setLoading(false) }
   }
   useEffect(() => {
+    setNoteProposal(null)
     mounted.current = true
     let cancelled = false
     const token = ++sequence.current
@@ -263,7 +310,7 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
         callbacks.current.onActivated?.(next)
       }
       if (action === 'check-in') setEditCheckin(false)
-      if (action === 'preferences') { setPreferenceDraft(null); alternative.current = false }
+      if (action === 'preferences') { setPreferenceDraft(null); setNoteProposal(null); alternative.current = false }
       if (action === 'finish-day') {
         setSkipConfirm(false)
         setEditCheckin(false)
@@ -282,6 +329,7 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
       if (mounted.current && token === sequence.current) {
         if (caught.status === 409) {
           pending.current = null
+          setNoteProposal(null)
           try {
             const fresh = await readSnapshot()
             if (mounted.current && token === sequence.current) acceptSnapshot(fresh)
@@ -324,8 +372,19 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
       : errorCode === 'COURSE_NOT_STARTED' ? t.noCourse
         : errorCode === 'NEW_R3_PROFILE_REQUIRED' ? t.sourceChanged
           : /INVALID|CHOOSE_|CONSENT_REQUIRED/.test(errorCode) ? t.invalid : t.error
-  function updateDraft(key, value) { setDrafts(previous => ({ ...previous, [day]: { ...previous[day], [key]: value } })) }
-  function updatePreference(key, value) { setPreferenceDraft({ ...preferences, [key]: value }) }
+  const activeNoteProposal = noteProposal?.day === day && noteProposal?.locale === lang && noteProposal?.revision === course?.revision && noteProposal?.text === draft.comment ? noteProposal : null
+  const noteAvailability = courseFeedbackAdjustmentAvailability(activeNoteProposal?.suggestion, view?.preferences, today?.lesson?.variant)
+  function inspectNotePreference() {
+    if (preferenceDraft) return
+    setNoteProposal({ day, locale: lang, revision: course?.revision, text: draft.comment, suggestion: suggestCourseFeedbackAdjustment(draft.comment, lang) })
+  }
+  async function applyNotePreference() {
+    if (!activeNoteProposal?.suggestion || preferenceDraft) return
+    const next = confirmCourseFeedbackAdjustment({ text: draft.comment, locale: lang, suggestionId: activeNoteProposal.suggestion.id, confirmed: true, preferences: view.preferences, lessonVariant: today?.lesson?.variant })
+    if (next) await command('preferences', next)
+  }
+  function updateDraft(key, value) { if (key === 'comment') setNoteProposal(null); setDrafts(previous => ({ ...previous, [day]: { ...previous[day], [key]: value } })) }
+  function updatePreference(key, value) { setNoteProposal(null); setPreferenceDraft({ ...preferences, [key]: value }) }
   function toggleScale(key) {
     setConsent(false)
     setSelected(previous => previous.includes(key) ? previous.filter(item => item !== key) : previous.length < maximum ? [...previous, key] : previous)
@@ -431,7 +490,7 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
         <Select label={t.length} value={preferences.length} onChange={value => updatePreference('length', value)} options={['quick', 'standard']} labels={[t.quick, t.standard]} disabled={waiting}/>
         <label className={styles.check}><input type="checkbox" checked={preferences.alternativeRequested} disabled={waiting} onChange={event => updatePreference('alternativeRequested', event.target.checked)}/><span>{t.grounding}</span></label>
         <label className={styles.check}><input type="checkbox" checked={preferences.stopOffer} disabled={waiting} onChange={event => updatePreference('stopOffer', event.target.checked)}/><span>{t.stopOffer}</span></label>
-        <button type="button" disabled={waiting || !preferenceDraft} onClick={() => command('preferences', preferences)}>{t.savePreferences}</button>
+        <button type="button" disabled={waiting || !preferenceDraft} onClick={() => command('preferences', preferences)}>{t.savePreferences}</button>{preferenceDraft && <button type="button" disabled={waiting} onClick={() => { setPreferenceDraft(null); setNoteProposal(null) }}>{t.notePreferenceDiscard}</button>}
       </details>}
       {today.status === 'choose-comfortable-option' && <section className={styles.notice}><h4>{t.alternative}</h4><p>{t.alternativeHint}</p>
         <button type="button" disabled={waiting} onClick={() => command('preferences', { length: 'quick', alternativeRequested: true, stopOffer: true }, { showAlternative: true })}>{t.viewGrounding}</button></section>}
@@ -447,6 +506,15 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
           </div>
           <label className={styles.field}><span>{t.reflectionAnswer} · {t.optional}</span><textarea rows={3} maxLength={1000} value={draft.reflectionAnswer} onChange={event => updateDraft('reflectionAnswer', event.target.value)} aria-describedby={uid + '-text-privacy'}/></label>
           <label className={styles.field}><span>{t.comment} · {t.optional}</span><textarea rows={3} maxLength={1000} value={draft.comment} onChange={event => updateDraft('comment', event.target.value)} aria-describedby={uid + '-text-privacy'}/></label>
+          <div className={styles.notice} data-course-note-adjustment>
+            <p className={styles.small}>{t.noteAdjustmentHint}</p><p className={styles.small}>{t.noteAdjustmentExample}</p>
+            <button type="button" disabled={waiting || Boolean(preferenceDraft) || !draft.comment.trim()} onClick={inspectNotePreference}>{t.noteAdjustment}</button>{preferenceDraft && <p className={styles.small}>{t.notePreferenceDirty}</p>}
+            {activeNoteProposal && <div role="status">{activeNoteProposal.suggestion && noteAvailability !== 'available' ? <p>{noteAvailability === 'same-alternative' ? t.noteSameAlternative : t.noteAlreadyApplied}</p> : activeNoteProposal.suggestion ? <>
+              <p><strong>{activeNoteProposal.suggestion.label}</strong></p><p className={styles.small}>{t.noteAdjustmentScope}</p>
+              {today.lesson.variant !== 'standard' && <p className={styles.small}>{activeNoteProposal.suggestion.id === 'pause-or-external-attention' ? t.noteExistingGrounding : t.noteAlreadyShort}</p>}
+              <div className={styles.actions}><button type="button" disabled={waiting} onClick={applyNotePreference}>{t.noteAdjustmentConfirm}</button><button type="button" disabled={waiting} onClick={() => setNoteProposal(null)}>{t.noteAdjustmentCancel}</button></div>
+            </> : <p>{t.noteAdjustmentNone}</p>}</div>}
+          </div>
           <label className={styles.check}><input type="checkbox" checked={draft.savePrivateText} onChange={event => updateDraft('savePrivateText', event.target.checked)}/><span>{t.saveText}</span></label>
           <p id={uid + '-text-privacy'} className={styles.small}>{t.textHint}</p>
           <label className={styles.check}><input type="checkbox" checked={draft.applyFeedback} onChange={event => updateDraft('applyFeedback', event.target.checked)}/><span>{t.applyFeedback}</span></label><p className={styles.small}>{t.applyHint}</p>
@@ -456,13 +524,13 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
       {EDITABLE_DAYS.includes(today.status) && !showCheckin && <div className={styles.skip}>
         {!skipConfirm ? <button type="button" disabled={waiting} onClick={() => setSkipConfirm(true)}>{t.skipDay}</button> : <><p>{t.skipConfirm}</p><div className={styles.actions}><button type="button" disabled={waiting} onClick={() => command('finish-day', { day: today.day, lessonId: null, status: 'skipped', feedback: {}, applyFeedback: false, savePrivateText: false, confirmAlternative: false })}>{t.skipDay}</button><button type="button" disabled={waiting} onClick={() => setSkipConfirm(false)}>{t.cancel}</button></div></>}
       </div>}
-      {!!view.history?.length && <section className={styles.history}><h4>{t.history}</h4><ol>{view.history.map(entry => <li key={entry.day}><span>{t.day} {entry.day} · {entry.status === 'completed' ? t.completed : t.skipped}</span><button type="button" disabled={waiting} onClick={() => reviewDay(entry.day)} aria-label={t.reviewDay + ' ' + entry.day}>{t.reviewDay} {entry.day}</button></li>)}</ol></section>}
+      {!!view.history?.length && <section className={styles.history}><h4>{t.history}</h4><ol>{view.history.map(entry => <li key={entry.day}><span>{t.day} {entry.day} · {entry.status === 'completed' ? t.completed : t.skipped}</span><button type="button" disabled={waiting} onClick={() => reviewDay(entry.day)} aria-label={t.reviewDay + ' ' + entry.day}>{t.reviewDay} {entry.day}</button><SavedObservations entry={entry} t={t}/></li>)}</ol></section>}
       {view.reviewLesson && <section className={styles.review} data-course-21-review><div className={styles.row}><p className={styles.small}>{t.repeatNote}</p><button type="button" disabled={waiting} onClick={() => accept({ ...current.current, reviewLesson: null })}>{t.closeReview}</button></div>
         {view.reviewLesson.status === 'ready' && view.reviewLesson.lesson ? <Lesson lesson={view.reviewLesson.lesson} t={t} titleId={uid + '-review-lesson'}/> : <p role="status">{t.material}</p>}
       </section>}
       {!!historicalDrafts.length && <details className={styles.details}><summary>{t.draftNotes}</summary><p className={styles.small}>{t.draftHint}</p>{historicalDrafts.map(([draftDay, entry]) => <section key={draftDay}><h4>{t.day} {draftDay}</h4>{entry.reflectionAnswer && <p className={styles.preserveText}>{entry.reflectionAnswer}</p>}{entry.comment && <p className={styles.preserveText}>{entry.comment}</p>}</section>)}</details>}
     </section>}
-    {!!view?.outline?.weeks?.length && <details className={styles.details}><summary>{t.outline}</summary>{view.outline.weeks.map(week => <section key={week.week}><h3>{t.week} {week.week}: {week.title}</h3><p>{week.goal}</p><ol start={(week.week - 1) * 7 + 1}>{week.days.map(entry => <li key={entry.day}>{entry.skill}</li>)}</ol></section>)}</details>}
+    {!!view?.outline?.weeks?.length && <details className={styles.details}><summary>{t.outline}</summary>{view.outline.mode !== 'personal' && <p className={styles.small}>{t.outlineOverview}</p>}{view.outline.weeks.map(week => <section key={week.week}><h3>{t.week} {week.week}: {week.title}</h3><p>{week.goal}</p>{view.outline.mode === 'personal' && <ol start={(week.week - 1) * 7 + 1}>{week.days.map(entry => <li key={entry.day}><strong>{entry.skill}</strong>{entry.learningOutcome && <p className={styles.small}>{entry.learningOutcome}</p>}</li>)}</ol>}</section>)}</details>}
     <p className={styles.safety}>{t.safe}</p>
   </section>
   )

@@ -1,6 +1,6 @@
-# R3 daily-only 21-day extension (local candidate)
+# R3 daily-only 21-day extension (release-gated draft)
 
-Baseline: `1739b433c6300d051f9f0d4900efef266582791a`, including the selected-scale lesson save fix in PR406. No live database or configuration changes have been applied.
+Baseline includes the selected-scale lesson save fix in PR406 and reconciled canonical `e4cb2c49d46b9729f51afe20cfa15fe8eec7665a`. No live database or configuration changes have been applied.
 
 ## Product boundary
 
@@ -18,7 +18,7 @@ The requested scenario and implementation gap map are saved in the owner’s pri
 - RU display of an explicitly selected EN form preserves the EN instrument identity. Localized labels never switch the administered form.
 - Prepared interpretation envelopes v1/v2 must be database-origin and exact-identity/score matched. Missing, retired, changed or malformed meanings produce an unavailable state. Static scale-guide prose is not a fallback.
 - The activation token is a10-minute HMAC over the authenticated actor, R3 and plan revision, exact forms/results, profile eligibility and interpretation hashes. Activation re-reads evidence while locking the owner/source course and selected plan.
-- New unchecked21-day consent is required. Private text needs a separate boolean opt-in on each finish request. Free text is bounded to1000 characters, encrypted, not externally transmitted or semantically interpreted. Applying structured feedback is a separate decision.
+- New unchecked21-day consent is required. Private text needs a separate boolean opt-in on each finish request. Saved free text is bounded to1000 characters, encrypted, and not externally transmitted or automatically semantically interpreted. Applying structured feedback is a separate decision. A separate user-invoked local phrase helper can suggest a supported practice preference from a complete allowlisted EN/RU statement of at most240 characters. It sends nothing until the client confirms a specific reversible preference. That POST contains only existing preference fields, never the note/excerpt/hash; saving the note still requires its own consent. Any unrecognized or additional context yields no suggestion, without implying that the text is safe or understood.
 
 ## Storage and API
 
@@ -37,10 +37,21 @@ There is no second intake/test plan and no new copy of questionnaire answers. Ol
 
 ## Progression
 
-One new lesson can follow completion or explicit skip on a subsequent local date. Absence does not consume a learning day. Check-ins must be refreshed on the current local date or explicitly skipped. Low energy, reported worsening, short available time or explicitly applied feedback can select a shorter prepared version; none increases intensity. Discomfort offers rest/stop or an explicitly requested prepared grounding alternative. Repeats require the exact stored lesson ID and pinned content version. Skipped sessions do not masquerade as completed helpful repeats.
+One new lesson can follow completion or explicit skip on a subsequent local date. Absence does not consume a learning day. Check-ins must be refreshed on the current local date or explicitly skipped. Low energy, reported worsening, short available time or explicitly applied feedback can select a shorter prepared version; none increases intensity. Discomfort offers rest/stop or an explicitly requested prepared grounding alternative. Repeats require the exact stored lesson ID and pinned content version. Skipped sessions do not masquerade as completed helpful repeats. Saved daily feedback, notes and reflection are readable in history, separately from unsent drafts. The personal outline uses the same selected-track/day selector as the actual lessons and history, showing exact titles and specific outcomes. Before selection, only a labelled general weekly overview is displayed.
 
 ## Release dependency and current evidence
 
 The production repository factory deliberately has no database interpretation loader until the separately reviewed interpretation release is available. Its default cannot activate a new programme. Both `HH_APP_COURSE_21_ENABLED` and `HH_APP_COURSE_21_RELEASE_APPROVED` default to false. This is an explicit pending integration dependency, not delivered production functionality.
 
-Current local evidence: 35 pure model/content/adapter tests, 14 synthetic repository tests and 14 UI handler/SSR checks pass. Full unit tests1121/1121 and app tests170/170 pass. Independent review identified and prompted the aggregate, CES-D, timeframe, skipped-repeat and optional-loader-outage fixes. The final backend re-review found no remaining blocker in its inspected scope. The actual PostgreSQL role/FK/RLS/consent/CAS/export suite and separate isolated workflow job are prepared but not yet executed for this candidate. The browser verifier is prepared but has not run locally. The local production build ended with a SIGKILL in the webpack worker; it is not a pass. Exact-head CI build, PostgreSQL, browser and released-loader integration are required before any merge or release. No publication or live acceptance claim is made.
+## Open completion checklist
+
+- Structured helpfulness/difficulty/comfort adaptation is implemented with explicit opt-in. The local phrase helper additionally supports a few ordinary exercise preferences, with a separate preview and confirmation. This is not general interpretation of free comments/reflections, AI-generated personalization or a safety monitor. The broader free-text requirement remains only partially covered pending explicit acceptance of this bounded scope or a separately reviewed implementation.
+- Connect and verify the released exact-key/version/hash database interpretation loader. No held interpretation-release source or payload is copied here.
+- Complete exact-head Chromium/WebKit acceptance and inspect the artifacts. The mocked-DTO course context blocks service workers so Playwright can intercept its fixtures; it explicitly excludes SW/PWA acceptance. A real SW-enabled course journey remains required after loader/database release.
+- Obtain separate action-time approval before any live DDL/grants; do not enable either course flag before release acceptance.
+
+## Verification record
+
+Initial published head `5b6d4b674bf7f11925366bd2eb15ce2283209bdf` passed CI production build, types/lint, existing database checks and the new actual PostgreSQL17 suite8/8. Its first browser iteration exposed service-worker bypass of the mocked fixture; that harness defect was corrected in `4b1de9ea03fa73856c6f64eaa870c07f33153721`, retaining all assertions and adding fulfilled-fixture markers and failure diagnostics. Neither is a claim of production acceptance.
+
+The local build before publication ended with webpack-worker SIGKILL; it was not a pass. Current local follow-up checks:44 pure model/content/adapter/phrase tests,14 synthetic repository tests,22 UI handler/SSR checks, full unit1134/1134 and app170/170 pass. The locale round-trip confirmation defect found by independent review was fixed with a regression test. New local changes still require their own exact-head CI and final review. No live database or configuration changes have been applied.

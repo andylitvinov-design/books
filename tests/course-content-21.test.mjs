@@ -72,3 +72,19 @@ test('each selected track supports a complete21-day synthetic journey using real
   assert.equal(s.status,'finished');assert.equal(new Set(ids).size,21)
  }
 })
+
+test('personal route uses actual selected-track lesson titles and outcomes, including mixed-track rotation',()=>{
+ for(const locale of ['en','ru'])for(const tracks of [...Object.keys(TRACKS).map(t=>[t]),['connection_boundaries','attention_clarity','connection_boundaries','inner_support']]){
+  let journey=createCourseJourney({id:'synthetic-route',choices:{confirmed:true,durationDays:21,topics:tracks.map((track,i)=>({scaleId:'s'+i,track}))},consent:true,timeZone:'UTC',contentVersion:COURSE_CONTENT_21_VERSION,now:'2026-10-12T12:00:00Z'})
+  const outline=courseOutline21(locale,journey);assert.equal(outline.mode,'personal');assert.equal(outline.contentVersion,journey.contentVersion)
+  const entries=outline.weeks.flatMap(w=>w.days);assert.equal(entries.length,21)
+  for(let day=1;day<=21;day++){
+   const now=new Date(Date.UTC(2026,9,11+day,12)).toISOString();journey=checkInBeforeLesson(journey,{day,skip:true,now,expectedRevision:journey.revision})
+   const today=dailyLesson(journey,{now,locale,lessonFor:lessonFor21}),entry=entries[day-1]
+   assert.equal(entry.lessonId,today.lesson.id);assert.equal(entry.track,today.track);assert.equal(entry.skill,today.lesson.title);assert.equal(entry.learningOutcome,today.lesson.curriculum.learningOutcome)
+   journey=finishCourseDay(journey,{day,lessonId:today.lesson.id,now,expectedRevision:journey.revision,lessonFor:lessonFor21,locale})
+  }
+  assert.equal(courseOutline21(locale,{...journey,contentVersion:'unavailable-version'}),null)
+ }
+ assert.equal(courseOutline21('en').mode,'overview')
+})
