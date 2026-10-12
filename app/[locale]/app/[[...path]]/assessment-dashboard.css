@@ -56,3 +56,35 @@
  .hh-app .hh-insights-test-card h2{font-size:1.01rem!important}
  .hh-app .hh-insights-date-range label{width:100%;justify-content:space-between}
 }
+
+
+/* Dashboard cockpit: multiple instrument dials on wide screens, one readable row on phones. */
+.hh-app .hh-insights-test-list{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr))!important;
+  gap:12px!important
+}
+.hh-app .hh-insights-test-card{
+  min-width:0;display:flex;flex-direction:column;
+  border:1px solid #d5ddd5!important;background:#fffefa!important
+}
+.hh-app .hh-insights-test-card .hh-insights-test-link{flex:1;min-width:0}
+.hh-app .hh-insights-test-card .hh-insights-test-body{min-width:0}
+.hh-app .hh-insights-period-guide{
+  color:#5f6b62;font-size:.84rem!important;line-height:1.43!important;
+  margin:0 0 14px!important;padding-left:3px
+}
+.hh-app .hh-insights-test-card .hh-insights-test-summary{
+  font-size:.9rem!important;line-height:1.4!important
+}
+.hh-app .hh-insights-test-card .hh-insights-test-meta time{
+  font-size:.82rem;color:#716a61;font-weight:650
+}
+.hh-app .hh-insights-test-card .hh-insights-open{color:#286853}
+.hh-app .hh-insights-test-link:hover{background:#f5faf5}
+@media(max-width:600px){
+  .hh-app .hh-insights-test-card .hh-insights-test-summary{font-size:.87rem!important}
+  .hh-app .hh-insights-test-card h2{font-size:1.14rem!important}
+  .hh-app .hh-insights-test-card .hh-insights-open{font-size:.86rem!important}
+  .hh-app .hh-insights-period-guide{font-size:.81rem!important}
+}
