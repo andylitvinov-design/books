@@ -77,12 +77,15 @@ function assertFallbackPairs(entries) {
   for (const [index, entry] of entries.entries()) {
     if (!isFallback(entry)) continue;
     const retry = new URL(entry.url);
+    assert.equal(retry.searchParams.getAll("gaf").length, 1, "exactly one fallback marker");
     assert.equal(retry.searchParams.get("gaf"), "1", "only the observed one-step fallback is recognized");
-    retry.searchParams.delete("gaf");
+    // URLSearchParams.delete reserializes %20 as +. Preserve original encoding
+    // so payload equality remains byte-for-byte after removing this one marker.
+    const originalQuery = retry.search.slice(1).split("&").filter(parameter => parameter !== "gaf=1").join("&");
     const primary = entries.slice(0, index).find(candidate => {
       const url = new URL(candidate.url);
       return !used.has(candidate) && url.origin === "https://www.google-analytics.com"
-        && url.pathname === retry.pathname && url.search === retry.search
+        && url.pathname === retry.pathname && url.search.slice(1) === originalQuery
         && candidate.body === entry.body && candidate.method === entry.method
         && candidate.scenario === entry.scenario && candidate.phase === entry.phase;
     });
@@ -361,6 +364,22 @@ try {
   await inspectCookies(foreign, "foreign-tag-stays-disabled", false);
   foreign.checkpoint("unknown global cannot masquerade as initialized destination");
   await foreign.context.close();
+  const foreignQueue = await scenario("foreign-queue-without-gtag");
+  await foreignQueue.page.evaluate(() => {
+    window.dataLayer = [];
+    function queuedCommand() { window.dataLayer.push(arguments); }
+    queuedCommand("config", "G-SYNTHETICFOREIGN", { send_page_view: true });
+    queuedCommand("event", "synthetic_foreign_event");
+    window.fixture.grant(); window.fixture.acquire();
+  });
+  await settled(foreignQueue.page);
+  assert.equal(foreignQueue.own.filter(entry => entry.action === "local-frozen-sdk").length, 0);
+  assert.equal(foreignQueue.collects().length, 0);
+  assert.equal(await foreignQueue.page.evaluate(() => window.dataLayer.length), 2);
+  assert.equal(await foreignQueue.page.evaluate(id => window["ga-disable-" + id], id), true);
+  await inspectCookies(foreignQueue, "foreign-queue-not-activated", false);
+  foreignQueue.checkpoint("unowned queued destination never activates a new SDK");
+  await foreignQueue.context.close();
   assertSafe(requests);
   assert.equal(errors.length, 0, JSON.stringify(errors));
 } catch (error) {

@@ -62,7 +62,10 @@ function loadGoogleTag(measurementId: string, nonce?: string) {
     window.gtag("set", publicPageContext(window.location.pathname));
     return window.gtag;
   }
-  window.dataLayer = window.dataLayer || [];
+  // A pre-existing queue may contain another destination's commands. Loading
+  // our SDK must not activate an unowned queue, even without a gtag global.
+  if (window.dataLayer !== undefined) return null;
+  window.dataLayer = [];
   const gtag: PublicAnalyticsGtag = function () {
     // Google dispatches Arguments as gtag commands; arrays are data-model calls.
     // eslint-disable-next-line prefer-rest-params -- The Google tag requires Arguments.

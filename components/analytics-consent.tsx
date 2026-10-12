@@ -36,7 +36,7 @@ function applyConsent(value: ConsentChoice) {
   window.dispatchEvent(new Event("holistic-house:analytics-consent"));
 }
 
-// Synchronize previously saved consent without ever interrupting a visitor.
+// Synchronize saved consent; an owned SDK is reset on the private boundary.
 // No analytics tag is loaded for new visitors: the default is denied.
 export function AnalyticsConsent() {
   const pathname = usePathname();

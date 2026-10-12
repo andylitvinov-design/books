@@ -273,3 +273,37 @@ test("private or denied documents without an owned SDK never reload", () => {
   }
 });
 
+
+
+test("an unowned pre-existing dataLayer is never activated by our SDK", () => {
+  function command() {
+    // Exercise a valid foreign gtag command.
+    return arguments;
+  }
+  for (const queue of [[], [command("config", "G-FOREIGN"), command("event", "foreign-event")]]) {
+    const h = harness();
+    h.window.dataLayer = queue;
+    h.render(); h.syncConsent(); h.acquisition("free_situation_assessment_click");
+    assert.equal(h.scripts.length, 0);
+    assert.equal(h.window.gtag, undefined);
+    assert.equal(h.window.dataLayer, queue);
+    assert.equal(h.window["ga-disable-G-SYNTHETIC"], true);
+  }
+});
+
+
+test("fallback fixture accepts only byte-identical one-step transport retries", () => {
+  const fixture = source("scripts/verify-ga4-privacy.mjs");
+  const start = fixture.indexOf("const isFallback =");
+  const end = fixture.indexOf("function decodedEvents", start);
+  const validate = vm.runInNewContext(`(() => { ${fixture.slice(start, end)} return assertFallbackPairs; })()`, { assert, URL });
+  const primary = { url: "https://www.google-analytics.com/g/collect?dt=Holistic%20House&extra=a~b+c&v=2", method: "POST", body: null, scenario: "test", phase: "public" };
+  const retry = { ...primary, url: "https://www.google.com/g/collect?dt=Holistic%20House&extra=a~b+c&v=2&gaf=1" };
+  validate([primary, retry]);
+  assert.throws(() => validate([primary, { ...retry, body: "changed" }]));
+  assert.throws(() => validate([primary, { ...retry, url: retry.url.replace("%20", "+") }]));
+  assert.throws(() => validate([primary, { ...retry, phase: "other" }]));
+  assert.throws(() => validate([primary, { ...retry, url: retry.url + "&gaf=1" }]));
+  assert.throws(() => validate([primary, retry, retry]));
+  assert.throws(() => validate([retry]));
+});
