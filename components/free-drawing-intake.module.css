@@ -24,7 +24,9 @@
 .prepare,.copyButton{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;width:100%;padding:10px 14px;cursor:pointer;border:0;border-radius:12px;background:#2d654f;color:white;font:800 14px/1.35 Arial,Helvetica,sans-serif}
 .prepare svg{margin-left:auto}
 .ready{margin-top:18px;padding-top:14px;border-top:1px solid #b9d3c4}
-.ready h3{margin:0 0 10px;font:700 16px/1.4 Georgia,serif}
+.ready h3{margin:0 0 5px;font:700 16px/1.4 Georgia,serif}
+.readyNote{margin:0 0 10px;color:#32654c;font:700 12px/1.45 Arial,Helvetica,sans-serif}
+.ready:focus-visible{outline:3px solid #be8d5a;outline-offset:4px}
 .preview{width:100%;padding:10px;border:1px solid #b3c9bd;background:#fffefa;border-radius:9px;color:#36483d;font:12px/1.5 Arial,Helvetica,sans-serif;resize:vertical}
 .copyButton{background:#426959;margin-top:10px}
 .copyStatus{min-height:17px;margin:5px 0;color:#32654c;font:700 12px/1.4 Arial,Helvetica,sans-serif}
