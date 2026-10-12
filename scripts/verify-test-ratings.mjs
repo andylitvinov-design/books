@@ -57,7 +57,7 @@ try{
   for(const width of [320,390,1280]){
    await page.setViewportSize({width,height:900});await rating.scrollIntoViewIfNeeded()
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
-   const rect=await rating.getByRole('radio').first().boundingBox();assert.ok(rect.width>=44&&rect.height>=44)
+   const rect=await rating.getByRole('radio').first().boundingBox();assert.ok(rect.width>=44&&rect.height>=44,`Radio target at ${locale}/${width}: ${JSON.stringify(rect)}`)
    await page.screenshot({path:output+'/rating-'+locale+'-'+width+'.png',fullPage:false})
   }
   // Real stale-revision conflict across tabs, then explicit refresh and recovery.
