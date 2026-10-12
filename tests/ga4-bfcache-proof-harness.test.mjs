@@ -31,6 +31,7 @@ test('incomplete header coverage cannot become a navigation-only overall pass',(
  const code=read('scripts/verify-ga4-bfcache-proof.mjs');assert.match(code,/assertCdpHeaderCoverage/);assert.match(code,/passed:navigationPassed&&headerCoveragePassed/);
  assert.match(code,/Network\.requestWillBeSentExtraInfo/);assert.match(code,/extraInfoReceived=true/);assert.match(code,/127\.0\.0\.1:9/);
  assert.doesNotMatch(code,/Fetch\.continueRequest|fetch\(r\.url/);assert.match(code,/env:\{PATH:process\.env\.PATH,HOME:tmpdir\(\)/);
+ assert.match(code,/bfcache-browser\.log/);assert.match(code,/browser\.on\('exit'/);assert.match(code,/browser\.on\('error'/);
 });
 test('raw commit parent headers remain provable with shallow checkout',()=>{
  const dir=mkdtempSync(join(tmpdir(),'ga4-shallow-parent-'));

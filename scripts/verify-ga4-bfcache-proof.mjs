@@ -19,7 +19,7 @@ const sentinel=/SYNTHETIC_PRIVATE|SYNTHETIC_QUERY|SYNTHETIC_FRAGMENT/i;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(fn,message,timeout=30000){const end=Date.now()+timeout;while(!await fn()){assert.ok(Date.now()<end,message);await wait(50);}}
 const requests=[],snapshots=[],failures=[],caseResults=[],notRestored=[],extraHeaders=new Map(),networkRequests=new Map();
-let browser,ws,sessionId,scenario='setup',phase='setup',serverLog='',browserLog='',counter=0;
+let browser,browserExit,browserSpawnError,ws,sessionId,scenario='setup',phase='setup',serverLog='',browserLog='',counter=0;
 const pending=new Map(),listeners=new Map(),inflightHandlers=new Set();
 const server=spawn(process.execPath,[require.resolve('next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3220'],{cwd:fixture,env:{PATH:process.env.PATH,HOME:tmpdir(),NODE_ENV:'production',NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_GA_MEASUREMENT_ID:id},stdio:['ignore','pipe','pipe']});
 for(const stream of [server.stdout,server.stderr])stream.on('data',data=>{serverLog+=data;});
@@ -44,7 +44,8 @@ try{
  // unload listeners. Dead proxy exists before the first browser process starts.
  browser=spawn(executable,['--headless=new','--remote-debugging-port=0','--user-data-dir='+profile,'--proxy-server=http://127.0.0.1:9','--disable-background-networking','--disable-component-update','--disable-sync','--no-first-run','about:blank'],{env:{PATH:process.env.PATH,HOME:tmpdir(),TMPDIR:tmpdir(),LANG:'en_US.UTF-8'},stdio:['ignore','ignore','pipe']});
  browser.stderr.on('data',data=>{browserLog+=data;});
- await until(()=>/DevTools listening on (ws:\/\/[^\s]+)/.test(browserLog),'raw Chrome CDP available');
+ browser.on('exit',(code,signal)=>{browserExit={code,signal};});browser.on('error',error=>{browserSpawnError=error.message;});
+ await until(()=>{assert.ok(!browserExit&&!browserSpawnError,'raw Chrome stopped before CDP: '+JSON.stringify({browserExit,browserSpawnError,stderr:browserLog}));return /DevTools listening on (ws:\/\/[^\s]+)/.test(browserLog);},'raw Chrome CDP available');
  ws=new WebSocket(browserLog.match(/DevTools listening on (ws:\/\/[^\s]+)/)[1]);await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true});});
  ws.addEventListener('message',event=>{const data=JSON.parse(event.data);if(data.id){const p=pending.get(data.id);if(p){pending.delete(data.id);clearTimeout(p.timer);if(data.error)p.reject(Error(JSON.stringify(data.error)));else p.resolve(data.result);}}else{const handler=listeners.get(data.method);if(handler&&(!data.sessionId||data.sessionId===sessionId)){const eventScenario=scenario,eventPhase=phase;const task=Promise.resolve(handler(data.params)).catch(error=>failures.push({scenario:eventScenario,phase:eventPhase,method:data.method,error:error.stack})).finally(()=>inflightHandlers.delete(task));inflightHandlers.add(task);}}});
  on('Page.backForwardCacheNotUsed',params=>notRestored.push({scenario,...params}));
@@ -128,6 +129,7 @@ finally{
  if(ws){await send('Browser.close',{},null).catch(()=>{});ws.close();}if(browser)browser.kill('SIGTERM');server.kill('SIGTERM');for(const p of pending.values())clearTimeout(p.timer);pending.clear();
  const redact=entry=>{const headers={...entry.headers};for(const key of Object.keys(headers))if(key.toLowerCase()==='cookie')headers[key]='[synthetic-cookie-values-omitted]';const clean=text=>text?.replace(/((?:^|[?&])(?:cid|sid|gcid|_gid|_ga)=)[^&\n]*/g,'$1[synthetic-id-omitted]');return {...entry,url:clean(entry.url),body:clean(entry.body),headers};};
  writeFileSync(join(output,'bfcache-server.log'),serverLog);
+ writeFileSync(join(output,'bfcache-browser.log'),JSON.stringify({browserExit,browserSpawnError},null,2)+'\n'+browserLog);
  writeFileSync(join(output,'bfcache-results.json'),JSON.stringify({testedAt:new Date().toISOString(),sdkSha256:createHash('sha256').update(sdk).digest('hex'),passed:failures.length===0,transmittedGoogleRequests:0,driver:'raw CDP without Playwright Page',headerCoverageRequirement:'Network.requestWillBeSentExtraInfo for every intercepted third-party attempt; absence fails',caseResults,serviceWorkers:'blocked in initialization; PWA behavior excluded',persistedRequired:true,snapshots,notRestored,failures,requests:requests.map(redact)},null,2)+'\n');
  console.log(JSON.stringify({passed:failures.length===0,caseResults,snapshots,failures},null,2));
 }
