@@ -153,6 +153,10 @@ try{
  await voluntary.check()
  await picker.getByRole('button',{name:'Relationships',exact:true}).click()
  await picker.getByRole('button',{name:'Self-support',exact:true}).click()
+ // A broader filter can move the chosen card below the first five matches.
+ // Expand the real paged list before inspecting its retained checkbox.
+ for(let batch=0;await voluntary.count()===0&&batch<21;batch++)
+  await picker.getByRole('button',{name:/^Show \d+ more tests$/}).click()
  await expect(voluntary).toBeChecked()
  const saveVoluntary=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
  await picker.getByRole('button',{name:'Start free monitoring',exact:true}).click()
