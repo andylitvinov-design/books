@@ -89,12 +89,7 @@ async function enterTest(name='Current State Check',mode='Guided'){
   if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
   await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
-  if(await page.getByRole('button',{name:/Review test filters/}).count()){
-   if(!(await page.locator('[data-pending-selection]').isVisible().catch(()=>false)))
-     await page.getByRole('button',{name:/Review test filters/}).click()
-   await expect(page.locator('[data-pending-selection]')).toBeVisible()
-   await page.locator('[data-pending-selection]').getByRole('button',{name:'Use new selection'}).click()
-  }
+  await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
   await expect(page.locator('#my-tests-list')).toBeVisible()
  }
  await expect(candidate()).toBeVisible({timeout:15000})
@@ -485,6 +480,10 @@ try {
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
  const storage=await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),caches:await Promise.all((await caches.keys()).map(async k=>(await(await caches.open(k)).keys()).map(r=>new URL(r.url).pathname)))}));assert.ok(!JSON.stringify(storage).match(/hh-app-auth|profile:first|\/api\/app|\/en\/app|\/ru\/app/));passed('no private browser storage or service-worker response cache')
  const exported=await api('export');assert.equal(exported.status,200);assert.ok(exported.data.runs.every(r=>r.accountId===first.accountId));assert.equal(exported.data.results.length,3);passed('own complete data export')
+ // Remember the active owner selection before the separate Google sign-in flow.
+ // It must still be present after the public selector adds another test.
+ const savedBeforeSignout=(await api('bootstrap')).data.activeTestPlan
+ assert.ok(savedBeforeSignout?.definitionIds?.length>0,'synthetic owner has a saved battery')
  await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
@@ -561,20 +560,24 @@ try {
  assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null)
  passed('Cabinet entry has a prominent Google sign-in and one integrated battery builder')
 
- await chooseVisibleTest(page,'Personality Baseline')
+ await chooseVisibleTest(page,'Monthly Life Profile')
  await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
- // An existing in-progress battery must not be discarded silently.
- // Choose the newly requested set through the explicit replacement confirmation.
- await expect(page.getByRole('button',{name:'Review test filters'})).toBeVisible()
- await page.getByRole('button',{name:'Review test filters'}).click()
- await expect(page.locator('[data-pending-selection]')).toBeVisible()
- await page.locator('[data-pending-selection]').getByRole('button',{name:'Use new selection'}).click()
+ // The public selector must ADD selected tests to the existing Google account,
+ // never discard earlier tests or display a replacement confirmation.
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  const reopenedPlan=(await api('bootstrap')).data.activeTestPlan
- assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'after replacement URL must identify saved plan')
+ assert.equal(reopenedPlan.id,savedBeforeSignout.id,'same original plan remains active')
+ assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'saved plan URL identifies the original account plan')
+ assert.ok(savedBeforeSignout.definitionIds.every(id=>reopenedPlan.definitionIds.includes(id)),
+   'every earlier saved test remains in the account')
+ assert.ok(reopenedPlan.definitionIds.length>savedBeforeSignout.definitionIds.length,
+   'the newly selected public test is added to My Tests')
+ assert.deepEqual(reopenedPlan.completedRunIds,savedBeforeSignout.completedRunIds,
+   'adding tests must not discard completed progress')
+ await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
  await expect(page.locator('#my-tests-list')).toBeVisible()
- await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
- passed('public test selection starts Google authentication and opens account test battery')
+ await expect(page.getByRole('heading',{name:'Monthly Life Profile',exact:true})).toBeVisible()
+ passed('public test selection adds new tests without replacing the previous account battery')
  // The account shows the entire saved selection immediately, with a direct
  // remove control per row. Removing does not remove previous saved results.
  const beforeRemove=(await api('bootstrap')).data
