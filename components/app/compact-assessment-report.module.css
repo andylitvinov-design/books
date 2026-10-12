@@ -30,4 +30,9 @@
 .footer details p{font-size:.87rem;line-height:1.48}
 @media(max-width:570px){.header h2{font-size:1.55rem!important}.card{padding:13px 11px;border-radius:16px}.measure{gap:9px;align-items:center}.summary h3{font-size:1.08rem!important}.band{font-size:.95rem!important}.scale{font-size:.84rem!important}.direction{font-size:.76rem!important}.recommendations{margin-top:12px;padding:12px}.recommendations li{font-size:1rem}.details summary{font-size:.86rem}}
 @media(max-width:350px){.measure{gap:4px}.card{padding:12px 8px}.summary h3{font-size:1rem!important}}
+
+.methodology{margin:0;color:#675e55;font-size:.85rem;line-height:1.55}
+.typeSummary{padding:16px;border:1px solid #d9ddcf;border-radius:16px;background:#f4f6ef}
+.typeSummary h3{margin:8px 0;color:#304832}
+.typeSummary p,.typeSummary small{line-height:1.55}
 .contextNote{margin:0;color:#675e55;font-size:.85rem;line-height:1.55;padding:12px;border:1px solid #e2ddd4;border-radius:12px;background:#faf8f3}
