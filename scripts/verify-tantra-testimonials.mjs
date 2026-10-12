@@ -86,8 +86,15 @@ try {
               assert.equal(sample.currentSrc, sources[index]);
               assert.ok(sample.ready >= 2 && sample.frames > 0, 'A decoded video frame is required');
               assert.ok(Math.abs(sample.duration - (index === 0 ? 321.2 : 236)) < 0.5);
+              const seekTarget = 30;
+              await video.evaluate((el, time) => { el.currentTime = time; }, seekTarget);
+              await expect.poll(() => video.evaluate(el => !el.seeking && el.readyState >= 2), { timeout: 20000 }).toBe(true);
+              await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(seekTarget + 0.25);
+              const afterSeek = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames, ready: el.readyState, error: el.error?.code ?? null }));
+              assert.equal(afterSeek.error, null);
+              assert.ok(afterSeek.frames > sample.frames, 'Decoded playback must continue after seeking');
               await video.evaluate(el => el.pause());
-              playback.push(sample);
+              playback.push({ ...sample, seekTarget, afterSeek });
             }
             await russian.locator('button.academy-video-poster').click();
             const alena = russian.locator('iframe');
