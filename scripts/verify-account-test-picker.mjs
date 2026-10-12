@@ -49,9 +49,15 @@ try {
   await api('test-plans', { items: [{ definitionKey: base.key, definitionVersion: base.version, instrumentLocale: 'en' }], appendActive: true, operationId: randomUUID() })
   const run = await api('runs', { definitionKey: base.key, definitionVersion: base.version, instrumentLocale: 'en', operationId: randomUUID() })
   const draft = await api('runs/' + run.id + '/save', { expectedRevision: run.revision, operationId: randomUUID(), answers: { [base.questions[0].id]: 2 }, context: {}, progress: 1 })
+  // Preserve a genuinely completed result as well as the earlier partial draft.
+  const completedDefinition = getAssessmentDefinition('cbi-personal', 'v1', 'en')
+  const completedRun = await api('runs', { definitionKey: completedDefinition.key, definitionVersion: completedDefinition.version, instrumentLocale: 'en', operationId: randomUUID() })
+  const completedAnswers = await api('runs/' + completedRun.id + '/save', { expectedRevision: completedRun.revision, operationId: randomUUID(), answers: Object.fromEntries(completedDefinition.questions.map(question => [question.id, 2])), context: {}, progress: completedDefinition.questions.length })
+  const completedResult = await api('runs/' + completedRun.id + '/submit', { expectedRevision: completedAnswers.revision })
   for (const locale of ['en', 'ru']) {
     const ru = locale === 'ru'
     const before = await api('bootstrap')
+    assert.ok(before.results.some(result => result.id === completedResult.id))
     const oldIds = before.activeTestPlan.definitionIds
     await navigate('/' + locale + '/app/tests')
     const open = page.locator('[data-my-tests-dashboard]').getByRole('button', { name: ru ? /Открыть фильтр тестов/ : /Open test filters/ })

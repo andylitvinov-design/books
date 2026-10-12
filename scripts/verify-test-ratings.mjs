@@ -18,7 +18,7 @@ const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{execut
 // Disable workers only in this fault-injection context: routing cannot reliably
 // intercept worker-controlled requests. Separate baseline PWA checks keep workers.
 const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}),page=await context.newPage()
-const output='artifacts/app-r1/test-ratings-'+engine.name(),checks=[],errors=[],fixtureActors=[]
+const output='artifacts/app-r1/test-ratings-'+engine.name(),checks=[],errors=[],navigationRetries=[],fixtureActors=[]
 await mkdir(output,{recursive:true})
 const config=getAppConfig(),repo=createAppRepository(config),ratings=createTestRatingRepository(config)
 const setupAdmin=await adminClient()
@@ -36,7 +36,19 @@ async function completeViaAPI(def){
  const saved=await api('runs/'+run.id+'/save',{answers:Object.fromEntries(def.questions.map(q=>[q.id,2])),context:{},progress:def.questions.length,expectedRevision:run.revision,operationId:randomUUID()})
  return api('runs/'+run.id+'/submit',{expectedRevision:saved.revision})
 }
-async function navigate(url){await page.waitForLoadState('networkidle');await page.goto(url);await page.waitForLoadState('networkidle')}
+async function navigate(url){
+ await page.waitForLoadState('networkidle')
+ const previous=page.url()
+ try { await page.goto(url) } catch(error) {
+  // WebKit + the dev router can finish the prior document navigation after
+  // goto has begun. Retry only this exact observed collision, once. A second
+  // failure or any other error still fails the journey and remains in evidence.
+  if(engine.name()!=='webkit'||!error.message.includes('is interrupted by another navigation to "'+previous+'"'))throw error
+  navigationRetries.push({from:previous,to:url,error:error.message})
+  await page.waitForLoadState('networkidle');await page.goto(url)
+ }
+ await page.waitForLoadState('networkidle');await expect(page).toHaveURL(url)
+}
 async function assertFits(label){
  const layout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].map(el=>({el,rect:el.getBoundingClientRect()})).filter(({rect})=>rect.width&&rect.right>innerWidth+1).slice(-20).map(({el,rect})=>({tag:el.tagName,class:el.className,right:rect.right,width:rect.width,text:el.textContent.slice(0,70)}))}))
  assert.ok(layout.scroll<=layout.width+1,label+': '+JSON.stringify(layout))
@@ -186,10 +198,11 @@ try{
   passed(locale+': guest report → explicit save/sign-in → claim confirmation → account rating persists, with one vote per account/test')
  }
  assert.deepEqual(errors,[])
- await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,engine:engine.name(),checks,errors,fixture:'SYNTHETIC_LOOPBACK_ONLY'},null,2))
-}catch(error){await page.screenshot({path:output+'/failure.png',fullPage:false}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,errors,failure:error.message},null,2));throw error}
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,engine:engine.name(),checks,errors,navigationRetries,fixture:'SYNTHETIC_LOOPBACK_ONLY'},null,2))
+}catch(error){await page.screenshot({path:output+'/failure.png',fullPage:false}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,errors,navigationRetries,failure:error.message},null,2));throw error}
 finally{
+ await browser.close()
  const admin=await adminClient()
- try{const ids=fixtureActors.map(a=>a.id);if(!accountExisted)await admin.query('delete from app.accounts where id=$1',[A]);if(ids.length){await admin.query('delete from app.accounts where id=any($1::uuid[])',[ids]);await admin.query('delete from auth.users where id=any($1::uuid[])',[ids])}}finally{await admin.end()}
- await closeDatabase();await browser.close()
+ try{const ids=fixtureActors.map(a=>a.id);if(!accountExisted){await admin.query('begin');await admin.query('delete from app_private.save_intents where target_account_id=$1',[A]);await admin.query('delete from app.accounts where id=$1',[A]);await admin.query('commit')}if(ids.length){await admin.query('delete from app.accounts where id=any($1::uuid[])',[ids]);await admin.query('delete from auth.users where id=any($1::uuid[])',[ids])}}finally{await admin.end()}
+ await closeDatabase()
 }
