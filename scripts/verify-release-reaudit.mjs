@@ -201,11 +201,11 @@ async function exercise(engine, browserType, width) {
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'same-public-document'; });
-          await cspPage.locator('.site-navigation a[href="/en/services"]').click();
+          await cspPage.locator('.mobile-bottom-navigation a[href="/en/services"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
-          await cspPage.locator('.site-navigation a[href="/en/client"]').click();
+          await cspPage.locator('.mobile-bottom-navigation a[href="/en/client"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/client');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Entering private must load a new document');
@@ -217,7 +217,7 @@ async function exercise(engine, browserType, width) {
             document.body.append(frame);
           });
           await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
-          await cspPage.locator('.site-navigation a[href="/en/about"]').click();
+          await cspPage.locator('.mobile-bottom-navigation a[href="/en/about"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await cspPage.locator('#psychic-alchemy-video button').click();
