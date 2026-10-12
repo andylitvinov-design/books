@@ -114,6 +114,9 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /Reset must restore the exact paid request/);
   assert.match(verifier, /check\('csp-navigation-and-history'/);
   assert.match(verifier, /privateIframeBlocked: true/);
+  assert.match(verifier, /ignoreDefaultArgs: \['--disable-back-forward-cache'\]/);
+  assert.match(verifier, /state\.persisted && state\.url/);
+  assert.match(verifier, /assert\.deepEqual\(cspErrors, \[\]/);
   assert.match(verifier, /decodedPlaybackClaimed: false/);
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
 });

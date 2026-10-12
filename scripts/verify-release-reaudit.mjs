@@ -192,11 +192,28 @@ async function exercise(engine, browserType, width) {
       await check('csp-navigation-and-history', { engine, width }, async () => {
         // New context isolates document policies and service-worker caching. This
         // checks real navigation/CSP enforcement, not third-party video decoding.
-        const cspContext = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
+        // Playwright disables Chromium's BFCache by default. Enable the real
+        // browser feature in this focused context and require persisted evidence.
+        const cspBrowser = engine === 'chromium'
+          ? await browserType.launch({ ignoreDefaultArgs: ['--disable-back-forward-cache'] }) : browser;
+        const cspContext = await cspBrowser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
+        const pageShows = [];
+        const cspErrors = [];
+        let historyPhase = 'initial';
+        await cspContext.exposeBinding('__recordCspPageShow', (_source, state) => pageShows.push({ phase: historyPhase, ...state }));
+        await cspContext.addInitScript(() => {
+          // Register before application scripts so its capture listener cannot
+          // hide the persisted event when replacing an interrupted router.
+          window.__cspInitDocumentProbe = crypto.randomUUID();
+          window.addEventListener('pageshow', event => {
+            const navigation = performance.getEntriesByType('navigation')[0];
+            void window.__recordCspPageShow({ documentProbe: window.__cspInitDocumentProbe, url: location.href, persisted: event.persisted, documentClass: document.body?.dataset.cspClass, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null });
+          }, true);
+        });
         const cspPage = await cspContext.newPage();
         const navigationTrace = [];
         cspPage.on('framenavigated', frame => { if (frame === cspPage.mainFrame()) navigationTrace.push(frame.url()); });
-        cspPage.on('pageerror', error => navigationTrace.push('JS: ' + error.message));
+        cspPage.on('pageerror', error => { cspErrors.push(error.message); navigationTrace.push('JS: ' + error.message); });
         await cspPage.route('https://app.heygen.com/embeds/**', route => route.fulfill({ contentType: 'text/html', body: '<p data-csp-probe>Allowed embed reached</p>' }));
         try {
           await cspPage.goto(origin + '/en/about', { waitUntil: 'networkidle' });
@@ -225,6 +242,7 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
+          const interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'before-tantra'; });
           // Next supports native history navigation; exercise the programmatic
           // fallback too, rather than relying only on the anchor interceptor.
@@ -232,23 +250,32 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Tantra media policy requires a fresh document');
+          historyPhase = 'back-from-tantra';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          if (engine === 'chromium') {
+            await expect.poll(() => pageShows.some(state => state.phase === 'back-from-tantra' && state.persisted && state.url === origin + '/en/about' && state.documentProbe === interruptedDocumentProbe), { message: 'Real Chromium BFCache restoration must exercise the interrupted-router pageshow branch' }).toBe(true);
+          }
+          await expect.poll(() => cspPage.evaluate(() => window.__cspInitDocumentProbe), { message: 'Restored interrupted router must be replaced with a fresh document' }).not.toBe(interruptedDocumentProbe);
+          historyPhase = 'back-to-private';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/client');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          historyPhase = 'forward-to-public';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          historyPhase = 'forward-to-tantra';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
-          return { samePolicySoftNavigation: true, privatePublicReload: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+          assert.deepEqual(cspErrors, [], 'No JavaScript runtime errors during CSP navigation');
+          return { interruptedDocumentProbe, pageShows, cspErrors, bfcachePersistedVerified: engine === 'chromium', samePolicySoftNavigation: true, privatePublicReload: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
         } catch (error) {
           const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
-          throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}`);
-        } finally { await cspContext.close(); }
+          throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);
+        } finally { await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close(); }
       });
     }
     if (width === 390) {
