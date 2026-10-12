@@ -39,9 +39,9 @@ const CATEGORIES = {
     "es": "Sueño y funcionamiento"
   },
   "neuro": {
-    "en": "Attention & neurodevelopment",
-    "ru": "Внимание и нейроразвитие",
-    "es": "Atención y neurodesarrollo"
+    "en": "Attention, neurodevelopment & bipolar screening",
+    "ru": "Внимание, нейроразвитие и биполярный спектр",
+    "es": "Atención, neurodesarrollo y espectro bipolar"
   },
   "substances": {
     "en": "Substance use & eating",
