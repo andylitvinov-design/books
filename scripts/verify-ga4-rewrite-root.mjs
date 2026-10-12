@@ -15,7 +15,7 @@ const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).trim();
 const clean=()=>git('status','--porcelain','--untracked-files=all','--','.',':(exclude)artifacts/**');
 assert.equal(clean(),'','proof must start from an exact clean checkout');
 writeFileSync(join(output,'provenance.json'),JSON.stringify({commit:git('rev-parse','HEAD'),tree:git('rev-parse','HEAD^{tree}'),parents:git('show','-s','--format=%P','HEAD'),next:require('next/package.json').version,react:require('react/package.json').version,sdkSha256:createHash('sha256').update(readFileSync(join(output,'google-tag-readonly.js'))).digest('hex'),applicationHold:false,fixtureOnly:true},null,2));
-const env={PATH:process.env.PATH,HOME:tmpdir(),NODE_ENV:'production',NEXT_TELEMETRY_DISABLED:'1',NODE_OPTIONS:'--max-old-space-size=512',CIRCLE_NODE_TOTAL:'2',HH_GA4_PLAYWRIGHT_MODULE:process.env.HH_GA4_PLAYWRIGHT_MODULE,HH_GA4_FROZEN_SDK:join(output,'google-tag-readonly.js')};
+const env={PATH:process.env.PATH,HOME:tmpdir(),NODE_ENV:'production',NEXT_TELEMETRY_DISABLED:'1',NODE_OPTIONS:'--max-old-space-size=512',CIRCLE_NODE_TOTAL:'2',PLAYWRIGHT_BROWSERS_PATH:'/tmp/hh-ga4-proof-browsers',HH_GA4_PLAYWRIGHT_MODULE:process.env.HH_GA4_PLAYWRIGHT_MODULE,HH_GA4_FROZEN_SDK:join(output,'google-tag-readonly.js')};
 let failed=false;
 for(const [name,args]of [['build',[require.resolve('next/dist/bin/next'),'build']],['http',['verify-http.mjs']],['browser',['verify-browser.mjs']]]){
  const result=spawnSync(process.execPath,args,{cwd:fixture,env,encoding:'utf8',timeout:300000,maxBuffer:20*1024*1024});writeFileSync(join(output,name+'.log'),(result.stdout||'')+(result.stderr||''));

@@ -29,3 +29,9 @@ test('negative privacy assertions and raw fallback equality remain active',()=>{
  const retry={...clean,url:clean.url.replace('www.google-analytics.com','www.google.com')+'&gaf=1'};
  assert.doesNotThrow(()=>assertFallbackPairs([clean,retry]));assert.throws(()=>assertFallbackPairs([retry]));assert.throws(()=>assertFallbackPairs([clean,{...retry,body:'different'}]));
 });
+
+test('scrubbed child environment uses the exact isolated browser installation directory',()=>{
+ const path='/tmp/hh-ga4-proof-browsers';
+ assert.ok(read('.github/workflows/ga4-rewrite-root-proof.yml').includes('PLAYWRIGHT_BROWSERS_PATH: '+path));
+ assert.ok(read('scripts/verify-ga4-rewrite-root.mjs').includes("PLAYWRIGHT_BROWSERS_PATH:'"+path+"'"));
+});
