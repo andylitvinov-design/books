@@ -16,6 +16,7 @@ jobs:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
       HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
+      HH_PLAYWRIGHT_TEST_PATH: /tmp/hh-public-services-tools/node_modules/@playwright/test/index.js
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
