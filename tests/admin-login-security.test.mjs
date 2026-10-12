@@ -48,3 +48,16 @@ test('admin sign-in uses Holistic House practitioner copy and a documented twelv
   assert.match(admin, /consumeAccessAttempt/)
   assert.doesNotMatch(page, /Prescription admin/)
 })
+
+test('practitioner Logout clears the session and opens the public Holistic House homepage', async () => {
+  const [action, header, homePage] = await Promise.all([
+    readFile('app/admin/logout/actions.js', 'utf8'),
+    readFile('components/prescription-admin-header.jsx', 'utf8'),
+    readFile('app/page.tsx', 'utf8'),
+  ])
+
+  assert.match(header, /<form action=\{logout\}>/)
+  assert.match(action, /await clearAdminSession\(\)\s*redirect\('\/'\)/)
+  assert.doesNotMatch(action, /redirect\('\/admin(?:\/login)?'\)/)
+  assert.match(homePage, /<HolisticHouseHome\b/)
+})

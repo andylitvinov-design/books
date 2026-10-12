@@ -9,6 +9,37 @@
   padding-bottom: calc(48px + env(safe-area-inset-bottom));
   color: var(--studio-ink);
 }
+.consultation-client-created-banner {
+  display: grid;
+  gap: 12px;
+  margin: 10px 0 17px;
+  padding: 17px 19px;
+  border: 1px solid #dfcebc;
+  border-radius: 16px;
+  background: #fffaf4;
+}
+.consultation-client-created-banner p {
+  margin: 0;
+  color: #5b4739;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.consultation-client-created-banner strong { color: #392b22; }
+.consultation-client-created-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+.consultation-client-created-links a {
+  color: #70452d;
+  font-size: 13px;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+.consultation-client-created-links a:focus-visible {
+  outline: 3px solid #9b7056;
+  outline-offset: 3px;
+}
 .consultation-studio-shell .prescription-admin-topbar {
   padding-bottom: 15px;
 }
