@@ -1359,3 +1359,49 @@ test('Bach Flower Emotional Profile saves 115 answers in the authorized Google a
   await assert.rejects(() => repo.getResult(outsider, submitted.id), error =>
     error.code === 'NOT_FOUND')
 })
+
+test('compassion registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { COMPASSION_DEFINITIONS } = await import('../data/assessments/compassion-2026.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261012033100_hh_compassion_research_measures.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const d of COMPASSION_DEFINITIONS) {
+      const rows = (await db.query('select id, definition, content_hash from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3', [d.key, d.version, d.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      assert.equal(rows[0].id, d.id)
+      assert.equal(rows[0].content_hash, d.contentHash)
+      assert.deepEqual(rows[0].definition, d)
+    }
+    const first = COMPASSION_DEFINITIONS[0]
+    for (const broken of [sql.replace(first.id, randomUUID()), sql.replace(first.contentHash, 'sha256:'+'0'.repeat(64)), sql.replace('HOW I TYPICALLY', 'CHANGED I TYPICALLY')]) {
+      await assert.rejects(() => db.query(broken), /Conflicting professional assessment ID|Different content already published/)
+      await db.query('rollback')
+    }
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[first.id])).rows[0].definition, first)
+  } finally { await db.end() }
+})
+
+test('both compassion instruments preserve source means in private guest saves and reports', async () => {
+  const { buildAssessmentResultReport } = await import('../lib/assessments/result-report.js')
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential(), other = createGuestCredential()
+  for (const who of [credential, other]) await guestRepo.createSession(who, {adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+  for (const [key,expected] of [['scs-sf',[3]],['compassion-scale',[2,1,1,1,5]]]) {
+    const d = getAssessmentDefinition(key,'v1','en')
+    let run = await guestRepo.startRun(credential,{definitionKey:key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
+    run = await guestRepo.saveRun(credential,run.id,{answers:answer(d,1),context:{},progress:d.questions.length,expectedRevision:run.revision,operationId:randomUUID()})
+    const result = await guestRepo.submitRun(credential,run.id,{expectedRevision:run.revision})
+    assert.deepEqual(result.dimensions.map(s=>s.value),expected)
+    assert.equal(result.contentHash,d.contentHash)
+    assert.deepEqual((await guestRepo.getResult(credential,result.id)).dimensions,result.dimensions)
+    await assert.rejects(()=>guestRepo.getResult(other,result.id),/NOT_FOUND/)
+    for (const locale of ['en','ru']) {
+      const report=buildAssessmentResultReport(result,locale)
+      assert.equal(report.sections.length,expected.length)
+      assert.ok(report.sections.every(s=>s.source===d.source.scoringUrl))
+    }
+  }
+})

@@ -827,6 +827,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               ))}
             </div>
 
+            {definition.instructions && <p className="cabinet-test-note" lang={definition.instrumentLocale}>{definition.instructions}</p>}
             {mode === 'quick' ? (
               <div className="cabinet-quick-form">
                 {definition.questions.map((item, step) => (
