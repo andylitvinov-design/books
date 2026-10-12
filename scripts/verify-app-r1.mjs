@@ -12,6 +12,18 @@ await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{}),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
 let page=await context.newPage()
+// Synthetic-only diagnostics: no request bodies, cookies, headers or tokens.
+// Keep the bounded sequence so a failed route transition has evidence beyond
+// the final screenshot. This observes the real app; it does not intercept it.
+const navigationMarkers=[]
+function marker(kind,detail){navigationMarkers.push({kind,...detail});if(navigationMarkers.length>100)navigationMarkers.shift()}
+function observeNavigation(target){
+ target.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/app/'))marker('request',{method:request.method(),path:url.pathname})})
+ target.on('response',response=>{const url=new URL(response.url());if(url.pathname.startsWith('/api/app/'))marker('response',{method:response.request().method(),path:url.pathname,status:response.status()})})
+ target.on('requestfailed',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/app/'))marker('requestfailed',{method:request.method(),path:url.pathname,error:request.failure()?.errorText})})
+ target.on('framenavigated',frame=>{if(frame===target.mainFrame()){const url=new URL(frame.url());marker('navigation',{path:url.pathname,hasPlan:url.searchParams.has('plan')})}})
+}
+observeNavigation(page)
 const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
 page.on('pageerror',capturePageError)
 const checks=[]
@@ -105,7 +117,17 @@ async function enterTest(name='Current State Check',mode='Guided'){
   const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
   if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
-  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+  const [planResponse]=await Promise.all([
+   page.waitForResponse(response=>new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST'),
+   page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click(),
+  ])
+  assert.equal(planResponse.status(),201)
+  const createdPlan=await planResponse.json()
+  assert.match(createdPlan.id,/^[\da-f-]{36}$/i)
+  // create() shows saved rows before reload() and its route replacement finish.
+  // Finish that user action before starting the next, distinct run navigation.
+  await expect(page).toHaveURL(origin+'/en/app/tests?plan='+encodeURIComponent(createdPlan.id))
+  await ready()
   await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
   await expect(page.locator('#my-tests-list')).toBeVisible()
  }
@@ -688,7 +710,7 @@ try {
  assert.ok(savedBeforeSignout?.definitionIds?.length>0,'synthetic owner has a saved battery')
  await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
- await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
+ await page.close();page=await context.newPage();page.on('pageerror',capturePageError);observeNavigation(page)
 
  await page.goto(origin+'/en/client')
  await expect(page.getByRole('heading',{name:'Choose your tests',exact:true})).toBeVisible()
@@ -799,6 +821,6 @@ try {
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
-} catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
+} catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/failure-dom.html',await page.content().catch(()=>''));await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,navigationMarkers,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
 finally{await browser.close()}
 

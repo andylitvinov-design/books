@@ -126,7 +126,13 @@ try{
  assert.equal('comment' in sent.feedback,false);assert.equal('reflectionAnswer' in sent.feedback,false)
  passed('409 retains both drafts; unchecked private text omitted from POST')
  await show('en',{...daily('en',1),today:{...daily('en',1).today,localDate:'2026-10-12',checkin:{wellbeing:2,energy:'low',feelingChange:'worse',availableTime:'quick',skipped:false}}})
- await component.getByRole('button',{name:'Change today’s check-in',exact:true}).click();await expect(component.getByLabel('Available energy',{exact:true})).toHaveValue('low');await component.getByLabel('How are you feeling right now?',{exact:false}).fill('5');await component.getByRole('button',{name:'Save check-in and continue',exact:true}).click();await expect.poll(()=>posts.at(-1)?.wellbeing).toBe(5);assert.equal(posts.at(-1).energy,'low');assert.equal(posts.at(-1).availableTime,'quick')
+ await component.getByRole('button',{name:'Change today’s check-in',exact:true}).click()
+ // The select is implicitly labelled. Match its accessible name, not the
+ // label's full textContent (which also contains every option's visible text).
+ const energySelect=component.getByRole('combobox',{name:'Available energy',exact:true})
+ await expect(energySelect).toHaveValue('low')
+ assert.deepEqual(await energySelect.evaluate(select=>Array.from(select.labels||[],label=>label.querySelector('span')?.textContent)),['Available energy'])
+ await component.getByLabel('How are you feeling right now?',{exact:false}).fill('5');await component.getByRole('button',{name:'Save check-in and continue',exact:true}).click();await expect.poll(()=>posts.at(-1)?.wellbeing).toBe(5);assert.equal(posts.at(-1).energy,'low');assert.equal(posts.at(-1).availableTime,'quick')
  await component.getByRole('button',{name:'Change today’s check-in',exact:true}).click();await component.getByRole('button',{name:'Pause course',exact:true}).click();await expect(component.getByRole('button',{name:'Save check-in and continue',exact:true})).toHaveCount(0)
  passed('saved check-in partial edit preserves gentle choices; pause removes active editing')
  await show('en',daily('en',21));await component.getByRole('button',{name:'Save completed learning day',exact:true}).click();await expect(component.locator('[data-course-completion-21]')).toBeVisible();passed('day21 finish opens factual completion instead of day22')
