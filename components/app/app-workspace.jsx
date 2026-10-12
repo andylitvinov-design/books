@@ -1087,6 +1087,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
       ? (locale === 'ru' ? 'За последние 2 недели' : 'Over the past 2 weeks')
       : def?.timeframe === 'past-30-days'
         ? (locale === 'ru' ? 'За последние 30 дней' : 'Over the past 30 days')
+        : def?.timeframe === 'past-month'
+          ? (locale === 'ru' ? 'За последний месяц' : 'During the past month')
         : def?.timeframe === 'past-7-days'
           ? (locale === 'ru' ? 'За последние 7 дней' : 'Over the past 7 days')
           : def?.timeframe === 'right-now'
