@@ -4,6 +4,7 @@ import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
+import { createCourse21Repository } from '@/lib/app/course-21'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import {
@@ -353,6 +354,20 @@ async function handle(request, { params }) {
         return json(await daily.command(actor, path[1], await readBody(request), locale))
       throw new AppError('NOT_FOUND', 404)
     }
+    if (joined === 'course-21/preview' && method === 'GET') {
+      const locale = new URL(request.url).searchParams.get('locale') === 'ru' ? 'ru' : 'en'
+      return json(await createCourse21Repository(config).preview(actor, locale))
+    }
+    if (joined === 'course-21') {
+      const url = new URL(request.url), locale = url.searchParams.get('locale') === 'ru' ? 'ru' : 'en'
+      const daily21 = createCourse21Repository(config)
+      if (method === 'GET') {
+        const rawDay = url.searchParams.get('reviewDay')
+        if (rawDay !== null && !/^(?:[1-9]|1[0-9]|2[01])$/.test(rawDay)) throw new AppError('INVALID_LEARNING_DAY', 400)
+        return json(await daily21.read(actor, locale, { reviewDay: rawDay === null ? null : Number(rawDay), confirmAlternative: url.searchParams.get('alternative') === 'true' }))
+      }
+      if (method === 'POST') return json(await daily21.command(actor, await readBody(request), locale))
+    }
     if (joined === 'course') {
       const growth = createGrowthCourseRepository(config)
       if (method === 'GET') return json(await growth.read(actor))
@@ -411,6 +426,7 @@ async function handle(request, { params }) {
       exported.savedReports = savedReports
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
+      exported.growthCourse21 = await createCourse21Repository(config).exportData(actor)
       const response = json(exported)
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
       return response
