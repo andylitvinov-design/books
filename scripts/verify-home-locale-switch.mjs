@@ -36,7 +36,15 @@ async function verifyFreeOffers(page, locale, engine, width) {
 
 async function exerciseFreeJourneys(page, engine, width) {
   // Only entry navigation is under test. Never query client data or create a guest session.
-  await page.route(`${origin}/api/app/**`, route => route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"APP_UNAVAILABLE"}' }));
+  const unexpectedApiRequests = [];
+  await page.route(`${origin}/api/app/**`, route => {
+    const request = route.request();
+    if (request.method() === 'GET' && new URL(request.url()).pathname === '/api/app/guest/bootstrap') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{"expiresAt":null,"moodCheckins":[],"results":[]}' });
+    }
+    unexpectedApiRequests.push({ method: request.method(), path: new URL(request.url()).pathname });
+    return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"APP_UNAVAILABLE"}' });
+  });
   for (const locale of ['en', 'ru']) {
     for (const [id, suffix, target] of [
       ['situation', '/services/free-situation-review', '#review-hero-title'],
@@ -44,16 +52,30 @@ async function exerciseFreeJourneys(page, engine, width) {
       ['stress', '/client#cabinet-tests', '#cabinet-tests [data-prelogin-test-picker]'],
     ]) {
       await page.goto(`${origin}/?lang=${locale}`, { waitUntil: 'domcontentloaded' });
+      // Let homepage prefetches settle before intentionally replacing its document.
+      await page.waitForLoadState('networkidle');
+      const bootstrapFinished = id === 'stress'
+        ? page.waitForResponse(response => response.request().method() === 'GET' && response.url() === `${origin}/api/app/guest/bootstrap`).then(async response => {
+          assert.equal(response.status(), 200);
+          assert.deepEqual(await response.json(), { expiresAt: null, moodCheckins: [], results: [] });
+        })
+        : Promise.resolve();
       await page.locator(`[data-free-insights="public"] [data-free-insights-offer="${id}"] a`).click();
       await expect(page).toHaveURL(`${origin}/${locale}${suffix}`);
       await expect(page.locator(target)).toBeVisible();
       if (id === 'stress') await expect(page.locator('#cabinet-tests')).toHaveCount(1);
+      await bootstrapFinished;
+      // In WebKit, tearing down an in-flight fetch reports an access-control error.
+      // Complete the synthetic bootstrap/prefetches; retain the strict pageerror check.
+      await page.waitForLoadState('networkidle');
       await page.goBack();
       await expect(page).toHaveURL(`${origin}/?lang=${locale}`);
       await expect(page.locator('[data-free-insights="public"]')).toBeVisible();
+      await page.waitForLoadState('networkidle');
       results.push({ engine, width, locale, freeJourney: id, destinationRendered: true, backReturned: true, submitted: false });
     }
   }
+  assert.deepEqual(unexpectedApiRequests, [], 'Entry navigation must not submit or request private app data');
 }
 
 async function exercise(engine, browserType, width) {
