@@ -36,8 +36,13 @@ Migration: `supabase/migrations/20261012145517_hh_client_test_ratings.sql`, scaf
 
 The local unit suite is `node --test tests/test-ratings.test.mjs`; the existing `npm run test:app` includes it. `npm run test:app:db` registers `tests/test-ratings.integration.mjs` in its isolated shared database and verifies ownership, duplicate retries, revisions, retakes, language separation, rating removal, grants/RLS, exact aggregate shape, account deletion exclusion and revoked sessions. Additional negative cases cover retired/missing UI-language content, missing table/access, a mismatched instrument hash and removal of an old rating after interpretation withdrawal. The POST check validates published metadata; full payload integrity and rendered-report availability remain guarded by the strict report resolver.
 
-## Local verification checkpoint (2026-10-12)
+## Verification evidence
 
-Published PR #389 head `28d0d2bb199a4dc1a701f26660e4bf123b8416f1` passed the original 37-test isolated PostgreSQL suite (including ratings), unit/build, IA, native, services and video jobs. The original Chromium app regression also passed; that baseline predates the newly prepared DB interpretation guard and full ratings browser scenario.
+The isolated CI suite must pass on the final combined commit, including the interpretation dependency. Focused earlier commits are not release acceptance. The database suite exercises actual PostgreSQL RLS and concurrency; browser scripts use synthetic loopback accounts and the existing authentication protocol double.
 
-The combined working candidate based on published PR #388 head `8b1d620d5daa3639fe5cb031db315ee25ea8a39c` passes all 180 local app tests. SSR validates EN/RU CBI and Bach visibility, five account radios, guest sign-in controls and missing-interpretation hiding. Local Chromium cannot launch because this execution sandbox rejects its Unix socket. The new real browser scenario is prepared for the existing Chromium/WebKit CI; it has not passed yet. Final combined PostgreSQL and Chromium/WebKit CI are still release gates. No live database migration has been applied. Do not treat the original CI success as evidence for the new guard and browser scenario.
+- `scripts/verify-test-ratings.mjs`: EN/RU keyboard/focus, actual radio target sizes, 320/390/1280px reflow, save/reload/edit/conflict/retry/remove, missing and retired interpretations, five-account ranking, and explicit guest save/sign-in/claim followed by persisted voting.
+- `scripts/verify-account-test-picker.mjs`: the actual My tests filter button, manual pending selection, filter/category/reset, detailed and dashboard Back, additive saving, and preservation of existing saved answers and a completed result.
+- Both scripts write screenshots and `verification.json` into the existing browser artifact. Development-only WebKit hot-update navigation diagnostics are recorded separately; application/API errors and repeated navigation failures still fail the tests.
+- Rating guest-session fixtures use a reserved documentation IP to isolate their rate bucket from later suites sharing the same loopback server. Production rate limits are unchanged.
+
+Browser viewport checks are desktop-engine emulation, not physical-device or screen-reader certification. No live database migration is performed by these scripts.

@@ -177,7 +177,9 @@ try{
   const guest=await browser.newContext({viewport:{width:390,height:844}}),guestPage=await guest.newPage(),c=ratingCopy(locale)
   guest.setDefaultTimeout(15000);guest.setDefaultNavigationTimeout(60000)
   guestPage.on('pageerror',capturePageError)
-  async function guestApi(path,body){const response=await guest.request.post(origin+'/api/app/'+path,{headers:{Origin:origin},data:body});const data=await response.json();assert.ok(response.ok(),path+': '+JSON.stringify(data));return data}
+  // Reserved documentation IP isolates this scenario's two guest-session rate buckets
+  // from the rest of the shared-loopback suite; production limits remain exercised.
+  async function guestApi(path,body){const response=await guest.request.post(origin+'/api/app/'+path,{headers:{Origin:origin,'x-forwarded-for':'198.51.100.39'},data:body});const data=await response.json();assert.ok(response.ok(),path+': '+JSON.stringify(data));return data}
   await guestApi('guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
   const plan=await guestApi('guest/test-plans',{items:[{definitionKey:cbi.key,definitionVersion:cbi.version,instrumentLocale:'en'}],operationId:randomUUID()})
   await guestPage.goto(origin+'/'+locale+'/client?plan='+plan.id)
