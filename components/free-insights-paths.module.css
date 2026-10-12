@@ -33,3 +33,17 @@
 @media(max-width:850px){.heading{align-items:start;flex-direction:column;gap:8px}.intro{max-width:720px}.item{padding-inline:14px}.item h3{font-size:19px}}
 @media(max-width:760px){.shell{width:calc(100% - 24px);margin:16px auto 20px;padding:17px 18px 13px;border-radius:18px}.heading h2{font-size:clamp(24px,6vw,30px)}.intro{font-size:12px}.grid{grid-template-columns:1fr;margin-top:12px;padding-top:0}.item,.cabinet .item{padding:13px 0;border-right:0;border-bottom:1px solid #e6dacc}.item:last-child,.cabinet .item:last-child{border-bottom:0;padding-bottom:0}.item h3,.cabinet .item h3{font-size:20px;margin:7px 0 4px}.item>p,.cabinet .item>p{font-size:12px;margin-bottom:4px}.action,.cabinet .action{font-size:12px;min-height:42px}.note{margin-top:12px}.cabinet{width:100%;margin:0 0 14px;padding:14px 16px 11px}.cabinet .heading h2{font-size:21px}.cabinet .intro{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.action{scroll-behavior:auto}}
+
+/* Prominent public entry points on Home and Services; Cabinet keeps its compact treatment. */
+.shell:not(.cabinet){border-color:#c5dfdd;background:linear-gradient(125deg,#f0faf8 0%,#fdf9f1 100%);box-shadow:0 12px 30px rgba(23,76,80,.05)}
+.shell:not(.cabinet) .eyebrow{font-size:12px;color:#257986}
+.shell:not(.cabinet) .intro{max-width:440px;font-size:15px;line-height:1.55}
+.shell:not(.cabinet) .label{font-size:12px;color:#2a6770}
+.shell:not(.cabinet) .number{font-size:12px}
+.shell:not(.cabinet) .item h3{font-size:clamp(20px,2.05vw,24px);line-height:1.21}
+.shell:not(.cabinet) .item>p{font-size:15px;line-height:1.5;margin-bottom:14px}
+.shell:not(.cabinet) .action{min-height:46px;min-width:0;padding:10px 13px;border:1px solid #a7cfca;border-radius:11px;background:#dff0ec;color:#174f58;font-size:14px;line-height:1.3;font-weight:700;text-decoration:none}
+.shell:not(.cabinet) .action:hover{background:#cae6e1;color:#174f58}
+.shell:not(.cabinet) .action:focus-visible{outline-color:#257986}
+.shell:not(.cabinet) .note{font-size:12px;line-height:1.5}
+@media(max-width:760px){.shell:not(.cabinet) .intro{font-size:14px}.shell:not(.cabinet) .item{padding:17px 0}.shell:not(.cabinet) .item>p{font-size:15px}.shell:not(.cabinet) .action{width:100%;justify-content:space-between;font-size:15px}.shell:not(.cabinet) .note{font-size:12px}}
