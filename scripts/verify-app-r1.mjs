@@ -234,7 +234,7 @@ try {
  }
  await verifyProfileServiceOffers(page)
  passed('every Google Cabinet profile has one working service-specific WhatsApp enquiry and matching landing link')
- await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-initial.png',fullPage:true});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
+ await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-initial.png',fullPage:false});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
  await page.getByRole('button',{name:'Happy',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect.poll(async()=>((await api('bootstrap')).data.moodCheckins||[]).length).toBe(1);await page.getByRole('button',{name:'Not now',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);passed('signed-in mood tap persists even when the user chooses Not now')
  const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
  // A public Master account must not be allowed to open the owner's global client database.
@@ -308,6 +308,32 @@ try {
  passed('completed tests lead Insights; detailed measurements remain available in optional advanced view')
  await page.setViewportSize({width:390,height:844});await enterTest();for(const v of[4,6,3,5,2])await answerCurrent(v);await page.getByRole('button',{name:'Save results and get recommendations'}).click();await openCompletedPlanResult()
  let data=(await api('bootstrap')).data;assert.equal(data.results.length,2);assert.equal(data.results[0].id,first.id);assert.equal(new Set(data.snapshot.dimensions.map(d=>d.key)).size,5);passed('second run keeps original baseline and unique profile axes')
+ // Use an isolated context so the real service worker cannot bypass route
+ // interception. The main journey keeps its worker and private-cache checks.
+ const recoveryContext=await browser.newContext({storageState:await context.storageState(),serviceWorkers:'block',viewport:{width:390,height:844}})
+ const recoveryPage=await recoveryContext.newPage()
+ recoveryPage.on('pageerror',capturePageError)
+ try {
+  for (const body of ['{"account":', '{"error":"SERVICE_UNAVAILABLE"}', '{"account":null}']) {
+   let intercepted=0
+   await recoveryPage.route('**/api/app/bootstrap', route => {
+    intercepted++
+    return route.fulfill({status:200,contentType:'application/json',body})
+   })
+   await recoveryPage.goto(origin+'/en/app/history')
+   const retry=recoveryPage.getByRole('button',{name:'Try again',exact:true})
+   await expect(retry).toBeVisible({timeout:15000})
+   assert.ok(intercepted>0,'invalid bootstrap response must actually reach the client')
+   await expect(recoveryPage.locator('main [role="alert"]')).toBeVisible()
+   await expect(recoveryPage.locator('.hh-account-menu')).toHaveCount(0)
+   await recoveryPage.unroute('**/api/app/bootstrap')
+   await retry.click()
+   await expect(recoveryPage.locator('.hh-mobile-app-nav')).toBeVisible({timeout:15000})
+   await expect(recoveryPage.locator('.hh-change')).toContainText('7 → 4')
+   assert.deepEqual(errors,[])
+  }
+ } finally { await recoveryContext.close() }
+ passed('invalid HTTP 200 bootstrap bodies show retry and recover without uncaught browser errors')
  await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await page.screenshot({path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
  await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await page.screenshot({path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
  await enterTest('Personality Baseline');await expect(page.getByText('In general, not only today',{exact:false})).toBeVisible()

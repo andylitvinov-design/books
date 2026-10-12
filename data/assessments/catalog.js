@@ -6,6 +6,7 @@ import { PROFESSIONAL_BATTERY_2026_CATALOG } from './professional-battery-2026.j
 import { CDC_HEALTHY_DAYS_CATALOG } from './cdc-healthy-days-2026.js'
 import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from './professional-battery-2026-b.js'
 import { IPIP_BIG_FIVE_50_CATALOG } from './ipip-big-five-50-en-v1.js'
+import { OPEN_PROFESSIONAL_2026_CATALOG } from './open-professional-2026.js'
 
 export const MONITORING_AXES = deepFreeze([
   'state',
@@ -693,6 +694,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...CDC_HEALTHY_DAYS_CATALOG,
   ...PROFESSIONAL_BATTERY_2026_B_CATALOG,
   ...IPIP_BIG_FIVE_50_CATALOG,
+  ...OPEN_PROFESSIONAL_2026_CATALOG,
   {
     key: 'mspss',
     version: 'v1',
