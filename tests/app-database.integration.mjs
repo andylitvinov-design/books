@@ -1363,7 +1363,7 @@ test('Bach Flower Emotional Profile saves 115 answers in the authorized Google a
 test('compassion registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
   const { readFile } = await import('node:fs/promises')
   const { COMPASSION_DEFINITIONS } = await import('../data/assessments/compassion-2026.js')
-  const sql = await readFile(new URL('../supabase/migrations/20261012031200_hh_compassion_research_measures.sql', import.meta.url), 'utf8')
+  const sql = await readFile(new URL('../supabase/migrations/20261012033100_hh_compassion_research_measures.sql', import.meta.url), 'utf8')
   const db = await adminClient()
   try {
     await db.query(sql)

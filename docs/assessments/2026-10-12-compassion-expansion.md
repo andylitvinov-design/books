@@ -21,7 +21,7 @@ Detailed bilingual source and scale guides: [SCS-SF](guides/scs-sf.md), [CS](gui
 
 ## Registration boundary
 
-Migration: `supabase/migrations/20261012031200_hh_compassion_research_measures.sql`.
+Migration: `supabase/migrations/20261012033100_hh_compassion_research_measures.sql`.
 
 This is an append-only technical registration of two definitions, guarded against mismatching ID, key/version/locale, hash or full definition content. Repeated application must be a no-op. It changes no schema, permissions, auth, RLS, existing definitions or client results. The Supabase CLI could not create a migration in this sandbox (read-only home; an older CLI download also failed); the SQL follows the existing repository registration convention and is exercised directly against isolated PostgreSQL.
 

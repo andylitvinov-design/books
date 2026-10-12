@@ -121,7 +121,7 @@ test('two distinct professional instruments are selectable once in both language
 })
 
 test('registration payload exactly matches both immutable definitions and rejects identity/hash conflicts',()=>{
- const sql=readFileSync(new URL('../supabase/migrations/20261012031200_hh_compassion_research_measures.sql',import.meta.url),'utf8')
+ const sql=readFileSync(new URL('../supabase/migrations/20261012033100_hh_compassion_research_measures.sql',import.meta.url),'utf8')
  assert.deepEqual(JSON.parse(sql.split('$compassion$')[1]),defs)
  assert.match(sql,/on conflict \(id\) do nothing/)
  assert.match(sql,/id is distinct from \(d->>'id'\)::uuid/)
