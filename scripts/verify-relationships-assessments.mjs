@@ -64,20 +64,25 @@ try{
  page=await publicContext.newPage()
  page.on('pageerror',e=>errors.push(e.message))
  for(const locale of ['en','ru']){
+  // Keep this independent first-visit scenario in its own tab. Next's dev
+  // reload of /client can otherwise interrupt WebKit's next hub navigation.
+  const pickerPage=await publicContext.newPage()
+  pickerPage.on('pageerror',e=>errors.push(e.message))
   for(const resources of [false,true]){
-   await navigate(page,origin+'/'+locale+'/client')
-   const picker=page.locator('[data-prelogin-test-picker]')
+   await navigate(pickerPage,origin+'/'+locale+'/client')
+   const picker=pickerPage.locator('[data-prelogin-test-picker]')
    await expect(picker).toBeVisible()
    if(resources)await picker.getByRole('button',{name:locale==='ru'?'Внутренняя опора':'Self-support',exact:true}).click()
    // Opening the full editor exposes every selected entry, including those
    // below the first five recommendation cards. This also checks the handoff.
    await picker.getByRole('button',{name:locale==='ru'?'Открыть всю базу тестов':'Browse full database',exact:true}).click()
-   const chosen=page.locator('article input[type="checkbox"]:checked')
+   const chosen=pickerPage.locator('article input[type="checkbox"]:checked')
    await expect(chosen).toHaveCount(3)
    const titles=await chosen.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('aria-label')))
    const excluded=MONITORING_CATALOG.filter(x=>x.starterEligible===false).map(x=>x.title[locale]||x.title.en)
    assert.ok(titles.every(title=>!excluded.includes(title)),locale+': automatic choice requires starter eligibility')
   }
+  await pickerPage.close()
   passed(locale+' first visit and broad Self-support filter keep every opt-in questionnaire out of the automatic plan')
   await navigate(page,origin+'/'+locale+'/relationships')
   await expect(page.locator('[data-relationships-category]')).toHaveCount(3)
