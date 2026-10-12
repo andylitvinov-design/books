@@ -222,7 +222,7 @@ async function verifyPublicServiceConversionJourneys(){
   await expect(ready).toBeVisible()
   await expect(ready.getByRole('heading')).toHaveText(copy.ready)
   assert.equal(await ready.getAttribute('aria-live'),'polite')
-  assert.equal(await publicPage.evaluate(()=>document.activeElement?.getAttribute('role')),'region')
+  await expect(ready).toBeFocused({timeout:15000})
   await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
   const whatsapp=ready.locator('a[data-contact-channel="whatsapp"]')
   const whatsappHref=await whatsapp.getAttribute('href')
@@ -752,7 +752,6 @@ try {
  const afterRemove=(await api('bootstrap')).data
  assert.equal(afterRemove.results.length,beforeRemove.results.length,'removing a test must not delete results')
  assert.equal(afterRemove.runs.length,beforeRemove.runs.length,'removing a test must not delete drafts')
- // The server poll can finish before reload() renders the removal notice.
  await expect(page.getByText('Removed from selection.',{exact:false})).toBeVisible({timeout:15000})
  passed('first-screen test removal updates current plan while preserving private results and drafts')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
