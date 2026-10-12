@@ -4,6 +4,8 @@ on:
     paths:
       - '.github/workflows/release-reaudit.yml'
       - 'scripts/verify-release-reaudit.mjs'
+      - 'scripts/about-player-hydration-probe.mjs'
+      - 'components/psychic-alchemy-intro-video.tsx'
       - 'scripts/csp-navigation-diagnostics.mjs'
       - 'lib/csp-prehydration.js'
       - 'components/csp-navigation-boundary.tsx'
@@ -26,6 +28,8 @@ on:
     paths:
       - '.github/workflows/release-reaudit.yml'
       - 'scripts/verify-release-reaudit.mjs'
+      - 'scripts/about-player-hydration-probe.mjs'
+      - 'components/psychic-alchemy-intro-video.tsx'
       - 'scripts/csp-navigation-diagnostics.mjs'
       - 'lib/csp-prehydration.js'
       - 'components/csp-navigation-boundary.tsx'
