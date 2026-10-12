@@ -5,6 +5,7 @@ import { createAppRepository } from '@/lib/app/repository'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createCourse21Repository } from '@/lib/app/course-21'
+import { getReviewedPersonalCourseRegistry } from '@/lib/app/course-personal-registry'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import {
@@ -356,15 +357,18 @@ async function handle(request, { params }) {
     }
     if (joined === 'course-21/preview' && method === 'GET') {
       const locale = new URL(request.url).searchParams.get('locale') === 'ru' ? 'ru' : 'en'
-      return json(await createCourse21Repository(config).preview(actor, locale))
+      return json(await createCourse21Repository(config, { personalRegistry: getReviewedPersonalCourseRegistry(), requirePersonalRegistry: true }).preview(actor, locale))
     }
     if (joined === 'course-21') {
       const url = new URL(request.url), locale = url.searchParams.get('locale') === 'ru' ? 'ru' : 'en'
-      const daily21 = createCourse21Repository(config)
+      const daily21 = createCourse21Repository(config, { personalRegistry: getReviewedPersonalCourseRegistry(), requirePersonalRegistry: true })
       if (method === 'GET') {
         const rawDay = url.searchParams.get('reviewDay')
         if (rawDay !== null && !/^(?:[1-9]|1[0-9]|2[01])$/.test(rawDay)) throw new AppError('INVALID_LEARNING_DAY', 400)
-        return json(await daily21.read(actor, locale, { reviewDay: rawDay === null ? null : Number(rawDay), confirmAlternative: url.searchParams.get('alternative') === 'true' }))
+        const choice = url.searchParams.get('choice'), targetScaleId = url.searchParams.get('targetScaleId')
+        if (choice !== null && !['keep','short','alternative','rest'].includes(choice)) throw new AppError('INVALID_DAY_CHOICE', 400)
+        if (targetScaleId !== null && (!targetScaleId || targetScaleId.length > 200)) throw new AppError('INVALID_DAY_CHOICE', 400)
+        return json(await daily21.read(actor, locale, { reviewDay: rawDay === null ? null : Number(rawDay), confirmAlternative: url.searchParams.get('alternative') === 'true', choice, targetScaleId }))
       }
       if (method === 'POST') return json(await daily21.command(actor, await readBody(request), locale))
     }
@@ -426,7 +430,7 @@ async function handle(request, { params }) {
       exported.savedReports = savedReports
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
-      exported.growthCourse21 = await createCourse21Repository(config).exportData(actor)
+      exported.growthCourse21 = await createCourse21Repository(config, { personalRegistry: getReviewedPersonalCourseRegistry(), requirePersonalRegistry: true }).exportData(actor)
       const response = json(exported)
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
       return response

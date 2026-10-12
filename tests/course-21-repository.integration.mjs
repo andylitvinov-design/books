@@ -4,15 +4,18 @@ import {randomUUID} from 'node:crypto'
 import {createCourse21Repository} from '../lib/app/course-21.js'
 import {getAssessmentDefinition,provenance} from '../lib/assessments/definitions.js'
 import {scoreAssessment} from '../lib/assessments/scoring.js'
-import {openSealed} from '../lib/app/crypto.js'
+import {decodeCourseState} from '../lib/app/course-state-codec.js'
+import {openSealed,seal} from '../lib/app/crypto.js'
+import {syntheticPersonalRegistry} from './helpers/course-personal-registry-fixture.mjs'
 import {lessonFor21} from '../lib/inner-growth/lesson-library-21.js'
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222'
 const actor=(id=A)=>({id,claims:{sub:id}})
+const goalChoices=(snapshot,rating=3)=>snapshot.rows.map(row=>({goalId:row.goalId,statementId:row.statementId,statementKey:row.statementKey,seriesId:row.seriesId,rating}))
 const config={test:true,encryptionKey:Buffer.alloc(32,7),encryptionKeyId:'synthetic-only',course21Enabled:true}
-function setup(){
+function setup({personal=false,instrumentLocale='en',displayLocale='en'}={}){
  let timestamp='2026-10-12T12:00:00.000Z',tail=Promise.resolve(),reportMode='ready',schemaPresent=true
  const rows=new Map(),queries=[],accounts=new Map([A,B].map(id=>[id,{id,status:'active',onboarding_state:'active',timezone:'UTC'}]))
- const def=getAssessmentDefinition('hh-weekly-pulse'),scored=scoreAssessment(def,Object.fromEntries(def.questions.map(q=>[q.id,q.min])))
+ const def=getAssessmentDefinition('hh-weekly-pulse','v1',instrumentLocale),scored=scoreAssessment(def,Object.fromEntries(def.questions.map(q=>[q.id,q.min])))
  const courses=new Map([[A,{id:'44444444-4444-4444-8444-444444444444',account_id:A,stage:3,revision:4,test_keys:[def.key]}]])
  const plans=new Map([[A,{id:'55555555-5555-4555-8555-555555555555',revision:2,definition_ids:[def.id]}]])
  const resultRows=new Map([[A,[{id:'33333333-3333-4333-8333-333333333333',provenance:provenance(def),dimensions:scored.dimensions,measurement_at:'2026-10-10T12:00:00.000Z'}]]])
@@ -49,12 +52,12 @@ function setup(){
   if(reportMode==='changed'&&owned[0])owned[0].interpretations.en.payloadHash='sha256:'+'c'.repeat(64)
   return owned
  }
- const options={runTransaction,loadReports,now:()=>timestamp},repo=createCourse21Repository(config,options)
- const command=(body,who=actor(),locale='en')=>repo.command(who,{operationId:randomUUID(),...body},locale)
+ const options={runTransaction,loadReports,now:()=>timestamp,...(personal?{personalRegistry:syntheticPersonalRegistry()}:{})},repo=createCourse21Repository(config,options)
+ const command=(body,who=actor(),locale=displayLocale)=>repo.command(who,{operationId:randomUUID(),...body},locale)
  const activation=p=>({action:'activate',expectedSourceRevision:p.source.courseRevision,activationToken:p.activationToken,
   selectedR3ScaleKeys:p.profile.rows.filter(r=>r.canChoosePractice).slice(0,3).map(r=>r.r3ScaleKey),consent:true,consentVersion:p.consentVersion,timeZone:'UTC'})
- const daily=async()=>command(activation(await repo.preview(actor())))
- const decrypt=()=>openSealed(rows.get(A).state_ciphertext,{accountId:A,recordId:rows.get(A).id,field:'course.daily_state'},config)
+ const daily=async()=>command(activation(await repo.preview(actor(),displayLocale)))
+ const decrypt=()=>decodeCourseState(openSealed(rows.get(A).state_ciphertext,{accountId:A,recordId:rows.get(A).id,field:'course.daily_state'},config))
  return {repo,options,command,activation,daily,decrypt,rows,courses,plans,resultRows,queries,accounts,
   setNow:v=>timestamp=v,setReports:v=>reportMode=v,setSchema:v=>schemaPresent=v}
 }
@@ -216,4 +219,142 @@ test('all-skipped course remains distinct from completed practice; rest is an ex
  await assert.rejects(s.command({action:'continuation',expectedRevision:v.course.revision,practiceDays:[1],pace:'occasional',consent:true}),{code:'EXACT_COMPLETED_LESSON_REQUIRED'})
  v=await s.command({action:'continuation',expectedRevision:v.course.revision,practiceDays:[],pace:'pause',consent:true});assert.equal(v.completion.continuationPlan.pace,'pause');assert.equal(v.course.status,'finished')
  await assert.rejects(s.command({action:'check-in',expectedRevision:v.course.revision,skip:true}),{code:'DAY_NOT_AVAILABLE'})
+})
+
+
+test('personal v2 enrollment persists exact plan, chosen lower load and factual checkins while v1 stays readable',async()=>{
+ const s=setup({personal:true}),p=await s.repo.preview(actor())
+ assert.equal(p.personalization,'exact-reviewed-scale-objective-practice');assert.equal(p.profile.rows.length,8)
+ assert.equal(p.profile.rows.find(row=>row.dimensionKey==='weekly.recovery').canChoosePractice,true)
+ let v=await s.command({...s.activation(p),loadMinutes:2})
+ assert.equal(v.personalPlan.loadMinutes,2);assert.equal(v.outline.mode,'personal-exact');assert.equal(v.course.contentVersion,'hh-personal-practices-21-v2-pilot-2026-10-12')
+ v=await s.command({action:'check-in',expectedRevision:v.course.revision,wellbeing:3,energy:'low',feelingChange:'worse',availableTime:'quick',skip:false})
+ assert.equal(v.today.status,'ready');assert.equal(v.today.lesson.contentLocale,'en');assert.equal(v.today.lesson.preparedVariant,'short')
+ const originalId=v.today.lesson.id
+ v=await s.command({action:'finish-day',day:1,lessonId:originalId,expectedRevision:v.course.revision,expectedPlanRevision:v.personalPlan.revision,status:'completed',savePrivateText:false,feedback:{},applyFeedback:false})
+ assert.equal(v.history[0].checkin.energy,'low');assert.equal(v.history[0].checkin.feelingChange,'worse');assert.equal(v.history[0].checkin.availableTime,'quick');assert.equal('preparedContent' in v.history[0],false);assert.equal('lessonSnapshot' in v.history[0],false)
+ const readViaOldComposition=createCourse21Repository(config,{...s.options,personalRegistry:null})
+ const archived=await readViaOldComposition.read(actor(),'ru',{reviewDay:1})
+ assert.equal(archived.reviewLesson.lesson.id,originalId);assert.equal(archived.reviewLesson.lesson.contentLocale,'en')
+ assert.equal(archived.profile.rows.length,8);assert.equal(archived.profile.availablePracticeCount,0)
+ const exported=await readViaOldComposition.exportData(actor());assert.equal(exported.personal.plan.slots.length,21)
+})
+test('personal v2 exact future revision requires fresh evidence and consent and preserves completed slot',async()=>{
+ const s=setup({personal:true});let v=await s.daily()
+ v=await s.command({action:'check-in',expectedRevision:v.course.revision,skip:true})
+ const lessonId=v.today.lesson.id
+ await assert.rejects(s.command({action:'finish-day',day:1,lessonId,expectedRevision:v.course.revision,expectedPlanRevision:99,status:'completed',savePrivateText:false}),{code:'STALE_PLAN_REVISION'})
+ v=await s.command({action:'finish-day',day:1,lessonId,expectedRevision:v.course.revision,expectedPlanRevision:0,status:'completed',savePrivateText:false,feedback:{},applyFeedback:false})
+ const old=s.decrypt().journey.sessions[1]
+ const change={action:'revise-plan',expectedRevision:v.course.revision,expectedPlanRevision:0,selectedR3ScaleKeys:v.course.selectedR3ScaleKeys,contentLocale:'ru',loadMinutes:2,consent:true}
+ await assert.rejects(s.command({...change,consent:false}),{code:'EXPLICIT_REVISION_CONSENT_REQUIRED'})
+ await assert.rejects(s.command({...change,loadMinutes:8}),{code:'INVALID_CHOSEN_LOAD'})
+ s.setReports('changed');await assert.rejects(s.command({...change,contentLocale:'en'}),{code:'PERSONAL_PROFILE_UNAVAILABLE'})
+ s.setReports('ready');v=await s.command(change)
+ assert.equal(v.personalPlan.contentLocale,'ru');assert.equal(v.personalPlan.revision,1);assert.deepEqual(s.decrypt().journey.sessions[1],old)
+ s.setNow('2026-10-13T12:00:00.000Z');v=await s.command({action:'check-in',expectedRevision:v.course.revision,skip:true})
+ assert.equal(v.today.lesson.contentLocale,'ru')
+ assert.equal((await s.repo.read(actor(),'ru',{reviewDay:1})).reviewLesson.lesson.contentLocale,'en')
+})
+
+for(const locale of ['en','ru'])test('personal v2 maximum journal history fits ciphertext limit '+locale,async(t)=>{
+ const s=setup({personal:true,instrumentLocale:locale,displayLocale:locale}),p=await s.repo.preview(actor(),locale)
+ let v=await s.command({...s.activation(p),selectedR3ScaleKeys:p.profile.rows.filter(row=>row.canChoosePractice).slice(0,5).map(row=>row.r3ScaleKey)})
+ // RU history uses high-entropy three-byte Unicode per allowed JS code unit.
+ const journal=seed=>{let value=seed;return Array.from({length:1000},()=>{value=(value*1664525+1013904223)>>>0;return String.fromCharCode((locale==='ru'?0x4e00:0x21)+value%(locale==='ru'?20000:90))}).join('')}
+ for(let day=1;day<=21;day++){
+  s.setNow(new Date(Date.parse('2026-10-12T12:00:00.000Z')+(day-1)*86400000).toISOString())
+  v=await s.command({action:'check-in',expectedRevision:v.course.revision,skip:false,wellbeing:day%11,energy:'usual',availableTime:'standard'})
+  assert.equal(v.today.status,'ready')
+  const finish={action:'finish-day',expectedRevision:v.course.revision,expectedPlanRevision:v.personalPlan.revision,day,lessonId:v.today.lesson.id,status:'completed',goalObservations:goalChoices(v.today.goalObservationSnapshot,day%5+1),savePrivateText:true,feedback:{comment:journal(day),reflectionAnswer:journal(day+100)},applyFeedback:false}
+  v=await s.command(finish)
+  assert.ok(Buffer.byteLength(s.rows.get(A).state_ciphertext)<=524288,'encrypted full state exceeds existing table limit on day '+day)
+ }
+ assert.equal(v.course.status,'finished');assert.equal(v.completion.resolvedDays,21);assert.equal(v.history.length,21)
+ assert.equal(v.completion.subjectiveCheckins.count,21)
+ assert.deepEqual(v.weeklyReports.map(report=>report.checkpointDay),[7,14,21]);assert.ok(v.weeklyReports[2].cumulativeSeries.every(series=>series.count>=1))
+ assert.equal(v.history[0].goalObservations.rows[0].rating,2)
+ assert.equal(v.reassessment.forms.length,1);assert.equal(v.reassessment.forms[0].status,'not-repeated')
+ v=await s.command({action:'continuation',expectedRevision:v.course.revision,practiceDays:[1,7,21],pace:'own-pace',consent:true})
+ assert.equal(v.completion.continuationPlan.practiceRefs.length,3)
+ t.diagnostic('21 days / 5 goals / 42 maximum journal fields / continuation: '+Buffer.byteLength(s.rows.get(A).state_ciphertext)+' ciphertext bytes')
+ s.setNow('2026-11-03T12:00:00.000Z');const later=structuredClone(s.resultRows.get(A)[0]);later.id=randomUUID();later.measurement_at='2026-11-02T12:00:00.000Z';s.resultRows.get(A).push(later)
+ v=await s.repo.read(actor(),locale);assert.equal(v.reassessment.forms[0].status,'ready')
+ for(const day of [1,7,21])assert.equal((await s.repo.read(actor(),'ru',{reviewDay:day})).reviewLesson.status,'ready')
+})
+
+
+test('personal suggestions reuse only explicitly saved R3 focus tags without reading concern text',async()=>{
+ const s=setup({personal:true});s.courses.get(A).focus_tags=['attention','relationships']
+ const p=await s.repo.preview(actor())
+ assert.match(p.profile.priorityScaleIds[0],/weekly.clarity$/);assert.match(p.profile.priorityScaleIds[1],/weekly.connection$/)
+ assert.deepEqual(p.source.confirmedFocusTopicIds,['attention_clarity','connection_boundaries'])
+ assert.ok(s.queries.every(query=>!query.sql.includes('concerns_ciphertext')))
+ s.courses.get(A).focus_tags=['energy'];await assert.rejects(s.command(s.activation(p)),{code:'COURSE_PREVIEW_CHANGED'})
+})
+
+
+test('personal weekly accents cannot bypass optional private-text consent',async()=>{
+ for(const weeklyAccents of ['synthetic private text',[],{privateNote:'synthetic'},{1:{comment:'synthetic'}}]){
+  const s=setup({personal:true}),p=await s.repo.preview(actor())
+  await assert.rejects(s.command({...s.activation(p),weeklyAccents}),{code:'INVALID_WEEKLY_ACCENTS'});assert.equal(s.rows.size,0)
+ }
+ const s=setup({personal:true}),v=await s.daily()
+ await assert.rejects(s.command({action:'revise-plan',expectedRevision:v.course.revision,expectedPlanRevision:0,selectedR3ScaleKeys:v.course.selectedR3ScaleKeys,consent:true,weeklyAccents:{1:{privateNote:'synthetic'}}}),{code:'INVALID_WEEKLY_ACCENTS'})
+ assert.deepEqual(s.decrypt().personal.plan.weeklyAccents,{})
+})
+
+
+test('authenticated malformed compressed state is a service error, never a retryable revision conflict',async()=>{
+ const s=setup({personal:true});await s.daily();const row=s.rows.get(A)
+ row.state_ciphertext=seal({format:'hh-course-state-gzip-v1',encoding:'gzip+base64',uncompressedBytes:3,payload:'bm9wZQ=='},{accountId:A,recordId:row.id,field:'course.daily_state'},config)
+ await assert.rejects(s.repo.read(actor()),error=>error.code==='COURSE_STATE_UNAVAILABLE'&&error.status===503)
+})
+
+test('goal observations bind the exact shown variant and chosen goal and cannot store free text or invalid ratings',async()=>{
+ const s=setup({personal:true});let v=await s.daily()
+ v=await s.command({action:'check-in',expectedRevision:v.course.revision,skip:true})
+ const snapshot=v.today.goalObservationSnapshot,valid=goalChoices(snapshot,4),initial=s.decrypt(),revision=v.course.revision
+ assert.equal(snapshot.optional,true);assert.equal(snapshot.recoveryMeasure,false)
+ const base={action:'finish-day',expectedRevision:revision,expectedPlanRevision:v.personalPlan.revision,day:1,lessonId:v.today.lesson.id,status:'completed',savePrivateText:false,feedback:{},applyFeedback:false}
+ for(const invalid of [[{...valid[0],rating:0}],[{...valid[0],rating:6}],[{...valid[0],rating:'4'}],[{...valid[0],statementKey:'stale-variant'}],[{...valid[0],goalId:'other-goal'}],[{...valid[0],comment:'PRIVATE TEXT'}],[valid[0],valid[0]]]){
+  await assert.rejects(s.command({...base,goalObservations:invalid}));assert.deepEqual(s.decrypt(),initial)
+ }
+ await assert.rejects(s.command({...base,status:'skipped',lessonId:null,goalObservations:valid}),{code:'SKIPPED_LESSON_HAS_NO_GOAL_RATINGS'})
+ const operationId=randomUUID();v=await s.command({...base,operationId,goalObservations:valid})
+ assert.equal((await s.command({...base,operationId,goalObservations:valid})).course.revision,v.course.revision)
+ assert.equal(v.history[0].goalObservations.rows[0].rating,4);assert.equal(v.history[0].goalObservations.rows[0].statementText,snapshot.rows[0].statementText)
+ assert.equal(v.weeklyReports.length,0)
+ const exported=await createCourse21Repository(config,{...s.options,enabled:false,loadReports:null,personalRegistry:null}).exportData(actor())
+ assert.equal(exported.journey.sessions[1].goalObservations.rows[0].rating,4);assert.equal(exported.operations,undefined)
+ const other=await s.repo.read(actor(B));assert.equal(other.course,null)
+})
+test('weekly reports become private immutable snapshots only after resolved learning checkpoints',async()=>{
+ const s=setup({personal:true});let v=await s.daily(),weekOne
+ // Prepared statement bytes are pinned at activation, not taken from a later provider.
+ s.options.personalRegistry.goalStatements=[]
+ for(let day=1;day<=14;day++){
+  s.setNow(new Date(Date.parse('2026-10-12T12:00:00Z')+(day-1)*86400000).toISOString())
+  v=await s.command({action:'check-in',expectedRevision:v.course.revision,skip:true})
+  const snapshot=v.today.goalObservationSnapshot;assert.ok(snapshot.rows.length>=1)
+  const skipped=day===3
+  v=await s.command({action:'finish-day',expectedRevision:v.course.revision,expectedPlanRevision:v.personalPlan.revision,day,lessonId:skipped?null:v.today.lesson.id,status:skipped?'skipped':'completed',goalObservations:skipped?[]:day===2?[]:goalChoices(snapshot,day===4?'skip':day%5+1),savePrivateText:false,feedback:{},applyFeedback:false})
+  if(day<7)assert.equal(v.weeklyReports.length,0)
+  if(day===7){assert.equal(v.weeklyReports.length,1);weekOne=structuredClone(v.weeklyReports[0]);assert.deepEqual(weekOne.coverage.skippedLessonDays,[3]);assert.ok(weekOne.series.some(series=>series.missingCount>0));assert.ok(weekOne.series.some(series=>series.skippedCount>0))}
+ }
+ assert.equal(v.weeklyReports.length,2);assert.deepEqual(v.weeklyReports[0],weekOne)
+ assert.ok(v.weeklyReports[1].cumulativeSeries.some(series=>new Set(series.observations.map(point=>point.statementId)).size>1))
+ assert.equal(s.decrypt().journey.sessions[3].goalObservations,undefined)
+ s.setReports('error');const reread=await s.repo.read(actor(),'ru');assert.deepEqual(reread.weeklyReports,v.weeklyReports)
+ const exported=await createCourse21Repository(config,{...s.options,enabled:false,loadReports:null,personalRegistry:null}).exportData(actor());assert.deepEqual(exported.personal.weeklyReports,v.weeklyReports)
+ assert.ok(exported.personal.weeklyReports.every(report=>report.privateCabinetOnly&&report.externalTransmission===false))
+})
+
+test('required personal registry cannot silently fall back to legacy enrollment when its receipt is unavailable',async()=>{
+ const s=setup(),p=await s.repo.preview(actor()),required=createCourse21Repository(config,{...s.options,requirePersonalRegistry:true,personalRegistry:null})
+ assert.equal((await required.preview(actor())).reason,'COURSE_REVIEWED_MATERIAL_UNAVAILABLE')
+ const absent=await required.read(actor());assert.equal(absent.enrollmentReady,false);assert.equal(absent.reason,'COURSE_REVIEWED_MATERIAL_UNAVAILABLE')
+ await assert.rejects(required.command(actor(),{operationId:randomUUID(),...s.activation(p)}),{code:'COURSE_REVIEWED_MATERIAL_UNAVAILABLE'});assert.equal(s.rows.size,0)
+ await s.daily();const legacy=await required.read(actor());assert.equal(legacy.course.personalization,null);assert.equal(legacy.course.contentVersion,s.decrypt().journey.contentVersion)
+ assert.equal((await required.exportData(actor())).personal,undefined)
 })

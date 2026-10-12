@@ -9,6 +9,7 @@ import {createCourse21Repository} from '../lib/app/course-21.js'
 import {createGrowthCourseRepository} from '../lib/app/growth-course.js'
 import {closeDatabase} from '../lib/app/database.js'
 import {A,B,SB,actor,setup,adminClient,rawAs} from './helpers/app-db-setup.mjs'
+import {syntheticPersonalRegistry} from './helpers/course-personal-registry-fixture.mjs'
 import {getAssessmentDefinition,provenance} from '../lib/assessments/definitions.js'
 const config=getAppConfig(),accounts=createAppRepository(config),a=actor(),b=actor(B,SB),def=getAssessmentDefinition('hh-weekly-pulse')
 // Synthetic prepared-content injection verifies storage only. The released DB
@@ -139,4 +140,41 @@ test('actual21-day completion and consented continuation preserve encrypted arch
  const after=await completing.exportData(a);assert.deepEqual(after.source,snapshot.source);assert.deepEqual(after.journey.sessions,snapshot.journey.sessions)
  assert.equal(after.journey.continuationPlan.consent,true);assert.equal(view.completion.finishedAt,snapshot.journey.sessions[21].at)
  assert.equal((await completing.read(b)).course,null)
+})
+
+
+test('personal v2 exact history uses bounded encrypted storage through day21 with owner-only replay',async()=>{
+ const db=await adminClient();try{
+  await db.query("insert into app_private.assessment_plans(account_id,definition_ids,operation_id,status) values($1,$2,$3,'completed')",[B,[def.id],randomUUID()])
+ }finally{await db.end()}
+ const run=await accounts.startRun(b,{definitionKey:def.key,definitionVersion:def.version,instrumentLocale:def.instrumentLocale,operationId:randomUUID()})
+ const saved=await accounts.saveRun(b,run.id,{answers:Object.fromEntries(def.questions.map(q=>[q.id,5])),context:{},progress:def.questions.length,expectedRevision:run.revision,operationId:randomUUID()})
+ await accounts.submitRun(b,run.id,{expectedRevision:saved.revision})
+ let timestamp=new Date(Date.now()+1000).toISOString();const start=Date.parse(timestamp)
+ const personal=createCourse21Repository(config,{enabled:true,loadReports,personalRegistry:syntheticPersonalRegistry(),now:()=>timestamp})
+ const send=body=>personal.command(b,{operationId:randomUUID(),...body},'ru')
+ const p=await personal.preview(b,'ru');assert.equal(p.profile.rows.length,8);assert.equal(p.profile.availablePracticeCount,8)
+ let current=await send({action:'activate',expectedSourceRevision:p.source.courseRevision,activationToken:p.activationToken,selectedR3ScaleKeys:p.profile.rows.filter(row=>row.canChoosePractice).slice(0,5).map(row=>row.r3ScaleKey),consent:true,consentVersion:p.consentVersion,timeZone:'Europe/London',loadMinutes:5})
+ for(let day=1;day<=21;day++){
+  timestamp=new Date(start+(day-1)*86400000).toISOString()
+  current=await send({action:'check-in',expectedRevision:current.course.revision,skip:false,wellbeing:day%11,energy:day===1?'low':'usual',availableTime:'standard'})
+  assert.equal(current.today.status,'ready')
+  const body={action:'finish-day',operationId:randomUUID(),expectedRevision:current.course.revision,expectedPlanRevision:current.personalPlan.revision,day,lessonId:current.today.lesson.id,status:'completed',goalObservations:current.today.goalObservationSnapshot.rows.map(row=>({goalId:row.goalId,statementId:row.statementId,statementKey:row.statementKey,seriesId:row.seriesId,rating:day%5+1})),savePrivateText:true,applyFeedback:false,feedback:{comment:'я'.repeat(1000),reflectionAnswer:'z'.repeat(1000)}}
+  current=await send(body)
+  if(day===1)assert.equal((await send(body)).course.revision,current.course.revision)
+ }
+ assert.equal(current.completion.completedDays,21);assert.equal(current.history[0].checkin.energy,'low');assert.deepEqual(current.weeklyReports.map(report=>report.checkpointDay),[7,14,21]);assert.equal(current.history[0].goalObservations.rows[0].rating,2)
+ const inspect=await adminClient();try{
+  const row=(await inspect.query('select octet_length(state_ciphertext) as bytes,state_ciphertext from app_private.growth_course_daily_21 where account_id=$1',[B])).rows[0]
+  assert.ok(row.bytes<524288);assert.equal(row.state_ciphertext.includes('я'.repeat(5)),false)
+ }finally{await inspect.end()}
+ const archived=await personal.exportData(b)
+ assert.equal(archived.personal.plan.slots.length,21);assert.equal(archived.journey.sessions[21].feedback.comment.length,1000)
+ const off=createCourse21Repository(config,{enabled:false})
+ assert.equal((await off.exportData(b)).journey.sessions[21].feedback.comment.length,1000);assert.deepEqual((await off.exportData(b)).personal.weeklyReports,current.weeklyReports)
+ current=await send({action:'continuation',expectedRevision:current.course.revision,practiceDays:[1,7,21],pace:'own-pace',consent:true})
+ assert.equal(current.completion.continuationPlan.practiceRefs.length,3)
+ assert.equal((await personal.read(b,'en',{reviewDay:7})).reviewLesson.lesson.contentLocale,'ru')
+ assert.notEqual((await personal.exportData(a)).id,archived.id)
+ await assert.rejects(send({action:'revise-plan',expectedRevision:current.course.revision,expectedPlanRevision:0,selectedR3ScaleKeys:current.course.selectedR3ScaleKeys,consent:true}),{code:'PAST_PLAN_SLOTS_IMMUTABLE'})
 })
