@@ -85,3 +85,27 @@ test("client CSP classification exactly follows middleware including encoded and
     assert.equal(classify(path), expected, path);
   }
 });
+
+
+test("background cabinet restore is cancelled on document leave without changing transport credentials", async () => {
+  const cabinet = await source("components/app/cabinet-landing.jsx");
+  assert.match(cabinet, /async function guestFetch\(path, body, method, signal\)/);
+  assert.match(cabinet, /credentials: 'same-origin',\s+signal,/);
+  assert.match(cabinet, /guestFetch\('guest\/bootstrap', undefined, undefined, controller\.signal\)/);
+  assert.match(cabinet, /addEventListener\('pagehide', cancelRestore\)/);
+  assert.match(cabinet, /removeEventListener\('pagehide', cancelRestore\)/);
+  assert.match(cabinet, /controller\.abort\(\)/);
+});
+
+test("Yggdrasil copy distinguishes public sources from the unavailable recording", async () => {
+  const curriculum = JSON.parse(await source("data/academy/yggdrasil-curriculum.json"));
+  const recordings = curriculum.levels.flatMap(level => level.steps.flatMap(step => step.video?.videos ?? []));
+  assert.equal(recordings.length, 79);
+  assert.equal(recordings.filter(video => video.youtubeId).length, 78);
+  assert.equal(recordings.filter(video => video.availability === "unavailable").length, 1);
+  const copy = await source("components/yggdrasil-curriculum.tsx");
+  assert.match(copy, /78 public video sources and one unavailable recording/);
+  assert.match(copy, /78 публичных источников и одна недоступная запись/);
+  assert.match(copy, /78 fuentes de video públicas y una grabación no disponible/);
+  assert.doesNotMatch(copy, /79 verified public video lectures|79 проверенных публичных видеолекций|79 videoclases públicas verificadas/);
+});

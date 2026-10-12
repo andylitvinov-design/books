@@ -46,7 +46,7 @@ const copy: Record<PublicLocale, {
   en: {
     eyebrow: "Canonical learning path",
     title: "7 modules · 37 steps",
-    lead: "Complete Reiki Yggdrasil course content synchronized from the canonical project: learner descriptions, 177 attunements and 79 verified public video lectures.",
+    lead: "Complete Reiki Yggdrasil course content synchronized from the canonical project: learner descriptions, 177 attunements and 79 lecture records: 78 public video sources and one unavailable recording.",
     source: "Canonical source: Reiki Yggdrasil project.",
     steps: "steps",
     sourceLanguage: "English pages use English course copy throughout. Historical/esoteric descriptions are presented as source material, not as medical claims.",
@@ -58,7 +58,7 @@ const copy: Record<PublicLocale, {
   ru: {
     eyebrow: "Актуальная структура обучения",
     title: "7 модулей · 37 ступеней",
-    lead: "Полная карта курса синхронизирована с текущим проектом Reiki Yggdrasil: описания ступеней, 177 настроек и 79 проверенных публичных видеолекций.",
+    lead: "Полная карта курса синхронизирована с текущим проектом Reiki Yggdrasil: описания ступеней, 177 настроек и 79 видеозаписей: 78 публичных источников и одна недоступная запись.",
     source: "Канонический источник: проект Reiki Yggdrasil.",
     steps: "ступеней",
     sourceLanguage: "",
@@ -70,7 +70,7 @@ const copy: Record<PublicLocale, {
   es: {
     eyebrow: "Ruta formativa canónica",
     title: "7 módulos · 37 etapas",
-    lead: "El mapa completo del curso está sincronizado con el proyecto actual Reiki Yggdrasil: descripciones, 177 sintonizaciones y 79 videoclases públicas verificadas.",
+    lead: "El mapa completo del curso está sincronizado con el proyecto actual Reiki Yggdrasil: descripciones, 177 sintonizaciones y 79 registros de clases: 78 fuentes de video públicas y una grabación no disponible.",
     source: "Fuente canónica: proyecto Reiki Yggdrasil.",
     steps: "etapas",
     sourceLanguage: "El detalle que aún no tiene traducción española usa la versión inglesa, nunca texto ruso.",
@@ -470,3 +470,4 @@ export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { l
     </section>
   );
 }
+

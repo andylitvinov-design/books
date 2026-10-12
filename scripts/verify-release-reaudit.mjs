@@ -199,9 +199,13 @@ async function exercise(engine, browserType, width) {
         const cspContext = await cspBrowser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
         const pageShows = [];
         const cspErrors = [];
+        const failedRequests = [];
+        const bfcacheNotUsed = [];
+        let interruptedDocumentProbe;
         let historyPhase = 'initial';
         await cspContext.exposeBinding('__recordCspPageShow', (_source, state) => pageShows.push({ phase: historyPhase, ...state }));
         await cspContext.addInitScript(() => {
+          if (window.top !== window) return;
           // Register before application scripts so its capture listener cannot
           // hide the persisted event when replacing an interrupted router.
           window.__cspInitDocumentProbe = crypto.randomUUID();
@@ -212,8 +216,14 @@ async function exercise(engine, browserType, width) {
         });
         const cspPage = await cspContext.newPage();
         const navigationTrace = [];
+        if (engine === 'chromium') {
+          const cdp = await cspContext.newCDPSession(cspPage);
+          cdp.on('Page.backForwardCacheNotUsed', state => bfcacheNotUsed.push({ phase: historyPhase, ...state }));
+          await cdp.send('Page.enable');
+        }
+        cspPage.on('requestfailed', request => failedRequests.push({ phase: historyPhase, url: request.url(), method: request.method(), error: request.failure()?.errorText }));
         cspPage.on('framenavigated', frame => { if (frame === cspPage.mainFrame()) navigationTrace.push(frame.url()); });
-        cspPage.on('pageerror', error => { cspErrors.push(error.message); navigationTrace.push('JS: ' + error.message); });
+        cspPage.on('pageerror', error => { cspErrors.push({ phase: historyPhase, message: error.message, stack: error.stack }); navigationTrace.push('JS: ' + error.message); });
         await cspPage.route('https://app.heygen.com/embeds/**', route => route.fulfill({ contentType: 'text/html', body: '<p data-csp-probe>Allowed embed reached</p>' }));
         try {
           await cspPage.goto(origin + '/en/about', { waitUntil: 'networkidle' });
@@ -242,7 +252,7 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
-          const interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);
+          interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'before-tantra'; });
           // Next supports native history navigation; exercise the programmatic
           // fallback too, rather than relying only on the anchor interceptor.
@@ -275,7 +285,11 @@ async function exercise(engine, browserType, width) {
         } catch (error) {
           const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
           throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);
-        } finally { await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close(); }
+        } finally {
+          // Keep full structured diagnostics even when check() bounds its message.
+          writeFileSync(`${evidence}/${label}-csp-${engine}.json`, JSON.stringify({ interruptedDocumentProbe, pageShows, navigationTrace, cspErrors, failedRequests, bfcacheNotUsed }, null, 2));
+          await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close();
+        }
       });
     }
     if (width === 390) {
