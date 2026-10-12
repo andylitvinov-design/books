@@ -115,12 +115,48 @@ async function verifyCspBfcache() {
 async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
   const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
+  const publicDiagnostics = { pageErrors: [], requests: [], responses: [], failedRequests: [], checkpoints: [], lifecycle: [] };
+  let publicPhase = 'initial';
+  await context.addInitScript(() => {
+    if (window.top !== window) return;
+    window.__publicAuditProbe = crypto.randomUUID();
+    const record = (type, extra = {}) => {
+      const rows = JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]');
+      rows.push({ type, time: performance.timeOrigin + performance.now(), documentProbe: window.__publicAuditProbe,
+        url: location.href, readyState: document.readyState, ...extra });
+      sessionStorage.setItem('__publicAuditLifecycle', JSON.stringify(rows));
+    };
+    record('init');
+    addEventListener('pageshow', event => record('pageshow', { persisted: event.persisted }), true);
+    addEventListener('pagehide', event => record('pagehide', { persisted: event.persisted }), true);
+    addEventListener('load', () => record('load'), true);
+    document.addEventListener('DOMContentLoaded', () => record('domcontentloaded'), true);
+    addEventListener('error', event => {
+      if (event instanceof ErrorEvent) record('window-error', { message: event.message, filename: event.filename, line: event.lineno });
+      else record('resource-error', { targetTag: event.target?.tagName, resourceUrl: event.target?.currentSrc || event.target?.src || event.target?.href });
+    }, true);
+    addEventListener('unhandledrejection', event => record('unhandled-rejection', { message: String(event.reason?.message || event.reason) }), true);
+    window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
+  });
   const page = await context.newPage();
   let errors = [];
-  page.on('pageerror', error => errors.push(String(error.message).slice(0, 300)));
+  page.on('pageerror', error => {
+    errors.push(String(error.message).slice(0, 300));
+    publicDiagnostics.pageErrors.push({ phase: publicPhase, time: Date.now(), pageUrl: page.url(), message: error.message, stack: error.stack });
+  });
+  const requestDetails = request => {
+    let frameUrl = null;
+    try { frameUrl = request.frame()?.url() ?? null; } catch { /* Service-worker requests do not have a frame. */ }
+    return { phase: publicPhase, time: Date.now(), url: request.url(), method: request.method(), resourceType: request.resourceType(), frameUrl };
+  };
+  page.on('request', request => publicDiagnostics.requests.push(requestDetails(request)));
+  page.on('requestfinished', request => publicDiagnostics.responses.push({ ...requestDetails(request), event: 'requestfinished' }));
+  page.on('requestfailed', request => publicDiagnostics.failedRequests.push({ ...requestDetails(request), error: request.failure()?.errorText }));
   try {
     for (const [path, locale] of routes) {
       await check('public-page', { engine, width, path }, async () => {
+        publicPhase = path;
+        publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
         errors = [];
         const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
         assert.equal(response.status(), 200);
@@ -135,7 +171,10 @@ async function exercise(engine, browserType, width) {
           assert.equal(await page.locator('[data-consultation-capture="personal"]').count(), 1, 'About must contain one accessible personal consultation selector');
           assert.equal(await page.locator('.public-consultation-cta').count(), 0, 'About must not repeat the generic consultation CTA');
         }
+        publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
+        publicDiagnostics.checkpoints.push({ type: 'assert', path, time: Date.now(), state: await page.evaluate(() => ({ probe: window.__publicAuditProbe, url: location.href, readyState: document.readyState, hydrated: history.pushState.toString().includes('__NA') })) });
         assert.deepEqual(errors, [], 'Unexpected page JS error');
+        assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors in public documents');
         // React may swap a max-resolution YouTube poster for its HQ fallback
         // while WebKit scrolls or decodes. Re-query the current image and retry
         // only these transient source/DOM-change errors, never a genuinely broken image.
@@ -508,7 +547,11 @@ async function exercise(engine, browserType, width) {
         }
       }
     }
-  } finally { await context.close(); await browser.close(); }
+  } finally {
+    publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => publicDiagnostics.lifecycle);
+    writeFileSync(`${evidence}/${label}-public-${engine}-${width}-diagnostics.json`, JSON.stringify(publicDiagnostics, null, 2));
+    await context.close(); await browser.close();
+  }
 }
 await Promise.all([exercise('chromium', chromium, 390), exercise('chromium', chromium, 1365), exercise('webkit', webkit, 390), exercise('webkit', webkit, 1365)]);
 const browser = await chromium.launch();
