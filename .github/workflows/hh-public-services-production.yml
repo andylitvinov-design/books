@@ -1,0 +1,54 @@
+name: Holistic House public services production acceptance
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+permissions:
+  contents: read
+concurrency:
+  group: public-services-production-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  public-services:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium for isolated public acceptance
+        run: |
+          mkdir -p /tmp/hh-public-services-tools
+          npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-public-services-tools/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium
+      - name: Production build and public browser acceptance
+        run: |
+          mkdir -p artifacts/public-services-production
+          npm run build > artifacts/public-services-production/build.log 2>&1
+          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 & SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 90); do
+            if curl --silent --fail http://127.0.0.1:3100/en/services >/dev/null; then break; fi
+            sleep 2
+          done
+          status=0
+          node scripts/verify-public-services-production.mjs || status=$?
+          {
+            echo "Production server diagnostic summary (no application secrets are configured for this job)"
+            grep -Ei 'ready|started|error|warn|failed|exception' /tmp/hh-public-services-next.log | tail -n 200 || true
+          } > artifacts/public-services-production/server-diagnostics.txt
+          exit "$status"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-services-production-acceptance
+          path: artifacts/public-services-production/
+          retention-days: 7
+          if-no-files-found: warn
