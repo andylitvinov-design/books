@@ -88,7 +88,7 @@ async function enterTest(name='Current State Check',mode='Guided'){
   const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
   if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
-  await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
+  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
   if(await page.getByRole('button',{name:/Review test filters/}).count()){
    if(!(await page.locator('[data-pending-selection]').isVisible().catch(()=>false)))
      await page.getByRole('button',{name:/Review test filters/}).click()
@@ -441,7 +441,7 @@ try {
   passed('Master creates synthetic client, attaches study link and recipient opens private cabinet')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
  const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();await expect(otherPage).toHaveURL(/\/en\/app$/,{timeout:15000});assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
- // The public Start free testing button must transfer the exact selection into an existing Google account.
+ // The public Start free monitoring button must transfer the exact selection into an existing Google account.
  // Open a fresh tab in the same authenticated cookie context: the onboarding page
  // can still have a queued router.replace('/en/app') after its nav becomes visible.
  // Reusing it races Playwright's navigation against that pending redirect in WebKit.
@@ -450,14 +450,14 @@ try {
  selectionPage.on('response',response=>{ if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST') selectionWrites.push(response.status()) })
  await selectionPage.goto(origin+'/en/client/tests')
  await expect(selectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
-  await expect(selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first()).toBeEnabled()
+  await expect(selectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first()).toBeEnabled()
  await chooseVisibleTest(selectionPage,'Personality Baseline')
  const selectionGuided=selectionPage.locator('#hh-test-customizer')
  if(!(await selectionGuided.isVisible()))await selectionPage.getByRole('button',{name:/Choose my own tests and filters/}).click()
  await selectionGuided.getByRole('button',{name:/Topics that matter/}).click()
  await selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true}).click()
  await expect(selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true})).toHaveAttribute('aria-pressed','true')
- await selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
+ await selectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  await expect(selectionPage.locator('#my-tests-list')).toBeVisible()
  await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
@@ -469,14 +469,14 @@ try {
  assert.equal(new URL(selectionPage.url()).searchParams.get('plan'),selectedPlan.id)
  assert.deepEqual(selectionWrites,[201],'single selected battery creates exactly one plan, even with React StrictMode')
  await selectionPage.close()
- passed('public Start free testing preserves the selected test in authenticated personal Cabinet')
+ passed('public Start free monitoring preserves the selected test in authenticated personal Cabinet')
  // Re-selecting the same assessment should reuse the existing battery, not
  // leave the OAuth handoff query pending or create a second plan.
  const repeatSelectionPage=await other.newPage()
  await repeatSelectionPage.goto(origin+'/en/client/tests')
  await expect(repeatSelectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
  await chooseVisibleTest(repeatSelectionPage,'Personality Baseline')
- await repeatSelectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
+ await repeatSelectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(repeatSelectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  assert.equal(new URL(repeatSelectionPage.url()).searchParams.get('plan'),selectedPlan.id)
  assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.id,selectedPlan.id)
@@ -562,7 +562,7 @@ try {
  passed('Cabinet entry has a prominent Google sign-in and one integrated battery builder')
 
  await chooseVisibleTest(page,'Personality Baseline')
- await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
+ await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  // An existing in-progress battery must not be discarded silently.
  // Choose the newly requested set through the explicit replacement confirmation.
  await expect(page.getByRole('button',{name:'Review test filters'})).toBeVisible()
