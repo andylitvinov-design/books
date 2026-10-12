@@ -84,7 +84,13 @@ const isFallback = entry => {
   const url = new URL(entry.url);
   return url.origin === "https://www.google.com" && url.pathname === "/g/collect";
 };
-const collection = (entries = requests) => entries.filter(entry => /(?:^|\.)google-analytics\.com$|^analytics\.google\.com$/.test(new URL(entry.url).hostname) || isFallback(entry));
+const isDiagnostic = entry => {
+  const url = new URL(entry.url);
+  return url.origin === "https://www.googletagmanager.com" && (
+    ["/td", "/a"].includes(url.pathname)
+    || (url.pathname === "/gtag/js" && url.searchParams.get("is_td") === "1"));
+};
+const collection = (entries = requests) => entries.filter(entry => /(?:^|\.)google-analytics\.com$|^analytics\.google\.com$/.test(new URL(entry.url).hostname) || isFallback(entry) || isDiagnostic(entry));
 function assertFallbackPairs(entries) {
   const used = new Set();
   for (const [index, entry] of entries.entries()) {
@@ -149,6 +155,9 @@ async function scenario(name, { holdSdk = false, withCsp = false, path = "/en?pr
       entry.action = "local-fixture";
       // Do not impose a safer response referrer policy than the application.
       await route.fulfill({ status: 200, contentType: "text/html", body: fixture.replace("__HH_WITH_CSP__", String(withCsp)) });
+    } else if (isDiagnostic(entry)) {
+      entry.action = "intercepted-local-diagnostic";
+      await route.fulfill({ status: url.pathname === "/gtag/js" ? 200 : 204, contentType: "application/javascript", body: "" });
     } else if (url.hostname === "www.googletagmanager.com" && url.pathname === "/gtag/js" && [id, "GT-KTPSQT8C"].includes(url.searchParams.get("id"))) {
       entry.action = "local-frozen-sdk";
       await sdkGate;
@@ -206,6 +215,11 @@ function assertSafe(entries) {
   const outbound = entries.filter(entry => entry.action !== "local-fixture");
   assertNoPersonalData(outbound);
   assert.equal(outbound.filter(entry => entry.action === "aborted-no-network").length, 0, "unknown destinations must be investigated");
+  for (const entry of entries.filter(isDiagnostic)) {
+    const url = new URL(entry.url);
+    assert.equal(url.searchParams.get("id"), id, "diagnostic destination");
+    if (url.searchParams.has("dl")) assert.equal(url.searchParams.get("dl"), "holistichouse.vercel.app/en", "diagnostics must not observe a private path");
+  }
   for (const event of decodedEvents(entries, true)) {
     assert.equal(event.tid, id);
     assert.equal(event.dl, "https://holistichouse.vercel.app/en");
@@ -233,6 +247,25 @@ function assertPublicDeparture(s, before) {
 }
 
 try {
+  // The unmodified Google SDK explicitly enables its diagnostic sampler when
+  // the current synthetic URL contains gtm_latency. This deterministically
+  // exercises telemetry beyond g/collect instead of relying on random sampling.
+  const diagnostics = await scenario("forced-diagnostics-private-before-sdk", { holdSdk: true, path: "/en?gtm_latency=1&private_query=SYNTHETIC_QUERY" });
+  await diagnostics.page.evaluate(() => {
+    window.fixture.grant();
+    document.getElementById("holistic-house-google-tag").addEventListener("load", () => {window.fixtureSdkLoaded=true;});
+  });
+  await waitUntil(()=>diagnostics.own.some(entry=>entry.action === "local-frozen-sdk"), "diagnostic probe holds the actual SDK");
+  diagnostics.phase("private-before-delayed-sdk-execution");
+  await diagnostics.page.evaluate(()=>window.fixture.navigateOnly("/en/app/SYNTHETIC_PRIVATE_DIAGNOSTIC?gtm_latency=1"));
+  diagnostics.releaseSdk();
+  await diagnostics.page.waitForFunction(()=>window.fixtureSdkLoaded===true);
+  await settled(diagnostics.page);
+  assertSafe(diagnostics.own);
+  assert.equal(diagnostics.collects().length, 0, "private boundary must stop diagnostics as well as GA event collection");
+  diagnostics.checkpoint("forced diagnostic sampling cannot expose a private path after delayed SDK execution");
+  await diagnostics.context.close();
+
   const s = await scenario("consent-and-spa");
   const { page } = s;
   await settled(page, 800);
