@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { gaugeModel, gaugeChange, periodWindow, resultsForPeriod, periodComparison, validCalendarDay } from '../lib/assessments/dashboard-gauges.js'
 
 const base = {
@@ -65,4 +66,20 @@ test('period comparison picks earliest compatible baseline, not a different scor
  assert.equal(periodComparison([c,b,a]).previous.id,'one')
  assert.equal(periodComparison([b,c]).previous,null)
  assert.equal(periodComparison([]).current,null)
+})
+
+
+test('account report and Insights use the same measured dial with selectable time windows and retake',()=>{
+ const account=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
+ const report=readFileSync(new URL('../components/app/compact-assessment-report.jsx',import.meta.url),'utf8')
+ const css=readFileSync(new URL('../app/[locale]/app/[[...path]]/assessment-dashboard.css',import.meta.url),'utf8')
+ assert.match(account,/periodWindow\(period,\s*periodStart,\s*periodEnd\)/)
+ assert.match(account,/resultsForPeriod\(group\.history,\s*period,\s*periodStart,\s*periodEnd\)/)
+ assert.match(account,/<ScoreGauge dimension=\{main\}/)
+ assert.match(account,/<ScoreTrend current=\{latest\}/)
+ assert.match(account,/<PersonalResultReport result=\{result\} locale=\{locale\} previous=\{previous\}/)
+ assert.match(account,/onClick=\{repeatTest\}/)
+ assert.match(report,/section\.steps\.slice\(0,\s*2\)/)
+ assert.match(css,/\.hh-insights-test-list/)
+ assert.match(css,/grid-template-columns:repeat\(auto-fit/)
 })
