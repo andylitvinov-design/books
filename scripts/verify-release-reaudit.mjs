@@ -189,7 +189,8 @@ async function exercise(engine, browserType, width) {
       });
     }
     if (width === 390) {
-      await check('csp-navigation-and-history', { engine, width }, async () => {
+      for (const readiness of ['rapid-history', 'loaded-history']) {
+      await check('csp-navigation-and-history', { engine, width, readiness }, async () => {
         // New context isolates document policies and service-worker caching. This
         // checks real navigation/CSP enforcement, not third-party video decoding.
         // Playwright disables Chromium's BFCache by default. Enable the real
@@ -202,6 +203,7 @@ async function exercise(engine, browserType, width) {
         const failedRequests = [];
         const bfcacheNotUsed = [];
         let interruptedDocumentProbe;
+        let lifecycleTrace = [];
         let historyPhase = 'initial';
         await cspContext.exposeBinding('__recordCspPageShow', (_source, state) => pageShows.push({ phase: historyPhase, ...state }));
         await cspContext.addInitScript(() => {
@@ -209,13 +211,37 @@ async function exercise(engine, browserType, width) {
           // Register before application scripts so its capture listener cannot
           // hide the persisted event when replacing an interrupted router.
           window.__cspInitDocumentProbe = crypto.randomUUID();
-          window.addEventListener('pageshow', event => {
+          // Synchronous same-origin storage survives an immediate document
+          // replacement; the asynchronous exposed binding alone may be lost.
+          const record = (type, extra = {}) => {
             const navigation = performance.getEntriesByType('navigation')[0];
-            void window.__recordCspPageShow({ documentProbe: window.__cspInitDocumentProbe, url: location.href, persisted: event.persisted, documentClass: document.body?.dataset.cspClass, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null });
+            const state = { type, time: performance.timeOrigin + performance.now(), documentProbe: window.__cspInitDocumentProbe, url: location.href, readyState: document.readyState, documentClass: document.body?.dataset.cspClass, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null, ...extra };
+            const entries = JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]');
+            entries.push(state);
+            sessionStorage.setItem('__cspLifecycleTrace', JSON.stringify(entries));
+            return state;
+          };
+          record('init');
+          window.addEventListener('pageshow', event => {
+            const state = record('pageshow', { persisted: event.persisted });
+            void window.__recordCspPageShow(state);
           }, true);
+          window.addEventListener('pagehide', event => record('pagehide', { persisted: event.persisted }), true);
+          window.addEventListener('popstate', () => record('popstate'), true);
+          window.addEventListener('load', () => record('load'), true);
+          document.addEventListener('DOMContentLoaded', () => record('domcontentloaded'), true);
+          window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
         });
         const cspPage = await cspContext.newPage();
         const navigationTrace = [];
+        const waitForDocument = async () => {
+          if (readiness !== 'loaded-history') return;
+          await cspPage.waitForLoadState('load');
+          // The pinned Next app router installs this wrapper in its hydration
+          // effect. A parsed SSR body alone does not prove listener readiness.
+          await expect.poll(() => cspPage.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
+          await cspPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        };
         if (engine === 'chromium') {
           const cdp = await cspContext.newCDPSession(cspPage);
           cdp.on('Page.backForwardCacheNotUsed', state => bfcacheNotUsed.push({ phase: historyPhase, ...state }));
@@ -228,6 +254,7 @@ async function exercise(engine, browserType, width) {
         try {
           await cspPage.goto(origin + '/en/about', { waitUntil: 'networkidle' });
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'same-public-document'; });
@@ -238,6 +265,7 @@ async function exercise(engine, browserType, width) {
           await cspPage.locator('.mobile-bottom-navigation a[href="/en/client"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/client');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Entering private must load a new document');
           await cspPage.evaluate(() => {
             window.__cspViolations = [];
@@ -250,6 +278,7 @@ async function exercise(engine, browserType, width) {
           await cspPage.locator('.mobile-bottom-navigation a[href="/en/about"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
           interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);
@@ -259,27 +288,35 @@ async function exercise(engine, browserType, width) {
           await cspPage.evaluate(() => history.pushState(null, '', '/en/academy/reiki/tantra-reiki'));
           await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
+          await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Tantra media policy requires a fresh document');
           historyPhase = 'back-from-tantra';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
           if (engine === 'chromium') {
-            await expect.poll(() => pageShows.some(state => state.phase === 'back-from-tantra' && state.persisted && state.url === origin + '/en/about' && state.documentProbe === interruptedDocumentProbe), { message: 'Real Chromium BFCache restoration must exercise the interrupted-router pageshow branch' }).toBe(true);
+            await expect.poll(async () => {
+              lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]'));
+              return lifecycleTrace.some(state => state.type === 'pageshow' && state.persisted && state.url === origin + '/en/about' && state.documentProbe === interruptedDocumentProbe);
+            }, { message: 'Real Chromium BFCache restoration must exercise the interrupted-router pageshow branch' }).toBe(true);
           }
           await expect.poll(() => cspPage.evaluate(() => window.__cspInitDocumentProbe), { message: 'Restored interrupted router must be replaced with a fresh document' }).not.toBe(interruptedDocumentProbe);
           historyPhase = 'back-to-private';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/client');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await waitForDocument();
           historyPhase = 'forward-to-public';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
           historyPhase = 'forward-to-tantra';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
+          await waitForDocument();
           assert.deepEqual(cspErrors, [], 'No JavaScript runtime errors during CSP navigation');
           return { interruptedDocumentProbe, pageShows, cspErrors, bfcachePersistedVerified: engine === 'chromium', samePolicySoftNavigation: true, privatePublicReload: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
         } catch (error) {
@@ -287,10 +324,12 @@ async function exercise(engine, browserType, width) {
           throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);
         } finally {
           // Keep full structured diagnostics even when check() bounds its message.
-          writeFileSync(`${evidence}/${label}-csp-${engine}.json`, JSON.stringify({ interruptedDocumentProbe, pageShows, navigationTrace, cspErrors, failedRequests, bfcacheNotUsed }, null, 2));
+          lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]')).catch(() => lifecycleTrace);
+          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, failedRequests, bfcacheNotUsed }, null, 2));
           await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close();
         }
       });
+      }
     }
     if (width === 390) {
       await check('translation-failure-invalid-response-and-recovery', { engine, width }, async () => {
