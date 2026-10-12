@@ -18,14 +18,21 @@ const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{execut
 // Disable workers only in this fault-injection context: routing cannot reliably
 // intercept worker-controlled requests. Separate baseline PWA checks keep workers.
 const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}),page=await context.newPage()
-const output='artifacts/app-r1/test-ratings-'+engine.name(),checks=[],errors=[],navigationRetries=[],fixtureActors=[]
+const output='artifacts/app-r1/test-ratings-'+engine.name(),checks=[],errors=[],navigationRetries=[],devNavigationDiagnostics=[],fixtureActors=[]
 await mkdir(output,{recursive:true})
 const config=getAppConfig(),repo=createAppRepository(config),ratings=createTestRatingRepository(config)
 const setupAdmin=await adminClient()
 const accountExisted=Boolean((await setupAdmin.query('select 1 from app.accounts where id=$1',[A])).rowCount)
 await setupAdmin.end()
 const cbi=getAssessmentDefinition('cbi-personal','v1','en'),secondTest=getAssessmentDefinition('phq-4','v1','en'),current=getAssessmentDefinition('hh-current-state','v2','en')
-page.on('pageerror',error=>errors.push(error.message))
+context.setDefaultTimeout(15000);context.setDefaultNavigationTimeout(60000)
+const capturePageError=error=>{
+ // These are development hot-update manifests, not application/API requests.
+ // WebKit aborts their reads during full navigation. Preserve exact diagnostics.
+ if(engine.name()==='webkit'&&process.env.NODE_ENV==='development'&&/\/_next\/static\/webpack\/[a-f0-9]+\.webpack\.hot-update\.json due to access control checks\.$/.test(error.message)){devNavigationDiagnostics.push(error.message);return}
+ errors.push(error.message)
+}
+page.on('pageerror',capturePageError)
 const passed=name=>{checks.push(name);console.log('PASS '+name)}
 async function api(path,body,method){
  const r=await context.request.fetch(origin+'/api/app/'+path,{method:method||(body?'POST':'GET'),headers:body?{Origin:origin,'Content-Type':'application/json'}:{},data:body})
@@ -168,7 +175,8 @@ try{
  }
  for(const locale of ['en','ru']){
   const guest=await browser.newContext({viewport:{width:390,height:844}}),guestPage=await guest.newPage(),c=ratingCopy(locale)
-  guestPage.on('pageerror',error=>errors.push(error.message))
+  guest.setDefaultTimeout(15000);guest.setDefaultNavigationTimeout(60000)
+  guestPage.on('pageerror',capturePageError)
   async function guestApi(path,body){const response=await guest.request.post(origin+'/api/app/'+path,{headers:{Origin:origin},data:body});const data=await response.json();assert.ok(response.ok(),path+': '+JSON.stringify(data));return data}
   await guestApi('guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
   const plan=await guestApi('guest/test-plans',{items:[{definitionKey:cbi.key,definitionVersion:cbi.version,instrumentLocale:'en'}],operationId:randomUUID()})
@@ -198,8 +206,8 @@ try{
   passed(locale+': guest report → explicit save/sign-in → claim confirmation → account rating persists, with one vote per account/test')
  }
  assert.deepEqual(errors,[])
- await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,engine:engine.name(),checks,errors,navigationRetries,fixture:'SYNTHETIC_LOOPBACK_ONLY'},null,2))
-}catch(error){await page.screenshot({path:output+'/failure.png',fullPage:false}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,errors,navigationRetries,failure:error.message},null,2));throw error}
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,engine:engine.name(),checks,errors,navigationRetries,devNavigationDiagnostics,fixture:'SYNTHETIC_LOOPBACK_ONLY'},null,2))
+}catch(error){await page.screenshot({path:output+'/failure.png',fullPage:false}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,errors,navigationRetries,devNavigationDiagnostics,failure:error.message},null,2));throw error}
 finally{
  await browser.close()
  const admin=await adminClient()

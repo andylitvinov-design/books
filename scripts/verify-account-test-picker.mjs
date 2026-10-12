@@ -13,10 +13,14 @@ assert.match(origin, /^http:\/\/(127\.0\.0\.1|localhost):\d+$/)
 const engine = process.env.HH_TEST_BROWSER === 'webkit' ? webkit : chromium
 const browser = await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE ? { executablePath: process.env.HH_TEST_BROWSER_EXECUTABLE } : {})
 const context = await browser.newContext({ viewport: { width: 390, height: 900 } })
-const page = await context.newPage(), checks = [], errors = []
+context.setDefaultTimeout(15000); context.setDefaultNavigationTimeout(60000)
+const page = await context.newPage(), checks = [], errors = [], devNavigationDiagnostics = []
 const output = 'artifacts/app-r1/account-test-picker-' + engine.name()
 await mkdir(output, { recursive: true })
-page.on('pageerror', error => errors.push(error.message))
+page.on('pageerror', error => {
+  if (engine.name() === 'webkit' && process.env.NODE_ENV === 'development' && /\/_next\/static\/webpack\/[a-f0-9]+\.webpack\.hot-update\.json due to access control checks\.$/.test(error.message)) { devNavigationDiagnostics.push(error.message); return }
+  errors.push(error.message)
+})
 const setupAdmin = await adminClient()
 const accountExisted = Boolean((await setupAdmin.query('select 1 from app.accounts where id=$1', [A])).rowCount)
 await setupAdmin.end()
@@ -115,10 +119,10 @@ try {
     passed(locale + ': shared modern picker, manual selection, filters/category, reset, Back persistence, additive save and saved-answer/result preservation at 320/390/1280px')
   }
   assert.deepEqual(errors, [])
-  await writeFile(output + '/verification.json', JSON.stringify({ commit: process.env.GITHUB_SHA, checks, errors, fixture: 'SYNTHETIC_LOOPBACK_ONLY' }, null, 2))
+  await writeFile(output + '/verification.json', JSON.stringify({ commit: process.env.GITHUB_SHA, checks, errors, devNavigationDiagnostics, fixture: 'SYNTHETIC_LOOPBACK_ONLY' }, null, 2))
 } catch (error) {
   await page.screenshot({ path: output + '/failure.png', fullPage: false }).catch(() => {})
-  await writeFile(output + '/verification.json', JSON.stringify({ commit: process.env.GITHUB_SHA, checks, errors, failure: error.message }, null, 2))
+  await writeFile(output + '/verification.json', JSON.stringify({ commit: process.env.GITHUB_SHA, checks, errors, devNavigationDiagnostics, failure: error.message }, null, 2))
   throw error
 } finally {
   await browser.close()
