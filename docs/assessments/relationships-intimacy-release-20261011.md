@@ -33,3 +33,14 @@ Desktop navigation has seven EN/RU entries; the mobile bar intentionally retains
 6. [ ] Verify production READY and alias for `holistichouse.vercel.app`, test EN/RU page and 8 links on mobile/desktop. Confirm no public indexing of private /client/tests screens.
 
 **Source branch or merged code alone is NOT a live release.**
+
+
+## Independent review follow-up: automatic starter eligibility
+
+Review of head `5925e2fb41f1cf0af604b231dfe3bd081130fd15` found that the public simple picker took the first three relevance matches even when their catalog metadata set `starterEligible: false`. Empty preferences selected the weekly pulse plus Love & Affection and Trust & Honest Dialogue; broad resources or self-support/time filters could also automatically select intimate questionnaires.
+
+The public automatic selection now uses `buildPublicStarterBattery`, which requires selectable, starter-eligible entries and keeps the three-entry limit. The filtered relevance list remains available for deliberate checkbox selection; eligibility does not erase a person's explicit or saved choice. This applies to the first visit, updated filters, the suggested-set reset and transfer into the full catalog. Unit regressions cover empty preferences, resources, self-support with <=2 minutes, format/depth restrictions, explicit relationship/sexuality/Tantra topics and retained manual selections. The browser suite adds EN/RU first-visit/resource checks and a real manual choice -> broader filters -> private save -> reload journey.
+
+The eight guides now describe two-decimal rounding before interpretation: attainable 1.33 is in the lower part and 2.67 in the upper part. A numerical regression pins those results. No definition, scoring function, stored history or registration SQL changed.
+
+Local follow-up checks: 1023 unit, 137 app, 33 isolated DB, build/types passed; lint has 0 errors and 28 warnings. Final browser/CI proof belongs to the follow-up head recorded in the PR, not the earlier green `5925e2f` run. No production writes or merge are authorized by this follow-up.

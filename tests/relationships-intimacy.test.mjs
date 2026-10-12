@@ -10,7 +10,7 @@ import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
-import { interpretationPlan, interpretationRegistryCoverage, interpretationDimensionPlan } from '../lib/assessments/interpretation-registry.js'
+import { interpretationPlan, interpretationRegistryCoverage, interpretationDimensionPlan, interpretationForDimension } from '../lib/assessments/interpretation-registry.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
 import { validTestKeys } from '../lib/app/test-selection-intent.js'
 
@@ -122,5 +122,17 @@ test('bilingual saved report and PDF models retain experimental status and conse
       assert.deepEqual(pdf.tests[0].dimensions.map(s=>s.value),[0,0])
     }
     assert.equal(buildAssessmentResultReport({...result,definitionVersion:'v999'},'en').contextNote,null)
+  }
+})
+
+
+test('relationship guide boundaries match the stored two-decimal means without rescoring history', () => {
+  for(const d of RELATIONSHIPS_INTIMACY_DEFINITIONS) {
+    const result=scoreAssessment(d,Object.fromEntries(d.questions.map((q,i)=>[q.id,[0,0,4,0,4,4][i]])))
+    assert.deepEqual(result.dimensions.map(x=>x.value),[1.33,2.67])
+    for(const locale of ['en','ru']) {
+      assert.deepEqual(result.dimensions.map(x=>interpretationForDimension(result,x,locale).code),['lower','upper'])
+      assert.ok(buildAssessmentResultReport(result,locale).sections.every(x=>x.bandBasis==='descriptive'&&!x.recommendedReview))
+    }
   }
 })

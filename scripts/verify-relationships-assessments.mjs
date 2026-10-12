@@ -3,6 +3,7 @@ import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
 import { RELATIONSHIPS_INTIMACY_DEFINITIONS, RELATIONSHIPS_INTIMACY_CATALOG } from '../data/assessments/relationships-intimacy-v1.js'
 const defs=RELATIONSHIPS_INTIMACY_DEFINITIONS.filter(d=>d.instrumentLocale==='en')
@@ -63,6 +64,21 @@ try{
  page=await publicContext.newPage()
  page.on('pageerror',e=>errors.push(e.message))
  for(const locale of ['en','ru']){
+  for(const resources of [false,true]){
+   await navigate(page,origin+'/'+locale+'/client')
+   const picker=page.locator('[data-prelogin-test-picker]')
+   await expect(picker).toBeVisible()
+   if(resources)await picker.getByRole('button',{name:locale==='ru'?'Внутренняя опора':'Self-support',exact:true}).click()
+   // Opening the full editor exposes every selected entry, including those
+   // below the first five recommendation cards. This also checks the handoff.
+   await picker.getByRole('button',{name:locale==='ru'?'Открыть всю базу тестов':'Browse full database',exact:true}).click()
+   const chosen=page.locator('article input[type="checkbox"]:checked')
+   await expect(chosen).toHaveCount(3)
+   const titles=await chosen.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('aria-label')))
+   const excluded=MONITORING_CATALOG.filter(x=>x.starterEligible===false).map(x=>x.title[locale]||x.title.en)
+   assert.ok(titles.every(title=>!excluded.includes(title)),locale+': automatic choice requires starter eligibility')
+  }
+  passed(locale+' first visit and broad Self-support filter keep every opt-in questionnaire out of the automatic plan')
   await navigate(page,origin+'/'+locale+'/relationships')
   await expect(page.locator('[data-relationships-category]')).toHaveCount(3)
   const links=page.locator('a[href*="/client/tests?test=hh-"]')
@@ -129,6 +145,30 @@ try{
   await expect(page.locator('[data-personal-result-report]')).toBeVisible()
   passed(d.key+' account '+locale+' '+mode+': save, original items, score, report and reload')
  }
+ await navigate(page,origin+'/en/client')
+ const picker=page.locator('[data-prelogin-test-picker]')
+ await picker.getByRole('button',{name:'Relationships',exact:true}).click()
+ const voluntary=picker.locator('[data-test-match="hh-love-affection"] input')
+ await expect(voluntary).not.toBeChecked()
+ await voluntary.check()
+ await picker.getByRole('button',{name:'Relationships',exact:true}).click()
+ await picker.getByRole('button',{name:'Self-support',exact:true}).click()
+ await expect(voluntary).toBeChecked()
+ const saveVoluntary=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
+ await picker.getByRole('button',{name:'Start free monitoring',exact:true}).click()
+ const voluntaryResponse=await saveVoluntary
+ assert.ok(voluntaryResponse.ok())
+ const voluntaryPlan=await voluntaryResponse.json()
+ assert.ok(voluntaryPlan.definitionIds.includes(localized('hh-love-affection','en').id))
+ assert.ok(!voluntaryPlan.definitionIds.includes(localized('hh-sexual-self-kindness','en').id))
+ await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/)
+ await expect(page.locator('#my-tests-list')).toBeVisible()
+ await page.waitForLoadState('networkidle')
+ await page.reload()
+ await expect(page.locator('#my-tests-list')).toBeVisible()
+ const savedChoice=await api(account,'bootstrap')
+ assert.ok(savedChoice.activeTestPlan.definitionIds.includes(localized('hh-love-affection','en').id))
+ passed('explicit relationship choice survives broader filters, private plan saving and reload without adding other intimate forms')
  await navigate(page,origin+'/en/client/tests?test=hh-love-affection')
  const selectionResponse=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
