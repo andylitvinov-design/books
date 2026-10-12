@@ -45,6 +45,8 @@ try {
         for (const locale of ['en', 'ru', 'es']) {
           const context = await browser.newContext({ viewport: { width, height: 900 } });
           const pageErrors = [];
+          const journey = { engine, width, locale, ok: false, nativeDecodedPlayback: [], alenaRendererSynthetic: true, alenaDecodedPlaybackClaimed: false, pageErrors };
+          result.journeys.push(journey);
           try {
             // Deterministic renderer/CSP test only; do not claim YouTube decoded playback.
             await context.route('https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1', route => route.fulfill({
@@ -74,8 +76,9 @@ try {
                 'Alena · Tantra Reiki testimonial · Russian audio',
               ]);
             }
-            const playback = [];
+            const playback = journey.nativeDecodedPlayback;
             for (let index = 0; index < 2; index++) {
+              journey.stage = { video: index + 1, phase: 'initial-playback' };
               const video = russian.locator('video').nth(index);
               await video.scrollIntoViewIfNeeded();
               await video.evaluate(async el => { el.muted = true; await el.play(); });
@@ -87,14 +90,22 @@ try {
               assert.ok(sample.ready >= 2 && sample.frames > 0, 'A decoded video frame is required');
               assert.ok(Math.abs(sample.duration - (index === 0 ? 321.2 : 236)) < 0.5);
               const seekTarget = 30;
+              const observed = { ...sample, seekTarget };
+              playback.push(observed);
+              journey.stage = { video: index + 1, phase: 'seek-and-decode' };
               await video.evaluate((el, time) => { el.currentTime = time; }, seekTarget);
               await expect.poll(() => video.evaluate(el => !el.seeking && el.readyState >= 2), { timeout: 20000 }).toBe(true);
               await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(seekTarget + 0.25);
+              observed.immediateAfterSeek = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames, ready: el.readyState, error: el.error?.code ?? null }));
+              // Decode statistics can update after the media clock / seeked event.
+              // Preserve the strict decoded-frame requirement and wait for observation.
+              await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(sample.frames);
               const afterSeek = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames, ready: el.readyState, error: el.error?.code ?? null }));
+              observed.afterSeek = afterSeek;
               assert.equal(afterSeek.error, null);
               assert.ok(afterSeek.frames > sample.frames, 'Decoded playback must continue after seeking');
               await video.evaluate(el => el.pause());
-              playback.push({ ...sample, seekTarget, afterSeek });
+
             }
             await russian.locator('button.academy-video-poster').click();
             const alena = russian.locator('iframe');
@@ -109,9 +120,13 @@ try {
               await expect(russian.locator('video').first()).toBeVisible();
             }
             assert.deepEqual(pageErrors, []);
-            const journey = { engine, width, locale, ok: true, nativeDecodedPlayback: playback, alenaRendererSynthetic: true, alenaDecodedPlaybackClaimed: false, pageErrors };
-            result.journeys.push(journey);
+            journey.ok = true;
+            journey.stage = { phase: 'complete' };
             console.log(JSON.stringify(journey));
+          } catch (error) {
+            journey.failure = { message: error.message, stack: error.stack };
+            console.log(JSON.stringify(journey));
+            throw error;
           } finally { await context.close(); }
         }
       }
