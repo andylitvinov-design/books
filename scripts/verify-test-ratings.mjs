@@ -50,7 +50,7 @@ try{
   let state=await api('results/'+result.id+'/rating')
   if(state.stars){await api('results/'+result.id+'/rating',{expectedRevision:state.revision},'DELETE');await navigate(url)}
   await rating.getByRole('radio').first().focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight')
-  await expect(rating.getByRole('radio').nth(2)).toBeChecked()
+  await expect(rating.getByRole('radio').nth(2)).toBeChecked();await expect(rating.getByRole('radio').nth(2)).toBeFocused()
   assert.notEqual(await rating.getByRole('radio').nth(2).evaluate(el=>getComputedStyle(el.parentElement).outlineStyle),'none')
   await rating.getByRole('button',{name:c.save,exact:true}).click();await expect(rating.getByRole('status')).toContainText(c.saved)
   await page.waitForLoadState('networkidle');await page.reload();await expect(rating.getByRole('radio').nth(2)).toBeChecked()
@@ -75,10 +75,16 @@ try{
   assert.equal((await api('results/'+result.id+'/rating')).stars,null)
   passed(locale+': native keyboard/focus, 320/390/1280 layout, real save/reload/edit/conflict/retry/remove')
  }
- // A missing DB interpretation hides the feedback control, without fabricated advice.
- await page.route('**/api/app/results/'+result.id,async route=>{const response=await route.fetch();const body=await response.json();await route.fulfill({response,json:{...body,interpretations:{}}})})
- await navigate(origin+'/en/app/results/'+result.id);await expect(page.locator('[data-test-rating]')).toHaveCount(0)
- await page.unroute('**/api/app/results/'+result.id)
+ // Withdraw actual synthetic DB content, covering both bootstrap and result GET.
+ // Intercepting only one route would leave bootstrap's valid report available.
+ const missingAdmin=await adminClient()
+ try {
+  await missingAdmin.query("update app.assessment_interpretation_versions set status='retired' where assessment_version_id=$1 and ui_locale='en'",[cbi.id])
+  assert.notEqual((await api('results/'+result.id)).interpretations.en.status,'available')
+  await navigate(origin+'/en/app/results/'+result.id);await expect(page.locator('[data-test-rating]')).toHaveCount(0)
+ } finally {
+  await missingAdmin.query("update app.assessment_interpretation_versions set status='published' where assessment_version_id=$1 and ui_locale='en'",[cbi.id]);await missingAdmin.end()
+ }
  passed('missing interpretation does not offer a vote')
  // A previously saved vote remains removable if the exact interpretation is retired.
  let managed=await api('results/'+result.id+'/rating')
