@@ -1445,6 +1445,30 @@ test('all relationship forms save independent means privately and reject another
   }
 })
 
+test('original typology registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { PERSONALITY_TYPE_DEFINITIONS } = await import('../data/assessments/personality-types-original-2026.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261011230000_hh_personality_types_original.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const d of PERSONALITY_TYPE_DEFINITIONS) {
+      const rows = (await db.query('select id, definition, content_hash from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3', [d.key, d.version, d.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      assert.equal(rows[0].id, d.id)
+      assert.equal(rows[0].content_hash, d.contentHash)
+      assert.deepEqual(rows[0].definition, d)
+    }
+    const first = PERSONALITY_TYPE_DEFINITIONS[0]
+    for (const broken of [sql.replace(first.id, randomUUID()), sql.replace(first.contentHash, 'sha256:'+'0'.repeat(64)), sql.replace('Exchanging ideas with others', 'CHANGED original question')]) {
+      await assert.rejects(() => db.query(broken), /Conflicting immutable assessment version|Different content already published/)
+      await db.query('rollback')
+    }
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[first.id])).rows[0].definition, first)
+  } finally { await db.end() }
+})
+
 test('MHC-SF registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
   const { readFile } = await import('node:fs/promises')
   const { MHC_SF_DEFINITIONS } = await import('../data/assessments/mhc-sf-adult-dec2011.js')
@@ -1491,4 +1515,49 @@ test('MHC-SF guest persistence retains zero, source sums and private bilingual r
       assert.ok(report.sections.every(s=>s.source===d.source.scoringUrl && s.bandBasis==='descriptive'))
     }
   }
+})
+
+test('prepared interpretation content has exact coverage, narrow read grants and immutable rows',async()=>{
+ const {preparedInterpretationRecords,seedAssessmentInterpretations}=await import('../scripts/seed-assessment-interpretations.mjs')
+ const {interpretationSeedSql}=await import('../scripts/prepare-assessment-interpretation-sql.mjs')
+ const records=await preparedInterpretationRecords(),row=records[0],db=await adminClient()
+ try {
+  assert.equal(Number((await db.query('select count(*) from app.assessment_interpretation_versions')).rows[0].count),356)
+  assert.deepEqual(await seedAssessmentInterpretations(db,records),{inserted:0,unchanged:356,total:356})
+  assert.equal(Number((await rawAs(a,'hh_app_backend',q=>q.query('select count(*) from app.assessment_interpretation_versions'))).rows[0].count),356)
+  for(const role of ['anon','authenticated','hh_app_inbox']) {
+   await db.query('begin');await db.query('set local role '+role)
+   await assert.rejects(()=>db.query('select * from app.assessment_interpretation_versions'),/permission denied/i)
+   await db.query('rollback')
+  }
+  for(const sql of ['insert into app.assessment_interpretation_versions select * from app.assessment_interpretation_versions where false',"update app.assessment_interpretation_versions set status='retired' where false",'delete from app.assessment_interpretation_versions where false'])
+   await assert.rejects(()=>rawAs(a,'hh_app_backend',q=>q.query(sql)),/permission denied/i)
+  for(const [sql,expected] of [["update app.assessment_interpretation_versions set payload=payload||'{\"tampered\":true}'::jsonb where assessment_version_id=$1",/IMMUTABLE_VERSION/],['delete from app.assessment_interpretation_versions where assessment_version_id=$1',/IMMUTABLE_RESULT/]]) {
+   await db.query('begin');await assert.rejects(()=>db.query(sql,[row.definitionId]),expected);await db.query('rollback')
+  }
+  await db.query('begin')
+  await db.query("update app.assessment_interpretation_versions set status='retired' where assessment_version_id=$1 and ui_locale=$2",[row.definitionId,row.uiLocale])
+  await db.query('set local role hh_app_backend')
+  assert.equal((await db.query('select * from app.assessment_interpretation_versions where assessment_version_id=$1 and ui_locale=$2',[row.definitionId,row.uiLocale])).rows.length,0)
+  await db.query('rollback')
+  const badHash=interpretationSeedSql([row]).replace(row.payloadHash,'sha256:'+'0'.repeat(64))
+  await assert.rejects(()=>db.query(badHash),/INTERPRETATION_PAYLOAD_HASH_MISMATCH/);await db.query('rollback')
+  const wrongDefinition=interpretationSeedSql([row]).replace('"id":"'+row.definitionId+'"','"id":"00000000-0000-4000-8000-000000000000"')
+  await assert.rejects(()=>db.query(wrongDefinition),/REGISTERED_INSTRUMENT_MISMATCH/);await db.query('rollback')
+ }finally{await db.end()}
+})
+
+test('account and guest submit, repeat submit, reload and bootstrap share database-origin interpretations',async()=>{
+ const d=getAssessmentDefinition('cbi-personal','v1','en')
+ const assertReady=result=>{for(const language of ['en','ru']){assert.equal(result.interpretations[language].status,'available');assert.equal(result.interpretations[language].origin,'database');assert.equal(result.interpretations[language].identity.definitionId,d.id)}}
+ let run=await start(a,d)
+ run=await repo.saveRun(a,run.id,{answers:answer(d,2),context:{},progress:d.questions.length,expectedRevision:run.revision,operationId:randomUUID()})
+ const result=await repo.submitRun(a,run.id,{expectedRevision:run.revision});assertReady(result)
+ for(const other of [await repo.submitRun(a,run.id,{expectedRevision:run.revision}),await repo.getResult(a,result.id),(await repo.bootstrap(a)).results.find(r=>r.id===result.id)]){assertReady(other);assert.deepEqual(other.interpretations,result.interpretations)}
+ const guest=createGuestRepository(config),credential=createGuestCredential()
+ await guest.createSession(credential,{adult:true,necessary:true,uiLocale:'en',timezone:'UTC'})
+ let guestRun=await guest.startRun(credential,{definitionKey:d.key,definitionVersion:d.version,instrumentLocale:d.instrumentLocale,operationId:randomUUID()})
+ guestRun=await guest.saveRun(credential,guestRun.id,{answers:answer(d,2),context:{},progress:d.questions.length,expectedRevision:guestRun.revision,operationId:randomUUID()})
+ const guestResult=await guest.submitRun(credential,guestRun.id,{expectedRevision:guestRun.revision});assertReady(guestResult)
+ for(const other of [await guest.submitRun(credential,guestRun.id,{expectedRevision:guestRun.revision}),await guest.getResult(credential,guestResult.id),(await guest.bootstrap(credential)).results.find(r=>r.id===guestResult.id)]){assertReady(other);assert.deepEqual(other.interpretations,guestResult.interpretations)}
 })

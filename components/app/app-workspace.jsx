@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, FileText, Heart, House, Leaf, Moon, Smile, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { COPY, labelFor, explanationFor } from './copy'
+import { COPY, labelFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { assessmentHistoryGroups, nextPersonalRecommendation, resultChangeSummary } from '@/lib/assessments/personal-guidance'
@@ -26,6 +26,7 @@ import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-e
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
+import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import {
   TEST_LENGTH_FILTERS,
   TEST_RECOMMENDATION_FOCUS,
@@ -49,6 +50,12 @@ function message(error, c) {
       : error?.code === 'NOT_FOUND'
         ? c.notFound
         : c.error
+}
+function preparedScaleMeaning(result, key, locale) {
+  const report = buildAssessmentResultReport(result, locale)
+  if (report.status !== 'available') return report.note
+  const section = report.sections.find(item => item.key === key)
+  return section?.explanation?.construct || section?.meaning || report.note
 }
 function dateLabel(value, locale) {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
@@ -815,6 +822,7 @@ function TestCatalog({ data, locale, onStarted }) {
     const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
     const title = item?.title?.[locale] || item?.title?.en || def.title
     const description = item?.description?.[locale] || item?.description?.en || ''
+    const methodology = assessmentMethodology({key: def.key, catalog: item, definition: def, locale}).text
     const image =
       item?.axis === 'baseline'
         ? (ru ? '/images/holistic-house/video-posters/services-ru-v1.webp' : '/images/holistic-house/video-posters/services-en-v2.webp')
@@ -834,6 +842,8 @@ function TestCatalog({ data, locale, onStarted }) {
           </p>
           <h2>{title}</h2>
           <p>{description}</p>
+          <p className="hh-fine">{methodology}</p>
+          {/^https:\/\//.test(def.source?.url || '') && <a className="hh-fine" href={def.source.url} rel="noopener noreferrer" target="_blank">{ru ? 'Источник методики' : 'Instrument source'}</a>}
           {def.source?.copyright && <p className="hh-fine">{def.source.copyright}</p>}
           {completed && <p className="hh-fine">{c.latest}: {dateLabel(completed.measurementAt, locale)}</p>}
           <div className="hh-actions">
@@ -1948,7 +1958,7 @@ function PortfolioPage({ data, locale }) {
             <div className="hh-panel hh-detail">
               <button type="button" onClick={() => setSelected(null)}>{ru ? 'Закрыть' : 'Close'}</button>
               <h2>{readableScaleName(selected, locale)}</h2>
-              <p>{explanationFor(selected.key, locale)}</p>
+              <p>{preparedScaleMeaning(data.results.find(result => result.id === selected.sourceResultId), selected.key, locale)}</p>
               <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{ru ? 'Полный отчёт' : 'Full report'}</Link>
             </div>
           )}
@@ -2519,7 +2529,7 @@ function ResultPage({ id, locale, data }) {
               <section className="hh-result-metric" key={d.key}>
                 <div className="hh-result-metric-copy">
                   <h3>{readableScaleName(d, locale)}</h3>
-                  {explanationFor(d.key, locale) && <p>{explanationFor(d.key, locale)}</p>}
+                  <p>{preparedScaleMeaning(result, d.key, locale)}</p>
                 </div>
                 <div className="hh-result-score">
                   <strong>{d.value}</strong>

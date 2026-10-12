@@ -1,12 +1,12 @@
 # Scale explanations and practical steps: bounded coverage audit
 
-Candidate base: `384266681609e7ee12d8be8c333b05153e72bbf8` (canonical branch checked 2026-10-12 14:10 UTC). No production deployment is part of this change.
+Candidate base: `575f87639fbecd4b503e899124ac5b24c2e37429` (canonical integration 2026-10-12 15:04 UTC). No production deployment is part of this change.
 
 ## Coverage and provenance
 
-The active, rights-cleared, startable catalog at this base contains **105 keys and 207 dimension slots**. This does **not** mean 105 professional or independently validated instruments, nor 105 newly reviewed original manuals.
+The active, rights-cleared, startable catalog at this base contains **109 keys and 232 dimension slots**. This does **not** mean 109 professional or independently validated instruments, nor 109 newly reviewed original manuals.
 
-- 159 dimension slots receive explicit construct explanations in EN/RU plus calculations derived from the exact registered definition and actual response anchors.
+- 184 dimension slots receive explicit construct explanations in EN/RU plus calculations derived from the exact registered definition and actual response anchors.
 - 48 existing specialized slots are preserved: Bach 38, MHC-SF 4, SCS-SF 1 and Compassion Scale 5.
 - Every key retains practical steps. The first scale meaning and first step are now visible in Insights; each numeric report exposes its scale explanations, scoring and sources without opening a disclosure. Bach retains its bespoke expandable theme list.
 - The machine-readable companion `2026-10-12-result-explanation-coverage.json` enumerates every key, version, content hash, dimensions, source status and category reference. It contains no participant responses or scores.
@@ -15,7 +15,7 @@ Source-review counts are **by catalog key**, not by independent publication:
 
 | Status | Keys | Meaning |
 | --- | ---: | --- |
-| original-hh-definition | 63 | Original Holistic House questions and scoring, including the preserved Bach profile; authored reflection, no independent norms asserted. |
+| original-hh-definition | 67 | Original Holistic House questions and scoring, including the preserved Bach profile; authored reflection, no independent norms asserted. |
 | original-form | 21 | Original IPIP keys/forms and CDC questionnaire documentation inspected. This does not imply individual norms or a clinical interpretation manual. |
 | original-guidance | 15 | Original author/custodian scoring guidance inspected for the claims below. |
 | research-source | 1 | ERQ construct and scoring checked against CMU research documentation. |
@@ -50,8 +50,8 @@ New explanatory prose requires exact definition version, instrument locale, tran
 
 ## Change boundary and verification
 
-Changed scope: report model, bilingual semantic content, shared report rendering, Insights preview, styles, focused tests, synthetic browser verification and this audit. No definition/question/scorer/hash/registration/migration/authorization changes. PR327 is superseded and is not resumed. Independent pending methodology/typology work is not overwritten; integration is coordinated separately.
+Changed scope: report model, bilingual semantic content, shared report rendering, Insights, persisted interpretation schema/content/lookup, PDF, tests and this audit. Existing definitions/questions/scorers/hashes/registrations remain unchanged relative to integrated canonical 575f876. PR327 is superseded and is not resumed. Canonical methodology and four original typology questionnaires are preserved, including their explicit nonvalidated status. The new content table and its narrow existing-backend SELECT grant are prepared separately for coordinated release; no live application occurred.
 
-Synthetic checks cover every active registered locale at answer endpoints/midpoint in EN/RU, 207-dimension coverage, distinct scale meanings, CBI arithmetic/anchors/reversal/source rules, misleading HH titles and mixed composites, exact provenance, category-source retention, and visible content outside closed disclosures. Existing MHC-SF, compassion, Bach and IPIP tests stay in the regression suite.
+Synthetic checks cover every active registered locale at answer endpoints/midpoint in EN/RU, 232-dimension coverage, distinct scale meanings, CBI arithmetic/anchors/reversal/source rules, misleading HH titles and mixed composites, exact provenance, category-source retention, and visible content outside closed disclosures. Existing MHC-SF, compassion, Bach and IPIP tests stay in the regression suite.
 
 The new isolated browser script exercises CBI quick completion, saved report, visible explanation/source, EN/RU, Insights preview and full-report link, widths 320/390/1280, no overflow, and screenshot artifacts in both existing Chromium/WebKit CI jobs. It is guarded against non-loopback or non-isolated use. All fixtures are synthetic. Local React SSR was checked; local Chromium launch is blocked by this execution environment's Unix-socket restrictions, so a passing local visual/browser run is **not** claimed. Final CI status belongs to the exact PR head.

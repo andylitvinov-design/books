@@ -14,6 +14,7 @@ create table app.assessment_interpretation_versions (
   interpretation_version text not null,
   payload jsonb not null check (jsonb_typeof(payload) = 'object'),
   payload_hash text not null check (payload_hash ~ '^sha256:[a-f0-9]{64}$'),
+  status text not null default 'published' check (status in ('published','retired')),
   published_at timestamptz not null default now(),
   primary key (assessment_version_id, ui_locale, interpretation_version),
   unique (definition_key,definition_version,instrument_locale,translation_version,scoring_key,scoring_version,result_version,ui_locale,interpretation_version)
@@ -24,7 +25,11 @@ alter table app.assessment_interpretation_versions force row level security;
 revoke all on app.assessment_interpretation_versions from public, anon, authenticated, hh_app_backend, hh_app_inbox;
 grant select on app.assessment_interpretation_versions to hh_app_backend;
 create policy interpretation_content_read on app.assessment_interpretation_versions
-  for select to hh_app_backend using (true);
+  for select to hh_app_backend using (status = 'published');
 -- Reuse the existing immutable-version trigger; no new elevated function.
 create trigger immutable_interpretation_version before update on app.assessment_interpretation_versions
   for each row execute function app_private.immutable_version();
+
+-- Retire an erroneous content revision instead of destroying its history.
+create trigger preserve_interpretation_history before delete on app.assessment_interpretation_versions
+  for each row execute function app_private.immutable_result();

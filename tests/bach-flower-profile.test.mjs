@@ -8,7 +8,7 @@ import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition, validateAnswers } from
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { validateResult, compareResults } from '../lib/profile/history.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { readFileSync } from 'node:fs'

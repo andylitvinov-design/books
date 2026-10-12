@@ -1,12 +1,11 @@
 import Link from 'next/link'
 import { ScoreGauge, ScoreTrend } from './assessment-gauge'
-import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import { gaugeModel } from '@/lib/assessments/dashboard-gauges'
 import styles from './compact-assessment-report.module.css'
 
 export function CompactAssessmentReport({ result, previous = null, report, locale = 'en' }) {
   const ru = locale === 'ru'
-  const scaleGuide = getTestScaleGuide(result.definitionKey, locale)
+  const scaleGuide = report.scaleGuide
   const byScale = new Map((scaleGuide?.scales || []).map(scale => [scale.key, scale]))
   const hasSkills = Boolean(scaleGuide?.skillAxes?.length)
   return <section className={styles.report} data-personal-result-report data-compact-assessment-report
@@ -16,6 +15,14 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       <span>{report.sections.length} {ru ? 'показателей' : 'measures'}</span>
     </header>
     <p className={styles.purpose} data-report-purpose>{report.purpose}</p>
+    {report.methodology && <p className={styles.methodology} data-assessment-methodology><strong>{ru ? 'Происхождение и профессиональный статус' : 'Origin & evidence'}:</strong> {report.methodology}</p>}
+    {report.personalityType && <aside className={styles.typeSummary} role="note" data-personality-type-summary>
+      <p>{ru ? 'Гипотеза для самопознания' : 'Self-reflection hypothesis'}</p>
+      <h3>{report.personalityType.headline}</h3>
+      <p>{report.personalityType.description}</p>
+      {report.personalityType.alternatives?.map(alternative => <p key={alternative}>{alternative}</p>)}
+      <small>{report.personalityType.warning}</small>
+    </aside>}
     {report.contextNote && <p className={styles.contextNote} data-assessment-context>{report.contextNote}</p>}
     <div className={styles.cards}>
       {report.sections.map((section, index) => {

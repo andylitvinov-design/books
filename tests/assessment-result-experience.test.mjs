@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { ASSESSMENT_DEFINITIONS } from '../lib/assessments/definitions.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 
 const source = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const enabled = new Set(MONITORING_CATALOG.filter(item => item.startable).map(item => item.key + ':' + item.version))
@@ -14,7 +14,7 @@ const answersFor = (def, value = 'min') => Object.fromEntries(def.questions.map(
 ]))
 
 test('every runnable, versioned assessment produces EN/RU score-tied advice without fabricated diagnostic categories', () => {
-  assert.ok(tests.length >= 75, 'All current runnable definitions must be covered')
+  assert.ok(tests.length >= 80, 'All current runnable definitions must be covered')
   for (const def of tests) {
     const scored = scoreAssessment(def, answersFor(def))
     assert.ok(scored.dimensions.length > 0, def.key)
@@ -131,14 +131,14 @@ test('full report appears before the optional raw score panel; no overall unrela
 test('PDF report includes personal interpretation and next steps for each individual assessment', () => {
   const building = source('lib/profile/client-report.js')
   const rendering = source('lib/profile/client-report-pdf.js')
-  assert.match(building, /interpretation:buildAssessmentResultReport\(latest, lang\)/)
+  assert.match(building, /const interpretation = buildAssessmentResultReport\(latest, lang\)/)
   assert.match(rendering, /test\.interpretation\?\.sections\?\.length/)
   assert.match(rendering, /for \(const section of test\.interpretation\.sections\)/)
   assert.match(rendering, /section\.steps\.slice\(0,2\)/)
 })
 test('each per-test report explains purpose and has human-readable labels rather than machine keys', () => {
   const component = source('components/app/personal-result-report.jsx')
-  const engine = source('lib/assessments/result-report.js')
+  const engine = source('lib/assessments/result-report-authoring.js')
   assert.match(component, /report\.purpose/)
   assert.match(component, /section\.value/)
   assert.match(engine, /visibleConstruct\(dimension, language\)/)

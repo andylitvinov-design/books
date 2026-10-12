@@ -150,23 +150,33 @@ try{
   await file.saveAs(output+'/report-'+locale+'.pdf')
   passed(locale+' PDF download includes persisted MHC-SF sums and interpretation model')
  }
+ // Both language/mode journeys use one consented guest and retain separate saved results.
+ // The complete browser matrix stays within the unchanged 12 sessions/IP/hour limit.
+ const guest=await browser.newContext({viewport:{width:390,height:844}}), guestResultIds=new Set()
+ await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
  for(const [i,d] of [defs[0],defs[0]].entries()){
-  const locale=i?'en':'ru',mode=i?'guided':'quick',guest=await browser.newContext({viewport:{width:390,height:844}})
-  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
+  const locale=i?'en':'ru',mode=i?'guided':'quick'
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en'}],operationId:randomUUID()})
   page=await guest.newPage();observePage(page,'guest-'+locale+'-'+mode)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
   const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
   await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()
   await fill(page,d,mode,true,locale,i?mixed:Array(14).fill(5))
-  const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key)
+  const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key&&!guestResultIds.has(r.id))
+  assert.ok(result,'each MHC-SF journey persists a new result')
+  guestResultIds.add(result.id)
   assert.deepEqual(result.dimensions.map(x=>x.value),i?[31,3,13,15]:[70,15,25,30])
   assert.equal(result.instrumentLocale,'en');assert.equal(result.contentHash,d.contentHash)
   passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
-  await guest.close()
+  await page.close()
  }
+ const guestResults=(await api(guest,'guest/bootstrap')).results.filter(r=>r.definitionKey==='mhc-sf')
+ assert.equal(guestResultIds.size,2)
+ assert.equal(guestResults.length,2)
+ assert.ok(guestResults.every(r=>guestResultIds.has(r.id)))
+ await guest.close()
  assert.deepEqual(errors,[])
- await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,browser:await browser.version(),checks,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,browser:await browser.version(),checks,guestSessions:1,guestResults:guestResults.length,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
 } catch(error){
  await page?.screenshot({path:output+'/failure.png',fullPage:true}).catch(()=>{})
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message},null,2));throw error

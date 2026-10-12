@@ -8,7 +8,7 @@ import { useState } from "react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-video-library.module.css";
 
-export type AcademyVideoLesson = { id: string; title: string };
+export type AcademyVideoLesson = { id: string; title: string; unavailable?: boolean };
 export type AcademyVideoChapter = { id: string; title: string; videos: AcademyVideoLesson[] };
 export type AcademyVideoCourse = {
   id: string;
@@ -52,6 +52,7 @@ const ui = {
     details: "Explore the complete course",
     youtube: "Watch on YouTube",
     missing: "Source pending:",
+    unavailable: "Recording unavailable: the listed source is not publicly playable.",
     unverified: "“Flight to the Sun” is retained as a practice reference, not as a playable video until its recording is verified.",
   },
   ru: {
@@ -74,6 +75,7 @@ const ui = {
     details: "Подробнее о программе",
     youtube: "Смотреть на YouTube",
     missing: "Источник уточняется:",
+    unavailable: "Запись недоступна: указанный источник не открыт для публичного просмотра.",
     unverified: "«Полёт к Солнцу» сохранён как описание практики, но запись не показывается, пока ссылка на видео не подтверждена.",
   },
   es: {
@@ -96,6 +98,7 @@ const ui = {
     details: "Ver programa completo",
     youtube: "Ver en YouTube",
     missing: "Fuente pendiente:",
+    unavailable: "Grabación no disponible: la fuente indicada no se puede reproducir públicamente.",
     unverified: "«Flight to the Sun» permanece como referencia; la grabación todavía no está verificada.",
   },
 } as const;
@@ -228,7 +231,10 @@ export function AcademyVideoLibraryClient({
                                         const playing = playingVideo === key;
                                         return (
                                           <div className={styles.lesson} key={key}>
-                                            <button
+                                            {lesson.unavailable ? <div className={styles.lessonToggle} role="note">
+                                              <span className={styles.lessonTitle}>{lesson.title}</span>
+                                              <span>{t.unavailable}</span>
+                                            </div> : <button
                                               className={styles.lessonToggle + (playing ? " " + styles.selected : "")}
                                               type="button"
                                               onClick={() => openVideoById(key)}
@@ -238,7 +244,7 @@ export function AcademyVideoLibraryClient({
                                               <span className={styles.lessonPoster}><Image src={poster(lesson.id)} unoptimized width={80} height={45} sizes="62px" alt="" loading="lazy" /></span>
                                               <span className={styles.lessonTitle}>{lesson.title}</span>
                                               <Play size={17} aria-hidden="true" />
-                                            </button>
+                                            </button>}
                                             {playing ? (
                                               <div className={styles.player}>
                                                 <div className={styles.frame}>

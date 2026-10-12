@@ -9,7 +9,7 @@ import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { interpretationForDimension } from '../lib/assessments/interpretation-registry.js'
 import { buildClientReport } from '../lib/profile/client-report.js'
@@ -109,10 +109,10 @@ test('EN/RU reports provide four continuous sums, attribution, form-specific lim
 })
 
 test('one MHC-SF replaces its research reference in EN/RU guest/account filters without duplication',()=>{
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,105)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,109)
   assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,42)
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
-  const prior=ASSESSMENT_DEFINITIONS.filter(x=>x.key!=='mhc-sf')
+  const prior=ASSESSMENT_DEFINITIONS.filter(x=>x.key!=='mhc-sf'&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
   assert.equal(prior.length,169)
   assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
   const relationshipIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))

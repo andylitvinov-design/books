@@ -8,7 +8,7 @@ import { getAssessmentDefinition, validateAnswers } from '../lib/assessments/def
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport, withInterpretationFixture } from './helpers/interpretation-fixture.mjs'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { interpretationPlan, interpretationRegistryCoverage, interpretationDimensionPlan, interpretationForDimension } from '../lib/assessments/interpretation-registry.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
@@ -61,7 +61,7 @@ test('eight adult EN/RU questionnaires have stable provenance, six questions and
 })
 test('catalog selection, privacy and recommended focus discover intimacy and sexuality without any diagnosis',()=>{
   const count=MONITORING_CATALOG.filter(item=>item.startable).length
-  assert.equal(count,105)
+  assert.equal(count,109)
   const coverage=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual(coverage.uncovered,[])
   assert.equal(coverage.registered,coverage.total)
@@ -117,7 +117,7 @@ test('bilingual saved report and PDF models retain experimental status and conse
       assert.match(report.contextNote,locale==='ru'?/без клинической валидации/:/not clinically validated/)
       assert.match(report.contextNote,locale==='ru'?/согласие/:/consent/)
       assert.ok(report.sections.every(s=>s.bandBasis==='descriptive'&&!s.recommendedReview))
-      const pdf=buildClientReport({results:[result],locale})
+      const pdf=buildClientReport({results:[withInterpretationFixture(result)],locale})
       assert.equal(pdf.tests[0].interpretation.contextNote,report.contextNote)
       assert.deepEqual(pdf.tests[0].dimensions.map(s=>s.value),[0,0])
     }

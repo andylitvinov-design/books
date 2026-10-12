@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
-import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
 import { CompactAssessmentReport } from './compact-assessment-report'
 
@@ -12,7 +11,7 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
   const bach = result?.definitionKey === 'hh-bach-flower-profile'
   // Keep the bespoke Bach ranking presentation; numeric tests use the concise dial layout.
   if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} />
-  const scaleGuide = getTestScaleGuide(result?.definitionKey, locale)
+  const scaleGuide = report.scaleGuide
   const byScale = new Map((scaleGuide?.scales || []).map(scale=>[scale.key,scale]))
   const hasTrainableSkills = Boolean(scaleGuide?.skillAxes?.length)
   const featured = bach ? report.sections.slice(0, report.highlightedCount) : report.sections
@@ -61,6 +60,7 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
         <div className={styles.purpose}>
           <strong>{ru ? 'Что измеряет тест' : 'What this test measures'}</strong>
           <p>{report.purpose}</p>
+          {report.methodology && <p className={styles.methodology}><strong>{ru ? 'Происхождение и профессиональный статус' : 'Origin & evidence'}:</strong> {report.methodology}</p>}
         </div>
       </header>
       {bach && featured.length > 0 && (

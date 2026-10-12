@@ -9,7 +9,7 @@ import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 
 const key = 'ipip-big-five-50'
 const definition = IPIP_BIG_FIVE_50_EN_V1
@@ -41,7 +41,7 @@ test('IPIP-50 original English questions, permission and immutable version are s
   assert.equal(IPIP_BIG_FIVE_50_CATALOG.length, 1)
   assert.equal(IPIP_BIG_FIVE_50_CATALOG[0].startable, true)
   assert.equal(IPIP_BIG_FIVE_50_CATALOG[0].starterEligible, false)
-  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 105)
+  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 109)
   const migration = await readFile('supabase/migrations/20261011170000_hh_ipip_big_five_50.sql', 'utf8')
   assert.ok(migration.includes(contentHash))
   assert.ok(migration.includes(definition.id))
@@ -82,8 +82,8 @@ test('IPIP-50 is available in both explorer locales, but the questions remain id
 })
 
 test('17 additional psychotherapy scales are searchable references, not unlicensed online tests', () => {
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 143)
-  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map(item => item.key)).size, 143)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 154)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map(item => item.key)).size, 154)
   const guest = buildExplorerEntries({ locale: 'en', audience: 'guest' })
   const account = buildExplorerEntries({ locale: 'en', audience: 'account' })
   for (const ref of refs) {

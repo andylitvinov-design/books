@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 import { resultDimensionExplanation, resultExplanationSource } from '../lib/assessments/result-explanations.js'
 
 const active = MONITORING_CATALOG.filter(item => item.startable && item.rightsStatus === 'cleared')
@@ -47,7 +47,7 @@ test('every active version and locale has substantive scale content, not just a 
     coverage.set(def.key, report.sections.length)
   }
   assert.equal(coverage.size, active.length)
-  assert.equal([...coverage.values()].reduce((a,b) => a+b, 0), 207)
+  assert.equal([...coverage.values()].reduce((a,b) => a+b, 0), 232)
 })
 
 test('CBI personal has original construct, exact mechanics, full anchors and a score-specific reading', () => {
@@ -148,7 +148,7 @@ test('actual shared report places construct, mechanics, score reading and source
   assert.match(ui, /section\.explanation\?\.mixed/)
   assert.match(read('components/app/personal-result-report.jsx'), /<CompactAssessmentReport/)
   for (const path of ['components/app/app-workspace.jsx','components/app/cabinet-landing.jsx']) assert.match(read(path), /<PersonalResultReport result=/)
-  assert.match(read('lib/profile/client-report.js'), /interpretation:buildAssessmentResultReport/)
+  assert.match(read('lib/profile/client-report.js'), /const interpretation = buildAssessmentResultReport/)
 })
 
 

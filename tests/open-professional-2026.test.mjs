@@ -14,7 +14,7 @@ import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessme
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { interpretationPlan, interpretationRegistryCoverage, classificationDirection } from '../lib/assessments/interpretation-registry.js'
 
@@ -97,11 +97,11 @@ test('BFAS and VIA-R use complete official positive/negative keyed forms; no cli
   }
 })
 
-test('all runnable 105 now have exact-version score interpretation plans and per-scale guidance',()=>{
+test('all runnable 109 now have exact-version score interpretation plans and per-scale guidance',()=>{
   const c=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual({total:c.total,registered:c.registered,uncovered:c.uncovered,obsolete:c.obsolete},
-    {total:105,registered:105,uncovered:[],obsolete:[]})
-  assert.equal(new Set(MONITORING_CATALOG.filter(c=>c.startable).map(c=>c.key)).size,105)
+    {total:109,registered:109,uncovered:[],obsolete:[]})
+  assert.equal(new Set(MONITORING_CATALOG.filter(c=>c.startable).map(c=>c.key)).size,109)
   for(const def of professional){
     const guideEN=getTestScaleGuide(def.key,'en')
     const guideRU=getTestScaleGuide(def.key,'ru')

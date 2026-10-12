@@ -1,13 +1,13 @@
 {
   "version": "2026-10-12.v1",
-  "base": "384266681609e7ee12d8be8c333b05153e72bbf8",
+  "base": "575f87639fbecd4b503e899124ac5b24c2e37429",
   "scope": "Active, rights-cleared, startable catalog keys only. Synthetic scoring; no client records.",
   "counts": {
-    "keys": 105,
-    "dimensions": 207,
-    "newDimensions": 159,
+    "keys": 109,
+    "dimensions": 232,
+    "newDimensions": 184,
     "sourceStatusCounts": {
-      "original-hh-definition": 63,
+      "original-hh-definition": 67,
       "original-form": 21,
       "original-guidance": 15,
       "research-source": 1,
@@ -2208,6 +2208,195 @@
           "key": "trait.ipip50.intellect_imagination",
           "explanation": "new-registered-form-explanation",
           "source": "https://ipip.ori.org/newBigFive5broadKey.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-socionics-32",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:739325e95feb1f299566200752b0c65de243f3e4e9fee0a4c767e53e84090aa6",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.hh_socionics.e",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.i",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.n",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.s",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.l",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.f",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.j",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.p",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-enneagram-36",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:1714cac50b4078864bc98ffbdcd3b35f27ae1454abb3a60579213263e226d566",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.hh_enneagram.one",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.two",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.three",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.four",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.five",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.six",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.seven",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.eight",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.nine",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-disc-style-20",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:d20ee32781a21001b350c244f578041480b6b249665f495443cfb82ec983ec08",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.hh_disc.d",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_disc.i",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_disc.s",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_disc.c",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-temperaments-16",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:c20a70040618f094adb4e71b94b642f1acd1a6ee612434b888a0ce4de27219b0",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.hh_temperament.sanguine",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_temperament.choleric",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_temperament.phlegmatic",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_temperament.melancholic",
+          "explanation": "new-registered-form-explanation",
+          "source": null
         }
       ],
       "mixedComposite": false
