@@ -16,7 +16,7 @@ const answers = definition => Object.fromEntries(definition.questions.map(q => [
 test('every active test has one separate bilingual source document and correct scored scale guide', () => {
   assert.ok(active.length >= 76)
   assert.equal(new Set(active.map(x=>x.key)).size,active.length)
-  assert.equal(FOCUS_KEYS.length,14)
+  assert.equal(FOCUS_KEYS.length,18)
   for (const key of FOCUS_KEYS) {
     const axis=SCALE_FOCUS[key]
     assert.ok(axis.en.length>4 && axis.ru.length>4 && axis.watch.every(v=>v.length>25) && axis.skill.every(v=>v.length>12),key)

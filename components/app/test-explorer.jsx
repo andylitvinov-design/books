@@ -7,7 +7,7 @@ import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation }
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import { PSYCHOTHERAPY_CORE_CATEGORIES } from '@/data/assessments/psychotherapy-core-100'
-import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries, rankPublicTestMatches } from '@/lib/assessments/test-explorer'
+import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, buildPublicStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries, rankPublicTestMatches } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import { normalizeProblemsForTopics } from '@/lib/assessments/test-problems'
 import { SimpleTestPicker } from './simple-test-picker'
@@ -181,6 +181,17 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   useEffect(() => {
     if (recommendedKey && entries.some((entry) => entry.key === recommendedKey && entry.selectable)) setSelectedKeys([recommendedKey])
   }, [recommendedKey, entries])
+  // A marketing page may preselect exactly one startable, rights-cleared test by key.
+  // URL contains no answers, health details or identity information.
+  useEffect(() => {
+    const key = new URLSearchParams(window.location.search).get('test')
+    const entry = entries.find(row => row.key === key && row.selectable)
+    if (!entry) return
+    setSelectedKeys([entry.key])
+    setSimpleSelectionChanged(true)
+    setAvailability('available')
+    setFocus([entry.topics.includes('sexuality') ? 'sexuality' : entry.topics.includes('tantra') ? 'tantra' : 'intimacy'])
+  }, [entries])
   const facets = { availability, focus, problems, styles: stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
   const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
   // Facet counts reflect the whole eligible catalog and every *other* active
@@ -210,7 +221,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     matching.filter((entry) => entry.selectable),
     { focus, problems, details, axes, depth, styles: stylesFilter, lengths },
   ), [matching, focus, problems, details, axes, depth, stylesFilter, lengths])
-  const simpleAuto = useMemo(() => simpleRecommendations.slice(0, 3), [simpleRecommendations])
+  const simpleAuto = useMemo(() => buildPublicStarterBattery(simpleRecommendations), [simpleRecommendations])
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
   // Use only existing, rights-cleared, startable questionnaires.

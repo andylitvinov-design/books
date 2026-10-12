@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {readFileSync} from 'node:fs'
 import {BFAS_100_DEFINITIONS} from '../data/assessments/bfas-100-en-v1.js'
+import {RELATIONSHIPS_INTIMACY_DEFINITIONS} from '../data/assessments/relationships-intimacy-v1.js'
 import {ASSESSMENT_DEFINITIONS, getAssessmentDefinition, validateAnswers} from '../lib/assessments/definitions.js'
 import {canonicalJSON} from '../lib/assessments/contracts.js'
 import {scoreAssessment} from '../lib/assessments/scoring.js'
@@ -125,11 +126,15 @@ test('BFAS reports and scale guides cover every construct in both UI languages w
 })
 
 test('BFAS adds one selectable professional instrument; existing immutable forms are byte-for-byte unchanged',()=>{
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,97)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,105)
  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,42)
  const prior=ASSESSMENT_DEFINITIONS.filter(x=>x.key!=='bfas-100')
- assert.equal(prior.length,153)
- assert.equal(digest(prior),'1743fb49e9f78bde406bc5055349a95c8b961961b21ab9d1a0fcb05fca1fb0bc')
+ assert.equal(prior.length,169)
+ assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
+ const relationshipIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))
+ const originalPrior=prior.filter(d=>!relationshipIds.has(d.id))
+ assert.equal(originalPrior.length,153)
+ assert.equal(digest(originalPrior),'1743fb49e9f78bde406bc5055349a95c8b961961b21ab9d1a0fcb05fca1fb0bc')
  for(const locale of ['en','ru'])for(const audience of ['guest','account']){
   const entries=buildExplorerEntries({locale,audience}),matches=entries.filter(e=>e.key==='bfas-100')
   assert.equal(matches.length,1);assert.ok(matches[0].selectable&&matches[0].definition)

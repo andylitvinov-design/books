@@ -1,12 +1,14 @@
 # Complete BFAS-100 author-form expansion
 
-This batch adds **one complete instrument**, `bfas-100`: 100 original English self-rating items, ten aspect means and five paired-domain means. It does not add ten separately counted tests. Canonical base: `10871d5473b912eeda39f51bc3c89e3d9395dd80` (`codex/public-book-library`). MHC-SF PR #384 is separate and is not included in this branch.
+This batch adds **one complete instrument**, `bfas-100`: 100 original English self-rating items, ten aspect means and five paired-domain means. It does not add ten separately counted tests. Canonical base after integration: `2ddf275f60cb12c0d4de1e3d08ce1b95a73497a2` (`codex/public-book-library`), including the released relationship forms and opt-in starter fix. MHC-SF PR #384 and the four-reflection PR #361 remain separate and are not included in this branch.
 
 ## Inventory and preservation
 
-Source inventory before/after: **96 → 97 runnable catalog keys**, **41 → 42 professional-labelled keys**, **153 → 154 immutable locale/version definitions**. These are code inventory counts, not production availability or a count of independent validated methods. Existing seven BFAS standalone aspects remain as published; no full 100-item form was runnable on the base. Open-PR checks for BFAS and Big Five found no active matching implementation. Stale personality/relationship PRs #361 and #364 were not reused.
+Source inventory against the updated canonical base: **104 → 105 runnable catalog keys**, **41 → 42 professional-labelled keys**, **169 → 170 immutable locale/version definitions**. The original batch was 96 → 97 keys and 153 → 154 definitions before #364 was released. These are code inventory counts, not production availability or a count of independent validated methods. Existing seven BFAS standalone aspects remain as published; no full 100-item form was runnable on the base. Open-PR checks for BFAS and Big Five found no active matching implementation.
 
-The focused test pins the canonical JSON digest of all 153 previous definitions (`1743fb49e9f78bde406bc5055349a95c8b961961b21ab9d1a0fcb05fca1fb0bc`). Existing questions, IDs, hashes, scoring and histories are unchanged. A misleading code comment that equated four item-origin footnotes with copyright exclusions was corrected; immutable legacy provenance fields remain untouched.
+The focused test retains the original 153-definition digest (`1743fb49e9f78bde406bc5055349a95c8b961961b21ab9d1a0fcb05fca1fb0bc`) and additionally pins all 169 canonical definitions (`6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c`). Existing questions, IDs, hashes, scoring and histories are unchanged. BFAS's definition, independent source transcript and guarded migration remain byte-identical to the original PR head. A misleading code comment that equated four item-origin footnotes with copyright exclusions was corrected in the original batch; immutable legacy provenance fields remain untouched.
+
+Integration preserves every released public-picker eligibility assertion and all relationship journeys, alongside the eight BFAS browser checks. The browser job budget is 30 minutes to accommodate both complete suites and browser dependency setup; no test coverage or request-limit pacing was removed. Exact-head verification is recorded in the PR. Production registration and merge remain pending separate approval.
 
 ## Exact sources and permission
 

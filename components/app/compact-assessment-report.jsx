@@ -15,6 +15,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       <h2>{ru ? 'Ваш результат' : 'Your results'}</h2>
       <span>{report.sections.length} {ru ? 'показателей' : 'measures'}</span>
     </header>
+    {report.contextNote && <p className={styles.contextNote} data-assessment-context>{report.contextNote}</p>}
     <div className={styles.cards}>
       {report.sections.map((section, index) => {
         const dimension = result.dimensions?.find(item => item.key === section.key)

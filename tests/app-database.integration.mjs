@@ -1406,6 +1406,45 @@ test('both compassion instruments preserve source means in private guest saves a
   }
 })
 
+
+test('existing relationship registration is exact and idempotent for all sixteen published forms', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { RELATIONSHIPS_INTIMACY_DEFINITIONS: defs } = await import('../data/assessments/relationships-intimacy-v1.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261011211746_hh_love_intimacy_assessments.sql', import.meta.url),'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for(const d of defs){
+      const rows=(await db.query('select id,definition,content_hash,status from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3',[d.key,d.version,d.instrumentLocale])).rows
+      assert.equal(rows.length,1)
+      assert.equal(rows[0].id,d.id)
+      assert.equal(rows[0].status,'published')
+      assert.equal(rows[0].content_hash,d.contentHash)
+      assert.deepEqual(rows[0].definition,d)
+    }
+    await assert.rejects(()=>db.query(sql.replace(defs[0].contentHash,'sha256:'+'0'.repeat(64))),/Refusing to overwrite published intimacy questionnaire/)
+    await db.query('rollback')
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[defs[0].id])).rows[0].definition,defs[0])
+  } finally { await db.end() }
+})
+
+test('all relationship forms save independent means privately and reject another guest', async () => {
+  const { RELATIONSHIPS_INTIMACY_DEFINITIONS: defs } = await import('../data/assessments/relationships-intimacy-v1.js')
+  const guestRepo=createGuestRepository(config)
+  const owner=createGuestCredential(),other=createGuestCredential()
+  for(const who of [owner,other])await guestRepo.createSession(who,{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+  for(const d of defs){
+    let run=await guestRepo.startRun(owner,{definitionKey:d.key,definitionVersion:d.version,instrumentLocale:d.instrumentLocale,operationId:randomUUID()})
+    run=await guestRepo.saveRun(owner,run.id,{answers:Object.fromEntries(d.questions.map((q,i)=>[q.id,[0,1,4,4,2,0][i]])),context:{},progress:6,expectedRevision:run.revision,operationId:randomUUID()})
+    const result=await guestRepo.submitRun(owner,run.id,{expectedRevision:run.revision})
+    assert.equal(result.contentHash,d.contentHash)
+    assert.deepEqual(result.dimensions.map(s=>s.value),[1.67,2])
+    assert.deepEqual((await guestRepo.getResult(owner,result.id)).dimensions,result.dimensions)
+    await assert.rejects(()=>guestRepo.getResult(other,result.id),/NOT_FOUND/)
+  }
+})
+
 test('BFAS registration is exact and idempotent, with ID/hash/full-content collision guards', async () => {
   const {readFile} = await import('node:fs/promises')
   const {BFAS_100_DEFINITIONS} = await import('../data/assessments/bfas-100-en-v1.js')
