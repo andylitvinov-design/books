@@ -82,3 +82,15 @@ test('practitioner CSS follows blue-mint/coral house design with readable iPhone
   assert.ok(crm.includes('min-height: 48px'))
   assert.ok(studio.includes('min-height: 54px'))
 })
+
+
+test('owner browser acceptance follows the modern handoff without exposing client tools first', async () => {
+  const script = await read('scripts/verify-app-r1.mjs')
+  assert.ok(script.includes('consultations\\/new\\?clientId='))
+  assert.ok(script.includes('consultation-client-created-label'))
+  assert.ok(script.includes('consultation-client-selected-row'))
+  assert.ok(script.includes('consultation-client-created-history-link'))
+  assert.ok(script.includes('client-detail-private-access > summary'))
+  assert.ok(script.includes('practitioner-new-consultation-handoff-mobile.png'))
+  assert.ok(script.includes('practitioner-client-workspace-mobile.png'))
+})
