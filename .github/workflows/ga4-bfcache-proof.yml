@@ -1,0 +1,68 @@
+name: GA4 isolated genuine BFCache research
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'tests/fixtures/ga4-bfcache-transport/**'
+      - 'tests/fixtures/ga4-rewrite-root/network-checks.mjs'
+      - 'scripts/prepare-ga4-bfcache-proof.mjs'
+      - 'scripts/verify-ga4-bfcache-proof.mjs'
+      - 'scripts/verify-ga4-rewrite-root.mjs'
+      - 'tests/ga4-bfcache-proof-harness.test.mjs'
+      - 'middleware.ts'
+      - 'lib/canonical-redirect.js'
+      - 'data/site-metadata.js'
+      - 'components/csp-navigation-boundary.tsx'
+      - 'lib/csp-prehydration.js'
+      - 'lib/native/client.ts'
+      - 'lib/public-analytics.ts'
+      - 'next.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/ga4-bfcache-proof.yml'
+permissions:
+  contents: read
+jobs:
+  genuine-bfcache-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      PLAYWRIGHT_BROWSERS_PATH: /tmp/hh-ga4-proof-browsers
+      HH_GA4_PLAYWRIGHT_MODULE: /tmp/hh-ga4-proof-tools/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/ga4-bfcache-proof-harness.test.mjs tests/ga4-safety-hold.test.mjs
+      - name: Install official isolated Chromium
+        run: |
+          npm install --prefix /tmp/hh-ga4-proof-tools --no-audit --no-fund playwright@1.57.0
+          /tmp/hh-ga4-proof-tools/node_modules/.bin/playwright install --with-deps chromium
+      - name: Read official SDK without analytics execution
+        run: |
+          mkdir -p artifacts/ga4-bfcache-proof
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
+            'https://www.googletagmanager.com/gtag/js?id=G-3WX7PDD52N' \
+            -o artifacts/ga4-bfcache-proof/google-tag-readonly.js
+          sha256sum artifacts/ga4-bfcache-proof/google-tag-readonly.js > artifacts/ga4-bfcache-proof/google-tag.sha256
+      - name: Build disposable transport fixture with current middleware and CSP
+        run: node scripts/prepare-ga4-bfcache-proof.mjs
+      - name: Genuine restoration and full-header coverage gates, all traffic intercepted
+        run: node scripts/verify-ga4-bfcache-proof.mjs
+      - name: Preserve exact production-off source
+        if: always()
+        run: |
+          git diff --exit-code
+          STATUS=$(git status --porcelain --untracked-files=all -- . ':(exclude)artifacts/**')
+          test -z "$STATUS" || { printf '%s\n' "$STATUS"; exit 1; }
+          node --test tests/ga4-safety-hold.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ga4-bfcache-synthetic-evidence
+          path: artifacts/ga4-bfcache-proof/
+          retention-days: 7
