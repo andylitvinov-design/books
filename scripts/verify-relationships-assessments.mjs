@@ -33,7 +33,10 @@ async function fill(page,d,mode,guest,locale){
  const quick=guest?'.cabinet-quick-question':'.hh-quick-question'
  for(let i=0;i<d.questions.length;i++){
   // Pace synthetic saves within unchanged production account/guest request limits.
-  await page.waitForTimeout(mode==='guided'?750:400)
+  // A guest keeps the same session through all eight short forms. Guided mode
+  // also saves on Next; 1.5 seconds per answer leaves room for plan/bootstrap
+  // reads within the unchanged 120 guest requests/minute allowance.
+  await page.waitForTimeout(guest?1500:mode==='guided'?750:400)
   const scope=mode==='quick'?page.locator(quick).nth(i):page.locator(guest?'.cabinet-guided-question':'.hh-runner-question')
   await expect(scope.getByRole('heading',{name:d.questions[i].text,exact:true})).toBeVisible()
   const buttons=scope.locator(guest?'.cabinet-answer-list button':'.hh-scale button')
