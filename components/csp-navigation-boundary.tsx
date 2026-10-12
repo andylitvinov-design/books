@@ -36,6 +36,7 @@ function cspClassForPath(pathname: string) {
 export function CspNavigationBoundary() {
   const pathname = usePathname();
   const documentClass = useRef<string | undefined>(undefined);
+  const interruptedRouterNavigation = useRef(false);
 
   useEffect(() => {
     documentClass.current ??= document.body.dataset.cspClass;
@@ -53,19 +54,27 @@ export function CspNavigationBoundary() {
       event.preventDefault();
       window.location.assign(url.href);
     };
-    const onPopState = () => {
-      if (crossesPolicy(new URL(window.location.href))) window.location.reload();
+    const onPopState = (event?: Event) => {
+      const url = new URL(window.location.href);
+      const restoresInterruptedRouter = event?.type === "pageshow"
+        && (event as PageTransitionEvent).persisted && interruptedRouterNavigation.current;
+      if (!crossesPolicy(url) && !restoresInterruptedRouter) return;
+      // Prevent Next from replaying the stale canonical URL while this document
+      // is being replaced. Capture runs before the router's history listeners.
+      event?.stopImmediatePropagation();
+      interruptedRouterNavigation.current = true;
+      window.location.replace(url.href);
     };
     document.addEventListener("click", onClick, true);
-    window.addEventListener("popstate", onPopState);
-    window.addEventListener("pageshow", onPopState);
+    window.addEventListener("popstate", onPopState, true);
+    window.addEventListener("pageshow", onPopState, true);
     // Back can occur before hydration installs listeners, and bfcache restores
     // a document without remounting React. Always compare the actual address.
     onPopState();
     return () => {
       document.removeEventListener("click", onClick, true);
-      window.removeEventListener("popstate", onPopState);
-      window.removeEventListener("pageshow", onPopState);
+      window.removeEventListener("popstate", onPopState, true);
+      window.removeEventListener("pageshow", onPopState, true);
     };
   }, []);
 
@@ -73,8 +82,11 @@ export function CspNavigationBoundary() {
     documentClass.current ??= document.body.dataset.cspClass;
     if (documentClass.current && documentClass.current !== cspClassForPath(window.location.pathname)) {
       // Programmatic router/history navigation also needs a fresh document.
-      // Reload, rather than assign, preserves the existing Back/Forward entry.
-      window.location.reload();
+      // Replace preserves the history entry and pins the destination before
+      // Next can replay an old canonical URL. On bfcache restore, discard the
+      // interrupted router state even when the original document policy fits.
+      interruptedRouterNavigation.current = true;
+      window.location.replace(window.location.href);
     }
   }, [pathname]);
 
