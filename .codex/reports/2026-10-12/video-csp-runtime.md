@@ -11,6 +11,8 @@ Repair public video playback while keeping cabinet, report, API and other securi
 - The prior CSP set `frame-src 'none'` outside Academy and omitted `media-src`, blocking public embeds and native Tantra Reiki MP4 files.
 - Next client navigation preserves the initial document CSP, so crossing a restrictive/public boundary must reload the document.
 - Library video cards sent English/Russian homeopathy entries to About; the Russian home card used `/ru/`, which has no page route.
+- An independent availability audit found public player metadata for 125 of 126 Academy records. `FxOE-cEAnP4` is the only confirmed private source (Russian Yggdrasil, Level 3, Recording 1/3). This is an availability check, not a decoded-playback claim for YouTube.
+- All eight distinct HeyGen sources were independently checked with ready state 4 and advancing playback time, including the About page's `fd5fcead9b067f9a0649862675a38771` Psychic Alchemy renderer.
 
 ## Changes
 
@@ -19,7 +21,7 @@ Repair public video playback while keeping cabinet, report, API and other securi
 - Added a client CSP-boundary reload for navigation between public, Tantra-media, private, admin-video and API policy classes.
 - Corrected the three library destinations above.
 - Replaced the known private `FxOE-cEAnP4` player with an explicit unavailable state. Its title and position remain visible, but no iframe or Play action is emitted.
-- Added static regression coverage for the allowlist, policy boundary and destinations.
+- Added static regression coverage for the allowlist, policy boundary, About's HeyGen renderer and destinations.
 
 ## Verification
 

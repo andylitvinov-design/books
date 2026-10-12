@@ -43,13 +43,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     inLanguage: ["en", "ru", "es"],
   };
   return (
-    <html lang={lang} data-csp-class={cspClass}>
+    <html lang={lang}>
       <head>
         {/* Browsers hide the nonce content attribute before hydration while
             preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
         <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       </head>
-      <body className="font-sans"><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} />{children}<SitewideLeadCapture /><AnalyticsConsent /><MobileBottomNavigation initialLocale={lang} /></body>
+      <body className="font-sans" data-csp-class={cspClass}><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} />{children}<SitewideLeadCapture /><AnalyticsConsent /><MobileBottomNavigation initialLocale={lang} /></body>
     </html>
   );
 }

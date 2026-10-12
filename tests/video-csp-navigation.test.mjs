@@ -14,12 +14,19 @@ test("public video CSP allows only reviewed embed origins and scopes native Tant
   assert.doesNotMatch(middleware, /media-src \*/);
 });
 
+test("About's Psychic Alchemy renderer uses the reviewed HeyGen embed", async () => {
+  const aboutVideo = await source("components/psychic-alchemy-intro-video.tsx");
+  assert.match(aboutVideo, /https:\/\/app\.heygen\.com\/embeds\/\$\{VIDEO_ID\}/);
+  assert.match(aboutVideo, /referrerPolicy="strict-origin-when-cross-origin"/);
+  assert.match(aboutVideo, /aria-label=\{`Open video: \$\{video\.title\}`\}/);
+});
+
 test("CSP class boundary reloads only cross-policy client navigation", async () => {
   const [middleware, layout, boundary] = await Promise.all([
     source("middleware.ts"), source("app/layout.tsx"), source("components/csp-navigation-boundary.tsx"),
   ]);
   assert.match(middleware, /requestHeaders\.set\('x-csp-class', cspClass\)/);
-  assert.match(layout, /data-csp-class=\{cspClass\}/);
+  assert.match(layout, /<body className="font-sans" data-csp-class=\{cspClass\}>/);
   assert.match(layout, /<CspNavigationBoundary \/>/);
   assert.match(boundary, /window\.location\.assign\(window\.location\.href\)/);
   assert.match(boundary, /tantra-media/);

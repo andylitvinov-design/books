@@ -25,7 +25,7 @@ export function CspNavigationBoundary() {
   const documentClass = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    documentClass.current ??= document.documentElement.dataset.cspClass;
+    documentClass.current ??= document.body.dataset.cspClass;
     if (documentClass.current && documentClass.current !== cspClassForPath(pathname)) {
       window.location.assign(window.location.href);
     }
