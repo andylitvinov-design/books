@@ -147,7 +147,7 @@ test('About exposes a consultation request form and a Google-first Cabinet with 
   assert.match(entryPage, /robots: \{ index: false, follow: false \}/)
   assert.match(landing, /Enter personal cabinet with Google/)
   assert.match(landing, /cabinet-signin-hero/)
-  assert.match(landing, /Your Mind–Body Monitor/)
+  assert.match(landing, /Free wellbeing & resources monitoring/)
   assert.match(landing, /MINI_IPIP_20_EN_V1/)
   assert.match(landing, /CURRENT_STATE_RU_V2/)
   assert.match(landing, /cabinet-legacy-entry/)
