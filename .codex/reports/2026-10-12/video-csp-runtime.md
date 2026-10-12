@@ -25,9 +25,11 @@ Repair public video playback while keeping cabinet, report, API and other securi
 
 ## Verification
 
-- `node --test tests/video-csp-navigation.test.mjs` passed.
-- Local lint/type/build could not complete because this execution environment's installed Next package lacks internal compiled modules after `npm ci`; this is an environment/package-install blocker, not a passing build result.
+- Local `npm run test:unit` and `node --test tests/yggdrasil-curriculum-sync.test.mjs tests/video-csp-navigation.test.mjs` passed.
+- On GitHub commit `41e19051c21f3ce4452479c14db50026838f2f7f`, clean locked-dependency build/browser checks passed in Holistic website video checks, Website video browser verification, Holistic House IA v2 checks, and isolated verification.
+- The local environment initially installed an incomplete Next package after `npm ci`, so local lint/type/build are not claimed; GitHub's clean production build did pass.
+- Release re-audit is blocked outside this change: its consultation-safe-handoff regression waits for `[data-consultation-capture="personal"] [data-contact-channel="whatsapp"]` and times out in EN/RU/ES (12 checks), after the proposed release build succeeds.
 
 ## Next action
 
-Run the exact branch through clean GitHub production build/runtime browser checks, including CSP violation monitoring and real media readiness/progress where network permits, before opening/merging the draft PR.
+Resolve or explicitly baseline-exempt the shared consultation regression, then rerun the exact branch through clean GitHub production/release browser checks before independent review or merge.
