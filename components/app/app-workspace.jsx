@@ -1,7 +1,7 @@
 'use client'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
-import { BarChart3, BookOpen, ClipboardList, FileText, House, UserRound } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, FileText, Heart, House, Leaf, Moon, Smile, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
@@ -22,7 +22,8 @@ import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { ProfileDomains } from '@/components/app/profile-domains'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
-import { coverageForFocus } from '@/lib/assessments/test-explorer'
+import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
+import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import {
@@ -1763,18 +1764,34 @@ function readableScaleName(dimension, locale) {
   return raw.split('.').pop().replace(/[_-]+/g, ' ').replace(/^./, letter => letter.toUpperCase())
 }
 
+const INSIGHTS_CATEGORY_ICONS = {
+  stress: Zap, anxiety: Heart, mood: Smile, sleep: Moon, body: Sun,
+  relationships: Users, resources: Leaf, attention: Target, personality: Brain,
+  function: Activity, meaning: Compass, 'wu-xing': Sparkles, other: ClipboardList,
+}
+
 function PortfolioPage({ data, locale }) {
   const ru = locale === 'ru'
   const allGroups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
   const [period, setPeriod] = useState('all')
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
+  const [selectedCategories, setSelectedCategories] = useState([])
   const validPeriod = periodWindow(period, periodStart, periodEnd).valid
+  const entriesByKey = useMemo(() => new Map(
+    buildExplorerEntries({ locale, audience: 'account' }).map((entry) => [entry.key, entry]),
+  ), [locale])
   const groups = allGroups.map(group => {
     const history = resultsForPeriod(group.history, period, periodStart, periodEnd)
     const { current, previous } = periodComparison(history)
     return { ...group, latest: current, periodPrior: previous, history, count: history.length }
   }).filter(group => group.latest)
+  const { counts: categoryCounts, sections: categorySections } = buildInsightsCategorySections(groups, entriesByKey, selectedCategories)
+  const categoryFilters = INSIGHTS_TEST_CATEGORIES.filter((category, index) =>
+    index < HOME_TEST_TOPICS.length || categoryCounts[category.key] > 0 || selectedCategories.includes(category.key))
+  function toggleCategory(key) {
+    setSelectedCategories((current) => current.includes(key) ? current.filter((value) => value !== key) : [...current, key])
+  }
   const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
   const dimensions = data.snapshot?.dimensions || []
   const [selected, setSelected] = useState(null)
@@ -1792,6 +1809,22 @@ function PortfolioPage({ data, locale }) {
         <span className="hh-insights-total">{groups.length} {ru ? 'пройдено' : 'completed'}</span>
       </header>
 
+      <div className="hh-insights-category-filters" role="group" aria-label={ru ? 'Фильтр по категориям тестов' : 'Filter completed tests by category'} data-testid="insights-category-filters">
+        <button type="button" className="hh-insights-category-filter" aria-pressed={selectedCategories.length === 0} onClick={() => setSelectedCategories([])}>
+          <ClipboardList size={20} aria-hidden="true" />
+          <span>{ru ? 'Все категории' : 'All categories'}</span>
+          <small>{groups.length}</small>
+        </button>
+        {categoryFilters.map((category) => {
+          const Icon = INSIGHTS_CATEGORY_ICONS[category.key] || ClipboardList
+          return <button type="button" key={category.key} className="hh-insights-category-filter"
+            aria-pressed={selectedCategories.includes(category.key)} onClick={() => toggleCategory(category.key)}>
+            <Icon size={20} aria-hidden="true" />
+            <span>{category[locale] || category.en}</span>
+            <small>{categoryCounts[category.key]}</small>
+          </button>
+        })}
+      </div>
       <div className="hh-insights-period" role="group" aria-label={ru ? 'Период анализа' : 'Analysis period'}>
         <span>{ru ? 'Период:' : 'Period:'}</span>
         {[
@@ -1816,9 +1849,23 @@ function PortfolioPage({ data, locale }) {
         <div className="hh-insights-empty hh-panel" role="status">
           <p>{ru ? 'Выберите корректные даты начала и конца периода.' : 'Choose valid start and end dates for comparison.'}</p>
         </div>
-      ) : groups.length ? (
-        <div className="hh-insights-test-list">
-          {groups.map(group => {
+      ) : groups.length || (selectedCategories.length > 0 && allGroups.length > 0) ? (
+        <div className="hh-insights-categories">
+          {categorySections.map(({ category, groups: categoryGroups }) => {
+            const CategoryIcon = INSIGHTS_CATEGORY_ICONS[category.key] || ClipboardList
+            return <section className="hh-insights-category" key={category.key} aria-label={category[locale] || category.en}>
+              <header className="hh-insights-category-heading">
+                <div className="hh-insights-category-heading-title">
+                  <span className="hh-insights-category-icon"><CategoryIcon size={22} aria-hidden="true" /></span>
+                  <h2>{category[locale] || category.en}</h2>
+                </div>
+                <span>{categoryGroups.length} {ru ? 'тестов' : 'tests'}</span>
+              </header>
+              {categoryGroups.length === 0 && <p className="hh-insights-category-empty">
+                {ru ? 'В выбранном периоде нет результатов в этой категории. Можно добавить подходящий тест.' : 'No results in this category for this period. You can choose a test for this topic.'}
+              </p>}
+              <div className="hh-insights-test-list">
+                {categoryGroups.map(group => {
             const latest = group.latest
             const report = buildAssessmentResultReport(latest, locale)
             const first = report.sections[0]
@@ -1850,6 +1897,17 @@ function PortfolioPage({ data, locale }) {
                 )}
               </article>
             )
+                })}
+              </div>
+              <Link className="hh-insights-add-test" prefetch={false}
+                href={`/${locale}/app/tests?explore=1&filters=topics&category=${encodeURIComponent(category.key)}`}>
+                <span className="hh-insights-add-mark" aria-hidden="true">+</span>
+                <span><strong>{ru ? 'Добавить ещё тест' : 'Add another test'}</strong>
+                  <small>{ru ? 'Открыть фильтр тестов по этой категории' : 'Open the test picker for this category'}</small>
+                </span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            </section>
           })}
         </div>
       ) : (
@@ -1862,7 +1920,7 @@ function PortfolioPage({ data, locale }) {
             : (ru ? 'Завершите первый тест — здесь появятся показатели и рекомендации.' : 'Finish your first assessment to see your gauges and recommendations here.')}</p>
           {allGroups.length
             ? <button type="button" onClick={() => setPeriod('all')}>{ru ? 'Всё время' : 'Show all time'}</button>
-            : <Link href={`/${locale}/app/tests`} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>}
+            : <Link href={`/${locale}/app/tests?explore=1&filters=topics`} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>}
         </div>
       )}
 
@@ -1874,7 +1932,7 @@ function PortfolioPage({ data, locale }) {
       )}
       <div className="hh-insights-links">
         <Link href={`/${locale}/app/history`} prefetch={false}>{ru ? 'История и динамика' : 'History & progress'}</Link>
-        <Link href={`/${locale}/app/tests`} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
+        <Link href={`/${locale}/app/tests?explore=1&filters=topics`} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
       </div>
 
       {allGroups.length > 0 && (
