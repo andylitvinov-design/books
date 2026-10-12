@@ -118,6 +118,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const router = useRouter()
   const searchParams = useSearchParams()
   const openFromInsights = searchParams.get('explore') === '1'
+  const fromCourse = searchParams.get('course') === '1'
   const requestedCategory = searchParams.get('category')
   const insightsCategory = INSIGHTS_TEST_CATEGORIES.some((item) => item.key === requestedCategory) ? requestedCategory : null
   const once = useRef(false)
@@ -224,7 +225,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       // Reconcile the saved account state before replacing the handoff URL.
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
-      router.replace(root + '/tests?plan=' + encodeURIComponent(created.id))
+      router.replace(fromCourse ? root + '/course' : root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
       if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
       else if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
@@ -483,7 +484,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           </div>
         </aside>}
         <TestExplorer key={(currentPlan?.id || 'new') + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
-          audience="account" onStart={choose} initialPreferences={explorerPreferences}
+          audience="account" onStart={choose} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
           openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
