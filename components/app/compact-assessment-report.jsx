@@ -26,10 +26,12 @@ export function CompactAssessmentReport({ result, previous = null, report, local
     {report.contextNote && <p className={styles.contextNote} data-assessment-context>{report.contextNote}</p>}
     <div className={styles.cards}>
       {report.sections.map((section, index) => {
-        const dimension = result.dimensions?.find(item => item.key === section.key)
+        const dimension = section.bandBasis === 'unavailable' ? null : result.dimensions?.find(item => item.key === section.key)
         const guide = byScale.get(section.key)
         const model = gaugeModel(dimension)
-        const rawNote = model?.orientation === 'difficulty'
+        const rawNote = model?.displayKind === 'screening-count'
+          ? ru ? 'Количество ответов в заштрихованных клетках. Это не шкала тяжести.' : 'Number of responses in shaded cells. This is not a severity scale.'
+          : model?.orientation === 'difficulty'
           ? ru ? 'Больше баллов = больше описанных трудностей.' : 'A higher score means more reported difficulties.'
           : model?.orientation === 'resource'
             ? ru ? 'Больше баллов = больше описанных ресурсов.' : 'A higher score means more reported resources.'
@@ -46,7 +48,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
             </div>
           </div>
           <div className={styles.recommendations}>
-            <h4>{ru ? 'Что поможет на этой неделе' : 'Two steps for this week'}</h4>
+            <h4>{result.definitionKey === 'asrs-6' ? (ru ? 'Пояснение Holistic House' : 'Holistic House explanation') : (ru ? 'Что поможет на этой неделе' : 'Two steps for this week')}</h4>
             <ol>{section.steps.slice(0, 2).map((step, i) => <li key={i}>{step}</li>)}</ol>
           </div>
           {section.recommendedReview && <p className={styles.care}>{section.followUp}</p>}
@@ -65,6 +67,15 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         </article>
       })}
     </div>
+    {report.instrumentText && <aside data-asrs6-instrument-text>
+      <div lang={report.instrumentText.instrumentLocale}>
+        <p>{report.instrumentText.eligibilityText}</p>
+        <p>{report.instrumentText.printedScoringText}</p>
+        <p>{report.instrumentText.safetyText}</p>
+      </div>
+      <p lang="en">{report.instrumentText.requiredSiteAttribution}</p>
+      {report.instrumentText.formCopyright && <p lang="en">{report.instrumentText.formCopyright}</p>}
+    </aside>}
     <div className={styles.footer}>
       <p>{ru
         ? 'Индикаторы показывают ответы на отдельных шкалах, а не процент здоровья. Изменение балла не доказывает изменение состояния.'

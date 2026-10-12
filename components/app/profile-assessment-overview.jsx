@@ -96,9 +96,9 @@ export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children
            <span>{row.label}</span>
            <strong>{formatValue(row.value)} <small>/ {formatValue(row.max)}</small></strong>
          </div>
-         <div className={styles.measuredBar} role="progressbar" aria-label={row.label} aria-valuemin={row.min} aria-valuemax={row.max} aria-valuenow={row.value}>
+         {row.displayKind === 'screening-count' ? <p data-screening-count>{row.screeningLabel}</p> : <div className={styles.measuredBar} role="progressbar" aria-label={row.label} aria-valuemin={row.min} aria-valuemax={row.max} aria-valuenow={row.value}>
            <span style={{width:(row.ratio*100)+'%'}}/>
-         </div>
+         </div>}
          <div className={styles.measureFooter}>
            <small className={styles.scaleSource}>{row.testTitle ? row.testTitle + ' · ' : ''}{formatValue(row.min)}–{formatValue(row.max)} · {dateString(row.date,locale)}</small>
            <span className={styles.openReport}>{c.openReport} <ArrowRight size={15} aria-hidden="true" /></span>

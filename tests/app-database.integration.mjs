@@ -1555,3 +1555,128 @@ test('R3 displayed rotated lesson can be saved and read back for EN/RU without c
     } finally { await db.end() }
   }
 })
+
+// ASRS6 coverage is intentionally append-only. This suite's existing setup guard
+// permits only the empty synthetic loopback database; no production data is used.
+test('ASRS6 EN/RU registration is exact and idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { ASRS6_DEFINITIONS: definitions } = await import('../data/assessments/asrs-v1-6-nyu.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261012202000_hh_asrs6_nyu_classic.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const definition of definitions) {
+      const rows = (await db.query(`select id, definition, questions, answer_schema,
+        translation_version, scoring_key, scoring_version, result_schema,
+        timeframe, source_metadata, content_hash, status
+        from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3`,
+      [definition.key, definition.version, definition.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      const row = rows[0]
+      assert.equal(row.id, definition.id)
+      assert.equal(row.status, 'published')
+      assert.equal(row.content_hash, definition.contentHash)
+      assert.deepEqual(row.definition, definition)
+      assert.deepEqual(row.questions, definition.questions)
+      assert.deepEqual(row.answer_schema, { type: 'integer', minimum: 0, maximum: 4 })
+      assert.equal(row.translation_version, definition.translationVersion)
+      assert.equal(row.scoring_key, definition.scoringKey)
+      assert.equal(row.scoring_version, definition.scoringVersion)
+      assert.deepEqual(row.result_schema, { version: definition.resultVersion })
+      assert.equal(row.timeframe, 'past-6-months')
+      assert.deepEqual(row.source_metadata, definition.source)
+      for (const broken of [
+        sql.replace(definition.id, randomUUID()),
+        sql.replace(definition.contentHash, 'sha256:' + '0'.repeat(64)),
+        sql.replace(definition.questions[0].text, 'Synthetic changed ASRS6 source item'),
+      ]) {
+        await assert.rejects(() => db.query(broken), /Conflicting professional assessment ID|Different content already published/)
+        await db.query('rollback')
+      }
+      assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1', [definition.id])).rows[0].definition, definition)
+    }
+    assert.equal((await db.query("select id from app.assessment_versions where definition_key in ('asrs-v1-18','asrs-5')")).rowCount, 0)
+  } finally { await db.end() }
+})
+
+test('ASRS6 EN/RU guest zero and mixed saves retain exact report provenance and reject cross-guest access', async () => {
+  const { ASRS6_DEFINITIONS: definitions } = await import('../data/assessments/asrs-v1-6-nyu.js')
+  const { provenance } = await import('../lib/assessments/definitions.js')
+  const { buildAssessmentResultReport } = await import('../lib/assessments/result-report.js')
+  const { exactAsrs6DefinitionForResult } = await import('../lib/assessments/interpretation-registry.js')
+  const guestRepo = createGuestRepository(config)
+  const owner = createGuestCredential(), outsider = createGuestCredential()
+  for (const credential of [owner, outsider]) await guestRepo.createSession(credential, { adult: true, necessary: true, uiLocale: 'ru', timezone: 'UTC' })
+  for (const definition of definitions) for (const [values, expected] of [[Array(6).fill(0), 0], [[2, 2, 2, 3, 0, 0], 4]]) {
+    const answers = Object.fromEntries(definition.questions.map((question, index) => [question.id, values[index]]))
+    let run = await guestRepo.startRun(owner, { definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: definition.instrumentLocale, operationId: randomUUID() })
+    // Persist zero before the rest; missing entries must not silently become Never.
+    run = await guestRepo.saveRun(owner, run.id, { answers: { [definition.questions[0].id]: 0 }, context: {}, progress: 1, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.deepEqual((await guestRepo.getRun(owner, run.id)).answers, { [definition.questions[0].id]: 0 })
+    await assert.rejects(() => guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision }), /REQUIRED_ANSWER/)
+    run = await guestRepo.saveRun(owner, run.id, { answers, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.deepEqual((await guestRepo.getRun(owner, run.id)).answers, answers)
+    const submitted = await guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    const stored = await guestRepo.getResult(owner, submitted.id)
+    assert.deepEqual(stored.dimensions, submitted.dimensions)
+    assert.deepEqual(stored.dimensions.map(dimension => dimension.value), [expected])
+    for (const [key, value] of Object.entries(provenance(definition))) assert.equal(stored[key], value, key)
+    assert.equal(exactAsrs6DefinitionForResult(stored), definition)
+    await assert.rejects(() => guestRepo.getResult(outsider, submitted.id), /NOT_FOUND/)
+    for (const locale of ['en', 'ru']) {
+      const report = buildAssessmentResultReport(stored, locale)
+      assert.equal(report.sections.length, 1)
+      assert.equal(report.sections[0].value, expected)
+      assert.equal(report.sections[0].bandBasis, 'screening')
+      assert.equal(report.sections[0].recommendedReview, expected >= 4)
+      assert.equal(report.sections[0].source, definition.source.scoringUrl)
+      assert.equal(report.instrumentText.instrumentLocale, definition.instrumentLocale)
+      assert.equal(report.instrumentText.safetyText, definition.safetyText)
+      assert.equal(report.instrumentText.printedScoringText, definition.printedScoringText)
+      assert.equal(report.instrumentText.requiredSiteAttribution, definition.requiredSiteAttribution)
+      assert.equal(report.instrumentText.formCopyright, definition.formCopyright)
+      assert.equal(report.personalityType, null)
+      if (definition.instrumentLocale === 'ru') assert.match(report.contextNote, locale === 'ru' ? /не подтверждена/ : /has not been established/)
+    }
+  }
+})
+
+test('ASRS6 EN/RU account zero and mixed results preserve discrete counts and all stored provenance fields', async () => {
+  const { ASRS6_DEFINITIONS: definitions } = await import('../data/assessments/asrs-v1-6-nyu.js')
+  const { provenance } = await import('../lib/assessments/definitions.js')
+  const { buildAssessmentResultReport } = await import('../lib/assessments/result-report.js')
+  const { exactAsrs6DefinitionForResult } = await import('../lib/assessments/interpretation-registry.js')
+  const owner = actor(randomUUID(), randomUUID())
+  const db = await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)', [owner.id, 'synthetic-asrs6@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [owner.claims.session_id, owner.id])
+  } finally { await db.end() }
+  await repo.ensureAccount(owner)
+  await repo.onboarding(owner, { adult: true, necessary: true, marketing: false, displayName: 'Synthetic ASRS6', uiLocale: 'en', timezone: 'UTC', goal: 'explore' })
+  for (const definition of definitions) for (const [values, expected] of [[Array(6).fill(0), 0], [[2, 2, 2, 3, 0, 0], 4]]) {
+    const answers = Object.fromEntries(definition.questions.map((question, index) => [question.id, values[index]]))
+    const run = await start(owner, definition)
+    const saved = await repo.saveRun(owner, run.id, { answers, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.deepEqual((await repo.getRun(owner, run.id)).answers, answers)
+    const submitted = await repo.submitRun(owner, run.id, { expectedRevision: saved.revision })
+    const stored = await repo.getResult(owner, submitted.id)
+    for (const [key, value] of Object.entries(provenance(definition))) assert.equal(stored[key], value, key)
+    assert.equal(exactAsrs6DefinitionForResult(stored), definition)
+    assert.equal(stored.dimensions.length, 1)
+    assert.equal(stored.dimensions[0].value, expected)
+    assert.equal(stored.dimensions[0].unit, 'qualifying-responses')
+    assert.equal(stored.dimensions[0].displayKind, 'screening-count')
+    for (const locale of ['en', 'ru']) {
+      const report = buildAssessmentResultReport(stored, locale)
+      assert.equal(report.sections[0].value, expected)
+      assert.equal(report.sections[0].bandBasis, 'screening')
+      assert.equal(report.sections[0].recommendedReview, expected >= 4)
+      assert.equal(report.instrumentText.instrumentLocale, definition.instrumentLocale)
+      assert.equal(report.instrumentText.safetyText, definition.safetyText)
+      assert.equal(report.instrumentText.requiredSiteAttribution, definition.requiredSiteAttribution)
+      if (definition.instrumentLocale === 'ru') assert.match(report.contextNote, locale === 'ru' ? /не подтверждена/ : /has not been established/)
+    }
+  }
+})

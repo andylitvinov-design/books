@@ -1,0 +1,221 @@
+// Prepared synthetic loopback-only ASRS6 browser checks. Never run against production.
+// Requires the approved isolated database, app and provider protocol double.
+import { chromium, webkit, expect } from '@playwright/test'
+import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
+import { ASRS6_DEFINITIONS as definitions } from '../data/assessments/asrs-v1-6-nyu.js'
+import { provenance } from '../lib/assessments/definitions.js'
+import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
+import { exactAsrs6DefinitionForResult } from '../lib/assessments/interpretation-registry.js'
+
+assertIsolated()
+const origin = process.env.HH_TEST_APP_ORIGIN || 'http://127.0.0.1:3100'
+assert.match(origin, /^http:\/\/(127\.0\.0\.1|localhost):\d+$/)
+const engine = process.env.HH_TEST_BROWSER === 'webkit' ? webkit : chromium
+const browser = await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE ? { executablePath: process.env.HH_TEST_BROWSER_EXECUTABLE } : {})
+const output = 'artifacts/app-r1/asrs6-' + engine.name()
+await mkdir(output, { recursive: true })
+const checks = [], errors = [], blockedRemote = []
+const mixed = [2, 2, 2, 3, 0, 0] // Classic count 4; continuous sum 9 is not used.
+const passed = label => { checks.push(label); console.log('PASS ' + label) }
+let page
+
+async function isolatedContext() {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'UTC' })
+  // Keep all browser traffic on loopback, including the synthetic auth provider.
+  await context.route('**/*', route => {
+    const url = new URL(route.request().url())
+    if (['http:', 'https:'].includes(url.protocol) && !['127.0.0.1', 'localhost'].includes(url.hostname)) {
+      blockedRemote.push(url.origin)
+      return route.abort('blockedbyclient')
+    }
+    return route.continue()
+  })
+  return context
+}
+function observe(target) { target.on('pageerror', error => errors.push(error.message)) }
+async function navigate(target, url) {
+  await target.waitForLoadState('networkidle')
+  await target.goto(url)
+  await target.waitForLoadState('networkidle')
+}
+async function api(context, path, body) {
+  const response = await context.request.fetch(origin + '/api/app/' + path, {
+    method: body ? 'POST' : 'GET',
+    headers: body ? { Origin: origin, 'Content-Type': 'application/json' } : {}, data: body,
+  })
+  const value = await response.json()
+  assert.ok(response.ok(), path + ': ' + JSON.stringify(value))
+  return value
+}
+async function selectMode(target, mode) {
+  const choices = target.locator('.hh-test-mode-grid button')
+  await expect(choices).toHaveCount(2)
+  await choices.nth(mode === 'quick' ? 0 : 1).click()
+}
+async function sourceNotice(target, definition, guest, locale) {
+  const instructions = target.locator((guest ? '.cabinet-test-note' : '.hh-runner-instructions') + '[lang="' + definition.instrumentLocale + '"]')
+  await expect(instructions).toHaveText(definition.instructions)
+  if (!guest) await expect(target.locator('.hh-runner-instructions').first()).toHaveText(locale === 'ru' ? 'За последние 6 месяцев' : 'Over the past 6 months')
+  const notice = target.locator('[data-asrs6-source-notice]')
+  await expect(notice).toBeVisible()
+  for (const text of [definition.eligibilityText, definition.safetyText, definition.printedScoringText, definition.requiredSiteAttribution, definition.formCopyright].filter(Boolean)) {
+    await expect(notice.getByText(text, { exact: true })).toBeVisible()
+  }
+  const date = notice.getByRole('textbox')
+  await expect(date).toHaveAttribute('readonly', '')
+  assert.ok((await date.inputValue()).trim().length > 0)
+  await expect(notice).toContainText(locale === 'ru' ? 'Пояснение Holistic House' : 'Holistic House explanation')
+  if (definition.instrumentLocale === 'ru') await expect(notice).toContainText(locale === 'ru' ? 'Валидация именно этого русского текста не подтверждена' : 'Validation of this exact Russian wording is unverified')
+  return date.inputValue()
+}
+async function assertQuestion(scope, definition, index, guest) {
+  await expect(scope.getByRole('heading', { name: definition.questions[index].text, exact: true })).toBeVisible()
+  const buttons = scope.locator(guest ? '.cabinet-answer-list button' : '.hh-scale button')
+  await expect(buttons).toHaveCount(5)
+  for (let value = 0; value < 5; value++) {
+    const button = buttons.nth(value)
+    await expect(button.locator('span[lang="' + definition.instrumentLocale + '"]')).toHaveText(definition.responseAnchors[value])
+    const markers = button.locator('small')
+    if (value >= definition.questions[index].shadedFrom) {
+      await expect(markers).toHaveText(definition.instrumentLocale === 'ru' ? '▧ Заштриховано' : '▧ Shaded')
+    } else await expect(markers).toHaveCount(0)
+    assert.ok(await button.evaluate(element => element.scrollWidth <= element.clientWidth + 1), 'Full response label must not be clipped')
+  }
+  const shaded = await buttons.nth(definition.questions[index].shadedFrom).evaluate(element => getComputedStyle(element).backgroundColor)
+  const plain = await buttons.nth(0).evaluate(element => getComputedStyle(element).backgroundColor)
+  assert.notEqual(shaded, plain, 'Shading must be visible as well as text-labelled')
+  return buttons
+}
+async function assertReport(target, definition, locale, expected) {
+  const report = target.locator('[data-personal-result-report]')
+  await expect(report).toBeVisible({ timeout: 20000 })
+  await expect(report.locator('article')).toHaveCount(1)
+  const count = report.locator('[data-assessment-gauge="screening-count"]')
+  await expect(count).toHaveCount(1)
+  await expect(count.locator('strong')).toHaveText(expected + ' / 6')
+  await expect(count.locator('svg')).toHaveCount(0)
+  await expect(report.locator('[role="progressbar"]')).toHaveCount(0)
+  await expect(report.locator('[data-assessment-gauge="difficulty"], [data-assessment-gauge="resource"]')).toHaveCount(0)
+  assert.doesNotMatch(await count.innerText(), /%/)
+  await expect(count).toContainText(locale === 'ru'
+    ? expected >= 4 ? 'На уровне или выше скринингового порога' : 'Ниже скринингового порога'
+    : expected >= 4 ? 'At or above screening threshold' : 'Below screening threshold')
+  for (const detail of await report.locator('details').all()) {
+    if (await detail.getAttribute('open') === null) await detail.locator(':scope > summary').click()
+  }
+  const instrument = report.locator('[data-asrs6-instrument-text]')
+  await expect(instrument).toBeVisible()
+  await expect(instrument.locator('div[lang="' + definition.instrumentLocale + '"]')).toHaveCount(1)
+  for (const text of [definition.eligibilityText, definition.printedScoringText, definition.safetyText, definition.requiredSiteAttribution, definition.formCopyright].filter(Boolean)) {
+    await expect(instrument.getByText(text, { exact: true })).toBeVisible()
+  }
+  if (definition.instrumentLocale === 'ru') await expect(report).toContainText(locale === 'ru' ? 'Валидация именно этой русской формулировки не подтверждена' : 'Validation of this exact Russian wording has not been established')
+  await expect(report).toContainText(locale === 'ru' ? 'не рекомендованный интервал повторного теста' : 'not a recommended retesting interval')
+  await expect(report.locator('a[href$="/app/course"]')).toHaveCount(0)
+  assert.ok(await target.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'No horizontal mobile overflow')
+}
+async function fill(target, definition, mode, guest, locale, values) {
+  const initialDate = await sourceNotice(target, definition, guest, locale)
+  const quick = guest ? '.cabinet-quick-question' : '.hh-quick-question'
+  for (let index = 0; index < 6; index++) {
+    const scope = mode === 'quick' ? target.locator(quick).nth(index) : target.locator(guest ? '.cabinet-guided-question' : '.hh-runner-question')
+    const buttons = await assertQuestion(scope, definition, index, guest)
+    const saved = target.waitForResponse(response => response.url().includes('/runs/') && response.url().endsWith('/save') && response.request().method() === 'POST')
+    await buttons.nth(values[index]).click()
+    assert.ok((await saved).ok())
+    if (index < 5) await expect(target.getByRole('button', { name: locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })).toHaveCount(0)
+    // A saved zero must remain distinct from an unanswered question after reload.
+    if (mode === 'quick' && index === 2) {
+      await target.waitForLoadState('networkidle')
+      await target.reload()
+      if (guest) await selectMode(target, 'quick')
+      assert.equal(await sourceNotice(target, definition, guest, locale), initialDate)
+      for (let prior = 0; prior <= index; prior++) await expect(target.locator(quick).nth(prior).locator(guest ? '.cabinet-answer-list button' : '.hh-scale button').nth(values[prior])).toHaveAttribute('aria-pressed', 'true')
+      await expect(target.locator(quick).nth(3).locator('[aria-pressed="true"]')).toHaveCount(0)
+      passed((guest ? 'guest' : 'account') + ' ' + locale + ' quick: zero saved, missing distinct, resumed date unchanged')
+    }
+    if (mode === 'guided' && index < 5) await target.getByRole('button', { name: locale === 'ru' ? 'Далее' : 'Next', exact: true }).click()
+  }
+  const finish = target.getByRole('button', { name: locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })
+  await expect(finish).toBeEnabled()
+  await finish.click()
+}
+function assertStored(result, definition, expected) {
+  assert.ok(result)
+  for (const [key, value] of Object.entries(provenance(definition))) assert.equal(result[key], value, key)
+  assert.equal(exactAsrs6DefinitionForResult(result), definition)
+  assert.deepEqual(result.dimensions.map(dimension => dimension.value), [expected])
+}
+
+try {
+  for (const locale of ['en', 'ru']) for (const audience of ['guest', 'account']) {
+    const full = buildExplorerEntries({ locale, audience }).find(entry => entry.key === 'asrs-v1-18')
+    assert.ok(full); assert.equal(full.selectable, false)
+  }
+  passed('ASRS-18 remains a non-selectable reference in both languages and audiences')
+  const account = await isolatedContext()
+  page = await account.newPage(); observe(page)
+  await navigate(page, origin + '/en/app')
+  await page.getByRole('button', { name: 'Continue with Google', exact: true }).click()
+  const onboarding = page.getByRole('heading', { name: 'Create my private space', exact: true })
+  await expect(onboarding.or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({ timeout: 60000 })
+  if (await onboarding.isVisible()) {
+    await page.getByLabel('I am 18 or older.').check()
+    await page.getByLabel('I agree to private processing', { exact: false }).check()
+    await page.getByRole('button', { name: 'Create my private space', exact: true }).click()
+  }
+  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({ timeout: 30000 })
+  for (const definition of definitions) for (const mode of ['quick', 'guided']) {
+    const locale = definition.instrumentLocale, values = mode === 'quick' ? Array(6).fill(0) : mixed, expected = mode === 'quick' ? 0 : 4
+    const run = await api(account, 'runs', { definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: locale, operationId: randomUUID() })
+    await navigate(page, origin + '/' + locale + '/app/runs/' + run.id + '?mode=' + mode)
+    if (mode === 'guided') await selectMode(page, mode)
+    await fill(page, definition, mode, false, locale, values)
+    await assertReport(page, definition, locale, expected)
+    const stored = (await api(account, 'bootstrap')).results.find(result => result.runId === run.id)
+    assertStored(stored, definition, expected)
+    // Check a persisted RU result with an EN report too; validation must follow its source language.
+    const reportLocale = locale === 'ru' ? 'en' : locale
+    await navigate(page, origin + '/' + reportLocale + '/app/results/' + stored.id)
+    await assertReport(page, definition, reportLocale, expected)
+    await page.screenshot({ path: output + '/account-' + locale + '-' + mode + '.png', fullPage: true })
+    passed('account ' + locale + ' ' + mode + ': exact source, five anchors, shading, saved count, provenance and reopened report')
+  }
+  await navigate(page, origin + '/en/app/portfolio')
+  const insight = page.locator('.hh-insights-test-card').filter({ hasText: 'ASRS-v1.1' })
+  await expect(insight).toHaveCount(1)
+  await expect(insight.locator('[data-assessment-gauge="screening-count"]')).toHaveCount(1)
+  await expect(insight.locator('[data-assessment-gauge] svg')).toHaveCount(0)
+  await expect(insight.locator('[data-gauge-trend="improved"], [data-gauge-trend="worsened"]')).toHaveCount(0)
+  passed('Insights retains discrete screening count without favorable gradient or clinical improvement inference')
+  await account.close()
+
+  // One consented guest session for four journeys, within the unchanged IP/session limits.
+  const guest = await isolatedContext(), resultIds = new Set()
+  await api(guest, 'guest/session', { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
+  for (const definition of definitions) for (const mode of ['quick', 'guided']) {
+    const locale = definition.instrumentLocale, values = mode === 'quick' ? Array(6).fill(0) : mixed, expected = mode === 'quick' ? 0 : 4
+    const plan = await api(guest, 'guest/test-plans', { items: [{ definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: locale }], operationId: randomUUID() })
+    page = await guest.newPage(); observe(page)
+    await navigate(page, origin + '/' + locale + '/client?plan=' + plan.id)
+    await selectMode(page, mode)
+    await fill(page, definition, mode, true, locale, values)
+    await assertReport(page, definition, locale, expected)
+    const stored = (await api(guest, 'guest/bootstrap')).results.find(result => result.definitionId === definition.id && !resultIds.has(result.id))
+    assertStored(stored, definition, expected); resultIds.add(stored.id)
+    await page.screenshot({ path: output + '/guest-' + locale + '-' + mode + '.png', fullPage: true })
+    passed('guest ' + locale + ' ' + mode + ': exact source, five anchors, shading, private saved count and report')
+    await page.close()
+  }
+  assert.equal(resultIds.size, 4)
+  await guest.close()
+  assert.deepEqual(errors, [])
+  await writeFile(output + '/verification.json', JSON.stringify({ commit: process.env.GITHUB_SHA, browser: await browser.version(), checks, blockedRemoteOrigins: [...new Set(blockedRemote)], guestSessions: 1, guestResults: resultIds.size, auth: 'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE', production: 'UNCHANGED' }, null, 2))
+} catch (error) {
+  await page?.screenshot({ path: output + '/failure.png', fullPage: true }).catch(() => {})
+  await writeFile(output + '/verification.json', JSON.stringify({ commit: process.env.GITHUB_SHA, checks, failure: error.message }, null, 2))
+  throw error
+} finally { await browser.close() }
