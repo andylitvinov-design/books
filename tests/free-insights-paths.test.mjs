@@ -44,6 +44,12 @@ test("private profile keeps the three free paths opt-in without private data in 
   assert.match(offer, /not free live calls/);
 });
 
+test("the homepage test link has a real target before a visitor starts any questionnaire", () => {
+  const landing = read("components/app/cabinet-landing.jsx");
+  assert.match(landing, /phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale=\{locale\} embedded \/><\/div>/);
+  assert.match(landing, /phase !== 'catalog' && <section[^>]+id="cabinet-tests"/);
+});
+
 test("the public and cabinet offers describe free wellbeing and resources monitoring, not a diagnosis", () => {
   for (const label of ["Free situation analysis", "Free Wu Xing resources & wellbeing profile", "Stress assessment & personality portrait", "Бесплатный анализ ситуации", "Бесплатный анализ ресурсов и самочувствия по У-Син", "Анализ стресса и психологический портрет"]) {
     assert.ok(offer.includes(label), label);

@@ -6,5 +6,5 @@ import { clearAdminSession } from '@/lib/prescriptions/admin'
 
 export async function logout() {
   await clearAdminSession()
-  redirect('/admin/login')
+  redirect('/')
 }

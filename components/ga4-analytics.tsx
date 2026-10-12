@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { PUBLIC_ANALYTICS_EVENTS, isPublicAnalyticsPath, type PublicAnalyticsEvent } from "@/lib/public-analytics";
+import { PUBLIC_ANALYTICS_AVAILABLE, PUBLIC_ANALYTICS_EVENTS, isPublicAnalyticsPath, type PublicAnalyticsEvent } from "@/lib/public-analytics";
 
 type Gtag = (...args: unknown[]) => void;
 
@@ -45,7 +45,7 @@ export function Ga4Analytics({ nonce }: { nonce?: string }) {
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   useEffect(() => {
-    if (!measurementId || !isCanonicalProductionHost() || !isPublicAnalyticsPath(pathname)) return;
+    if (!PUBLIC_ANALYTICS_AVAILABLE || !measurementId || !isCanonicalProductionHost() || !isPublicAnalyticsPath(pathname)) return;
     const sendPageView = () => {
       if (!hasConsent() || lastPage.current === pathname) return;
       const gtag = loadGoogleTag(measurementId, nonce);

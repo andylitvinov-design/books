@@ -11,6 +11,44 @@ const results = [];
 let app;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+async function verifyFreeOffers(page, locale, engine, width) {
+  const free = page.locator('[data-free-insights="public"]');
+  await expect(free).toHaveCount(1);
+  const cards = free.locator('[data-free-insights-offer]');
+  assert.deepEqual(await cards.evaluateAll(items => items.map(item => item.dataset.freeInsightsOffer)), ['situation', 'wu', 'stress']);
+  for (const [id, suffix] of [['situation', '/services/free-situation-review'], ['wu', '/services/dao-health-profile'], ['stress', '/client#cabinet-tests']]) {
+    const cta = free.locator(`[data-free-insights-offer="${id}"] a`);
+    await expect(cta).toHaveAttribute('href', `/${locale}${suffix}`);
+    await expect(cta).toBeVisible();
+    const size = await cta.evaluate(element => ({ height: element.getBoundingClientRect().height, font: parseFloat(getComputedStyle(element).fontSize) }));
+    assert.ok(size.height >= 46 && size.font >= 14, `Small ${locale} ${id} CTA: ${JSON.stringify(size)}`);
+  }
+  assert.ok(await free.evaluate(element => Boolean(element.compareDocumentPosition(document.querySelector('[data-core-service-offers="home"]')) & Node.DOCUMENT_POSITION_FOLLOWING)), 'Free offers must precede the four service cards');
+  results.push({ engine, width, locale, freeOffers: ['situation', 'wu', 'stress'], touchTargets: true });
+}
+
+async function exerciseFreeJourneys(page, engine, width) {
+  // Only entry navigation is under test. Never query client data or create a guest session.
+  await page.route(`${origin}/api/app/**`, route => route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"APP_UNAVAILABLE"}' }));
+  for (const locale of ['en', 'ru']) {
+    for (const [id, suffix, target] of [
+      ['situation', '/services/free-situation-review', '#review-hero-title'],
+      ['wu', '/services/dao-health-profile', '[data-core-service-detail="dao"] h1'],
+      ['stress', '/client#cabinet-tests', '#cabinet-tests #hh-test-list'],
+    ]) {
+      await page.goto(`${origin}/?lang=${locale}`, { waitUntil: 'domcontentloaded' });
+      await page.locator(`[data-free-insights="public"] [data-free-insights-offer="${id}"] a`).click();
+      await expect(page).toHaveURL(`${origin}/${locale}${suffix}`);
+      await expect(page.locator(target)).toBeVisible();
+      if (id === 'stress') await expect(page.locator('#cabinet-tests')).toHaveCount(1);
+      await page.goBack();
+      await expect(page).toHaveURL(`${origin}/?lang=${locale}`);
+      await expect(page.locator('[data-free-insights="public"]')).toBeVisible();
+      results.push({ engine, width, locale, freeJourney: id, destinationRendered: true, backReturned: true, submitted: false });
+    }
+  }
+}
+
 async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
   const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
@@ -56,6 +94,7 @@ async function exercise(engine, browserType, width) {
       await expect(page).toHaveURL(new RegExp(`\\?lang=${to}$`));
       delayedLocale = null;
       results.push({ engine, width, from, to, heldRsc: true, firstClickRetained: true });
+      await verifyFreeOffers(page, to, engine, width);
     }
     assert.deepEqual(errors, []);
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
@@ -137,6 +176,9 @@ async function exercise(engine, browserType, width) {
     await expect(firstReview.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
     await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0);
 
+    await exerciseFreeJourneys(page, engine, width);
+    assert.deepEqual(errors, []);
+
   } catch (error) {
     results.push({ engine, width, failure: error.message, pageErrors: errors });
     await page.screenshot({ path: `${evidence}/failed-${engine}-${width}.png`, fullPage: true }).catch(() => {});
@@ -160,6 +202,7 @@ try {
   const outcomes = await Promise.allSettled([['chromium', chromium], ['webkit', webkit]].flatMap(([name, type]) => [390, 1365].map(width => exercise(name, type, width))));
   assert.ok(outcomes.every(result => result.status === 'fulfilled'), 'Locale-switch regression failed; inspect artifact');
   assert.equal(results.filter(result => result.firstClickRetained).length, 8);
+  assert.equal(results.filter(result => result.freeJourney).length, 24);
   console.log('PASS: eight delayed-RSC EN/RU switches, Chromium/WebKit, mobile/desktop; no lost first click');
 } finally {
   await writeFile(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ origin, results, fullPlayback: 'Not claimed by this interaction-only test' }, null, 2));

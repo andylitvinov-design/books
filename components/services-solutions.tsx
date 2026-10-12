@@ -7,12 +7,13 @@ import { coreServiceOffers } from "@/data/core-service-offers";
 import type { Locale } from "@/data/remedies";
 import styles from "./services-solutions.module.css";
 
-// Homepage-only editorial illustrations. Preserve original source media on Services.
+// Use existing approved local imagery, including real stills from the two service videos.
+// Keep the homepage photo-left layout; do not alter the video links or Services page.
 const homepageMedia = {
   situation: "/images/holistic-house/hero-olive-incense.webp",
   dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
-  alchemy: "/images/holistic-house/homepage-constellations.svg",
-  hypnotherapy: "/images/holistic-house/homepage-guided-imagery.svg",
+  alchemy: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
 } as const;
 
 const copy = {
