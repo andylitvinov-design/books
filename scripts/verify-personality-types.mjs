@@ -16,6 +16,20 @@ const output='artifacts/app-r1/typology-'+engine.name()
 await mkdir(output,{recursive:true})
 const checks=[], errors=[]
 const passed=name=>{checks.push(name);console.log('PASS '+name)}
+function observePage(page,label){
+ const location=()=>new URL(page.url()).pathname
+ page.on('pageerror',error=>{
+  errors.push(error.message)
+  console.log('TYPOLOGY_PAGE_ERROR',JSON.stringify({label,path:location(),message:error.message,stack:error.stack,lastCheck:checks.at(-1)}))
+ })
+ page.on('console',message=>{
+  if(['error','warning'].includes(message.type()))console.log('TYPOLOGY_CONSOLE',JSON.stringify({label,path:location(),type:message.type(),text:message.text().slice(0,1600)}))
+ })
+ page.on('requestfailed',request=>console.log('TYPOLOGY_REQUEST_FAILED',JSON.stringify({label,path:location(),request:new URL(request.url()).pathname,error:request.failure()?.errorText})))
+ page.on('request',request=>{
+  if(new URL(request.url()).pathname==='/__nextjs_original-stack-frames')console.log('TYPOLOGY_STACK_REQUEST',JSON.stringify({label,path:location(),frames:request.postDataJSON()?.frames}))
+ })
+}
 async function navigate(page,url){
  // Let mounted account panels finish their reads before a hard navigation.
  // WebKit otherwise reports an interrupted same-origin fetch as an access-control error.
@@ -62,7 +76,7 @@ let page
 try{
  const account=await browser.newContext({viewport:{width:390,height:844}})
  page=await account.newPage()
- page.on('pageerror',e=>errors.push(e.message))
+ observePage(page,'account')
  await navigate(page,origin+'/en/app')
  await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
@@ -93,8 +107,29 @@ try{
  await api(account,'runs/'+repeat.id+'/submit',{expectedRevision:repeat.revision})
  const snapshot=await api(account,'bootstrap')
  assert.ok(snapshot.results.filter(r=>r.definitionKey===d.key).length>=2)
+ const historyReads=[]
+ const collectHistoryRead=request=>{if(request.url().endsWith('/api/app/shared-materials')&&request.method()==='GET')historyReads.push(request)}
+ page.on('request',collectHistoryRead)
+ const historyMaterials=page.waitForResponse(response=>response.url().endsWith('/api/app/shared-materials')&&response.request().method()==='GET')
  await navigate(page,origin+'/en/app/history')
  await expect(page.getByRole('heading',{name:d.title,exact:true}).first()).toBeVisible({timeout:20000})
+ // History renders from bootstrap before the materials panel's passive effect
+ // starts. Complete its real read (including StrictMode's second request)
+ // before leaving this document; a visible result heading is not readiness.
+ const materialsResponse=await historyMaterials
+ assert.ok(materialsResponse.ok())
+ assert.ok(Array.isArray((await materialsResponse.json()).materials))
+ await materialsResponse.finished()
+ // networkidle can already have fired before these passive-effect reads.
+ // Join every request that actually started, including StrictMode's replay.
+ await Promise.all(historyReads.map(async request=>{
+  const response=await request.response()
+  assert.ok(response?.ok())
+  assert.ok(Array.isArray((await response.json()).materials))
+  await response.finished()
+ }))
+ page.off('request',collectHistoryRead)
+ console.log('TYPOLOGY_HISTORY_MATERIALS_READY',historyReads.length)
  for(const locale of ['en','ru']){
   await navigate(page,origin+'/'+locale+'/app/portfolio')
   for(const entry of PERSONALITY_TYPE_CATALOG)await expect(page.locator('.hh-insights-test-card').filter({hasText:entry.title[locale]}).first()).toBeVisible({timeout:20000})
@@ -115,7 +150,7 @@ try{
   const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale),guest=await browser.newContext({viewport:{width:390,height:844}})
   await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale}],operationId:randomUUID()})
-  page=await guest.newPage();page.on('pageerror',e=>errors.push(e.message))
+  page=await guest.newPage();observePage(page,'guest-'+locale+'-'+mode)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
   const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
   await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()

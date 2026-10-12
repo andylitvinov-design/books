@@ -109,11 +109,11 @@ test('public and signed-in routes share the complete Test Explorer rather than a
 
 test('active assessment inventory is classified for style and length filters', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 100)
-  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 59)
+  assert.equal(active.length, 108)
+  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 67)
   assert.equal(active.filter((item) => item.testStyle === 'professional').length, 41)
   assert.equal(active.filter((item) => item.testLength === 'short').length, 40)
-  assert.equal(active.filter((item) => item.testLength === 'medium').length, 47)
+  assert.equal(active.filter((item) => item.testLength === 'medium').length, 55)
   assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 13)
   assert.ok(active.every((item) => TEST_STYLE_FILTERS.some((filter) => filter.key === item.testStyle)))
   assert.ok(active.every((item) => TEST_LENGTH_FILTERS.some((filter) => filter.key === item.testLength)))

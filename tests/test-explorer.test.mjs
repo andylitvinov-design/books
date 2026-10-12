@@ -90,7 +90,7 @@ test('coverage uses diminishing returns, remains bounded, and classifies breadth
   const one = coverageForSelection(entries, ['phq-4'])
   const two = coverageForSelection(entries, ['phq-4', 'gad-7'])
 
-  assert.equal(TEST_EXPLORER_AXES.length, 14)
+  assert.equal(TEST_EXPLORER_AXES.length, 18)
   assert.equal(one.axes.anxiety.coverage, 0.95)
   assert.equal(two.axes.anxiety.coverage, 1)
   assert.ok(Object.values(two.axes).every((axis) => axis.coverage >= 0 && axis.coverage <= 1))

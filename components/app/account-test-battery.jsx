@@ -143,6 +143,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }, [openFromInsights, insightsCategory])
   const allowedFilters = ['all', 'notStarted', 'inProgress', 'completed', 'remaining']
   const requestedFilter = allowedFilters.includes(initialStatusFilter) ? initialStatusFilter : null
+  const [statusFiltersOpen, setStatusFiltersOpen] = useState(Boolean(requestedFilter))
   const [showList, setShowList] = useState(true)
   const [statusFilter, setStatusFilter] = useState(requestedFilter || 'all')
   useEffect(() => {
@@ -151,6 +152,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }, [requestedPlanId])
   useEffect(() => {
     if (!requestedFilter) return
+    setStatusFiltersOpen(true)
     setStatusFilter(requestedFilter)
     setShowList(true)
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
@@ -420,7 +422,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                   </article>
                 })}
               </div>
-              <details className={styles.filterDetails} defaultOpen={Boolean(requestedFilter)}>
+              <details className={styles.filterDetails} open={statusFiltersOpen}
+                onToggle={(event) => setStatusFiltersOpen(event.currentTarget.open)}>
                 <summary>{locale === 'ru' ? 'Отфильтровать список по статусу' : 'Filter this list by status'}</summary>
                 <div className={styles.testFilters} role="group"
                   aria-label={locale === 'ru' ? 'Фильтр по статусу' : 'Filter by status'}>

@@ -4,9 +4,10 @@ import { createHash, randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { MIND_BODY_MONITOR_REGISTRY, RIGHTS_STATUS } from '../data/assessments/mind-body-monitor-registry.js'
+import { RELATIONSHIPS_INTIMACY_DEFINITIONS } from '../data/assessments/relationships-intimacy-v1.js'
 import { PERSONALITY_TYPE_DEFINITIONS, PERSONALITY_TYPE_CATALOG } from '../data/assessments/personality-types-original-2026.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
-import { getAssessmentDefinition, getDefinitionById } from '../lib/assessments/definitions.js'
+import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition, getDefinitionById } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { personalityTypeHypothesis, SOCIONICS_TYPE_CODES } from '../lib/assessments/personality-type-interpretation.js'
@@ -32,7 +33,7 @@ test('four original EN/RU questionnaires are unique, content-hashed and genuinel
   assert.equal(PERSONALITY_TYPE_DEFINITIONS.length,8)
   assert.equal(PERSONALITY_TYPE_CATALOG.length,4)
   assert.equal(new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id)).size,8)
-  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,100)
+  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,108)
   for(const [key,,questionCount,scaleCount] of CASES){
     const item=MONITORING_CATALOG.find(c=>c.key===key)
     assert.ok(item?.startable && item.rightsStatus==='cleared' && item.guestEligible)
@@ -214,4 +215,17 @@ test('all sixteen socionics mappings use an explicit independent code fixture',(
     const answers=Object.fromEntries(d.questions.map(q=>[q.id,letters.includes(q.id.split('.')[1])?5:1]))
     for(const locale of ['en','ru'])assert.equal(personalityTypeHypothesis(scoreAssessment(d,answers),locale).code,code)
   }
+})
+
+
+test('canonical 169 prior definitions and earlier 153-definition baseline remain unchanged',()=>{
+  const ids=new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id))
+  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!ids.has(d.id))
+  const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
+  assert.equal(prior.length,169)
+  assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
+  const relationIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))
+  const originalPrior=prior.filter(d=>!relationIds.has(d.id))
+  assert.equal(originalPrior.length,153)
+  assert.equal(digest(originalPrior),'1743fb49e9f78bde406bc5055349a95c8b961961b21ab9d1a0fcb05fca1fb0bc')
 })

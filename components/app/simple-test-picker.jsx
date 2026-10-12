@@ -263,6 +263,9 @@ export function SimpleTestPicker({
         <strong>{activeBattery.length} {c.selected} · ~{minutes} {c.minutes}</strong>
         <button type="button" onClick={onResetSuggested}>{c.reset}</button>
       </div>
+      <p className={styles.fitNote} data-public-selected-tests>
+        {activeBattery.map((entry, index) => <span key={entry.key} data-selected-test-key={entry.key}>{index > 0 ? ' · ' : ''}{entry.title}</span>)}
+      </p>
       <button type="button" className={styles.cta} disabled={!activeBattery.length || starting} onClick={onStart}>
         <Play size={22} fill="currentColor" aria-hidden="true" />
         <span><strong>{starting ? '…' : c.build}</strong><small>{c.buildHelp}</small></span>

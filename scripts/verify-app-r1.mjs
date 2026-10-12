@@ -2,6 +2,7 @@ import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
 import {createHmac} from 'node:crypto'
+import {MONITORING_CATALOG} from '../data/assessments/catalog.js'
 import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
 const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
@@ -163,7 +164,14 @@ try {
  await expect(conditionalProblems.getByText('Choose a topic above to see relevant concerns.')).toBeVisible()
  const rankedCards=picker.locator('[data-test-match]')
  await expect(rankedCards).toHaveCount(5)
- await expect(rankedCards.locator('input[type="checkbox"]:checked')).toHaveCount(3)
+ const selectedSummary=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
+ await expect(selectedSummary).toHaveCount(3)
+ const defaultKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
+ assert.ok(defaultKeys.every(key=>MONITORING_CATALOG.some(entry=>entry.key===key&&entry.startable&&entry.rightsStatus==='cleared'&&entry.starterEligible!==false)))
+ for(const card of await rankedCards.all()){
+  const key=await card.getAttribute('data-test-match')
+  await expect(card.locator('input[type="checkbox"]')).toBeChecked({checked:defaultKeys.includes(key)})
+ }
  const initialPercents=await rankedCards.evaluateAll(nodes=>nodes.map(node=>Number(node.dataset.relevance)))
  assert.ok(initialPercents.every(value=>Number.isInteger(value)&&value>=0&&value<=99))
  assert.deepEqual(initialPercents,[...initialPercents].sort((a,b)=>b-a),'fit percentages must be descending')
@@ -201,8 +209,11 @@ try {
  await picker.getByRole('button',{name:/Quick check-in/}).click()
  await expect(picker.getByRole('button',{name:/Quick check-in/})).toHaveAttribute('aria-pressed','true')
  await optional.locator('summary').click()
+ const handoffKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
  await picker.getByRole('button',{name:'Browse full database'}).click()
  await expect(guestPickerPage.getByRole('heading',{name:'Find the tests that fit you'})).toBeVisible()
+ const handoffTitles=await guestPickerPage.locator('article input[type="checkbox"]:checked').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')))
+ assert.deepEqual(handoffTitles.sort(),handoffKeys.map(key=>MONITORING_CATALOG.find(entry=>entry.key===key).title.en).sort(),'full catalog must preserve every actual selected test')
  await guestPickerPage.getByRole('button',{name:/Back to easy selection/}).click()
  await expect(picker).toBeVisible()
  assert.match(guestPickerPage.url(),/\/en\/client$/)

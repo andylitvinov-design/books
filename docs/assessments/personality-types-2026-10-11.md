@@ -27,7 +27,7 @@ MMPI-2, MMPI-2-RF, official MBTI Step I/II, NEO-PI-3, NEO-FFI-3, HEXACO-60/100, 
 - Enneagram systematic review: https://pubmed.ncbi.nlm.nih.gov/33332604/
 
 ## Expected catalog
-Startable catalogue: **96 → 100** (four original bilingual instruments = 8 immutable localized definitions).
+Startable catalogue: **104 → 108** (four original bilingual instruments = 8 immutable localized definitions).
 Rights-gated research reference registry: **143 → 154** (11 more; reference entries overlap with product where applicable and are not added to the executable count).
 
 ## QA and deployment contract
@@ -36,4 +36,6 @@ Rights-gated research reference registry: **143 → 154** (11 more; reference en
 3. Additive migration `20261011230000_hh_personality_types_original.sql` prepared for the **existing** Holistic House Supabase; not applied by this recovery. Require separate explicit authorization before production registration. A bounded read-only technical check on 2026-10-12 at approximately 05:26 UTC returned no rows for these eight IDs or four keys. After authorized registration verify exactly eight matching ID/hash/body rows, rather than treating database version counts as the number of runnable tests. Do not alter customer answers or prior score versions.
 4. Merge source only with all QA checks green. Production is **not live** until Vercel builds and exposes an exact tested GitHub SHA on `holistichouse.vercel.app`, and key UX is read back. Vercel Hobby build-rate-limit may prevent publishing; never claim live solely from GitHub merge.
 
-Recovery baseline: canonical `10871d5473b912eeda39f51bc3c89e3d9395dd80`. The resulting inventory contains 41 professional and 59 original/reflection instruments, with 161 immutable definitions (153 existing + 8 localized originals). BFAS and MHC-SF are separate unmerged work and are not counted. All four added instruments are engaging/original, not professional psychometric tests.
+Recovery baseline: canonical `2ddf275f60cb12c0d4de1e3d08ce1b95a73497a2`. The resulting inventory contains 41 professional and 67 original/reflection instruments, with 177 immutable definitions (169 existing + 8 localized originals). BFAS and MHC-SF are separate unmerged work and are not counted. All four added instruments are engaging/original, not professional psychometric tests.
+
+Canonical reconciliation preserves the complete relationship release and explicit opt-in starter selection, including all 27 relationship browser cases. All eight typology definitions and the guarded SQL remain byte-identical to the prior PR head; tests pin canonical 169-definition and earlier 153-definition digests. Necessary common browser fixes are carried separately: exact-plan read completion, single-script JSON-LD nonce handling with four strict document checks, native status-disclosure state with four EN/RU keyboard cases, and completed history-material reads before navigation. Typology diagnostics retain the unfiltered final page-error assertion. BFAS and MHC-SF definitions are not imported. No production registration or merge is performed.

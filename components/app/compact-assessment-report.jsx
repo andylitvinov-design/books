@@ -23,6 +23,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       {report.personalityType.alternatives?.map(alternative => <p key={alternative}>{alternative}</p>)}
       <small>{report.personalityType.warning}</small>
     </aside>}
+    {report.contextNote && <p className={styles.contextNote} data-assessment-context>{report.contextNote}</p>}
     <div className={styles.cards}>
       {report.sections.map((section, index) => {
         const dimension = result.dimensions?.find(item => item.key === section.key)
