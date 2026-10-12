@@ -1,4 +1,6 @@
-const { chromium, expect } = await import(process.env.HH_PLAYWRIGHT_TEST_PATH || "@playwright/test");
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -39,6 +41,7 @@ try {
     ]);
     assert.ok(scrollWidth <= width + 1, "Horizontal overflow: " + label + " (" + scrollWidth + " > " + width + ")");
   };
+  const visible = async (locator) => locator.waitFor({ state: "visible", timeout: 30000 });
   const createPage = async (width) => {
     const page = await context.newPage();
     attachDiagnostics(page);
@@ -50,9 +53,9 @@ try {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
-      await expect(page.locator("#services-conversion-title")).toBeVisible();
-      await expect(page.locator('[data-free-insights="public"]')).toBeVisible();
-      await expect(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first()).toBeVisible();
+      await visible(page.locator("#services-conversion-title"));
+      await visible(page.locator('[data-free-insights="public"]'));
+      await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       await assertViewport(page, locale + "/services/" + width);
       if (width === 390 || width === 1188) {
@@ -78,7 +81,7 @@ try {
         const page = await createPage(width);
         await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "networkidle" });
         const main = page.locator('main[data-core-service-detail="' + kind + '"]');
-        await expect(main.locator("h1")).toBeVisible();
+        await visible(main.locator("h1"));
         await assertNoDevIssueOverlay(page, locale + "/" + slug + "/" + width);
         await assertViewport(page, locale + "/" + slug + "/" + width);
         if (width === 390 || width === 1188) {
@@ -90,7 +93,7 @@ try {
           const alternative = main.locator("details");
           assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
           await alternative.locator("summary").click();
-          await expect(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]')).toBeVisible();
+          await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false });
         }
         await page.close();
@@ -102,7 +105,7 @@ try {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services/free-situation-review", { waitUntil: "networkidle" });
-      await expect(page.locator("[data-free-drawing-intake]")).toBeVisible();
+      await visible(page.locator("[data-free-drawing-intake]"));
       await assertNoDevIssueOverlay(page, locale + "/free-situation-review/" + width);
       await assertViewport(page, locale + "/free-situation-review/" + width);
       if (width === 390 || width === 1188) {
@@ -120,7 +123,7 @@ try {
     await intake.locator("textarea").nth(1).fill(markerB);
     await intake.locator('form button[type="submit"]').click();
     const ready = intake.locator('[role="region"]');
-    await expect(ready).toBeVisible();
+    await visible(ready);
     const href = await ready.locator('a[data-contact-channel="whatsapp"]').getAttribute("href");
     const whatsappText = new URL(href || "").searchParams.get("text") || "";
     const decodedPageUrl = decodeURIComponent(page.url());
