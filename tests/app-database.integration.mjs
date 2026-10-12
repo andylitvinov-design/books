@@ -1516,3 +1516,42 @@ test('MHC-SF guest persistence retains zero, source sums and private bilingual r
     }
   }
 })
+
+// Synthetic R3 regression: exercise the real restricted-role repository read and
+// session insert for the non-primary selected scale. This suite is loopback-only.
+test('R3 displayed rotated lesson can be saved and read back for EN/RU without changing legacy content', async () => {
+  const { createDailyCourseRepository } = await import('../lib/app/growth-daily.js')
+  const { lessonFor, COURSE_CONTENT_VERSION } = await import('../lib/inner-growth/lesson-library.js')
+  const dailyRepo = createDailyCourseRepository(config)
+  for (const locale of ['en','ru']) {
+    const who = actor(randomUUID(),randomUUID()), courseId = randomUUID()
+    const db = await adminClient()
+    try {
+      await db.query('insert into auth.users(id,email) values($1,$2)',[who.id,'synthetic-course-'+locale+'@example.invalid'])
+      await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
+      await repo.ensureAccount(who)
+      await repo.onboarding(who,{adult:true,necessary:true,marketing:false,displayName:'Synthetic R3 course',uiLocale:locale,timezone:'UTC',goal:'explore'})
+      await db.query(`insert into app_private.growth_courses
+        (id,account_id,stage,goals,scale_keys,consented_at,chosen_at,started_at)
+        values($1,$2,4,$3,$4,now(),now(),now())`,[courseId,who.id,
+        ['calm_regulation','attention_clarity','connection_boundaries'],
+        ['hh-weekly-pulse::weekly.tension','hh-weekly-pulse::weekly.clarity','hh-weekly-pulse::weekly.connection']])
+      let value = await dailyRepo.command(who,'activate',{problemLabel:'Synthetic everyday concern',timeZone:'UTC'},locale)
+      await db.query("update app_private.growth_cycles set start_local_date=(now() at time zone 'UTC')::date-1 where id=$1",[value.cycle.id])
+      value = await dailyRepo.command(who,'preferences',{expectedRevision:value.cycle.revision,length:'quick',imagery:'optional',checkinFrequency:'daily'},locale)
+      assert.equal(value.cycle.day,2)
+      assert.equal(value.cycle.activeGoal,'attention_clarity')
+      assert.equal(value.lesson.id,lessonFor('attention_clarity',2,locale,'quick').id)
+      const operationId = randomUUID(), request = {operationId,day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      await assert.rejects(dailyRepo.command(who,'session',{...request,lessonId:lessonFor('calm_regulation',2).id},locale),{code:'INVALID_LESSON_ID'})
+      const saved = await dailyRepo.command(who,'session',request,locale)
+      assert.ok(saved.currentSession.completedAt)
+      await dailyRepo.command(who,'session',request,locale)
+      const rows = (await db.query('select lesson_id,content_version from app_private.growth_sessions where account_id=$1 and cycle_id=$2',[who.id,value.cycle.id])).rows
+      assert.equal(rows.length,1)
+      assert.equal(rows[0].lesson_id,value.lesson.id)
+      assert.equal(rows[0].content_version,COURSE_CONTENT_VERSION)
+      assert.equal((await dailyRepo.read(who,locale)).lesson.id,value.lesson.id)
+    } finally { await db.end() }
+  }
+})
