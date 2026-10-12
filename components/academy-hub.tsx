@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
-import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { AcademyCourseCapture } from "@/components/academy-course-capture";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import {
   academyCopy,
@@ -221,7 +221,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           </Link>
         </p>
       ) : null}
-      <PublicConsultationCta locale={locale} />
+      <AcademyCourseCapture locale={locale} />
     </main>
   );
 }
@@ -252,7 +252,7 @@ export function AcademyDirection({ locale, direction }: { locale: PublicLocale; 
         <p>{info.description[locale]}</p>
       </header>
       <AcademyRecordIndex items={items} label={info.title[locale]} />
-      <PublicConsultationCta locale={locale} />
+      <AcademyCourseCapture locale={locale} />
     </main>
   );
 }
@@ -281,7 +281,7 @@ export function AcademyPrefixDirectory({ locale, prefix, title, description }: {
         <p>{description}</p>
       </header>
       <AcademyRecordIndex items={items} label={title} />
-      <PublicConsultationCta locale={locale} />
+      <AcademyCourseCapture locale={locale} />
     </main>
   );
 }

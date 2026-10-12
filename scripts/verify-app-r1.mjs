@@ -150,7 +150,113 @@ async function openCompletedPlanResult(){
  await resultLink.click()
  await expect(page).toHaveURL(/\/results\//,{timeout:20000})
 }
+async function assertPublicViewportFits(target,label){
+ const width=await target.evaluate(()=>window.innerWidth)
+ const scroll=await target.evaluate(()=>document.documentElement.scrollWidth)
+ assert.ok(scroll<=width+1,`Public overflow: ${label} (${scroll} > ${width})`)
+}
+async function verifyPublicServiceConversionJourneys(){
+ const publicContext=await browser.newContext({viewport:{width:390,height:844}})
+ const publicErrors=[]
+ const services=[
+  ['dao-health-profile','dao',{en:'Free Wu Xing Resource Profile',ru:'Бесплатный профиль ресурсов У-Син'}],
+  ['alchemy-of-soul','alchemy',{en:'Alchemy of the Soul',ru:'Алхимия души'}],
+  ['hypnotherapy-course','hypnotherapy',{en:'Guided Imagery Hypnotherapy',ru:'Курс гипнотерапии'}],
+ ]
+ for(const locale of ['en','ru']){
+  for(const [slug,kind,names] of services){
+   const servicePage=await publicContext.newPage()
+   servicePage.on('pageerror',error=>publicErrors.push(error.message))
+   for(const width of [320,360,390,1280]){
+    await servicePage.setViewportSize({width,height:844})
+    await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
+    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
+    if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
+    if(width!==390)continue
+    const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
+    await capture.scrollIntoViewIfNeeded()
+    await expect(capture).toBeVisible({timeout:30000})
+    const cta=capture.locator('a[data-contact-channel="whatsapp"]')
+    await expect(cta).toBeVisible()
+    const href=await cta.getAttribute('href')
+    const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
+    assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
+    const alternative=capture.locator('details')
+    assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
+    await alternative.locator('summary').click()
+    await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+   }
+   await servicePage.close()
+  }
+ }
+ for(const locale of ['en','ru']){
+  const publicPage=await publicContext.newPage()
+  publicPage.on('pageerror',error=>publicErrors.push(error.message))
+  const copy=locale==='ru'
+   ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
+   : {ready:'Your answers are ready to copy. Nothing has been sent.',copied:'Copied',fallback:'Select and copy the text below'}
+  for(const width of [320,360,390,1280]){
+   await publicPage.setViewportSize({width,height:844})
+   await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+   const intake=publicPage.locator('[data-free-drawing-intake]')
+   await expect(intake).toBeVisible({timeout:30000})
+   await assertPublicViewportFits(publicPage,locale+'/free-review/'+width)
+   if(width===390||width===1280)await publicPage.screenshot({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})
+  }
+  await publicPage.setViewportSize({width:390,height:844})
+  await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+  await publicPage.evaluate(()=>{
+   document.documentElement.dataset.analyticsConsent='granted'
+   window.__publicAcquisition=[]
+   window.addEventListener('holistic-house:acquisition',event=>window.__publicAcquisition.push(event.detail))
+  })
+  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboard=value}}}))
+  const intake=publicPage.locator('[data-free-drawing-intake]')
+  const uniqueProblem='Synthetic public form value — '+locale
+  const uniqueGoal='Synthetic public goal value — '+locale
+  await intake.locator('textarea').nth(0).fill(uniqueProblem)
+  await intake.locator('textarea').nth(1).fill(uniqueGoal)
+  await intake.locator('form button[type="submit"]').click()
+  const ready=intake.locator('[role="region"]')
+  await expect(ready).toBeVisible()
+  await expect(ready.getByRole('heading')).toHaveText(copy.ready)
+  assert.equal(await ready.getAttribute('aria-live'),'polite')
+  await expect(ready).toBeFocused({timeout:15000})
+  await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
+  const whatsapp=ready.locator('a[data-contact-channel="whatsapp"]')
+  const whatsappHref=await whatsapp.getAttribute('href')
+  const whatsappText=new URL(whatsappHref||'').searchParams.get('text')||''
+  const decodedPageUrl=decodeURIComponent(publicPage.url())
+  for(const marker of [uniqueProblem,uniqueGoal]){
+   assert.ok(!whatsappText.includes(marker),'Answers never enter decoded WhatsApp text')
+   assert.ok(!decodedPageUrl.includes(marker),'Answers never enter decoded page URL')
+  }
+  await ready.getByRole('button').click()
+  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
+  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('synthetic clipboard denial')}}}))
+  await ready.getByRole('button').click()
+  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.fallback)
+  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboardRecovery=value}}}))
+  await ready.getByRole('button').click()
+  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
+  const events=await publicPage.evaluate(()=>window.__publicAcquisition)
+  // The temporary SDK safety hold also suppresses the public event emitter,
+  // including when this fixture forces a stale granted dataset. Restore the
+  // positive analytics contract only with the fully verified transport repair.
+  assert.deepEqual(events,[], 'Temporary analytics hold must emit no acquisition events')
+  assert.ok(!JSON.stringify(events).includes(uniqueProblem),'Analytics event metadata never contains answers')
+  assert.ok(!JSON.stringify(events).includes(uniqueGoal),'Analytics event metadata never contains answers')
+  await publicPage.screenshot({path:output+'/free-review-'+locale+'-prepared-390.png',fullPage:false})
+  await publicPage.close()
+ }
+ assert.deepEqual(publicErrors,[])
+ await publicContext.close()
+ passed('public EN/RU service conversion journeys: mobile/desktop layout, hydrated same-service footer, disclosure, private free-review handoff and screenshots')
+}
+
 try {
+ await verifyPublicServiceConversionJourneys()
  // Public test picker must work anonymously before OAuth.
  const guestPickerContext=await browser.newContext({viewport:{width:390,height:844}})
  const guestPickerPage=await guestPickerContext.newPage()
@@ -285,12 +391,21 @@ try {
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
   await page.goto(origin+'/en/app/analysis');await ready()
   await expect(page.getByRole('heading',{name:'Personal analysis',exact:true})).toBeVisible()
-  await expect(page.getByRole('link',{name:'Start free analysis'})).toHaveAttribute('href','/en/services/free-situation-review')
-  await expect(page.getByRole('link',{name:'Request free analysis'})).toHaveAttribute('href','/en/services/dao-health-profile')
-  await expect(page.getByText('No personal reports have been pinned here yet.')).toBeVisible()
+  await expect(page.locator('[data-analysis-offer]')).toHaveCount(3)
+  await expect(page.locator('[data-analysis-offer="stress"]').getByRole('link',{name:'Start free testing'})).toHaveAttribute('href','/en/app/tests?mode=recommendations')
+  await expect(page.locator('[data-analysis-offer="situation"]').getByRole('link',{name:'Request free review'})).toHaveAttribute('href','/en/services/free-situation-review')
+  await expect(page.locator('[data-analysis-offer="resource"]').getByRole('link',{name:'Get my free profile'})).toHaveAttribute('href','/en/services/dao-health-profile')
+  await expect(page.locator('[data-analysis-offer] img')).toHaveCount(3)
+  await expect(page.getByText('No saved reports yet')).toBeVisible()
+  await expect(page.getByRole('link',{name:'Request a consultation'})).toHaveAttribute('href','/en/services/alchemy-of-soul')
   await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Analysis'})).toHaveAttribute('aria-current','page')
-  await screenshotEvidence(page,{path:output+'/client-personal-analysis-en.png',fullPage:true})
-  passed('Google Cabinet Personal Analysis shows both verified free services and pinned-reports empty state')
+  for(const width of [320,390,768,1280]){
+    await page.setViewportSize({width,height:900})
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Analysis must not overflow viewport at '+width+'px')
+    await screenshotEvidence(page,{path:output+'/client-personal-analysis-en-'+width+'.png',fullPage:true})
+  }
+  await page.setViewportSize({width:390,height:844})
+  passed('Google Cabinet Analysis has three free photo offers, private reports and a responsive optional consultation CTA')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
  await screenshotEvidence(page,{path:output+'/current-state-runner.png',fullPage:true})
@@ -433,8 +548,33 @@ try {
   await handoffPage.locator('.master-client-create input[name="fullName"]').fill('Synthetic Handoff Client')
   await handoffPage.locator('.master-client-create input[name="email"]').fill('synthetic-recipient@example.invalid')
   await handoffPage.locator('.master-client-create-form button[type="submit"]').click()
+  // Client creation must open the consultation editor, not the client's Cabinet.
+  // After checking the approved workflow, follow the explicit client-history link
+  // to finish the separate private-materials handoff acceptance scenario.
+  await expect(handoffPage).toHaveURL(/\/admin\/consultations\/new\?clientId=[a-f0-9-]{36}&created=1$/,{timeout:20000})
+  const createdClientId = new URL(handoffPage.url()).searchParams.get('clientId')
+  assert.match(createdClientId, /^[a-f0-9-]{36}$/)
+  await expect(handoffPage.getByRole('heading',{name:'New consultation',exact:true})).toBeVisible()
+  await expect(handoffPage.locator('.consultation-client-created-label')).toContainText('CLIENT SAVED')
+  await expect(handoffPage.locator('.consultation-client-selected-row')).toContainText('Synthetic Handoff Client')
+  await expect(handoffPage.locator('.consultation-client-created-identity strong')).toHaveText('Synthetic Handoff Client')
+  await expect(handoffPage.locator('.consultation-form input[name="clientId"]')).toHaveValue(createdClientId)
+  await expect(handoffPage.locator('#consultation-items-heading')).toHaveText('Recommendations')
+  await handoffPage.setViewportSize({width:390,height:844})
+  await screenshotEvidence(handoffPage,{path:output+'/practitioner-new-consultation-handoff-mobile.png',fullPage:false})
+  passed('new client opens its preselected practitioner recommendation editor')
+  const ownerHistoryLink=handoffPage.locator('.consultation-client-created-history-link')
+  await expect(ownerHistoryLink).toHaveAttribute('href', '/admin/clients/' + createdClientId)
+  await ownerHistoryLink.click()
   await expect(handoffPage).toHaveURL(/\/admin\/clients\/[a-f0-9-]{36}$/,{timeout:20000})
   await expect(handoffPage.getByRole('heading',{name:'Synthetic Handoff Client',exact:true})).toBeVisible()
+  const ownerClientId=new URL(handoffPage.url()).pathname.split('/').at(-1)
+  assert.equal(ownerClientId, createdClientId)
+  await expect(handoffPage.locator('.client-detail-action-primary')).toHaveAttribute('href','/admin/consultations/new?clientId='+ownerClientId)
+  await expect(handoffPage.locator('.client-detail-private-access')).not.toHaveAttribute('open','')
+  assert.equal(await handoffPage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),false,'owner client workspace mobile horizontal overflow')
+  await screenshotEvidence(handoffPage,{path:output+'/practitioner-client-workspace-mobile.png',fullPage:true})
+  await handoffPage.setViewportSize({width:1280,height:720})
    // Owner's Create report path selects a real private client record; it never
    // creates or publishes a report before explicit Save/Share in the editor.
    const reportPickerPage=await admin.newPage();
@@ -466,6 +606,9 @@ try {
     const {selector,secret}=await response.json()
     return location.origin+'/en/client/'+selector+'#'+secret
   })
+  await handoffPage.locator('.client-detail-private-access > summary').click()
+  await expect(handoffPage.locator('.client-detail-private-access')).toHaveAttribute('open', '')
+  await expect(handoffPage.locator('.consultation-cabinet-primary')).toBeVisible()
   await handoffPage.locator('.consultation-cabinet-primary').click()
   await expect(handoffPage.locator('.consultation-cabinet-status')).toContainText('Link copied')
   assert.equal(await handoffPage.evaluate(() => window.__syntheticCopiedLink), clientLink)
@@ -481,9 +624,12 @@ try {
   passed('all four legacy private-client profile CTAs open a precise, privacy-safe order request')
   await clientPage.getByRole('link',{name:'Personal analysis'}).click()
   await expect(clientPage.getByRole('heading',{name:'Personal analysis',exact:true})).toBeVisible()
-  await expect(clientPage.getByRole('link',{name:'Start free analysis'})).toHaveAttribute('href','/en/services/free-situation-review')
-  await expect(clientPage.getByRole('link',{name:'Request free analysis'})).toHaveAttribute('href','/en/services/dao-health-profile')
-  await expect(clientPage.getByText('No personal reports have been pinned here yet.')).toBeVisible()
+  await expect(clientPage.locator('[data-analysis-offer]')).toHaveCount(3)
+  await expect(clientPage.locator('[data-analysis-offer="stress"]').getByRole('link',{name:'Start free testing'})).toHaveAttribute('href','/en/client/tests')
+  await expect(clientPage.locator('[data-analysis-offer="situation"]').getByRole('link',{name:'Request free review'})).toHaveAttribute('href','/en/services/free-situation-review')
+  await expect(clientPage.locator('[data-analysis-offer="resource"]').getByRole('link',{name:'Get my free profile'})).toHaveAttribute('href','/en/services/dao-health-profile')
+  await expect(clientPage.getByText('No saved reports yet')).toBeVisible()
+  await expect(clientPage.getByRole('link',{name:'Request a consultation'})).toHaveAttribute('href','/en/services/alchemy-of-soul')
   await screenshotEvidence(clientPage,{path:output+'/private-client-personal-analysis.png',fullPage:true})
   await clientPage.getByRole('link',{name:'My materials'}).click()
   await expect(clientPage.getByRole('heading',{name:'Study materials from Andy'})).toBeVisible()
@@ -648,7 +794,6 @@ try {
  const afterRemove=(await api('bootstrap')).data
  assert.equal(afterRemove.results.length,beforeRemove.results.length,'removing a test must not delete results')
  assert.equal(afterRemove.runs.length,beforeRemove.runs.length,'removing a test must not delete drafts')
- // The server poll can finish before reload() renders the removal notice.
  await expect(page.getByText('Removed from selection.',{exact:false})).toBeVisible({timeout:15000})
  passed('first-screen test removal updates current plan while preserving private results and drafts')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
@@ -656,3 +801,4 @@ try {
  await other.close();await admin.close()
 } catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
 finally{await browser.close()}
+

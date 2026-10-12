@@ -1,20 +1,29 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowRight, BookOpen, Check, ClipboardList, Feather, LockKeyhole, Sparkles } from 'lucide-react'
-import { GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS, growthSuggestions, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
+import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
+import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import CourseToday from './course-today'
-import { MONITORING_CATALOG } from '@/data/assessments/catalog'
+import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
 
 const WORDS = {
   en: {
-    eyebrow: 'MY COURSE · HOLISTIC HOUSE', title: 'Your personal path to inner growth',
-    intro: 'A gentle, structured course shaped by what matters to you and the tests you choose. Practice psychological skills and observe change in your own time.',
+    eyebrow: 'MY COURSE · HOLISTIC HOUSE', title: 'My personal course',
+    intro: 'Explore your stress patterns, choose your own tests and build practical skills with short daily exercises.',
     free: 'Free to start', time: '5–12 minutes a day', note: 'Self-guided learning, not a diagnosis, psychotherapy session or emergency monitoring.',
-    start: 'Start my free course', continue: 'Continue my course', consent: 'I agree to privately save my course choices, voluntary concerns and practice progress in my account.',
+    start: 'Start course for free', continue: 'Continue my course', consent: 'I agree to privately save my course choices, voluntary concerns and practice progress in my account.',
+    how: 'How it works', detailTitle: 'Six steps to your personal course',
+    detailIntro: 'Start with what matters to you. You choose the tests and goals; then follow a personal daily practice plan.',
+    consentTitle: 'Save your course privately?', consentHelp: 'Your choices and optional notes are stored in your private account only after your consent.',
+    consentConfirm: 'Agree & start', cancel: 'Not now',
+    focusIntro: 'Pick any areas you would like to explore. Add a description only if you want to.',
+    optionalSituation: 'Describe my situation (optional)',
+    testChoiceTitle: 'You decide which tests to take', testChoiceHint: 'Recommendations are optional. Choose and save only the tests you want.',
+    chooseMyTests: 'Choose my own tests', seeSuggestions: 'See suggested tests', hideSuggestions: 'Hide suggestions',
+    suggestionsOptional: 'Nothing here is added automatically. Open any suggestion to review it or choose a different test.',
+    saveReturn: 'After saving your chosen tests, you will return to your course.',
     personal: 'My personal course', step: 'Step', of: 'of', planned: 'My journey',
     concernsTitle: 'Tell us what you want to work on', concernsHint: 'Describe a current difficulty or an important goal in your own words. Optional; do not include emergency information.',
     concernPlaceholder: 'For example: I would like to feel calmer in difficult conversations and have more inner support.',
@@ -23,7 +32,7 @@ const WORDS = {
     changes: 'Changes in my weekly check-ins', noComparison: 'You need at least two comparable weekly check-ins to see a change. This is different from your lesson completion progress.',
     changeNotice: 'These numbers describe your self-reports on different dates; they do not establish that the course caused a change.',
     explore: 'Open the full test finder', testHint: 'Use the existing My Tests filters to choose and save the tests that suit you. You may change your selection.',
-    saveContinue: 'Save and open the test finder', selectedReady: 'My tests are selected — continue', selected: 'Selected tests', done: 'Completed', results: 'Saved results',
+    saveContinue: 'Open the test finder', selectedReady: 'Continue with my chosen tests', selected: 'Selected tests', done: 'Completed', results: 'Saved results',
     testTitle: 'Explore yourself through testing', testText: 'Continue any saved test, or select new questionnaires. Your responses and detailed reports remain in your private account.',
     runTests: 'Go to My Tests', review: 'Review my results and growth options', noTests: 'Complete at least one test to proceed. You can always return here.',
     approveTitle: 'Choose the resources you want to develop', approveText: 'These suggestions are optional. Only you decide which skills to practise.',
@@ -47,10 +56,20 @@ const WORDS = {
     interest: 'Based on your choices', notDiagnostic: 'Weekly Pulse is an original non-diagnostic self-report; these are not clinical thresholds.',
   },
   ru: {
-    eyebrow: 'МОЙ КУРС · HOLISTIC HOUSE', title: 'Ваш личный путь внутреннего развития',
-    intro: 'Бережный персональный курс на основе ваших запросов и выбранных тестов. Развивайте психологические навыки и наблюдайте за собой в собственном темпе.',
+    eyebrow: 'МОЙ КУРС · HOLISTIC HOUSE', title: 'Мой личный курс',
+    intro: 'Узнайте больше о своих стрессовых зонах, выберите нужные тесты и развивайте полезные навыки с короткими ежедневными практиками.',
     free: 'Начать бесплатно', time: '5–12 минут в день', note: 'Самостоятельная практика, а не диагноз, сеанс психотерапии или экстренная помощь.',
-    start: 'Начать мой бесплатный курс', continue: 'Продолжить мой курс', consent: 'Я согласен(на) на приватное сохранение выбора курса, добровольно описанных трудностей и прогресса в моём аккаунте.',
+    start: 'Начать курс бесплатно', continue: 'Продолжить мой курс', consent: 'Я согласен(на) на приватное сохранение выбора курса, добровольно описанных трудностей и прогресса в моём аккаунте.',
+    how: 'Как проходит курс', detailTitle: 'Шесть шагов личного курса',
+    detailIntro: 'Начните с важных для вас тем. Вы сами выбираете тесты и цели, затем получаете ежедневные практики.',
+    consentTitle: 'Сохранить курс приватно?', consentHelp: 'Ваш выбор и необязательные заметки сохранятся только в личном кабинете после согласия.',
+    consentConfirm: 'Согласен(на), начать', cancel: 'Не сейчас',
+    focusIntro: 'Отметьте интересующие темы. Описывать свою ситуацию необязательно.',
+    optionalSituation: 'Описать ситуацию (необязательно)',
+    testChoiceTitle: 'Вы сами решаете, какие тесты пройти', testChoiceHint: 'Рекомендации необязательны. Выберите и сохраните только нужные вам тесты.',
+    chooseMyTests: 'Выбрать тесты самостоятельно', seeSuggestions: 'Посмотреть рекомендации', hideSuggestions: 'Скрыть рекомендации',
+    suggestionsOptional: 'Ничего не добавится автоматически. Можете открыть предложенный тест или выбрать любой другой.',
+    saveReturn: 'После сохранения выбранных тестов вы вернётесь в свой курс.',
     personal: 'Мой личный курс', step: 'Этап', of: 'из', planned: 'Мой путь',
     concernsTitle: 'Что бы вы хотели изменить?', concernsHint: 'Опишите трудность или важную цель своими словами. Поле необязательное; не используйте его для экстренных обращений.',
     concernPlaceholder: 'Например: хочу спокойнее чувствовать себя в общении и больше опираться на себя.',
@@ -59,7 +78,7 @@ const WORDS = {
     changes: 'Изменения по недельным самоотчётам', noComparison: 'Для анализа изменений нужны хотя бы два сопоставимых недельных замера. Это отдельно от количества выполненных уроков.',
     changeNotice: 'Цифры описывают ваши ответы в разные даты, но не доказывают, что изменения вызваны курсом.',
     explore: 'Открыть полный подбор тестов', testHint: 'В существующем разделе My Tests выберите тесты по темам и проблемам, сохраните набор; его всегда можно изменить.',
-    saveContinue: 'Сохранить и подобрать тесты', selectedReady: 'Тесты выбраны — продолжить', selected: 'Выбрано тестов', done: 'Пройдено', results: 'Сохранённые результаты',
+    saveContinue: 'Открыть подбор тестов', selectedReady: 'Продолжить с выбранными тестами', selected: 'Выбрано тестов', done: 'Пройдено', results: 'Сохранённые результаты',
     testTitle: 'Изучите себя с помощью тестов', testText: 'Продолжите сохранённые тесты или подберите новые. Ответы и подробные отчёты остаются в вашем кабинете.',
     runTests: 'Перейти к моим тестам', review: 'Посмотреть результаты и направления развития', noTests: 'Чтобы продолжить, пройдите хотя бы один тест. Вы сможете вернуться сюда.',
     approveTitle: 'Выберите ресурсы, которые хотите развивать', approveText: 'Предложения необязательны. Только вы решаете, какие навыки практиковать.',
@@ -84,7 +103,6 @@ const WORDS = {
   },
 }
 
-const asLocale = (value, locale) => value?.[locale] || value?.en || ''
 async function request(body) {
   const response = await fetch('/api/app/course', {
     method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
@@ -111,26 +129,17 @@ export function MyCourse({ data, locale = 'en' }) {
   const ru = locale === 'ru'
   const t = WORDS[locale] || WORDS.en
   const root = '/' + locale + '/app'
-  const router = useRouter()
   const [state, setState] = useState(undefined)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
-  const [concerns, setConcerns] = useState('')
-  const [focusTags, setFocusTags] = useState([])
-  const [goals, setGoals] = useState([])
-  const [goalsAccepted, setGoalsAccepted] = useState(false)
-  const [problemLabel, setProblemLabel] = useState('')
-  const [intention, setIntention] = useState('')
+  const startDialogRef = useRef(null)
 
   async function refresh() {
     setError('')
     try {
       const response = await request()
       setState(response)
-      setConcerns(response.course?.concerns || '')
-      setFocusTags(response.course?.focusTags || [])
-      setProblemLabel((previous)=>previous || (response.course?.concerns||'').trim().slice(0,160))
     } catch (e) { setError(e.message) }
   }
   useEffect(() => { void refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -146,134 +155,72 @@ export function MyCourse({ data, locale = 'en' }) {
     finally { setBusy(false) }
   }
 
-  const stateCourse = state?.course
-  const stage = stateCourse?.stage || 0
-  const assessment = state?.assessments || {}
-  const suggested = useMemo(() => growthSuggestions(data.results || [], locale), [data.results, locale])
-  const suggestedTopics = useMemo(() => suggestedCourseTopics(concerns), [concerns])
-  const testCards = useMemo(() => {
-    const match = MONITORING_CATALOG.filter((item) => item.startable && item.rightsStatus === 'cleared' &&
-      (item.instrumentLocale === locale || item.instrumentLocale === 'dynamic') &&
-      focusTags.some((tag) => item.topics?.includes(tag)))
-    return match.slice(0, 3)
-  }, [focusTags, locale])
-  const hasTestSelection = (assessment.plannedInSet > 0 && assessment.planStatus !== 'cancelled') ||
-    assessment.resultsCount > 0
-  const testsReady = assessment.resultsCount > 0 && (assessment.planStatus !== 'active' ||
-    (assessment.plannedInSet > 0 && assessment.completedInSet >= assessment.plannedInSet))
+  function openStartDialog() {
+    if (busy) return
+    setOptIn(false)
+    startDialogRef.current?.showModal()
+  }
+
+  async function courseCommand(action,values={}) {
+    if (!state?.course) throw new Error('COURSE_NOT_STARTED')
+    return request({ action, expectedRevision:state.course.revision, ...values })
+  }
+
+  const stage = state?.course?.stage || 0
+  const visibleStep = stage === 1 ? 2 : stage === 2
+    ? ((state?.course?.testKeys || []).length ? 4 : 3) : stage === 3 ? 5 : stage === 4 ? 6 : 1
 
   if (state === undefined && !error) return <section className={'hh-panel ' + styles.root} aria-busy="true"><p>{ru ? 'Открываем ваш курс…' : 'Opening your course…'}</p></section>
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
 
   return <div className={styles.root} data-my-course>
-    {stage !== 4 && <header className={styles.hero}>
+    {stage === 0 && <header className={styles.hero}>
       <div>
         <p className="hh-kicker">{t.eyebrow}</p>
-        <h1>{stage ? t.personal : t.title}</h1>
-        <p>{t.intro}</p>
-        <div className={styles.meta}><span><Sparkles size={15} aria-hidden="true"/>{t.free}</span><span><BookOpen size={15} aria-hidden="true"/>{t.time}</span></div>
+        <h1>{t.title}</h1>
+        <p className={styles.heroLead}>{t.intro}</p>
+        <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
+        <div className={styles.heroActions}>
+          <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+          <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
+        </div>
       </div>
       <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
     </header>}
-    {stage !== 4 && <Journey stage={stage} locale={locale}/>}
+    {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
+      <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
+    </div>}
     {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
 
-    {stage === 0 && <section className={'hh-panel ' + styles.chapter}>
-      <p className={styles.small}>{t.note}</p>
-      <label className={styles.consent}><input type="checkbox" checked={optIn} onChange={(e) => setOptIn(e.target.checked)}/><span>{t.consent}</span></label>
-      <button type="button" className="hh-primary" disabled={!optIn || busy} onClick={() => act('start', { consent: true })}>{t.start}<ArrowRight size={17}/></button>
+    {stage === 0 && <section className={'hh-panel ' + styles.details} id="course-details">
+      <p className="hh-kicker">{t.how}</p>
+      <h2>{t.detailTitle}</h2>
+      <p>{t.detailIntro}</p>
+      <Journey stage={1} locale={locale}/>
+      <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.note}</p>
     </section>}
 
-    {stage === 1 && <section className={'hh-panel ' + styles.chapter}>
-      <p className="hh-kicker">{t.step} 1 {t.of} 4</p>
-      <h2>{t.concernsTitle}</h2><p>{t.concernsHint}</p>
-      <label htmlFor="growth-concerns" className={styles.formLabel}>{t.concernsTitle}</label>
-      <textarea id="growth-concerns" rows={4} maxLength={1000} value={concerns} placeholder={t.concernPlaceholder}
-        onChange={(e) => setConcerns(e.target.value)} />
-      {suggestedTopics.urgent && <p role="alert" className={styles.error}>{t.urgent}</p>}
-      {suggestedTopics.topics.length > 0 && !suggestedTopics.urgent &&
-        <button type="button" className={styles.suggestButton} onClick={() => setFocusTags(suggestedTopics.topics)}>
-          <Sparkles size={16} aria-hidden="true"/>{t.suggestTopics}
-        </button>}
-      <div><strong>{t.themes}</strong><div className={styles.chips}>
-        {COURSE_TOPICS.map((tag) => <button key={tag.id} type="button" aria-pressed={focusTags.includes(tag.id)}
-          onClick={() => setFocusTags((tags) => tags.includes(tag.id) ? tags.filter((x) => x !== tag.id) : [...tags,tag.id])}>
-          {asLocale(tag.title,locale)}
-        </button>)}
-      </div></div>
-      {testCards.length > 0 && <div className={styles.testMatches}>
-        <strong>{t.suggestions}</strong>
-        {testCards.map((item) => <div key={item.key} className={styles.testMatch}><ClipboardList size={17}/><span>{asLocale(item.title,locale)}</span><small>~{item.durationMinutes} min</small></div>)}
-      </div>}
-      <p className={styles.small}>{t.testHint}</p>
-      <button type="button" className="hh-primary" disabled={busy || suggestedTopics.urgent} onClick={async () => {
-        if (busy || suggestedTopics.urgent) return
-        setBusy(true)
-        setError('')
-        try {
-          const saved = await request({ action:'intake', expectedRevision:stateCourse.revision, concerns, focusTags })
-          setState(saved)
-          router.push(root + '/tests')
-        } catch (e) { setError(e.message) }
-        finally { setBusy(false) }
-      }}>{t.saveContinue}<ArrowRight size={17}/></button>
-      {hasTestSelection && <button type="button" disabled={busy || suggestedTopics.urgent}
-        onClick={async () => {
-          if (busy || suggestedTopics.urgent) return
-          setBusy(true); setError('')
-          try {
-            const saved = await request({ action:'intake', expectedRevision:stateCourse.revision, concerns, focusTags })
-            setState(await request({ action:'to-tests', expectedRevision:saved.course.revision }))
-          } catch (e) { setError(e.message) }
-          finally { setBusy(false) }
-        }}>{t.selectedReady}<ArrowRight size={17}/></button>}
-    </section>}
-
-    {stage === 2 && <section className={'hh-panel ' + styles.chapter}>
-      <p className="hh-kicker">{t.step} 2 {t.of} 4</p>
-      <h2>{t.testTitle}</h2><p>{t.testText}</p>
-      <div className={styles.stats}><div><strong>{assessment.plannedInSet || 0}</strong><span>{t.selected}</span></div><div><strong>{assessment.completedInSet || 0}</strong><span>{t.done}</span></div><div><strong>{assessment.resultsCount || 0}</strong><span>{t.results}</span></div></div>
-      <Link href={root + '/tests'} className="hh-primary" prefetch={false}>{t.runTests}<ArrowRight size={17}/></Link>
-      <p className={styles.small}>{t.noTests}</p>
-      <button type="button" disabled={busy || !testsReady} onClick={() => act('review')}>{t.review}<ArrowRight size={17}/></button>
-    </section>}
-
-    {stage === 3 && <section className={'hh-panel ' + styles.chapter}>
-      <p className="hh-kicker">{t.step} 3 {t.of} 4</p>
-      <h2>{t.approveTitle}</h2><p>{t.approveText}</p>
-      <Link href={root + '/portfolio'} prefetch={false} className={styles.textLink}>{t.another}<ArrowRight size={16}/></Link>
-      <p className={styles.small}>{suggested.length ? t.basedOn : t.noDerived}</p>
-      <div className={styles.goals}>
-        {Object.entries(GROWTH_GOALS).map(([key, value]) => {
-          const evidence = suggested.find((r) => r.goal === key)
-          const selected = goals.includes(key)
-          return <label key={key} className={styles.goal} data-selected={selected}>
-            <input type="checkbox" checked={selected} disabled={!selected && goals.length >= 3}
-              onChange={(e) => setGoals((prev) => e.target.checked ? [...prev, key] : prev.filter((k) => k !== key))}/>
-            <span><strong>{asLocale(value.title,locale)}</strong><small>{asLocale(value.description,locale)}</small>
-              {evidence && <em>{t.interest}: {evidence.scaleKey} · {evidence.response}/10 · {new Date(evidence.measuredAt).toLocaleDateString(ru?'ru-RU':'en-CA')}</em>}
-            </span>
-          </label>
-        })}
+    {stage === 0 && <dialog ref={startDialogRef} className={styles.startDialog}
+      aria-labelledby="course-consent-heading" onClose={() => setOptIn(false)}>
+      <h2 id="course-consent-heading">{t.consentTitle}</h2>
+      <p>{t.consentHelp}</p>
+      <label className={styles.consent}><input type="checkbox" checked={optIn}
+        onChange={(e) => setOptIn(e.target.checked)}/><span>{t.consent}</span></label>
+      <div className={styles.dialogActions}>
+        <button type="button" className="hh-primary" disabled={!optIn || busy} onClick={() => {
+          startDialogRef.current?.close()
+          void act('start', { consent: true })
+        }}>{t.consentConfirm}<ArrowRight size={17} aria-hidden="true"/></button>
+        <button type="button" disabled={busy} onClick={() => startDialogRef.current?.close()}>{t.cancel}</button>
       </div>
-      <p className={styles.small}>{t.optional} · {t.notDiagnostic}</p>
-      <div className={styles.length}><strong>{t.duration}: {t.days14}</strong><p className={styles.small}>{t.nextCycleHint}</p></div>
-      <label className={styles.formLabel} htmlFor="growth-target">{t.targetPrompt}</label>
-      <input id="growth-target" maxLength={160} value={problemLabel}
-        onChange={e=>setProblemLabel(e.target.value)}
-        placeholder={ru?'Напряжение при общении':'Tension in conversations'} required/>
-      <p className={styles.small}>{t.targetHint}</p>
-      <label className={styles.formLabel} htmlFor="growth-intention">{t.intentionPrompt}</label>
-      <textarea id="growth-intention" rows={2} maxLength={300} value={intention}
-        onChange={e=>setIntention(e.target.value)}/>
-      <label className={styles.consent}><input type="checkbox" checked={goalsAccepted} onChange={(e)=>setGoalsAccepted(e.target.checked)}/><span>{t.consentGoals}</span></label>
-      <button type="button" className="hh-primary" disabled={busy || !goals.length || !goalsAccepted || problemLabel.trim().length<3}
-        onClick={() => act('choose-goals', { goals, durationDays:14, consent:true,
-          problemLabel:problemLabel.trim(),intention,
-          timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' })}>
-        {t.confirm}<ArrowRight size={17}/></button>
-    </section>}
+    </dialog>}
+
+    {stage >= 1 && stage <= 3 && <CourseR3Steps
+      stage={stage} locale={locale} data={data} state={state} busy={busy}
+      onAct={act} onCourseCommand={courseCommand}
+      onState={setState} onError={setError} root={root}
+    />}
 
     {stage === 4 && <CourseToday locale={locale} />}
 

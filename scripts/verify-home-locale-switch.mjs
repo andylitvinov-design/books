@@ -10,11 +10,128 @@ await mkdir(evidence, { recursive: true });
 const results = [];
 let app;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const navigationTraceKey = 'hh-home-entry-navigation-trace';
+
+async function installEntryDiagnostics(context, page) {
+  const requests = [];
+  await context.addInitScript(({ key }) => {
+    const probe = Math.random().toString(36).slice(2);
+    const record = (type, details = {}) => {
+      try {
+        const items = JSON.parse(sessionStorage.getItem(key) || '[]');
+        items.push({ type, time: Date.now(), probe, url: location.href, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), ...details });
+        sessionStorage.setItem(key, JSON.stringify(items.slice(-500)));
+      } catch {}
+    };
+    record('init');
+    for (const event of ['pageshow', 'pagehide', 'popstate', 'DOMContentLoaded', 'load']) {
+      window.addEventListener(event, value => record(event, { persisted: Boolean(value.persisted) }), true);
+    }
+    document.addEventListener('click', event => {
+      const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+      if (!link) return;
+      const details = { href: link.href, offer: link.closest('[data-free-insights-offer]')?.dataset.freeInsightsOffer || null, trusted: event.isTrusted, x: event.clientX, y: event.clientY };
+      record('click-capture', { ...details, prevented: event.defaultPrevented });
+      queueMicrotask(() => record('click-after', { ...details, prevented: event.defaultPrevented }));
+    }, true);
+    for (const method of ['pushState', 'replaceState']) {
+      const original = history[method];
+      history[method] = function (...args) {
+        record(`history-${method}`, { destination: args[2] == null ? null : String(args[2]) });
+        return Reflect.apply(original, this, args);
+      };
+    }
+  }, { key: navigationTraceKey });
+  const relevant = request => {
+    const url = new URL(request.url());
+    return url.origin === origin && (request.isNavigationRequest() || url.searchParams.has('_rsc') || url.pathname === '/api/app/guest/bootstrap');
+  };
+  for (const event of ['request', 'requestfinished', 'requestfailed']) {
+    page.on(event, request => {
+      if (relevant(request)) requests.push({ event, time: Date.now(), pageUrl: page.url(), url: request.url(), method: request.method(), failure: request.failure()?.errorText || null });
+    });
+  }
+  page.on('response', response => {
+    if (relevant(response.request())) requests.push({ event: 'response', time: Date.now(), pageUrl: page.url(), url: response.url(), status: response.status() });
+  });
+  return requests;
+}
+
+async function verifyFreeOffers(page, locale, engine, width) {
+  const free = page.locator('[data-free-insights="public"]');
+  await expect(free).toHaveCount(1);
+  const cards = free.locator('[data-free-insights-offer]');
+  assert.deepEqual(await cards.evaluateAll(items => items.map(item => item.dataset.freeInsightsOffer)), ['situation', 'wu', 'stress']);
+  for (const [id, suffix] of [['situation', '/services/free-situation-review'], ['wu', '/services/dao-health-profile'], ['stress', '/client#cabinet-tests']]) {
+    const cta = free.locator(`[data-free-insights-offer="${id}"] a`);
+    await expect(cta).toHaveAttribute('href', `/${locale}${suffix}`);
+    await expect(cta).toBeVisible();
+    const size = await cta.evaluate(element => ({ height: element.getBoundingClientRect().height, font: parseFloat(getComputedStyle(element).fontSize) }));
+    assert.ok(size.height >= 46 && size.font >= 14, `Small ${locale} ${id} CTA: ${JSON.stringify(size)}`);
+  }
+  const order = await free.evaluate(element => {
+    const services = document.querySelector('[data-core-service-offers="home"]');
+    return {
+      freeBeforeServices: (element.compareDocumentPosition(services) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+      servicesBeforeFree: (services.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    };
+  });
+  assert.deepEqual(order, { freeBeforeServices: true, servicesBeforeFree: false }, 'Free offers must precede the four service cards');
+  results.push({ engine, width, locale, freeOffers: ['situation', 'wu', 'stress'], touchTargets: true });
+}
+
+async function exerciseFreeJourneys(page, engine, width) {
+  // Only entry navigation is under test. Never query client data or create a guest session.
+  const unexpectedApiRequests = [];
+  await page.route(`${origin}/api/app/**`, route => {
+    const request = route.request();
+    if (request.method() === 'GET' && new URL(request.url()).pathname === '/api/app/guest/bootstrap') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{"expiresAt":null,"moodCheckins":[],"results":[]}' });
+    }
+    unexpectedApiRequests.push({ method: request.method(), path: new URL(request.url()).pathname });
+    return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"APP_UNAVAILABLE"}' });
+  });
+  for (const locale of ['en', 'ru']) {
+    for (const [id, suffix, target] of [
+      ['situation', '/services/free-situation-review', '#review-hero-title'],
+      ['wu', '/services/dao-health-profile', '[data-core-service-detail="dao"] h1'],
+      ['stress', '/client#cabinet-tests', '#cabinet-tests [data-prelogin-test-picker]'],
+    ]) {
+      await page.goto(`${origin}/?lang=${locale}`, { waitUntil: 'domcontentloaded' });
+      // Let homepage prefetches settle before intentionally replacing its document.
+      await page.waitForLoadState('networkidle');
+      const bootstrapFinished = id === 'stress'
+        ? page.waitForResponse(response => response.request().method() === 'GET' && response.url() === `${origin}/api/app/guest/bootstrap`).then(async response => {
+          assert.equal(response.status(), 200);
+          assert.deepEqual(await response.json(), { expiresAt: null, moodCheckins: [], results: [] });
+        })
+        : Promise.resolve();
+      const cta = page.locator(`[data-free-insights="public"] [data-free-insights-offer="${id}"] a`);
+      const beforeClick = await cta.evaluate(element => ({ url: location.href, href: element.href, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), reactProps: Object.keys(element).some(key => key.startsWith('__reactProps$')) }));
+      results.push({ engine, width, locale, entryClickAttempt: id, time: Date.now(), beforeClick });
+      await cta.click();
+      await expect(page).toHaveURL(`${origin}/${locale}${suffix}`);
+      await expect(page.locator(target)).toBeVisible();
+      if (id === 'stress') await expect(page.locator('#cabinet-tests')).toHaveCount(1);
+      await bootstrapFinished;
+      // In WebKit, tearing down an in-flight fetch reports an access-control error.
+      // Complete the synthetic bootstrap/prefetches; retain the strict pageerror check.
+      await page.waitForLoadState('networkidle');
+      await page.goBack();
+      await expect(page).toHaveURL(`${origin}/?lang=${locale}`);
+      await expect(page.locator('[data-free-insights="public"]')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      results.push({ engine, width, locale, freeJourney: id, destinationRendered: true, backReturned: true, submitted: false });
+    }
+  }
+  assert.deepEqual(unexpectedApiRequests, [], 'Entry navigation must not submit or request private app data');
+}
 
 async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
   const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
   const page = await context.newPage();
+  const navigationRequests = await installEntryDiagnostics(context, page);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   let delayedLocale = null;
@@ -56,12 +173,26 @@ async function exercise(engine, browserType, width) {
       await expect(page).toHaveURL(new RegExp(`\\?lang=${to}$`));
       delayedLocale = null;
       results.push({ engine, width, from, to, heldRsc: true, firstClickRetained: true });
+      await verifyFreeOffers(page, to, engine, width);
     }
     assert.deepEqual(errors, []);
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
     const offers = page.locator('[data-core-service-offers="home"]');
     await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
-    await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
+    const freeInsights = page.locator('[data-free-insights="public"]');
+    await expect(freeInsights).toHaveCount(1);
+    const freeOfferCards = freeInsights.locator('[data-free-insights-offer]');
+    await expect(freeOfferCards).toHaveCount(3);
+    assert.deepEqual(await freeOfferCards.evaluateAll(cards => cards.map(card => card.getAttribute('data-free-insights-offer'))), ['situation', 'wu', 'stress']);
+    for (const [id, route] of [
+      ['situation', '/en/services/free-situation-review'],
+      ['wu', '/en/services/dao-health-profile'],
+      ['stress', '/en/client#cabinet-tests'],
+    ]) {
+      const cta = freeInsights.locator('[data-free-insights-offer="' + id + '"] a');
+      await expect(cta).toHaveAttribute('href', route);
+      await expect(cta).toBeVisible();
+    }
     await expect(offers.locator('[data-core-service-id]')).toHaveCount(4);
     for (const id of ['situation', 'dao', 'alchemy', 'hypnotherapy']) {
       await expect(offers.locator('[data-core-service-id="' + id + '"]')).toHaveCount(1);
@@ -124,11 +255,16 @@ async function exercise(engine, browserType, width) {
     await expect(firstReview.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
     await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0);
 
+    await exerciseFreeJourneys(page, engine, width);
+    assert.deepEqual(errors, []);
+
   } catch (error) {
     results.push({ engine, width, failure: error.message, pageErrors: errors });
     await page.screenshot({ path: `${evidence}/failed-${engine}-${width}.png`, fullPage: true }).catch(() => {});
     throw error;
   } finally {
+    const lifecycle = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key) || '[]'), navigationTraceKey).catch(() => []);
+    await writeFile(`${evidence}/${live ? 'live' : 'local'}-${engine}-${width}-navigation-diagnostics.json`, JSON.stringify({ engine, width, lifecycle, requests: navigationRequests, errors }, null, 2));
     await context.close();
     await browser.close();
   }
@@ -147,6 +283,7 @@ try {
   const outcomes = await Promise.allSettled([['chromium', chromium], ['webkit', webkit]].flatMap(([name, type]) => [390, 1365].map(width => exercise(name, type, width))));
   assert.ok(outcomes.every(result => result.status === 'fulfilled'), 'Locale-switch regression failed; inspect artifact');
   assert.equal(results.filter(result => result.firstClickRetained).length, 8);
+  assert.equal(results.filter(result => result.freeJourney).length, 24);
   console.log('PASS: eight delayed-RSC EN/RU switches, Chromium/WebKit, mobile/desktop; no lost first click');
 } finally {
   await writeFile(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ origin, results, fullPlayback: 'Not claimed by this interaction-only test' }, null, 2));

@@ -97,11 +97,11 @@ test('BFAS and VIA-R use complete official positive/negative keyed forms; no cli
   }
 })
 
-test('all runnable 106 now have exact-version score interpretation plans and per-scale guidance',()=>{
+test('all runnable 110 now have exact-version score interpretation plans and per-scale guidance',()=>{
   const c=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual({total:c.total,registered:c.registered,uncovered:c.uncovered,obsolete:c.obsolete},
-    {total:106,registered:106,uncovered:[],obsolete:[]})
-  assert.equal(new Set(MONITORING_CATALOG.filter(c=>c.startable).map(c=>c.key)).size,106)
+    {total:110,registered:110,uncovered:[],obsolete:[]})
+  assert.equal(new Set(MONITORING_CATALOG.filter(c=>c.startable).map(c=>c.key)).size,110)
   for(const def of professional){
     const guideEN=getTestScaleGuide(def.key,'en')
     const guideRU=getTestScaleGuide(def.key,'ru')

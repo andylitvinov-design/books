@@ -165,7 +165,7 @@ export default function CourseToday({locale='en'}){
  const reportDay=cycle?.day>=14?14:cycle?.day>=7?7:null
  const reviewed=reportDay&&data.reviews?.some(r=>r.day===reportDay)
  const problem=target.label||''
- const activeName=GROWTH_GOALS[cycle?.primaryGoal]?.title?.[locale]||''
+ const activeName=GROWTH_GOALS[cycle?.activeGoal||cycle?.primaryGoal]?.title?.[locale]||''
  const beforeValue=v=>v===null||v===undefined?null:v
  if(data.requiresTarget) return <section className={'hh-panel '+styles.shell}>
    <p className="hh-kicker">Holistic House · My Course</p><h2>{t.activateText}</h2>
@@ -180,7 +180,7 @@ export default function CourseToday({locale='en'}){
  return <section className={styles.shell} data-daily-course>
   <header className={styles.hero}>
     <div><p className="hh-kicker">MY COURSE · HOLISTIC HOUSE</p>
-      <h2>{t.welcome}</h2><p className={styles.focus}>{activeName} · {problem}</p>
+      <h2>{t.welcome}</h2><p className={styles.focus}>{activeName}{cycle?.activeScaleLabel?' · '+cycle.activeScaleLabel:''} · {problem}</p>
       <p className={styles.hint}>{t.day} {cycle.day} {t.of} {cycle.durationDays} · {t.date}: {cycle.todayLocalDate} · {cycle.timeZone}</p>
     </div>
     <div className={styles.counter}><strong>{progress.practiceCount||0}<span>/{cycle.durationDays}</span></strong><small>{t.count}</small></div>

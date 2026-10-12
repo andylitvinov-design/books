@@ -34,7 +34,7 @@ const labels = {
     video: "Video testimonials",
     language: "Original video · Russian audio",
     native: "Participant video",
-    youtube: "Alena · Tantra Reiki testimonial",
+    youtube: "Alena · Tantra Reiki testimonial · Russian audio",
   },
   ru: {
     eyebrow: "Впечатления участников",
@@ -97,7 +97,7 @@ export function TantraReikiTestimonials({ locale }: { locale: PublicLocale }) {
         ))}
       </div>
 
-      <details className="tantra-source-disclosure tantra-testimonials__archival-quotes" id="tantra-original-english-testimonials">
+      <details className="tantra-source-disclosure tantra-testimonials__archival-quotes" id="tantra-original-english-testimonials" open={locale === "en"}>
         <summary>{l.earlierReviews}</summary>
         <p className="tantra-source-disclosure__note">{l.earlierNote}</p>
         <div className="tantra-review-quotes" lang="en">
@@ -110,8 +110,8 @@ export function TantraReikiTestimonials({ locale }: { locale: PublicLocale }) {
         </div>
       </details>
 
-      <div className="tantra-review-video-section">
-        <h3 className="tantra-testimonials__subheading">{l.video}</h3>
+      <details className="tantra-source-disclosure tantra-review-video-section" id="tantra-russian-video-testimonials" open={locale !== "en"}>
+        <summary>{l.video} · {l.language}</summary>
         <p className="tantra-review-video-note">{l.language}</p>
         <div className="tantra-review-videos">
           {tantraReikiArchive.html5Videos.ru.map((video, i) => (
@@ -119,7 +119,7 @@ export function TantraReikiTestimonials({ locale }: { locale: PublicLocale }) {
               <video controls playsInline preload="none" poster={video.poster ?? undefined}>
                 <source src={video.src} type={video.type} />
               </video>
-              <figcaption>{l.native} {i + 1}</figcaption>
+              <figcaption>{l.native} {i + 1}{locale === "en" ? " · Russian audio" : ""}</figcaption>
             </figure>
           ))}
           <figure className="tantra-review-video">
@@ -127,7 +127,7 @@ export function TantraReikiTestimonials({ locale }: { locale: PublicLocale }) {
             <figcaption>{l.youtube}</figcaption>
           </figure>
         </div>
-      </div>
+      </details>
     </section>
   );
 }

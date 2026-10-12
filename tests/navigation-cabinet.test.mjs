@@ -197,9 +197,12 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
   assert.match(homeContact, /variant="service"/)
   assert.match(homeChoice, /whatsappEnquiryUrl/)
   assert.match(homeChoice, /t\.me\/AndyTherapist/)
-  for (const source of [homeopathy, services, spanishServices, library, academy, academyRecord, remedies, remedyPage, bookReader]) {
+  for (const source of [homeopathy, services, spanishServices, library, academyRecord, remedies, remedyPage, bookReader]) {
     assert.match(source, /PublicConsultationCta/)
   }
+  // The Academy now uses its dedicated course interest form rather than the
+  // generic public consultation footer. Preserve that newer conversion path.
+  assert.match(academy, /AcademyCourseCapture/)
 })
 
 // Preserve PR #76's compact menu and cabinet next-step checks under shared IA data.

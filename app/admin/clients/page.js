@@ -6,6 +6,7 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { uiLocaleCookie } from '@/lib/ui-locale'
 import { createClientAction } from './actions'
+import './client-workspace.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Clients · Holistic House', robots: { index: false, follow: false } }
@@ -15,24 +16,24 @@ const copy = {
     title: 'Client database',
     intro: 'Find a person, review their history, prepare documents or send their private cabinet link.',
     search: 'Find a client', placeholder: 'Search by client name', searchButton: 'Search',
-    new: 'Create client', newHelp: 'Create the client record now. You can add documents later.',
+    new: 'Create client', newKicker: 'START HERE', newHelp: 'Save the client once, then add remedies and prepare their personal documents.',
     name: 'Full name', language: 'Preferred language', email: 'Email (optional)',
-    phone: 'Phone (optional)', add: 'Create client record',
+    phone: 'Phone (optional)', add: 'Create client & write recommendations', privacyHint: 'The client record stays private. No documents are sent automatically.',
     list: 'Clients', consultations: 'Create consultation', count: 'documents',
     none: 'No client matches yet.', clear: 'Clear search', emptyDate: 'No documents yet',
-    archived: 'Archived', showing: 'Showing the first 50 matches. Use search to narrow the list.',
+    archived: 'Archived', directoryHint: 'Choose a client to see their private practitioner workspace.', showing: 'Showing the first 50 matches. Use search to narrow the list.',
     storage: 'Client storage is unavailable. No changes can be saved.',
   },
   ru: {
     title: 'База клиентов',
     intro: 'Найдите клиента, откройте историю, подготовьте документы или передайте ссылку на его кабинет.',
     search: 'Найти клиента', placeholder: 'Поиск по имени клиента', searchButton: 'Найти',
-    new: 'Новый клиент', newHelp: 'Сначала создайте карточку. Документы можно добавить позднее.',
+    new: 'Создать клиента', newKicker: 'НАЧНИТЕ ЗДЕСЬ', newHelp: 'Создайте карточку один раз — затем сразу переходите к препаратам и личному отчёту.',
     name: 'Имя клиента', language: 'Язык клиента', email: 'Email (необязательно)',
-    phone: 'Телефон (необязательно)', add: 'Создать карточку клиента',
+    phone: 'Телефон (необязательно)', add: 'Создать клиента и перейти к назначениям', privacyHint: 'Карточка приватная. Документы не отправляются клиенту автоматически.',
     list: 'Клиенты', consultations: 'Новая консультация', count: 'документов',
     none: 'Клиенты не найдены.', clear: 'Очистить поиск', emptyDate: 'Документов пока нет',
-    archived: 'Архив', showing: 'Показаны первые 50 совпадений. Уточните поиск.',
+    archived: 'Архив', directoryHint: 'Выберите клиента, чтобы открыть его рабочую карточку специалиста.', showing: 'Показаны первые 50 совпадений. Уточните поиск.',
     storage: 'Хранилище клиентов недоступно. Сохранение отключено.',
   },
 }
@@ -57,6 +58,26 @@ export default async function Clients({ searchParams }) {
 
   return <main className="prescription-admin-shell master-clients-shell">
     <PrescriptionAdminHeader title={{ en: copy.en.title, ru: copy.ru.title }} description={{ en: copy.en.intro, ru: copy.ru.intro }} />
+    {!store && <p role="alert" className="master-clients-error">{t.storage}</p>}
+    {store && <details className="master-client-create" id="create-client">
+      <summary>
+        <span className="client-workspace-symbol" aria-hidden="true">✦</span>
+        <span className="client-workspace-summary-copy">
+          <small>{t.newKicker}</small>
+          <strong>{t.new}</strong>
+          <span>{t.newHelp}</span>
+        </span>
+        <span className="client-workspace-summary-toggle" aria-hidden="true">+</span>
+      </summary>
+      <form className="prescription-admin-form master-client-create-form" action={createClientAction}>
+        <label>{t.name}<input name="fullName" required maxLength={200} autoComplete="off" /></label>
+        <label>{t.language}<select name="preferredLocale" defaultValue={locale}><option value="en">English</option><option value="ru">Русский</option></select></label>
+        <label>{t.email}<input type="email" name="email" maxLength={254} autoComplete="off" /></label>
+        <label>{t.phone}<input name="phone" maxLength={80} autoComplete="off" /></label>
+        <p className="client-workspace-form-note">{t.privacyHint}</p>
+        <button type="submit">{t.add} <span aria-hidden="true">→</span></button>
+      </form>
+    </details>}
     <section className="master-clients-top">
       <form className="master-client-search" role="search" action="/admin/clients" method="get">
         <label htmlFor="master-client-query">{t.search}</label>
@@ -68,20 +89,8 @@ export default async function Clients({ searchParams }) {
       </form>
       <Link className="master-clients-quick-consultation" href="/admin/consultations/new">+ {t.consultations}</Link>
     </section>
-    {!store && <p role="alert" className="master-clients-error">{t.storage}</p>}
-    {store && <details className="master-client-create">
-      <summary>+ {t.new}</summary>
-      <p>{t.newHelp}</p>
-      <form className="prescription-admin-form master-client-create-form" action={createClientAction}>
-        <label>{t.name}<input name="fullName" required maxLength={200} autoComplete="off" /></label>
-        <label>{t.language}<select name="preferredLocale" defaultValue={locale}><option value="en">English</option><option value="ru">Русский</option></select></label>
-        <label>{t.email}<input type="email" name="email" maxLength={254} autoComplete="off" /></label>
-        <label>{t.phone}<input name="phone" maxLength={80} autoComplete="off" /></label>
-        <button type="submit">{t.add}</button>
-      </form>
-    </details>}
     <section aria-label={t.list} className="master-client-directory">
-      <div className="master-client-directory-heading"><h2>{t.list}</h2><span>{matching.length}</span></div>
+      <div className="master-client-directory-heading"><div><h2>{t.list}</h2><p>{t.directoryHint}</p></div><span className="master-client-count">{matching.length}</span></div>
       {matching.length > 50 && <p className="master-client-list-note">{t.showing}</p>}
       {!matching.length && <p className="master-client-list-empty">{t.none}</p>}
       <div className="master-client-list">

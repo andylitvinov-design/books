@@ -51,7 +51,7 @@ test('Services keeps EN/RU offerings distinct, with archive and method reference
     readFile('components/services-solutions.tsx', 'utf8'),
   ])
   assert.match(page, /<ServicesSolutions locale=/)
-  for(const text of ['Free Situation Review','Free DAO Health & Resource Profile','Alchemy of the Soul','Guided Imagery Hypnotherapy','Алхимия души','Дао-диагностика здоровья']) assert.ok(offers.includes(text))
+  for(const text of ['Free Situation Review','Free Wu Xing Resource Profile','Alchemy of the Soul','Guided Imagery Hypnotherapy','Алхимия души','Бесплатный профиль ресурсов У-Син']) assert.ok(offers.includes(text))
   assert.match(ui, /Curious about the methods/)
   assert.match(ui, /Хотите подробнее о методах/)
   assert.match(ui, /coreServiceOffers\(locale\)/)

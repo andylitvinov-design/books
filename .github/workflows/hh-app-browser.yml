@@ -69,7 +69,7 @@ jobs:
             if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/app >/dev/null; then break; fi
             sleep 2
           done
-          if ! node scripts/verify-document-hydration.mjs || ! node scripts/verify-app-r1.mjs || ! node scripts/verify-compassion-assessments.mjs || ! node scripts/verify-relationships-assessments.mjs || ! node scripts/verify-mhc-sf.mjs || ! node scripts/verify-bfas-100.mjs || ! node scripts/verify-account-status-filters.mjs; then
+          if ! node scripts/verify-document-hydration.mjs || ! node scripts/verify-app-r1.mjs || ! node scripts/verify-compassion-assessments.mjs || ! node scripts/verify-relationships-assessments.mjs || ! node scripts/verify-mhc-sf.mjs || ! node scripts/verify-personality-types.mjs || ! node scripts/verify-bfas-100.mjs || ! node scripts/verify-account-status-filters.mjs; then
             grep 'HH_APP_TEST_ERROR' /tmp/hh-app-next.log | tail -10 || true
             exit 1
           fi

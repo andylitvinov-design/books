@@ -14,7 +14,7 @@ export async function createClientAction(data) {
     phone: data.get('phone'),
   })
   await store.saveClient(client)
-  redirect(`/admin/clients/${client.id}`)
+  redirect(`/admin/consultations/new?clientId=${encodeURIComponent(client.id)}&created=1`)
 }
 
 export async function editClientAction(id, data) {

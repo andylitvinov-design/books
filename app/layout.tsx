@@ -8,6 +8,8 @@ import { AnalyticsConsent } from "@/components/analytics-consent";
 import { Ga4Analytics } from "@/components/ga4-analytics";
 import { NativeLinkHandler } from "@/components/native-link-handler";
 import { NativeExternalLinks } from "@/components/native-external-links";
+import { CspNavigationBoundary } from "@/components/csp-navigation-boundary";
+import { CSP_PREHYDRATION_SCRIPT } from "@/lib/csp-prehydration";
 import "./globals.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
@@ -32,6 +34,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // Set by middleware from the URL, not from an untrusted incoming header.
   const pageLocale = (await headers()).get("x-public-page-locale");
   const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const cspClass = (await headers()).get("x-csp-class") ?? "restricted";
   const lang = pageLocale === "es" || pageLocale === "en" ? pageLocale : "ru";
   const websiteSchema = {
     "@context": "https://schema.org",
@@ -43,11 +46,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={lang}>
       <head>
+        <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: CSP_PREHYDRATION_SCRIPT }} />
         {/* Browsers hide the nonce content attribute before hydration while
             preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
         <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       </head>
-      <body className="font-sans"><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><Ga4Analytics nonce={nonce} />{children}<SitewideLeadCapture /><AnalyticsConsent /><MobileBottomNavigation initialLocale={lang} /></body>
+      <body className="font-sans" data-csp-class={cspClass}><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} />{children}<SitewideLeadCapture /><AnalyticsConsent /><MobileBottomNavigation initialLocale={lang} /></body>
     </html>
   );
 }
+

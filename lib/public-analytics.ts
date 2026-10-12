@@ -1,3 +1,6 @@
+// Temporary safety hold: enable only after the complete SDK privacy boundary is verified.
+export const PUBLIC_ANALYTICS_AVAILABLE = false;
+
 export const PUBLIC_ANALYTICS_EVENTS = [
   "free_situation_assessment_click",
   "free_questionnaire_started",
@@ -12,6 +15,7 @@ export const PUBLIC_ANALYTICS_EVENTS = [
 export type PublicAnalyticsEvent = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
 export function emitPublicAnalyticsEvent(event: PublicAnalyticsEvent) {
+  if (!PUBLIC_ANALYTICS_AVAILABLE) return;
   if (document.documentElement.dataset.analyticsConsent !== "granted") return;
   window.dispatchEvent(new CustomEvent("holistic-house:acquisition", { detail: { event } }));
 }

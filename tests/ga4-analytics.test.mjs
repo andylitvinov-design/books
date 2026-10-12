@@ -58,6 +58,6 @@ test("analytics is opt-in through the Privacy page with no sitewide popup", () =
   assert.doesNotMatch(consent, /<aside\b|className="analytics-consent"/);
   assert.match(consent, /isPublicAnalyticsPath\(pathname\) \? savedConsent\(\) : "denied"/);
   assert.match(consent, /window\.gtag\?\.\("consent", "update"/);
-  assert.match(consent, /if \(value === "denied"\) eraseAnalyticsCookies\(\)/);
+  assert.match(consent, /if \(!PUBLIC_ANALYTICS_AVAILABLE \|\| value === "denied"\) eraseAnalyticsCookies\(\)/);
   assert.match(privacy, /<AnalyticsPreferences\s*\/>/);
 });

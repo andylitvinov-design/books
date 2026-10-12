@@ -7,6 +7,7 @@ import { PROFESSIONAL_BATTERY_2026_CATALOG } from './professional-battery-2026.j
 import { CDC_HEALTHY_DAYS_CATALOG } from './cdc-healthy-days-2026.js'
 import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from './professional-battery-2026-b.js'
 import { IPIP_BIG_FIVE_50_CATALOG } from './ipip-big-five-50-en-v1.js'
+import { PERSONALITY_TYPE_CATALOG } from './personality-types-original-2026.js'
 import { BFAS_100_CATALOG } from './bfas-100-en-v1.js'
 import { COMPASSION_CATALOG } from './compassion-2026.js'
 import { MHC_SF_CATALOG } from './mhc-sf-adult-dec2011.js'
@@ -699,6 +700,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...CDC_HEALTHY_DAYS_CATALOG,
   ...PROFESSIONAL_BATTERY_2026_B_CATALOG,
   ...IPIP_BIG_FIVE_50_CATALOG,
+  ...PERSONALITY_TYPE_CATALOG,
   ...OPEN_PROFESSIONAL_2026_CATALOG,
   {
     key: 'mspss',

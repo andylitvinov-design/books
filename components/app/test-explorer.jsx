@@ -101,7 +101,7 @@ const GUIDED_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const quick = QUICK_COPY[locale] || QUICK_COPY.en
@@ -229,9 +229,11 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)),
     { focus, details, axes, depth, styles: stylesFilter, lengths },
   ), [matching, axisFilter, focus, details, axes, depth, stylesFilter, lengths])
-  const activeBattery = simpleMode
-    ? (simpleSelectionChanged ? selected : simpleAuto)
-    : (selected.length ? selected : autoBattery)
+  const activeBattery = explicitSelectionOnly
+    ? selected // A course visitor must explicitly select tests; never fall back to an automatic set.
+    : simpleMode
+      ? (simpleSelectionChanged ? selected : simpleAuto)
+      : (selected.length ? selected : autoBattery)
   const activeCoverage = selected.length ? coverage : coverageForSelection(entries, activeBattery.map((entry) => entry.key))
   const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes }), [entries, focus, details, axes])
   const showingCoverage = selectedKeys.length > 0
@@ -342,7 +344,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       <p className={styles.quickIntro}>{quick.intro}</p>
       {activePlan?.status === 'active' && <button className={styles.resumeButton} type="button" onClick={() => onResume?.(activePlan)}>{locale === 'ru' ? `Продолжить набор: шаг ${activePlan.currentIndex + 1}` : locale === 'es' ? `Continuar selección: paso ${activePlan.currentIndex + 1}` : `Resume set: step ${activePlan.currentIndex + 1}`}</button>}
       <div className={styles.quickActions}>
-        <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : c.start}</button>
+        <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : explicitSelectionOnly ? (locale === 'ru' ? 'Сохранить выбранные тесты' : 'Save my chosen tests') : c.start}</button>
         <span>{activeBattery.length} {quick.summary} · {questions} {c.questions} · ~{minutes} {c.minutes}</span>
       </div>
       {actionError && <p role="alert" className={styles.quickError}>{actionError.code || actionError.message}</p>}
@@ -479,7 +481,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <TestArtwork entry={entry} />
-        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p><TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
+        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}<TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
 
       </article>)}</div>
         {visible.length > 8 && <button className={styles.showMore} type="button" onClick={() => setShowAll((value) => !value)}>{showAll ? quick.showLess : `${quick.showAll} (${visible.length})`}</button>}
@@ -493,7 +495,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
         </div>
         <div>
           <button type="button" onClick={() => setSelectedKeys([])}>{quick.resetSet}</button>
-          <button className={styles.primary} type="button" disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : c.start}</button>
+          <button className={styles.primary} type="button" disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : explicitSelectionOnly ? (locale === 'ru' ? 'Сохранить выбранные тесты' : 'Save my chosen tests') : c.start}</button>
         </div>
       </footer>
   </section>

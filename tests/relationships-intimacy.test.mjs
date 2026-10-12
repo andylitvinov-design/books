@@ -61,7 +61,7 @@ test('eight adult EN/RU questionnaires have stable provenance, six questions and
 })
 test('catalog selection, privacy and recommended focus discover intimacy and sexuality without any diagnosis',()=>{
   const count=MONITORING_CATALOG.filter(item=>item.startable).length
-  assert.equal(count,106)
+  assert.equal(count,110)
   const coverage=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual(coverage.uncovered,[])
   assert.equal(coverage.registered,coverage.total)

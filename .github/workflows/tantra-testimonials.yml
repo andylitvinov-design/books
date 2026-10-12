@@ -1,0 +1,57 @@
+name: Tantra testimonial verification
+on:
+  pull_request:
+    paths:
+      - 'middleware.ts'
+      - 'components/tantra-reiki-testimonials.tsx'
+      - 'data/academy/tantra-reiki-full.generated.json'
+      - 'data/academy/tantra-native-assets.json'
+      - 'public/images/tantra-reiki/**'
+      - 'scripts/verify-tantra-testimonials.mjs'
+      - 'tests/video-csp-navigation.test.mjs'
+      - '.github/workflows/tantra-testimonials.yml'
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Validate scoped changes
+        run: |
+          node --test tests/video-csp-navigation.test.mjs
+          npx eslint middleware.ts components/tantra-reiki-testimonials.tsx
+          npx tsc --noEmit
+      - name: Install isolated browser tools
+        run: |
+          npm install --prefix /tmp/tantra-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          ln -s /tmp/tantra-tools/node_modules/@playwright node_modules/@playwright
+          /tmp/tantra-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Build proposed application
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Verify only local Tantra testimonials
+        run: |
+          npm run start -- --port 3123 > /tmp/tantra-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" || true' EXIT
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:3123/en/academy/reiki/tantra-reiki >/dev/null && break || sleep 2; done
+          node scripts/verify-tantra-testimonials.mjs
+        env:
+          TANTRA_ORIGIN: http://127.0.0.1:3123
+      - name: Save public Tantra evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tantra-testimonial-verification
+          path: output/tantra-testimonials/verification.json
+          if-no-files-found: warn

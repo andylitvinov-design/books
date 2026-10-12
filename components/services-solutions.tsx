@@ -7,12 +7,13 @@ import { coreServiceOffers } from "@/data/core-service-offers";
 import type { Locale } from "@/data/remedies";
 import styles from "./services-solutions.module.css";
 
-// Homepage-only editorial illustrations. Preserve original source media on Services.
+// Use existing approved local imagery, including real stills from the two service videos.
+// Keep the homepage photo-left layout; do not alter the video links or Services page.
 const homepageMedia = {
   situation: "/images/holistic-house/hero-olive-incense.webp",
   dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
-  alchemy: "/images/holistic-house/homepage-constellations.svg",
-  hypnotherapy: "/images/holistic-house/homepage-guided-imagery.svg",
+  alchemy: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
 } as const;
 
 const copy = {
@@ -22,7 +23,7 @@ const copy = {
     title: "Personal support for your next step",
     homeTitle: "How I can help",
     lead: "After exploring your question, you can choose a personal Alchemy of the Soul session or a guided-imagery course.",
-    homeLead: "Two free starting points and two personal-work options. Find the support that fits your question.",
+    homeLead: "Two free written reviews and two personal-work options. You can also explore free stress and personality tests above.",
     more: "Curious about the methods?",
     moreText: "Systemic constellations, guided imagery and homeopathy are approaches used in specific sessions, not extra services you must choose on this page.",
     methods: [
@@ -38,7 +39,7 @@ const copy = {
     title: "Личная работа для следующего шага",
     homeTitle: "Чем я могу помочь",
     lead: "После бесплатного знакомства со своим запросом можно выбрать сессию «Алхимия души» или курс образной работы.",
-    homeLead: "Две бесплатные возможности для начала и два формата личной работы. Выберите то, что отвечает вашему запросу.",
+    homeLead: "Два бесплатных письменных разбора и два формата личной работы. Выше также доступны бесплатные тесты стресса и личности.",
     more: "Хотите подробнее о методах?",
     moreText: "Системные расстановки, образная работа и гомеопатия — инструменты отдельных сессий, а не обязательные дополнительные услуги.",
     methods: [

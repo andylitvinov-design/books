@@ -124,3 +124,15 @@ test("generic personal and reading fallback capture is blue, but training/networ
   assert.match(capture, /data-consultation-cta=\{sitewide \? undefined : "true"\}/);
   assert.match(suppress, /body:has\(\[data-consultation-cta\]\) \[data-sitewide-capture\]/);
 });
+
+
+test("core service footers retain the same service CTA and keep the free written review as a collapsed alternative", () => {
+  const component = read("components/sitewide-lead-capture.tsx");
+  const detail = read("components/core-service-detail.tsx");
+  assert.match(component, /data-sitewide-capture="core-service"/);
+  assert.match(component, /coreOfferDetailData\(locale, coreKind\)/);
+  assert.match(component, /<details className=\{styles\.alternative\}>/);
+  assert.match(detail, /className=\{styles\.footerCta\}/);
+  assert.match(detail, /className=\{styles\.freeAlternative\}/);
+  assert.match(detail, /With Andrey Litvinov/);
+});

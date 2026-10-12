@@ -11,6 +11,7 @@ import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
+import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { INSIGHTS_TEST_CATEGORIES } from '@/lib/assessments/insights-categories'
@@ -106,6 +107,7 @@ function planRows(plan, data, locale) {
       definition, run, result: latest, completedInPlan, progress, key: item,
       title: catalog?.title?.[locale] || catalog?.title?.en || definition.title,
       description: catalog?.description?.[locale] || catalog?.description?.en || '',
+      methodology: assessmentMethodology({key: item, catalog, definition, locale}).text,
       minutes: catalog?.durationMinutes || Math.max(1, Math.round(definition.questions.length / 6)),
       topics: catalog?.topics || [],
     }
@@ -116,6 +118,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const router = useRouter()
   const searchParams = useSearchParams()
   const openFromInsights = searchParams.get('explore') === '1'
+  const fromCourse = searchParams.get('course') === '1'
   const requestedCategory = searchParams.get('category')
   const insightsCategory = INSIGHTS_TEST_CATEGORIES.some((item) => item.key === requestedCategory) ? requestedCategory : null
   const once = useRef(false)
@@ -219,10 +222,25 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setNotice(c.added)
       setExploring(false)
       setShowList(true)
+      // When the person came from My Course, these are the EXACT tests they
+      // deliberately checked in the full Explorer. Explicitly bind them to
+      // that private course, not the default five or the account's entire
+      // (possibly much larger) historical test-plan selection.
+      if (fromCourse) {
+        const current = await api('course')
+        if (current.course?.stage !== 2) {
+          throw Object.assign(new Error('COURSE_STAGE_CHANGED'), { code: 'COURSE_STAGE_CHANGED' })
+        }
+        await api('course', {
+          action: 'confirm-tests',
+          expectedRevision: current.course.revision,
+          testKeys: valid,
+        })
+      }
       // Reconcile the saved account state before replacing the handoff URL.
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
-      router.replace(root + '/tests?plan=' + encodeURIComponent(created.id))
+      router.replace(fromCourse ? root + '/course' : root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
       if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
       else if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
@@ -388,7 +406,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                         <strong className={state === 'inProgress' ? styles.inProgress
                           : state === 'completed' ? styles.completed : styles.notStarted}>{status}</strong>
                       </div>
-                      {row.run && <div className={styles.draftProgress}>
+                      <details className={styles.aboutTest}>
+                         <summary>{locale === 'ru' ? 'О тесте и научном статусе' : 'About this test & evidence'}</summary>
+                         <p>{row.description}</p>
+                         <p>{row.methodology}</p>
+                       </details>
+                       {row.run && <div className={styles.draftProgress}>
                         <progress max="100" value={row.progress} aria-label={status}/>
                         <small>{row.progress}% {c.percent}</small>
                       </div>}
@@ -476,7 +499,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           </div>
         </aside>}
         <TestExplorer key={(currentPlan?.id || 'new') + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
-          audience="account" onStart={choose} initialPreferences={explorerPreferences}
+          audience="account" onStart={choose} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
           openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
