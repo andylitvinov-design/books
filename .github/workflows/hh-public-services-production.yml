@@ -16,7 +16,7 @@ jobs:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
       HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
-      HH_PLAYWRIGHT_TEST_PATH: /tmp/hh-public-services-tools/node_modules/@playwright/test/index.js
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-public-services-tools/node_modules/playwright
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
@@ -26,8 +26,7 @@ jobs:
       - name: Install Chromium for isolated public acceptance
         run: |
           mkdir -p /tmp/hh-public-services-tools
-          npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund @playwright/test@1.63.0
-          ln -s /tmp/hh-public-services-tools/node_modules/@playwright node_modules/@playwright
+          npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium
       - name: Production build and public browser acceptance
         run: |
