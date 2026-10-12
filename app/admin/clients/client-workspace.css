@@ -1,0 +1,788 @@
+/* Owner-only Holistic House CRM surfaces.
+   Uses the contemporary mist-blue / mint / coral language from the current
+   consultation and Academy capture components; no client-facing pages touched. */
+
+.master-clients-shell,
+.client-detail-shell {
+  --crm-ink: #21465a;
+  --crm-muted: #52727a;
+  --crm-teal: #17728b;
+  --crm-line: #d1e4e5;
+  --crm-coral: #e66d50;
+  width: min(100%, 1040px);
+  min-width: 0;
+  padding-bottom: calc(54px + env(safe-area-inset-bottom));
+  color: var(--crm-ink);
+}
+
+.master-clients-shell .prescription-admin-titleblock,
+.client-detail-shell .prescription-admin-titleblock {
+  padding-top: 20px;
+  padding-bottom: 12px;
+}
+
+.master-clients-shell .prescription-admin-titleblock h1,
+.client-detail-shell .prescription-admin-titleblock h1 {
+  max-width: 100%;
+  margin: 0;
+  color: #293c43;
+  font-size: clamp(30px, 4.4vw, 43px) !important;
+  font-weight: 400;
+  line-height: 1.13;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}
+
+.master-clients-shell .prescription-admin-description,
+.client-detail-shell .prescription-admin-description {
+  max-width: 670px;
+  color: #62747b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.master-clients-shell .prescription-admin-navigation--tabs,
+.client-detail-shell .prescription-admin-navigation--tabs {
+  display: flex;
+  gap: 5px;
+  margin-top: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.master-clients-shell .prescription-admin-navigation--tabs::-webkit-scrollbar,
+.client-detail-shell .prescription-admin-navigation--tabs::-webkit-scrollbar { display: none; }
+.master-clients-shell .prescription-admin-navigation--tabs a,
+.client-detail-shell .prescription-admin-navigation--tabs a {
+  flex: 0 0 auto;
+  min-height: 38px;
+  border-radius: 11px;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.master-clients-shell .prescription-admin-navigation--tabs a[href="/admin/clients"],
+.client-detail-shell .prescription-admin-navigation--tabs a[href="/admin/clients"] {
+  background: #ddf3f4;
+  border-color: #bddfdf;
+  color: #195d6e;
+}
+
+/* Client creation: the next clinical action is explicit, not a client portal. */
+.master-clients-shell .master-client-create {
+  margin: 20px 0 24px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #b7dbe0;
+  border-radius: 22px;
+  background: linear-gradient(125deg, #e9f7fe 0%, #ddf5f2 55%, #dcf6ea 100%);
+  box-shadow: 0 12px 34px rgba(26, 91, 105, .08);
+}
+.master-clients-shell .master-client-create > summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 118px;
+  padding: clamp(17px, 3vw, 27px);
+  border: 0;
+  color: var(--crm-ink);
+  list-style: none;
+  cursor: pointer;
+}
+.master-clients-shell .master-client-create > summary::-webkit-details-marker { display: none; }
+.client-workspace-symbol {
+  display: grid;
+  width: 55px;
+  height: 55px;
+  flex: 0 0 55px;
+  place-items: center;
+  border: 1px solid rgba(23, 114, 139, .17);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, .68);
+  color: #17728b;
+  font-size: 27px;
+}
+.client-workspace-summary-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+}
+.client-workspace-summary-copy small {
+  color: #237a82;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.client-workspace-summary-copy strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(26px, 3.2vw, 34px);
+  font-weight: 400;
+  line-height: 1.14;
+  letter-spacing: -.025em;
+}
+.client-workspace-summary-copy > span {
+  max-width: 670px;
+  color: #52727a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.client-workspace-summary-toggle {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border: 1px solid #bdd9de;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .8);
+  color: #225e72;
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+}
+.master-clients-shell .master-client-create[open] > summary {
+  border-bottom: 1px solid rgba(36, 109, 121, .16);
+}
+.master-clients-shell .master-client-create[open] .client-workspace-summary-toggle {
+  transform: rotate(45deg);
+}
+.master-clients-shell .master-client-create-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+  margin: 0;
+  padding: clamp(17px, 3vw, 25px);
+  background: rgba(255, 255, 255, .37);
+}
+.master-clients-shell .master-client-create-form > label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: #285568;
+  font-size: 13px;
+  font-weight: 700;
+}
+.master-clients-shell .master-client-create-form > label:first-child { grid-column: 1 / -1; }
+.master-clients-shell .master-client-create-form input,
+.master-clients-shell .master-client-create-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid #bcd7db;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 13px;
+  color: #203d4e;
+  font-size: 16px;
+}
+.master-clients-shell .client-workspace-form-note {
+  align-self: center;
+  margin: 0;
+  color: #587780;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.master-clients-shell .master-client-create-form > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  grid-column: 1 / -1;
+  width: fit-content;
+  min-height: 50px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--crm-coral);
+  box-shadow: 0 7px 18px rgba(222, 97, 66, .14);
+  padding: 12px 19px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.master-clients-shell .master-client-create-form > button:hover { background: #d95b40; }
+
+.master-clients-shell .master-clients-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 15px;
+  margin: 14px 0 23px;
+}
+.master-clients-shell .master-client-search { min-width: 0; }
+.master-clients-shell .master-client-search > label {
+  margin-bottom: 9px;
+  color: #416576;
+  font-size: 13px;
+  font-weight: 750;
+}
+.master-clients-shell .master-client-search > div { gap: 8px; }
+.master-clients-shell .master-client-search input {
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid #cee1e3;
+  border-radius: 12px;
+  background: #fff;
+  color: #203d4e;
+  padding: 0 13px;
+  font-size: 16px;
+}
+.master-clients-shell .master-client-search button {
+  min-height: 46px;
+  border-color: #17728b;
+  border-radius: 12px;
+  background: #17728b;
+  font-size: 13px;
+}
+.master-clients-shell .master-clients-quick-consultation {
+  min-height: 46px;
+  border: 1px solid #b7d9dc;
+  border-radius: 12px;
+  background: #f5fbfb;
+  color: #24586a !important;
+  font-size: 13px;
+}
+.master-clients-shell .master-client-directory {
+  margin: 18px 0 0;
+  border: 1px solid var(--crm-line);
+  border-radius: 19px;
+  background: rgba(255, 255, 255, .88);
+  padding: clamp(16px, 3vw, 25px);
+}
+.master-clients-shell .master-client-directory-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 13px;
+  padding: 0 0 14px;
+  border-color: #e1ebec;
+}
+.master-clients-shell .master-client-directory-heading h2 {
+  margin: 0;
+  color: #253d4c;
+  font: 400 clamp(25px, 3vw, 31px)/1.15 Georgia, serif;
+}
+.master-clients-shell .master-client-directory-heading p {
+  margin: 5px 0 0;
+  color: #698089;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.master-clients-shell .master-client-count {
+  display: grid;
+  min-width: 37px;
+  min-height: 30px;
+  place-items: center;
+  border-radius: 11px;
+  background: #e6f6f7;
+  color: #24697a;
+  padding: 4px 9px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.master-clients-shell .master-client-list { gap: 8px; padding-top: 13px; }
+.master-clients-shell .master-client-row {
+  gap: 13px;
+  min-width: 0;
+  border: 1px solid #e0e9e8;
+  border-radius: 13px;
+  background: #fff;
+  padding: 13px;
+  color: #223e4a;
+  box-shadow: 0 3px 14px rgba(31, 82, 87, .025);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.master-clients-shell .master-client-row:hover {
+  border-color: #8ac7cf;
+  box-shadow: 0 5px 20px rgba(31, 82, 87, .075);
+  transform: none;
+}
+.master-clients-shell .master-client-monogram {
+  width: 45px;
+  height: 45px;
+  flex-basis: 45px;
+  border-radius: 12px;
+  background: #e7f5f4;
+  color: #26717b;
+  font-size: 24px;
+}
+.master-clients-shell .master-client-row-info { gap: 5px; }
+.master-clients-shell .master-client-row-info strong {
+  color: #233f4c;
+  font-size: 15px;
+}
+.master-clients-shell .master-client-row-info small {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  color: #67808a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.master-clients-shell .master-client-row-end {
+  flex: 0 0 auto;
+  color: #17728b;
+  font-size: 16px;
+  font-weight: 750;
+}
+.master-clients-shell .master-client-list-empty {
+  padding: 22px 0;
+  color: #57757a;
+  font-size: 13px;
+}
+
+/* Owner client detail: work first, record and sharing controls second. */
+.client-detail-shell .client-workspace-back {
+  display: inline-flex;
+  min-height: 39px;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 2px;
+  color: #31687a;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 750;
+}
+.client-detail-shell .client-detail-primary-actions {
+  display: block;
+  margin: 17px 0 18px;
+}
+.client-detail-shell .client-detail-work-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 315px);
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  border: 1px solid #b7dbe0;
+  border-radius: 22px;
+  background: linear-gradient(125deg, #e9f7fe 0%, #ddf5f2 55%, #dcf6ea 100%);
+  padding: clamp(18px, 3vw, 27px);
+  box-shadow: 0 12px 34px rgba(26, 91, 105, .08);
+}
+.client-detail-work-eyebrow {
+  display: block;
+  margin-bottom: 9px;
+  color: #237a82;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .09em;
+}
+.client-detail-shell .client-detail-work-copy h2 {
+  margin: 0 0 9px;
+  color: #1c465e;
+  font: 400 clamp(26px, 3.3vw, 36px)/1.13 Georgia, serif;
+  letter-spacing: -.02em;
+}
+.client-detail-shell .client-detail-work-copy p {
+  max-width: 580px;
+  margin: 0;
+  color: #52727a;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.client-detail-work-buttons { display: grid; gap: 9px; }
+.client-detail-shell .client-detail-work-buttons a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 53px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  padding: 11px 15px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-decoration: none;
+}
+.client-detail-shell .client-detail-action-primary {
+  background: #e66d50;
+  color: #fff !important;
+  box-shadow: 0 7px 18px rgba(222, 97, 66, .14);
+}
+.client-detail-shell .client-detail-action-primary:hover { background: #d95b40; }
+.client-detail-shell .client-detail-action-secondary {
+  border-color: #bad7db !important;
+  background: rgba(255, 255, 255, .82);
+  color: #24586a !important;
+}
+.client-detail-shell .client-detail-action-secondary:hover { background: #fff; }
+.client-detail-archived {
+  border-radius: 12px;
+  background: #f8f2eb;
+  padding: 12px;
+  color: #765b4a;
+  font-weight: 700;
+  text-align: center;
+}
+
+.client-detail-shell .client-detail-summary,
+.client-detail-shell .client-detail-history,
+.client-detail-shell .client-detail-assessments .assessment-section,
+.client-detail-shell .client-detail-materials {
+  margin: 0 0 17px;
+  border: 1px solid #dce8e9;
+  border-radius: 19px;
+  background: #fffdfb;
+  padding: clamp(17px, 3vw, 24px);
+  box-shadow: 0 4px 16px rgba(31, 82, 87, .025);
+}
+.client-detail-shell .client-detail-summary { display: block; }
+.client-detail-section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 15px;
+}
+.client-detail-section-heading h2,
+.client-detail-shell .client-detail-materials h2,
+.client-detail-shell .client-detail-assessments h2 {
+  margin: 0;
+  color: #263f4b;
+  font: 400 clamp(24px, 3vw, 30px)/1.16 Georgia, serif;
+}
+.client-detail-section-heading p {
+  margin: 5px 0 0;
+  color: #728188;
+  font-size: 12px;
+}
+.client-detail-owner-note,
+.client-detail-document-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 29px;
+  border-radius: 10px;
+  background: #edf6f6;
+  padding: 5px 10px;
+  color: #2d7580;
+  font-size: 11px;
+  font-weight: 700;
+}
+.client-detail-shell .client-detail-summary dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.client-detail-shell .client-detail-summary dl > div {
+  min-width: 0;
+  border: 1px solid #e2edef;
+  border-radius: 13px;
+  background: #f8fcfc;
+  padding: 12px 14px;
+}
+.client-detail-shell .client-detail-summary dt {
+  margin: 0;
+  color: #62808a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .05em;
+}
+.client-detail-shell .client-detail-summary dd {
+  margin: 7px 0 0;
+  color: #284a5b;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.client-detail-shell .client-detail-contact {
+  margin: 13px 2px 0;
+  color: #5d7781;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.client-detail-shell .client-detail-history { border-top: 1px solid #dce8e9; }
+.client-detail-history-list { display: grid; gap: 10px; }
+.client-detail-shell .client-detail-history article {
+  border: 1px solid #e5eded;
+  border-radius: 13px;
+  background: #fff;
+  padding: 15px;
+}
+.client-detail-shell .client-detail-history h3 {
+  margin: 0 0 8px;
+  color: #315264;
+  font: 750 13px/1.3 Arial, Helvetica, sans-serif;
+}
+.client-detail-shell .client-detail-history p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  min-height: 42px;
+  margin: 0;
+  padding: 9px 0;
+}
+.client-detail-shell .client-detail-history p + p { border-top: 1px solid #edf2f1; }
+.client-detail-shell .client-detail-history a {
+  color: #245d72;
+  font-size: 13px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+.client-detail-shell .client-detail-history p span {
+  color: #67818b;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.client-detail-shell .client-detail-empty {
+  border: 1px dashed #c8dedf;
+  border-radius: 13px;
+  background: #f6fbfb;
+  padding: 17px;
+  color: #5c7780;
+  font-size: 13px;
+}
+.client-detail-shell .client-detail-empty p { margin: 0; }
+.client-detail-shell .client-detail-assessments .assessment-section {
+  display: grid;
+  gap: 13px;
+}
+.client-detail-shell .client-detail-assessments .assessment-section > h2 { margin: 0; }
+.client-detail-shell .client-detail-assessments .assessment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.client-detail-shell .client-detail-assessments .assessment-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid #b9d8dd;
+  border-radius: 11px;
+  background: #f1faf9;
+  padding: 9px 13px;
+  color: #28647a;
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.client-detail-shell .client-detail-assessments .assessment-actions a:last-child {
+  border: 0;
+  background: #e66d50;
+  color: #fff;
+}
+.client-detail-shell .client-detail-assessments .assessment-cards { display: grid; gap: 8px; }
+.client-detail-shell .client-detail-assessments .assessment-card {
+  border: 1px solid #e1ebeb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px;
+}
+.client-detail-shell .client-detail-assessments .assessment-card h3 {
+  margin: 0 0 4px;
+  color: #274456;
+  font-size: 15px;
+}
+.client-detail-shell .client-detail-assessments .assessment-card .assessment-meta {
+  color: #71838a;
+  font-size: 12px;
+}
+.client-detail-shell .client-detail-assessments .assessment-card a {
+  color: #277085;
+  font-size: 13px;
+}
+.client-detail-shell .client-detail-assessments .assessment-section > p:last-child {
+  margin: 0;
+  color: #6c8088;
+  font-size: 13px;
+}
+.client-detail-shell .client-detail-materials h2 { margin-bottom: 5px; }
+.client-detail-shell .client-detail-materials-heading p,
+.client-detail-shell .client-detail-materials-list > p {
+  margin: 5px 0;
+  color: #6e8289;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.client-detail-shell .client-detail-material-row {
+  flex-wrap: wrap;
+  border-color: #e1ebec;
+  background: #fff;
+}
+.client-detail-shell .client-detail-material-row a { color: #24586a; }
+.client-detail-shell .client-detail-material-row button {
+  border: 1px solid #cee1e3;
+  border-radius: 10px;
+  background: #f4fafb;
+  color: #285e71;
+}
+.client-detail-shell .client-detail-materials details summary {
+  min-height: 44px;
+  color: #28697d;
+}
+.client-detail-shell .client-detail-material-form input { font-size: 16px; }
+
+/* Private client link and settings are lower priority, clearly separated. */
+.client-detail-shell .client-detail-private-access,
+.client-detail-shell .client-detail-settings,
+.client-detail-shell .client-detail-security {
+  margin: 0 0 13px;
+  overflow: hidden;
+  border: 1px solid #d9e7e8;
+  border-radius: 15px;
+  background: #fffdfb;
+  padding: 0;
+}
+.client-detail-shell .client-detail-private-access > summary,
+.client-detail-shell .client-detail-settings > summary,
+.client-detail-shell .client-detail-security > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 13px 17px;
+  color: #315b6e;
+  font-size: 14px;
+  font-weight: 750;
+  list-style: none;
+  cursor: pointer;
+}
+.client-detail-shell .client-detail-private-access > summary {
+  flex-wrap: wrap;
+}
+.client-detail-shell .client-detail-private-access > summary small {
+  display: block;
+  flex-basis: 100%;
+  color: #71828a;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.client-detail-shell .client-detail-private-access > summary::-webkit-details-marker,
+.client-detail-shell .client-detail-settings > summary::-webkit-details-marker,
+.client-detail-shell .client-detail-security > summary::-webkit-details-marker { display: none; }
+.client-detail-shell .client-detail-private-access > summary::after,
+.client-detail-shell .client-detail-settings > summary::after,
+.client-detail-shell .client-detail-security > summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: #2b8090;
+  font-size: 22px;
+  font-weight: 400;
+}
+.client-detail-shell .client-detail-private-access[open] > summary::after,
+.client-detail-shell .client-detail-settings[open] > summary::after,
+.client-detail-shell .client-detail-security[open] > summary::after { content: "−"; }
+.client-detail-shell .client-detail-private-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 17px 17px;
+}
+.client-detail-shell .client-detail-private-body > p {
+  margin: 0;
+  color: #6b8088;
+  font-size: 12px;
+}
+.client-detail-shell .client-detail-private-access .consultation-cabinet-card { margin: 0; }
+.client-detail-shell .client-detail-settings > form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 17px 17px;
+}
+.client-detail-shell .client-detail-settings label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #416575;
+  font-size: 12px;
+  font-weight: 700;
+}
+.client-detail-shell .client-detail-settings label:has(textarea),
+.client-detail-shell .client-detail-settings > form button { grid-column: 1 / -1; }
+.client-detail-shell .client-detail-settings input,
+.client-detail-shell .client-detail-settings select,
+.client-detail-shell .client-detail-settings textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 45px;
+  border: 1px solid #ccdedf;
+  border-radius: 11px;
+  background: #fff;
+  padding: 10px 12px;
+  color: #234858;
+  font-size: 16px;
+}
+.client-detail-shell .client-detail-settings > form button {
+  justify-self: start;
+  min-height: 44px;
+  border: 0;
+  border-radius: 11px;
+  background: #17728b;
+  padding: 9px 17px;
+  color: #fff;
+  font-weight: 750;
+  cursor: pointer;
+}
+.client-detail-shell .client-detail-security .client-detail-danger-zone {
+  margin: 0;
+  border-top: 1px solid #e6dcda;
+  padding: 17px;
+}
+.client-detail-shell .client-detail-security .client-detail-danger-zone h2 { font-size: 24px; }
+
+/* Visual and keyboard / small-screen guarantees */
+.master-clients-shell :is(a, button, summary, input, select):focus-visible,
+.client-detail-shell :is(a, button, summary, input, select, textarea):focus-visible {
+  outline: 3px solid #b6804c;
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .client-detail-shell .client-detail-work-card { grid-template-columns: minmax(0, 1fr); }
+  .client-detail-work-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .master-clients-shell .master-clients-top { grid-template-columns: minmax(0, 1fr); }
+  .master-clients-shell .master-clients-quick-consultation { width: fit-content; }
+}
+@media (max-width: 600px) {
+  .master-clients-shell,
+  .client-detail-shell { padding: 12px 14px calc(38px + env(safe-area-inset-bottom)); }
+  .master-clients-shell .prescription-admin-titleblock,
+  .client-detail-shell .prescription-admin-titleblock { padding-top: 17px; padding-bottom: 10px; }
+  .master-clients-shell .prescription-admin-titleblock h1,
+  .client-detail-shell .prescription-admin-titleblock h1 { font-size: 32px !important; }
+  .master-clients-shell .prescription-admin-description,
+  .client-detail-shell .prescription-admin-description { font-size: 12px; }
+  .master-clients-shell .master-client-create { margin-top: 14px; border-radius: 18px; }
+  .master-clients-shell .master-client-create > summary { gap: 11px; min-height: 108px; padding: 16px; }
+  .client-workspace-symbol { width: 41px; height: 41px; flex-basis: 41px; border-radius: 13px; font-size: 23px; }
+  .client-workspace-summary-copy strong { font-size: 27px; }
+  .client-workspace-summary-copy > span { font-size: 12px; }
+  .client-workspace-summary-toggle { width: 31px; height: 31px; flex-basis: 31px; font-size: 21px; }
+  .master-clients-shell .master-client-create-form { grid-template-columns: 1fr; gap: 12px; padding: 16px; }
+  .master-clients-shell .master-client-create-form > label:first-child { grid-column: auto; }
+  .master-clients-shell .master-client-create-form > button { width: 100%; }
+  .master-clients-shell .master-client-search > div { display: grid; grid-template-columns: minmax(0,1fr) auto; }
+  .master-clients-shell .master-client-search > div > a { grid-column: 1 / -1; }
+  .master-clients-shell .master-client-directory { padding: 15px; border-radius: 17px; }
+  .master-clients-shell .master-client-row { gap: 10px; padding: 11px; }
+  .master-clients-shell .master-client-monogram { width: 40px; height: 40px; flex-basis: 40px; font-size: 22px; }
+  .master-clients-shell .master-client-row-info strong { font-size: 14px; }
+  .master-clients-shell .master-client-row-info small { font-size: 11px; }
+  .client-detail-shell .client-workspace-back { margin-top: 9px; }
+  .client-detail-shell .client-detail-work-card { padding: 17px; border-radius: 18px; }
+  .client-detail-work-buttons { grid-template-columns: minmax(0,1fr); }
+  .client-detail-shell .client-detail-work-buttons a { min-height: 52px; }
+  .client-detail-shell .client-detail-summary,
+  .client-detail-shell .client-detail-history,
+  .client-detail-shell .client-detail-assessments .assessment-section,
+  .client-detail-shell .client-detail-materials { padding: 16px; border-radius: 17px; }
+  .client-detail-shell .client-detail-summary dl { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .client-detail-shell .client-detail-summary dl > div { padding: 10px 12px; }
+  .client-detail-shell .client-detail-history p { align-items: flex-start; }
+  .client-detail-shell .client-detail-material-form { grid-template-columns: minmax(0,1fr); }
+  .client-detail-shell .client-detail-settings > form { grid-template-columns: minmax(0,1fr); }
+  .client-detail-shell .client-detail-settings label:has(textarea),
+  .client-detail-shell .client-detail-settings > form button { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .master-clients-shell .master-client-row,
+  .master-clients-shell .master-client-create > summary,
+  .client-detail-shell .client-detail-work-buttons a { transition: none; }
+}
