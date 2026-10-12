@@ -14,6 +14,14 @@ const output='artifacts/app-r1/compassion-'+engine.name()
 await mkdir(output,{recursive:true})
 const checks=[], errors=[]
 const passed=name=>{checks.push(name);console.log('PASS '+name)}
+async function navigate(page,url){
+ // Let mounted account panels finish their reads before a hard navigation.
+ // WebKit otherwise reports an interrupted same-origin fetch as an access-control error.
+ // Keep the final zero-page-error assertion: do not suppress actual request failures.
+ await page.waitForLoadState('networkidle')
+ await page.goto(url)
+ await page.waitForLoadState('networkidle')
+}
 async function api(context,path,body){
  const response=await context.request.fetch(origin+'/api/app/'+path,{method:body?'POST':'GET',headers:body?{Origin:origin,'Content-Type':'application/json'}:{},data:body})
  const value=await response.json();assert.ok(response.ok(),path+': '+JSON.stringify(value));return value
@@ -51,7 +59,7 @@ try{
  const account=await browser.newContext({viewport:{width:390,height:844}})
  page=await account.newPage()
  page.on('pageerror',e=>errors.push(e.message))
- await page.goto(origin+'/en/app')
+ await navigate(page,origin+'/en/app')
  await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
@@ -64,12 +72,13 @@ try{
  for(const [i,d] of defs.entries()){
   const locale=i?'ru':'en',mode=i?'guided':'quick'
   const run=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
-  await page.goto(origin+'/'+locale+'/app/runs/'+run.id+'?mode='+mode)
+  await navigate(page,origin+'/'+locale+'/app/runs/'+run.id+'?mode='+mode)
   if(mode==='guided')await page.locator('.hh-test-mode-grid button').nth(1).click()
   await fill(page,d,mode,false,locale)
   const data=await api(account,'bootstrap'),result=data.results.find(r=>r.runId===run.id)
   assert.ok(result);assert.equal(result.contentHash,d.contentHash)
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(i?5:1).fill(3))
+  await page.waitForLoadState('networkidle')
   await page.reload()
   await expect(page.locator('[data-personal-result-report]')).toBeVisible()
   passed(d.key+' account '+locale+' '+mode+': save, original instructions/items, score, report and reload')
@@ -81,14 +90,14 @@ try{
  await api(account,'runs/'+repeat.id+'/submit',{expectedRevision:repeat.revision})
  const snapshot=await api(account,'bootstrap')
  assert.ok(snapshot.results.filter(r=>r.definitionKey==='scs-sf').length>=2)
- await page.goto(origin+'/en/app/history')
+ await navigate(page,origin+'/en/app/history')
  await expect(page.getByRole('heading',{name:d.title,exact:true}).first()).toBeVisible({timeout:20000})
- await page.goto(origin+'/ru/app/portfolio')
+ await navigate(page,origin+'/ru/app/portfolio')
  for(const def of defs)await expect(page.locator('.hh-insights-test-card').filter({hasText:def.key==='scs-sf'?'Самосострадание':'Сострадание к другим'}).first()).toBeVisible({timeout:20000})
  passed('both instruments appear in Insights; compatible repeated SCS-SF appears in history')
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
-  await page.goto(origin+'/'+locale+'/app')
+  await navigate(page,origin+'/'+locale+'/app')
   const download=page.waitForEvent('download',{timeout:60000})
   await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()
   const file=await download,bytes=await readFile(await file.path())
@@ -101,7 +110,7 @@ try{
   await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en'}],operationId:randomUUID()})
   page=await guest.newPage();page.on('pageerror',e=>errors.push(e.message))
-  await page.goto(origin+'/'+locale+'/client?plan='+plan.id)
+  await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
   const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
   await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()
   await fill(page,d,mode,true,locale)
