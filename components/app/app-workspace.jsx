@@ -2425,9 +2425,7 @@ function ResultPage({ id, locale, data }) {
           <p className="hh-kicker">{c.result}</p>
           <h1>{title}</h1>
           <p className="hh-result-intro">
-            {monitoringCatalogItem(result.definitionKey)?.description?.[locale] ||
-              monitoringCatalogItem(result.definitionKey)?.description?.en ||
-              (locale === 'ru' ? 'Ваши ответы по этому конкретному тесту, с пояснениями и рекомендациями ниже.' : 'Your responses to this specific assessment, with interpretation and recommendations below.')}
+            {locale === 'ru' ? 'Ваш показатель и два практических шага на неделю.' : 'Your score and two practical steps for this week.'}
           </p>
         </div>
         <div className="hh-result-meta">
@@ -2495,18 +2493,14 @@ function ResultPage({ id, locale, data }) {
       </section>
 
       </details>
-      <section className="hh-result-comparison" aria-label={locale === 'ru' ? 'История и повторные измерения' : 'Progress and previous assessments'}>
+      <section className="hh-result-comparison" aria-label={locale === 'ru' ? 'История теста' : 'Assessment history'}>
         <div>
-          <h2>{locale === 'ru' ? 'Динамика результата' : 'Your result over time'}</h2>
+          <h2>{locale === 'ru' ? 'Динамика' : 'Progress'}</h2>
           {changeSummary.previous
-            ? <p>{locale === 'ru' ? 'Предыдущий совместимый замер' : 'Previous comparable assessment'}: {dateLabel(changeSummary.previous.measurementAt, locale)}</p>
-            : <p>{locale === 'ru' ? 'Это первый совместимый замер. При повторном прохождении сможете сравнить результаты.' : 'This is your first comparable baseline. Repeat the same version later to see changes.'}</p>}
-          {changeSummary.changes.length > 0 && <ul>{changeSummary.changes.map(change => (
-            <li key={change.key}>{readableScaleName({key:change.key,sourceConstruct:change.label},locale)}: {change.from} → {change.to}</li>
-          ))}</ul>}
-          <small>{locale === 'ru' ? 'Числа показывают ответы по шкале теста, а не медицинский диагноз.' : 'Scores describe this questionnaire, not a medical diagnosis.'}</small>
+            ? <p>{locale === 'ru' ? 'Предыдущий совместимый замер:' : 'Previous comparable measurement:'} {dateLabel(changeSummary.previous.measurementAt, locale)}</p>
+            : <p>{locale === 'ru' ? 'Первый замер. Повторите позже, чтобы сравнить изменения.' : 'First measurement. Repeat later to see changes.'}</p>}
         </div>
-        <Link href={`/${locale}/app/portfolio`} prefetch={false}>{locale === 'ru' ? 'Все мои отчёты' : 'All my reports'} →</Link>
+        <Link href={'/' + locale + '/app/portfolio'} prefetch={false}>{locale === 'ru' ? 'Все мои отчёты' : 'All my reports'} →</Link>
       </section>
       {Object.entries(result.context || {}).length > 0 && (
         <aside className="hh-context-at-checkin hh-result-context">
