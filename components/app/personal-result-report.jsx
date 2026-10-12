@@ -2,12 +2,15 @@ import Link from 'next/link'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
+import { CompactAssessmentReport } from './compact-assessment-report'
 
-export function PersonalResultReport({ result, locale = 'en' }) {
+export function PersonalResultReport({ result, locale = 'en', previous = null }) {
   const report = buildAssessmentResultReport(result, locale)
   if (!report.sections.length) return null
   const ru = locale === 'ru'
   const bach = result?.definitionKey === 'hh-bach-flower-profile'
+  // Keep the bespoke Bach ranking presentation; numeric tests use the concise dial layout.
+  if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} />
   const scaleGuide = getTestScaleGuide(result?.definitionKey, locale)
   const byScale = new Map((scaleGuide?.scales || []).map(scale=>[scale.key,scale]))
   const hasTrainableSkills = Boolean(scaleGuide?.skillAxes?.length)
@@ -59,15 +62,6 @@ export function PersonalResultReport({ result, locale = 'en' }) {
           <p>{report.purpose}</p>
           {report.methodology && <p className={styles.methodology}><strong>{ru ? 'Происхождение и профессиональный статус' : 'Origin & evidence'}:</strong> {report.methodology}</p>}
         </div>
-        {report.personalityType && (
-          <div className={styles.typeSummary} role="note" data-personality-type-summary>
-            <p className={styles.typeLabel}>{ru ? 'Гипотеза для самопознания' : 'Self-reflection hypothesis'}</p>
-            <h3>{report.personalityType.headline}</h3>
-            <p>{report.personalityType.description}</p>
-            {report.personalityType.alternatives?.map((alternative) => <p key={alternative} className={styles.typeAlternative}>{alternative}</p>)}
-            <small>{report.personalityType.warning}</small>
-          </div>
-        )}
       </header>
       {bach && featured.length > 0 && (
         <p className={styles.profileLead}>

@@ -32,7 +32,7 @@ test('four original EN/RU questionnaires are unique, content-hashed and genuinel
   assert.equal(PERSONALITY_TYPE_DEFINITIONS.length,8)
   assert.equal(PERSONALITY_TYPE_CATALOG.length,4)
   assert.equal(new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id)).size,8)
-  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,80)
+  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,100)
   for(const [key,,questionCount,scaleCount] of CASES){
     const item=MONITORING_CATALOG.find(c=>c.key===key)
     assert.ok(item?.startable && item.rightsStatus==='cleared' && item.guestEligible)
@@ -118,8 +118,8 @@ test('personal result reports carry bilingual type hypotheses and distinct, safe
 })
 
 test('public and Account explorers expose new original self-reflection, never protected MMPI or official MBTI',()=>{
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,139)
-  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map(x=>x.key)).size,139)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,154)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map(x=>x.key)).size,154)
   const restricted=['mmpi-3','mmpi-2','mmpi-2-rf','mbti-step-i','mbti-step-ii','neo-pi-3','hexaco-60','hexaco-100','16pf-fifth-edition','mcmi-iv','cpi-260']
   for(const locale of ['en','ru']){
     for(const audience of ['guest','account']){
@@ -145,7 +145,7 @@ test('public and Account explorers expose new original self-reflection, never pr
 test('new typology scales coexist with Mini-IPIP and IPIP-50 in one owner-scoped complete profile',()=>{
   const accountId='10000000-0000-4000-8000-000000000001'
   const values=[MINI_IPIP_20_EN_V1,IPIP_BIG_FIVE_50_EN_V1,...CASES.map(([key])=>getAssessmentDefinition(key,'v1','en'))]
-  const results=values.map((d,index)=>({
+  const results=values.map(d=>({
     id:randomUUID(),accountId,measurementAt:'2026-10-11T19:00:00.000Z',
     ...scoreAssessment(d,minAnswers(d)),
   }))
@@ -160,7 +160,7 @@ test('new typology scales coexist with Mini-IPIP and IPIP-50 in one owner-scoped
 test('migration, desktop and phone report paths preserve safety and private report content',async()=>{
  const migration=await readFile('supabase/migrations/20261011230000_hh_personality_types_original.sql','utf8')
  const helper=await readFile('tests/helpers/app-db-setup.mjs','utf8')
- const reportUi=await readFile('components/app/personal-result-report.jsx','utf8')
+ const reportUi=await readFile('components/app/compact-assessment-report.jsx','utf8')
  const pdf=await readFile('lib/profile/client-report-pdf.js','utf8')
  for(const d of PERSONALITY_TYPE_DEFINITIONS)assert.ok(migration.includes(d.contentHash),d.key)
  assert.match(migration,/on conflict\(id\) do nothing/)
@@ -169,4 +169,49 @@ test('migration, desktop and phone report paths preserve safety and private repo
  assert.match(reportUi,/report\.personalityType\.headline/)
  assert.match(pdf,/Personality type hypothesis/)
  assert.doesNotMatch(reportUi,/localStorage|sessionStorage/)
+})
+
+test('source-independent keyed fixtures, missing answers and exact immutable hashes', async () => {
+  const hashes = [
+    '739325e95feb1f299566200752b0c65de243f3e4e9fee0a4c767e53e84090aa6',
+    'c4f7087981e8e4326b978bba6237de8db910679044e2a9e3e343a80f5d56fc4d',
+    '1714cac50b4078864bc98ffbdcd3b35f27ae1454abb3a60579213263e226d566',
+    '8cbeab16f4bda2b93a26d078d4ea98fe16f1ade9ee3ff3ed45379360a24a0492',
+    'd20ee32781a21001b350c244f578041480b6b249665f495443cfb82ec983ec08',
+    '88e22bbdb759d4c144879fb886d9b8ed36898a85a4cd48e0ea41f5abf51569d7',
+    'c20a70040618f094adb4e71b94b642f1acd1a6ee612434b888a0ce4de27219b0',
+    '2540945fab8da34bde976d0340a42642f244fb6538e8dbb3e6b0b069b8629a6f',
+  ]
+  const expected = {
+    'hh-socionics-32': [10,11,12,13,14,10,11,12],
+    'hh-enneagram-36': [10,11,12,13,14,10,11,12,13],
+    'hh-disc-style-20': [15,15,15,15],
+    'hh-temperaments-16': [10,11,12,13],
+  }
+  const sql = await readFile('supabase/migrations/20261011230000_hh_personality_types_original.sql','utf8')
+  const embedded = JSON.parse(sql.split('$hh_personality$')[1])
+  assert.deepEqual(embedded, PERSONALITY_TYPE_DEFINITIONS)
+  for (const [index,d] of PERSONALITY_TYPE_DEFINITIONS.entries()) {
+    assert.equal(d.contentHash,'sha256:'+hashes[index])
+    const answers = Object.fromEntries(d.questions.map((q,i)=>[q.id,1+i%5]))
+    const score = scoreAssessment(d,answers)
+    assert.deepEqual(score.dimensions.map(x=>x.value), expected[d.key])
+    for (const invalid of [undefined,null,0,6,2.5,'3']) {
+      const broken={...answers,[d.questions[0].id]:invalid}
+      if(invalid===undefined)delete broken[d.questions[0].id]
+      assert.throws(()=>scoreAssessment(d,broken),d.key+': '+invalid)
+    }
+    assert.equal(personalityTypeHypothesis({...score,definitionVersion:'v999'}),null)
+    assert.equal(personalityTypeHypothesis({...score,dimensions:score.dimensions.slice(1)}),null)
+    assert.equal(personalityTypeHypothesis({...score,dimensions:score.dimensions.map(x=>({...x,value:99}))}),null)
+  }
+})
+
+test('all sixteen socionics mappings use an explicit independent code fixture',()=>{
+  const d=getAssessmentDefinition('hh-socionics-32','v1','en')
+  const cases={enlp:'ILE',isfp:'SEI',esfj:'ESE',inlj:'LII',enfj:'EIE',islj:'LSI',eslp:'SLE',infp:'IEI',esfp:'SEE',inlp:'ILI',enlj:'LIE',isfj:'ESI',eslj:'LSE',infj:'EII',enfp:'IEE',islp:'SLI'}
+  for(const [letters,code] of Object.entries(cases)){
+    const answers=Object.fromEntries(d.questions.map(q=>[q.id,letters.includes(q.id.split('.')[1])?5:1]))
+    for(const locale of ['en','ru'])assert.equal(personalityTypeHypothesis(scoreAssessment(d,answers),locale).code,code)
+  }
 })

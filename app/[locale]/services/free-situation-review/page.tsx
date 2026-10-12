@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, CheckCircle2, MessageCircle } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { getHomeopathyLocaleParams } from "@/data/remedies";
 import { isPublicLocale } from "@/data/academy/catalog";
@@ -269,6 +270,8 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           <FreeSituationReviewForm locale={locale} />
         </div>
       </section>
+
+      <ServiceVideoShowcase topic="overview" locale={locale} id="service-video" />
 
       <details className={styles.sample}>
         <summary>{sampleCopy[locale].summary}</summary>

@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, BookOpen, Check, CheckCircle2, CirclePause, ClipboardList, Feather, Heart, LockKeyhole, Play, RotateCcw, Sparkles, Target } from 'lucide-react'
-import { GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS, courseLesson, growthSuggestions, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
+import { ArrowRight, BookOpen, Check, ClipboardList, Feather, LockKeyhole, Sparkles } from 'lucide-react'
+import { GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS, growthSuggestions, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
+import CourseToday from './course-today'
 import { MONITORING_CATALOG } from '@/data/assessments/catalog'
 import styles from './my-course.module.css'
 
@@ -28,7 +29,10 @@ const WORDS = {
     approveTitle: 'Choose the resources you want to develop', approveText: 'These suggestions are optional. Only you decide which skills to practise.',
     basedOn: 'Suggestions from your recent Holistic House Weekly Pulse', noDerived: 'Choose from these resources. We cannot identify personal low scales from compatible test data yet.',
     optional: 'You may choose 1–3 directions', consentGoals: 'I choose these goals and want a personal daily practice course.',
-    duration: 'Course length', days14: '14 days · gentle start', days28: '28 days · deeper integration', confirm: 'Create my personal course', another: 'View full test reports',
+    duration: 'Course length', days14: '14 days · gentle start', days28: '28 days · deeper integration', confirm: 'Create my personal course',
+    urgentHelp: 'If you are in immediate danger or considering self-harm, contact local emergency or crisis support services now. This course is not monitored by a therapist.',
+    targetPrompt: 'The one personal problem I want to observe each day',targetHint: 'Choose specific words. The daily question will be: How difficult was this problem over the last 24 hours? (0–10).',
+    intentionPrompt: 'One real-life skill I would like to build (optional)',nextCycleHint: 'After 14 days you may start a new cycle with a new goal.', another: 'View full test reports',
     session: 'Today’s personal lesson', day: 'Day', goal: 'Developing', min: 'about 6 min',
     prepared: 'Your own pace. Keep your eyes open, do not force your breath or feelings, and stop if uncomfortable.',
     begin: 'Start today’s practice', short: 'Choose a shorter exercise', next: 'Continue', meditate: 'Grounding or visualization', reflection: 'Reflect',
@@ -61,7 +65,10 @@ const WORDS = {
     approveTitle: 'Выберите ресурсы, которые хотите развивать', approveText: 'Предложения необязательны. Только вы решаете, какие навыки практиковать.',
     basedOn: 'Предложения по последнему недельному самоотчёту Holistic House', noDerived: 'Выберите нужные ресурсы. Пока нет совместимых данных, чтобы делать персональные выводы о шкалах.',
     optional: 'Можно выбрать 1–3 направления', consentGoals: 'Я выбираю эти цели и хочу проходить персональный ежедневный курс.',
-    duration: 'Продолжительность курса', days14: '14 дней · мягкий старт', days28: '28 дней · углублённая практика', confirm: 'Создать мой личный курс', another: 'Посмотреть отчёты тестов',
+    duration: 'Продолжительность курса', days14: '14 дней · мягкий старт', days28: '28 дней · углублённая практика', confirm: 'Создать мой личный курс',
+    urgentHelp: 'При непосредственной опасности или мыслях о причинении себе вреда обратитесь в местную экстренную или кризисную службу. Этот курс не отслеживается специалистом в реальном времени.',
+    targetPrompt: 'Одна конкретная проблема, за которой я хочу наблюдать',targetHint: 'Выберите понятную формулировку. Каждый день вопрос будет: насколько выражена проблема за последние 24 часа? (0–10).',
+    intentionPrompt: 'Какой навык хочу применять в жизни? (необязательно)',nextCycleHint: 'После 14 дней можно начать новый цикл с другой целью.', another: 'Посмотреть отчёты тестов',
     session: 'Персональный урок сегодня', day: 'День', goal: 'Развиваем', min: 'около 6 минут',
     prepared: 'Работайте в своём темпе. Можно не закрывать глаза, не менять дыхание и прекращать упражнение при дискомфорте.',
     begin: 'Начать сегодняшнюю практику', short: 'Короткая версия упражнения', next: 'Продолжить', meditate: 'Заземление или визуализация', reflection: 'Рефлексия',
@@ -113,9 +120,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const [focusTags, setFocusTags] = useState([])
   const [goals, setGoals] = useState([])
   const [goalsAccepted, setGoalsAccepted] = useState(false)
-  const [durationDays, setDurationDays] = useState(14)
-  const [sessionStep, setSessionStep] = useState(0)
-  const [feedback, setFeedback] = useState('skip')
+  const [problemLabel, setProblemLabel] = useState('')
+  const [intention, setIntention] = useState('')
 
   async function refresh() {
     setError('')
@@ -124,6 +130,7 @@ export function MyCourse({ data, locale = 'en' }) {
       setState(response)
       setConcerns(response.course?.concerns || '')
       setFocusTags(response.course?.focusTags || [])
+      setProblemLabel((previous)=>previous || (response.course?.concerns||'').trim().slice(0,160))
     } catch (e) { setError(e.message) }
   }
   useEffect(() => { void refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -135,7 +142,6 @@ export function MyCourse({ data, locale = 'en' }) {
     try {
       const response = await request({ action, ...(action === 'start' ? {} : { expectedRevision: state.course?.revision }), ...values })
       setState(response)
-      setSessionStep(0)
     } catch (e) { setError(e.message) }
     finally { setBusy(false) }
   }
@@ -151,34 +157,16 @@ export function MyCourse({ data, locale = 'en' }) {
       focusTags.some((tag) => item.topics?.includes(tag)))
     return match.slice(0, 3)
   }, [focusTags, locale])
-  const total = stateCourse?.durationDays || 14
-  const today = stateCourse?.today || 1
-  const completions = stateCourse?.dayCompletions || {}
-  const todayComplete = Boolean(completions[String(today)])
   const hasTestSelection = (assessment.plannedInSet > 0 && assessment.planStatus !== 'cancelled') ||
     assessment.resultsCount > 0
   const testsReady = assessment.resultsCount > 0 && (assessment.planStatus !== 'active' ||
     (assessment.plannedInSet > 0 && assessment.completedInSet >= assessment.plannedInSet))
-  const activeGoal = stateCourse?.goals?.[(today - 1) % Math.max(stateCourse?.goals?.length || 1, 1)] || 'calm_regulation'
-  const lesson = courseLesson(activeGoal, today, locale)
-  const completed = Object.keys(completions).length
-  const weekly = assessment.weeklyChange
-  const weeklyNames = {
-    'weekly.mood': ru ? 'Эмоциональное состояние' : 'Mood',
-    'weekly.tension': ru ? 'Напряжение' : 'Tension',
-    'weekly.load': ru ? 'Психологическая нагрузка' : 'Stress load',
-    'weekly.recovery': ru ? 'Восстановление' : 'Recovery',
-    'weekly.energy': ru ? 'Энергия' : 'Energy',
-    'weekly.clarity': ru ? 'Ясность' : 'Mental clarity',
-    'weekly.connection': ru ? 'Поддержка' : 'Connection',
-    'weekly.functioning': ru ? 'Повседневная активность' : 'Daily functioning',
-  }
 
   if (state === undefined && !error) return <section className={'hh-panel ' + styles.root} aria-busy="true"><p>{ru ? 'Открываем ваш курс…' : 'Opening your course…'}</p></section>
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
 
   return <div className={styles.root} data-my-course>
-    <header className={styles.hero}>
+    {stage !== 4 && <header className={styles.hero}>
       <div>
         <p className="hh-kicker">{t.eyebrow}</p>
         <h1>{stage ? t.personal : t.title}</h1>
@@ -186,9 +174,9 @@ export function MyCourse({ data, locale = 'en' }) {
         <div className={styles.meta}><span><Sparkles size={15} aria-hidden="true"/>{t.free}</span><span><BookOpen size={15} aria-hidden="true"/>{t.time}</span></div>
       </div>
       <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
-    </header>
-    <Journey stage={stage} locale={locale}/>
-    {error && <p className={styles.error} role="alert">{t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
+    </header>}
+    {stage !== 4 && <Journey stage={stage} locale={locale}/>}
+    {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
 
     {stage === 0 && <section className={'hh-panel ' + styles.chapter}>
       <p className={styles.small}>{t.note}</p>
@@ -270,62 +258,24 @@ export function MyCourse({ data, locale = 'en' }) {
         })}
       </div>
       <p className={styles.small}>{t.optional} · {t.notDiagnostic}</p>
-      <fieldset className={styles.length}><legend>{t.duration}</legend>
-        <label><input type="radio" checked={durationDays===14} onChange={() => setDurationDays(14)} name="growth-duration"/>{t.days14}</label>
-        <label><input type="radio" checked={durationDays===28} onChange={() => setDurationDays(28)} name="growth-duration"/>{t.days28}</label>
-      </fieldset>
+      <div className={styles.length}><strong>{t.duration}: {t.days14}</strong><p className={styles.small}>{t.nextCycleHint}</p></div>
+      <label className={styles.formLabel} htmlFor="growth-target">{t.targetPrompt}</label>
+      <input id="growth-target" maxLength={160} value={problemLabel}
+        onChange={e=>setProblemLabel(e.target.value)}
+        placeholder={ru?'Напряжение при общении':'Tension in conversations'} required/>
+      <p className={styles.small}>{t.targetHint}</p>
+      <label className={styles.formLabel} htmlFor="growth-intention">{t.intentionPrompt}</label>
+      <textarea id="growth-intention" rows={2} maxLength={300} value={intention}
+        onChange={e=>setIntention(e.target.value)}/>
       <label className={styles.consent}><input type="checkbox" checked={goalsAccepted} onChange={(e)=>setGoalsAccepted(e.target.checked)}/><span>{t.consentGoals}</span></label>
-      <button type="button" className="hh-primary" disabled={busy || !goals.length || !goalsAccepted}
-        onClick={() => act('choose-goals', { goals, durationDays, consent:true })}>{t.confirm}<ArrowRight size={17}/></button>
+      <button type="button" className="hh-primary" disabled={busy || !goals.length || !goalsAccepted || problemLabel.trim().length<3}
+        onClick={() => act('choose-goals', { goals, durationDays:14, consent:true,
+          problemLabel:problemLabel.trim(),intention,
+          timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' })}>
+        {t.confirm}<ArrowRight size={17}/></button>
     </section>}
 
-    {stage === 4 && <section className={'hh-panel ' + styles.chapter}>
-      <div className={styles.sessionHeader}>
-        <div><p className="hh-kicker">{t.step} 4 {t.of} 4</p><h2>{t.session}</h2><p>{t.day} {today} / {total} · {t.min}</p></div>
-        <span className={styles.sessionSymbol}><Heart size={24}/></span>
-      </div>
-      <div className={styles.progressLabel}><strong>{t.progress}</strong><span>{completed} / {total} {t.completeCount}</span></div>
-      <div className={styles.dayGrid} aria-label={t.progress}>
-        {Array.from({ length: total }, (_, index) => <span key={index} data-completed={Boolean(completions[String(index + 1)])}
-          data-current={index + 1 === today} title={t.day + ' ' + (index + 1)} />)}
-      </div>
-      <div className={styles.practiceIntro}><strong>{t.goal}: {asLocale(GROWTH_GOALS[activeGoal].title,locale)}</strong><p>{t.prepared}</p></div>
-      {stateCourse.status === 'paused' ? <p className={styles.notice}>{t.paused}</p> :
-       todayComplete ? <div className={styles.done}><CheckCircle2 size={22}/><div><strong>{t.completed}</strong><p>{t.already}</p></div></div> :
-       sessionStep === 0 ? <div className={styles.practiceActions}>
-         <button type="button" className="hh-primary" onClick={() => setSessionStep(1)}><Play size={17}/>{t.begin}</button>
-         <button type="button" onClick={() => setSessionStep(2)}>{t.short}</button>
-       </div> : <div className={styles.practiceBody}>
-         {sessionStep === 1 && <><p className="hh-kicker">{t.aphorism}</p><blockquote>“{lesson.aphorism}”</blockquote><p>{lesson.teaching}</p></>}
-         {sessionStep === 2 && <><p className="hh-kicker">{t.meditate}</p><p>{lesson.meditation}</p><p className={styles.small}>{t.prepared}</p></>}
-         {sessionStep === 3 && <><p className="hh-kicker">{t.ritual}</p><p>{lesson.ritual}</p></>}
-         {sessionStep === 4 && <><p className="hh-kicker">{t.reflection}</p><p>{lesson.reflection}</p>
-           <fieldset className={styles.feedback}><legend>{t.askFeedback}</legend>
-             {[['helped',t.helped],['neutral',t.neutral],['uncomfortable',t.uncomfortable],['skip',t.skip]].map(([value,label])=>
-               <label key={value}><input type="radio" name="growth-feedback" value={value} checked={feedback===value} onChange={()=>setFeedback(value)}/>{label}</label>)}
-           </fieldset>
-         </>}
-         {sessionStep < 4 ? <button type="button" className="hh-primary" onClick={()=>setSessionStep(x=>x+1)}>{t.next}<ArrowRight size={17}/></button> :
-           <button type="button" className="hh-primary" disabled={busy} onClick={()=>act('complete-day',{day:today,feedback})}>{t.finish}<Check size={17}/></button>}
-       </div>}
-      <div className={styles.bottomActions}>
-        <button type="button" disabled={busy} onClick={()=>act(stateCourse.status==='paused'?'resume':'pause')}>
-          {stateCourse.status==='paused'?<RotateCcw size={16}/>:<CirclePause size={16}/>}
-          {stateCourse.status==='paused'?t.resume:t.pause}
-        </button>
-        <Link href={root + '/portfolio'} prefetch={false}>{t.mood}</Link>
-      </div>
-      <aside className={styles.comparison}><Target size={18}/><div><strong>{t.changes}</strong>
-        {weekly ? <div className={styles.weeklyChanges}>
-          <small>{new Date(weekly.from).toLocaleDateString(ru?'ru-RU':'en-CA')} → {new Date(weekly.to).toLocaleDateString(ru?'ru-RU':'en-CA')}</small>
-          <div className={styles.scoreGrid}>
-            {weekly.changes.filter((item)=>Object.hasOwn(weeklyNames,item.key)).map((item)=>
-              <span key={item.key}><strong>{weeklyNames[item.key]}</strong><small>{item.from} → {item.to} / 10</small></span>)}
-          </div>
-          <p>{t.changeNotice}</p>
-        </div> : <p>{t.noComparison}</p>}
-        <p>{t.compareNote}</p><Link href={root+'/monitoring'} prefetch={false}>{t.compare} →</Link></div></aside>
-    </section>}
+    {stage === 4 && <CourseToday locale={locale} />}
 
     <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>
   </div>

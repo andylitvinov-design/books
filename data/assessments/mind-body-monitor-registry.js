@@ -1,3 +1,5 @@
+import { NEW_PSYCHOTHERAPY_REFERENCES } from './psychotherapy-core-100.js'
+
 // Canonical Mind–Body Monitor research registry.
 // Product source: Holistic House — Psychic Health Monitoring Test Database
 // https://docs.google.com/spreadsheets/d/13tKxFlypfuaEWh0Vy0NeYasCZ-iItRkmZTEx7eB9E5k/edit
@@ -321,6 +323,12 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
     rightsNote: 'Publisher controlled CPI 260 forms, scoring and reports; qualification/licence required.',
   }),
 
+  // Additional curated research references; questionnaire access stays gated.
+  ...NEW_PSYCHOTHERAPY_REFERENCES.map((item) => row(
+    item.key, item.category, item.area, item.priority, item.instrument,
+    item.acronym, item.items, item.duration, item.rightsStatus, item.access,
+    { rightsNote: item.rightsNote },
+  )),
 ])
 
 export const PRODUCT_MONITOR_MODULES = Object.freeze([

@@ -9,14 +9,24 @@ import styles from "./personal-testimonials.module.css";
 // provenance-checked PsiTrends review videos. Do not invent quotations or outcomes.
 // Source list: /en/about, /ru/about, sales/integrations/psitrends-client/reviews.mjs.
 // Videos retain their actual audio language and link to the published originals.
+// Exact first-party video stills from the publicly reviewed PsiTrends testimonial archive.
+// A poster is used only for the matching YouTube ID; never swap in unrelated illustrations.
+// Two legacy PsiMaster RU clips have no verified archived still and use the normal
+// YouTube thumbnail path until a genuine image is available.
+const locallyArchivedVideoPosterIds = new Set([
+  "Dk0LBmOivQo", "aUJde6A-9p0", "fE6sD1zr1Js", "itjo2_z2NGk",
+  "4NrryHcEF1A", "hYwRNMxIMjc", "MIVLm1GUTtM", "ttQxUHopaUM",
+  "VABgpmn4ZYA", "muOnIHllI7E",
+]);
+
 const testimonialVideos = {
   ru: [
-    { id: "m9RfDgK76PU", title: "Антон Корчинский — отзыв о работе", language: "ru" },
-    { id: "5oj0BIbLT4w", title: "Елена Бахтина — отзыв клиента", language: "ru" },
     { id: "MIVLm1GUTtM", title: "Юрий Гончаренко — отзыв клиента", language: "ru" },
     { id: "ttQxUHopaUM", title: "Бизнес-расстановки — отзыв", language: "ru" },
     { id: "VABgpmn4ZYA", title: "Татьяна Разумовская — отзыв о бизнес-консультации", language: "ru" },
     { id: "muOnIHllI7E", title: "Экспресс-диагностика — отзыв", language: "ru" },
+    { id: "m9RfDgK76PU", title: "Антон Корчинский — отзыв о работе", language: "ru" },
+    { id: "5oj0BIbLT4w", title: "Елена Бахтина — отзыв клиента", language: "ru" },
   ],
   en: [
     { id: "Dk0LBmOivQo", title: "Business Constellation — testimonial", language: "en" },
@@ -102,11 +112,12 @@ export function PersonalTestimonials({
       </div>
       <div className={styles.videoGrid}>
         {videos.map((item) => (
-          <div className={styles.videoItem} key={item.id}>
+          <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
             <SiteVideoPlayer
               video={{ youtubeId: item.id, language: item.language, title: item.title }}
               locale={locale}
               compact
+              fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
             />
           </div>
         ))}

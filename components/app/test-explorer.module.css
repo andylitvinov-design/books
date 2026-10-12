@@ -513,7 +513,7 @@
   .catalogHeading h2{font-size:1.34rem}
   .catalogHeading p:not(.eyebrow){font-size:.79rem}
   .catalogTopline{gap:12px}
-  .catalogTopbar .availability{width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .catalogTopbar .availability{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
   .catalogTopbar .availability button{font-size:.79rem;padding:9px 8px}
   .catalogControls{grid-template-columns:minmax(0,1fr);gap:9px}
   .catalogTopbar .search,.catalogTopbar .sort select{min-height:46px}

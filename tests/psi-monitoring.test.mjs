@@ -20,6 +20,7 @@ import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from '../data/assessments/profess
 import { CDC_HEALTHY_DAYS_CATALOG } from '../data/assessments/cdc-healthy-days-2026.js'
 import { IPIP_BIG_FIVE_50_CATALOG } from '../data/assessments/ipip-big-five-50-en-v1.js'
 import { PERSONALITY_TYPE_CATALOG } from '../data/assessments/personality-types-original-2026.js'
+import { OPEN_PROFESSIONAL_2026_CATALOG } from '../data/assessments/open-professional-2026.js'
 import { validateMoodInput } from '../lib/app/mood.js'
 
 const accountId = '10000000-0000-4000-8000-000000000001'
@@ -40,6 +41,8 @@ const result = (def, value, day) => ({
 test('monitoring catalog exposes the cleared active checks and keeps uncleared measures metadata-only', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable).map((item) => item.key).sort()
   assert.deepEqual(active, [
+    'scs-sf',
+    'compassion-scale',
     'brcs',
     'erq',
     'gad-2',
@@ -90,8 +93,9 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
     ...CDC_HEALTHY_DAYS_CATALOG.map((item) => item.key),
     ...IPIP_BIG_FIVE_50_CATALOG.map((item) => item.key),
     ...PERSONALITY_TYPE_CATALOG.map((item) => item.key),
+    ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
   ].sort())
-  for (const key of ['scs-sf', 'functioning-review'])
+  for (const key of ['functioning-review'])
     assert.equal(monitoringCatalogItem(key).startable, false)
 })
 

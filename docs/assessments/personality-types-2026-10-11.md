@@ -11,7 +11,7 @@ All in the **existing Test Explorer → My Tests → Account/Insights/PDF** pipe
 - **D/I/S/C behavioral styles (20 items)**: original 4 communication/work-style scales, 5 questions each, **NOT** an official or licensed DISC test.
 - **Four classical temperaments (16 items)**: original reflection on expressive, decisive, steady, reflective tendencies. Historical model, NOT a validated health diagnosis.
 
-All eight immutable locale definitions have official version IDs + canonical SHA-256, exact question sets, declared 1–5 choices, separate 4–20/5–25 raw subscale sums (non-normative), no clinical cutoffs and no repeated-cooldown push. They use the existing authenticated guest/start/save/RLS and per-test report paths. No new backend, provider, client data export or account system.
+All eight immutable locale definitions have stable internal version IDs + canonical SHA-256, exact question sets, declared 1–5 choices, separate 4–20/5–25 raw subscale sums (non-normative), no clinical cutoffs and no repeated-cooldown push. They use the existing authenticated guest/start/save/RLS and per-test report paths. No new backend, provider, client data export or account system.
 
 ### Psychological integrity
 Scores are descriptive agreement with original questions, not population percentiles, IQ, diagnoses, predictive relationship matching, medically meaningful severities or stable objective personality identities. Socionics and Enneagram categorical models lack robust psychometric support; the user must see uncertainty and alternatives. The scientifically better-supported trait approach continues to be the previously added IPIP Big Five (20/50 items). Do not merge typology with Wu Xing, homeopathic claims, resource diagnosis or auto-selected therapy goals.
@@ -27,11 +27,13 @@ MMPI-2, MMPI-2-RF, official MBTI Step I/II, NEO-PI-3, NEO-FFI-3, HEXACO-60/100, 
 - Enneagram systematic review: https://pubmed.ncbi.nlm.nih.gov/33332604/
 
 ## Expected catalog
-Startable catalogue: **76 → 80** (four original bilingual instruments = 8 immutable localized definitions).
-Rights-gated research reference registry: **128 → 139** (11 more; reference entries overlap with product where applicable and are not added to the executable count).
+Startable catalogue: **96 → 100** (four original bilingual instruments = 8 immutable localized definitions).
+Rights-gated research reference registry: **143 → 154** (11 more; reference entries overlap with product where applicable and are not added to the executable count).
 
 ## QA and deployment contract
 1. Run exact PR SHA unit tests, `tests/personality-types-original-2026.test.mjs`, lint, typecheck, production build, isolated PostgreSQL data/RLS tests, Chromium+WebKit guest/account flows.
 2. Verify provenance SHA, scores min/max, **all 16 socionics codes** and ties, licence-gating of MMPI/MBTI/HEXACO, full per-test EN/RU Insights and PDF, snapshot uniqueness alongside Mini-IPIP/IPIP-50.
-3. Additive migration `20261011230000_hh_personality_types_original.sql` only on **existing** Holistic House Supabase, after checks. Verify 8 registered locale rows and 79 unique assessment keys. Do not alter customer answers or prior score versions.
+3. Additive migration `20261011230000_hh_personality_types_original.sql` prepared for the **existing** Holistic House Supabase; not applied by this recovery. Require separate explicit authorization before production registration. A bounded read-only technical check on 2026-10-12 at approximately 05:26 UTC returned no rows for these eight IDs or four keys. After authorized registration verify exactly eight matching ID/hash/body rows, rather than treating database version counts as the number of runnable tests. Do not alter customer answers or prior score versions.
 4. Merge source only with all QA checks green. Production is **not live** until Vercel builds and exposes an exact tested GitHub SHA on `holistichouse.vercel.app`, and key UX is read back. Vercel Hobby build-rate-limit may prevent publishing; never claim live solely from GitHub merge.
+
+Recovery baseline: canonical `10871d5473b912eeda39f51bc3c89e3d9395dd80`. The resulting inventory contains 41 professional and 59 original/reflection instruments, with 161 immutable definitions (153 existing + 8 localized originals). BFAS and MHC-SF are separate unmerged work and are not counted. All four added instruments are engaging/original, not professional psychometric tests.

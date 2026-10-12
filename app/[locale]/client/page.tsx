@@ -14,12 +14,12 @@ type PageProps = { params: Promise<{ locale: string }> };
 
 const copy = {
   en: {
-    title: "Choose your tests | Holistic House",
-    description: "Choose personal self-observation tests before signing in. Save the selection and results in your private Holistic House account.",
+    title: "Free wellbeing monitoring | Holistic House",
+    description: "Explore stress, mood and inner resources with free self-checks. These are not medical diagnoses; sign in to save a personal monitoring plan.",
   },
   ru: {
-    title: "Подбор тестов | Holistic House",
-    description: "Подберите психологические тесты до входа через Google, затем сохраните выбор и результаты в личном аккаунте Holistic House.",
+    title: "Бесплатный мониторинг состояния | Holistic House",
+    description: "Пройдите бесплатный мониторинг психологического состояния и ресурсов. Опросники не ставят диагноз; войдите через Google, чтобы сохранять результаты.",
   },
 } as const;
 

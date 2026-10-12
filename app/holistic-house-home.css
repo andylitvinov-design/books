@@ -711,3 +711,24 @@ a.service-home-start-card:hover {
  .house-home--services .home-contact-capture__actions>a{min-height:46px}
 }
 @media(prefers-reduced-motion:reduce){.house-home--services :is(.service-home-start-card,.home-contact-capture__actions a){transition:none}}
+
+/* Homepage CTA v3 · real blue conversion chooser; keep generic service pages untouched. */
+.house-home--services .home-contact-choice {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1188px;
+  min-width: 0;
+  margin: 18px auto 40px;
+  padding: 0 20px;
+}
+.house-home--services .home-contact-choice [data-consultation-capture="service"] {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+@media (max-width: 767px) {
+  .house-home--services .home-contact-choice {
+    margin: 12px auto 34px;
+    padding: 0 16px;
+  }
+}

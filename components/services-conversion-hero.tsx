@@ -8,7 +8,7 @@ const copy = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ РАБОТА",
     heading: "Больше ясности, опоры и вариантов движения",
-    lead: "Три бесплатных способа начать: психологические тесты, личный разбор ситуации или профиль ресурсов У-Син. При желании можно продолжить личную работу.",
+    lead: "Три бесплатных способа начать: мониторинг психологического состояния и внутренних ресурсов, личный разбор ситуации или профиль У-Син. Личная работа — по желанию.",
     benefits: ["3 бесплатных направления", "Личная работа по желанию", "Торонто и онлайн"],
     cta: "Бесплатный разбор ситуации",
     secondary: "Все три бесплатных варианта",
@@ -19,7 +19,7 @@ const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · PERSONAL SUPPORT",
     heading: "More clarity, inner resources and choices",
-    lead: "Three free ways to begin: psychological self-checks, a personal situation review, or a Wu Xing resource profile. Personal sessions are optional.",
+    lead: "Three free ways to begin: free mental wellbeing and inner resources monitoring, a personal situation review, or a Wu Xing resource profile. Personal sessions are optional.",
     benefits: ["3 free starting points", "Optional one-to-one work", "Toronto & online"],
     cta: "Get a free situation review",
     secondary: "See all three free options",

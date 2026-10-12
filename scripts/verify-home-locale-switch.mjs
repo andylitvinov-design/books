@@ -60,30 +60,42 @@ async function exercise(engine, browserType, width) {
     assert.deepEqual(errors, []);
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
     const offers = page.locator('[data-core-service-offers="home"]');
-    const freePaths = page.locator('[data-free-insights="public"]');
     await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
-    await expect(freePaths.locator('[data-free-insights-offer]')).toHaveCount(3);
-    await expect(freePaths.locator('[data-free-insights-offer="stress"] a')).toHaveAttribute('href', /\/client$/);
-    await expect(freePaths.locator('[data-free-insights-offer="situation"] a')).toHaveAttribute('href', /\/services\/free-situation-review$/);
-    await expect(freePaths.locator('[data-free-insights-offer="wu"] a')).toHaveAttribute('href', /\/services\/dao-health-profile$/);
-    await expect(offers.locator('[data-core-service-id]')).toHaveCount(2);
+    await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
+    await expect(offers.locator('[data-core-service-id]')).toHaveCount(4);
+    for (const id of ['situation', 'dao', 'alchemy', 'hypnotherapy']) {
+      await expect(offers.locator('[data-core-service-id="' + id + '"]')).toHaveCount(1);
+    }
+    const firstOfferPhoto = offers.locator('[data-core-service-id="situation"] img');
+    await firstOfferPhoto.scrollIntoViewIfNeeded();
+    await expect.poll(() => firstOfferPhoto.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
     await expect(page.locator('[data-home-contact-capture]')).toHaveCount(1);
-    const freeLink = page.locator('.home-contact-capture__text-link');
-    await expect(freeLink).toHaveAttribute('href', /\/services\/free-situation-review$/);
-    await expect(freeLink).toBeVisible();
+    const capture = page.locator('[data-home-contact-capture] [data-consultation-capture="service"]');
+    await expect(capture).toBeVisible();
+    await expect(capture.locator('[data-choice-layout="service"] button')).toHaveCount(3);
+    await capture.locator('[data-choice-layout="service"] button').last().click();
+    await expect(capture.locator('a[data-consultation-action="free"]')).toHaveAttribute('href', /\/services\/free-situation-review$/);
+    const videoPosters = page.locator('[data-personal-testimonials="home"] .site-video-fallback-poster');
+    await expect(videoPosters).toHaveCount(6);
+    await videoPosters.first().scrollIntoViewIfNeeded();
+    await expect.poll(() => videoPosters.first().evaluate(image => image.complete && image.naturalWidth > 100), { timeout: 15000 }).toBe(true);
+    // The first review image must be a frame from that exact review, not the botanical placeholder.
+    await expect(videoPosters.first()).toHaveAttribute('src', /Dk0LBmOivQo\.webp/);
+    const firstReview = page.locator('[data-personal-testimonials="home"] [data-testimonial-video-id="Dk0LBmOivQo"]');
+    await expect(firstReview.locator('.site-video-play')).toHaveCount(1);
+    await expect(firstReview.locator('.site-video-watch-link')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=Dk0LBmOivQo');
     const portrait = page.locator('.service-home-about__image');
     await portrait.scrollIntoViewIfNeeded();
     await expect.poll(() => portrait.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
     const measurements = await page.evaluate(() => {
       const bounds = selector => document.querySelector(selector)?.getBoundingClientRect();
-      const first = bounds('[data-free-insights-offer="stress"]');
-      const photo = bounds('[data-core-service-id="alchemy"] img');
+      const first = bounds('[data-core-service-id="situation"]');
+      const photo = bounds('[data-core-service-id="situation"] img');
       const portrait = bounds('.service-home-about__image');
       const contact = bounds('[data-home-contact-capture]');
       const frame = document.querySelector('[data-home-contact-capture]');
       return {
         cardCount: document.querySelectorAll('[data-core-service-offers="home"] [data-core-service-id]').length,
-        freeCount: document.querySelectorAll('[data-free-insights="public"] [data-free-insights-offer]').length,
         overflow: document.documentElement.scrollWidth - innerWidth,
         featuredCardWidth: first?.width,
         featuredPhotoWidth: photo?.width,
@@ -91,23 +103,27 @@ async function exercise(engine, browserType, width) {
         portraitWidth: portrait?.width,
         portraitHeight: portrait?.height,
         contactWidth: contact?.width,
-        contactButtons: frame?.querySelectorAll('[data-contact-channel]').length,
-        contactHasGenericSelector: !!frame?.querySelector('[data-consultation-capture]'),
-        contactBackground: frame && getComputedStyle(frame).backgroundImage,
+        contactChoices: frame?.querySelectorAll('[data-choice-layout="service"] button').length,
+        contactHasBlueCapture: !!frame?.querySelector('[data-consultation-capture="service"]'),
+        contactBackground: frame && getComputedStyle(frame.querySelector('[data-consultation-capture="service"]')).backgroundImage,
       };
     });
-    assert.equal(measurements.freeCount, 3, 'Exactly three free starting paths should be visible');
-    assert.equal(measurements.cardCount, 2, 'Paid work is presented in only two personal-service cards');
+    assert.equal(measurements.cardCount, 4, 'Home must show all four restored image-left cards');
     assert.ok(measurements.overflow <= 2, 'Homepage causes horizontal scroll: ' + JSON.stringify(measurements));
-    assert.ok(measurements.featuredCardWidth > (width === 390 ? 250 : 200), 'The free path is too narrow: ' + JSON.stringify(measurements));
-    assert.ok(measurements.featuredPhotoWidth >= 90 && measurements.featuredPhotoHeight >= 95, 'Personal-service artwork is tiny or hidden: ' + JSON.stringify(measurements));
+    assert.ok(measurements.featuredCardWidth > (width === 390 ? 250 : 200), 'First offer card is too narrow: ' + JSON.stringify(measurements));
+    assert.ok(measurements.featuredPhotoWidth >= 90 && measurements.featuredPhotoHeight >= 95, 'Featured service image is tiny or hidden: ' + JSON.stringify(measurements));
     assert.ok(measurements.portraitWidth > (width === 390 ? 180 : 230), 'Real practitioner portrait has collapsed: ' + JSON.stringify(measurements));
     assert.ok(measurements.portraitHeight >= 160, 'Real practitioner portrait is too short: ' + JSON.stringify(measurements));
-    assert.equal(measurements.contactButtons, 2, 'Homepage must have exactly WhatsApp and Telegram direct-contact channels');
-    assert.equal(measurements.contactHasGenericSelector, false, 'Homepage must not show the long generic consultation form');
-    assert.ok(measurements.contactBackground?.includes('linear-gradient'), 'Approved warm contact card background is missing');
+    assert.equal(measurements.contactChoices, 3, 'Modern capture must offer the three requested choices');
+    assert.equal(measurements.contactHasBlueCapture, true, 'Homepage must contain the shared blue capture form');
+    assert.ok(measurements.contactBackground?.includes('linear-gradient'), 'Blue capture gradient must render');
     results.push({ engine, width, homeVisual: true, ...measurements });
     await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-${engine}-${width}.png`, fullPage: true });
+    // One tap must replace the poster with a working YouTube embed URL.
+    await firstReview.locator('.site-video-play').click();
+    await expect(firstReview.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
+    await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0);
+
   } catch (error) {
     results.push({ engine, width, failure: error.message, pageErrors: errors });
     await page.screenshot({ path: `${evidence}/failed-${engine}-${width}.png`, fullPage: true }).catch(() => {});

@@ -15,7 +15,7 @@ const defFor = (item, locale) => getAssessmentDefinition(item.key,item.version,i
 const allAnswers = d => Object.fromEntries(d.questions.map(q=>[q.id,q.min??d.answerScale?.min??0]))
 
 test('every active test has a bilingual short purpose/origin/evidence paragraph without changing scoring hashes',()=>{
-  assert.equal(active.length,80)
+  assert.equal(active.length,100)
   for(const locale of ['en','ru']){
     for(const item of active){
       const def=defFor(item,item.instrumentLocale==='dynamic'?locale:'en')
@@ -40,10 +40,10 @@ test('every active test has a bilingual short purpose/origin/evidence paragraph 
   }
 })
 
-test('all 139 research-only references have concise bilingual field, verified rights and no public start',()=>{
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,139)
+test('all 154 research-only references have concise bilingual field, verified rights and no public start',()=>{
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,154)
   const unique=new Set(MIND_BODY_MONITOR_REGISTRY.map(x=>x.key))
-  assert.equal(unique.size,139)
+  assert.equal(unique.size,154)
   for(const locale of ['en','ru']){
     const entries=buildExplorerEntries({locale,audience:'guest'})
     for(const row of MIND_BODY_MONITOR_REGISTRY){
@@ -87,7 +87,7 @@ test('purpose/origin/evidence explanations render in public explorer, prelogin s
     'components/app/simple-test-picker.jsx',
     'components/app/app-workspace.jsx',
     'components/app/account-test-battery.jsx',
-    'components/app/personal-result-report.jsx',
+    'components/app/compact-assessment-report.jsx',
     'lib/profile/client-report-pdf.js',
   ]
   const [logic,explorer,picker,workspace,savedBattery,report,pdf]=await Promise.all(paths.map(x=>readFile(x,'utf8')))

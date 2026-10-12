@@ -23,8 +23,8 @@ const UI = {
     googleNote: 'Continue with Google to keep your selected tests and results in your private Cabinet.',
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
     testsKicker: 'Mind–Body Monitor',
-    tryTitle: 'Your Mind–Body Monitor',
-    tryText: 'Complete the selected test battery to track your concerns and review each result.',
+    tryTitle: 'Free wellbeing & resources monitoring',
+    tryText: 'Choose self-checks for stress, mood and resilience. View guidance now; save results if you want to track changes over time.',
     recommended: 'Recommended now',
     otherChecks: 'Other self-checks',
     areasTitle: 'What you can monitor',
@@ -45,10 +45,10 @@ const UI = {
     recommenderResults: 'Recommended for your request',
     recommenderPrivacy: 'Your choices are used only to rank this set and are not saved unless you explicitly consent to a test.',
     recommenderRank: 'Priority',
-    stateAnalysisCta: 'Take a free state analysis and get recommendations',
+    stateAnalysisCta: 'Start a free wellbeing check-in',
     stateAnalysisMeta: 'Free · ~1 min · no sign-in required',
-    batteryCta: 'Build a personal test battery',
-    batteryMeta: 'Choose several areas and depth — we rank the most relevant tests for you.',
+    batteryCta: 'Create my free monitoring plan',
+    batteryMeta: 'Choose areas and depth to find relevant self-checks for your plan.',
     wuXing: 'Personal Wu Xing profile',
     stateTitle: 'Current State Check',
     stateText: '5 questions · ~1 min',
@@ -112,8 +112,8 @@ const UI = {
     googleNote: 'Для сохранения выбранных тестов и результатов предусмотрен вход через Google.',
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
     testsKicker: 'Монитор состояния',
-    tryTitle: 'Ваш монитор состояния',
-    tryText: 'Пройдите подобранный набор тестов и просматривайте результаты по каждому направлению.',
+    tryTitle: 'Бесплатный мониторинг состояния и ресурсов',
+    tryText: 'Выберите опросники о стрессе, настроении и ресурсах. Получите рекомендации и сохраняйте результаты для наблюдения за динамикой.',
     recommended: 'Рекомендуем сейчас',
     otherChecks: 'Другие самопроверки',
     areasTitle: 'Что можно отслеживать',
@@ -134,10 +134,10 @@ const UI = {
     recommenderResults: 'Рекомендуем по вашему запросу',
     recommenderPrivacy: 'Выбор используется только для расчёта этого набора и не сохраняется без вашего явного согласия на прохождение теста.',
     recommenderRank: 'Приоритет',
-    stateAnalysisCta: 'Пройти бесплатный тест-анализ состояния и получить рекомендации',
+    stateAnalysisCta: 'Начать бесплатную проверку состояния',
     stateAnalysisMeta: 'Бесплатно · ~1 мин · без регистрации',
-    batteryCta: 'Подобрать персональную батарею тестов',
-    batteryMeta: 'Выберите несколько зон и глубину — мы расставим подходящие тесты по приоритету.',
+    batteryCta: 'Составить мой бесплатный план мониторинга',
+    batteryMeta: 'Выберите направления и глубину, чтобы подобрать подходящие опросники.',
     wuXing: 'Личный профиль У-Син',
     stateTitle: 'Состояние сейчас',
     stateText: '5 вопросов · ~1 мин',
@@ -827,6 +827,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               ))}
             </div>
 
+            {definition.instructions && <p className="cabinet-test-note" lang={definition.instrumentLocale}>{definition.instructions}</p>}
             {mode === 'quick' ? (
               <div className="cabinet-quick-form">
                 {definition.questions.map((item, step) => (

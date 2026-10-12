@@ -36,7 +36,7 @@ test("three free paths and two personal cards retain all core service detail pag
   const freePaths = read("components/free-insights-paths.tsx");
   assert.match(freePaths, /free-situation-review/);
   assert.match(freePaths, /dao-health-profile/);
-  assert.match(ui, /personalOffers.map/);
+  assert.match(ui, /visibleOffers.map/);
   assert.match(free, /FreeSituationReviewForm/);
 });
 

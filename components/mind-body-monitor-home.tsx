@@ -15,10 +15,10 @@ import type { PublicLocale } from "@/lib/public-locales";
 
 const copy = {
   en: {
-    kicker: "Free mind–body monitoring",
-    title: "A clearer picture of how you’re doing",
+    kicker: "Free mental wellbeing & resources monitoring",
+    title: "Monitor your wellbeing and inner resources",
     intro:
-      "Short self-checks can help you see what is affecting your wellbeing and everyday effectiveness right now — stress, mood, mental clarity, energy, sleep, or body symptoms — and get simple recommendations for what to pay attention to next.",
+      "Explore stress, mood, sleep and resilience with short self-checks. See clear results and next-step recommendations; sign in to follow changes over time.",
     choose: "What matters most right now?",
     inventoryAll: "active tests in the full monitor",
     inventoryEngaging: "light & engaging",
@@ -35,7 +35,7 @@ const copy = {
     stateTitle: "Start with a quick check-in",
     stateText: "5 questions · about 1 minute · no sign-in required",
     stateAction: "Start free monitoring",
-    testsTitle: "Find the right tests for you",
+    testsTitle: "Build your monitoring plan",
     testsText: "Filter by topic, style and length — from quick engaging checks to professional scales.",
     testsAction: "Choose my tests",
     wuTitle: "Personal Wu Xing Profile",
@@ -45,10 +45,10 @@ const copy = {
       "You’ll get a simple summary and practical next-step recommendations. This is self-monitoring and educational guidance, not a diagnosis.",
   },
   ru: {
-    kicker: "Бесплатный мониторинг состояния",
-    title: "Понять своё состояние чуть яснее",
+    kicker: "Бесплатный мониторинг психологического состояния и ресурсов",
+    title: "Наблюдайте своё состояние и внутренние ресурсы",
     intro:
-      "Короткие самопроверки помогают увидеть, что сейчас сильнее влияет на самочувствие и повседневную эффективность — стресс, настроение, ясность мышления, энергия, сон или телесные симптомы — и получить простые рекомендации, на что обратить внимание дальше.",
+      "Оцените стресс, настроение, сон и внутреннюю устойчивость с помощью коротких тестов. Получите понятные результаты и рекомендации; сохраняйте их, чтобы наблюдать изменения со временем.",
     choose: "Что сейчас важнее всего?",
     inventoryAll: "активных тестов в полном мониторе",
     inventoryEngaging: "лёгких / интерактивных",
@@ -65,7 +65,7 @@ const copy = {
     stateTitle: "Начните с короткой проверки",
     stateText: "5 вопросов · около 1 минуты · без регистрации",
     stateAction: "Начать бесплатный мониторинг",
-    testsTitle: "Подберите тесты под себя",
+    testsTitle: "Составьте свой план мониторинга",
     testsText: "Фильтр по теме, стилю и длине — от лёгких быстрых проверок до профессиональных шкал.",
     testsAction: "Подобрать мои тесты",
     wuTitle: "Личный профиль У-Син",
@@ -75,10 +75,10 @@ const copy = {
       "После проверки вы получите краткий итог и практические рекомендации по следующим шагам. Это самонаблюдение и образовательная информация, а не диагноз.",
   },
   es: {
-    kicker: "Monitoreo mente–cuerpo gratuito",
-    title: "Una imagen más clara de cómo estás",
+    kicker: "Monitoreo gratuito del bienestar emocional y los recursos personales",
+    title: "Observa tu bienestar y tus recursos personales",
     intro:
-      "Las autoevaluaciones breves pueden ayudarte a ver qué está afectando más tu bienestar y funcionamiento cotidiano — estrés, ánimo, claridad mental, energía, sueño o síntomas físicos — y recibir recomendaciones sencillas sobre qué observar después.",
+      "Observa el estrés, el ánimo, el sueño y la resiliencia con evaluaciones breves. Consulta tus resultados y recomendaciones; guarda tus registros si quieres seguir los cambios.",
     choose: "¿Qué te importa más ahora?",
     inventoryAll: "tests activos en el monitor completo",
     inventoryEngaging: "ligeros e interactivos",
@@ -95,7 +95,7 @@ const copy = {
     stateTitle: "Empieza con una revisión breve",
     stateText: "5 preguntas · aproximadamente 1 minuto · sin registro",
     stateAction: "Iniciar monitoreo gratuito",
-    testsTitle: "Encuentra los tests adecuados",
+    testsTitle: "Crea tu plan de seguimiento",
     testsText: "Filtra por tema, estilo y duración — desde controles ligeros hasta escalas profesionales.",
     testsAction: "Elegir mis tests",
     wuTitle: "Perfil personal Wu Xing",

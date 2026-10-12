@@ -17,6 +17,8 @@ export type SiteVideoPlayerProps = {
   /** Only above-the-fold placements should eagerly load their small still image. */
   posterPriority?: boolean;
   className?: string;
+  /** Same-origin illustrative image visible whenever YouTube blocks its real thumbnail. */
+  fallbackPoster?: string;
 };
 
 const copy = {
@@ -57,6 +59,17 @@ const approvedAndyPosters: Readonly<Record<string, string>> = {
 };
 
 // Exact published page renders only; About and future editor replacements are unchanged.
+// Approved Unlisted YouTube mirror links for these exact public HeyGen masters.
+// Mirrors are only backup links; they do not replace provider embeds or admin state.
+const existingYouTubeMirrors: Readonly<Record<string, string>> = {
+  ed202847a43a96b918308aa972177b34: "Y4K4piEwwA8",
+  "48105a2f2228e7cb3a67391e97acaf8b": "s30Y42IwPcg",
+  "34df311e461509433b45929908a9097a": "ILyRWyHtJoE",
+  "388a04b39ebf215ae656bcd22d0d0847": "AE8Pelpo424",
+  "79c2845577865979cd95ac40a08fc01a": "Cz6SxXJNZbw",
+  "0f984780d06948b1e78166e6e553e4e9": "Q9NvYECKWuc",
+};
+
 const minimalPageVideoIds = new Set([
   "ed202847a43a96b918308aa972177b34",
   "48105a2f2228e7cb3a67391e97acaf8b",
@@ -78,7 +91,7 @@ function videoDuration(seconds?: number) {
 }
 
 /** A page cannot turn arbitrary source data into an iframe URL. */
-export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, minimal = false, posterPriority = false, className }: SiteVideoPlayerProps) {
+export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, minimal = false, posterPriority = false, className, fallbackPoster }: SiteVideoPlayerProps) {
   const watchUrl = siteVideoWatchUrl(video);
   const source = watchUrl ? parseSiteVideoSource(watchUrl) : null;
   if (!source) return null;
@@ -86,12 +99,12 @@ export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, 
     <PlayableSiteVideo
       key={`${source.heygenId ? "heygen:" + source.heygenId : "youtube:" + source.youtubeId}:${locale}:${video.language}`}
       video={{ ...video, ...source }} locale={locale} textLanguage={textLanguage} compact={compact}
-      minimal={minimal || minimalPageVideoIds.has(source.heygenId ?? "")} posterPriority={posterPriority} className={className}
+      minimal={minimal || minimalPageVideoIds.has(source.heygenId ?? "")} posterPriority={posterPriority} className={className} fallbackPoster={fallbackPoster}
     />
   );
 }
 
-function PlayableSiteVideo({ video, locale, textLanguage = video.language, compact = false, minimal = false, posterPriority = false, className }: SiteVideoPlayerProps) {
+function PlayableSiteVideo({ video, locale, textLanguage = video.language, compact = false, minimal = false, posterPriority = false, className, fallbackPoster }: SiteVideoPlayerProps) {
   const text = copy[locale];
   const [playing, setPlaying] = useState(false);
   // SSR may appear before React attaches handlers on a slow connection.
@@ -119,6 +132,11 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   function showFallbackPoster() { setPoster((current) => current === "maxres" ? "hq" : current === "hq" ? "direct" : null); }
 
   const externalLink = <a className="site-video-watch-link" href={watchUrl} target="_blank" rel="noopener noreferrer" aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}>{watchLabel}<ExternalLink aria-hidden="true" /></a>;
+  const mirrorId = video.heygenId ? existingYouTubeMirrors[video.heygenId] : undefined;
+  const mirrorLink = mirrorId ? <a className="site-video-watch-link" href={`https://www.youtube.com/watch?v=${mirrorId}`}
+    target="_blank" rel="noopener noreferrer" aria-label={`${text.watch}: ${video.title} (${text.newTab})`}>
+    {text.watch}<ExternalLink aria-hidden="true" />
+  </a> : null;
 
   return (
     <figure className={["site-video-player", compact && "site-video-player--compact", minimal && "site-video-player--minimal", minimal && styles.minimal, className].filter(Boolean).join(" ")} aria-labelledby={titleId} lang={locale}>
@@ -127,6 +145,9 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           <iframe ref={playerRef} className="site-video-iframe" src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
           <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
+            {!isHeygen && fallbackPoster && (
+              <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
+            )}
             {approvedPoster && poster ? (
               <Image className="site-video-poster" src={approvedPoster} alt="" fill priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
             ) : isHeygen ? (
@@ -148,6 +169,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
             <summary>{video.transcript ? text.transcriptShort : text.details}<ChevronDown aria-hidden="true" /></summary>
             <div className="site-video-more">{video.transcript && <p lang={textLanguage}>{video.transcript}</p>}<div className="site-video-actions">{externalLink}</div></div>
           </details>
+          {mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}
           {(isHeygen || audioNotice) && <span className="site-video-ai-badge" title={isHeygen ? aiDisclosure : undefined} aria-label={[audioNotice, isHeygen ? aiDisclosure : ""].filter(Boolean).join(". ")}>{audioNotice}{audioNotice && isHeygen ? " · " : ""}{isHeygen ? (isApprovedAndyIntro ? text.avatarShort : text.aiShort) : ""}</span>}
         </figcaption>
       ) : (
@@ -155,7 +177,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           <div className="site-video-copy" lang={textLanguage}><p className="site-video-title" id={titleId}>{video.title}</p>{video.description && <p className="site-video-description">{video.description}</p>}</div>
           {audioNotice && <p className="site-video-description site-video-audio-language">{audioNotice}</p>}
           {isHeygen && <p className="site-video-description site-video-ai-disclosure">{aiDisclosure}</p>}
-          <div className="site-video-actions">{externalLink}{duration && <time className="site-video-duration-text" dateTime={`PT${duration.total}S`} aria-label={`${text.duration}: ${duration.total} ${text.seconds}`}>{duration.label}</time>}</div>
+          <div className="site-video-actions">{externalLink}{mirrorLink}{duration && <time className="site-video-duration-text" dateTime={`PT${duration.total}S`} aria-label={`${text.duration}: ${duration.total} ${text.seconds}`}>{duration.label}</time>}</div>
           {video.transcript && <details className="site-video-transcript"><summary>{text.transcript}<ChevronDown aria-hidden="true" /></summary><p lang={textLanguage}>{video.transcript}</p></details>}
         </figcaption>
       )}

@@ -9,13 +9,12 @@ if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error('Only
 const output='artifacts/app-r1'
 await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
-const browser=await engine.launch(),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
+const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{}),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
 let page=await context.newPage()
 const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
 page.on('pageerror',capturePageError)
 const checks=[]
 function passed(name){checks.push(name);console.log('PASS '+name)}
-
 /**
  * Playwright/WebKit cannot screenshot a full page taller than 32767 device pixels.
  * Clinical test catalogs and complete Reports may naturally exceed that height.
@@ -105,13 +104,8 @@ async function enterTest(name='Current State Check',mode='Guided'){
   const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
   if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
-  await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
-  if(await page.getByRole('button',{name:/Review test filters/}).count()){
-   if(!(await page.locator('[data-pending-selection]').isVisible().catch(()=>false)))
-     await page.getByRole('button',{name:/Review test filters/}).click()
-   await expect(page.locator('[data-pending-selection]')).toBeVisible()
-   await page.locator('[data-pending-selection]').getByRole('button',{name:'Use new selection'}).click()
-  }
+  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+  await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
   await expect(page.locator('#my-tests-list')).toBeVisible()
  }
  await expect(candidate()).toBeVisible({timeout:15000})
@@ -227,7 +221,7 @@ try {
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
  await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
- await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'My profile',exact:true})).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await expect(page.getByRole('heading',{name:'Your measured scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
+ await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'My profile',exact:true})).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
  const profileOfferCases=[
    ['psychology','alchemy-of-soul','Alchemy of the Soul'],
    ['homeopathy','psychohomeopathy','homeopathy'],
@@ -256,7 +250,7 @@ try {
  }
  await verifyProfileServiceOffers(page)
  passed('every Google Cabinet profile has one working service-specific WhatsApp enquiry and matching landing link')
- await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-initial.png',fullPage:true});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
+ await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-initial.png',fullPage:false});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
  await page.getByRole('button',{name:'Happy',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect.poll(async()=>((await api('bootstrap')).data.moodCheckins||[]).length).toBe(1);await page.getByRole('button',{name:'Not now',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);passed('signed-in mood tap persists even when the user chooses Not now')
  const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
  // A public Master account must not be allowed to open the owner's global client database.
@@ -305,8 +299,8 @@ try {
  passed('real printable PDF downloads with all latest personal results and scale data')
  await page.goto(origin+'/en/app/portrait');await ready();
   await expect(page.locator('[data-profile-head]')).toBeVisible();
-  await expect(page.locator('[data-measured-scale]').first()).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Your measured scales',exact:true})).toBeVisible();
+  await expect(page.locator('[data-measured-scale]')).toHaveCount(0);await expect(page.getByText(/No professional test results yet/)).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Download report'})).toBeEnabled();
   await expect(page.getByRole('link',{name:/Get personal recommendations from a specialist/})).toBeVisible();
@@ -330,6 +324,32 @@ try {
  passed('completed tests lead Insights; detailed measurements remain available in optional advanced view')
  await page.setViewportSize({width:390,height:844});await enterTest();for(const v of[4,6,3,5,2])await answerCurrent(v);await page.getByRole('button',{name:'Save results and get recommendations'}).click();await openCompletedPlanResult()
  let data=(await api('bootstrap')).data;assert.equal(data.results.length,2);assert.equal(data.results[0].id,first.id);assert.equal(new Set(data.snapshot.dimensions.map(d=>d.key)).size,5);passed('second run keeps original baseline and unique profile axes')
+ // Use an isolated context so the real service worker cannot bypass route
+ // interception. The main journey keeps its worker and private-cache checks.
+ const recoveryContext=await browser.newContext({storageState:await context.storageState(),serviceWorkers:'block',viewport:{width:390,height:844}})
+ const recoveryPage=await recoveryContext.newPage()
+ recoveryPage.on('pageerror',capturePageError)
+ try {
+  for (const body of ['{"account":', '{"error":"SERVICE_UNAVAILABLE"}', '{"account":null}']) {
+   let intercepted=0
+   await recoveryPage.route('**/api/app/bootstrap', route => {
+    intercepted++
+    return route.fulfill({status:200,contentType:'application/json',body})
+   })
+   await recoveryPage.goto(origin+'/en/app/history')
+   const retry=recoveryPage.getByRole('button',{name:'Try again',exact:true})
+   await expect(retry).toBeVisible({timeout:15000})
+   assert.ok(intercepted>0,'invalid bootstrap response must actually reach the client')
+   await expect(recoveryPage.locator('main [role="alert"]')).toBeVisible()
+   await expect(recoveryPage.locator('.hh-account-menu')).toHaveCount(0)
+   await recoveryPage.unroute('**/api/app/bootstrap')
+   await retry.click()
+   await expect(recoveryPage.locator('.hh-mobile-app-nav')).toBeVisible({timeout:15000})
+   await expect(recoveryPage.locator('.hh-change')).toContainText('7 → 4')
+   assert.deepEqual(errors,[])
+  }
+ } finally { await recoveryContext.close() }
+ passed('invalid HTTP 200 bootstrap bodies show retry and recover without uncaught browser errors')
  await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await screenshotEvidence(page,{path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
  await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
  await enterTest('Personality Baseline');await expect(page.getByText('In general, not only today',{exact:false})).toBeVisible()
@@ -458,7 +478,7 @@ try {
   passed('Master creates synthetic client, attaches study link and recipient opens private cabinet')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
  const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();await expect(otherPage).toHaveURL(/\/en\/app$/,{timeout:15000});assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
- // The public Start free testing button must transfer the exact selection into an existing Google account.
+ // The public Start free monitoring button must transfer the exact selection into an existing Google account.
  // Open a fresh tab in the same authenticated cookie context: the onboarding page
  // can still have a queued router.replace('/en/app') after its nav becomes visible.
  // Reusing it races Playwright's navigation against that pending redirect in WebKit.
@@ -467,14 +487,14 @@ try {
  selectionPage.on('response',response=>{ if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST') selectionWrites.push(response.status()) })
  await selectionPage.goto(origin+'/en/client/tests')
  await expect(selectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
-  await expect(selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first()).toBeEnabled()
+  await expect(selectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first()).toBeEnabled()
  await chooseVisibleTest(selectionPage,'Personality Baseline')
  const selectionGuided=selectionPage.locator('#hh-test-customizer')
  if(!(await selectionGuided.isVisible()))await selectionPage.getByRole('button',{name:/Choose my own tests and filters/}).click()
  await selectionGuided.getByRole('button',{name:/Topics that matter/}).click()
  await selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true}).click()
  await expect(selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true})).toHaveAttribute('aria-pressed','true')
- await selectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
+ await selectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  await expect(selectionPage.locator('#my-tests-list')).toBeVisible()
  await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
@@ -486,14 +506,14 @@ try {
  assert.equal(new URL(selectionPage.url()).searchParams.get('plan'),selectedPlan.id)
  assert.deepEqual(selectionWrites,[201],'single selected battery creates exactly one plan, even with React StrictMode')
  await selectionPage.close()
- passed('public Start free testing preserves the selected test in authenticated personal Cabinet')
+ passed('public Start free monitoring preserves the selected test in authenticated personal Cabinet')
  // Re-selecting the same assessment should reuse the existing battery, not
  // leave the OAuth handoff query pending or create a second plan.
  const repeatSelectionPage=await other.newPage()
  await repeatSelectionPage.goto(origin+'/en/client/tests')
  await expect(repeatSelectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
  await chooseVisibleTest(repeatSelectionPage,'Personality Baseline')
- await repeatSelectionPage.getByRole('button',{name:'Start free testing',exact:true}).first().click()
+ await repeatSelectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(repeatSelectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  assert.equal(new URL(repeatSelectionPage.url()).searchParams.get('plan'),selectedPlan.id)
  assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.id,selectedPlan.id)
@@ -502,6 +522,10 @@ try {
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
  const storage=await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),caches:await Promise.all((await caches.keys()).map(async k=>(await(await caches.open(k)).keys()).map(r=>new URL(r.url).pathname)))}));assert.ok(!JSON.stringify(storage).match(/hh-app-auth|profile:first|\/api\/app|\/en\/app|\/ru\/app/));passed('no private browser storage or service-worker response cache')
  const exported=await api('export');assert.equal(exported.status,200);assert.ok(exported.data.runs.every(r=>r.accountId===first.accountId));assert.equal(exported.data.results.length,3);passed('own complete data export')
+ // Remember the active owner selection before the separate Google sign-in flow.
+ // It must still be present after the public selector adds another test.
+ const savedBeforeSignout=(await api('bootstrap')).data.activeTestPlan
+ assert.ok(savedBeforeSignout?.definitionIds?.length>0,'synthetic owner has a saved battery')
  await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
@@ -578,20 +602,24 @@ try {
  assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null)
  passed('Cabinet entry has a prominent Google sign-in and one integrated battery builder')
 
- await chooseVisibleTest(page,'Personality Baseline')
- await page.getByRole('button',{name:'Start free testing',exact:true}).first().click()
- // An existing in-progress battery must not be discarded silently.
- // Choose the newly requested set through the explicit replacement confirmation.
- await expect(page.getByRole('button',{name:'Review test filters'})).toBeVisible()
- await page.getByRole('button',{name:'Review test filters'}).click()
- await expect(page.locator('[data-pending-selection]')).toBeVisible()
- await page.locator('[data-pending-selection]').getByRole('button',{name:'Use new selection'}).click()
+ await chooseVisibleTest(page,'Monthly Life Profile')
+ await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+ // The public selector must ADD selected tests to the existing Google account,
+ // never discard earlier tests or display a replacement confirmation.
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  const reopenedPlan=(await api('bootstrap')).data.activeTestPlan
- assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'after replacement URL must identify saved plan')
+ assert.equal(reopenedPlan.id,savedBeforeSignout.id,'same original plan remains active')
+ assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'saved plan URL identifies the original account plan')
+ assert.ok(savedBeforeSignout.definitionIds.every(id=>reopenedPlan.definitionIds.includes(id)),
+   'every earlier saved test remains in the account')
+ assert.ok(reopenedPlan.definitionIds.length>savedBeforeSignout.definitionIds.length,
+   'the newly selected public test is added to My Tests')
+ assert.deepEqual(reopenedPlan.completedRunIds,savedBeforeSignout.completedRunIds,
+   'adding tests must not discard completed progress')
+ await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
  await expect(page.locator('#my-tests-list')).toBeVisible()
- await expect(page.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
- passed('public test selection starts Google authentication and opens account test battery')
+ await expect(page.getByRole('heading',{name:'Monthly Life Profile',exact:true})).toBeVisible()
+ passed('public test selection adds new tests without replacing the previous account battery')
  // The account shows the entire saved selection immediately, with a direct
  // remove control per row. Removing does not remove previous saved results.
  const beforeRemove=(await api('bootstrap')).data

@@ -3,6 +3,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Check, ShieldCheck } from "lucide-react";
 import type { Locale } from "@/data/remedies";
+import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import styles from "./core-service-detail.module.css";
 
 export type DetailKind = "dao" | "alchemy" | "hypnotherapy";
@@ -149,6 +150,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
         </div>
         <div className={styles.photo}><Image src={t.image} alt="" fill priority sizes="(max-width: 760px) 100vw, 38vw" /></div>
       </section>
+      <ServiceVideoShowcase topic={kind === "dao" ? "overview" : kind} locale={locale} id="service-video" />
       <section className={styles.outcomes} aria-labelledby="core-service-process-heading">
         <h2 id="core-service-process-heading">{t.sectionsTitle}</h2>
         <div className={styles.items}>

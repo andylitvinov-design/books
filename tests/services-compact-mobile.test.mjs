@@ -11,8 +11,8 @@ test("three free entrances plus two personal services retain all original local 
   const css = read("components/services-solutions.module.css");
   const hero = read("components/services-conversion-hero.tsx");
   assert.match(page, /<ServicesSolutions locale=/);
-  assert.match(ui, /coreServiceOffers\(locale\)\.filter/);
-  assert.match(ui, /personalOffers\.map/);
+  assert.match(ui, /allOffers\.filter/);
+  assert.match(ui, /visibleOffers\.map/);
   assert.match(page, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   for (const key of ["situation","dao","alchemy","hypnotherapy"])
     assert.ok(offers.includes('id: "' + key + '"'), key);
@@ -30,10 +30,11 @@ test("three free entrances plus two personal services retain all original local 
   assert.match(css, /min-height:44px/);
 });
 
-test("homepage reuses exact four offers and keeps tests/Academy below, without duplicate personal offer", () => {
+test("homepage restores photo-left four services while keeping tests and Academy", () => {
   const home = read("components/holistic-house-home.tsx");
   const css = read("app/holistic-house-home.css");
-  assert.match(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
+  assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
+  assert.match(read("components/services-solutions.tsx"), /isHome \? allOffers : personalOffers/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.match(home, /event="self_check_start"/);

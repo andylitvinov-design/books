@@ -16,8 +16,10 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   assert.match(explorer, /embedded \? styles\.embedded/)
   assert.match(styles, /\.explorer \.battery\{position:static/)
   assert.match(styles, /\.customizer\[hidden\]\{display:none/)
-  assert.match(explorer, /\[customizeOpen, setCustomizeOpen\] = useState\(false\)/)
-  assert.match(explorer, /\[activeFilterGroup, setActiveFilterGroup\] = useState\(null\)/)
+  assert.match(explorer, /openFiltersInitially = false/)
+  assert.match(explorer, /initialFilterGroup = null/)
+  assert.match(explorer, /\[customizeOpen, setCustomizeOpen\] = useState\(Boolean\(openFiltersInitially\)\)/)
+  assert.match(explorer, /\[activeFilterGroup, setActiveFilterGroup\] = useState\(initialFilterGroup\)/)
   assert.match(explorer, /onStart\(activeBattery, \{/)
   assert.match(explorer, /aria-expanded=\{customizeOpen\}/)
   assert.match(explorer, /showAll \? visible : visible\.slice\(0, 8\)/)
@@ -145,4 +147,18 @@ test('Client lead block offers local choice and pre-fills existing reviewed enqu
   assert.match(invite, /Nothing is sent until you confirm it in WhatsApp/)
   assert.match(css, /background:radial-gradient/)
   assert.match(css, /@media\(max-width:600px\)/)
+})
+
+test('signed-in and full database test selector use the same monitoring CTA as the easy pre-login picker', () => {
+  const full = read('components/app/test-explorer.jsx')
+  const simple = read('components/app/simple-test-picker.jsx')
+  for (const label of [
+    'Start free monitoring',
+    'Начать бесплатный мониторинг',
+    'Iniciar monitoreo gratuito',
+  ]) {
+    assert.ok(full.includes(label), 'Full explorer: ' + label)
+    assert.ok(simple.includes(label), 'Simple explorer: ' + label)
+  }
+  assert.doesNotMatch(full, /Start free testing|Пройти тестирование бесплатно|Comenzar pruebas gratuitas/)
 })

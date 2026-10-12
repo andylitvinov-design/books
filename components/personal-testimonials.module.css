@@ -100,7 +100,7 @@
 }
 .videoItem :global(.site-video-caption) { padding: 13px 15px 12px; }
 .videoItem :global(.site-video-title) { font-size: 20px; }
-.videoItem :global(.site-video-poster-title) { font-size: 16px; }
+.videoItem :global(.site-video-poster-title) { display: none; } /* Title appears once in the caption, not twice over the real still. */
 .videoItem :global(.site-video-actions) { margin-top: 8px; }
 .disclaimer {
   margin: 18px 0 0;

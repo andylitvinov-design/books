@@ -30,18 +30,18 @@ export function ConsultationTextImport({ remedies, onApply, uiLocale = 'ru' }) {
     if (parsed.items.length || parsed.patientName || parsed.dateIssued || parsed.generalInstructions) onApply(parsed)
   }
 
-  return <section className="consultation-text-import">
-    <div className="consultation-text-import-head">
-      <strong>{labels.title}</strong>
-      <span>{labels.hint}</span>
+  return <details className="consultation-text-import">
+    <summary><strong>{labels.title}</strong><span>{ru ? 'Необязательно · вставить список' : 'Optional · paste a list'}</span></summary>
+    <div className="consultation-text-import-content">
+      <p>{labels.hint}</p>
+      <div className="consultation-text-import-row">
+        <textarea aria-label={labels.title} rows={2} maxLength={30000} value={text} onChange={(event) => { setText(event.target.value); setPreview(null) }} placeholder={labels.placeholder} />
+        <button type="button" disabled={!text.trim()} onClick={run}>{labels.parse}</button>
+      </div>
+      {preview && <div className="consultation-text-import-status" role="status">
+        <span>{labels.found}: {preview.items.length}</span>
+        {preview.warnings.length > 0 && <span>{labels.warning}: {preview.warnings.length}</span>}
+      </div>}
     </div>
-    <div className="consultation-text-import-row">
-      <textarea aria-label={labels.title} rows={2} maxLength={30000} value={text} onChange={(event) => { setText(event.target.value); setPreview(null) }} placeholder={labels.placeholder} />
-      <button type="button" disabled={!text.trim()} onClick={run}>{labels.parse}</button>
-    </div>
-    {preview && <div className="consultation-text-import-status" role="status">
-      <span>{labels.found}: {preview.items.length}</span>
-      {preview.warnings.length > 0 && <span>{labels.warning}: {preview.warnings.length}</span>}
-    </div>}
-  </section>
+  </details>
 }

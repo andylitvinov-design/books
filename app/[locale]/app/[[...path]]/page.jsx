@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import AppWorkspace from '@/components/app/app-workspace'
 import './workspace.css'
+import './assessment-dashboard.css'
 import '@/components/app/psi-monitoring.css'
 import '@/components/app/refinements.css'
 export const dynamic = 'force-dynamic'
