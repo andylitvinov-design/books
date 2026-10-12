@@ -111,6 +111,6 @@ test("every site lead surface uses structured service/request WhatsApp links, ne
 
 test("consultation choices do not duplicate the Request label in prepared WhatsApp text", () => {
   const capture = read("components/consultation-choice-capture.tsx");
-  assert.doesNotMatch(capture, /serviceMessages:[\\s\\S]*?Request: I would like to book/);
-  assert.doesNotMatch(capture, /serviceMessages:[\\s\\S]*?Запрос: хочу записаться/);
+  assert.doesNotMatch(capture, /serviceMessages:[\s\S]*?Request: I would like to book/);
+  assert.doesNotMatch(capture, /serviceMessages:[\s\S]*?Запрос: хочу записаться/);
 });
