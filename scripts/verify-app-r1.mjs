@@ -153,6 +153,30 @@ async function savedClick(button){
  await expect(page.getByRole('status')).toHaveText('Saved securely')
 }
 async function answerCurrent(value){await savedClick(page.locator('.hh-scale').getByRole('button',{name:String(value),exact:true}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
+async function goBackAndResumeCurrentDraft(){
+ const previous=new URL(page.url()),runId=previous.pathname.split('/').at(-1),planId=previous.searchParams.get('plan')
+ assert.match(runId,/^[\da-f-]{36}$/i);assert.ok(planId)
+ const before=await api('runs/'+runId);assert.equal(before.status,200)
+ assert.ok(Object.values(before.data.answers).includes(7),'first answer must be acknowledged before browser Back')
+ // Exercise the browser history action itself, without page.goto/retry-click
+ // or a mocked route. The server still owns the same in-progress draft.
+ await page.goBack()
+ await expect(page).toHaveURL(origin+'/en/app/tests?plan='+encodeURIComponent(planId))
+ // Do not use ready() here: its error-recovery reload could repair a broken
+ // history restoration and conceal the behavior this check must exercise.
+ await expect(page.locator((await page.evaluate(()=>innerWidth<=760))?'.hh-mobile-app-nav':'.hh-nav')).toBeVisible()
+ await page.waitForLoadState('networkidle')
+ const row=page.locator('article').filter({has:page.getByRole('heading',{name:'Current State Check',exact:true})}).filter({has:page.getByRole('button',{name:/^(Start test|Continue test)/})}).first()
+ const resume=row.getByRole('button',{name:/^(Start test|Continue test)/})
+ await expect(resume).toBeEnabled();await resume.click()
+ await expect(page).toHaveURL(origin+'/en/app/runs/'+runId+'?mode=quick&plan='+encodeURIComponent(planId))
+ await expect(page.locator('.hh-runner')).toBeVisible()
+ await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
+ await expect(page.locator('.hh-runner--guided .hh-runner-question').getByRole('heading',{name:'How much energy and inner support do you feel right now?'})).toBeVisible()
+ const after=await api('runs/'+runId);assert.equal(after.status,200)
+ assert.deepEqual(after.data.answers,before.data.answers)
+ passed('real browser Back returns to committed plan; resume opens same draft with saved answer and question')
+}
 async function saveAndExit(){
  await page.getByRole('button',{name:'Save and exit'}).click()
  // Do not cancel the in-flight save with a scripted page.goto. Wait for the app's own navigation.
@@ -431,7 +455,7 @@ try {
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
  await screenshotEvidence(page,{path:output+'/current-state-runner.png',fullPage:true})
- await answerCurrent(7);await saveAndExit()
+ await answerCurrent(7);await goBackAndResumeCurrentDraft();await saveAndExit()
  await page.reload();await ready();await enterTest();await expect(page.getByRole('heading',{name:'How much energy and inner support do you feel right now?'})).toBeVisible();passed('saved answers and progress resume after reload')
  for(const v of[3,6,8,5])await answerCurrent(v)
  await page.getByText('Add optional context',{exact:true}).click();await page.getByLabel('Anything else you want to note?').fill('Synthetic private context, not a real person.');await page.getByLabel('What changed or seems to trigger this?').fill('Synthetic trigger.');await page.getByLabel('What would you like to change?').fill('Synthetic desired change.')
