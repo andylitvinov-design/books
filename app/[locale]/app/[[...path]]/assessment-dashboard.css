@@ -56,3 +56,83 @@
  .hh-app .hh-insights-test-card h2{font-size:1.01rem!important}
  .hh-app .hh-insights-date-range label{width:100%;justify-content:space-between}
 }
+
+
+/* Insights cockpit v2: gauge-first, large readable controls, without generic score summaries. */
+.hh-app .hh-insights-period{
+  display:block;width:100%;min-width:0;border:1px solid #d6e1d7;border-radius:17px;
+  padding:11px 14px 12px;margin:10px 0 15px;background:linear-gradient(145deg,#f4f8f3,#fffaf5)
+}
+.hh-app .hh-insights-period legend{
+  padding:0 7px;color:#436a57;font-size:.9rem;line-height:1.4;font-weight:800
+}
+.hh-insights-period-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.hh-app .hh-insights-period-buttons button{
+  min-height:40px!important;padding:8px 13px!important;
+  font-size:.87rem!important;line-height:1.2!important
+}
+.hh-insights-custom-dates{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px
+}
+.hh-insights-custom-dates label{display:grid;gap:5px;color:#55594f;font-size:.9rem;font-weight:730;min-width:0}
+.hh-insights-custom-dates input{
+  min-width:0;width:100%;min-height:43px;padding:7px 10px;border:1px solid #b9c9bd;
+  background:#fffefa;border-radius:10px;font-size:1rem;color:#3c3a35
+}
+.hh-insights-custom-dates input:focus-visible{outline:3px solid #6b9a86;outline-offset:2px}
+.hh-app .hh-insights-period-note{
+  font-size:.85rem!important;line-height:1.42!important;color:#6b7068;margin:10px 1px 0!important
+}
+.hh-app .hh-insights-period-alert{
+  font-size:.91rem!important;color:#9a473e;margin:10px 0 0!important;font-weight:700
+}
+.hh-app .hh-insights-dash-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,370px),1fr));gap:12px!important
+}
+.hh-app .hh-insights-dash-card{
+  min-width:0;overflow:hidden;border-radius:18px!important;
+  border-color:#d8e0d8!important;background:#fffefa!important
+}
+.hh-app .hh-insights-dash-card .hh-insights-test-link{
+  display:block!important;width:100%;padding:17px 17px 15px!important
+}
+.hh-insights-dash-body{display:grid;grid-template-columns:133px minmax(0,1fr);gap:13px;align-items:center;min-width:0}
+.hh-insights-dial{min-width:0;display:grid;place-items:center}
+.hh-insights-dash-info{min-width:0;display:flex;flex-direction:column;align-items:start;gap:7px}
+.hh-insights-dash-info time{font-size:.79rem;line-height:1.35;color:#87786e;font-weight:680}
+.hh-app .hh-insights-dash-card .hh-insights-dash-info h2{
+  margin:0!important;font:500 clamp(1.08rem,2vw,1.3rem)/1.2 Georgia,serif!important;
+  letter-spacing:-.015em;color:#3d3630
+}
+.hh-app .hh-insights-dash-construct{
+  margin:0!important;font-size:.87rem!important;line-height:1.32!important;
+  color:#59675f;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden
+}
+.hh-insights-dash-info [data-gauge-trend]{max-width:100%;white-space:normal}
+.hh-insights-extra-measures{font-size:.78rem;line-height:1.3;color:#756b61;font-weight:680}
+.hh-insights-dash-open{
+  display:inline-flex;align-items:center;gap:8px;margin-top:1px;
+  font-size:.89rem;line-height:1.3;color:#23654f;font-weight:850
+}
+.hh-insights-dash-open span{font-size:1.13rem}
+.hh-app .hh-insights-dash-card .hh-insights-history{padding:0 17px}
+.hh-app .hh-insights-dash-card .hh-insights-history summary{min-height:41px}
+.hh-app .hh-insights-dash-card .hh-insights-test-link:hover{background:#f2f8f2!important}
+.hh-app .hh-insights-dash-card .hh-insights-test-link:focus-visible{outline:3px solid #367c67;outline-offset:-4px}
+@media(max-width:620px){
+  .hh-app .hh-insights-period{padding:9px 11px 11px}
+  .hh-app .hh-insights-period-buttons button{min-height:39px!important;font-size:.83rem!important;padding:6px 11px!important}
+  .hh-app .hh-insights-dash-card .hh-insights-test-link{padding:14px 12px!important}
+  .hh-insights-dash-body{grid-template-columns:118px minmax(0,1fr);gap:11px}
+  .hh-insights-dial [data-assessment-gauge]{width:116px}
+  .hh-app .hh-insights-dash-card .hh-insights-dash-info h2{font-size:1.15rem!important}
+}
+@media(max-width:400px){
+  .hh-insights-custom-dates{grid-template-columns:1fr}
+  .hh-insights-dash-body{grid-template-columns:103px minmax(0,1fr);gap:8px}
+  .hh-insights-dial [data-assessment-gauge]{width:102px}
+  .hh-app .hh-insights-dash-card .hh-insights-test-link{padding:12px 10px!important}
+  .hh-app .hh-insights-dash-card .hh-insights-dash-info h2{font-size:1.06rem!important}
+  .hh-app .hh-insights-dash-construct{font-size:.83rem!important}
+  .hh-insights-dash-open{font-size:.83rem}
+}
