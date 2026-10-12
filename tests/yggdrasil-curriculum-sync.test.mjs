@@ -26,6 +26,14 @@ test("Yggdrasil full source parity", async () => {
       assert.ok(setting.effect);
     }
     for (const video of step.video?.videos ?? []) {
+      if (video.availability === "unavailable") {
+        assert.ok(video.title);
+        assert.ok(video.label);
+        assert.equal(video.url, undefined);
+        assert.equal(video.youtubeId, undefined);
+        assert.equal(video.posterUrl, undefined);
+        continue;
+      }
       assert.ok(video.url.startsWith("https://"));
       assert.ok(video.youtubeId);
       assert.ok(video.posterUrl.includes(video.youtubeId));

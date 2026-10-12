@@ -21,7 +21,7 @@ Repair public video playback while keeping cabinet, report, API and other securi
 - Added a client CSP-boundary reload for navigation between public, Tantra-media, private, admin-video and API policy classes.
 - Corrected the three library destinations above.
 - Replaced the known private `FxOE-cEAnP4` player with an explicit unavailable state. Its title and position remain visible, but no iframe or Play action is emitted.
-- Added static regression coverage for the allowlist, policy boundary, About's HeyGen renderer and destinations.
+- Added static regression coverage for the allowlist, policy boundary, About's HeyGen renderer and destinations. The existing source-parity test now explicitly accepts the documented unavailable-recording state only when all playable-provider fields are absent.
 
 ## Verification
 
