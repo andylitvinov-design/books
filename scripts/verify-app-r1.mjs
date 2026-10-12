@@ -130,7 +130,97 @@ async function openCompletedPlanResult(){
  await resultLink.click()
  await expect(page).toHaveURL(/\/results\//,{timeout:20000})
 }
+async function assertPublicViewportFits(target,label){
+ const width=await target.evaluate(()=>window.innerWidth)
+ const scroll=await target.evaluate(()=>document.documentElement.scrollWidth)
+ assert.ok(scroll<=width+1,`Public overflow: ${label} (${scroll} > ${width})`)
+}
+async function verifyPublicServiceConversionJourneys(){
+ const publicContext=await browser.newContext({viewport:{width:390,height:844}})
+ const publicPage=await publicContext.newPage()
+ const publicErrors=[]
+ publicPage.on('pageerror',error=>publicErrors.push(error.message))
+ const services=[
+  ['dao-health-profile','dao',{en:'Free Wu Xing Resource Profile',ru:'Бесплатный профиль ресурсов У-Син'}],
+  ['alchemy-of-soul','alchemy',{en:'Alchemy of the Soul',ru:'Алхимия души'}],
+  ['hypnotherapy-course','hypnotherapy',{en:'Guided Imagery Hypnotherapy',ru:'Курс гипнотерапии'}],
+ ]
+ for(const locale of ['en','ru']){
+  for(const [slug,kind,names] of services){
+   for(const width of [320,360,390,1280]){
+    await publicPage.setViewportSize({width,height:844})
+    await publicPage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
+    await expect(publicPage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    await assertPublicViewportFits(publicPage,locale+'/'+slug+'/'+width)
+    if(width===390||width===1280)await publicPage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
+    if(width!==390)continue
+    const capture=publicPage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
+    await capture.scrollIntoViewIfNeeded()
+    await expect(capture).toBeVisible({timeout:30000})
+    const cta=capture.locator('a[data-contact-channel="whatsapp"]')
+    await expect(cta).toBeVisible()
+    const href=await cta.getAttribute('href')
+    const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
+    assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
+    const alternative=capture.locator('details')
+    assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
+    await alternative.locator('summary').click()
+    await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+   }
+  }
+ }
+ for(const locale of ['en','ru']){
+  const copy=locale==='ru'
+   ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
+   : {ready:'Your answers are ready to copy. Nothing has been sent.',copied:'Copied',fallback:'Select and copy the text below'}
+  for(const width of [320,360,390,1280]){
+   await publicPage.setViewportSize({width,height:844})
+   await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+   const intake=publicPage.locator('[data-free-drawing-intake]')
+   await expect(intake).toBeVisible({timeout:30000})
+   await assertPublicViewportFits(publicPage,locale+'/free-review/'+width)
+   if(width===390||width===1280)await publicPage.screenshot({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})
+  }
+  await publicPage.setViewportSize({width:390,height:844})
+  await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+  await publicPage.evaluate(()=>{
+   document.documentElement.dataset.analyticsConsent='granted'
+   window.__publicAcquisition=[]
+   window.addEventListener('holistic-house:acquisition',event=>window.__publicAcquisition.push(event.detail))
+  })
+  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboard=value}}}))
+  const intake=publicPage.locator('[data-free-drawing-intake]')
+  const unique='Synthetic public form value — '+locale
+  await intake.locator('textarea').nth(0).fill(unique)
+  await intake.locator('textarea').nth(1).fill('Synthetic goal — '+locale)
+  await intake.locator('form button[type="submit"]').click()
+  const ready=intake.locator('[role="region"]')
+  await expect(ready).toBeVisible()
+  await expect(ready.getByRole('heading')).toHaveText(copy.ready)
+  assert.equal(await ready.getAttribute('aria-live'),'polite')
+  assert.equal(await publicPage.evaluate(()=>document.activeElement?.getAttribute('role')),'region')
+  const whatsapp=ready.locator('a[data-contact-channel="whatsapp"]')
+  const whatsappHref=await whatsapp.getAttribute('href')
+  assert.ok(!whatsappHref.includes(unique),'Answers never enter WhatsApp URL')
+  assert.ok(!publicPage.url().includes(unique),'Answers never enter page URL')
+  await ready.getByRole('button').click()
+  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
+  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('synthetic clipboard denial')}}}))
+  await ready.getByRole('button').click()
+  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.fallback)
+  const events=await publicPage.evaluate(()=>window.__publicAcquisition)
+  assert.ok(events.some(item=>item.event==='free_questionnaire_started'))
+  assert.ok(events.some(item=>item.event==='free_questionnaire_prepared'))
+  assert.ok(!JSON.stringify(events).includes(unique),'Analytics event metadata never contains answers')
+  await publicPage.screenshot({path:output+'/free-review-'+locale+'-prepared-390.png',fullPage:false})
+ }
+ assert.deepEqual(publicErrors,[])
+ await publicContext.close()
+ passed('public EN/RU service conversion journeys: mobile/desktop layout, hydrated same-service footer, disclosure, private free-review handoff and screenshots')
+}
+
 try {
+ await verifyPublicServiceConversionJourneys()
  // Public test picker must work anonymously before OAuth.
  const guestPickerContext=await browser.newContext({viewport:{width:390,height:844}})
  const guestPickerPage=await guestPickerContext.newPage()
