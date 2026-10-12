@@ -170,9 +170,9 @@ async function verifyPublicServiceConversionJourneys(){
    await servicePage.close()
   }
  }
- const publicPage=await publicContext.newPage()
- publicPage.on('pageerror',error=>publicErrors.push(error.message))
  for(const locale of ['en','ru']){
+  const publicPage=await publicContext.newPage()
+  publicPage.on('pageerror',error=>publicErrors.push(error.message))
   const copy=locale==='ru'
    ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
    : {ready:'Your answers are ready to copy. Nothing has been sent.',copied:'Copied',fallback:'Select and copy the text below'}
@@ -219,6 +219,7 @@ async function verifyPublicServiceConversionJourneys(){
   assert.ok(events.some(item=>item.event==='free_questionnaire_prepared'))
   assert.ok(!JSON.stringify(events).includes(unique),'Analytics event metadata never contains answers')
   await publicPage.screenshot({path:output+'/free-review-'+locale+'-prepared-390.png',fullPage:false})
+  await publicPage.close()
  }
  assert.deepEqual(publicErrors,[])
  await publicContext.close()
