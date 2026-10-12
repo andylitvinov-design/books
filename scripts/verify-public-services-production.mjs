@@ -90,7 +90,7 @@ try {
         if (width === 390) {
           const footerCta = main.locator('a[data-contact-channel="whatsapp"]').last();
           await footerCta.scrollIntoViewIfNeeded();
-          const alternative = main.locator("details");
+          const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
           assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
           await alternative.locator("summary").click();
           await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
