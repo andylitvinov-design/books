@@ -45,6 +45,16 @@ The production repository factory deliberately has no database interpretation lo
 
 ## Open completion checklist
 
+### Completion follow-up (release-gated)
+
+The day-21 archive now has a factual three-week review, saved optional check-in observations, exact helpful-lesson links and an explicitly consented continuation plan of one to three available completed practices, or a pause. The plan stays inside the existing encrypted course state; it does not create a new cycle, alter archived sessions or move the original completion date. Completed and skipped days remain distinct, including an all-skipped course.
+
+Optional reassessment opens the exact original form through the existing questionnaire runner only after explicit confirmation. It does not automatically schedule a retest or assume that day21 is an appropriate interval. Later owner-bound results are compared only after the course completion timestamp and for the same registered instrument identity. Prepared meanings are required for numeric deltas; no health percentage, clinical-change threshold or attribution to the course is inferred. The original profile remains pinned. Missing observations are not zero.
+
+Reloading and editing a check-in preserves untouched saved low-energy/short-practice choices. Successfully submitted fields cease to be dirty, while failed saves retain the draft. A new local date requires fresh observations; a pause hides editing without deleting notes. History includes saved check-ins as well as notes and structured feedback. Exact replay now checks the saved variant and track in addition to ID/version.
+
+Local evidence:1152 unit,170 app,62 focused pure,17 synthetic repository,27 parent UI and9 completion UI checks pass. New actual PostgreSQL completion/continuation and Chromium/WebKit terminal scenarios require CI on the published follow-up commit. The provider-neutral AI proposal is separate from this completion patch; no provider is connected and the broader free-text requirement remains open.
+
 - Structured helpfulness/difficulty/comfort adaptation is implemented with explicit opt-in. The local phrase helper additionally supports a few ordinary exercise preferences, with a separate preview and confirmation. This is not general interpretation of free comments/reflections, AI-generated personalization or a safety monitor. The broader free-text requirement remains only partially covered pending explicit acceptance of this bounded scope or a separately reviewed implementation.
 - Connect and verify the released exact-key/version/hash database interpretation loader. No held interpretation-release source or payload is copied here.
 - Complete exact-head Chromium/WebKit acceptance and inspect the artifacts. The mocked-DTO course context blocks service workers so Playwright can intercept its fixtures; it explicitly excludes SW/PWA acceptance. A real SW-enabled course journey remains required after loader/database release.

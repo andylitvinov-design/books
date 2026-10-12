@@ -119,3 +119,24 @@ test('inactive account is denied by repository and restricted SQL; existing14-da
   assert.equal((await rawAs(a,'hh_app_backend',db=>db.query('select id from app_private.growth_course_daily_21 where account_id=$1',[A]))).rowCount,0)
  }finally{const restore=await adminClient();try{await restore.query("update app.accounts set status='active' where id=$1",[A])}finally{await restore.end()}}
 })
+
+test('actual21-day completion and consented continuation preserve encrypted archive and serialize repeated saves',async()=>{
+ const archived=await repo.exportData(a),start=Date.parse(archived.journey.updatedAt)
+ let timestamp=new Date(start+86400000).toISOString()
+ const completing=createCourse21Repository(config,{enabled:true,loadReports,now:()=>timestamp})
+ const send=body=>completing.command(a,{operationId:randomUUID(),...body})
+ view=await completing.read(a)
+ for(let day=view.today.day;day<=21;day++){
+  timestamp=new Date(start+day*86400000).toISOString()
+  view=await send({action:'check-in',expectedRevision:view.course.revision,skip:true})
+  view=await send({action:'finish-day',expectedRevision:view.course.revision,day,lessonId:view.today.lesson.id,status:'completed',feedback:{},applyFeedback:false,savePrivateText:false})
+ }
+ assert.equal(view.course.status,'finished');assert.equal(view.completion.completedDays,21);assert.equal(view.completion.journal.entryDays,1)
+ const snapshot=await completing.exportData(a)
+ await assert.rejects(send({action:'continuation',expectedRevision:view.course.revision,practiceDays:[1],pace:'own-pace',consent:false}),{code:'CONTINUATION_CONSENT_REQUIRED'})
+ const body={action:'continuation',operationId:randomUUID(),expectedRevision:view.course.revision,practiceDays:[1,21],pace:'occasional',consent:true}
+ view=await send(body);assert.equal(view.completion.continuationPlan.pace,'occasional');assert.equal((await send(body)).course.revision,view.course.revision)
+ const after=await completing.exportData(a);assert.deepEqual(after.source,snapshot.source);assert.deepEqual(after.journey.sessions,snapshot.journey.sessions)
+ assert.equal(after.journey.continuationPlan.consent,true);assert.equal(view.completion.finishedAt,snapshot.journey.sessions[21].at)
+ assert.equal((await completing.read(b)).course,null)
+})

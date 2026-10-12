@@ -5,7 +5,8 @@ import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {assertIsolated} from '../tests/helpers/app-db-setup.mjs'
 import {courseOutline21,lessonFor21,COURSE_CONTENT_21_VERSION} from '../lib/inner-growth/lesson-library-21.js'
-import {createCourseJourney} from '../lib/inner-growth/course-progression-21.js'
+import {createCourseJourney,checkInBeforeLesson,dailyLesson,finishCourseDay} from '../lib/inner-growth/course-progression-21.js'
+import {courseCompletion21,saveCourseContinuation} from '../lib/inner-growth/course-completion-21.js'
 assertIsolated()
 const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
 assert.match(origin,/^http:\/\/(127\.0\.0\.1|localhost):\d+$/)
@@ -26,6 +27,7 @@ const rows=['mood','tension','clarity','recovery','connection','energy','load','
 }))
 const profile={status:'ready-to-review',rows,priorityScaleIds:rows.slice(0,7).map(r=>r.id),minimumChoices:3,maximumChoices:5}
 const proposal={available:true,status:'ready-to-review',profile,source:{courseRevision:3,selectedForms:[]},consentVersion:'synthetic-consent-v1',activationToken:'synthetic-preview-token'}
+let terminalJourney=null
 let locale='en',fixture={available:true,enrollmentReady:true,course:null},conflict=false
 const syntheticJourney=createCourseJourney({id:'synthetic-outline',choices:{confirmed:true,durationDays:21,topics:[{scaleId:rows[0].id,track:'inner_support'}]},consent:true,timeZone:'UTC',contentVersion:COURSE_CONTENT_21_VERSION,now:'2026-10-12T12:00:00Z'})
 const r3={course:{id:'synthetic-r3-course',stage:3,revision:3,testKeys:['hh-weekly-pulse'],scaleKeys:[],focusTags:[],goals:[]},assessments:{selectedTests:[],pendingSelected:[]}}
@@ -36,6 +38,10 @@ await page.route('**/api/app/course**',async route=>{
  const body=route.request().method()==='POST'?route.request().postDataJSON():null
  if(body){posts.push(body);if(conflict){conflict=false;await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'REVISION_CONFLICT'})});return}
   if(body.action==='preferences')fixture={...fixture,preferences:{length:body.length,alternativeRequested:body.alternativeRequested,stopOffer:body.stopOffer},today:{...fixture.today,lesson:lessonFor21('inner_support',fixture.today.day,locale,body.alternativeRequested?'grounding':body.length)}}
+  if(body.action==='check-in')fixture={...fixture,today:{...fixture.today,status:'ready',checkin:{...body,day:fixture.today.day,skipped:body.skip},localDate:'2026-10-12',lesson:lessonFor21('inner_support',fixture.today.day,locale,body.energy==='low'||body.feelingChange==='worse'||body.availableTime==='quick'?'quick':'standard')}}
+  if(body.action==='pause')fixture={...fixture,course:{...fixture.course,status:'paused'},today:{...fixture.today,status:'paused',lesson:null}}
+  if(body.action==='finish-day'&&body.day===21)fixture=completedView(locale)
+  if(body.action==='continuation'){terminalJourney=saveCourseContinuation(terminalJourney,{...body,now:'2026-11-03T12:00:00Z',expectedRevision:terminalJourney.revision,locale,lessonFor:lessonFor21});fixture={...fixture,course:{...fixture.course,revision:terminalJourney.revision},completion:courseCompletion21(terminalJourney,{locale,lessonFor:lessonFor21})}}
   if(body.action==='activate')fixture={available:true,course,today:{status:'check-in-required',day:1,week:1,completedDays:0,skippedDays:0},history:[],profile}
  }
  const value=path==='/api/app/course'?r3:path.endsWith('/preview')?proposal:{...fixture,outline:fixture.outline||courseOutline21(locale)}
@@ -45,6 +51,12 @@ await page.route('**/api/app/course**',async route=>{
 const passed=label=>{checks.push(label);console.log('PASS '+label)}
 async function show(lang,view){locale=lang;fixture=view;await page.goto(origin+'/'+lang+'/app/course');await expect(page.locator('[data-my-course]')).toBeVisible({timeout:30000});await page.waitForLoadState('networkidle')}
 function daily(lang,day=15){return {available:true,course,profile,today:{status:'ready',day,week:Math.ceil(day/7),completedDays:day-1,skippedDays:0,lesson:lessonFor21('inner_support',day,lang)},history:[{day:1,status:'completed',localDate:'2026-10-12',feedbackApplied:false,feedback:{helpfulness:'helpful',difficulty:'manageable',comfort:'comfortable',comment:'SYNTHETIC SAVED NOTE',reflectionAnswer:'SYNTHETIC SAVED REFLECTION'}}],outline:courseOutline21(lang,syntheticJourney),preferences:{length:'standard',alternativeRequested:false,stopOffer:false}}}
+function completedView(lang,skip=false){
+ let state=structuredClone(syntheticJourney)
+ for(let day=1;day<=21;day++){const now=new Date(Date.parse('2026-10-12T12:00:00Z')+(day-1)*86400000).toISOString();state=checkInBeforeLesson(state,{day,now,expectedRevision:state.revision,skip,wellbeing:day===1?0:6,energy:'usual'});const card=dailyLesson(state,{now,locale:lang,lessonFor:lessonFor21});state=finishCourseDay(state,{day,now,expectedRevision:state.revision,lessonFor:lessonFor21,locale:lang,lessonId:skip?null:card.lesson.id,status:skip?'skipped':'completed',feedback:skip?{}:{helpfulness:day===1?'helpful':'neutral'}})}
+ terminalJourney=state
+ return {available:true,course:{...course,status:'finished',revision:state.revision},profile,today:{status:'finished',day:null,completedDays:skip?0:21,skippedDays:skip?21:0},history:Object.values(state.sessions),outline:courseOutline21(lang,state),completion:courseCompletion21(state,{locale:lang,lessonFor:lessonFor21}),reassessment:{forms:[{definitionId:'synthetic-form',definitionKey:'hh-weekly-pulse',definitionVersion:'v1',instrumentLocale:'en',title:'Synthetic original questionnaire',repeatAvailable:true,status:'not-repeated',initialMeasurementAt:'2026-10-10T12:00:00Z',initialResultId:'synthetic-result',scales:[]}]}}
+}
 try{
  await page.goto(origin+'/en/app');await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
@@ -113,6 +125,18 @@ try{
  const sent=posts.at(-1);assert.equal(sent.action,'finish-day');assert.equal(sent.savePrivateText,false)
  assert.equal('comment' in sent.feedback,false);assert.equal('reflectionAnswer' in sent.feedback,false)
  passed('409 retains both drafts; unchecked private text omitted from POST')
+ await show('en',{...daily('en',1),today:{...daily('en',1).today,localDate:'2026-10-12',checkin:{wellbeing:2,energy:'low',feelingChange:'worse',availableTime:'quick',skipped:false}}})
+ await component.getByRole('button',{name:'Change today’s check-in',exact:true}).click();await expect(component.getByLabel('Available energy',{exact:true})).toHaveValue('low');await component.getByLabel('How are you feeling right now?',{exact:false}).fill('5');await component.getByRole('button',{name:'Save check-in and continue',exact:true}).click();await expect.poll(()=>posts.at(-1)?.wellbeing).toBe(5);assert.equal(posts.at(-1).energy,'low');assert.equal(posts.at(-1).availableTime,'quick')
+ await component.getByRole('button',{name:'Change today’s check-in',exact:true}).click();await component.getByRole('button',{name:'Pause course',exact:true}).click();await expect(component.getByRole('button',{name:'Save check-in and continue',exact:true})).toHaveCount(0)
+ passed('saved check-in partial edit preserves gentle choices; pause removes active editing')
+ await show('en',daily('en',21));await component.getByRole('button',{name:'Save completed learning day',exact:true}).click();await expect(component.locator('[data-course-completion-21]')).toBeVisible();passed('day21 finish opens factual completion instead of day22')
+ for(const lang of ['en','ru'])for(const width of [320,390,1280]){await page.setViewportSize({width,height:900});await show(lang,completedView(lang));const summary=component.locator('[data-course-completion-21]');await expect(summary).toBeVisible();await expect(summary.getByRole('button',{name:lang==='ru'?'Сохранить мой план':'Save my plan',exact:true})).toBeDisabled();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1),false);await page.screenshot({path:output+'/'+lang+'-finished-'+width+'.png',fullPage:true});passed(lang+' '+width+'px: finished summary/unchecked continuation without overflow')}
+ await show('en',completedView('en'));const completion=component.locator('[data-course-completion-21]');await completion.getByRole('checkbox').first().check();await completion.getByRole('checkbox',{name:'I agree to privately save these practice choices and this pace in my account.',exact:true}).check();await completion.getByRole('button',{name:'Save my plan',exact:true}).click();await expect(completion.locator('[data-course-saved-plan]')).toContainText('At my own pace');assert.equal(posts.at(-1).action,'continuation');assert.equal(posts.at(-1).consent,true);assert.equal(posts.at(-1).practiceDays.length,1)
+ await completion.getByRole('button',{name:'Review optional repeat: Synthetic original questionnaire',exact:true}).click();const beforeRepeat=posts.length;await completion.getByRole('button',{name:'Cancel',exact:true}).click();assert.equal(posts.length,beforeRepeat)
+ passed('continuation needs explicit consent; optional retest cancel has no effect')
+ await show('ru',completedView('ru',true));await expect(component.locator('[data-course-completion-21]')).toContainText('Необязательные наблюдения о самочувствии не сохранялись.');passed('all-skipped course has no invented completed practices or check-in scores')
+ let repeatBody=null;await page.route('**/api/app/runs',async route=>{repeatBody=route.request().postDataJSON();await route.fulfill({contentType:'application/json',body:JSON.stringify({id:'11111111-1111-4111-8111-111111111111'})})});await page.route('**/en/app/runs/11111111-1111-4111-8111-111111111111?mode=quick',route=>route.fulfill({contentType:'text/html',body:'<!doctype html><title>Synthetic exact-form navigation</title><p>Synthetic questionnaire route</p>'}))
+ await show('en',completedView('en'));await completion.getByRole('button',{name:'Review optional repeat: Synthetic original questionnaire',exact:true}).click();assert.equal(repeatBody,null);await completion.getByRole('button',{name:'Start this exact form',exact:true}).click();await expect(page).toHaveURL(/\/en\/app\/runs\/11111111-1111-4111-8111-111111111111\?mode=quick$/);assert.equal(repeatBody.definitionKey,'hh-weekly-pulse');assert.equal(repeatBody.definitionVersion,'v1');assert.equal(repeatBody.instrumentLocale,'en');passed('explicit optional repeat hands off exact original form and does not overwrite course')
  assert.deepEqual(pageErrors,[])
 }catch(error){
  await page.screenshot({path:output+'/failure.png',fullPage:true}).catch(()=>{})

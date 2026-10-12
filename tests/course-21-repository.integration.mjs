@@ -182,3 +182,38 @@ test('permission and loader identity/value tampering are hard failures, not clas
   assert.equal(s.rows.get(A).revision,v.course.revision);assert.equal(s.decrypt().journey.status,'active')
  }
 })
+
+test('current-date check-in survives read/edit; prior local date is not presented as current',async()=>{
+ const s=setup();let v=await s.daily();v=await s.command({action:'check-in',expectedRevision:v.course.revision,skip:false,wellbeing:0,energy:'low',feelingChange:'worse',availableTime:'quick'})
+ v=await s.repo.read(actor());assert.equal(v.today.checkin.wellbeing,0);assert.equal(v.today.checkin.energy,'low');assert.equal(v.today.checkin.availableTime,'quick')
+ assert.equal(v.today.lesson.variant,'quick');s.setNow('2026-10-13T12:00:00.000Z');v=await s.repo.read(actor());assert.equal(v.today.status,'check-in-required');assert.equal(v.today.checkin,null);assert.equal(v.today.localDate,'2026-10-13')
+})
+async function finishAll(s,{skip=false}={}){
+ let v=await s.daily()
+ for(let day=1;day<=21;day++){
+  s.setNow(new Date(Date.parse('2026-10-12T12:00:00.000Z')+(day-1)*86400000).toISOString())
+  v=await s.command({action:'check-in',expectedRevision:v.course.revision,skip:false,wellbeing:day===1?0:6,energy:'usual'})
+  v=await s.command({action:'finish-day',expectedRevision:v.course.revision,day,lessonId:skip?null:v.today.lesson.id,status:skip?'skipped':'completed',feedback:skip?{}:{helpfulness:day===1?'helpful':'neutral'},savePrivateText:false,applyFeedback:false})
+ }
+ return v
+}
+test('day21 summary, explicit continuation and later exact-form comparison preserve pinned baseline and history',async()=>{
+ const s=setup();let v=await finishAll(s);assert.equal(v.course.status,'finished');assert.equal(v.completion.completedDays,21);assert.equal(v.completion.subjectiveCheckins.initial.wellbeing,0)
+ assert.equal(v.history[0].checkin.wellbeing,0);assert.equal(v.completion.helpfulLessons[0].day,1);assert.equal(v.reassessment.forms[0].status,'not-repeated')
+ const baseline=s.decrypt().source,history=s.decrypt().journey.sessions,finishedAt=v.completion.finishedAt
+ await assert.rejects(s.command({action:'continuation',expectedRevision:v.course.revision,practiceDays:[1],pace:'own-pace',consent:false}),{code:'CONTINUATION_CONSENT_REQUIRED'})
+ const command={action:'continuation',operationId:randomUUID(),expectedRevision:v.course.revision,practiceDays:[1,21],pace:'own-pace',consent:true}
+ v=await s.command(command);assert.equal(v.completion.continuationPlan.practiceRefs.length,2);assert.equal(v.completion.continuationPlan.consent,true)
+ assert.equal((await s.command(command)).course.revision,v.course.revision);assert.deepEqual(s.decrypt().source,baseline);assert.deepEqual(s.decrypt().journey.sessions,history)
+ s.setNow('2026-11-03T12:00:00.000Z');const next=structuredClone(s.resultRows.get(A)[0]);next.id=randomUUID();next.measurement_at='2026-11-02T12:00:00.000Z'
+ const d=getAssessmentDefinition('hh-weekly-pulse');next.dimensions=scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,q.max]))).dimensions;s.resultRows.get(A).push(next)
+ v=await s.repo.read(actor());assert.equal(v.completion.finishedAt,finishedAt);assert.equal(v.reassessment.forms[0].status,'ready');assert.equal(v.reassessment.forms[0].latestResultId,next.id)
+ assert.equal(v.profile.rows[0].resultId,baseline.bindings[0].resultId);assert.equal(v.reassessment.forms[0].initialResultId,baseline.bindings[0].resultId)
+ s.setReports('error');v=await s.repo.read(actor());assert.equal(v.completion.completedDays,21);assert.equal(v.reassessment.forms[0].status,'interpretations-unavailable');assert.ok(v.reassessment.forms[0].scales.every(r=>r.change===null))
+})
+test('all-skipped course remains distinct from completed practice; rest is an explicit continuation choice',async()=>{
+ const s=setup();let v=await finishAll(s,{skip:true});assert.equal(v.completion.completedDays,0);assert.equal(v.completion.skippedDays,21);assert.equal(v.completion.completedLessons.length,0)
+ await assert.rejects(s.command({action:'continuation',expectedRevision:v.course.revision,practiceDays:[1],pace:'occasional',consent:true}),{code:'EXACT_COMPLETED_LESSON_REQUIRED'})
+ v=await s.command({action:'continuation',expectedRevision:v.course.revision,practiceDays:[],pace:'pause',consent:true});assert.equal(v.completion.continuationPlan.pace,'pause');assert.equal(v.course.status,'finished')
+ await assert.rejects(s.command({action:'check-in',expectedRevision:v.course.revision,skip:true}),{code:'DAY_NOT_AVAILABLE'})
+})

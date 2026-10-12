@@ -1,0 +1,55 @@
+.root{display:grid;gap:18px;min-width:0;color:#433d35;font-size:15px;line-height:1.6;overflow-wrap:anywhere}
+.root *{box-sizing:border-box}
+.root :is(h2,h3,h4,h5,p,ul,dl){margin:0}
+.root h2{font-size:clamp(24px,4vw,32px);line-height:1.25;letter-spacing:-.02em}
+.root h3{font-size:20px;line-height:1.35}
+.root h4{font-size:17px;line-height:1.4}
+.root h5{font-size:15px;line-height:1.5}
+.root a{color:#2c6653;text-decoration:underline;text-underline-offset:3px}
+.root button{appearance:none;font:inherit;font-weight:650;line-height:1.4;min-height:44px;max-width:100%;padding:10px 14px;border:1px solid #bfd1c4;border-radius:11px;background:#f4f8f1;color:#2b604e;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+.root button:hover:not(:disabled){background:#e8f0e3;border-color:#71967f}
+.root button:disabled{cursor:not-allowed;opacity:.55}
+.root :is(button,input,select,a,summary,[tabindex]):focus-visible{outline:3px solid #35775e;outline-offset:3px}
+.root input[type=checkbox]{appearance:auto;accent-color:#306650;width:20px;height:20px;min-width:20px;margin:2px 0 0}
+.root .primary{background:#326b56;color:#fff;border-color:#326b56}
+.root .primary:hover:not(:disabled){background:#275440}
+.hero,.card{display:grid;gap:15px;min-width:0;padding:clamp(17px,3vw,26px);border:1px solid #dfd8c8;border-radius:19px;background:#fffdf8}
+.hero{background:linear-gradient(120deg,#f3f7ed,#fffaf1)}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.1em;color:#3d705c}
+.small{font-size:13px;line-height:1.6;color:#665e54}
+.stats,.weeks,.readings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.stats>div,.weeks>li,.readings>div{min-width:0;padding:12px 14px;border:1px solid #e1dace;border-radius:12px;background:#faf9f3}
+.stats dt,.readings dt{font-size:13px;color:#665e54}
+.stats dd,.readings dd{margin:3px 0 0;font-size:23px;line-height:1.35;font-weight:700;color:#433d35;font-variant-numeric:tabular-nums}
+.weeks{padding:0;list-style:none}
+.weeks>li{display:grid;gap:4px}
+.details{min-width:0;border-top:1px solid #e4dece;padding-top:8px}
+.details>summary{min-height:44px;padding:9px 0;cursor:pointer;font-weight:700;line-height:1.5}
+.details[open]>*:not(summary){margin-top:13px}
+.checkins{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.checkins>div,.savedPlan,.notice,.confirmation{display:grid;gap:9px;min-width:0;border:1px solid #d8dece;border-radius:12px;padding:14px;background:#f5f7ee}
+.checkins dd{margin:0}
+.list{display:grid;gap:10px;padding:0;list-style:none}
+.list>li{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;min-width:0}
+.list>li>span{flex:1 1 220px;min-width:0}
+.form{display:grid;gap:15px;min-width:0}
+.choices{min-width:0;margin:0;padding:14px;border:1px solid #ddd7c8;border-radius:12px}
+.choices legend{font-weight:700;padding:0 6px;max-width:100%}
+.choiceList{display:grid;gap:9px;margin-top:10px}
+.check{display:flex;align-items:flex-start;gap:10px;min-height:44px;min-width:0;cursor:pointer}
+.check>span{flex:1;min-width:0}
+.field{display:grid;gap:7px;min-width:0;font-weight:650}
+.field select{width:100%;min-width:0;min-height:46px;border:1px solid #c8c6b5;border-radius:10px;padding:10px 12px;font:inherit;font-size:16px;font-weight:400;color:#433d35;background:#fffefa}
+.actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.assessment{display:grid;gap:13px;padding-top:16px;border-top:1px solid #e4dece;min-width:0}
+.assessment:first-of-type{padding-top:0;border-top:0}
+.scales{display:grid;gap:13px}
+.scale{display:grid;gap:11px;min-width:0;border:1px solid #e1dace;border-radius:13px;padding:15px;background:#fcfbf6}
+.meanings{display:grid;gap:10px}
+.meanings>div{display:grid;gap:4px}
+.meanings p{white-space:pre-wrap}
+.confirmation{border-color:#9dad98;background:#f8f9f2;scroll-margin-top:90px}
+.savedPlan ul{padding-left:22px}
+@media(max-width:600px){.root{gap:14px}.hero,.card{border-radius:15px}.stats,.weeks,.checkins{grid-template-columns:minmax(0,1fr)}.readings{gap:6px}.readings>div{padding:10px 8px}.readings dd{font-size:20px}.actions{align-items:stretch}.actions button,.list button{flex:1 1 180px}.choices{padding:11px}.scale{padding:12px}}
+@media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important}}
+@media(forced-colors:active){.root button,.hero,.card,.scale,.notice,.savedPlan,.confirmation{border-color:CanvasText}.root button:disabled{color:GrayText;opacity:1}}

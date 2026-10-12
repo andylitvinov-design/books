@@ -110,6 +110,8 @@ test('journey pins content version and repeat pins exact saved lesson identity',
  assert.equal(reviewCourseLesson(s,{day:1,lessonFor:changed}).status,'material-unavailable')
  const renamed=(...a)=>({...syntheticLesson(...a),id:'different-id'})
  assert.equal(reviewCourseLesson(s,{day:1,lessonFor:renamed}).status,'material-unavailable')
+ const variant=(...a)=>({...syntheticLesson(...a),variant:'quick'})
+ assert.equal(reviewCourseLesson(s,{day:1,lessonFor:variant}).status,'material-unavailable')
  assert.equal(reviewCourseLesson(s,{day:1,lessonFor:syntheticLesson}).lesson.id,s.sessions[1].lessonId)
 })
 

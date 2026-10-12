@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './course-daily-21.module.css'
 import { suggestCourseFeedbackAdjustment, confirmCourseFeedbackAdjustment, courseFeedbackAdjustmentAvailability } from '@/lib/inner-growth/course-feedback-phrases'
+import CourseCompletion21 from './course-completion-21'
 
 const WORDS = {
   en: {
@@ -79,7 +80,7 @@ const WORDS = {
     finish: 'Save completed learning day', skipDay: 'Skip this learning day', skipConfirm: 'Record this learning day as skipped? You can revisit it later. No ratings or written notes will be sent with this action.',
     history: 'Your learning days', reviewDay: 'Revisit day', repeatNote: 'Optional review. Reading or repeating this lesson does not add a completed day or change progress.', closeReview: 'Close review',
     draftNotes: 'Unsent notes kept in this open page', draftHint: 'These notes were not sent with a skipped or completed day. They remain available here until this page is left or reloaded.',
-    savedObservations: 'Saved observations for this day', noSavedText: 'No written note or reflection was saved for this day.', savedReflection: 'Saved reflection', savedNote: 'Saved note', noAnswer: 'Not answered', feedbackWasApplied: 'These selected feedback answers were used to adjust prepared options.', feedbackWasNotApplied: 'These answers were saved without applying an adjustment.',
+    savedObservations: 'Saved observations for this day', savedCheckin:'Recorded pre-lesson check-in', noSavedText: 'No written note or reflection was saved for this day.', savedReflection: 'Saved reflection', savedNote: 'Saved note', noAnswer: 'Not answered', feedbackWasApplied: 'These selected feedback answers were used to adjust prepared options.', feedbackWasNotApplied: 'These answers were saved without applying an adjustment.',
     outlineOverview: 'This is a general weekly overview. Your exact daily lessons will appear after you choose your scales and confirm the programme.',
     outline: 'The 21-day learning route', safe: 'If an exercise increases distress, stop. For severe or persistent distress, seek qualified support. If you are in immediate danger, contact local emergency or crisis support services; this course is not monitored.',
   },
@@ -155,7 +156,7 @@ const WORDS = {
     finish: 'Сохранить выполненный учебный день', skipDay: 'Пропустить этот учебный день', skipConfirm: 'Отметить этот учебный день как пропущенный? К нему можно вернуться позже. При этом действии оценки и письменные заметки не отправляются.',
     history: 'Мои учебные дни', reviewDay: 'Вернуться к дню', repeatNote: 'Необязательный повтор. Чтение или повторение урока не добавляет выполненный день и не меняет прогресс.', closeReview: 'Закрыть повтор',
     draftNotes: 'Неотправленные заметки на этой странице', draftHint: 'Эти заметки не отправлялись при завершении или пропуске дня. Они доступны здесь до ухода со страницы или перезагрузки.',
-    savedObservations: 'Сохранённые наблюдения за этот день', noSavedText: 'За этот день письменная заметка и размышление не сохранялись.', savedReflection: 'Сохранённое размышление', savedNote: 'Сохранённая заметка', noAnswer: 'Без ответа', feedbackWasApplied: 'Эти выбранные ответы использовались для настройки подготовленных вариантов.', feedbackWasNotApplied: 'Эти ответы сохранены без применения настройки.',
+    savedObservations: 'Сохранённые наблюдения за этот день', savedCheckin:'Сохранённая отметка перед уроком', noSavedText: 'За этот день письменная заметка и размышление не сохранялись.', savedReflection: 'Сохранённое размышление', savedNote: 'Сохранённая заметка', noAnswer: 'Без ответа', feedbackWasApplied: 'Эти выбранные ответы использовались для настройки подготовленных вариантов.', feedbackWasNotApplied: 'Эти ответы сохранены без применения настройки.',
     outlineOverview: 'Это общий обзор недель. Точные ежедневные уроки появятся после выбора шкал и подтверждения программы.',
     outline: 'Маршрут на 21 учебный день', safe: 'Если упражнение усиливает дискомфорт, остановитесь. При тяжёлом или длительном неблагополучии обратитесь к специалисту. При непосредственной опасности — в местную экстренную или кризисную службу; курс не отслеживается в реальном времени.',
   },
@@ -186,6 +187,11 @@ function SavedObservations({ entry, t }) {
   ]
   return <details className={styles.details} data-course-saved-observations><summary>{t.savedObservations}</summary>
     {entry.localDate && <p className={styles.small}>{entry.localDate}</p>}
+    {entry.checkin && <section data-course-recorded-checkin><h5>{t.savedCheckin}</h5><p className={styles.small}>{t.wellbeingHint}</p>
+      <dl className={styles.curriculum}><div><dt>{t.wellbeing}</dt><dd>{entry.checkin.skipped ? t.noAnswer : entry.checkin.wellbeing??t.noAnswer}</dd></div>
+        <div><dt>{t.energy}</dt><dd>{!entry.checkin.skipped && ['low','usual','ample'].includes(entry.checkin.energy) ? t.energyOptions[['low','usual','ample'].indexOf(entry.checkin.energy)+1] : t.noAnswer}</dd></div>
+        <div><dt>{t.change}</dt><dd>{!entry.checkin.skipped && ['better','same','worse'].includes(entry.checkin.feelingChange) ? t.changeOptions[['better','same','worse'].indexOf(entry.checkin.feelingChange)+1] : t.noAnswer}</dd></div></dl>
+    </section>}
     <dl className={styles.curriculum}>{values.map(([label, value, keys, labels]) => <div key={label}><dt>{label}</dt><dd>{keys.indexOf(value) > 0 ? labels[keys.indexOf(value)] : t.noAnswer}</dd></div>)}</dl>
     <p className={styles.small}>{entry.feedbackApplied ? t.feedbackWasApplied : t.feedbackWasNotApplied}</p>
     {reflection && <section><h5>{t.savedReflection}</h5><p className={styles.preserveText}>{reflection}</p></section>}
@@ -236,6 +242,7 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
   const [editCheckin, setEditCheckin] = useState(false), [skipConfirm, setSkipConfirm] = useState(false)
   const dialog = useRef(null), mounted = useRef(false), lock = useRef(false), sequence = useRef(0)
   const pending = useRef(null), current = useRef(null), unavailableNotified = useRef(false), alternative = useRef(false)
+  const repeatOperations = useRef(new Map())
   const callbacks = useRef({ onUnavailable, onActivated })
   callbacks.current = { onUnavailable, onActivated }
   const endpoint = 'course-21?locale=' + lang
@@ -309,7 +316,12 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
         setConsent(false)
         callbacks.current.onActivated?.(next)
       }
-      if (action === 'check-in') setEditCheckin(false)
+      if (['check-in','pause','resume'].includes(action)) setEditCheckin(false)
+      if(action==='check-in')setDrafts(previous=>{
+        const currentDay=next.today?.day,entry={...previous[currentDay]}
+        for(const field of ['wellbeing','energy','feelingChange','availableTime','rest','checkinLocalDate'])delete entry[field]
+        return {...previous,[currentDay]:entry}
+      })
       if (action === 'preferences') { setPreferenceDraft(null); setNoteProposal(null); alternative.current = false }
       if (action === 'finish-day') {
         setSkipConfirm(false)
@@ -355,6 +367,20 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
     } catch (caught) { if (mounted.current) setError(caught) }
     finally { lock.current = false; if (mounted.current) setBusy(false) }
   }
+  async function repeatAssessment(form) {
+    const allowed=current.current?.completion && current.current?.reassessment?.forms?.find(item=>item.definitionId===form?.definitionId&&item.repeatAvailable)
+    if(lock.current||loading||!allowed)return false
+    lock.current=true;setBusy(true);setError(null)
+    if(!repeatOperations.current.has(allowed.definitionId))repeatOperations.current.set(allowed.definitionId,crypto.randomUUID())
+    try{
+      const run=await appFetch('runs',{definitionKey:allowed.definitionKey,definitionVersion:allowed.definitionVersion,instrumentLocale:allowed.instrumentLocale,operationId:repeatOperations.current.get(allowed.definitionId)})
+      if(!/^[a-f0-9-]{36}$/i.test(run?.id||''))throw new Error('INVALID_RUN')
+      repeatOperations.current.delete(allowed.definitionId)
+      window.location.assign('/'+lang+'/app/runs/'+encodeURIComponent(run.id)+'?mode=quick')
+      return true
+    }catch(caught){if(mounted.current)setError(caught);return false}
+    finally{lock.current=false;if(mounted.current)setBusy(false)}
+  }
 
   const course = view?.course, today = view?.today, profile = preview?.profile || view?.profile
   const rows = profile?.rows || [], priorityRows = (profile?.priorityScaleIds || []).map(id => rows.find(row => row.id === id)).filter(Boolean).slice(0, 7)
@@ -363,9 +389,16 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
   const staleSelections = selected.filter(key => !rows.some(row => scaleKey(row) === key && row.canChoosePractice))
   const minimum = profile?.minimumChoices ?? 3, maximum = Math.min(5, profile?.maximumChoices ?? 5)
   const selectionReady = profile?.status === 'ready-to-review' && selected.length >= minimum && selected.length <= maximum && selected.length > 0 && !staleSelections.length && Boolean(preview?.activationToken)
-  const waiting = loading || busy, day = today?.day, draft = { ...EMPTY_DRAFT, ...drafts[day] }
+  const waiting = loading || busy, day = today?.day, savedCheckin = today?.checkin
+  // Only the server's current-local-date check-in is a baseline. Dirty fields remain local.
+  const localDraft = { ...drafts[day] }
+  if(localDraft.checkinLocalDate !== today?.localDate)for(const key of ['wellbeing','energy','feelingChange','availableTime','rest'])delete localDraft[key]
+  const draft = { ...EMPTY_DRAFT, ...(savedCheckin ? {
+    wellbeing:savedCheckin.wellbeing??'',energy:savedCheckin.energy??'',feelingChange:savedCheckin.feelingChange??'',
+    availableTime:savedCheckin.availableTime??'standard',rest:savedCheckin.pauseRequested===true,
+  }:{}), ...localDraft }
   const preferences = preferenceDraft || view?.preferences || { length: 'standard', alternativeRequested: false, stopOffer: false }
-  const showCheckin = today?.status === 'check-in-required' || editCheckin
+  const showCheckin = course?.status === 'active' && (today?.status === 'check-in-required' || (editCheckin && EDITABLE_DAYS.includes(today?.status)))
   const errorCode = error?.code || error?.message || ''
   const errorText = error?.status === 409 ? (error.refreshFailed ? t.conflictReload : t.conflict)
     : ['SIGN_IN_REQUIRED', 'RECENT_SIGN_IN_REQUIRED'].includes(errorCode) ? t.signin
@@ -383,7 +416,17 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
     const next = confirmCourseFeedbackAdjustment({ text: draft.comment, locale: lang, suggestionId: activeNoteProposal.suggestion.id, confirmed: true, preferences: view.preferences, lessonVariant: today?.lesson?.variant })
     if (next) await command('preferences', next)
   }
-  function updateDraft(key, value) { if (key === 'comment') setNoteProposal(null); setDrafts(previous => ({ ...previous, [day]: { ...previous[day], [key]: value } })) }
+  function updateDraft(key, value) {
+    if (key === 'comment') setNoteProposal(null)
+    setDrafts(previous => {
+      const entry={...previous[day]},checkinFields=['wellbeing','energy','feelingChange','availableTime','rest']
+      if(checkinFields.includes(key)){
+        if(entry.checkinLocalDate!==today?.localDate)for(const field of checkinFields)delete entry[field]
+        entry.checkinLocalDate=today?.localDate
+      }
+      return {...previous,[day]:{...entry,[key]:value}}
+    })
+  }
   function updatePreference(key, value) { setNoteProposal(null); setPreferenceDraft({ ...preferences, [key]: value }) }
   function toggleScale(key) {
     setConsent(false)
@@ -472,6 +515,8 @@ export default function CourseDaily21({ locale = 'en', onUnavailable, onCancel, 
       <div className={styles.actions}>{today.status !== 'finished' && <button type="button" disabled={waiting} onClick={() => command(today.status === 'paused' ? 'resume' : 'pause')}>{today.status === 'paused' ? t.resume : t.pause}</button>}
         <button type="button" disabled={waiting} onClick={refresh}>{t.refresh}</button></div>
       {['paused', 'finished', 'next-local-day', 'rest-chosen'].includes(today.status) && <p className={styles.notice} role="status">{today.status === 'paused' ? t.paused : today.status === 'finished' ? t.finishHint : today.status === 'next-local-day' ? t.tomorrow : t.rest}</p>}
+      {view.completion && <CourseCompletion21 locale={lang} completion={view.completion} reassessment={view.reassessment} busy={waiting}
+        onSavePlan={values=>command('continuation',values)} onReviewDay={reviewDay} onRetest={repeatAssessment}/>}
       {EDITABLE_DAYS.includes(today.status) && !editCheckin && <button type="button" className={styles.textButton} disabled={waiting} onClick={() => setEditCheckin(true)}>{t.editCheckin}</button>}
       {showCheckin && <form className={styles.checkin} onSubmit={event => { event.preventDefault(); checkIn(false) }}>
         <h4>{t.checkin}</h4>
