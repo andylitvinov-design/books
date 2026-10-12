@@ -44,6 +44,13 @@ test("private profile keeps the three free paths opt-in without private data in 
   assert.match(offer, /not free live calls/);
 });
 
+test("the public and cabinet offers describe free wellbeing and resources monitoring, not a diagnosis", () => {
+  for (const label of ["Free monitoring", "Start free monitoring", "Mental wellbeing & inner resources", "Бесплатный мониторинг", "Начать бесплатный мониторинг", "Психологическое состояние и ресурсы"]) {
+    assert.ok(offer.includes(label), label);
+  }
+  assert.match(offer, /not medical diagnoses/);
+});
+
 test("the design stays compact, accessible and mobile-first in the existing warm palette", () => {
   assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:760px\)/);

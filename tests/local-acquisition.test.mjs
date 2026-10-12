@@ -17,7 +17,7 @@ test('the English Maps entry exposes only the approved local acquisition offers'
     'business-decision-constellations',
     'reiki-energy-work',
   ])
-  assert.equal(entry.selfCheck.href, '/en/app')
+  assert.equal(entry.selfCheck.href, '/en/client#cabinet-tests')
   assert.doesNotMatch(JSON.stringify(entry), /psychotherapist|homeopath|cure/i)
 })
 
