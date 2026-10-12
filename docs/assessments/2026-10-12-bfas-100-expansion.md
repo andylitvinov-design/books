@@ -1,0 +1,57 @@
+# Complete BFAS-100 author-form expansion
+
+This batch adds **one complete instrument**, `bfas-100`: 100 original English self-rating items, ten aspect means and five paired-domain means. It does not add ten separately counted tests. Canonical base: `10871d5473b912eeda39f51bc3c89e3d9395dd80` (`codex/public-book-library`). MHC-SF PR #384 is separate and is not included in this branch.
+
+## Inventory and preservation
+
+Source inventory before/after: **96 → 97 runnable catalog keys**, **41 → 42 professional-labelled keys**, **153 → 154 immutable locale/version definitions**. These are code inventory counts, not production availability or a count of independent validated methods. Existing seven BFAS standalone aspects remain as published; no full 100-item form was runnable on the base. Open-PR checks for BFAS and Big Five found no active matching implementation. Stale personality/relationship PRs #361 and #364 were not reused.
+
+The focused test pins the canonical JSON digest of all 153 previous definitions (`1743fb49e9f78bde406bc5055349a95c8b961961b21ab9d1a0fcb05fca1fb0bc`). Existing questions, IDs, hashes, scoring and histories are unchanged. A misleading code comment that equated four item-origin footnotes with copyright exclusions was corrected; immutable legacy provenance fields remain untouched.
+
+## Exact sources and permission
+
+- The [author's University of Minnesota research page](https://deyoung.psych.umn.edu/research), “Between Facets and Domains,” describes the full 100-item BFAS and explicitly identifies it as public domain.
+- Master: [author-linked BFAS self-rating DOCX](https://docs.google.com/document/d/0B-XDPUhSKUmOUXdEU3ZnbnNvaUk/edit?resourcekey=0-kbXmTs_iSctSAlyyWmjR-A). The source auditor downloaded and read the complete 13,398-byte file, SHA-256 `a9ee90dca1c8f31ac2a9f0fcaa1b8058cc12c4f27b2c98bd29c6fe0930ccfdb9`, then supplied the full numbered text, instructions and numerical scoring key to the coding executor. The executor did **not** download that binary: its network returned CONNECT 403 and supported text readers did not expose it. This provenance distinction is preserved in the definition and test fixture.
+- The [IPIP BFAS key](https://ipip.ori.org/BFASKeys.htm) independently cross-checks all 100 item meanings, aspect membership and signs. A local comparison verified all 100 after punctuation normalization and the four documented wording differences: author items **1, 60, 80, 90 use Rarely**, while IPIP uses Seldom. The implementation keeps author wording, punctuation, straight apostrophes and interleaved order. Only layout spacing in items 60 and 100 was collapsed.
+- [DeYoung, Quilty & Peterson (2007)](https://doi.org/10.1037/0022-3514.93.5.880), *Between facets and domains: 10 aspects of the Big Five*, JPSP 93, 880–896. The author form itself supplies the exact numerical key and averaging instructions; no proprietary Understand Myself scoring norms or reports are used.
+- [Source audit and rights record](https://github.com/andylitvinov-design/books/issues/342#issuecomment-6117973176).
+
+IPIP's four footnotes describe item origins; they do not state distribution prohibitions. The instrument-specific permission basis is the complete BFAS public-domain statement from its author. No Russian full-form translation rights or validation are claimed. Russian titles carry **EN** and explanations explicitly identify the English original.
+
+## Scoring contract
+
+Definition ID: `1412085c-c923-55bb-946f-c611554bcd6d`
+
+Key/version/language: `bfas-100` / `v1` / `en`
+
+Translation/source version: `original-en-author-form-v1`
+
+Content hash: `sha256:fc322ecc17c3f2f9e16578596a12ef7ded4a40a346fed665c3d96cde896dc021`
+
+Responses are integers 1–5. The author labels 1 **Strongly Disagree**, 3 **Neither Agree Nor Disagree**, 5 **Strongly Agree**; 2 and 4 are numeric only. Every reversed item uses `6 − response`. Each aspect averages its ten keyed answers. Each domain averages its two aspects; with all items complete, the configured 20-item mean is exactly equivalent. Scores stay in 1–5; no overall personality total is produced.
+
+| Domain | First aspect | Second aspect |
+| --- | --- | --- |
+| Neuroticism | Withdrawal | Volatility |
+| Agreeableness | Compassion | Politeness |
+| Conscientiousness | Industriousness | Orderliness |
+| Extraversion | Enthusiasm | Assertiveness |
+| Openness/Intellect | Intellect | Openness |
+
+The source permits averaging completed items without specifying a minimum. **All 100 are required by this interface**, a clearly stated product rule. Missing answers do not produce a score; zero, fractions, strings and out-of-range answers are invalid. There is no imputation.
+
+All scales use `dimensionClass: trait` and `direction: non-normative`. Reports and gauges are neutral, with continuous descriptive means, no percentile/norm/clinical bands and no better/worse trait goal. BFAS interpretation requires the exact version, locale, translation and content hash; incompatible provenance cannot fall back to generic thirds. Intellect is explicitly not an IQ score; BFAS Compassion is distinguished from CS and SCS-SF. Every scale has original EN/RU meaning and optional reflection in the [individual guide](./guides/bfas-100.md).
+
+## Integration and verification
+
+Uses the existing account/consented guest runner, Quick and Guided modes, filters, selection deduplication, private saves, compatible history, Insights and client-only bilingual PDF pipeline. It is not automatically placed in the quick starter set. No auth, RLS, client data, schema, deployment settings or services are changed.
+
+Focused independent fixtures cover the full author text, item numbering, all ten numerical keys, all five domain pairs, every single-item contribution, reversed extrema, uniform and mixed responses, missing/invalid answers, exact ID/hash, neutral bilingual reports, source-version mismatch, catalog availability, registration payload and PDF/history model. The prior-definition digest protects all existing forms.
+
+Local verification: 1,023 unit tests, 140 app tests, 33 isolated PostgreSQL tests and 10 PKCE tests pass. Production build and TypeScript check pass; lint has zero errors and the same 29 existing warnings. Initial inventory assertions were updated for the one new key and comprehensive-form count. Browser evidence and exact-head CI links are recorded in the draft PR; tests use a synthetic loopback auth protocol double, **not real Google authentication**.
+
+## Registration and release boundary
+
+Prepared SQL: `supabase/migrations/20261012045314_hh_bfas_100_author_form.sql`. It appends exactly one definition and rejects conflicting ID, identity tuple, content hash or full content. Reapplication is idempotent and is tested in isolated PostgreSQL. The Supabase migration CLI failed before creation because `/home/agent/.supabase` is read-only; the local file follows the repository's established append-only convention. No access change or escalation was attempted.
+
+**Production registration, merge and deployment have not been performed.** After independent exact-head review and authorization, register this exact definition using the guarded migration and verify its ID/hash/content before release. MHC-SF production registration remains separately paused. A Vercel preview quota failure, if returned, is a deployment-capacity limitation and does not itself invalidate passing code checks.

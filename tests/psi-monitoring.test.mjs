@@ -42,6 +42,7 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
   assert.deepEqual(active, [
     'scs-sf',
     'compassion-scale',
+    'bfas-100',
     'brcs',
     'erq',
     'gad-2',

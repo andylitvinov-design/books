@@ -6,6 +6,7 @@ import { PROFESSIONAL_BATTERY_2026_CATALOG } from './professional-battery-2026.j
 import { CDC_HEALTHY_DAYS_CATALOG } from './cdc-healthy-days-2026.js'
 import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from './professional-battery-2026-b.js'
 import { IPIP_BIG_FIVE_50_CATALOG } from './ipip-big-five-50-en-v1.js'
+import { BFAS_100_CATALOG } from './bfas-100-en-v1.js'
 import { COMPASSION_CATALOG } from './compassion-2026.js'
 import { OPEN_PROFESSIONAL_2026_CATALOG } from './open-professional-2026.js'
 
@@ -721,6 +722,7 @@ export const MONITORING_CATALOG = deepFreeze([
     },
   },
   ...COMPASSION_CATALOG,
+  ...BFAS_100_CATALOG,
   {
     key: 'functioning-review',
     version: 'planned',

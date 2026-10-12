@@ -1,10 +1,12 @@
 # Holistic House · Individual assessment guides
 
-This collection has **76 separate bilingual guides**, one for every currently runnable instrument in `MONITORING_CATALOG`. Every guide is linked to a stable test key and scored scale names, offers practical observation and optional skills, and distinguishes source-backed screening from original HH self-observation and traditional Bach themes.
+This collection has **separate bilingual guides**, one for every currently runnable instrument in `MONITORING_CATALOG`. Every guide is linked to a stable test key and scored scale names, offers practical observation and optional skills, and distinguishes source-backed screening from original HH self-observation and traditional Bach themes.
 
 The application derives the current score-specific values and bounds from immutable versioned definitions and `lib/assessments/interpretation-registry.js`. If any catalog entry or scale changes, update this collection and its automated coverage test before merging. These documents do **not** authorize reproduction of licensed research-only instruments.
 
 ## Guide index
+
+- [Большая пятёрка: 10 аспектов · EN / Big Five Aspect Scales — 100](./bfas-100.md) — one complete instrument, 5 domains and 10 aspects
 
 - [Эмоциональный профиль по Баху / Bach Flower Emotional Profile](./hh-bach-flower-profile.md) — 38 scales
 - [Состояние сейчас / Current State Check](./hh-current-state.md) — 5 scales

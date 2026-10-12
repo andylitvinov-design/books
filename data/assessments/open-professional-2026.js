@@ -2,7 +2,9 @@ import { deepFreeze } from '../../lib/assessments/contracts.js'
 
 // 18 source-cleared, full-length original English measures; 120 actual questions.
 // Every key uses the official item order and scoring signs; no invented thresholds or diagnoses.
-// Do not use copyrighted BFAS aspects with 4 items explicitly noted outside the IPIP pool.
+// Legacy scope selected seven IPIP-only aspect sets; their immutable definitions stay unchanged.
+// IPIP origin footnotes do not establish copyright exclusions. The full BFAS author
+// public-domain form is separately versioned in bfas-100-en-v1.js.
 export const OPEN_PROFESSIONAL_2026_DEFINITIONS = deepFreeze([
   {
     "id": "d6277cc3-f343-5576-afc4-2a4717387448",
