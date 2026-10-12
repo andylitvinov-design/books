@@ -18,12 +18,12 @@ test("three free paths use real, existing local service and test routes", () => 
   assert.match(offer, /prefetch=\{false\}/);
 });
 
-test("Services shows the free trio while Home retains four photo-left cards", () => {
+test("Home and Services show the free trio while keeping four approved image-left service cards", () => {
   const home = read("components/holistic-house-home.tsx");
   const services = read("app/[locale]/services/page.tsx");
   const solutions = read("components/services-solutions.tsx");
   const hero = read("components/services-conversion-hero.tsx");
-  assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
+  assert.match(home, /<FreeInsightsPaths locale=\{locale\} testHref=\{entry\.selfCheck\.href\} \/>/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.match(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   assert.match(solutions, /offer.id === "alchemy" \|\| offer.id === "hypnotherapy"/);
@@ -45,10 +45,12 @@ test("private profile keeps the three free paths opt-in without private data in 
 });
 
 test("the public and cabinet offers describe free wellbeing and resources monitoring, not a diagnosis", () => {
-  for (const label of ["Free monitoring", "Start free monitoring", "Mental wellbeing & inner resources", "Бесплатный мониторинг", "Начать бесплатный мониторинг", "Психологическое состояние и ресурсы"]) {
+  for (const label of ["Free situation analysis", "Free Wu Xing resources & wellbeing profile", "Stress assessment & personality portrait", "Бесплатный анализ ситуации", "Бесплатный анализ ресурсов и самочувствия по У-Син", "Анализ стресса и психологический портрет"]) {
     assert.ok(offer.includes(label), label);
   }
   assert.match(offer, /not medical diagnoses/);
+  assert.match(offer, /not a health diagnosis/);
+  assert.deepEqual([...offer.matchAll(/id: "(situation|wu|stress)"/g)].map(match => match[1]), ["situation", "wu", "stress", "situation", "wu", "stress"]);
 });
 
 test("Services hero advertises wellbeing monitoring alongside the two other distinct free offers", () => {
@@ -65,4 +67,6 @@ test("the design stays compact, accessible and mobile-first in the existing warm
   assert.match(css, /grid-template-columns:1fr/);
   assert.match(css, /:focus-visible/);
   assert.match(offer, /aria-labelledby=\{headingId\}/);
+  assert.match(css, /min-height:46px/);
+  assert.match(css, /font-size:15px/);
 });
