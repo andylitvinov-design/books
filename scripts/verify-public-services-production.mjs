@@ -1,4 +1,4 @@
-import { chromium, expect } from "@playwright/test";
+const { chromium, expect } = await import(process.env.HH_PLAYWRIGHT_TEST_PATH || "@playwright/test");
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
