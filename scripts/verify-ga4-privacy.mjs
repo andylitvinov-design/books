@@ -17,7 +17,8 @@ for (const path of ["lib/public-analytics.ts", "components/ga4-analytics.tsx", "
   compiled[path] = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
 }
 const id = "G-3WX7PDD52N";
-const fixture = `<!doctype html><html><head><title>Public synthetic fixture</title></head><body><h1>Offline-intercepted analytics fixture</h1><script>
+const fixture = `<!doctype html><html><head><title>Public synthetic fixture</title></head><body><h1>Offline-intercepted analytics fixture</h1>
+<form id="synthetic-form"><input name="email" type="email" value="synthetic_private_email@example.invalid"><input name="phone" type="tel" value="+12025550100"><input name="name" value="SYNTHETIC_PRIVATE_NAME"><textarea name="answer">SYNTHETIC_PRIVATE_ANSWER</textarea><button>Submit synthetic form</button></form><script>
 (() => {
  const compiled = ${JSON.stringify(compiled)};
  const modules = new Map();
@@ -35,6 +36,7 @@ const fixture = `<!doctype html><html><head><title>Public synthetic fixture</tit
  const analytics=evaluate('components/ga4-analytics.tsx');
  const consent=evaluate('components/analytics-consent.tsx');
  const events=evaluate('lib/public-analytics.ts');
+ document.getElementById('synthetic-form').addEventListener('submit',event=>event.preventDefault());
  function render(){cleanup?.(); pathname=location.pathname; cursor=0;effects=[];analytics.Ga4Analytics({nonce:'fixture'});cleanup=effects[0]?.();}
  function syncConsent(){effects=[];consent.AnalyticsConsent();effects[0]?.();}
  let fixtureVisibility='visible';
@@ -46,6 +48,7 @@ const fixture = `<!doctype html><html><head><title>Public synthetic fixture</tit
   navigateOnly(url){history.pushState({},'',url);},
   navigate(url){history.pushState({},'',url);render();syncConsent();},
   acquire(){events.emitPublicAnalyticsEvent('free_situation_assessment_click');},
+  formInteractions(){const form=document.getElementById('synthetic-form');for(const field of form.querySelectorAll('input,textarea')){field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));field.dispatchEvent(new Event('blur',{bubbles:true}));}form.requestSubmit();},
   lifecycle(state){fixtureVisibility=state;document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new PageTransitionEvent(state==='hidden'?'pagehide':'pageshow',{persisted:false}));},
   unmount(){cleanup?.();cleanup=undefined;},
   queue(){return (window.dataLayer||[]).filter(x=>Object.prototype.toString.call(x)==='[object Arguments]').map(x=>Array.from(x));}
@@ -61,15 +64,47 @@ const browser = await chromium.launch({
   args: ["--disable-background-networking", "--disable-component-update", "--disable-sync", "--disable-default-apps", "--no-first-run"],
 });
 const requests = [], errors = [], results = [], contexts = [], cookieChecks = [];
-const collection = (entries = requests) => entries.filter(entry => /(?:^|\.)google-analytics\.com$|^analytics\.google\.com$/.test(new URL(entry.url).hostname));
-function decodedEvents(entries = requests) {
-  return collection(entries).flatMap(entry => {
+// Google currently retries a failed GA transport on this exact fallback URL.
+// It is not a blanket allowance for google.com traffic: each retry must match
+// an earlier primary request byte-for-byte, apart from the host and gaf=1.
+const isFallback = entry => {
+  const url = new URL(entry.url);
+  return url.origin === "https://www.google.com" && url.pathname === "/g/collect";
+};
+const collection = (entries = requests) => entries.filter(entry => /(?:^|\.)google-analytics\.com$|^analytics\.google\.com$/.test(new URL(entry.url).hostname) || isFallback(entry));
+function assertFallbackPairs(entries) {
+  const used = new Set();
+  for (const [index, entry] of entries.entries()) {
+    if (!isFallback(entry)) continue;
+    const retry = new URL(entry.url);
+    assert.equal(retry.searchParams.get("gaf"), "1", "only the observed one-step fallback is recognized");
+    retry.searchParams.delete("gaf");
+    const primary = entries.slice(0, index).find(candidate => {
+      const url = new URL(candidate.url);
+      return !used.has(candidate) && url.origin === "https://www.google-analytics.com"
+        && url.pathname === retry.pathname && url.search === retry.search
+        && candidate.body === entry.body && candidate.method === entry.method
+        && candidate.scenario === entry.scenario && candidate.phase === entry.phase;
+    });
+    assert.ok(primary, "fallback must match exactly one earlier primary request, never a new event");
+    used.add(primary);
+  }
+}
+function decodedEvents(entries = requests, includeRetries = false) {
+  return collection(entries).filter(entry => includeRetries || !isFallback(entry)).flatMap(entry => {
     if (!new URL(entry.url).pathname.endsWith("/g/collect")) return [];
     const common = Object.fromEntries(new URL(entry.url).searchParams);
     return (entry.body ? entry.body.split("\n") : [""]).map(line => ({ scenario: entry.scenario, phase: entry.phase, ...common, ...Object.fromEntries(new URLSearchParams(line)) }));
   });
 }
-const sentinel = /SYNTHETIC_QUERY|SYNTHETIC_FRAGMENT|SYNTHETIC_PRIVATE|SYNTHETIC_RETURN_QUERY/;
+const sentinel = /SYNTHETIC_QUERY|SYNTHETIC_FRAGMENT|SYNTHETIC_PRIVATE|SYNTHETIC_RETURN_QUERY|12025550100/i;
+const syntheticPersonalValues = ["synthetic_private_email@example.invalid", "+12025550100", "12025550100", "synthetic_private_name", "synthetic_private_answer"];
+const syntheticPersonalHashes = syntheticPersonalValues.map(value => createHash("sha256").update(value).digest("hex"));
+function assertNoPersonalData(value) {
+  const serialized = JSON.stringify(value);
+  assert.doesNotMatch(serialized, sentinel, "no synthetic personal values in outbound payload or headers");
+  for (const hash of syntheticPersonalHashes) assert.ok(!serialized.includes(hash), "no hashed synthetic personal values");
+}
 async function waitUntil(predicate, message, timeout = 10000) {
   const start = Date.now();
   while (!predicate()) {
@@ -89,7 +124,7 @@ async function scenario(name, { holdSdk = false, path = "/en?private_query=SYNTH
     const headers = await request.allHeaders();
     // Assert before redaction: omitted security headers are not a valid test.
     if (!(url.hostname === "holistichouse.vercel.app" && request.isNavigationRequest())) {
-      assert.doesNotMatch(JSON.stringify(headers), sentinel, "sensitive sentinel in complete request headers");
+      assertNoPersonalData(headers);
     }
     if (headers.cookie) headers.cookie = "[isolated synthetic cookies omitted]";
     const entry = { scenario: name, phase, url: request.url(), method: request.method(), resourceType: request.resourceType(), body: request.postData(), headers };
@@ -144,15 +179,17 @@ async function inspectCookies(s, label, expectedPresent) {
   return all;
 }
 function assertSafe(entries) {
+  assertFallbackPairs(entries);
   const outbound = entries.filter(entry => entry.action !== "local-fixture");
-  assert.doesNotMatch(JSON.stringify(outbound), sentinel, "no synthetic sensitive values in external URL, body or headers");
+  assertNoPersonalData(outbound);
   assert.equal(outbound.filter(entry => entry.action === "aborted-no-network").length, 0, "unknown destinations must be investigated");
-  for (const event of decodedEvents(entries)) {
+  for (const event of decodedEvents(entries, true)) {
     assert.equal(event.tid, id);
     assert.equal(event.dl, "https://holistichouse.vercel.app/en");
     assert.ok(!event.dr);
     assert.equal(event.dt, "Holistic House");
-    assert.ok(!["generate_lead", "purchase", "lead_received_verified"].includes(event.en));
+    assert.ok(["page_view", "free_situation_assessment_click"].includes(event.en), "only intended manual synthetic events");
+    for (const key of Object.keys(event)) assert.ok(!/^(?:user_data|user_id|uid|em|ph|phone_number|email|sha256_email_address|sha256_phone_number)$/.test(key), "no user-identifying event parameters");
   }
 }
 
@@ -178,10 +215,10 @@ try {
   ]);
 
   s.phase("public-acquisition");
-  await page.evaluate(() => window.fixture.acquire());
+  await page.evaluate(() => { window.fixture.formInteractions(); window.fixture.acquire(); });
   await waitUntil(() => s.events().some(event => event.en === "free_situation_assessment_click"), "positive control: acquisition event");
   await settled(page);
-  assert.equal(s.events().filter(event => event.en === "free_situation_assessment_click").length, 1); s.checkpoint("secondary public event arrives");
+  assert.equal(s.events().filter(event => event.en === "free_situation_assessment_click").length, 1); s.checkpoint("secondary public event arrives without synthetic form values or hashes");
 
   s.phase("private-before-react-effect");
   const beforePrivate = s.collects().length;
@@ -331,7 +368,7 @@ try {
 } finally {
   await Promise.all(contexts.map(context => context.close().catch(() => {})));
   // All browser state is freshly synthetic. Cookies themselves are never saved.
-  const evidence = { testedAt: new Date().toISOString(), testedCommit: process.env.GITHUB_SHA || "local-unpublished", browserVersion: browser.version(), googleScriptSha256: createHash("sha256").update(sdk).digest("hex"), everyPageRequestFulfilledOrAbortedBeforeSend: true, deadProxyDefense: "127.0.0.1:9", transmittedAnalyticsRequests: 0, results, errors, cookieChecks, requests, decodedEvents: decodedEvents() };
+  const evidence = { testedAt: new Date().toISOString(), testedCommit: process.env.GITHUB_SHA || "local-unpublished", browserVersion: browser.version(), googleScriptSha256: createHash("sha256").update(sdk).digest("hex"), everyPageRequestFulfilledOrAbortedBeforeSend: true, deadProxyDefense: "127.0.0.1:9", transmittedAnalyticsRequests: 0, results, errors, cookieChecks, requests, decodedEvents: decodedEvents(), decodedTransportAttempts: decodedEvents(requests, true), fallbackRequestCount: requests.filter(isFallback).length };
   writeFileSync(new URL("full-sdk-intercept-results.json", output), JSON.stringify(evidence, null, 2) + "\n");
   console.log(JSON.stringify({ results, errors, requestCount: requests.length, collectionCount: collection().length }, null, 2));
   await browser.close();
