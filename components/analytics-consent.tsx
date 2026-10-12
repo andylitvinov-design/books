@@ -31,7 +31,7 @@ function applyConsent(value: ConsentChoice) {
     ad_personalization: "denied",
   });
   if (value === "denied") eraseAnalyticsCookies();
-  if (value === "granted") window.dispatchEvent(new Event("holistic-house:analytics-consent"));
+  window.dispatchEvent(new Event("holistic-house:analytics-consent"));
 }
 
 // Synchronize previously saved consent without ever interrupting a visitor.
@@ -90,3 +90,4 @@ export function AnalyticsPreferences() {
     </section>
   );
 }
+

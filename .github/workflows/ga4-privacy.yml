@@ -1,0 +1,53 @@
+name: GA4 privacy and transport
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/ga4-analytics.tsx'
+      - 'components/analytics-consent.tsx'
+      - 'lib/public-analytics.ts'
+      - 'tests/ga4-transport.test.mjs'
+      - 'scripts/verify-ga4-privacy.mjs'
+      - '.github/workflows/ga4-privacy.yml'
+permissions:
+  contents: read
+concurrency:
+  group: ga4-privacy-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  intercepted-network:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_GA4_PLAYWRIGHT_MODULE: /tmp/hh-ga4-tools/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - name: Focused source regression
+        run: |
+          node --test tests/ga4-transport.test.mjs tests/ga4-analytics.test.mjs
+          npx --no-install eslint components/ga4-analytics.tsx components/analytics-consent.tsx lib/public-analytics.ts tests/ga4-transport.test.mjs scripts/verify-ga4-privacy.mjs
+      - name: Install isolated browser test tools
+        run: |
+          npm install --prefix /tmp/hh-ga4-tools --no-audit --no-fund playwright@1.57.0
+          /tmp/hh-ga4-tools/node_modules/.bin/playwright install --with-deps chromium
+      - name: Read current official SDK without executing it
+        run: |
+          mkdir -p artifacts/ga4-privacy
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
+            'https://www.googletagmanager.com/gtag/js?id=G-3WX7PDD52N' \
+            -o artifacts/ga4-privacy/google-tag-readonly.js
+          sha256sum artifacts/ga4-privacy/google-tag-readonly.js > artifacts/ga4-privacy/google-tag.sha256
+      - name: Full SDK with every browser request intercepted before sending
+        run: node scripts/verify-ga4-privacy.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ga4-privacy-intercepted-evidence
+          path: artifacts/ga4-privacy/
+          retention-days: 7

@@ -17,5 +17,18 @@ export function emitPublicAnalyticsEvent(event: PublicAnalyticsEvent) {
 }
 
 export function isPublicAnalyticsPath(pathname: string) {
-  return !/^\/(?:admin|api|document-preview)(?:\/|$)|^\/(?:en|ru|es)\/(?:app|client|report|prescriptions)(?:\/|$)/.test(pathname);
+  let normalized = pathname;
+  try {
+    // Fail closed on malformed or deeply encoded paths. Encoded private route
+    // names must not bypass the same boundary used by the consent component.
+    for (let attempt = 0; attempt < 3 && normalized.includes("%"); attempt++) {
+      normalized = decodeURIComponent(normalized);
+    }
+  } catch {
+    return false;
+  }
+  if (!normalized.startsWith("/") || normalized.startsWith("//") || normalized.includes("%")
+    || normalized.includes("\\") || /(?:^|\/)\.{1,2}(?:\/|$)/.test(normalized)) return false;
+  return !/^\/(?:(?:en|ru|es)\/)?(?:admin|api|document-preview|app|client|report|prescriptions)(?:\/|$)/i.test(normalized);
 }
+
