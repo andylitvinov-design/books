@@ -83,7 +83,7 @@ async function saveExistingAccountPlan(items) {
   return result
 }
 
-export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onState,onError,onBusy,root}) {
+export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onState,onError,root}) {
   const t=UI[locale]||UI.en,ru=locale==='ru'
   const current=state.course||{}, assessment=state.assessments||{}
   const [concerns,setConcerns]=useState(current.concerns||'')
