@@ -15,6 +15,8 @@ import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
+import { periodComparison, periodWindow, resultsForPeriod } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
@@ -1763,7 +1765,16 @@ function readableScaleName(dimension, locale) {
 
 function PortfolioPage({ data, locale }) {
   const ru = locale === 'ru'
-  const groups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
+  const allGroups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
+  const [period, setPeriod] = useState('all')
+  const [periodStart, setPeriodStart] = useState('')
+  const [periodEnd, setPeriodEnd] = useState('')
+  const validPeriod = periodWindow(period, periodStart, periodEnd).valid
+  const groups = allGroups.map(group => {
+    const history = resultsForPeriod(group.history, period, periodStart, periodEnd)
+    const { current, previous } = periodComparison(history)
+    return { ...group, latest: current, periodPrior: previous, history, count: history.length }
+  }).filter(group => group.latest)
   const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
   const dimensions = data.snapshot?.dimensions || []
   const [selected, setSelected] = useState(null)
@@ -1775,39 +1786,58 @@ function PortfolioPage({ data, locale }) {
           <p className="hh-kicker">Insights · Holistic House</p>
           <h1 id="hh-insights-title">{ru ? 'Мои пройденные тесты' : 'My completed tests'}</h1>
           <p>{ru
-            ? 'Выберите тест, чтобы прочитать именно его результаты, объяснение и рекомендации. Измерения остаются приватными.'
-            : 'Choose a completed test to read its results, interpretation and practical recommendations. Your results stay private.'}</p>
+            ? 'Ваши пройденные тесты — как панель приборов. Каждый спидометр показывает отдельную шкалу, а не процент здоровья.'
+            : 'Your tests, displayed like a dashboard. Each dial shows its own scale, not an overall health percentage.'}</p>
         </div>
         <span className="hh-insights-total">{groups.length} {ru ? 'пройдено' : 'completed'}</span>
       </header>
 
-      {groups.length ? (
+      <div className="hh-insights-period" role="group" aria-label={ru ? 'Период анализа' : 'Analysis period'}>
+        <span>{ru ? 'Период:' : 'Period:'}</span>
+        {[
+          ['all', ru ? 'Всё время' : 'All time'],
+          ['week', ru ? 'Неделя' : '7 days'],
+          ['month', ru ? 'Месяц' : '30 days'],
+          ['quarter', ru ? '3 месяца' : '3 months'],
+          ['custom', ru ? 'Свой период' : 'Custom'],
+        ].map(([key, title]) => (
+          <button key={key} type="button" aria-pressed={period === key}
+            onClick={() => setPeriod(key)}>{title}</button>
+        ))}
+      </div>
+      {period === 'custom' && <div className="hh-insights-date-range">
+        <label>{ru ? 'С' : 'From'} <input type="date" value={periodStart} onChange={event => setPeriodStart(event.target.value)} /></label>
+        <label>{ru ? 'По' : 'To'} <input type="date" value={periodEnd} onChange={event => setPeriodEnd(event.target.value)} /></label>
+      </div>}
+      <p className="hh-insights-period-guide">{ru
+        ? 'Стрелки сравнивают последний результат с первым совместимым замером за выбранный период. Личностные шкалы нейтральны.'
+        : 'Trend arrows compare your latest result with the earliest compatible measure in this period. Personality traits are neutral.'}</p>
+      {!validPeriod ? (
+        <div className="hh-insights-empty hh-panel" role="status">
+          <p>{ru ? 'Выберите корректные даты начала и конца периода.' : 'Choose valid start and end dates for comparison.'}</p>
+        </div>
+      ) : groups.length ? (
         <div className="hh-insights-test-list">
           {groups.map(group => {
             const latest = group.latest
             const report = buildAssessmentResultReport(latest, locale)
             const first = report.sections[0]
+            const main = latest.dimensions?.[0]
             return (
               <article className="hh-insights-test-card" key={group.key}>
                 <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}>
-                  <div className="hh-insights-test-meta">
-                    <span>{ru ? 'Завершённый тест' : 'Completed assessment'}</span>
-                    <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
+                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact /></div>
+                  <div className="hh-insights-test-body">
+                    <div className="hh-insights-test-meta">
+                      <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
+                    </div>
+                    <h2>{group.title}</h2>
+                    {first && <p className="hh-insights-test-summary">{first.construct}: <strong>{first.value}</strong> · {first.band}</p>}
+                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} />}
+                    {latest.dimensions?.length > 1 &&
+                      <p className="hh-insights-test-scores">+ {latest.dimensions.length - 1} {ru ? 'дополнительных шкал' : 'more scales'}</p>}
+                    <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
                   </div>
-                  <h2>{group.title}</h2>
-                  <p className="hh-insights-test-purpose">{report.purpose}</p>
-                  {first && (
-                    <p className="hh-insights-test-summary">
-                      <strong>{first.title}</strong> — {first.meaning}
-                    </p>
-                  )}
-                  <div className="hh-insights-test-scores">
-                    {(latest.dimensions || []).slice(0, 2).map(d => (
-                      <span key={d.key}>{readableScaleName(d, locale)}: <strong>{d.value} / {d.max}</strong></span>
-                    ))}
-                    {latest.dimensions?.length > 2 && <span>{ru ? 'И другие показатели' : 'And more measured areas'}</span>}
-                  </div>
-                  <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
                 </Link>
                 {group.count > 1 && (
                   <details className="hh-insights-history">
@@ -1824,13 +1854,19 @@ function PortfolioPage({ data, locale }) {
         </div>
       ) : (
         <div className="hh-insights-empty hh-panel">
-          <h2>{ru ? 'Отчётов пока нет' : 'No reports yet'}</h2>
-          <p>{ru ? 'Завершите первый тест — здесь появится его результат с анализом и рекомендациями.' : 'Finish your first assessment and its analysis and recommendations will appear here.'}</p>
-          <Link href={`/${locale}/app/tests`} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>
+          <h2>{allGroups.length
+            ? (ru ? 'Нет тестов за выбранный период' : 'No assessments in this period')
+            : (ru ? 'Отчётов пока нет' : 'No reports yet')}</h2>
+          <p>{allGroups.length
+            ? (ru ? 'Выберите более длинный период — сохранённые результаты не удалены.' : 'Try a longer time range. Your past results are still saved.')
+            : (ru ? 'Завершите первый тест — здесь появятся показатели и рекомендации.' : 'Finish your first assessment to see your gauges and recommendations here.')}</p>
+          {allGroups.length
+            ? <button type="button" onClick={() => setPeriod('all')}>{ru ? 'Всё время' : 'Show all time'}</button>
+            : <Link href={`/${locale}/app/tests`} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>}
         </div>
       )}
 
-      {groups.length > 0 && (
+      {allGroups.length > 0 && (
         <details className="hh-insights-export">
           <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>
           <ClientReportActions data={data} locale={locale} />
@@ -1841,7 +1877,7 @@ function PortfolioPage({ data, locale }) {
         <Link href={`/${locale}/app/tests`} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
       </div>
 
-      {groups.length > 0 && (
+      {allGroups.length > 0 && (
         <details className="hh-insights-advanced">
           <summary>{ru ? 'Дополнительно: общие графики и таблица измерений' : 'Advanced: combined charts and measurements'}</summary>
           <ProfileOverview profile={profile} locale={locale} />
@@ -2318,6 +2354,9 @@ function ResultConsultationCta({ locale }) {
 }
 
 function ResultPage({ id, locale, data }) {
+  const router = useRouter()
+  const [retaking, setRetaking] = useState(false)
+  const [retakeError, setRetakeError] = useState(null)
   const c = COPY[locale],
     [result, setResult] = useState(data.results.find((r) => r.id === id) || null),
     [error, setError] = useState(null)
@@ -2349,6 +2388,28 @@ function ResultPage({ id, locale, data }) {
       monitoringCatalogItem(result.definitionKey)?.title?.[locale] ||
       monitoringCatalogItem(result.definitionKey)?.title?.en ||
       result.definitionKey
+  const repeatDefinition = getDefinitionById(result.definitionId)
+  const canRepeat = Boolean(repeatDefinition && MONITORING_CATALOG.some(item =>
+    item.startable && item.key === result.definitionKey && item.version === result.definitionVersion))
+  async function repeatTest() {
+    if (retaking || !canRepeat) return
+    setRetaking(true)
+    setRetakeError(null)
+    try {
+      const draft = (data.runs || []).find(run =>
+        run.definitionId === result.definitionId && ['draft', 'in_progress'].includes(run.status))
+      const run = draft || await appFetch('runs', {
+        definitionKey: repeatDefinition.key,
+        definitionVersion: repeatDefinition.version,
+        instrumentLocale: repeatDefinition.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      router.push('/' + locale + '/app/runs/' + encodeURIComponent(run.id) + '?mode=quick')
+    } catch (cause) {
+      setRetakeError(cause)
+      setRetaking(false)
+    }
+  }
   return (
     <article className="hh-result-page">
       <header className="hh-result-hero">
@@ -2356,9 +2417,7 @@ function ResultPage({ id, locale, data }) {
           <p className="hh-kicker">{c.result}</p>
           <h1>{title}</h1>
           <p className="hh-result-intro">
-            {monitoringCatalogItem(result.definitionKey)?.description?.[locale] ||
-              monitoringCatalogItem(result.definitionKey)?.description?.en ||
-              (locale === 'ru' ? 'Ваши ответы по этому конкретному тесту, с пояснениями и рекомендациями ниже.' : 'Your responses to this specific assessment, with interpretation and recommendations below.')}
+            {locale === 'ru' ? 'Ваш результат и два практических шага на неделю.' : 'Your score and two practical next steps for this week.'}
           </p>
         </div>
         <div className="hh-result-meta">
@@ -2369,7 +2428,18 @@ function ResultPage({ id, locale, data }) {
 
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
-      <PersonalResultReport result={result} locale={locale} />
+      <PersonalResultReport result={result} locale={locale} previous={previous} />
+      <div className="hh-result-repeat">
+        {canRepeat
+          ? <button type="button" onClick={repeatTest} disabled={retaking}>
+              {retaking ? (locale === 'ru' ? 'Открываем тест…' : 'Opening test…')
+                : (locale === 'ru' ? '↻ Пройти тест ещё раз' : '↻ Retake this test')}
+            </button>
+          : <Link href={'/' + locale + '/app/tests'} prefetch={false}>
+              {locale === 'ru' ? 'Подобрать доступный тест →' : 'Choose an available assessment →'}
+            </Link>}
+        {retakeError && <p role="alert">{message(retakeError, c)}</p>}
+      </div>
       <details className="hh-result-raw-details">
         <summary>{locale === 'ru' ? 'Посмотреть все исходные баллы и шкалы' : 'View all recorded scores and scales'}</summary>
       <section className="hh-result-section" aria-labelledby="result-values-title">

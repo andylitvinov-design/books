@@ -1,0 +1,15 @@
+.gauge{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;flex:none;width:170px;margin:0;color:#3a5147;text-align:center;min-width:0}
+.gauge svg{width:100%;height:auto;display:block}
+.value{font:800 1.65rem/1.1 system-ui,-apple-system,sans-serif;color:#384a44;letter-spacing:-.04em;margin-top:-8px;font-variant-numeric:tabular-nums}
+.value span{font-size:.73rem;font-weight:650;letter-spacing:0;color:#726e66}
+.gauge figcaption{font:650 .73rem/1.25 system-ui,-apple-system,sans-serif;color:#5d7569;margin-top:7px;max-width:100%}
+.compact{width:133px}
+.compact .value{font-size:1.32rem}
+.compact figcaption{font-size:.67rem;margin-top:4px}
+.unavailable{display:block;font-size:14px;color:#7a6f67}
+.trend{display:inline-flex;align-items:center;gap:5px;white-space:normal;font:730 .8rem/1.35 system-ui,-apple-system,sans-serif;border-radius:99px;padding:5px 9px;background:#f1f1ec;color:#565d58}
+.trend>span:first-child{font-size:1.15rem;line-height:1}
+.improved{color:#22624f;background:#e3f2e9}
+.worsened{color:#a0443d;background:#fbe8e4}
+.changed,.baseline,.unchanged{color:#5c6863;background:#eff1ef}
+@media(max-width:500px){.gauge{width:138px}.compact{width:113px}.value{font-size:1.35rem}.compact .value{font-size:1.12rem}.gauge figcaption{font-size:.68rem}.compact figcaption{font-size:.61rem}.trend{font-size:.74rem;padding:4px 8px}}

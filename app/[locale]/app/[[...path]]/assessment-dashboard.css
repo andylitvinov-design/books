@@ -1,0 +1,90 @@
+/* Readable assessment cockpit for private Holistic House results and Insights. */
+.hh-app .hh-result-page{gap:12px;padding:clamp(14px,2.2vw,24px)!important}
+.hh-app .hh-result-hero{padding-bottom:11px!important;margin-bottom:2px!important}
+.hh-app .hh-result-hero h1{font-size:clamp(1.65rem,4vw,2.35rem)!important;line-height:1.12!important;margin:3px 0 8px!important}
+.hh-app .hh-result-hero .hh-result-intro{font-size:.93rem!important;line-height:1.4!important;margin:4px 0!important;color:#716960;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.hh-app .hh-result-repeat{margin:10px 0 14px}
+.hh-app .hh-result-repeat button,.hh-app .hh-result-repeat a{width:100%;min-height:62px!important;display:flex;align-items:center;justify-content:center;padding:13px 20px!important;border-radius:15px!important;text-decoration:none;font-size:1.16rem!important;font-weight:800!important;border:1px solid #1c6956!important;background:#206c58!important;color:#fff!important;box-shadow:0 5px 13px #1c695520}
+.hh-app .hh-result-repeat button:hover{background:#195943!important}
+.hh-app .hh-result-repeat button:focus-visible,.hh-app .hh-result-repeat a:focus-visible{outline:3px solid #bf6944;outline-offset:3px}
+.hh-app .hh-result-repeat p[role=alert]{font-size:.94rem;color:#9b3737;margin:9px 0}
+.hh-app .hh-result-raw-details{margin:8px 0!important}
+.hh-app .hh-result-raw-details>summary{font-size:.92rem!important;padding:12px 4px!important}
+.hh-app .hh-result-comparison{margin:12px 0!important;padding:13px 16px!important}
+.hh-app .hh-result-comparison h2{font-size:1.35rem!important}
+.hh-app .hh-result-comparison p{font-size:.92rem!important}
+.hh-app .hh-insights-intro{margin-bottom:12px}
+.hh-app .hh-insights-intro h1{font-size:clamp(1.9rem,4vw,2.35rem)!important}
+.hh-app .hh-insights-intro p:not(.hh-kicker){font-size:.92rem;line-height:1.4}
+.hh-insights-period{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:10px 0 13px}
+.hh-insights-period>span{color:#69594d;font-weight:800;font-size:.92rem;margin-right:3px}
+.hh-app .hh-insights-period button{min-height:38px!important;border-radius:99px!important;border:1px solid #d5cbbf!important;background:#fffdf7!important;color:#665849!important;padding:7px 13px!important;font-size:.84rem!important;font-weight:750!important}
+.hh-app .hh-insights-period button[aria-pressed=true]{background:#276d58!important;color:white!important;border-color:#276d58!important}
+.hh-app .hh-insights-period button:focus-visible,.hh-insights-date-range input:focus-visible{outline:3px solid #438a78;outline-offset:2px}
+.hh-insights-date-range{display:flex;flex-wrap:wrap;gap:10px;margin:-2px 0 14px}
+.hh-insights-date-range label{display:flex;align-items:center;gap:8px;color:#64594f;font-size:.9rem;font-weight:740}
+.hh-insights-date-range input{max-width:170px;min-height:42px;border:1px solid #c9cfc5;border-radius:9px;background:#fffdf8;padding:7px 9px;font-size:1rem;color:#38352f}
+.hh-app .hh-insights-test-list{gap:10px!important}
+.hh-app .hh-insights-test-card{border-radius:17px!important}
+.hh-app .hh-insights-test-link{display:flex!important;align-items:center;gap:clamp(12px,2.5vw,24px);padding:15px 20px!important;min-width:0}
+.hh-insights-test-gauge{flex:none;display:grid;align-items:center;justify-items:center}
+.hh-insights-test-body{min-width:0;flex:1;display:flex;flex-direction:column;align-items:start;gap:6px}
+.hh-app .hh-insights-test-meta{font-size:.78rem;color:#796f64}
+.hh-app .hh-insights-test-card h2{font-size:clamp(1.12rem,2.35vw,1.46rem)!important;font-weight:500!important;line-height:1.2!important;margin:0!important}
+.hh-app .hh-insights-test-summary{font-size:.88rem!important;line-height:1.33!important;background:none!important;padding:0!important;color:#586159!important;margin:0!important}
+.hh-app .hh-insights-test-summary strong{color:#2c6654}
+.hh-app .hh-insights-test-scores{display:block;font-size:.79rem;padding:0}
+.hh-app .hh-insights-open{font-size:.84rem!important;margin:1px 0 0;padding-top:6px!important;text-align:left}
+.hh-app .hh-insights-history summary{font-size:.9rem!important}
+.hh-app .hh-insights-empty{margin:12px 0;padding:16px;border-radius:16px}
+.hh-app .hh-insights-empty h2{font-size:1.2rem;margin:0 0 8px}
+.hh-app .hh-insights-empty p{font-size:.95rem;line-height:1.45}
+@media(max-width:700px){
+ .hh-app .hh-insights-intro{margin:0 0 12px}
+ .hh-app .hh-insights-test-link{padding:12px 11px!important;gap:8px}
+ .hh-app .hh-insights-test-card h2{font-size:1.09rem!important}
+ .hh-app .hh-insights-open{font-size:.78rem!important}
+ .hh-app .hh-insights-test-summary{font-size:.8rem!important}
+ .hh-app .hh-result-hero h1{font-size:1.72rem!important}
+ .hh-app .hh-result-hero .hh-result-intro{font-size:.9rem!important}
+ .hh-app .hh-result-repeat button,.hh-app .hh-result-repeat a{min-height:58px!important;font-size:1.07rem!important}
+ .hh-app .hh-insights-period{gap:6px}
+ .hh-app .hh-insights-period button{font-size:.78rem!important;padding:6px 10px!important}
+}
+@media(max-width:360px){
+ .hh-app .hh-insights-test-link{padding:10px 6px!important;gap:5px}
+ .hh-app .hh-insights-test-card h2{font-size:1.01rem!important}
+ .hh-app .hh-insights-date-range label{width:100%;justify-content:space-between}
+}
+
+
+/* Dashboard cockpit: multiple instrument dials on wide screens, one readable row on phones. */
+.hh-app .hh-insights-test-list{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr))!important;
+  gap:12px!important
+}
+.hh-app .hh-insights-test-card{
+  min-width:0;display:flex;flex-direction:column;
+  border:1px solid #d5ddd5!important;background:#fffefa!important
+}
+.hh-app .hh-insights-test-card .hh-insights-test-link{flex:1;min-width:0}
+.hh-app .hh-insights-test-card .hh-insights-test-body{min-width:0}
+.hh-app .hh-insights-period-guide{
+  color:#5f6b62;font-size:.84rem!important;line-height:1.43!important;
+  margin:0 0 14px!important;padding-left:3px
+}
+.hh-app .hh-insights-test-card .hh-insights-test-summary{
+  font-size:.9rem!important;line-height:1.4!important
+}
+.hh-app .hh-insights-test-card .hh-insights-test-meta time{
+  font-size:.82rem;color:#716a61;font-weight:650
+}
+.hh-app .hh-insights-test-card .hh-insights-open{color:#286853}
+.hh-app .hh-insights-test-link:hover{background:#f5faf5}
+@media(max-width:600px){
+  .hh-app .hh-insights-test-card .hh-insights-test-summary{font-size:.87rem!important}
+  .hh-app .hh-insights-test-card h2{font-size:1.14rem!important}
+  .hh-app .hh-insights-test-card .hh-insights-open{font-size:.86rem!important}
+  .hh-app .hh-insights-period-guide{font-size:.81rem!important}
+}
