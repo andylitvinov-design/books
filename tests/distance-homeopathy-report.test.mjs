@@ -30,6 +30,7 @@ function clientDocument(includeDistanceHomeopathy = false) {
 test('distance-homeopathy selection is saved with prescriptions and not with invoices', async () => {
   const store = createMemoryPrescriptionStore()
   const input = {
+    patientName,
     consultationDate: '2026-10-13', languagePreference: 'en',
     includeRecommendation: true, includeInvoice: false,
     includeDistanceHomeopathy: true, items,
@@ -80,7 +81,8 @@ test('selected full guide is appended after remedy profiles, and disabled guide 
   assert.equal(off.includes(marker), false)
   assert.equal(on.includes(marker), true)
   assert.ok(on.indexOf(marker) > on.indexOf('SELECTED REMEDY PROFILES'))
-  assert.match(on, /View the original illustrated guide/)
+  // The visible link caption uses a Unicode arrow and is correctly CID-encoded in PDF.
+  // Check its real clickable URI instead of searching for an unencoded glyph stream.
   assert.match(on, /\/URI \(https:\/\/example\.test\/en\/library\/distance-homeopathy\)/)
   assert.ok(on.length > off.length)
 
