@@ -160,7 +160,10 @@ export default function CourseToday({locale='en'}){
     setInterference(response?.currentCheckin?.interference??null)
     setResource(response?.currentCheckin?.resource??null)
     setDailyNote(response?.currentCheckin?.note||'')
+    setReviewNote('')
+    setReviewDecision('continue')
     setStage(0)
+    setExpanded('checkin')
   }else {
     if(response?.currentSession){
       setBeforeNow(response.currentSession.beforeNow)
