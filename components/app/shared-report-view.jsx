@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { DownloadPractitionerReport } from '@/components/app/personal-analysis-panel'
+import { ReportInvitationGate } from '@/components/app/report-invitation-gate'
 
 const COPY = {
   en: {
@@ -94,7 +95,7 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
         operationId: crypto.randomUUID(),
       })
       if (intent.signedIn) {
-        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id))
+        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id) + '&auto=1')
         return
       }
       const auth = await api('auth/start', { locale, intentId: intent.id })
@@ -111,22 +112,35 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
     return <section className="shared-report-card"><p role="alert">{c.unavailable}</p></section>
 
   return (
-    <section className="shared-report-card">
-      <p className="about-kicker">{c.guest}</p>
-      <AssessmentReading record={report} locale={locale} />
-      <div className="hh-analysis-detail-download"><DownloadPractitionerReport report={report} locale={locale} /></div>
-      {grant?.expiresAt && <p className="cabinet-test-note">{c.expires}: {new Date(grant.expiresAt).toLocaleString(locale)}</p>}
-      <div className="shared-report-save">
-        <p>{c.note}</p>
-        {grant?.saveAllowed ? (
+    <ReportInvitationGate
+      locale={locale}
+      kind="report"
+      saveAction={grant?.saveAllowed && appAvailable ? (
+        <>
           <button type="button" onClick={save} disabled={busy}>
             {busy ? c.saving : c.save}
           </button>
-        ) : (
-          <p className="cabinet-test-note">{c.viewOnly}</p>
-        )}
-        {error && <p role="alert" className="client-entry-error">{error}</p>}
-      </div>
-    </section>
+          {error && <p role="alert" className="client-entry-error">{error}</p>}
+        </>
+      ) : null}
+    >
+      <section className="shared-report-card">
+        <p className="about-kicker">{c.guest}</p>
+        <AssessmentReading record={report} locale={locale} />
+        <div className="hh-analysis-detail-download"><DownloadPractitionerReport report={report} locale={locale} /></div>
+        {grant?.expiresAt && <p className="cabinet-test-note">{c.expires}: {new Date(grant.expiresAt).toLocaleString(locale)}</p>}
+        <div className="shared-report-save">
+          <p>{c.note}</p>
+          {grant?.saveAllowed && appAvailable ? (
+            <button type="button" onClick={save} disabled={busy}>
+              {busy ? c.saving : c.save}
+            </button>
+          ) : (
+            <p className="cabinet-test-note">{appAvailable ? c.viewOnly : c.authUnavailable}</p>
+          )}
+          {error && <p role="alert" className="client-entry-error">{error}</p>}
+        </div>
+      </section>
+    </ReportInvitationGate>
   )
 }
