@@ -273,7 +273,7 @@ export default function CourseToday({locale='en'}){
       {!isFinished&&!paused&&<a href="#course-today-lesson" className={styles.todayPrimary}
         data-course-today-primary onClick={()=>setExpanded(today?'thought':'checkin')}>
         {t.openToday}<ArrowRight size={17} aria-hidden="true"/>
-      </a>
+      </a>}
     </div>
     <div className={styles.counter}><strong>{progress.practiceCount||0}<span>/{cycle.durationDays}</span></strong><small>{t.count}</small></div>
   </header>
