@@ -1,3 +1,5 @@
+import { COURSE_CONTENT_V3, V3_CORE_DAYS, V3_SUPPORT_DAYS, v3FocusChoiceIndex, v3ReturnSuggestion } from '../lib/inner-growth/course-v3.js'
+import { DEEP_PRACTICE_DAYS, deepPracticeDay } from '../data/inner-growth/deep-practice-v3.js'
 import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.js'
 import { COURSE_JOURNEY, COURSE_PHASES } from '../data/inner-growth/course-journey.js'
 import { SHARED_DAYS } from '../data/inner-growth/shared-days.js'
@@ -9,7 +11,7 @@ import {
   GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS,
   courseDay, courseLesson, growthSuggestions, suggestedCourseTopics,
 } from '../lib/inner-growth/course-model.js'
-import { courseRecommendedTests, courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale } from '../lib/inner-growth/course-strategy.js'
+import { courseRecommendedTests, courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale, coursePracticeFocus } from '../lib/inner-growth/course-strategy.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
@@ -318,7 +320,7 @@ test('personal 14-day roadmap uses the same day-specific approved focus and real
   const ui = read('components/app/course-today.jsx')
   const css = read('components/app/course-today.module.css')
   assert.match(server, /const roadmap=COURSE_JOURNEY\.map/)
-  assert.match(server, /coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,plannedDay,locale\)/)
+  assert.match(server, /coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,plannedDay,locale,contentVersion\)/)
   assert.match(server, /Boolean\(history\.days\[plannedDay-1\]\?\.sessionCompleted\)/)
   assert.match(server, /roadmap,/)
   assert.match(ui, /data-course-journey/)
@@ -460,4 +462,118 @@ test('workbook personal notes use existing owner scoped encrypted course session
   assert.match(css,/\.workbookTask/)
   assert.match(css,/\.workbookFinish/)
   assert.doesNotMatch(ui,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
+})
+
+
+test('V3 has fourteen bilingual recall–action–reflection lessons while preserving 84 authored track lessons', () => {
+  assert.equal(DEEP_PRACTICE_DAYS.length,14)
+  const distinct=new Set()
+  for(let day=1;day<=14;day++){
+    const ru=deepPracticeDay(day,'ru'),en=deepPracticeDay(day,'en')
+    assert.equal(ru.day,day)
+    assert.equal(en.day,day)
+    for(const lang of [ru,en]){
+      for(const field of ['recall','microAction','review']) assert.ok(lang[field].length>40,field+' '+day)
+      distinct.add(lang.recall)
+    }
+    for(const domain of Object.keys(TRACKS)){
+      const prior=lessonFor(domain,day,'en','standard')
+      const updated=lessonFor(domain,day,'en','standard',COURSE_CONTENT_V3)
+      assert.equal(updated.version,COURSE_CONTENT_V3)
+      assert.equal(prior.version,COURSE_CONTENT_VERSION)
+      assert.notEqual(updated.id,prior.id)
+      assert.equal(updated.title,prior.title)
+      assert.equal(updated.ritual,prior.ritual)
+      assert.deepEqual(updated.sections,prior.sections)
+      assert.deepEqual(updated.workbook,prior.workbook)
+      assert.deepEqual(updated.practiceV3,deepPracticeDay(day,'en'))
+      assert.deepEqual(lessonFor(domain,day,'ru','quick',COURSE_CONTENT_V3).practiceV3,ru)
+    }
+  }
+  assert.equal(distinct.size,28)
+  assert.equal(deepPracticeDay(0),null)
+  assert.equal(deepPracticeDay(15),null)
+  assert.equal(deepPracticeDay(2.5),null)
+})
+
+test('V3 consistently gives six primary lessons and all supporting skills repeated without altering R2 rotation', () => {
+  assert.deepEqual(V3_CORE_DAYS,[1,2,4,6,9,14])
+  assert.equal(V3_SUPPORT_DAYS.length,8)
+  for(let choiceCount=2;choiceCount<=5;choiceCount++){
+    const indices=Array.from({length:14},(_,i)=>v3FocusChoiceIndex(i+1,choiceCount))
+    assert.equal(indices.filter(i=>i===0).length,6)
+    for(let other=1;other<choiceCount;other++) assert.ok(indices.filter(i=>i===other).length>=2)
+    assert.equal(indices[13],0,'day 14 returns to the main skill')
+  }
+  assert.equal(v3FocusChoiceIndex(1,1),0)
+  assert.equal(v3FocusChoiceIndex(1,0),null)
+  assert.equal(v3FocusChoiceIndex(0,3),null)
+  assert.equal(v3FocusChoiceIndex(15,3),null)
+  const scales=['weekly.tension','weekly.recovery','weekly.clarity','weekly.connection','weekly.mood']
+    .map(key=>'hh-weekly-pulse::'+key)
+  const r2=coursePracticeFocus(scales,'calm_regulation',2,'en')
+  const v3=coursePracticeFocus(scales,'calm_regulation',2,'en',COURSE_CONTENT_V3)
+  assert.equal(r2.scaleId,scales[1])
+  assert.equal(v3.scaleId,scales[0])
+  assert.equal(v3.role,'primary')
+  for(let day=1;day<=14;day++){
+    const item=coursePracticeFocus(scales,'calm_regulation',day,'en',COURSE_CONTENT_V3)
+    assert.equal(item.scaleId,scales[v3FocusChoiceIndex(day,5)])
+    assert.ok(['primary','support'].includes(item.role))
+  }
+  assert.equal(coursePracticeFocus([], 'inner_support',8,'ru',COURSE_CONTENT_V3).goal,'inner_support')
+})
+
+test('V3 re-entry hints are nonclinical, optional and do not misrepresent missing days', () => {
+  assert.equal(v3ReturnSuggestion({day:2,sessions:[]}),null)
+  assert.equal(v3ReturnSuggestion({day:4,sessions:[]}), 'restart')
+  assert.equal(v3ReturnSuggestion({day:7,sessions:[{day:3,feedback:'neutral'}]}),'restart')
+  assert.equal(v3ReturnSuggestion({day:7,sessions:[{day:6,feedback:'uncomfortable'}]}),'gentle')
+  assert.equal(v3ReturnSuggestion({day:7,sessions:[{day:6,feedback:'helped'}]}),null)
+  assert.equal(v3ReturnSuggestion({day:17,sessions:[]}),null)
+})
+
+test('V3 persists the chosen content version and uses the exact same lesson ID for display and authenticated save', () => {
+  const service=read('lib/app/growth-daily.js')
+  const component=read('components/app/course-today.jsx')
+  const css=read('components/app/course-today.module.css')
+  assert.match(service,/goal,COURSE_CONTENT_V3,local,zone/)
+  assert.match(service,/cycle\.content_version===COURSE_CONTENT_V3\?COURSE_CONTENT_V3:COURSE_CONTENT_VERSION/)
+  assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,dayInfo\.day,locale,contentVersion\)/)
+  assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,plannedDay,locale,contentVersion\)/)
+  assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,today\.day,locale,version\)/)
+  assert.match(service,/const lesson=lessonFor\(focus\.goal,today\.day,'en','standard',version\)/)
+  assert.match(service,/input\.lessonId!==lesson\.id/)
+  assert.match(service,/lesson\.id,version,before,after/)
+  assert.match(service,/where account_id=\$1 and cycle_id=\$2/)
+  for (const required of ['data-course-primary-skill','data-course-active-recall','data-course-skill-transfer','data-course-learning-evidence','data-course-gentle-return','data-course-reflection-transfer']) {
+    assert.ok(component.includes(required), required)
+  }
+  assert.match(component,/hasComparableWeeks/)
+  assert.match(component,/isV3&&/)
+  assert.match(css,/\.recallCard/)
+  assert.match(css,/\.transferCard/)
+  assert.match(css,/\.learningEvidence/)
+  assert.doesNotMatch(component,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
+  assert.doesNotMatch(service,/select \* from app_private\.growth_sessions(?! where account_id)/)
+})
+
+
+test('client consciously chooses or confirms the V3 main skill before activating the cycle',()=>{
+  const picker=read('components/app/course-focus-picker.jsx')
+  const pickerCss=read('components/app/course-r3-steps.module.css')
+  const steps=read('components/app/course-r3-steps.jsx')
+  const summary=read('components/app/course-completion-review.jsx')
+  const service=read('lib/app/growth-course.js')
+  assert.match(picker,/data-course-primary-scale-choice/)
+  assert.match(picker,/id="course-main-scale"/)
+  assert.match(picker,/onSetPrimaryScale\?\.\(event\.target\.value\)/)
+  assert.match(steps,/onSetPrimaryScale=\{key=>setChosenScales/)
+  assert.match(steps,/mainSkillTitle:/)
+  assert.match(steps,/mainSkillHelp:/)
+  assert.match(summary,/index===0&&/)
+  assert.match(summary,/t\.mainSkillTitle/)
+  assert.match(pickerCss,/\.primaryScaleChoice/)
+  assert.match(service,/scales = strictArray\(body\.scaleKeys/)
+  assert.match(service,/scale_keys=\$3/)
 })

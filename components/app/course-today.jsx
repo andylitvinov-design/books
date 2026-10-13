@@ -53,6 +53,13 @@ const UI={
   sentenceStarter:'If it helps, begin with',journalHelp:'One honest sentence is enough; the note is kept privately in your account.',
   continuedLearning:'My next few weeks',noHabitGuarantee:'Fourteen days offer a starting cycle, not a guarantee that a habit or belief has changed.',
   savedWorkbookHistory:'My saved reflections',savedWorkbookIntro:'Your previous private notes may help you review your learning. Older notes might come from an earlier lesson version.',savedNote:'Saved note',
+  coreFocus:'My main practice skill',supportFocus:'Supporting skill',activeRecall:'Recall before reading',recallOptional:'Try remembering in your own words; you can skip this.',
+  transferPrompt:'Optional real-life practice',transferHint:'A small choice, not a required challenge.',reflectionV3:'A question to bring into tomorrow',
+  afterGap:'Welcome back. You can restart gently with a shorter lesson; there is no catching up to do.',
+  progressThree:'What the data can and cannot show',participation:'Sessions saved',helpfulCount:'Times you said the practice helped',
+  weeklyComparison:'Weekly self-ratings (median)',weekOne:'Days 1–7',weekTwo:'Days 8–14',
+  insufficientRatings:'A weekly comparison needs at least four observations in each week. Missing values stay missing.',
+  learningBoundaries:'These are descriptive self-reports, not clinical scores or proof that the programme caused change.',
  },
  ru:{
   welcome:'Ваш ежедневный курс',open:'Открыть',close:'Свернуть',day:'День',of:'из',mins:'минут',daily:'Мой ежедневный замер',
@@ -100,6 +107,13 @@ const UI={
   sentenceStarter:'Можно начать так',journalHelp:'Достаточно одного честного предложения. Запись приватно хранится в кабинете.',
   continuedLearning:'Мои следующие недели',noHabitGuarantee:'14 дней — стартовый цикл, а не гарантия закрепившейся привычки или изменившегося убеждения.',
   savedWorkbookHistory:'Мои сохранённые наблюдения',savedWorkbookIntro:'Предыдущие приватные записи помогают осмыслить путь. Старые записи могли быть сделаны до обновления программы.',savedNote:'Сохранённая заметка',
+  coreFocus:'Мой основной навык',supportFocus:'Дополнительный навык',activeRecall:'Вспомнить перед чтением',recallOptional:'Попробуйте вспомнить самостоятельно. Можно пропустить.',
+  transferPrompt:'Необязательная практика в жизни',transferHint:'Маленький выбор, а не обязательное испытание.',reflectionV3:'Вопрос для переноса опыта',
+  afterGap:'Рады вашему возвращению. Можно начать с короткой версии; ничего догонять не нужно.',
+  progressThree:'Что показывают наблюдения',participation:'Сохранённых занятий',helpfulCount:'Раз вы отметили, что практика помогла',
+  weeklyComparison:'Недельные самооценки (медиана)',weekOne:'Дни 1–7',weekTwo:'Дни 8–14',
+  insufficientRatings:'Для сравнения недель нужно хотя бы четыре наблюдения за каждую. Пропуски не заменяются нулями.',
+  learningBoundaries:'Это описательные самоотчёты, не клинические показатели и не доказательство влияния курса.',
  }
 }
 async function api(action,locale,body){
@@ -205,6 +219,9 @@ export default function CourseToday({locale='en'}){
  const reviewed=reportDay&&data.reviews?.some(r=>r.day===reportDay)
  const problem=target.label||''
  const activeName=GROWTH_GOALS[cycle?.activeGoal||cycle?.primaryGoal]?.title?.[locale]||''
+ const isV3=Boolean(lesson?.practiceV3)
+ const firstWeekMedian=progress.weeklyMedian?.[0],secondWeekMedian=progress.weeklyMedian?.[1]
+ const hasComparableWeeks=Number.isFinite(firstWeekMedian)&&Number.isFinite(secondWeekMedian)
  // The thought and everyday action are separate cards; do not make the
  // guided timer repeat their text as additional meditation steps.
  const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind))
@@ -234,6 +251,12 @@ export default function CourseToday({locale='en'}){
       <h2>{t.welcome}</h2>
       <p className={styles.heroDay}>{t.day} {cycle.day} · {lesson?.title||lesson?.journey?.heading}</p>
       <p className={styles.heroPurpose}>{lesson?.journey?.purpose}</p>
+      {isV3&&<p className={styles.focusRoleBanner} data-course-primary-skill>
+        <strong>{t.coreFocus}: </strong>
+        {GROWTH_GOALS[cycle?.primaryGoal]?.title?.[locale]||activeName}
+        {cycle?.primaryScaleLabel?' · '+cycle.primaryScaleLabel:''}
+      </p>}
+      {isV3&&cycle.activeFocusRole==='support'&&<p className={styles.supportRole}>{t.supportFocus}: {activeName}</p>}
       {lesson?.workbook?.skill&&<p className={styles.heroSkill}><strong>{t.skillLabel}:</strong> {lesson.workbook.skill}</p>}
       <p className={styles.focus}>{activeName}{cycle?.activeScaleLabel?' · '+cycle.activeScaleLabel:''} · {problem}</p>
       <p className={styles.hint}>{t.day} {cycle.day} {t.of} {cycle.durationDays} · {t.date}: {cycle.todayLocalDate} · {cycle.timeZone}</p>
@@ -244,6 +267,8 @@ export default function CourseToday({locale='en'}){
   {error&&<p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error}) <button type="button" onClick={reload}>{t.retry}</button></p>}
   {paused&&<p className={styles.note}>{t.paused}</p>}
   {isFinished&&<p className={styles.notice}><CheckCircle2 size={20}/>{t.completed}</p>}
+  {isV3&&data.returnSuggestion==='restart'&&!isFinished&&
+    <p className={styles.returnMessage} data-course-gentle-return>{t.afterGap}</p>}
   <section className={styles.journeyPanel} aria-labelledby="course-journey-heading" data-course-journey>
     <div className={styles.journeyHeading}>
       <div><p className="hh-kicker">HOLISTIC HOUSE · 14 DAYS</p>
@@ -263,7 +288,10 @@ export default function CourseToday({locale='en'}){
         <h4>{item.title}</h4>
         <p className={styles.journeyTheme}>{item.heading} · {item.phaseTitle}</p>
         {item.workbookSkill&&<p className={styles.journeySkill}><strong>{t.skillLabel}:</strong> {item.workbookSkill}</p>}
-        <p className={styles.journeyFocus}>{item.focusTitle}{item.scaleLabel?' · '+item.scaleLabel:''}</p>
+        <p className={styles.journeyFocus}>
+          {isV3&&<strong className={styles.focusRoleTag}>{item.focusRole==='support'?t.supportFocus:t.coreFocus} · </strong>}
+          {item.focusTitle}{item.scaleLabel?' · '+item.scaleLabel:''}
+        </p>
         <p className={styles.journeyOutcome}><strong>{t.outcome}:</strong> {item.outcome}</p>
         {item.status==='today'&&!isFinished&&<a href="#course-today-lesson"
           className={styles.journeyAction} onClick={()=>setExpanded('checkin')}>
@@ -303,6 +331,10 @@ export default function CourseToday({locale='en'}){
    </DailyCard>
    <DailyCard number="thought" title={'02 · '+t.thought} subtitle={lesson?.title||''} icon={Lightbulb}
     expanded={expanded==='thought'} onToggle={()=>setExpanded(x=>x==='thought'?'':'thought')}>
+      {isV3&&<aside className={styles.recallCard} data-course-active-recall>
+        <strong>{t.activeRecall}</strong><p>{lesson.practiceV3.recall}</p>
+        <small>{t.recallOptional}</small>
+      </aside>}
       <blockquote className={styles.aphorism}>“{lesson?.aphorism}”</blockquote>
       <p>{lesson?.sections?.find(x=>x.kind==='learn')?.text}</p>
       {lesson?.workbook&&<aside className={styles.workingPosition}>
@@ -351,6 +383,10 @@ export default function CourseToday({locale='en'}){
       {lesson?.workbook&&<section className={styles.workbookTask} data-course-micro-experiment>
         <h4>{t.todayExperiment}</h4><p>{lesson.workbook.microPractice}</p>
       </section>}
+      {isV3&&<details className={styles.transferCard} data-course-skill-transfer>
+        <summary>{t.transferPrompt}</summary>
+        <p>{lesson.practiceV3.microAction}</p><small>{t.transferHint}</small>
+      </details>}
       {data.anchor&&<details className={styles.anchorBox}>
         <summary>{t.anchorTitle}: {data.anchor.title}</summary>
         <p className={styles.hint}>{t.anchorIntro}</p><p>{data.anchor.practice}</p>
@@ -367,6 +403,9 @@ export default function CourseToday({locale='en'}){
       <h4>{lesson.workbook.question}</h4>
       <p><strong>{t.sentenceStarter}:</strong> {lesson.workbook.sentenceStarter}</p>
     </section>}
+    {isV3&&<p className={styles.reflectionTransfer} data-course-reflection-transfer>
+      <strong>{t.reflectionV3}:</strong> {lesson.practiceV3.review}
+    </p>}
     <div className={styles.ratingPair}>
       <Rating optional label={t.beforeNow} value={beforeNow} onChange={setBeforeNow}/>
       <Rating optional label={t.afterNow} value={afterNow} onChange={setAfterNow}/>
@@ -401,6 +440,17 @@ export default function CourseToday({locale='en'}){
    </p>:<p className={styles.hint}>{t.noChange}</p>}
    <p className={styles.hint}>{t.changeText}</p>
   </section>
+  {isV3&&<section className={styles.learningEvidence} data-course-learning-evidence>
+    <h3>{t.progressThree}</h3>
+    <div className={styles.learningEvidenceGrid}>
+      <div><strong>{progress.practiceCount||0} / 14</strong><span>{t.participation}</span></div>
+      <div><strong>{progress.helpful||0}</strong><span>{t.helpfulCount}</span></div>
+    </div>
+    {hasComparableWeeks?<p className={styles.weekComparison}>
+      {t.weeklyComparison}: {t.weekOne} {firstWeekMedian}/10 → {t.weekTwo} {secondWeekMedian}/10
+    </p>:<p className={styles.hint}>{t.insufficientRatings}</p>}
+    <p className={styles.hint}>{t.learningBoundaries}</p>
+  </section>}
   {data.journalHistory?.length>0&&<section className={styles.workbookHistory} data-course-journal-history>
     <details>
       <summary>{t.savedWorkbookHistory} ({data.journalHistory.length})</summary>
