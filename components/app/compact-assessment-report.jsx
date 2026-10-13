@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { FreeCourseBanner } from './free-course-banner'
 import { ScoreGauge, ScoreTrend } from './assessment-gauge'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import { gaugeModel } from '@/lib/assessments/dashboard-gauges'
@@ -8,7 +8,6 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const ru = locale === 'ru'
   const scaleGuide = getTestScaleGuide(result.definitionKey, locale)
   const byScale = new Map((scaleGuide?.scales || []).map(scale => [scale.key, scale]))
-  const hasSkills = Boolean(scaleGuide?.skillAxes?.length)
   return <section className={styles.report} data-personal-result-report data-compact-assessment-report
     aria-label={ru ? 'Мои результаты и рекомендации' : 'Results and recommendations'}>
     <header className={styles.header}>
@@ -69,8 +68,6 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       <p>{ru
         ? 'Индикаторы показывают ответы на отдельных шкалах, а не процент здоровья. Изменение балла не доказывает изменение состояния.'
         : 'Each dial shows a questionnaire scale, not a health percentage. A score change alone does not prove a health change.'}</p>
-      {hasSkills && <Link href={'/' + (ru ? 'ru' : 'en') + '/app/course'} prefetch={false}>
-        {ru ? 'Выбрать навык для личного курса →' : 'Explore a personal practice →'}</Link>}
       <details><summary>{ru ? 'О методике, ограничениях и версии интерпретации' : 'Method, limitations & interpretation version'}</summary>
         <p>{report.purpose}</p>
         <p>{report.note}</p>
@@ -78,5 +75,6 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <small>{ru ? 'Версия интерпретации' : 'Interpretation version'}: {report.rulesVersion}</small>
       </details>
     </div>
+    <FreeCourseBanner locale={locale}/>
   </section>
 }
