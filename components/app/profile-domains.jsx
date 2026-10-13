@@ -268,6 +268,7 @@ export function ProfileDomains({
           <ReportsHistory reports={psychologicalReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.emptyLegacyPsy} t={t} />
           <Link className="hh-domain-secondary-link" href={'/' + locale + '/app/portrait'} prefetch={false}>{t.google} <ArrowRight size={16} /></Link>
         </> : <>
+          <div className="hh-domain-heading"><div><p className="hh-domain-eyebrow">{t.psychology}</p><h2>{t.psyDetail}</h2><p>{t.psyIntro}</p></div></div>
           {children}
           <div className="hh-domain-link-row"><Link href={'/' + locale + '/app/history'} prefetch={false}>{t.compare} <ArrowRight size={16} /></Link><Link href={'/' + locale + '/app/tests'} prefetch={false}>{t.assessments} <ArrowRight size={16} /></Link></div>
           {psychologicalReports.length > 0 && <ReportsHistory reports={psychologicalReports} locale={locale} title={t.reportHistory} empty={t.noPsy} t={t} />}
@@ -286,7 +287,7 @@ export function ProfileDomains({
         </div>}
         {(external || fetchState !== 'loading') && active === 'wu_xing' && <ReportsHistory reports={wuReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noWu} t={t} />}
         {(external || fetchState !== 'loading') && active === 'hypnotherapy' && <ReportsHistory reports={hypnoReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noHypno} t={t} />}
-        <Link className="hh-domain-secondary-link" href={external ? '/' + locale + '/client/' + encodeURIComponent(selector) + '?view=analysis' : '/' + locale + '/app/analysis'} prefetch={false}>{t.seeAll} <ArrowRight size={16} /></Link>
+        <Link className="hh-domain-secondary-link" href={external ? '/' + locale + '/client/' + encodeURIComponent(selector) + '?view=analysis' : '/' + locale + '/app/portrait#personal-reports'} prefetch={false}>{t.seeAll} <ArrowRight size={16} /></Link>
         {fetchState === 'partial' && <p role="status" className="hh-domain-caution">{t.incomplete}</p>}
         {mayBeLimited && <p className="hh-domain-caution">{t.visibleLimit}</p>}
       </section>}
