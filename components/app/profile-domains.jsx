@@ -161,7 +161,7 @@ function ProfileServiceOffer({ area, locale }) {
 export function ProfileDomains({
   locale = 'en', mode = 'account', selector = null, assessments = [], homeopathyUpdates = [],
   results = [], savedReports = [], savedDocuments = [], children = null,
-  overviewContent = null, reportsContent = null,
+  overviewContent = null, reportsContent = null, focusReports = false,
 }) {
   const ru = locale === 'ru'
   const t = WORDS[ru ? 'ru' : 'en']
@@ -171,7 +171,16 @@ export function ProfileDomains({
   const [fetchedDocuments, setFetchedDocuments] = useState([])
   const [fetchState, setFetchState] = useState('idle')
   const mounted = useRef(true)
+  const focusedArchive = useRef(false)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+  useEffect(() => {
+    if (!reportsContent || focusedArchive.current) return
+    if (!focusReports && window.location.hash !== '#personal-reports') return
+    focusedArchive.current = true
+    // Profile is client-rendered after account bootstrap; browser fragment scrolling
+    // can happen before its report archive exists, so complete it after mount.
+    requestAnimationFrame(() => document.getElementById('personal-reports')?.scrollIntoView({ block: 'start' }))
+  }, [focusReports, reportsContent])
   useEffect(() => { setInteractive(true) }, [])
   const external = mode === 'legacy'
   const recentResults = useMemo(() => ordered(results.map(result => ({ ...result, occurredOn: String(result.measurementAt || '').slice(0, 10) }))), [results])
