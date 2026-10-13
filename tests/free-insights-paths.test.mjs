@@ -18,12 +18,13 @@ test("three free paths use real, existing local service and test routes", () => 
   assert.match(offer, /prefetch=\{false\}/);
 });
 
-test("Home and Services show the free trio while keeping four approved image-left service cards", () => {
+test("Services retains free paths; Home uses only the bottom blue capture for the free trio", () => {
   const home = read("components/holistic-house-home.tsx");
   const services = read("app/[locale]/services/page.tsx");
   const solutions = read("components/services-solutions.tsx");
   const hero = read("components/services-conversion-hero.tsx");
-  assert.match(home, /<FreeInsightsPaths locale=\{locale\} testHref=\{entry\.selfCheck\.href\} \/>/);
+  assert.doesNotMatch(home, /<FreeInsightsPaths/);
+  assert.match(read("components/homepage-contact-cta.tsx"), /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.match(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   assert.match(solutions, /offer.id === "alchemy" \|\| offer.id === "hypnotherapy"/);

@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
-import { FreeInsightsPaths } from "@/components/free-insights-paths";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { RelationshipsSpotlight } from "@/components/relationships-spotlight";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
@@ -133,7 +132,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
             </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--consultation"
-              href="#home-consultation"
+              href={`/${locale}/services#solutions`}
               event="service_request_start"
             >
               {text.heroBook}<span aria-hidden="true">→</span>
@@ -148,8 +147,6 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           </div>
         </div>
       </section>
-
-      <FreeInsightsPaths locale={locale} testHref={entry.selfCheck.href} />
 
       <ServicesSolutions locale={locale} variant="home" />
       <RelationshipsSpotlight locale={locale} />

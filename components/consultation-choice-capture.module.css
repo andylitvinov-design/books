@@ -47,3 +47,26 @@
   .footer { margin-top:12px; }
 }
 @media (prefers-reduced-motion:reduce) { .choice,.action { transition:none; } }
+
+/* Homepage only: three distinct free service choices, within the existing blue enquiry capture. */
+.homeFreeChoices { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.homeFreeChoices .homeFreeChoice {
+  position:relative; display:flex; flex-direction:column; align-items:flex-start;
+  justify-content:flex-start; text-align:left; gap:10px; padding:17px;
+  min-height:185px; font-size:14px; line-height:1.4;
+}
+.homeFreeChoices .homeFreeChoice > svg:not(.homeFreeCheck) { flex:none; }
+.homeFreeNumber { font:800 12px/1.2 Arial,Helvetica,sans-serif; letter-spacing:.09em; opacity:.82; }
+.homeFreeOptionText { display:grid; gap:8px; padding-right:3px; }
+.homeFreeOptionText strong { font:800 15px/1.32 Arial,Helvetica,sans-serif; }
+.homeFreeOptionText small { color:inherit; font:500 12px/1.48 Arial,Helvetica,sans-serif; opacity:.9; }
+.homeFreeCheck { position:absolute; top:15px; right:13px; }
+@media (max-width:760px) {
+  .homeFreeChoices { grid-template-columns:minmax(0,1fr); gap:9px; }
+  .homeFreeChoices .homeFreeChoice { flex-direction:row; align-items:flex-start; min-height:90px; padding:14px 15px; gap:12px; }
+  .homeFreeNumber { display:none; }
+  .homeFreeChoices .homeFreeChoice > svg:not(.homeFreeCheck) { width:24px; height:24px; margin-top:2px; }
+  .homeFreeOptionText { gap:4px; padding-right:17px; }
+  .homeFreeOptionText strong { font-size:15px; }
+  .homeFreeOptionText small { font-size:13px; }
+}

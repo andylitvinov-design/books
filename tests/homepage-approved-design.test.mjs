@@ -85,8 +85,11 @@ test("homepage uses the real blue enquiry chooser instead of the old beige direc
   const homeStyle = read("app/holistic-house-home.css");
   assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
   assert.match(cta, /data-home-contact-capture/);
-  assert.match(cta, /<ConsultationChoiceCapture/);
-  assert.match(cta, /variant="service"/);
+  const homeFree = read("components/homepage-free-capture.tsx");
+  assert.match(cta, /<HomepageFreeCapture locale=\{locale\} \/>/);
+  assert.match(homeFree, /data-consultation-capture="home-free"/);
+  assert.match(homeFree, /data-choice-layout="home-free"/);
+  assert.doesNotMatch(cta, /variant="service"/);
   assert.match(capture, /serviceChoices: ServiceChoice\[\] = \["session", "questions", "free"\]/);
   assert.match(capture, /whatsappEnquiryUrl/);
   assert.match(capture, /t\.me\/AndyTherapist/);
@@ -107,6 +110,6 @@ test("home restores four approved image-left service cards and their titles", ()
   assert.match(cards, /visibleOffers.map/);
   assert.match(css, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
   assert.match(home, /href="#core-services"/);
-  assert.match(home, /<FreeInsightsPaths locale=\{locale\} testHref=\{entry\.selfCheck\.href\}/);
-  assert.ok(home.indexOf("<FreeInsightsPaths") < home.indexOf("<ServicesSolutions"), "Three free offers must appear before the service cards");
+  assert.doesNotMatch(home, /<FreeInsightsPaths/);
+  assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
 });

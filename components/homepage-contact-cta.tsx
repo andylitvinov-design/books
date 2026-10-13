@@ -1,19 +1,13 @@
-import { ConsultationChoiceCapture } from "@/components/consultation-choice-capture";
+import { HomepageFreeCapture } from "@/components/homepage-free-capture";
 import type { Locale } from "@/data/remedies";
 
-/**
- * The homepage uses the shared modern blue enquiry form.
- * The visitor explicitly chooses a paid session or free written review;
- * no request is sent before they confirm the external WhatsApp handoff.
+/** Three free entry points live only in the existing blue capture at the foot of Home.
+ * Paid consultation selectors on other pages use the unchanged shared component.
  */
 export function HomepageContactCta({ locale }: { locale: Locale }) {
   return (
     <div id="home-consultation" className="home-contact-choice" data-home-contact-capture lang={locale}>
-      <ConsultationChoiceCapture
-        locale={locale}
-        variant="service"
-        service={locale === "ru" ? "Личная консультация — Holistic House" : "Personal consultation — Holistic House"}
-      />
+      <HomepageFreeCapture locale={locale} />
     </div>
   );
 }

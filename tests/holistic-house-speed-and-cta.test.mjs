@@ -26,21 +26,24 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.doesNotMatch(publicSource, /force-static|s-maxage|public, max-age/);
 });
 
-test("homepage offers a genuine consultation enquiry from the first screen without removing free entry", () => {
+test("homepage keeps genuine paid consultation navigation while free services live only in its bottom capture", () => {
   const home = read("components/holistic-house-home.tsx");
-  const capture = read("components/homepage-contact-cta.tsx");
+  const wrapper = read("components/homepage-contact-cta.tsx");
+  const freeCapture = read("components/homepage-free-capture.tsx");
   assert.match(home, /heroBook: "Book a consultation"/);
   assert.match(home, /heroBook: "Записаться на консультацию"/);
-  assert.match(home, /href="#home-consultation"/);
+  assert.match(home, /href=\{\x60\/\$\{locale\}\/services#solutions\x60\}/);
   assert.match(home, /className="service-home-button service-home-button--consultation"/);
-  assert.match(capture, /id="home-consultation"/);
-  assert.match(capture, /variant="service"/);
+  assert.match(wrapper, /id="home-consultation"/);
+  assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
+  assert.match(freeCapture, /data-home-free-capture="true"/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review\x60\}/);
   assert.match(home, /href="#core-services"/);
+  assert.doesNotMatch(home, /<FreeInsightsPaths/);
   const firstScreen = home.indexOf('className="service-home-hero"');
-  const book = home.indexOf('href="#home-consultation"');
-  const belowFold = home.indexOf("<FreeInsightsPaths");
-  assert.ok(firstScreen < book && book < belowFold, "Booking CTA must be inside the hero");
+  const book = home.indexOf('className="service-home-button service-home-button--consultation"');
+  const belowFold = home.indexOf("<ServicesSolutions");
+  assert.ok(firstScreen < book && book < belowFold, "Paid CTA must stay inside the hero");
 });
 
 test("bypass paid transformation for owned ready-compressed WebP images only", () => {
