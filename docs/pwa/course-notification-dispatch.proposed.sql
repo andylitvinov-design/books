@@ -1,7 +1,7 @@
+-- UNAPPLIED PROPOSAL. Requires explicit approval and isolated SQL/RLS testing.
 -- SUPERSEDED / INACTIVE PR427 DRAFT: do not apply.
 -- Canonical notifications use existing app_private tables and dispatcher.
 -- See docs/billing/NOTIFICATION-RECONCILIATION.md.
--- UNAPPLIED PROPOSAL. Requires explicit approval and isolated SQL/RLS testing.
 -- Depends on reviewed enrollment schema and billing subscription schema.
 -- No role membership, environment values, keys or cron are configured here.
 DO $$ BEGIN RAISE EXCEPTION 'UNAPPLIED NOTIFICATION DISPATCH PROPOSAL: explicit approval required'; END $$;
