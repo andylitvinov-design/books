@@ -443,7 +443,7 @@ a.service-home-start-card:hover {
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .house-header--services { gap: 18px; padding-inline: 4vw; }
-  .house-header--services .site-navigation { gap: 12px; }
+  .house-header--services .site-navigation { gap: 12px; flex-wrap: wrap; }
   .house-header--services .site-navigation > a { font-size: 11px; }
   .house-header--services .house-wordmark { font-size: 28px; }
   .house-header--services .house-wordmark span { font-size: 8px; letter-spacing: .1em; }
@@ -464,7 +464,7 @@ a.service-home-start-card:hover {
   .house-header--services .site-navigation { margin-left: auto; flex-shrink: 0; }
   .house-header--services .site-navigation > a { display: none; }
   .house-header--services { gap: 8px; padding-inline: clamp(12px, 3.8vw, 22px); }
-  .house-header--services .house-wordmark { font-size: clamp(21px, 6vw, 27px); }
+  .house-header--services .house-wordmark { min-width: 0; flex-shrink: 1; font-size: clamp(21px, 6vw, 27px); }
   .house-header--services .site-navigation { gap: 7px; flex-wrap: nowrap; }
   .house-header--services .site-navigation > .site-cabinet-entry {
     display: inline-flex;
