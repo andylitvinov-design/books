@@ -41,6 +41,7 @@ import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
+import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
 function message(error, c) {
@@ -171,6 +172,28 @@ export default function AppWorkspace({ locale, path = [] }) {
     }
   }
   async function completePlan(result, destination = 'report') {
+    if (searchParams.get('course') === '1') {
+      const courseState = await appFetch('course')
+      // Validate membership against the server-owned confirmed set, not only
+      // the URL. Normal non-course tests still use their original result flow.
+      if (isCourseTest(courseState, result.definitionKey)) {
+        const nextKey = coursePendingKeys(courseState)[0]
+        if (nextKey) {
+          const nextRun = await startOrResumeCourseTest({
+            courseState, key: nextKey, locale, request: appFetch,
+          })
+          await load()
+          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=quick&course=1')
+        } else {
+          await load()
+          router.push(root + '/course?tests=complete')
+        }
+        return
+      }
+      await load()
+      router.push(root + '/results/' + encodeURIComponent(result.id))
+      return
+    }
     const planId = searchParams.get('plan')
     let advanced = null
     if (planId) {
@@ -364,9 +387,10 @@ export default function AppWorkspace({ locale, path = [] }) {
               id={recordId}
               locale={locale}
               initialMode={searchParams.get('mode') === 'quick' ? 'quick' : null}
+              courseMode={searchParams.get('course') === '1'}
               onExit={async () => {
                 await load()
-                router.push(root + '/tests')
+                router.push(searchParams.get('course') === '1' ? root + '/course' : root + '/tests')
               }}
               onComplete={async (result, destination) => {
                 await completePlan(result, destination)
@@ -1027,7 +1051,7 @@ function RunnerAnswerChoices({ definition, question, selected, onChoose, locale,
   )
 }
 
-function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
+function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode = false }) {
   const c = COPY[locale],
     [run, setRun] = useState(null),
     [error, setError] = useState(null),
@@ -1398,7 +1422,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
       )}
       {(isContext || (mode === 'quick' && allAnswered) ||
         (mode === 'guided' && index === def.questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
-        <TestFinishActions locale={locale} disabled={busy || Boolean(operation.current) || !allAnswered}
+        <TestFinishActions locale={locale} courseMode={courseMode}
+          disabled={busy || Boolean(operation.current) || !allAnswered}
           onReport={() => finish('report')} onNext={() => finish('next')} />
       )}
       <div className="hh-actions hh-runner-actions">
