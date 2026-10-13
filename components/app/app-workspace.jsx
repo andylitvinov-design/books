@@ -177,6 +177,22 @@ export default function AppWorkspace({ locale, path = [] }) {
       // Validate membership against the server-owned confirmed set, not only
       // the URL. Normal non-course tests still use their original result flow.
       if (isCourseTest(courseState, result.definitionKey)) {
+        // A course owns its NEXT-test choice, but a completed test must still
+        // count in the ordinary account-wide selection. Sync that ledger
+        // independently; stale plan revisions never block course progression.
+        try {
+          const snapshot = await appFetch('bootstrap')
+          const active = snapshot.activeTestPlan
+          if (active?.status === 'active' && active.definitionIds?.includes(result.definitionId)) {
+            const plan = await appFetch('test-plans/' + encodeURIComponent(active.id))
+            await appFetch('test-plans/' + encodeURIComponent(active.id) + '/advance', {
+              completedRunId: result.runId,
+              expectedRevision: plan.revision,
+            })
+          }
+        } catch {
+          // The saved result and authoritative course state remain intact.
+        }
         const nextKey = coursePendingKeys(courseState)[0]
         if (nextKey) {
           const nextRun = await startOrResumeCourseTest({
