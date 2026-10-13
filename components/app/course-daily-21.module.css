@@ -96,5 +96,7 @@
 .weekAccents>legend{padding:0 6px;font-weight:650}
 /* Bound nested fieldsets explicitly; WebKit can retain native-select intrinsic overflow. */
 .planSettings,.weekAccents{inline-size:100%;max-inline-size:100%}
+/* Bound only native caption overflow (WebKit284644); keep every ancestor unclipped. */
+.planSettings select{overflow-x:hidden}
 .dayOptions{padding:16px;border:1px solid #ceddcb;border-radius:14px;background:#f4f7ed}
 @media(max-width:700px){.weekAccents{grid-template-columns:minmax(0,1fr)}.personalPlan,.planSettings,.dayOptions{padding:13px}}
