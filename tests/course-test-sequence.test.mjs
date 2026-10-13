@@ -81,8 +81,10 @@ test('course finish overrides ordinary report buttons and ordinary account batte
   assert.match(runner, /coursePendingKeys\(courseState\)/)
   assert.match(runner, /startOrResumeCourseTest/)
   assert.match(finish, /courseMode/)
-  assert.match(course, /data-course-testing-complete/)
-  assert.match(course, /profile\.scales/)
+  const completion = readFileSync(new URL('../components/app/course-completion-review.jsx', import.meta.url), 'utf8')
+  assert.match(course, /<CourseCompletionReview/)
+  assert.match(completion, /data-course-testing-complete/)
+  assert.match(completion, /profile\.scales/)
   assert.match(account, /data-course-test-group/)
 })
 
