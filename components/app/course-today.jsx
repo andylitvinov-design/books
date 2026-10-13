@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
@@ -47,6 +47,12 @@ const UI={
   journeyTitle:'Your 14-day learning map',journeyIntro:'Each day brings a new theme and a small practical takeaway. Your chosen scales shape the lesson topics.',
   outcome:'A small takeaway',planned:'Coming up',pastDay:'Earlier day',doneDay:'Completed',todayDay:'Today',openToday:'Open today’s practice',
   optionalResult:'An invitation, not a requirement. You may skip an action or return to it later.',
+  skillLabel:'Skill for today',workbookTitle:'My workbook question',practiceApproach:'Inspired by',workingPosition:'A flexible working phrase',
+  notAffirmation:'No forced affirmations: you do not have to believe this phrase or feel differently.',todayExperiment:'A small, safe experiment',
+  anchorTitle:'Repeat a familiar resource',anchorIntro:'Optional 30–60 seconds, even on days with a different topic.',
+  sentenceStarter:'If it helps, begin with',journalHelp:'One honest sentence is enough; the note is kept privately in your account.',
+  continuedLearning:'My next few weeks',noHabitGuarantee:'Fourteen days offer a starting cycle, not a guarantee that a habit or belief has changed.',
+  savedWorkbookHistory:'My saved reflections',savedWorkbookIntro:'Your previous private notes may help you review your learning. Older notes might come from an earlier lesson version.',savedNote:'Saved note',
  },
  ru:{
   welcome:'Ваш ежедневный курс',open:'Открыть',close:'Свернуть',day:'День',of:'из',mins:'минут',daily:'Мой ежедневный замер',
@@ -88,6 +94,12 @@ const UI={
   journeyTitle:'Карта моего 14-дневного курса',journeyIntro:'Каждый день — новая тема и небольшой практический результат. Темы уроков учитывают выбранные вами шкалы.',
   outcome:'Что можно взять с собой',planned:'Впереди',pastDay:'Прошедший день',doneDay:'Завершено',todayDay:'Сегодня',openToday:'Перейти к практике дня',
   optionalResult:'Это приглашение, а не обязанность. Действие можно пропустить или выполнить позже.',
+  skillLabel:'Навык дня',workbookTitle:'Вопрос из моей рабочей тетради',practiceApproach:'Основано на идеях',workingPosition:'Гибкая рабочая фраза',
+  notAffirmation:'Без навязанных аффирмаций: необязательно верить этой фразе или испытывать другие чувства.',todayExperiment:'Небольшой безопасный эксперимент',
+  anchorTitle:'Повторить знакомую опору',anchorIntro:'По желанию 30–60 секунд, даже когда тема дня отличается.',
+  sentenceStarter:'Можно начать так',journalHelp:'Достаточно одного честного предложения. Запись приватно хранится в кабинете.',
+  continuedLearning:'Мои следующие недели',noHabitGuarantee:'14 дней — стартовый цикл, а не гарантия закрепившейся привычки или изменившегося убеждения.',
+  savedWorkbookHistory:'Мои сохранённые наблюдения',savedWorkbookIntro:'Предыдущие приватные записи помогают осмыслить путь. Старые записи могли быть сделаны до обновления программы.',savedNote:'Сохранённая заметка',
  }
 }
 async function api(action,locale,body){
@@ -132,18 +144,39 @@ export default function CourseToday({locale='en'}){
  const [feedback,setFeedback]=useState('skip'),[reflection,setReflection]=useState('')
  const [reviewNote,setReviewNote]=useState(''),[reviewDecision,setReviewDecision]=useState('continue')
  const [targetLabel,setTargetLabel]=useState(''),[intention,setIntention]=useState(''),[newGoal,setNewGoal]=useState('calm_regulation')
+ const hydratedDayRef=useRef('')
  const hydrate=useCallback((response)=>{
   setData(response)
-  if(response?.currentSession){
-    setBeforeNow(response.currentSession.beforeNow)
-    setAfterNow(response.currentSession.afterNow)
-    setFeedback(response.currentSession.feedback||'skip')
-  }
-  if(response?.currentCheckin){
-    setSeverity(response.currentCheckin.severity)
-    setInterference(response.currentCheckin.interference)
-    setResource(response.currentCheckin.resource)
-    setDailyNote(response.currentCheckin.note||'')
+  const nextDay=response?.cycle ? response.cycle.id+':'+response.cycle.day : ''
+  if(nextDay!==hydratedDayRef.current){
+    // Change of local day or cycle: never carry an unsaved private answer into
+    // another lesson. Same-day preference changes must preserve draft text.
+    hydratedDayRef.current=nextDay
+    setBeforeNow(response?.currentSession?.beforeNow??null)
+    setAfterNow(response?.currentSession?.afterNow??null)
+    setFeedback(response?.currentSession?.feedback||'skip')
+    setReflection(response?.currentSession?.reflection||'')
+    setSeverity(response?.currentCheckin?.severity??null)
+    setInterference(response?.currentCheckin?.interference??null)
+    setResource(response?.currentCheckin?.resource??null)
+    setDailyNote(response?.currentCheckin?.note||'')
+    setReviewNote('')
+    setReviewDecision('continue')
+    setStage(0)
+    setExpanded('checkin')
+  }else {
+    if(response?.currentSession){
+      setBeforeNow(response.currentSession.beforeNow)
+      setAfterNow(response.currentSession.afterNow)
+      setFeedback(response.currentSession.feedback||'skip')
+      setReflection(response.currentSession.reflection||'')
+    }
+    if(response?.currentCheckin){
+      setSeverity(response.currentCheckin.severity)
+      setInterference(response.currentCheckin.interference)
+      setResource(response.currentCheckin.resource)
+      setDailyNote(response.currentCheckin.note||'')
+    }
   }
  },[])
  const reload=useCallback(async()=>{
@@ -201,6 +234,7 @@ export default function CourseToday({locale='en'}){
       <h2>{t.welcome}</h2>
       <p className={styles.heroDay}>{t.day} {cycle.day} · {lesson?.title||lesson?.journey?.heading}</p>
       <p className={styles.heroPurpose}>{lesson?.journey?.purpose}</p>
+      {lesson?.workbook?.skill&&<p className={styles.heroSkill}><strong>{t.skillLabel}:</strong> {lesson.workbook.skill}</p>}
       <p className={styles.focus}>{activeName}{cycle?.activeScaleLabel?' · '+cycle.activeScaleLabel:''} · {problem}</p>
       <p className={styles.hint}>{t.day} {cycle.day} {t.of} {cycle.durationDays} · {t.date}: {cycle.todayLocalDate} · {cycle.timeZone}</p>
     </div>
@@ -228,6 +262,7 @@ export default function CourseToday({locale='en'}){
         </div>
         <h4>{item.title}</h4>
         <p className={styles.journeyTheme}>{item.heading} · {item.phaseTitle}</p>
+        {item.workbookSkill&&<p className={styles.journeySkill}><strong>{t.skillLabel}:</strong> {item.workbookSkill}</p>}
         <p className={styles.journeyFocus}>{item.focusTitle}{item.scaleLabel?' · '+item.scaleLabel:''}</p>
         <p className={styles.journeyOutcome}><strong>{t.outcome}:</strong> {item.outcome}</p>
         {item.status==='today'&&!isFinished&&<a href="#course-today-lesson"
@@ -270,9 +305,13 @@ export default function CourseToday({locale='en'}){
     expanded={expanded==='thought'} onToggle={()=>setExpanded(x=>x==='thought'?'':'thought')}>
       <blockquote className={styles.aphorism}>“{lesson?.aphorism}”</blockquote>
       <p>{lesson?.sections?.find(x=>x.kind==='learn')?.text}</p>
+      {lesson?.workbook&&<aside className={styles.workingPosition}>
+        <strong>{t.workingPosition}</strong><p>{lesson.workbook.workingPosition}</p>
+        <small>{t.notAffirmation}</small>
+      </aside>}
       <button type="button" className={styles.nextButton} onClick={()=>setExpanded('meditation')}>{t.next}<ArrowRight size={16}/></button>
    </DailyCard>
-   <DailyCard number="meditation" title={'03 · '+t.meditation} subtitle={lesson?Math.ceil(lesson.durationSeconds/60)+' '+t.mins:''} icon={Leaf}
+   <DailyCard number="meditation" title={'03 · '+t.meditation} subtitle={lesson?Math.ceil(guidedSections.reduce((seconds,item)=>seconds+item.seconds,0)/60)+' '+t.mins:''} icon={Leaf}
     expanded={expanded==='meditation'} onToggle={()=>setExpanded(x=>x==='meditation'?'':'meditation')}>
      <p className={styles.hint}>{t.eyes}</p>
      {data.gentleSuggested&&<p className={styles.note}>{t.softerSuggestion}</p>}
@@ -309,6 +348,13 @@ export default function CourseToday({locale='en'}){
    <DailyCard number="ritual" title={'04 · '+t.ritual} subtitle={t.action} icon={Sprout}
     expanded={expanded==='ritual'} onToggle={()=>setExpanded(x=>x==='ritual'?'':'ritual')}>
       <p>{lesson?.ritual}</p>
+      {lesson?.workbook&&<section className={styles.workbookTask} data-course-micro-experiment>
+        <h4>{t.todayExperiment}</h4><p>{lesson.workbook.microPractice}</p>
+      </section>}
+      {data.anchor&&<details className={styles.anchorBox}>
+        <summary>{t.anchorTitle}: {data.anchor.title}</summary>
+        <p className={styles.hint}>{t.anchorIntro}</p><p>{data.anchor.practice}</p>
+      </details>}
       <p className={styles.journeyOutcome}><strong>{t.outcome}:</strong> {lesson?.journey?.outcome}</p>
       <p className={styles.hint}>{t.optionalResult} {t.quickTip}</p>
       <button type="button" className={styles.nextButton} onClick={()=>setExpanded('reflection')}>{t.next}<ArrowRight size={16}/></button>
@@ -316,6 +362,11 @@ export default function CourseToday({locale='en'}){
    <DailyCard number="reflection" title={'05 · '+t.reflection} subtitle={t.private} icon={HeartHandshake}
     expanded={expanded==='reflection'} onToggle={()=>setExpanded(x=>x==='reflection'?'':'reflection')} completed={completed}>
     <p>{lesson?.reflection}</p>
+    {lesson?.workbook&&<section className={styles.workbookPrompt} data-course-workbook>
+      <span>{t.workbookTitle} · {t.practiceApproach}: {lesson.workbook.method}</span>
+      <h4>{lesson.workbook.question}</h4>
+      <p><strong>{t.sentenceStarter}:</strong> {lesson.workbook.sentenceStarter}</p>
+    </section>}
     <div className={styles.ratingPair}>
       <Rating optional label={t.beforeNow} value={beforeNow} onChange={setBeforeNow}/>
       <Rating optional label={t.afterNow} value={afterNow} onChange={setAfterNow}/>
@@ -324,7 +375,9 @@ export default function CourseToday({locale='en'}){
       {[['helped',t.helpful],['neutral',t.neutral],['uncomfortable',t.uncomfortable],['skip',t.noAnswer]].map(([value,label])=>
       <label key={value}><input type="radio" name="course-feedback" checked={feedback===value} onChange={()=>setFeedback(value)}/>{label}</label>)}
     </fieldset>
-    <label className={styles.field}>{t.journal}<textarea maxLength={500} rows={3} value={reflection} onChange={e=>setReflection(e.target.value)}/></label>
+    <label className={styles.field}>{t.journal}<textarea maxLength={500} rows={3} value={reflection}
+      readOnly={completed} placeholder={lesson?.workbook?.sentenceStarter||''} onChange={e=>setReflection(e.target.value)}/>
+      <small className={styles.hint}>{t.journalHelp}</small></label>
     {completed?<p className={styles.saved}><CheckCircle2 size={18}/>{t.finished}</p>:
       <button type="button" className="hh-primary" disabled={busy||paused} onClick={()=>submit('session',{
         operationId:crypto.randomUUID(),day:cycle.day,lessonId:lesson.id,feedback,
@@ -348,6 +401,16 @@ export default function CourseToday({locale='en'}){
    </p>:<p className={styles.hint}>{t.noChange}</p>}
    <p className={styles.hint}>{t.changeText}</p>
   </section>
+  {data.journalHistory?.length>0&&<section className={styles.workbookHistory} data-course-journal-history>
+    <details>
+      <summary>{t.savedWorkbookHistory} ({data.journalHistory.length})</summary>
+      <p className={styles.hint}>{t.savedWorkbookIntro}</p>
+      <ol>{data.journalHistory.map(item=><li key={item.day}>
+        <strong>{t.day} {item.day} · {t.savedNote}</strong>
+        <p>{item.reflection}</p>
+      </li>)}</ol>
+    </details>
+  </section>}
   {reportDay&&!reviewed&&<section className={styles.review}>
     <h3>{reportDay===7?t.firstWeek:t.lastWeek}</h3><p>{t.weeklyText}</p>
     <textarea rows={3} maxLength={650} value={reviewNote} onChange={e=>setReviewNote(e.target.value)} placeholder={t.weeklyText}/>
@@ -360,6 +423,12 @@ export default function CourseToday({locale='en'}){
     })}>{t.saveReview}<Check size={17}/></button>
    </section>}
   {reviewed&&<p className={styles.saved}><CheckCircle2 size={17}/>{t.reviewSaved}</p>}
+  {isFinished&&<section className={styles.workbookFinish} data-course-continuation>
+    <h3>{t.continuedLearning}</h3>
+    <p>{lesson?.workbook?.microPractice}</p>
+    {session?.reflection&&<p className={styles.savedWorkbook}>{session.reflection}</p>}
+    <p className={styles.hint}>{t.noHabitGuarantee}</p>
+  </section>}
   {isFinished&&<div className={styles.reportActions}>
     <button type="button" onClick={()=>window.print()}>{t.printReport}</button>
   </div>}
@@ -373,7 +442,7 @@ export default function CourseToday({locale='en'}){
     </select></label>
     <button type="button" className="hh-primary" disabled={busy||targetLabel.trim().length<3}
       onClick={()=>submit('new-cycle',{problemLabel:targetLabel,intention,timeZone:timezone(),goal:newGoal},
-        ()=>{setExpanded('checkin');setStage(0)})}>{t.nextCycle}<ArrowRight size={16}/></button>
+        ()=>{setExpanded('checkin');setStage(0);setReflection('')})}>{t.nextCycle}<ArrowRight size={16}/></button>
    </section>}
   {data.recommendedTest&&<aside className={styles.retest}>
     <div><strong>{data.recommendedTest.due?t.retestDue:t.retestLater}</strong>
@@ -388,6 +457,6 @@ export default function CourseToday({locale='en'}){
     </button>}
     <Link href={root+'/portfolio'} prefetch={false}>{t.recommendations}<ChevronRight size={16}/></Link>
   </div>
-  <p className={styles.footnote}><ShieldCheck size={16}/>{t.disclaimer}</p>
+  <p className={styles.footnote}><ShieldCheck size={16}/>{t.disclaimer} {t.noHabitGuarantee}</p>
  </section>
 }
