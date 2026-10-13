@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { buildPrescriptionPdf, buildPaymentPdf } from '../lib/prescriptions/pdf.js'
 import { extractReportProgress } from '../lib/documents/report-progress.js'
+import { remedyDescriptionBlocks } from '../lib/documents/report-appendices.js'
+import { getRemedy } from '../data/remedies.js'
 
 const origin = 'https://example.test'
 const base = {
@@ -97,4 +99,39 @@ test('realistic RU example keeps the practitioner signature with the core report
   const signaturePage = pages.findIndex(page => /\/Signature Do Q/.test(page))
   assert.equal(signaturePage, 0, 'compact realistic consultation keeps its approved signature on the first A4 page')
   assert.ok(pages.slice(1).some(page => /\/RemedyPhoto1 Do Q/.test(page)), 'full approved appendix follows')
+})
+
+
+test('report visualizes start and end only, while retaining any authored target in notes', () => {
+  const pdf = source(buildPrescriptionPdf({
+    ...base,
+    analysis: 'Start: 3/10\nEnd: 6/10\nTarget: 7.3/10',
+  }, 'en', origin))
+  assert.deepEqual(extractReportProgress('Start: 3/10\nEnd: 6/10\nTarget: 7.3/10'), { before: 3, after: 6 })
+  assert.match(pdf, /\(START\)/)
+  assert.match(pdf, /\(END\)/)
+  assert.doesNotMatch(pdf, /TARGET \\?\(PLAN\\?\)/, 'no third progress indicator')
+  assert.match(pdf, /Target: 7\.3\/10/, 'the original plan is still available in the analysis')
+})
+
+test('every original remedy paragraph is appended as full library text after the signed report', () => {
+  for (const locale of ['ru', 'en']) {
+    const remedy = getRemedy(locale, 'veratrum-album')
+    const blocks = remedyDescriptionBlocks(remedy.description).filter(entry => entry.kind !== 'space')
+    const finalLine = remedy.description.trim().split(/\r?\n/).filter(Boolean).at(-1).trim()
+    assert.ok(blocks.length > 35, locale + ': the description must not become an excerpt')
+    assert.equal(blocks.at(-1).text, finalLine, locale + ': last source sentence survives')
+  }
+  const report = source(buildPrescriptionPdf({
+    ...base,
+    items: [{ displayName: 'Veratrum Album', remedySlug: 'veratrum-album', itemType: 'homeopathy' }],
+  }, 'en', origin))
+  assert.ok(report.indexOf('APPENDIX') > report.indexOf('/Signature Do Q'),
+    'the full remedy card belongs after the core and its signature')
+  assert.match(report, /COMPLETE LIBRARY TEXT/)
+  const html = readFileSync('components/prescription-document.jsx', 'utf8')
+  const content = readFileSync('components/remedy-content.tsx', 'utf8')
+  assert.match(html, /expandSupplementary fullSource/)
+  assert.match(content, /CompleteSourceDescription description=\{remedy\.description\}/)
+  assert.match(content, /split\(\/\\n\{2,\}\/\)/)
 })
