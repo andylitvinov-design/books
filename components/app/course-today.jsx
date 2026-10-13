@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import CourseGuidedTimer from './course-guided-timer'
-import { CourseQuestMap, CourseQuestPlayer } from './course-quest'
+import { CourseQuestMap } from './course-quest'
+import CourseSlidePlayer from './course-slide-player'
 import styles from './course-today.module.css'
 
 const UI={
@@ -262,27 +263,38 @@ export default function CourseToday({locale='en'}){
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
  return <section className={styles.shell} data-daily-course>
-  <header className={styles.questHero}>
-    <div className={styles.questTopline}>
-      <p className="hh-kicker">HOLISTIC HOUSE · MY COURSE</p>
-      <span className={styles.questDayPill}>{t.day} {cycle.day} {t.of} {cycle.durationDays}</span>
+  <header className={styles.questHero} data-course-teal-hero>
+    <div className={styles.heroPhoto} aria-hidden="true"/>
+    <div className={styles.heroInner}>
+      <div className={styles.questTopline}>
+        <span className={styles.heroBrand}>HOLISTIC HOUSE · MY COURSE</span>
+        <span className={styles.questDayPill}>{t.day} {cycle.day} {t.of} {cycle.durationDays}</span>
+      </div>
+      <h2>{lesson?.title||lesson?.journey?.heading}</h2>
+      <p className={styles.heroPurpose}>{lesson?.journey?.purpose}</p>
+      {!isFinished&&!paused&&<button type="button" className={styles.todayPrimary}
+        data-course-today-primary onClick={()=>setQuestOpen(true)}>
+        {completed?(ru?'Посмотреть урок дня':'Review today’s lesson'):t.openToday}
+        <ArrowRight size={19} aria-hidden="true"/>
+      </button>}
+      <div className={styles.heroProgress}><span>{ru?'Мой прогресс':'My progress'}</span>
+        <strong>{progress.practiceCount||0}/{cycle.durationDays}</strong>
+        <progress max={cycle.durationDays} value={progress.practiceCount||0} aria-label={t.engagement}/>
+      </div>
     </div>
-    <h2>{lesson?.title||lesson?.journey?.heading}</h2>
-    <p className={styles.heroPurpose}>{lesson?.journey?.purpose}</p>
+  </header>
+  {(isV3||lesson?.workbook?.skill)&&<details className={styles.focusDetails}>
+    <summary>{ru?'Мои персональные навыки':'My personal skills'}</summary>
     {isV3&&<p className={styles.focusRoleBanner} data-course-primary-skill>
       <strong>{t.coreFocus}: </strong>{GROWTH_GOALS[cycle?.primaryGoal]?.title?.[locale]||activeName}
       {cycle?.primaryScaleLabel?' · '+cycle.primaryScaleLabel:''}
     </p>}
     {isV3&&cycle.activeFocusRole==='support'&&<p className={styles.supportRole}>{t.supportFocus}: {activeName}</p>}
     {lesson?.workbook?.skill&&<p className={styles.heroSkill}><strong>{t.skillLabel}:</strong> {lesson.workbook.skill}</p>}
-    <div className={styles.questHeroFooter}>
-      <span>{progress.practiceCount||0} / {cycle.durationDays} {t.count}</span>
-      {!isFinished&&!paused&&<button type="button" className={styles.todayPrimary}
-        data-course-today-primary onClick={()=>setQuestOpen(true)}>
-        {completed?(ru?'Повторить урок дня':'Review today’s lesson'):t.openToday}<ArrowRight size={17} aria-hidden="true"/>
-      </button>}
-    </div>
-  </header>
+  </details>}
+  {lesson?.aphorism&&<aside className={styles.quoteStrip}><Leaf size={18} aria-hidden="true"/>
+    <span>“{lesson.aphorism}”</span>
+  </aside>}
   {error&&<p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error}) <button type="button" onClick={reload}>{t.retry}</button></p>}
   {paused&&<p className={styles.note}>{t.paused}</p>}
   {isFinished&&<p className={styles.notice}><CheckCircle2 size={20}/>{t.completed}</p>}
@@ -291,7 +303,7 @@ export default function CourseToday({locale='en'}){
   <CourseQuestMap locale={locale} cycle={cycle} progress={progress}
     roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
     onPlay={()=>setQuestOpen(true)}/>
-  {questOpen&&<CourseQuestPlayer key={cycle.id+':'+cycle.day} locale={locale}
+  {questOpen&&<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
     data={data} busy={busy} onClose={()=>setQuestOpen(false)}
     onCheckin={body=>submit('checkin',body)}
     onSession={body=>submit('session',body)}
@@ -483,6 +495,8 @@ export default function CourseToday({locale='en'}){
    </DailyCard>
   </>}
   </details>
+  <details className={styles.courseInsights} data-course-insights>
+    <summary><span className={styles.insightsIcon}><Clock3 size={20} aria-hidden="true"/></span><span><strong>{ru?'Моя динамика и наблюдения':'My trends and observations'}</strong><small>{ru?'График, оценки и история занятий':'Chart, ratings and saved sessions'}</small></span><ChevronDown size={19} aria-hidden="true"/></summary>
   <section className={styles.graph} aria-labelledby="course-problem-graph">
    <header><div><h3 id="course-problem-graph">{t.symptoms}</h3><p className={styles.hint}>{t.history}</p></div><span>{progress.observations||0} {t.rating}</span></header>
    <div className={styles.chart} role="img" aria-label={t.symptoms+': '+(progress.days||[]).map(d=>d.date+' '+(d.severity??t.none)).join('; ')}>
@@ -510,6 +524,7 @@ export default function CourseToday({locale='en'}){
     </p>:<p className={styles.hint}>{t.insufficientRatings}</p>}
     <p className={styles.hint}>{t.learningBoundaries}</p>
   </section>}
+  </details>
   {data.journalHistory?.length>0&&<section className={styles.workbookHistory} data-course-journal-history>
     <details>
       <summary>{t.savedWorkbookHistory} ({data.journalHistory.length})</summary>
