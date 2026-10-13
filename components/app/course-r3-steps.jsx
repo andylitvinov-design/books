@@ -1,12 +1,14 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { appFetch } from '@/lib/app/client-fetch'
 import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
-import { ArrowRight, Check, ClipboardList, Heart, Plus, SlidersHorizontal } from 'lucide-react'
+import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
 import { COURSE_TOPICS, GROWTH_GOALS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
-import { courseMeasuredProfile, courseRecommendedTests } from '@/lib/inner-growth/course-strategy'
+import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
+import CourseCompletionReview from './course-completion-review'
+import CourseFocusPicker from './course-focus-picker'
 import styles from './course-r3-steps.module.css'
 
 const UI = {
@@ -30,6 +32,20 @@ const UI = {
     completeDescription: 'Every test you selected has a saved result. Here is a short overview of your measured scales.',
     briefSummary: 'My course test results', noMeasuredScales: 'This questionnaire has no compatible displayable scales; its original result remains in My Tests.',
     viewMyResults: 'View results and choose my focus areas', reviseSelection: 'Change the course test selection',
+    nextStage: 'NEXT STEP · MY COURSE',
+    recommendedFocusTitle: '3 suggested focus areas for your course',
+    recommendedFocusIntro: 'These areas are suggested from your own compatible test scales, with the strongest reported difficulties or lowest resources first. The choice is yours.',
+    recommendationSafety: 'These are self-guided learning priorities, not a diagnosis, medical norms or proof that treatment is needed.',
+    acceptSuggested: 'Yes, choose these {count} areas and start my course',
+    chooseDifferent: 'Choose different focus areas',
+    pickerIntro: 'Select 3–5 areas to work with. Every suitable measured scale is available below, with its original score.',
+    generalFocusTitle: 'Choose my general learning directions',
+    selectedFocusCount: 'areas selected', allEligibleFocus: 'Scales available for practice',
+    availableFocus: 'available', suggested: 'Suggested',
+    dailyTrackingTitle: 'Daily observation', dailyTrackingHelp: 'Your course includes an optional personal 0–10 check-in. Choose the name of the difficulty or resource you want to observe.',
+    trackingFallback: 'Leave blank to use your first selected area as the daily observation label.',
+    continueChosen: 'Continue with selected areas',
+    backToSuggested: 'Back to recommended areas',
     reviewDisabled: 'Complete each remaining selected test to see your full profile.',
     profileTitle: 'Your current measured profile', profileIntro: 'These are the latest compatible scales from the tests you selected. Select any report to read its interpretation.',
     profileLink: 'Open full results portfolio', scaleGuide: 'Each bar shows the raw position in that questionnaire’s own range, not a health grade.', profileNone: 'No eligible measurements yet. Choose other questionnaires or review existing reports.',
@@ -39,7 +55,7 @@ const UI = {
     traitNote: 'Personality traits and traditional themes are informational, not deficits requiring correction.',
     otherScales: 'All measured scales', measured: 'Measured', older: 'Earlier result', personal: 'One issue to observe daily (optional)',
     goalConsent: 'I choose these areas and want a personal daily practice course.',
-    startLessons: 'Start my daily course', requireScales: 'Select at least the available number of scales (up to three) to continue.',
+    startLessons: 'Start my daily course', requireScales: 'Choose at least 3 areas (up to 5), or all available if there are fewer than 3.',
     days: '14 days of gentle practice · about 5–12 minutes a day',
     error: 'Could not save the selection. Please try again.', report: 'View report',
     relativePriority: 'within-scale priority', noMedical: 'For education and self-observation; not diagnosis or psychotherapy.',
@@ -64,6 +80,20 @@ const UI = {
     completeDescription: 'Результаты выбранных тестов сохранены. Ниже краткая сводка измеренных шкал.',
     briefSummary: 'Результаты тестов курса', noMeasuredScales: 'Для этого опросника нет совместимых шкал для сводки; исходный результат сохранён в «Моих тестах».',
     viewMyResults: 'Смотреть результаты и выбрать направления работы', reviseSelection: 'Изменить набор тестов курса',
+    nextStage: 'СЛЕДУЮЩИЙ ШАГ · МОЙ КУРС',
+    recommendedFocusTitle: '3 рекомендованные шкалы для курса',
+    recommendedFocusIntro: 'Эти темы предложены по вашим реальным совместимым шкалам: сначала более выраженные трудности или менее развитые ресурсы. Выбор остаётся за вами.',
+    recommendationSafety: 'Это направления для самостоятельных практик, а не диагноз, медицинская норма или доказательство необходимости лечения.',
+    acceptSuggested: 'Да, выбрать эти {count} темы и перейти к курсу',
+    chooseDifferent: 'Выбрать другие шкалы',
+    pickerIntro: 'Выберите 3–5 направлений для работы. Ниже доступны все подходящие измеренные шкалы с исходными баллами.',
+    generalFocusTitle: 'Выбрать общие направления развития',
+    selectedFocusCount: 'направлений выбрано', allEligibleFocus: 'Подходящие шкалы для практик',
+    availableFocus: 'доступно', suggested: 'Рекомендуется',
+    dailyTrackingTitle: 'Ежедневное наблюдение', dailyTrackingHelp: 'В курсе есть добровольная личная оценка состояния 0–10. Назовите трудность или ресурс, который хотите наблюдать.',
+    trackingFallback: 'Если оставить пустым, используем название первой выбранной шкалы.',
+    continueChosen: 'Продолжить с выбранными шкалами',
+    backToSuggested: 'Вернуться к рекомендованным темам',
     reviewDisabled: 'Для полного профиля сначала пройдите недостающие выбранные тесты.',
     profileTitle: 'Мой текущий профиль по тестам', profileIntro: 'Здесь реальные шкалы из выбранных тестов и последние совместимые результаты. Нажмите на отчёт, чтобы увидеть подробности.',
     profileLink: 'Открыть полный профиль результатов', scaleGuide: 'Полоска показывает положение балла внутри шкалы конкретного теста, а не уровень здоровья.', profileNone: 'Пока нет подходящих измерений. Можно подобрать дополнительные тесты или посмотреть прошлые отчёты.',
@@ -73,7 +103,7 @@ const UI = {
     traitNote: 'Черты личности и традиционные темы показаны для информации, а не для «исправления».',
     otherScales: 'Все измеренные шкалы', measured: 'Измерено', older: 'Более ранний результат', personal: 'Что я хочу наблюдать каждый день (по желанию)',
     goalConsent: 'Я самостоятельно выбираю эти направления и хочу проходить ежедневные практики.',
-    startLessons: 'Начать ежедневный курс', requireScales: 'Выберите не меньше доступного количества шкал (до трёх) для продолжения.',
+    startLessons: 'Начать ежедневный курс', requireScales: 'Выберите не меньше 3 и не больше 5 шкал (или все доступные, если их меньше 3).',
     days: '14 дней бережной практики · около 5–12 минут в день',
     error: 'Не получилось сохранить выбор. Попробуйте ещё раз.', report: 'Открыть отчёт',
     relativePriority: 'приоритет внутри шкалы', noMedical: 'Для обучения и самонаблюдения, не диагноз и не замена психотерапии.',
@@ -104,7 +134,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [testsTouched,setTestsTouched]=useState(false)
   const [showAll,setShowAll]=useState(false)
   const [chosenScales,setChosenScales]=useState([])
-  const [showOtherScales,setShowOtherScales]=useState(false)
+  const [scaleView,setScaleView]=useState('recommended')
+  const actionLock=useRef(false)
   const [fallbackGoals,setFallbackGoals]=useState([])
   const [problemLabel,setProblemLabel]=useState((current.concerns||'').trim().slice(0,160))
   const [intention]=useState('')
@@ -130,6 +161,65 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const confirmedStatuses=assessment.selectedTests||[]
   const pending=confirmedStatuses.filter(item=>!item.completed)
   const minScales=Math.min(3,profile.eligible.length)
+  const suggestedScales=useMemo(()=>courseSuggestedFocus(profile,3),[profile])
+
+
+  const courseTimeZone=()=>{
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }
+    catch { return 'UTC' }
+  }
+  async function submitFocusSelection(keys, isMeasured = true) {
+    if(actionLock.current || busy || localBusy) return
+    const requested = isMeasured ? keys : fallbackGoals
+    if(!Array.isArray(requested) || !requested.length) return
+    if(isMeasured && (requested.length < minScales || requested.length > 5)) return
+    actionLock.current=true
+    setLocalBusy(true)
+    onError('')
+    try {
+      // A stage-2 course must complete its private test review before goal
+      // approval. Use the fresh revision from that response for the second
+      // transaction, not the old revision captured by the UI closure.
+      let revision=current.revision
+      if(current.stage===2) {
+        const reviewed=await onCourseCommand('review')
+        onState(reviewed)
+        revision=reviewed.course.revision
+      }
+      const firstSelected=profile.eligible.find(item=>isMeasured && keys.includes(item.id))?.label
+      const label=(problemLabel.trim() || firstSelected || (ru?'Моё ежедневное наблюдение':'My daily observation')).slice(0,160)
+      const result=await appFetch('course',{
+        action:'choose-goals',expectedRevision:revision,
+        ...(isMeasured ? {scaleKeys:keys} : {goals:fallbackGoals}),
+        consent:true,durationDays:14,
+        problemLabel:label,intention,timeZone:courseTimeZone(),
+      })
+      onState(result)
+    } catch(error) {
+      onError(error.message || 'COURSE_GOALS_UNAVAILABLE')
+    } finally {
+      actionLock.current=false
+      setLocalBusy(false)
+    }
+  }
+
+  async function openManualFocus() {
+    if(actionLock.current || busy || localBusy) return
+    actionLock.current=true
+    setLocalBusy(true)
+    onError('')
+    try {
+      if(current.stage===2) {
+        const reviewed=await onCourseCommand('review')
+        onState(reviewed)
+      }
+      setChosenScales(previous=>previous.length
+        ? previous.filter(key=>profile.eligible.some(scale=>scale.id===key))
+        : suggestedScales.map(scale=>scale.id))
+      setScaleView('manual')
+    } catch(error) { onError(error.message || 'COURSE_REVIEW_UNAVAILABLE') }
+    finally { actionLock.current=false;setLocalBusy(false) }
+  }
 
   async function openFirstCourseTest() {
     if (openingTest || localBusy || busy) return
@@ -206,39 +296,13 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   </section>
 
   if(stage===2 && confirmed && pending.length===0 && !showCompletedOptions) {
-    return <section className={'hh-panel '+styles.section+' '+styles.completeScreen}
-      data-course-testing-complete>
-      <header className={styles.completeHero} role="status">
-        <span className={styles.completeSymbol}><Check size={25} aria-hidden="true"/></span>
-        <h2>{t.congratulations}</h2><p>{t.completeDescription}</p>
-        <strong>{confirmedStatuses.length} / {confirmedStatuses.length} {t.completed.toLowerCase()}</strong>
-      </header>
-      <section className={styles.briefSummary} aria-label={t.briefSummary}>
-        <h3>{t.briefSummary}</h3>
-        <p className={styles.small}>{t.scaleGuide}</p>
-        {confirmedStatuses.map(item=>{
-          const scales=profile.scales.filter(scale=>scale.testKey===item.key)
-          const meta=optionByKey.get(item.key)
-          return <article key={item.key} className={styles.summaryTest}>
-            <div className={styles.summaryHeading}><strong>{meta?.title||item.key}</strong>
-              {item.resultId&&<Link href={root+'/results/'+encodeURIComponent(item.resultId)}>
-                {t.report}<ArrowRight size={13}/></Link>}
-            </div>
-            {scales.length?<ul className={styles.briefScales}>{scales.map(scale=><li key={scale.id}>
-              <span>{scale.label}</span>
-              <meter min={scale.min} max={scale.max} value={scale.score}
-                aria-label={scale.label+': '+scale.score+' ('+scale.min+'–'+scale.max+')'}/>
-              <strong>{scale.score}<small> / {scale.min}–{scale.max}</small></strong>
-            </li>)}</ul>:<p className={styles.small}>{t.noMeasuredScales}</p>}
-          </article>
-        })}
-      </section>
-      <button className={'hh-primary '+styles.cta} type="button" disabled={busy}
-        onClick={()=>onAct('review')}>{t.viewMyResults}<ArrowRight size={17}/></button>
-      <button type="button" className={styles.secondary} onClick={()=>setShowCompletedOptions(true)}>
-        {t.reviseSelection}
-      </button>
-    </section>
+    return <CourseCompletionReview
+      t={t} root={root} confirmedStatuses={confirmedStatuses}
+      optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
+      busy={busy||localBusy}
+      onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}
+      onAlternative={openManualFocus}
+      onEditTests={()=>setShowCompletedOptions(true)}/>
   }
 
   if(stage===2) {
@@ -296,72 +360,25 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
 
   if(stage===3) {
-    const selectedEligible=chosenScales.length>=minScales&&chosenScales.length<=5
-    const direct=profile.eligible.length>0
-    const list=showOtherScales?profile.eligible:profile.priority
-    const defaultLabel=profile.eligible.find(item=>chosenScales.includes(item.id))?.label||profile.eligible[0]?.label||''
-    return <section className={'hh-panel '+styles.section} data-course-profile>
-      <h2>{t.profileTitle}</h2><p>{t.profileIntro}</p>
-      <Link className={styles.link} href={root+'/portfolio'}>{t.profileLink}<ArrowRight size={16}/></Link>
-      {profile.scales.length>0?<section className={styles.measuredPanel} aria-label={t.otherScales}>
-        <div className={styles.profileHeading}>
-          <h3>{t.otherScales} ({profile.scales.length})</h3><p className={styles.small}>{t.scaleGuide}</p>
-        </div>
-        <div className={styles.allScales}>{profile.scales.map(item=><div key={item.id} className={styles.scaleRow}>
-          <div className={styles.scaleDetail}>
-            <strong>{item.label}</strong>
-            <small>{item.testTitle} · {formatDate(item.measuredAt,locale)}</small>
-            <meter className={styles.scaleMeter} min={item.min} max={item.max} value={item.score}
-              aria-label={item.label+' · '+item.score+' / '+item.max}/>
-            <small>{item.recent?'':t.older} {item.axisLabel}</small>
-          </div>
-          <div className={styles.score}><strong>{item.score}<small>{item.min}–{item.max}</small></strong>
-            <Link href={root+'/results/'+encodeURIComponent(item.resultId)}>{t.report}</Link></div>
-        </div>)}</div>
-      </section>:<p>{t.profileNone}</p>}
-      {direct?<><h3>{t.priorities}</h3><p className={styles.small}>{t.prioritiesHint}</p>
-        <h3>{t.chooseScales}</h3>
-        {profile.eligible.length<3&&<p className={styles.small}>{t.chooseScalesShort}</p>}
-        <div className={styles.scaleOptions}>
-          {list.map(item=><label key={item.id} className={styles.scaleOption}
-            data-checked={chosenScales.includes(item.id)}>
-            <input type="checkbox" checked={chosenScales.includes(item.id)} disabled={busy||(!chosenScales.includes(item.id)&&chosenScales.length>=5)}
-              onChange={()=>toggleScale(item.id)}/>
-            <span><strong>{item.label}</strong>
-              <small>{item.testTitle} · {item.score} ({item.min}–{item.max})</small>
-              <small>{item.practice}</small></span>
-            <em>{item.priorityPercent}%<small>{t.relativePriority}</small></em>
-          </label>)}
-        </div>
-        {profile.eligible.length>7&&<button className={styles.secondary} type="button"
-          onClick={()=>setShowOtherScales(value=>!value)}><SlidersHorizontal size={16}/>{t.showOthers}</button>}
-        <p className={styles.small}>{t.traitNote}</p>
-        </>:<>
-          <p>{t.noGoals}</p><div className={styles.topics}>
-            {Object.entries(GROWTH_GOALS).map(([key,goal])=><button type="button"
-              key={key} aria-pressed={fallbackGoals.includes(key)}
-              onClick={()=>setFallbackGoals(current=>current.includes(key)?current.filter(x=>x!==key):
-                current.length<3?[...current,key]:current)}>{goal.title[ru?'ru':'en']}</button>)}
-          </div>
-        </>}
-      <div className={styles.formBottom}>
-        <label htmlFor="course-r3-target">{t.personal}</label>
-        <input id="course-r3-target" maxLength={160} value={problemLabel} placeholder={defaultLabel}
-          onChange={event=>setProblemLabel(event.target.value)}/>
-        <label className={styles.consent}><input type="checkbox" checked={goalsAccepted}
-          onChange={event=>setGoalsAccepted(event.target.checked)}/><span>{t.goalConsent}</span></label>
-        <p className={styles.small}>{t.days} · {t.noMedical}</p>
-        <button type="button" className={'hh-primary '+styles.cta}
-          disabled={busy||!goalsAccepted||(direct?!selectedEligible:!fallbackGoals.length)}
-          onClick={()=>onAct('choose-goals',{
-            ...(direct?{scaleKeys:chosenScales}:{goals:fallbackGoals}),consent:true,durationDays:14,
-            problemLabel:(problemLabel.trim()||defaultLabel||(ru?'Моя ежедневная трудность':'My daily concern')).slice(0,160),
-            intention,
-            timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC',
-          })}>{t.startLessons}<Heart size={17}/></button>
-        {direct&&!selectedEligible&&<p className={styles.small}>{t.requireScales}</p>}
-      </div>
-    </section>
+    if(scaleView!=='manual') {
+      return <CourseCompletionReview
+        t={t} root={root} confirmedStatuses={confirmedStatuses}
+        optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
+        busy={busy||localBusy}
+        onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}
+        onAlternative={openManualFocus}/>
+    }
+    return <CourseFocusPicker
+      t={t} locale={locale} profile={profile} suggested={suggestedScales}
+      chosenScales={chosenScales} chosenGoals={fallbackGoals}
+      onToggleScale={toggleScale}
+      onToggleGoal={key=>setFallbackGoals(previous=>previous.includes(key)
+        ?previous.filter(x=>x!==key):previous.length<3?[...previous,key]:previous)}
+      problemLabel={problemLabel} onProblemLabel={setProblemLabel}
+      minScales={minScales} busy={busy||localBusy}
+      onContinue={()=>submitFocusSelection(chosenScales,profile.eligible.length>0)}
+      onBack={()=>setScaleView('recommended')}/>
   }
+
   return null
 }
