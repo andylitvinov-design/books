@@ -260,7 +260,7 @@ test('keeps the PDF footer below general instructions instead of overlapping it'
   const pdf = buildPrescriptionPdf(getClientPrescription(record, 'en'), 'en', 'https://books.example.test')
   const source = pdf.toString('latin1')
   const streams = [...source.matchAll(/\/Type \/Page\b[^]*?\/Contents (\d+) 0 R/g)].map(match => {
-    const object = source.match(new RegExp(\`\\n\${match[1]} 0 obj\\n<< /Length (\\d+) >>\\nstream\\n\`))
+    const object = source.match(new RegExp('\\n' + match[1] + ' 0 obj\\n<< /Length (\\d+) >>\\nstream\\n'))
     assert.ok(object, 'PDF page must have a content stream')
     const start = object.index + object[0].length
     return source.slice(start, start + Number(object[1]))
