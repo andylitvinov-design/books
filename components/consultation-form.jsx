@@ -5,6 +5,7 @@ import './consultation-studio.css'
 import './consultation-report.css'
 import { ClipboardList, FileCheck2, UsersRound } from 'lucide-react'
 import { ConsultationTextImport } from './consultation-text-import'
+import { ConsultationDraftPreview } from './consultation-draft-preview'
 import { useActionState, useEffect, useMemo, useState } from 'react'
 import { initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
@@ -276,6 +277,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       setError('')
     }
   }}>
+    <input type="hidden" name="consultationId" value={consultation?.id ?? ''} />
     <input type="hidden" name="recommendationRevision" value={consultation?.updatedAt ?? ''} />
     <input type="hidden" name="paymentRevision" value={payment?.updatedAt ?? ''} />
     <input type="hidden" name="requestId" value={requestId ?? ''} />
@@ -479,7 +481,10 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
             : labels.noDocumentError}</span>
       </div>
       {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
-      <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>{pending ? labels.saving : consultation ? labels.save : labels.create}</button>
+      <div className="consultation-studio-submit-buttons">
+        <ConsultationDraftPreview locale={uiLocale} includeRecommendation={includeRecommendation} includeInvoice={includeInvoice} disabled={pending} />
+        <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>{pending ? labels.saving : consultation ? labels.save : labels.create}</button>
+      </div>
     </div>
   </form>
 }
