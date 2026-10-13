@@ -92,7 +92,8 @@ test('one private six-milestone route reuses tests, insights and keeps mobile bo
   assert.match(css, /repeat\(6,minmax\(0,1fr\)\)/)
   const r3=read('components/app/course-r3-steps.jsx')
   assert.match(r3, /root\+'\/tests/)
-  assert.match(r3, /root\+'\/portfolio/)
+  const completion=read('components/app/course-completion-review.jsx')
+  assert.match(completion, /root\+'\/results\/'/)
   assert.match(ui, /COURSE_STEPS/)
 })
 
