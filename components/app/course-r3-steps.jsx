@@ -232,7 +232,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       const key=coursePendingKeys(fresh)[0]
       if (!key) { onState(fresh); return }
       const run=await startOrResumeCourseTest({ courseState:fresh, key, locale, request:appFetch })
-      router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=quick&course=1')
+      router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=1')
     } catch(error) { onError(error.message||'COURSE_TEST_UNAVAILABLE') }
     finally { setOpeningTest(false) }
   }
