@@ -61,6 +61,10 @@ const UI={
   weeklyComparison:'Weekly self-ratings (median)',weekOne:'Days 1–7',weekTwo:'Days 8–14',
   insufficientRatings:'A weekly comparison needs at least four observations in each week. Missing values stay missing.',
   learningBoundaries:'These are descriptive self-reports, not clinical scores or proof that the programme caused change.',
+  showJourney:'Open the full 14-day path',
+  symbolicLab:'Creative reflection · optional',symbolicIntro:'One image or simple words',symbolImage:'Use an image',symbolWords:'Use plain words',
+  symbolLens:'Symbolic resource',symbolArtifact:'My one-line takeaway',
+  symbolSafety:'This metaphor is for personal reflection only, not diagnosis or therapy. You can always switch to words or skip.',
  },
  ru:{
   welcome:'Ваш ежедневный курс',open:'Открыть',close:'Свернуть',day:'День',of:'из',mins:'минут',daily:'Мой ежедневный замер',
@@ -116,6 +120,10 @@ const UI={
   weeklyComparison:'Недельные самооценки (медиана)',weekOne:'Дни 1–7',weekTwo:'Дни 8–14',
   insufficientRatings:'Для сравнения недель нужно хотя бы четыре наблюдения за каждую. Пропуски не заменяются нулями.',
   learningBoundaries:'Это описательные самоотчёты, не клинические показатели и не доказательство влияния курса.',
+  showJourney:'Открыть полный маршрут 14 дней',
+  symbolicLab:'Творческая рефлексия · по желанию',symbolicIntro:'Один образ или обычные слова',symbolImage:'Через образ',symbolWords:'Через слова',
+  symbolLens:'Метафора ресурса',symbolArtifact:'Мой итог одним предложением',
+  symbolSafety:'Образ используется только для личной рефлексии, не является диагнозом или лечением. Можно перейти к словам или пропустить.',
  }
 }
 async function api(action,locale,body){
@@ -154,7 +162,7 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
 export default function CourseToday({locale='en'}){
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
- const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0)
+ const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
  const [severity,setSeverity]=useState(null),[interference,setInterference]=useState(null),[resource,setResource]=useState(null)
  const [dailyNote,setDailyNote]=useState(''),[beforeNow,setBeforeNow]=useState(null),[afterNow,setAfterNow]=useState(null)
  const [feedback,setFeedback]=useState('skip'),[reflection,setReflection]=useState('')
@@ -179,6 +187,7 @@ export default function CourseToday({locale='en'}){
     setReviewNote('')
     setReviewDecision('continue')
     setStage(0)
+    setSymbolMode('image')
     setExpanded('checkin')
   }else {
     if(response?.currentSession){
@@ -225,6 +234,7 @@ export default function CourseToday({locale='en'}){
  const problem=target.label||''
  const activeName=GROWTH_GOALS[cycle?.activeGoal||cycle?.primaryGoal]?.title?.[locale]||''
  const isV3=Boolean(lesson?.practiceV3)
+ const isV4=Boolean(lesson?.practiceV4)
  const firstWeekMedian=progress.weeklyMedian?.[0],secondWeekMedian=progress.weeklyMedian?.[1]
  const hasComparableWeeks=Number.isFinite(firstWeekMedian)&&Number.isFinite(secondWeekMedian)
  // The thought and everyday action are separate cards; do not make the
@@ -265,6 +275,10 @@ export default function CourseToday({locale='en'}){
       {lesson?.workbook?.skill&&<p className={styles.heroSkill}><strong>{t.skillLabel}:</strong> {lesson.workbook.skill}</p>}
       <p className={styles.focus}>{activeName}{cycle?.activeScaleLabel?' · '+cycle.activeScaleLabel:''} · {problem}</p>
       <p className={styles.hint}>{t.day} {cycle.day} {t.of} {cycle.durationDays} · {t.date}: {cycle.todayLocalDate} · {cycle.timeZone}</p>
+      {!isFinished&&!paused&&<a href="#course-today-lesson" className={styles.todayPrimary}
+        data-course-today-primary onClick={()=>setExpanded(today?'thought':'checkin')}>
+        {t.openToday}<ArrowRight size={17} aria-hidden="true"/>
+      </a>}
     </div>
     <div className={styles.counter}><strong>{progress.practiceCount||0}<span>/{cycle.durationDays}</span></strong><small>{t.count}</small></div>
   </header>
@@ -274,14 +288,15 @@ export default function CourseToday({locale='en'}){
   {isFinished&&<p className={styles.notice}><CheckCircle2 size={20}/>{t.completed}</p>}
   {isV3&&data.returnSuggestion==='restart'&&!isFinished&&
     <p className={styles.returnMessage} data-course-gentle-return>{t.afterGap}</p>}
-  <section className={styles.journeyPanel} aria-labelledby="course-journey-heading" data-course-journey>
-    <div className={styles.journeyHeading}>
+  <details className={styles.journeyPanel} data-course-journey>
+    <summary className={styles.journeyHeading}>
+      <span className={styles.journeyToggleLabel}>{t.showJourney}<ChevronDown size={16} aria-hidden="true"/></span>
       <div><p className="hh-kicker">HOLISTIC HOUSE · 14 DAYS</p>
         <h3 id="course-journey-heading">{t.journeyTitle}</h3>
         <p>{t.journeyIntro}</p>
       </div>
       <span className={styles.journeyCount}>{progress.practiceCount||0} / 14</span>
-    </div>
+    </summary>
     <div className={styles.journeyGrid} role="list">
       {(data.roadmap||[]).map(item=><article key={item.day} role="listitem"
         className={styles.journeyDay} data-day-state={item.status}
@@ -304,7 +319,7 @@ export default function CourseToday({locale='en'}){
         </a>}
       </article>)}
     </div>
-  </section>
+  </details>
   {!isFinished&&<>
    <DailyCard number="checkin" title={'01 · '+t.daily} subtitle="~30 sec" icon={ClipboardList}
     expanded={expanded==='checkin'} onToggle={()=>setExpanded(x=>x==='checkin'?'':'checkin')} completed={Boolean(today)} completedLabel={t.doneDay}>
@@ -388,6 +403,28 @@ export default function CourseToday({locale='en'}){
       {lesson?.workbook&&<section className={styles.workbookTask} data-course-micro-experiment>
         <h4>{t.todayExperiment}</h4><p>{lesson.workbook.microPractice}</p>
       </section>}
+      {isV4&&<details className={styles.symbolLab} data-course-symbolic-lab>
+        <summary className={styles.symbolSummary}>
+          <span className={styles.symbolTile}><Sprout size={20} aria-hidden="true"/></span>
+          <span><strong>{t.symbolicLab}</strong><small>{t.symbolicIntro} · {lesson.practiceV4.symbol}</small></span>
+          <ChevronDown size={17} aria-hidden="true"/>
+        </summary>
+        <div className={styles.symbolContent}>
+          <p className={styles.symbolLens}><strong>{t.symbolLens}:</strong> {lesson.practiceV4.element}</p>
+          <h4>{lesson.practiceV4.symbol}</h4>
+          <div className={styles.symbolModes} role="group" aria-label={t.symbolicLab}>
+            <button type="button" disabled={cycle.preferences?.imagery==='no_imagery'}
+              aria-pressed={symbolMode==='image'&&cycle.preferences?.imagery!=='no_imagery'}
+              onClick={()=>setSymbolMode('image')}>{t.symbolImage}</button>
+            <button type="button" aria-pressed={symbolMode==='words'||cycle.preferences?.imagery==='no_imagery'}
+              onClick={()=>setSymbolMode('words')}>{t.symbolWords}</button>
+          </div>
+          <p className={styles.symbolInvitation}>{symbolMode==='image'&&cycle.preferences?.imagery!=='no_imagery'
+            ?lesson.practiceV4.invitation:lesson.practiceV4.withoutImagery}</p>
+          <div className={styles.symbolArtifact}><strong>{t.symbolArtifact}</strong><p>{lesson.practiceV4.artifact}</p></div>
+          <small>{t.symbolSafety}</small>
+        </div>
+      </details>}
       {isV3&&<details className={styles.transferCard} data-course-skill-transfer>
         <summary>{t.transferPrompt}</summary>
         <p>{lesson.practiceV3.microAction}</p><small>{t.transferHint}</small>
@@ -421,7 +458,8 @@ export default function CourseToday({locale='en'}){
     </fieldset>
     <label className={styles.field}>{t.journal}<textarea maxLength={500} rows={3} value={reflection}
       readOnly={completed} placeholder={lesson?.workbook?.sentenceStarter||''} onChange={e=>setReflection(e.target.value)}/>
-      <small className={styles.hint}>{t.journalHelp}</small></label>
+      <small className={styles.hint}>{t.journalHelp}</small>
+      {isV4&&<small className={styles.symbolNotebookCue}>{t.symbolArtifact}: {lesson.practiceV4.artifact}</small>}</label>
     {completed?<p className={styles.saved}><CheckCircle2 size={18}/>{t.finished}</p>:
       <button type="button" className="hh-primary" disabled={busy||paused} onClick={()=>submit('session',{
         operationId:crypto.randomUUID(),day:cycle.day,lessonId:lesson.id,feedback,
