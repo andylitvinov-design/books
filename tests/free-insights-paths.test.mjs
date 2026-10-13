@@ -36,10 +36,11 @@ test("Services retains free paths; Home uses only the bottom blue capture for th
   assert.doesNotMatch(hero, /two free assessments/i);
 });
 
-test("private profile keeps the three free paths opt-in without private data in links or analytics", () => {
+test("integrated private Profile links to Services without cloning public free offers or leaking private state", () => {
   const profile = read("components/app/profile-domains.jsx");
-  assert.match(profile, /<FreeInsightsPaths locale=\{locale\} variant="cabinet"/);
-  assert.match(profile, /testHref=\{external \?/);
+  assert.doesNotMatch(profile, /<FreeInsightsPaths/);
+  assert.match(profile, /className="hh-domain-services-link"/);
+  assert.match(profile, /href=\{'\/' \+ locale \+ '\/services'\}/);
   assert.match(offer, /<Link className=\{styles.action\} href=\{href\} prefetch=\{false\}/);
   assert.doesNotMatch(offer, /selector|clientId|reportId|testResult|\?score=/);
   assert.match(offer, /not free live calls/);
