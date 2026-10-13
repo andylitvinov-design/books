@@ -33,7 +33,7 @@ test('compact report PDF renders measured values and a labeled aspirational targ
   const source = pdf.toString('latin1')
   assert.match(source, /143 779 Tm/)
   assert.match(source, /\(SELF-RATED PROGRESS\)/)
-  assert.match(source, /\(TARGET \(PLAN\)\)/)
+  assert.ok(source.includes('TARGET \\(PLAN\\)'), 'planned target is explicitly labeled')
   for (const value of ['3/10', '6/10', '7.3/10', 'SYNTHETIC PDF TEST']) {
     assert.ok(source.includes(value), 'Missing supplied report value: ' + value)
   }
