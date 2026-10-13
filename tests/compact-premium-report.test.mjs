@@ -5,6 +5,7 @@ import { extractReportProgress } from '../lib/documents/report-progress.js'
 import { reportPdfFilename } from '../lib/documents/report-filename.js'
 import { getOwnerReportTextTemplate } from '../lib/consultations/owner-report-template.js'
 import { remedyDescriptionBlocks } from '../lib/documents/report-appendices.js'
+import { getRemedy } from '../data/remedies.js'
 import { buildPrescriptionPdf, buildPaymentPdf } from '../lib/prescriptions/pdf.js'
 
 test('only explicit before/after self-ratings create progress; target stays planned', () => {
@@ -57,6 +58,12 @@ test('remedy appendix headings are legible and all narrative copy is retained', 
   assert.ok(blocks.some(block => block.text === 'Исходный авторский текст.'))
   assert.ok(blocks.some(block => block.text === 'Вторая строка.'))
   assert.equal(blocks.filter(block => block.kind === 'space').length, 2)
+  const approved = remedyDescriptionBlocks(getRemedy('ru', 'veratrum-album').description)
+  const headings = approved.filter(block => block.kind === 'subheading').map(block => block.text)
+  for (const name of ['ОСНОВА', 'ПОКАЗАНИЯ', 'АРХЕТИПЫ', 'ОБРАЗЫ', 'ЭФФЕКТ']) {
+    assert.ok(headings.includes(name), 'Missing approved source heading: ' + name)
+  }
+  assert.ok(approved.some(block => block.text.startsWith('• Арлекин')), 'Decorative list markers become proper bullets')
 })
 
 test('download names are meaningful and never contain patient identity', () => {
