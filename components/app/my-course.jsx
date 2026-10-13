@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
-import { COURSE_STEPS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
+import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
+import { getCoursePreset } from '@/lib/inner-growth/course-presets'
+import CoursePresetCatalog from './course-preset-catalog'
 import CourseToday from './course-today'
 import MyCoursesDashboard from './my-courses-dashboard'
 import Course14DayOverview from './course-14-day-overview'
@@ -136,7 +138,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
   const [view,setView] = useState('list')
-  const [selectedTopic,setSelectedTopic] = useState('resources')
+  const [selectedTopic,setSelectedTopic] = useState(null)
+  const [selectedPreset,setSelectedPreset] = useState(null)
   const startDialogRef = useRef(null)
 
   async function refresh(courseId=null) {
@@ -166,12 +169,14 @@ export function MyCourse({ data, locale = 'en' }) {
     finally { setBusy(false) }
   }
 
-  function openStartDialog() {
+  function openStartDialog(presetId = null) {
     if (busy) return
+    if (presetId !== null && !getCoursePreset(presetId)) return
     if (view==='new' && activeCourses.length >= (state?.membership?.maxActiveCourses||1)) {
       setView('paywall')
       return
     }
+    setSelectedPreset(presetId)
     setOptIn(false)
     startDialogRef.current?.showModal()
   }
@@ -194,7 +199,8 @@ export function MyCourse({ data, locale = 'en' }) {
     if(updated){await refresh();setView('list')}
   }
   async function startAnother() {
-    setSelectedTopic('resources')
+    setSelectedTopic(null)
+    setSelectedPreset(null)
     setView('new')
   }
   async function checkoutPlan(tier) {
@@ -228,23 +234,18 @@ export function MyCourse({ data, locale = 'en' }) {
       </button>}
     {!showDashboard && stage === 0 && <header className={styles.hero}>
       <div>
-        <p className="hh-kicker">{t.eyebrow}</p>
-        <h1>{t.title}</h1>
-        <p className={styles.heroLead}>{t.intro}</p>
-        <label className={styles.pickTopic}>
-          <span>{ru?'Выберите актуальную тему':'Choose a theme that matters now'}</span>
-          <select value={selectedTopic} onChange={e=>setSelectedTopic(e.target.value)}>
-            {COURSE_TOPICS.map(topic=><option key={topic.id} value={topic.id}>{topic.title[ru?'ru':'en']}</option>)}
-          </select>
-        </label>
+        <p className="hh-kicker">{ru ? 'МОИ КУРСЫ · HOLISTIC HOUSE' : 'MY COURSES · HOLISTIC HOUSE'}</p>
+        <h1>{ru ? 'Мои курсы' : 'My courses'}</h1>
+        <p className={styles.heroLead}>{ru
+          ? 'Выберите готовое направление с пятью фиксированными тестами или создайте курс под свой запрос. Все программы проходят одинаковый путь: тесты, анализ, выбор шкал и 14 дней практики.'
+          : 'Choose a ready-made focus with five fixed tests or create your own course. Both paths follow the same process: tests, measured results, chosen scales and 14 days of practice.'}</p>
         <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
-        <div className={styles.heroActions}>
-          <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
-          <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
-        </div>
       </div>
       <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
     </header>}
+    {!showDashboard && stage === 0 && <CoursePresetCatalog locale={locale} busy={busy}
+      onPreset={openStartDialog} onPersonal={()=>openStartDialog(null)}
+      switchMode={view==='new'}/>}
     {!showDashboard && stage === 0 && <Course14DayOverview locale={locale} />}
     {!showDashboard && stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
@@ -256,20 +257,23 @@ export function MyCourse({ data, locale = 'en' }) {
       <h2>{t.detailTitle}</h2>
       <p>{t.detailIntro}</p>
       <Journey stage={1} locale={locale}/>
-      <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.note}</p>
     </section>}
 
     {!showDashboard && stage === 0 && <dialog ref={startDialogRef} className={styles.startDialog}
       aria-labelledby="course-consent-heading" onClose={() => setOptIn(false)}>
-      <h2 id="course-consent-heading">{t.consentTitle}</h2>
-      <p>{t.consentHelp}</p>
+      <h2 id="course-consent-heading">{selectedPreset
+        ? (getCoursePreset(selectedPreset)?.title?.[locale] || t.consentTitle) : t.consentTitle}</h2>
+      <p>{selectedPreset
+        ? (ru ? 'Для этой программы закреплены пять тестов. Вы подтвердите набор, пройдёте недостающие тесты, посмотрите результаты и выберете направления практики.'
+          : 'This programme has five fixed tests. You will confirm the set, complete any missing tests, review your measured results and choose your practice focus.')
+        : t.consentHelp}</p>
       <label className={styles.consent}><input type="checkbox" checked={optIn}
         onChange={(e) => setOptIn(e.target.checked)}/><span>{t.consent}</span></label>
       <div className={styles.dialogActions}>
         <button type="button" className="hh-primary" disabled={!optIn || busy} onClick={() => {
           startDialogRef.current?.close()
-          void act('start', { consent: true })
+          void act('start', { consent: true, ...(selectedPreset ? {presetId:selectedPreset} : {}) })
         }}>{t.consentConfirm}<ArrowRight size={17} aria-hidden="true"/></button>
         <button type="button" disabled={busy} onClick={() => startDialogRef.current?.close()}>{t.cancel}</button>
       </div>

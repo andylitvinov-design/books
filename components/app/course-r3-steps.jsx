@@ -7,12 +7,14 @@ import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-tes
 import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
+import { getCoursePreset, coursePresetSuggestedScales } from '@/lib/inner-growth/course-presets'
 import CourseCompletionReview from './course-completion-review'
 import CourseFocusPicker from './course-focus-picker'
 import styles from './course-r3-steps.module.css'
 
 const UI = {
   en: {
+    presetTag: 'Fixed', presetFixed: 'Fixed set for this programme', presetTestIntro: 'These five tests are already selected for your course. Confirm the list, complete only any missing tests, and then choose your focus from real measured scales.',
     focusTitle: 'Which areas matter to you?', focusHint: 'Choose one or several areas. You can also describe your concern in your own words.',
     optional: 'Describe my situation (optional)', describe: 'A few words about my concern (optional)',
     example: 'For example, I want to feel calmer in conversations and more supported.',
@@ -62,6 +64,7 @@ const UI = {
     relativePriority: 'within-scale priority', noMedical: 'For education and self-observation; not diagnosis or psychotherapy.',
   },
   ru: {
+    presetTag: 'Входит', presetFixed: 'Фиксированный набор для этой программы', presetTestIntro: 'Для этого курса заранее выбрано пять тестов. Подтвердите их, пройдите только недостающие и выберите направления по реальным измеренным шкалам.',
     focusTitle: 'С какими сферами хотите работать?', focusHint: 'Выберите одну или несколько сфер. Если хотите, дополнительно опишите проблему своими словами.',
     optional: 'Описать ситуацию (по желанию)', describe: 'Несколько слов о моей ситуации (по желанию)',
     example: 'Например: хочу спокойнее общаться и чувствовать больше внутренней опоры.',
@@ -130,6 +133,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const t=UI[locale]||UI.en,ru=locale==='ru'
   const router=useRouter()
   const current=state.course||{}, assessment=state.assessments||{}
+  const preset=getCoursePreset(current.presetId)
   const [concerns,setConcerns]=useState(current.concerns||'')
   const [focusTags,setFocusTags]=useState(current.focusTags?.length ? current.focusTags : (initialTopic ? [initialTopic] : []))
   const [chosenTests,setChosenTests]=useState([])
@@ -145,13 +149,18 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [openingTest,setOpeningTest]=useState(false)
   const [showCompletedOptions,setShowCompletedOptions]=useState(false)
   const predicted=useMemo(()=>suggestedCourseTopics(concerns),[concerns])
-  const ranked=useMemo(()=>courseRecommendedTests({
-    // A written concern may be the only confirmed request. Derive its
-    // descriptive topic tags locally when no explicit sectors were selected.
-    focusTags:current.focusTags?.length ? current.focusTags
-      : suggestedCourseTopics(current.concerns||'').topics,
-    results:data.results||[],locale,
-  }),[current.focusTags,current.concerns,data.results,locale])
+  const ranked=useMemo(()=>{
+    const options=courseRecommendedTests({
+      // Personal courses keep their editable relevance-ranked shortlist.
+      focusTags:current.focusTags?.length ? current.focusTags
+        : suggestedCourseTopics(current.concerns||'').topics,
+      results:data.results||[],locale,
+    })
+    if (!preset) return options
+    const choices=new Map(options.map(test=>[test.key,test]))
+    // Fixed published battery: no opportunistic dynamic substitutions.
+    return preset.testKeys.map(key=>choices.get(key)).filter(Boolean)
+  },[current.focusTags,current.concerns,data.results,locale,preset])
   const profile=useMemo(()=>courseMeasuredProfile({
     results:data.results||[],testKeys:current.testKeys||[],locale,
   }),[data.results,current.testKeys,locale])
@@ -162,7 +171,9 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const confirmedStatuses=assessment.selectedTests||[]
   const pending=confirmedStatuses.filter(item=>!item.completed)
   const minScales=Math.min(3,profile.eligible.length)
-  const suggestedScales=useMemo(()=>courseSuggestedFocus(profile,3),[profile])
+  const suggestedScales=useMemo(()=>preset
+    ? coursePresetSuggestedScales(profile,preset.id,3)
+    : courseSuggestedFocus(profile,3),[profile,preset])
 
 
   const courseTimeZone=()=>{
@@ -239,9 +250,11 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
 
   useEffect(()=>{
     if(stage!==2 || testsTouched) return
-    setChosenTests(confirmedKeys.length ? [...confirmedKeys] : ranked.slice(0,5).map(item=>item.key))
-  },[stage,testsTouched,current.testKeys,ranked])
+    setChosenTests(preset ? [...preset.testKeys] : confirmedKeys.length
+      ? [...confirmedKeys] : ranked.slice(0,5).map(item=>item.key))
+  },[stage,testsTouched,current.testKeys,ranked,preset])
   function toggleTest(key) {
+    if (preset) return
     setTestsTouched(true)
     setChosenTests(previous=>previous.includes(key)
       ? previous.filter(value=>value!==key)
@@ -255,6 +268,11 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
 
   async function saveTestSelection() {
     if(localBusy||busy||!chosenTests.length||chosenTests.length>12) return
+    if(preset && (chosenTests.length!==preset.testKeys.length ||
+      chosenTests.some((key,index)=>key!==preset.testKeys[index]))) {
+      onError('COURSE_PRESET_TESTS_FIXED')
+      return
+    }
     setLocalBusy(true);onError('')
     try {
       const selected=chosenTests.map(key=>optionByKey.get(key))
@@ -303,19 +321,21 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       busy={busy||localBusy}
       onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}
       onAlternative={openManualFocus}
-      onEditTests={()=>setShowCompletedOptions(true)}/>
+      onEditTests={preset?undefined:()=>setShowCompletedOptions(true)}/>
   }
 
   if(stage===2) {
-    const visible=showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
+    const visible=preset?ranked:showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
     return <section className={'hh-panel '+styles.section} data-course-tests>
       <div className={styles.sectionHeading}><h2>{t.testsTitle}</h2>
-        <button type="button" className={styles.secondary} disabled={busy}
-          onClick={()=>onAct('edit-intake')}>{t.editAreas}</button></div>
-      <p>{t.testsIntro}</p><p className={styles.small}>{t.relevanceHint}</p>
+        {!preset&&<button type="button" className={styles.secondary} disabled={busy}
+          onClick={()=>onAct('edit-intake')}>{t.editAreas}</button>}</div>
+      <p>{preset?t.presetTestIntro:t.testsIntro}</p>
+      {preset?<p className={styles.small}><strong>{t.presetFixed} · {preset.title[ru?'ru':'en']}</strong></p>
+        :<p className={styles.small}>{t.relevanceHint}</p>}
       <div className={styles.testList} aria-label={t.testsTitle}>
         {visible.map((item,index)=><label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}>
-          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||
+          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||Boolean(preset)||
             (!chosenTests.includes(item.key)&&chosenTests.length>=12)}
             onChange={()=>toggleTest(item.key)}/>
           <span className={styles.testBody}><strong>{item.title}</strong>
@@ -326,19 +346,19 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
               {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
-          <span className={styles.match}>{item.matchPercent}%<small>{t.relevance}</small></span>
+          <span className={styles.match}>{preset?t.presetTag:<>{item.matchPercent}%<small>{t.relevance}</small></>}</span>
         </label>)}
       </div>
-      <div className={styles.controls}>
+      {!preset&&<div className={styles.controls}>
         <button type="button" className={styles.secondary} onClick={()=>setShowAll(value=>!value)}>
           <Plus size={15}/>{showAll?t.showLess:t.showMore}</button>
         <Link href={root+'/tests?explore=1&course=1&filters=topics'}>{t.returnTests}<ArrowRight size={15}/></Link>
-      </div>
-      <p className={styles.small}>{t.saveNotice}</p>
+      </div>}
+      {!preset&&<p className={styles.small}>{t.saveNotice}</p>}
       <div className={styles.selectionActions}><strong>{chosenTests.length} {t.chosen}</strong>
         <button className={confirmed ? styles.editSelection : 'hh-primary '+styles.cta}
           type="button" disabled={busy||localBusy||!chosenTests.length}
-          onClick={saveTestSelection}>{confirmed?t.editTests:t.saveTests}<ArrowRight size={17}/></button>
+          onClick={saveTestSelection}>{preset?t.saveTests:confirmed?t.editTests:t.saveTests}<ArrowRight size={17}/></button>
       </div>
       {confirmed&&<section className={styles.progress} aria-label={t.pendingTitle}>
         <h3>{t.pendingTitle}</h3><p>{t.pendingText}</p>

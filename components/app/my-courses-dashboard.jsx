@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ArrowRight, BookOpenCheck, Check, ChevronDown, Crown, HeartHandshake, Leaf, LockKeyhole, Plus, ShieldCheck, Sparkles, Star, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { COURSE_PLANS } from '@/lib/inner-growth/course-plans'
+import { getCoursePreset } from '@/lib/inner-growth/course-presets'
 import styles from './my-courses-dashboard.module.css'
 
 const copy={
@@ -45,11 +46,15 @@ const copy={
   },
 }
 function topicName(course,language){
+  const preset=getCoursePreset(course.presetId)
+  if(preset) return preset.title[language]
   const byTag=COURSE_TOPICS.find(topic=>course.focusTags?.includes(topic.id))
   const byGoal=GROWTH_GOALS[course.goals?.[0]]
   return byTag?.title?.[language]||byGoal?.title?.[language]|| (language==='ru'?'Мой персональный курс':'My personal course')
 }
 function axes(course,language){
+  const preset=getCoursePreset(course.presetId)
+  if(preset) return preset.axes[language]
   const normalized=course.scaleKeys?.map(key=>key.split('::').pop()?.replace(/^(weekly|scale)\./,'').replace(/[_-]/g,' ')).filter(Boolean) || []
   const names=[...normalized,...(course.goals||[]).map(g=>GROWTH_GOALS[g]?.title?.[language]).filter(Boolean)]
   return [...new Set(names)].slice(0,3)
