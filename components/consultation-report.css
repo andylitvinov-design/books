@@ -520,3 +520,29 @@
   }
   .consultation-result .consultation-document-secondary-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.consultation-studio .consultation-template-review {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 13px;
+  padding: 12px 15px;
+  border: 1px solid #d8c8ba;
+  border-radius: 12px;
+  background: #fffdfa;
+  color: #4b483e;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.consultation-studio .consultation-template-review input[type="checkbox"] {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: #65364e;
+}
+.consultation-studio .consultation-template-review input:focus-visible {
+  outline: 3px solid #a87591;
+  outline-offset: 3px;
+}
