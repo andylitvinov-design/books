@@ -96,6 +96,13 @@ async function assertQuestion(scope, definition, index, guest) {
   assert.notEqual(shaded, plain, 'Shading must be visible as well as text-labelled')
   return buttons
 }
+// A generic optional banner is separate from ASRS score-derived guidance.
+function assertCourseLinkBoundary(links, locale) {
+  assert.equal(links.length, 1, 'ASRS reports permit only the single optional banner course link')
+  assert.equal(links[0].href, '/' + locale + '/app/course', 'The optional course link must use the report language')
+  assert.equal(links[0].insideBanner, true, 'No ASRS score-derived course recommendation is permitted')
+  assert.equal(links[0].insideScore, false, 'The generic course banner must remain outside scored articles')
+}
 async function assertReport(target, definition, locale, expected) {
   const report = target.locator('[data-personal-result-report]')
   await expect(report).toBeVisible({ timeout: 20000 })
@@ -121,7 +128,21 @@ async function assertReport(target, definition, locale, expected) {
   }
   if (definition.instrumentLocale === 'ru') await expect(report).toContainText(locale === 'ru' ? 'Валидация именно этой русской формулировки не подтверждена' : 'Validation of this exact Russian wording has not been established')
   await expect(report).toContainText(locale === 'ru' ? 'не рекомендованный интервал повторного теста' : 'not a recommended retesting interval')
-  await expect(report.locator('a[href$="/app/course"]')).toHaveCount(0)
+  const banner = report.locator('[data-free-course-banner]')
+  await expect(banner).toHaveCount(1)
+  await expect(banner).toBeVisible()
+  await expect(banner.locator('a[href="/' + locale + '/app/course"]')).toBeVisible()
+  await expect(banner.locator('details')).toHaveAttribute('open', '')
+  await expect(banner).toContainText(locale === 'ru' ? 'Следующий шаг — по желанию' : 'An optional next step')
+  await expect(banner).toContainText(locale === 'ru' ? 'требуют вашего согласия' : 'requires your consent')
+  await expect(banner).toContainText(locale === 'ru' ? 'а не диагноз, психотерапия или экстренная помощь' : 'not a diagnosis, psychotherapy or emergency support')
+  await expect(banner).toContainText(locale === 'ru' ? 'Курс необязателен и не меняет результаты теста' : 'Taking the course is optional and does not change your test results')
+  const courseLinks = await report.locator('a[href$="/app/course"], a[href*="/app/course?"], a[href*="/app/course#"]').evaluateAll(links => links.map(link => ({
+    href: link.getAttribute('href'),
+    insideBanner: Boolean(link.closest('[data-free-course-banner]')),
+    insideScore: Boolean(link.closest('article')),
+  })))
+  assertCourseLinkBoundary(courseLinks, locale)
   assert.ok(await target.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'No horizontal mobile overflow')
 }
 async function fill(target, definition, mode, guest, locale, values) {

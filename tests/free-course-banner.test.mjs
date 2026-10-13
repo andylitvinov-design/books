@@ -5,6 +5,11 @@ import { runInNewContext } from 'node:vm'
 import { URL } from 'node:url'
 import test from 'node:test'
 import ts from 'typescript'
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
+import { gaugeChange, gaugeModel } from '../lib/assessments/dashboard-gauges.js'
 
 const require = createRequire(import.meta.url)
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -120,4 +125,84 @@ test('native disclosure retains keyboard semantics, visible focus and narrow-scr
   assert.match(css, /flex-wrap:wrap/)
   assert.match(css, /@media\(max-width:530px\)/)
   assert.match(css, /@media print\{\.banner\{display:none\}\}/)
+})
+
+
+test('ASRS count-only EN/RU reports allow only a score-independent optional course banner', () => {
+  const loadComponent = (path, imports) => {
+    const compiled = ts.transpileModule(read(path), {
+      fileName: path,
+      compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+    }).outputText
+    const loaded = { exports: {} }
+    runInNewContext(compiled, {
+      exports: loaded.exports,
+      require: name => imports[name] || (name.endsWith('.module.css')
+        ? { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) } : require(name)),
+    })
+    return loaded.exports
+  }
+  const gauges = loadComponent('components/app/assessment-gauge.jsx', {
+    '@/lib/assessments/dashboard-gauges': { gaugeChange, gaugeModel },
+  })
+  const { CompactAssessmentReport } = loadComponent('components/app/compact-assessment-report.jsx', {
+    './free-course-banner': { FreeCourseBanner }, './assessment-gauge': gauges,
+    '@/lib/assessments/scale-guides': { getTestScaleGuide },
+    '@/lib/assessments/dashboard-gauges': { gaugeModel },
+  })
+  // Exercise the exact pure boundary assertion used by the browser journey.
+  const browserSource = read('scripts/verify-asrs6.mjs')
+  const boundarySource = browserSource.slice(browserSource.indexOf('function assertCourseLinkBoundary('),
+    browserSource.indexOf('async function assertReport('))
+  const checkBoundary = runInNewContext('(' + boundarySource.trim() + ')', { assert })
+  const expand = node => node == null || typeof node !== 'object' ? node
+    : Array.isArray(node) ? node.map(expand)
+      : typeof node.type === 'function' && node.type !== Link ? expand(node.type(node.props))
+        : { ...node, props: { ...node.props, children: expand(node.props.children) } }
+  const courseLinks = (node, insideBanner = false, insideScore = false) => {
+    if (node == null || typeof node !== 'object') return []
+    if (Array.isArray(node)) return node.flatMap(child => courseLinks(child, insideBanner, insideScore))
+    const banner = insideBanner || Object.hasOwn(node.props, 'data-free-course-banner')
+    const score = insideScore || node.type === 'article'
+    const own = (node.type === Link || node.type === 'a') && /\/app\/course(?:[?#]|$)/.test(node.props.href || '')
+      ? [{ href: node.props.href, insideBanner: banner, insideScore: score }] : []
+    return [...own, ...courseLinks(node.props.children, banner, score)]
+  }
+  for (const locale of ['en', 'ru']) {
+    let baselineBanner
+    for (const count of [0, 3, 4, 6]) {
+      const definition = getAssessmentDefinition('asrs-6', 'v1', locale)
+      const answers = Object.fromEntries(definition.questions.map((question, index) =>
+        [question.id, index < count ? (index < 3 ? 2 : 3) : 0]))
+      const result = scoreAssessment(definition, answers)
+      const report = buildAssessmentResultReport(result, locale)
+      const tree = expand(CompactAssessmentReport({ result, report, locale }))
+      const nodes = elements(tree)
+      const banners = nodes.filter(node => Object.hasOwn(node.props, 'data-free-course-banner'))
+      assert.equal(banners.length, 1)
+      assert.equal(tree.props.children.at(-1), banners[0])
+      const links = courseLinks(tree)
+      checkBoundary(links, locale)
+      assert.equal(nodes.filter(node => node.props['data-assessment-gauge'] === 'screening-count').length, 1)
+      assert.ok(nodes.every(node => !['meter', 'svg'].includes(node.type) && node.props.role !== 'progressbar'))
+      const bannerText = text(banners[0])
+      if (baselineBanner === undefined) baselineBanner = bannerText
+      assert.equal(bannerText, baselineBanner, 'Generic banner must not vary with screening count or threshold')
+      assert.doesNotMatch(bannerText, /ASRS|ADHD|СДВГ|screening|скрининг/i)
+      assert.match(bannerText, locale === 'ru' ? /по желанию/ : /optional next step/)
+      assert.match(bannerText, locale === 'ru' ? /требуют вашего согласия/ : /requires your consent/)
+      assert.match(bannerText, locale === 'ru' ? /а не диагноз, психотерапия или экстренная помощь/ : /not a diagnosis, psychotherapy or emergency support/)
+      assert.match(bannerText, locale === 'ru' ? /Курс необязателен и не меняет результаты теста/ : /Taking the course is optional and does not change your test results/)
+      // Negative controls: an extra score recommendation or a displaced banner link must fail.
+      for (const suffix of ['', '?from=asrs-score', '#practice']) {
+        const badScoreLink = { type: 'a', props: { href: '/' + locale + '/app/course' + suffix, children: 'Score-derived course recommendation' } }
+        const injected = { ...tree, props: { ...tree.props, children: [
+          ...tree.props.children, { type: 'article', props: { children: badScoreLink } },
+        ] } }
+        assert.throws(() => checkBoundary(courseLinks(injected), locale), /single optional banner/)
+      }
+      assert.throws(() => checkBoundary([{ ...links[0], insideBanner: false }], locale), /score-derived course recommendation/)
+      assert.throws(() => checkBoundary([{ ...links[0], insideScore: true }], locale), /outside scored articles/)
+    }
+  }
 })
