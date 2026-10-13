@@ -220,8 +220,7 @@ function assertPersonalQuery(start,expected,responseMode){
  assert.deepEqual([...new URLSearchParams(request.query)].sort(),Object.entries(expected).sort(),'Exact personal course GET query, without hidden mutation fields')
  return request
 }
-// Diagnostic-only: measurements and temporary isolated probes never determine
-// acceptance. Original styles are restored before the unchanged viewport check.
+// Passive geometry only. No test-time styling may repair an overflowing layout.
 async function layoutGeometry(){
  return page.evaluate(()=>{
   const root=document.querySelector('[data-personal-plan-editor]'),nodes=new Set(),dom=[...document.querySelectorAll('*')]
@@ -239,32 +238,6 @@ async function layoutGeometry(){
     style:Object.fromEntries(['width','min-width','max-width','inline-size','min-inline-size','max-inline-size','grid-template-columns','overflow-x','overflow-y','padding-left','padding-right','box-sizing','white-space','display'].map(key=>[key,style.getPropertyValue(key)]))}})}
  })
 }
-async function recordOverflowDiagnostic(lang,width,stage,baseline){
- const editor='[data-personal-plan-editor]',settings=editor+' [data-personal-plan-settings]'
- const candidates=[
-  {name:'zero-minimum-grid-tracks',selector:settings+', '+settings+' label',declarations:{'grid-template-columns':'minmax(0,1fr)'}},
-  {name:'explicit-fieldset-size',selector:editor+' fieldset',declarations:{'inline-size':'100%','max-inline-size':'100%'}},
-  {name:'native-select-intrinsic-size',selector:settings+' select',declarations:{width:'0','min-width':'100%','max-width':'100%'}},
- ]
- const controls=()=>page.evaluate(()=>({activeIndex:[...document.querySelectorAll('input,select,textarea,button')].indexOf(document.activeElement),values:[...document.querySelectorAll('input,select,textarea')].map(node=>({value:node.value,checked:node.checked,selected:node.tagName==='SELECT'?[...node.options].map(option=>({value:option.value,selected:option.selected})):null}))}))
- const originalControls=await controls(),beforeRequests=requests.length,beforePosts=posts.length,beforeEffects=effectRequests.length,probes=[]
- try{for(const candidate of candidates){
-  const prior=await page.evaluate(({selector,declarations})=>[...document.querySelectorAll(selector)].map(node=>{
-   const value=node.getAttribute('style');for(const [property,text] of Object.entries(declarations))node.style.setProperty(property,text,'important');return value
-  }),candidate)
-  try{
-   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))
-   probes.push({name:candidate.name,geometry:await layoutGeometry()})
-  }finally{
-   await page.evaluate(({selector,prior})=>[...document.querySelectorAll(selector)].forEach((node,index)=>{if(prior[index]===null)node.removeAttribute('style');else node.setAttribute('style',prior[index])}),{selector:candidate.selector,prior})
-  }
-  const restored=await layoutGeometry();probes.at(-1).restored=restored
-  assert.deepEqual(await controls(),originalControls,'Layout probes must preserve focus, choices and drafts')
-  assert.equal(restored.documentWidth,baseline.documentWidth,'Diagnostic must restore the failing baseline, never conceal overflow')
- }
- assert.equal(requests.length,beforeRequests);assert.equal(posts.length,beforePosts);assert.equal(effectRequests.length,beforeEffects)
- }finally{await writeFile(output+'/overflow-'+lang+'-'+width+'-'+stage+'.json',JSON.stringify({diagnosticOnly:true,browser:engine.name(),browserVersion:browser.version(),lang,width,stage,baseline,probes},null,2))}
-}
 async function personalLayout(component,lang,width,stage){
  // Names, native keyboard operation, and linked descriptions are covered here;
  // this is deliberately not described as a comprehensive WCAG audit.
@@ -273,8 +246,10 @@ async function personalLayout(component,lang,width,stage){
  assert.deepEqual(missingDescriptions,[],'Visible descriptions must reference existing elements')
  await page.evaluate(()=>document.fonts?.ready)
  const geometry=await layoutGeometry()
- if(geometry.documentWidth>geometry.innerWidth+1)await recordOverflowDiagnostic(lang,width,stage,geometry)
+ const fieldsetOverflow=await component.locator('[data-personal-plan-editor] fieldset:visible').evaluateAll(elements=>elements.some(element=>element.scrollWidth>element.clientWidth+1))
+ if(geometry.documentWidth>geometry.innerWidth+1||fieldsetOverflow)await writeFile(output+'/overflow-'+lang+'-'+width+'-'+stage+'.json',JSON.stringify({diagnosticOnly:true,browser:engine.name(),browserVersion:browser.version(),lang,width,stage,fieldsetOverflow,baseline:geometry},null,2))
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1),false,stage+' must not overflow the viewport')
+ assert.equal(fieldsetOverflow,false,'Plan fieldsets must not retain internal horizontal overflow')
  for(const dialog of await component.getByRole('dialog').all())assert.equal(await dialog.evaluate(element=>element.scrollWidth>element.clientWidth+1),false,'Open consent dialog must not overflow internally')
  await page.screenshot({path:output+'/personal-v2-'+lang+'-'+width+'-'+stage+'.png',fullPage:true})
 }

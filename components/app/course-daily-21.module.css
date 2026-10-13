@@ -94,5 +94,7 @@
 .planSettings>legend{padding:0 7px;font-size:17px;font-weight:700}
 .weekAccents{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;min-width:0;padding:12px;border:1px solid #d8dec9;border-radius:12px;margin:0}
 .weekAccents>legend{padding:0 6px;font-weight:650}
+/* Bound nested fieldsets explicitly; WebKit can retain native-select intrinsic overflow. */
+.planSettings,.weekAccents{inline-size:100%;max-inline-size:100%}
 .dayOptions{padding:16px;border:1px solid #ceddcb;border-radius:14px;background:#f4f7ed}
 @media(max-width:700px){.weekAccents{grid-template-columns:minmax(0,1fr)}.personalPlan,.planSettings,.dayOptions{padding:13px}}
