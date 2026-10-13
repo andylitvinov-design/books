@@ -7,7 +7,7 @@ import './consultation-report.css'
 
 export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
-  const guidance = recommendationGuidance(document, locale)
+  const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
   const mixed = document.recommendationType === 'mixed'
   const groups = mixed
