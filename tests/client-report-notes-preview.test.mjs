@@ -148,6 +148,9 @@ test('owner-authored consultation example is an editable draft only for new reco
   assert.match(form, /current \|\| OWNER_REPORT_TEXT_TEMPLATE\.additionalNotes/)
   assert.match(form, /consultation-template-notice/)
   assert.match(form, /Проверьте и замените замеры/)
+  assert.match(form, /consultation-template-review/)
+  assert.match(form, /checked=\{templateReviewed\}/)
+  assert.match(form, /required/)
   // Existing consultations still initialize from the persisted patient record.
   assert.match(form, /useState\(consultation\?\.analysis \?\? ''\)/)
   assert.match(form, /useState\(consultation\?\.additionalNotes \?\? ''\)/)
