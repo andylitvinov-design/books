@@ -277,13 +277,10 @@ export default function CourseToday({locale='en'}){
       <span>{progress.practiceCount||0} / {cycle.durationDays} {t.count}</span>
       {!isFinished&&!paused&&<button type="button" className={styles.todayPrimary}
         data-course-today-primary onClick={()=>setQuestOpen(true)}>
-        {t.openToday}<ArrowRight size={17} aria-hidden="true"/>
+        {completed?(ru?'Повторить урок дня':'Review today’s lesson'):t.openToday}<ArrowRight size={17} aria-hidden="true"/>
       </button>}
-      {completed&&!isFinished&&<button type="button" className={styles.questReview}
-        onClick={()=>setQuestOpen(true)}>{ru?'Повторить день':'Review today'}<ChevronRight size={15}/></button>}
     </div>
   </header>
-  <progress className={styles.progress} max={cycle.durationDays} value={progress.practiceCount||0} aria-label={t.engagement}/>
   {error&&<p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error}) <button type="button" onClick={reload}>{t.retry}</button></p>}
   {paused&&<p className={styles.note}>{t.paused}</p>}
   {isFinished&&<p className={styles.notice}><CheckCircle2 size={20}/>{t.completed}</p>}
