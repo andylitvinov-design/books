@@ -14,7 +14,7 @@ import styles from './course-r3-steps.module.css'
 
 const UI = {
   en: {
-    presetFixed: 'Fixed set for this programme', presetTestIntro: 'These five tests are already selected for your course. Confirm the list, complete only any missing tests, and then choose your focus from real measured scales.',
+    presetTag: 'Fixed', presetFixed: 'Fixed set for this programme', presetTestIntro: 'These five tests are already selected for your course. Confirm the list, complete only any missing tests, and then choose your focus from real measured scales.',
     focusTitle: 'Which areas matter to you?', focusHint: 'Choose one or several areas. You can also describe your concern in your own words.',
     optional: 'Describe my situation (optional)', describe: 'A few words about my concern (optional)',
     example: 'For example, I want to feel calmer in conversations and more supported.',
@@ -64,7 +64,7 @@ const UI = {
     relativePriority: 'within-scale priority', noMedical: 'For education and self-observation; not diagnosis or psychotherapy.',
   },
   ru: {
-    presetFixed: 'Фиксированный набор для этой программы', presetTestIntro: 'Для этого курса заранее выбрано пять тестов. Подтвердите их, пройдите только недостающие и выберите направления по реальным измеренным шкалам.',
+    presetTag: 'Входит', presetFixed: 'Фиксированный набор для этой программы', presetTestIntro: 'Для этого курса заранее выбрано пять тестов. Подтвердите их, пройдите только недостающие и выберите направления по реальным измеренным шкалам.',
     focusTitle: 'С какими сферами хотите работать?', focusHint: 'Выберите одну или несколько сфер. Если хотите, дополнительно опишите проблему своими словами.',
     optional: 'Описать ситуацию (по желанию)', describe: 'Несколько слов о моей ситуации (по желанию)',
     example: 'Например: хочу спокойнее общаться и чувствовать больше внутренней опоры.',
@@ -346,7 +346,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
               {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
-          <span className={styles.match}>{preset?t.presetFixed:<>{item.matchPercent}%<small>{t.relevance}</small></>}</span>
+          <span className={styles.match}>{preset?t.presetTag:<>{item.matchPercent}%<small>{t.relevance}</small></>}</span>
         </label>)}
       </div>
       {!preset&&<div className={styles.controls}>
