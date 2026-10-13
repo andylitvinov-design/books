@@ -190,7 +190,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       const firstSelected=profile.eligible.find(item=>isMeasured && keys.includes(item.id))?.label
       const label=(problemLabel.trim() || firstSelected || (ru?'Моё ежедневное наблюдение':'My daily observation')).slice(0,160)
       const result=await appFetch('course',{
-        action:'choose-goals',expectedRevision:revision,
+        action:'choose-goals',expectedRevision:revision,courseId:current.id,
         ...(isMeasured ? {scaleKeys:keys} : {goals:fallbackGoals}),
         consent:true,durationDays:14,
         problemLabel:label,intention,timeZone:courseTimeZone(),
@@ -228,7 +228,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     onError('')
     try {
       // A fresh, owner-scoped read is authoritative after edits in another tab.
-      const fresh=await appFetch('course')
+      const fresh=await appFetch('course?courseId='+encodeURIComponent(current.id))
       const key=coursePendingKeys(fresh)[0]
       if (!key) { onState(fresh); return }
       const run=await startOrResumeCourseTest({ courseState:fresh, key, locale, request:appFetch })
