@@ -429,7 +429,7 @@ try {
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
  await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
- await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'My profile',exact:true})).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
+ await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'My profile',exact:true})).toBeVisible();await expect(page.locator('[data-personal-portrait-summary]')).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await page.locator('[data-profile-deep-dive] > summary').click();await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
  const profileOfferCases=[
    ['psychology','alchemy-of-soul','Alchemy of the Soul'],
    ['homeopathy','psychohomeopathy','homeopathy'],
@@ -480,22 +480,23 @@ try {
  await page.goto(origin+'/en/app');await ready()
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
   await page.goto(origin+'/en/app/analysis');await ready()
-  await expect(page.getByRole('heading',{name:'Personal analysis',exact:true})).toBeVisible()
-  await expect(page.locator('[data-analysis-offer]')).toHaveCount(3)
-  await expect(page.locator('[data-analysis-offer="stress"]').getByRole('link',{name:'Start free testing'})).toHaveAttribute('href','/en/app/tests?mode=recommendations')
-  await expect(page.locator('[data-analysis-offer="situation"]').getByRole('link',{name:'Request free review'})).toHaveAttribute('href','/en/services/free-situation-review')
-  await expect(page.locator('[data-analysis-offer="resource"]').getByRole('link',{name:'Get my free profile'})).toHaveAttribute('href','/en/services/dao-health-profile')
-  await expect(page.locator('[data-analysis-offer] img')).toHaveCount(3)
+  await expect(page).toHaveURL(/\\/en\\/app\\/portrait#personal-reports/)
+  await expect(page.locator('[data-personal-portrait-summary]')).toBeVisible()
+  await expect(page.locator('[data-profile-report-archive]')).toBeVisible()
+  await expect(page.locator('[data-personal-reports]')).toBeVisible()
+  await expect(page.locator('[data-analysis-offer]')).toHaveCount(0)
   await expect(page.getByText('No saved reports yet')).toBeVisible()
-  await expect(page.getByRole('link',{name:'Request a consultation'})).toHaveAttribute('href','/en/services/alchemy-of-soul')
-  await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Analysis'})).toHaveAttribute('aria-current','page')
+  const primaryNav=page.getByRole('navigation',{name:'Quick navigation'})
+  await expect(primaryNav.locator('a')).toHaveCount(5)
+  await expect(primaryNav.getByRole('link',{name:'Analysis'})).toHaveCount(0)
+  await expect(primaryNav.getByRole('link',{name:'Profile'})).toHaveAttribute('aria-current','page')
   for(const width of [320,390,768,1280]){
     await page.setViewportSize({width,height:900})
-    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Analysis must not overflow viewport at '+width+'px')
-    await screenshotEvidence(page,{path:output+'/client-personal-analysis-en-'+width+'.png',fullPage:true})
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Profile must not overflow viewport at '+width+'px')
+    await screenshotEvidence(page,{path:output+'/integrated-profile-en-'+width+'.png',fullPage:true})
   }
   await page.setViewportSize({width:390,height:844})
-  passed('Google Cabinet Analysis has three free photo offers, private reports and a responsive optional consultation CTA')
+  passed('legacy Analysis route opens the secure integrated Profile archive with five responsive destinations')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
  await screenshotEvidence(page,{path:output+'/current-state-runner.png',fullPage:true})
@@ -518,6 +519,8 @@ try {
  passed('real printable PDF downloads with all latest personal results and scale data')
  await page.goto(origin+'/en/app/portrait');await ready();
   await expect(page.locator('[data-profile-head]')).toBeVisible();
+  await expect(page.locator('[data-personal-portrait-summary]')).toBeVisible();
+  await page.locator('[data-profile-deep-dive] > summary').click();
   await expect(page.locator('[data-measured-scale]')).toHaveCount(0);await expect(page.getByText(/No professional test results yet/)).toBeVisible();
   await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();
@@ -526,7 +529,7 @@ try {
   await page.getByRole('link',{name:/Retake completed tests/}).click();
   await expect(page).toHaveURL(/\/en\/app\/tests\?filter=completed/);
   await expect(page.locator('#my-tests-list')).toBeVisible();
-  await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-extra-tools] > summary').click();
+  await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-deep-dive] > summary').click();await page.locator('[data-profile-extra-tools] > summary').click();
   await expect(page.getByRole('heading',{name:'Add your baseline profile',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:/Results portfolio/})).toBeVisible()
  for(const width of[320,360,390,430,768,1280]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await screenshotEvidence(page,{path:`${output}/portrait-en-${width}.png`,fullPage:true})}
  assert.equal(await page.locator('.mobile-bottom-navigation').count(),0);passed('action-first profile dashboard and responsive no-overflow screenshots 320–1280')
@@ -620,6 +623,7 @@ try {
  await ready()
  await page.goto(origin+'/en/app/portrait')
  await ready()
+ await page.locator('[data-profile-deep-dive] > summary').click()
  await page.locator('[data-profile-extra-tools] > summary').click()
  await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible()
  await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible()
@@ -719,15 +723,17 @@ try {
   await verifyProfileServiceOffers(clientPage)
   await screenshotEvidence(clientPage,{path:output+'/private-client-profile-cta.png',fullPage:false})
   passed('all four legacy private-client profile CTAs open a precise, privacy-safe order request')
-  await clientPage.getByRole('link',{name:'Personal analysis'}).click()
-  await expect(clientPage.getByRole('heading',{name:'Personal analysis',exact:true})).toBeVisible()
-  await expect(clientPage.locator('[data-analysis-offer]')).toHaveCount(3)
-  await expect(clientPage.locator('[data-analysis-offer="stress"]').getByRole('link',{name:'Start free testing'})).toHaveAttribute('href','/en/client/tests')
-  await expect(clientPage.locator('[data-analysis-offer="situation"]').getByRole('link',{name:'Request free review'})).toHaveAttribute('href','/en/services/free-situation-review')
-  await expect(clientPage.locator('[data-analysis-offer="resource"]').getByRole('link',{name:'Get my free profile'})).toHaveAttribute('href','/en/services/dao-health-profile')
+
+  await expect(clientPage.getByRole('link',{name:'Personal analysis'})).toHaveCount(0)
+  await expect(clientPage.locator('[data-profile-report-archive]')).toBeVisible()
+  const formerAnalysisUrl=new URL(clientLink)
+  formerAnalysisUrl.searchParams.set('view','analysis')
+  await clientPage.goto(formerAnalysisUrl.toString())
+  await expect(clientPage.getByRole('heading',{name:'My profile',exact:true})).toBeVisible()
+  await expect(clientPage.locator('[data-personal-reports]')).toBeVisible()
   await expect(clientPage.getByText('No saved reports yet')).toBeVisible()
-  await expect(clientPage.getByRole('link',{name:'Request a consultation'})).toHaveAttribute('href','/en/services/alchemy-of-soul')
-  await screenshotEvidence(clientPage,{path:output+'/private-client-personal-analysis.png',fullPage:true})
+  await expect(clientPage.locator('[data-analysis-offer]')).toHaveCount(0)
+  await screenshotEvidence(clientPage,{path:output+'/private-client-integrated-profile.png',fullPage:true})
   await clientPage.getByRole('link',{name:'My materials'}).click()
   await expect(clientPage.getByRole('heading',{name:'Study materials from Andy'})).toBeVisible()
   await screenshotEvidence(clientPage,{path:output+'/master-client-material-handoff.png',fullPage:true})
