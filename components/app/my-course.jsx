@@ -135,6 +135,7 @@ export function MyCourse({ data, locale = 'en', requestedSupport = null }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
+  const [informationRequested, setInformationRequested] = useState(false)
   const startDialogRef = useRef(null)
   const courseInfoScrolled = useRef(false)
   const requestedGoal = typeof requestedSupport === 'string' && Object.hasOwn(GROWTH_GOALS, requestedSupport) ? requestedSupport : null
@@ -148,11 +149,17 @@ export function MyCourse({ data, locale = 'en', requestedSupport = null }) {
   }
   useEffect(() => {
     if (state && !courseInfoScrolled.current && window.location.hash === '#about-course') {
-      courseInfoScrolled.current = true
-      document.getElementById('about-course')?.scrollIntoView({ block: 'start' })
+      const target = document.getElementById('about-course')
+      if (target) {
+        target.scrollIntoView({ block: 'start' })
+        courseInfoScrolled.current = true
+      }
     }
-  }, [state])
-  useEffect(() => { void refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state, informationRequested])
+  useEffect(() => {
+    setInformationRequested(window.location.hash === '#about-course')
+    void refresh()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function act(action, values = {}) {
     if (busy) return
@@ -203,12 +210,12 @@ export function MyCourse({ data, locale = 'en', requestedSupport = null }) {
     </div>}
     {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
 
-    {stage === 0 && <section className={'hh-panel ' + styles.details} id="course-details">
+    {(stage === 0 || informationRequested) && <section className={'hh-panel ' + styles.details} id="course-details" data-course-information>
       <p className="hh-kicker">{t.how}</p>
-      <h2>{t.detailTitle}</h2>
+      <h2 id="about-course">{t.detailTitle}</h2>
       <p>{t.detailIntro}</p>
-      <Journey stage={1} locale={locale}/>
-      <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+      <Journey stage={stage === 0 ? 1 : visibleStep} locale={locale}/>
+      {stage === 0 && <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>}
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.note}</p>
     </section>}
 

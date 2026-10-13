@@ -155,6 +155,8 @@ try {
   await page.locator('[data-report-course-banner]').getByRole('link',{name:'Learn more about the course'}).click()
   await expect(page).toHaveURL(origin+'/en/app/course?support=energy_agency#about-course')
   await expect(page.locator('[data-course-information]')).toBeVisible()
+  await expect(page.locator('[data-course-information] #about-course')).toHaveText('Six steps to your personal course')
+  await expect(page.locator('#about-course')).toBeInViewport()
   await expect(page.locator('[data-requested-support-topic="energy_agency"]')).toBeVisible()
   await page.getByRole('button',{name:'Start course for free',exact:true}).first().click();await expect(page.getByRole('button',{name:'Agree & start',exact:true})).toBeDisabled();await page.getByRole('button',{name:'Not now',exact:true}).click()
   await expect(page.locator('[data-requested-support-topic="energy_agency"]')).toContainText('You choose tests and directions in the course steps.')
@@ -177,6 +179,27 @@ try {
   await guestPage.getByRole('button',{name:'Start course for free',exact:true}).first().click();await expect(guestPage.getByRole('button',{name:'Agree & start',exact:true})).toBeDisabled();await guestPage.getByRole('button',{name:'Not now',exact:true}).click()
   await guestContext.close()
   passed('signed-out course handoff clearly requires an account, retains only the public topic through login and leaves consent unchecked')
+
+  // Explicit synthetic setup is separate from navigation: an existing course
+  // must receive information without a second enrollment action or state change.
+  const enrolled=await api(account,'course',{action:'start',consent:true})
+  assert.equal(enrolled.course.stage,1)
+  const savedCourse=(await api(account,'course')).course
+  await navigate(page,'/en/app/course')
+  await expect(page.locator('[data-course-information]')).toHaveCount(0)
+  for(const locale of ['en','ru'])for(const support of ['?support=energy_agency','']){
+    await navigate(page,'/'+locale+'/app/course'+support+'#about-course')
+    await expect(page.locator('[data-course-information] #about-course')).toHaveText(locale==='ru'?'Шесть шагов личного курса':'Six steps to your personal course')
+    await expect(page.locator('#about-course')).toBeInViewport()
+    await expect(page.locator('[data-course-information] [aria-current="step"]')).toHaveCount(1)
+    await expect(page.locator('[data-course-information] li').nth(1)).toHaveAttribute('aria-current','step')
+    await expect(page.getByRole('button',{name:locale==='ru'?'Начать курс бесплатно':'Start course for free',exact:true})).toHaveCount(0)
+    await expect(page.locator('dialog')).toHaveCount(0)
+    assert.deepEqual((await api(account,'course')).course,savedCourse)
+    assert.deepEqual(posts,[])
+  }
+  passed('EN/RU active-course information handoffs work with or without a topic, preserve the saved course, and expose no enrollment action')
+
   // A real refresh failure must be surfaced, never discarded as navigation noise.
   await page.route('**/api/app/results/'+result.id,r=>r.fulfill({status:503,contentType:'application/json',body:'{"error":"SERVICE_UNAVAILABLE"}'}))
   await page.goto(origin+'/en/app/results/'+result.id)
