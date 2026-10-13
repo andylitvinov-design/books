@@ -69,7 +69,7 @@ test('PDF keeps custom analysis, notes and general instructions separated, inclu
     }
     assert.doesNotMatch(source, /PRIVATE-SYNTHETIC-000/)
     assert.match(source, /HOLISTIC HOUSE/)
-    assert.match(source, /0\.926 0\.970 0\.969 rg/)
+    assert.match(source, /0\.984 0\.961 0\.941 rg/)
     assert.equal(getClientPrescription(record, locale).internalNotes, undefined)
   }
   assert.equal(recommendationCopy('ru').analysis, 'АНАЛИЗ СОСТОЯНИЯ')
@@ -131,8 +131,8 @@ test('bilingual practitioner editors expose both separate notes textareas', asyn
   }
   assert.match(studio, /Анализ/)
   assert.match(studio, /Примечания/)
-  assert.match(studio, /useState\(consultation\?\.analysis \?\? ''\)/)
-  assert.match(studio, /useState\(consultation\?\.additionalNotes \?\? ''\)/)
+  assert.match(studio, /useState\(\(\) => consultation\?\.analysis \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.analysis\)/)
+  assert.match(studio, /useState\(\(\) => consultation\?\.additionalNotes \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes\)/)
 })
 
 test('owner-authored consultation example is an editable draft only for new records', async () => {
@@ -144,16 +144,16 @@ test('owner-authored consultation example is an editable draft only for new reco
 
   const form = await readFile('components/consultation-form.jsx', 'utf8')
   assert.match(form, /if \(!consultation\) \{/)
-  assert.match(form, /current \|\| OWNER_REPORT_TEXT_TEMPLATE\.analysis/)
-  assert.match(form, /current \|\| OWNER_REPORT_TEXT_TEMPLATE\.additionalNotes/)
+  assert.match(form, /getOwnerReportTextTemplate\(initialReportLocale\)\.analysis/)
+  assert.match(form, /getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes/)
   assert.match(form, /consultation-template-notice/)
   assert.match(form, /Проверьте и замените замеры/)
   assert.match(form, /consultation-template-review/)
   assert.match(form, /checked=\{templateReviewed\}/)
   assert.match(form, /required/)
   // Existing consultations still initialize from the persisted patient record.
-  assert.match(form, /useState\(consultation\?\.analysis \?\? ''\)/)
-  assert.match(form, /useState\(consultation\?\.additionalNotes \?\? ''\)/)
+  assert.match(form, /useState\(\(\) => consultation\?\.analysis \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.analysis\)/)
+  assert.match(form, /useState\(\(\) => consultation\?\.additionalNotes \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes\)/)
 })
 
 test('the generated private PDF has a distinct clickable remedy description URL', async () => {

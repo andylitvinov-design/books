@@ -21,6 +21,12 @@ const nextConfig: NextConfig = {
   ] },
   async headers() {
     return [
+      // Versioned public video artwork is safe to cache; never apply this policy
+      // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
+      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*"].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600" }],
+      })),
       {
         source: "/:path*",
         headers: [

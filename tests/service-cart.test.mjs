@@ -9,6 +9,13 @@ const operationId = '0a1b2c3d-1111-4111-8111-000000000001'
 const request = (items = [{ serviceId: 'express-consultation-30', quantity: 1 }]) => ({ operationId, locale: 'ru', items })
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
+test('Russian free drawing offer remains a review rather than a diagnostic claim', () => {
+  const source = read('components/commerce/service-cart.tsx')
+  assert.match(source, /Бесплатный разбор рисунка \+ отчёт/)
+  assert.doesNotMatch(source, /Бесплатная диагностика по рисунку/)
+  assert.match(source, /services\/free-situation-review/)
+})
+
 test('catalog keeps existing published €50/30 min and €100/60 min rates', () => {
   assert.deepEqual(SERVICE_PRODUCTS.map((entry) => [entry.amountMinor, entry.currency, entry.durationMinutes]), [[5000, 'EUR', 30], [10000, 'EUR', 60]])
   assert.ok(SERVICE_PRODUCTS.every((entry) => entry.kind === 'one_time'))

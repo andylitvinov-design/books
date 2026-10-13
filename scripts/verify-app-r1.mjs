@@ -162,6 +162,32 @@ async function assertPublicViewportFits(target,label){
  const width=await target.evaluate(()=>window.innerWidth)
  const scroll=await target.evaluate(()=>document.documentElement.scrollWidth)
  if(scroll>width+1){
+  // Report offending public DOM nodes without hiding overflow or muting the
+  // original strict assertion. This runs only in isolated synthetic CI.
+  const offenders=await target.evaluate(()=>{
+   const viewport=window.innerWidth
+   const roots=[document.documentElement,document.body]
+   const all=[...roots,...document.querySelectorAll('body *')]
+   const metrics=all.map(node=>{
+    const box=node.getBoundingClientRect()
+    const style=getComputedStyle(node)
+    return {
+     tag:node.tagName.toLowerCase(),
+     className:typeof node.className==='string'?node.className.slice(0,100):'',
+     left:Math.round(box.left),right:Math.round(box.right),
+     width:Math.round(box.width),client:node.clientWidth,scroll:node.scrollWidth,
+     overflow:style.overflowX,position:style.position,
+     label:(node.getAttribute('aria-label')||node.textContent||'').trim().slice(0,58),
+    }
+   })
+   const byExcess=metrics.filter(m=>m.scroll>m.client+1||m.right>viewport+1||m.left< -1)
+    .sort((a,b)=>(b.scroll-b.client)-(a.scroll-a.client)||b.right-a.right).slice(0,18)
+   const byRight=metrics.filter(m=>m.width>0).sort((a,b)=>b.right-a.right).slice(0,10)
+   return {document:{width:viewport,htmlScroll:document.documentElement.scrollWidth,bodyScroll:document.body.scrollWidth},byExcess,byRight}
+  })
+  console.error('PUBLIC_OVERFLOW_GEOMETRY',label,JSON.stringify(offenders))
+ }
+ if(scroll>width+1){
   // Failure-only evidence from this loopback public-service fixture. Never
   // inspect account state, field values, storage, or private routes here.
   const pathname=new URL(target.url()).pathname
@@ -204,6 +230,18 @@ async function verifyPublicServiceConversionJourneys(){
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
     await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
+    if(kind==='alchemy'){
+     const guideHeading=servicePage.locator('#distance-homeopathy-guide h1')
+     await expect(guideHeading).toBeVisible()
+     const headingSize=await guideHeading.evaluate(node=>({
+      scroll:node.scrollWidth,client:node.clientWidth,font:getComputedStyle(node).fontSize,
+     }))
+     assert.ok(headingSize.scroll<=headingSize.client+1,
+      'Distance-homeopathy heading must wrap inside its '+width+'px '+locale+' article: '+JSON.stringify(headingSize))
+     // The article itself stays on the Alchemy page, but there is no
+     // navigation link to inject into client reports or service copy.
+     await expect(servicePage.locator('a[href="#distance-homeopathy-guide"]')).toHaveCount(0)
+    }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
     if(width!==390)continue
     const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
@@ -302,6 +340,13 @@ try {
  await expect(conditionalProblems.getByText('Choose a topic above to see relevant concerns.')).toBeVisible()
  const rankedCards=picker.locator('[data-test-match]')
  await expect(rankedCards).toHaveCount(5)
+ const typeFilters=picker.locator('[data-test-kind-filter]')
+ await expect(typeFilters).toBeVisible()
+ const typeChoices=typeFilters.locator('input[data-test-kind-checkbox]')
+ await expect(typeChoices).toHaveCount(3)
+ await expect(typeChoices.locator('xpath=..').first()).toBeVisible()
+ assert.deepEqual(await typeChoices.evaluateAll(nodes=>nodes.map(node=>node.value)),['professional','monitoring','hobby'])
+ assert.equal(await picker.locator('[data-test-kind-badge]').count(),5,'Every displayed test needs a visible category icon and label')
  const selectedSummary=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
  await expect(selectedSummary).toHaveCount(3)
  const defaultKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
@@ -313,6 +358,18 @@ try {
  const initialPercents=await rankedCards.evaluateAll(nodes=>nodes.map(node=>Number(node.dataset.relevance)))
  assert.ok(initialPercents.every(value=>Number.isInteger(value)&&value>=0&&value<=99))
  assert.deepEqual(initialPercents,[...initialPercents].sort((a,b)=>b-a),'fit percentages must be descending')
+ await typeChoices.nth(0).check()
+ await expect(rankedCards).toHaveCount(5)
+ assert.ok((await picker.locator('[data-test-kind-badge]').evaluateAll(nodes=>nodes.map(node=>node.dataset.testKindBadge))).every(kind=>kind==='professional'),
+  'Professional checkbox must restrict recommendations to documented professional tests')
+ await typeChoices.nth(2).check()
+ assert.ok((await picker.locator('[data-test-kind-badge]').evaluateAll(nodes=>nodes.map(node=>node.dataset.testKindBadge))).every(kind=>['professional','hobby'].includes(kind)),
+  'Multiple kind checkboxes combine with OR')
+ await typeChoices.nth(0).uncheck()
+ assert.ok((await picker.locator('[data-test-kind-badge]').evaluateAll(nodes=>nodes.map(node=>node.dataset.testKindBadge))).every(kind=>kind==='hobby'),
+  'Unchecking professional must keep only hobby tests')
+ await typeChoices.nth(2).uncheck()
+ await expect(rankedCards).toHaveCount(5)
  await picker.getByRole('button',{name:/Show 5 more tests/}).click()
  await expect(rankedCards).toHaveCount(10)
  await picker.getByRole('button',{name:/Show 5 more tests/}).click()
@@ -350,6 +407,11 @@ try {
  const handoffKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
  await picker.getByRole('button',{name:'Browse full database'}).click()
  await expect(guestPickerPage.getByRole('heading',{name:'Find the tests that fit you'})).toBeVisible()
+ const fullTypeFilters=guestPickerPage.locator('[data-test-kind-filter]').first()
+ await expect(fullTypeFilters.locator('input[data-test-kind-checkbox]')).toHaveCount(3)
+ await fullTypeFilters.locator('input[value="monitoring"]').check()
+ await expect(guestPickerPage.locator('article [data-test-kind-badge]').first()).toBeVisible()
+ await fullTypeFilters.locator('input[value="monitoring"]').uncheck()
  const handoffTitles=await guestPickerPage.locator('article input[type="checkbox"]:checked').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')))
  assert.deepEqual(handoffTitles.sort(),handoffKeys.map(key=>MONITORING_CATALOG.find(entry=>entry.key===key).title.en).sort(),'full catalog must preserve every actual selected test')
  await guestPickerPage.getByRole('button',{name:/Back to easy selection/}).click()
@@ -358,10 +420,36 @@ try {
  await guestPickerPage.goto(origin+'/ru/client')
  const ruPicker=guestPickerPage.locator('[data-prelogin-test-picker]')
  await expect(ruPicker.getByRole('heading',{name:'Подберите свои тесты'})).toBeVisible()
+ await expect(ruPicker.locator('[data-test-kind-filter] input[data-test-kind-checkbox]')).toHaveCount(3)
  await ruPicker.getByRole('button',{name:'Стресс',exact:true}).click()
  await expect(ruPicker.getByRole('button',{name:'Перегрузка на работе'})).toBeVisible()
  await guestPickerContext.close()
  passed('pre-login test picker, optional filters, recommendations and full database')
+
+ // Public course-information preview is intentionally available before Google
+ // login and before voluntary personal course-data consent. No private scores
+ // or account session are needed to read all fourteen genuine day names.
+ for (const [language, title] of [
+   ['en','What happens during the 14 days?'],
+   ['ru','Что вас ждёт за 14 дней?'],
+ ]) {
+   await page.goto(origin+'/'+language+'/app/course')
+   const overview=page.locator('[data-course-before-signup="guest"]')
+   await expect(overview).toBeVisible({timeout:20000})
+   await expect(overview.getByRole('heading',{name:title,exact:true})).toBeVisible()
+   await expect(overview.locator('[data-course-phase]')).toHaveCount(4)
+   const detailed=overview.locator('[data-course-14-day-list]')
+   await detailed.locator('summary').click()
+   await expect(detailed.locator('[data-course-day]')).toHaveCount(14)
+   for (const width of [320,390]) {
+     await page.setViewportSize({width,height:844})
+     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
+       language+' public course preview must fit the mobile viewport')
+   }
+   await screenshotEvidence(page,{path:output+'/course-public-'+language+'.png',fullPage:false})
+ }
+ await page.setViewportSize({width:390,height:844})
+ passed('anonymous EN/RU course preview shows four phases and all 14 real days without account access')
 
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
@@ -385,6 +473,8 @@ try {
    await expect(target.locator('[data-profile-domains][data-profile-interactive="true"]')).toBeVisible({timeout:20000})
    for (const [area, slug, service] of profileOfferCases) {
      await target.locator('#hh-domain-tab-'+area).click()
+     const support=target.locator('.hh-domain-support')
+     if (await support.getAttribute('open') === null) await support.locator('summary').click()
      const promo=target.locator('[data-profile-service-cta="'+area+'"]')
      await expect(promo).toBeVisible()
      const order=promo.locator('a[data-contact-channel="whatsapp"]')
@@ -473,7 +563,7 @@ try {
  for(const width of[320,360,390,430,768,1280]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await screenshotEvidence(page,{path:`${output}/portrait-en-${width}.png`,fullPage:true})}
  assert.equal(await page.locator('.mobile-bottom-navigation').count(),0);passed('action-first profile dashboard and responsive no-overflow screenshots 320–1280')
  await page.goto(origin+'/en/app/portfolio');await ready();
- await expect(page.getByRole('heading',{name:'My completed tests',exact:true})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'My results',exact:true})).toBeVisible()
  await expect(page.locator('[data-testid="completed-test-insights"]')).toBeVisible()
  await expect(page.locator('.hh-insights-test-card')).toHaveCount(1)
  await expect(page.getByRole('link',{name:/Open analysis & recommendations/}).first()).toBeVisible()

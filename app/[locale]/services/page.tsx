@@ -259,7 +259,7 @@ export default async function ServicesPage({ params }: PageProps) {
 
 
 
-      <PublicConsultationCta locale={locale as Locale} id="consultation" />
+      <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking />
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
     </main>
   );

@@ -147,10 +147,6 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
           <p className={styles.benefit}><Check size={17} aria-hidden="true"/>{t.benefit}</p>
           <AcquisitionEventLink className={styles.primary} href={whatsappUrl} target="_blank" rel="noopener noreferrer" prefetch={false} event="service_request_start" attributes={{ "data-contact-channel":"whatsapp", "data-service-request":kind }}>{t.action}<ArrowUpRight size={20} aria-hidden="true"/></AcquisitionEventLink>
           <p className={styles.note}>{t.note}</p>
-          {kind === "alchemy" && <Link href="#distance-homeopathy-guide" className={styles.homeopathyGuideLink}>
-            {locale === "ru" ? "Как работать с препаратами дистанционно — читать статью" : "Distance homeopathy — how to work with remedies"}
-            <ArrowUpRight size={17} aria-hidden="true" />
-          </Link>}
           <aside className={styles.andrey}>
             <strong>{locale === "ru" ? "С Андреем Литвиновым" : "With Andrey Litvinov"}</strong>
             <span>{locale === "ru" ? "После запроса уточняем вопрос и формат; затем можно посмотреть короткое видео о подходе ниже." : "After your enquiry, we clarify your question and format; then you can watch the short approach video below."}</span>

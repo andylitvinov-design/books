@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom'
 import { Plus, X, Check, Loader2 } from 'lucide-react'
 
 import { PrescriptionTextImport } from './prescription-text-import'
+import { ReportLanguagePicker } from './report-language-picker'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
 import { initialPrescriptionRows, serializePrescriptionRows } from '@/lib/prescriptions/editor'
 
@@ -27,6 +28,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
   const [dateIssued, setDateIssued] = useState(prescription?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [generalInstructions, setGeneralInstructions] = useState(prescription?.generalInstructions ?? '')
   const [includeDistanceHomeopathy, setIncludeDistanceHomeopathy] = useState(prescription?.includeDistanceHomeopathy === true)
+  const [reportLocale, setReportLocale] = useState(prescription?.languagePreference === 'ru' ? 'ru' : 'en')
   const [importUndo, setImportUndo] = useState(null)
   const update = (index, changes) => setItems((current) => current.map((item, i) => i === index ? { ...item, ...changes } : item))
   const selectedCount = items.filter((item) => item.remedySlug || item.displayNameOverride).length
@@ -59,6 +61,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
         <label>Recommendation No.<input name="recommendationNumber" defaultValue={prescription?.recommendationNumber} /></label>
         <label>Date<input name="dateIssued" type="date" value={dateIssued} onChange={(event) => setDateIssued(event.target.value)} required /></label>
       </fieldset>
+      <ReportLanguagePicker locale={reportLocale} onChange={setReportLocale} uiLocale="en" />
 
       <fieldset className="prescription-remedies"><legend>Remedies <span>{selectedCount} selected</span></legend>
         <p className="prescription-form-hint">Search by name or alias. Leave unused rows empty.</p>
@@ -106,7 +109,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
       <label className="prescription-distance-homeopathy-choice" data-selected={includeDistanceHomeopathy}>
         <input name="includeDistanceHomeopathy" type="checkbox" checked={includeDistanceHomeopathy} onChange={event => setIncludeDistanceHomeopathy(event.target.checked)} />
         <span><strong>Distance homeopathy · Дистанционная гомеопатия</strong>
-          <small>Include the full illustrated guide as the final appendix of the client's report and PDF.</small>
+          <small>Include the full article text as the final appendix in the client report and PDF, without a website link.</small>
         </span>
       </label>
       <label className="prescription-instructions">Follow-up<textarea name="followUp" defaultValue={prescription?.followUp} rows={2} /></label>
@@ -116,7 +119,6 @@ export function PrescriptionForm({ action, prescription, remedies }) {
       <input type="hidden" name="practitionerContact" value="5 Henuyezka St, Apt. 222V · Odesa, Ukraine · +380 93 478 88 27" />
       <details className="prescription-document-options"><summary>Document settings</summary><div>
         <label>Patient DOB<input name="patientDob" type="date" defaultValue={prescription?.patientDob} /></label>
-        <label>Language preference<select name="languagePreference" defaultValue={prescription?.languagePreference ?? 'bilingual'}><option value="bilingual">Bilingual</option><option value="ru">RU</option><option value="en">EN</option></select></label>
       </div><div className="prescription-lifecycle">
         <button type="submit" name="status" value="draft">Save draft</button>
         {prescription && <><button type="submit" name="status" value="active">Activate private link</button><button type="submit" name="status" value="revoked">Revoke link</button><button type="submit" name="status" value="archived">Archive</button></>}

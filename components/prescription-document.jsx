@@ -36,28 +36,40 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
     </div>}
     <article className="canonical-document">
       <DocumentAutoPrint enabled={admin && autoPrint} /><DocumentLetterhead />
-      <h1>{labels.title}</h1>
-      <div className="canonical-client"><p>{labels.patient}: {document.patientName}</p><p>{labels.date}: {document.dateIssued}</p></div>
-      {document.recommendationNumber && <p>{labels.number}: {document.recommendationNumber}</p>}
-      <p className="canonical-intro">{labels.intro}</p>
+      <header className="canonical-report-heading">
+        <p className="canonical-report-eyebrow">{locale === 'ru' ? 'HOLISTIC HOUSE · ПЕРСОНАЛЬНЫЙ ОТЧЁТ' : 'HOLISTIC HOUSE · PERSONAL REPORT'}</p>
+        <h1>{labels.title}</h1>
+        <dl className="canonical-client">
+          <div><dt>{labels.patient}</dt><dd>{document.patientName}</dd></div>
+          <div><dt>{labels.date}</dt><dd><time dateTime={document.dateIssued}>{document.dateIssued}</time></dd></div>
+          {document.recommendationNumber && <div><dt>{labels.number}</dt><dd>{document.recommendationNumber}</dd></div>}
+        </dl>
+        <p className="canonical-intro">{labels.intro}</p>
+      </header>
       {document.analysis && <section className="canonical-general canonical-report-analysis">
         <h2>{labels.analysis}</h2>
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
       </section>}
 
       {groups.map((group) => <section className="canonical-remedy-group" key={group.type}>
-        {group.title && <h2 className="canonical-remedy-group-title">{group.title}</h2>}
+        <h2 className="canonical-remedy-group-title">{group.title || (locale === 'ru' ? 'РЕКОМЕНДАЦИИ' : 'RECOMMENDATIONS')}</h2>
         {group.items.map((item) => {
           itemNumber += 1
           const number = itemNumber
           const schedule = remedySchedule(item, locale, document.recommendationType)
           return <section className="canonical-remedy" key={number}>
             <div className="canonical-remedy-heading">
-              <h2>{number}. {item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}</h2>
-              {schedule && <span className="canonical-remedy-schedule">{schedule}</span>}
+              <span className="canonical-remedy-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
+              <div className="canonical-remedy-title">
+                <h3>{item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}</h3>
+                {schedule && <p className="canonical-remedy-schedule">{schedule}</p>}
+              </div>
             </div>
-            {item.remedyPath && <Link href={item.remedyPath}>{locale === 'ru' ? 'Подробнее о препарате →' : 'Read remedy profile →'}</Link>}
-            <dl>{['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key]).map((key) => <div key={key}><dt>{labels[key]}: </dt><dd>{item[key]}</dd></div>)}</dl>
+            {item.remedyPath && <Link className="canonical-remedy-profile-action" href={item.remedyPath}>
+              <span>{locale === 'ru' ? 'Открыть описание препарата' : 'View remedy description'}</span>
+              <span aria-hidden="true">↗</span>
+            </Link>}
+            <dl className="canonical-remedy-fields">{['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key]).map((key) => <div key={key}><dt>{labels[key]}</dt><dd>{item[key]}</dd></div>)}</dl>
           </section>
         })}
       </section>)}
@@ -74,16 +86,13 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </section>}
 
       {document.additionalNotes && <section className="canonical-general canonical-report-notes"><h2>{labels.additionalNotes}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.additionalNotes}</p></section>}
-      {document.generalInstructions && <section className="canonical-general"><h2>{labels.general}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.generalInstructions}</p></section>}
-      {document.followUp && <p className="canonical-follow-up">{labels.followUp}: {document.followUp}</p>}
+      {document.generalInstructions && <section className="canonical-general canonical-general-instructions"><h2>{labels.general}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.generalInstructions}</p></section>}
+      {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
       <DocumentSignature date={document.dateIssued} locale={locale} />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
 
-      {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Описание препаратов' : 'Remedy profiles'}>
-        <h2>{locale === 'ru' ? 'Описание выбранных препаратов' : 'About your selected remedies'}</h2>
-        <p>{locale === 'ru'
-          ? 'Авторские описания и фотографии из библиотеки Holistic House. Материал для ознакомления и самонаблюдения, не медицинская инструкция.'
-          : 'Original descriptions and photographs from the Holistic House library. Educational material for reflection, not medical instructions.'}</p>
+      {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
+        <h2>{locale === 'ru' ? 'Приложение' : 'Appendix'}</h2>
         {selectedProfiles.map(({ item, remedy }) => <section className="canonical-remedy-profile" key={item.remedySlug}>
           <h3>{remedy.canonical_latin_name}</h3>
           {remedy.primary_image ? <figure className="canonical-remedy-profile-photo">

@@ -27,6 +27,7 @@ const inputKeys = [
 function errorMessage(error, locale) {
   const message = String(error instanceof Error ? error.message : '')
   const ru = locale === 'ru'
+  if (/language/i.test(message)) return ru ? 'Выберите язык отчёта: английский или русский.' : 'Choose the report language: English or Russian.'
   if (/client|patient/i.test(message)) return ru ? 'Сначала выберите или заполните клиента.' : 'Select or enter a client first.'
   if (/amount|service|currency|payment/i.test(message)) return ru ? 'Проверьте данные счёта и сумму.' : 'Check the invoice service and amount.'
   if (/item|remedy|potency|granules|times per day|essence/i.test(message)) return ru ? 'Проверьте выбранные препараты и их параметры.' : 'Check the selected remedies and their details.'
@@ -47,7 +48,9 @@ export async function POST(request) {
   let locale = 'en'
   try {
     const form = await request.formData()
-    locale = form.get('languagePreference') === 'ru' ? 'ru' : 'en'
+    const selectedLanguage = form.get('languagePreference')
+    if (!['en', 'ru'].includes(selectedLanguage)) throw new Error('Choose report language')
+    locale = selectedLanguage
     const itemText = String(form.get('itemsJson') ?? '[]')
     if (itemText.length > 70000) throw new Error('Too many remedy items')
     const items = JSON.parse(itemText)

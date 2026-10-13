@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useReducer, useRef, useState } from 'react'
 import { Check, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { canShowHousePromotion, canStartCheckout, EMPTY_LESSON_OFFERS, lessonCompletionKey, lessonOfferReducer, normalizeBillingStatus } from '@/lib/billing/public-plan'
-import { requestBilling, verifiedBillingRedirect } from '@/lib/billing/client-session'
+import { requestBilling, requestBillingStatus, verifiedBillingRedirect } from '@/lib/billing/client-session'
 import { SUBSCRIPTION_COPY } from './subscription-copy'
 import styles from './subscription-access.module.css'
 
@@ -27,19 +27,24 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
   const [manualOffer, setManualOffer] = useState(false)
   const mounted = useRef(false), requestVersion = useRef(0), inFlight = useRef(false)
   const operationIds = useRef({}), lifecycle = useRef(0), currentAccount = useRef(accountId)
+  const statusController = useRef(null)
   currentAccount.current = accountId
   const lang = locale === 'ru' ? 'ru' : 'en'
 
   const loadStatus = useCallback(async ({ reconcile = false } = {}) => {
     const version = ++requestVersion.current
+    statusController.current?.abort()
     if (!accountId) {
       setStatus(null); setPhase('unavailable')
       return false
     }
+    const controller = new AbortController()
+    statusController.current = controller
     try {
       if (reconcile) await requestBilling(accountId, 'reconcile', {})
-      const next = normalizeBillingStatus(await requestBilling(accountId, 'status'))
-      if (!mounted.current || requestVersion.current !== version) return false
+      if (!mounted.current || requestVersion.current !== version || controller.signal.aborted) return false
+      const next = normalizeBillingStatus(await requestBillingStatus(accountId, { signal: controller.signal }))
+      if (!mounted.current || requestVersion.current !== version || controller.signal.aborted) return false
       setStatus(next); setPhase('ready')
       if (next.entitlement.active || next.entitlement.adFree) {
         dispatch({ type: 'suppress' }); setManualOffer(false)
@@ -48,7 +53,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     } catch {
       if (mounted.current && requestVersion.current === version) setPhase('error')
       return false
-    }
+    } finally { if (statusController.current === controller) statusController.current = null }
   }, [accountId])
 
   useEffect(() => {
@@ -58,16 +63,18 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     dispatch({ type: 'reset' }); operationIds.current = {}
     const returned = new URLSearchParams(window.location.search).get('billing')
     void loadStatus({ reconcile: returned === 'success' || returned === 'returned' })
-    const recheck = () => {
-      if (document.visibilityState !== 'hidden') void loadStatus()
-    }
+    const stopStatus = () => { requestVersion.current += 1; statusController.current?.abort() }
+    const recheck = () => { if (document.visibilityState === 'hidden') stopStatus(); else void loadStatus() }
     window.addEventListener('focus', recheck)
     window.addEventListener('pageshow', recheck)
+    window.addEventListener('pagehide', stopStatus)
     document.addEventListener('visibilitychange', recheck)
     return () => {
       mounted.current = false; lifecycle.current += 1; requestVersion.current += 1
+      statusController.current?.abort()
       window.removeEventListener('focus', recheck)
       window.removeEventListener('pageshow', recheck)
+      window.removeEventListener('pagehide', stopStatus)
       document.removeEventListener('visibilitychange', recheck)
     }
   }, [loadStatus])

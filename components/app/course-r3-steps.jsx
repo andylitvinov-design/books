@@ -39,6 +39,7 @@ const UI = {
     acceptSuggested: 'Yes, choose these {count} areas and start my course',
     chooseDifferent: 'Choose different focus areas',
     pickerIntro: 'Select 3–5 areas to work with. Every suitable measured scale is available below, with its original score.',
+    mainSkillTitle:'My main course skill',mainSkillHelp:'The selected main scale is revisited throughout your new 14-day course. Your other selected scales remain supporting skills. You can change the main one before confirming.',
     generalFocusTitle: 'Choose my general learning directions',
     selectedFocusCount: 'areas selected', allEligibleFocus: 'Scales available for practice',
     availableFocus: 'available', suggested: 'Suggested',
@@ -87,6 +88,7 @@ const UI = {
     acceptSuggested: 'Да, выбрать эти {count} темы и перейти к курсу',
     chooseDifferent: 'Выбрать другие шкалы',
     pickerIntro: 'Выберите 3–5 направлений для работы. Ниже доступны все подходящие измеренные шкалы с исходными баллами.',
+    mainSkillTitle:'Мой основной навык курса',mainSkillHelp:'Основная шкала повторяется в течение нового 14-дневного курса. Остальные выбранные шкалы будут дополнительными. Основную можно поменять до подтверждения.',
     generalFocusTitle: 'Выбрать общие направления развития',
     selectedFocusCount: 'направлений выбрано', allEligibleFocus: 'Подходящие шкалы для практик',
     availableFocus: 'доступно', suggested: 'Рекомендуется',
@@ -371,6 +373,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       t={t} locale={locale} profile={profile} suggested={suggestedScales}
       chosenScales={chosenScales} chosenGoals={fallbackGoals}
       onToggleScale={toggleScale}
+      onSetPrimaryScale={key=>setChosenScales(previous=>previous.includes(key)?[key,...previous.filter(item=>item!==key)]:previous)}
       onToggleGoal={key=>setFallbackGoals(previous=>previous.includes(key)
         ?previous.filter(x=>x!==key):previous.length<3?[...previous,key]:previous)}
       problemLabel={problemLabel} onProblemLabel={setProblemLabel}

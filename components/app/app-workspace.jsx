@@ -2,7 +2,7 @@
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
-import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, FileText, Heart, House, Leaf, Moon, Smile, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
@@ -25,6 +25,7 @@ import { ProfileDomains } from '@/components/app/profile-domains'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
+import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
@@ -41,6 +42,7 @@ import { SubscriptionProvider, SubscriptionSettings, SubscriptionHousePromo, use
 import CrmManager from '@/components/app/crm-manager'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import CourseNotificationSettings from '@/components/pwa/course-notification-settings'
+import Course14DayOverview from '@/components/app/course-14-day-overview'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -61,6 +63,9 @@ function dateLabel(value, locale) {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
     new Date(value),
   )
+}
+function shortDateLabel(value, locale) {
+  return new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-US', { dateStyle: 'medium' }).format(new Date(value))
 }
 function localZone() {
   try {
@@ -283,14 +288,18 @@ export default function AppWorkspace({ locale, path = [] }) {
       <main className="hh-app">
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
-          <h1>{state === 'unavailable' ? c.unavailable : c.welcome}</h1>
-          <p>{state === 'unavailable' ? c.unavailableText : c.intro}</p>
+          <h1>{state === 'unavailable' ? c.unavailable : page === 'course'
+            ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course') : c.welcome}</h1>
+          <p>{state === 'unavailable' ? c.unavailableText : page === 'course'
+            ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
+              : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
             <button className="hh-primary" onClick={signin} disabled={busy}>
               {c.signin}
             </button>
           )}
+          {page === 'course' && <Course14DayOverview locale={locale} compact />}
           {state === 'error' && <button onClick={load}>{c.retry}</button>}
           {error && state !== 'signed-out' && state !== 'unavailable' && (
             <p role="alert">{message(error, c)}</p>
@@ -1832,6 +1841,7 @@ const INSIGHTS_CATEGORY_ICONS = {
 function PortfolioPage({ data, locale }) {
   const ru = locale === 'ru'
   const allGroups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
+  const summary = buildInsightsSummary(allGroups)
   const [period, setPeriod] = useState('all')
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
@@ -1848,6 +1858,8 @@ function PortfolioPage({ data, locale }) {
   const { counts: categoryCounts, sections: categorySections } = buildInsightsCategorySections(groups, entriesByKey, selectedCategories)
   const categoryFilters = INSIGHTS_TEST_CATEGORIES.filter((category, index) =>
     index < HOME_TEST_TOPICS.length || categoryCounts[category.key] > 0 || selectedCategories.includes(category.key))
+  const activeFilters = selectedCategories.length + (period === 'all' ? 0 : 1)
+  const visibleCount = categorySections.reduce((sum, section) => sum + section.groups.length, 0)
   function toggleCategory(key) {
     setSelectedCategories((current) => current.includes(key) ? current.filter((value) => value !== key) : [...current, key])
   }
@@ -1858,16 +1870,31 @@ function PortfolioPage({ data, locale }) {
   return (
     <section className="hh-insights-page" aria-labelledby="hh-insights-title" data-testid="completed-test-insights">
       <header className="hh-insights-intro">
-        <div>
-          <p className="hh-kicker">Insights · Holistic House</p>
-          <h1 id="hh-insights-title">{ru ? 'Мои пройденные тесты' : 'My completed tests'}</h1>
-          <p>{ru
-            ? 'Ваши пройденные тесты — как панель приборов. Каждый спидометр показывает отдельную шкалу, а не процент здоровья.'
-            : 'Your tests, displayed like a dashboard. Each dial shows its own scale, not an overall health percentage.'}</p>
-        </div>
-        <span className="hh-insights-total">{groups.length} {ru ? 'пройдено' : 'completed'}</span>
+        <p className="hh-kicker">{ru ? 'Кабинет · Insights' : 'Dashboard · Insights'}</p>
+        <h1 id="hh-insights-title">{ru ? 'Мои результаты' : 'My results'}</h1>
+        <p>{ru ? 'Ваши пройденные тесты, результаты и динамика.' : 'Your completed tests, scores and trends.'}</p>
       </header>
-
+      <dl className="hh-insights-quickstats" data-testid="insights-summary" aria-label={ru ? 'Общая статистика тестов' : 'All-time test statistics'}>
+        <div><dt>{ru ? 'Пройдено тестов' : 'Tests completed'}</dt><dd>{summary.tests}</dd></div>
+        <div><dt>{ru ? 'Всего прохождений' : 'Total sessions'}</dt><dd>{summary.attempts}</dd></div>
+        <div><dt>{ru ? 'Измерено шкал' : 'Measured scales'}</dt><dd>{summary.scales}</dd></div>
+      </dl>
+      {summary.latestAt && <p className="hh-insights-last-date">{ru ? 'Последний тест' : 'Last test'}: <time dateTime={summary.latestAt}>{shortDateLabel(summary.latestAt, locale)}</time></p>}
+      <details className="hh-insights-filter-disclosure" data-testid="insights-filters">
+        <summary className="hh-insights-filter-toggle">
+          <SlidersHorizontal size={18} aria-hidden="true" />
+          <strong>{ru ? 'Фильтры' : 'Filters'}</strong>
+          {activeFilters > 0 && <span className="hh-insights-active-count">{activeFilters}</span>}
+          <small>{(selectedCategories.length ? (ru ? 'Темы выбраны' : 'Topics selected') : (ru ? 'Все темы' : 'All topics')) + ' · ' + (period === 'all' ? (ru ? 'Всё время' : 'All time') : (ru ? 'Период выбран' : 'Period selected'))}</small>
+          <ChevronDown className="hh-insights-filter-chevron" size={17} aria-hidden="true" />
+        </summary>
+        <div className="hh-insights-filter-panel">
+          <div className="hh-insights-filter-heading">
+            <span>{ru ? 'Категории и период' : 'Categories and period'}</span>
+            {activeFilters > 0 && <button type="button" className="hh-insights-reset"
+              onClick={() => { setSelectedCategories([]); setPeriod('all'); setPeriodStart(''); setPeriodEnd('') }}>
+              {ru ? 'Сбросить' : 'Reset filters'}</button>}
+          </div>
       <div className="hh-insights-category-filters" role="group" aria-label={ru ? 'Фильтр по категориям тестов' : 'Filter completed tests by category'} data-testid="insights-category-filters">
         <button type="button" className="hh-insights-category-filter" aria-pressed={selectedCategories.length === 0} onClick={() => setSelectedCategories([])}>
           <ClipboardList size={20} aria-hidden="true" />
@@ -1904,6 +1931,11 @@ function PortfolioPage({ data, locale }) {
       <p className="hh-insights-period-guide">{ru
         ? 'Стрелки сравнивают последний результат с первым совместимым замером за выбранный период. Личностные шкалы нейтральны.'
         : 'Trend arrows compare your latest result with the earliest compatible measure in this period. Personality traits are neutral.'}</p>
+        </div>
+      </details>
+      {activeFilters > 0 && <p className="hh-insights-filter-status" role="status">
+        {ru ? 'Показано тестов:' : 'Showing tests:'} {visibleCount} / {summary.tests}
+      </p>}
       {!validPeriod ? (
         <div className="hh-insights-empty hh-panel" role="status">
           <p>{ru ? 'Выберите корректные даты начала и конца периода.' : 'Choose valid start and end dates for comparison.'}</p>
@@ -1918,7 +1950,14 @@ function PortfolioPage({ data, locale }) {
                   <span className="hh-insights-category-icon"><CategoryIcon size={22} aria-hidden="true" /></span>
                   <h2>{category[locale] || category.en}</h2>
                 </div>
-                <span>{categoryGroups.length} {ru ? 'тестов' : 'tests'}</span>
+                <div className="hh-insights-category-tools">
+                  <span>{categoryGroups.length} {ru ? 'тестов' : 'tests'}</span>
+                  <Link className="hh-insights-add-test" prefetch={false}
+                    href={'/' + locale + '/app/tests?explore=1&filters=topics&category=' + encodeURIComponent(category.key)}
+                    aria-label={(ru ? 'Добавить тест по теме ' : 'Add test in ') + (category[locale] || category.en)}>
+                    <span aria-hidden="true">+</span>{ru ? 'Тест' : 'Add test'}
+                  </Link>
+                </div>
               </header>
               {categoryGroups.length === 0 && <p className="hh-insights-category-empty">
                 {ru ? 'В выбранном периоде нет результатов в этой категории. Можно добавить подходящий тест.' : 'No results in this category for this period. You can choose a test for this topic.'}
@@ -1931,18 +1970,19 @@ function PortfolioPage({ data, locale }) {
             const main = latest.dimensions?.[0]
             return (
               <article className="hh-insights-test-card" key={group.key}>
-                <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}>
+                <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}
+                  aria-label={(ru ? 'Открыть отчёт и рекомендации: ' : 'Open analysis & recommendations: ') + group.title}>
                   <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact /></div>
                   <div className="hh-insights-test-body">
                     <div className="hh-insights-test-meta">
-                      <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
+                      <time dateTime={latest.measurementAt}>{shortDateLabel(latest.measurementAt, locale)}</time>
                     </div>
                     <h2>{group.title}</h2>
-                    {first && <p className="hh-insights-test-summary">{first.construct}: <strong>{first.value}</strong> · {first.band}</p>}
-                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} />}
+                    {first?.band && <p className="hh-insights-test-summary">{first.band}</p>}
+                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} compact />}
                     {latest.dimensions?.length > 1 &&
                       <p className="hh-insights-test-scores">+ {latest.dimensions.length - 1} {ru ? 'дополнительных шкал' : 'more scales'}</p>}
-                    <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
+                    <strong className="hh-insights-open">{ru ? 'Отчёт и рекомендации' : 'View report & guidance'} <span aria-hidden="true">→</span></strong>
                   </div>
                 </Link>
                 {group.count > 1 && (
@@ -1958,14 +1998,7 @@ function PortfolioPage({ data, locale }) {
             )
                 })}
               </div>
-              <Link className="hh-insights-add-test" prefetch={false}
-                href={`/${locale}/app/tests?explore=1&filters=topics&category=${encodeURIComponent(category.key)}`}>
-                <span className="hh-insights-add-mark" aria-hidden="true">+</span>
-                <span><strong>{ru ? 'Добавить ещё тест' : 'Add another test'}</strong>
-                  <small>{ru ? 'Открыть фильтр тестов по этой категории' : 'Open the test picker for this category'}</small>
-                </span>
-                <span aria-hidden="true">→</span>
-              </Link>
+
             </section>
           })}
         </div>
@@ -1983,6 +2016,7 @@ function PortfolioPage({ data, locale }) {
         </div>
       )}
 
+      {allGroups.length > 0 && <p className="hh-insights-scale-note">{ru ? 'Показатели относятся к отдельным шкалам, а не к проценту здоровья.' : 'Scores reflect individual scales, not an overall health percentage.'}</p>}
       {allGroups.length > 0 && (
         <details className="hh-insights-export">
           <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>

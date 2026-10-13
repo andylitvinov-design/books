@@ -80,7 +80,7 @@ test('consultation notes are above step 03 and preview button precedes create do
     const documents = form.indexOf('id="consultation-documents-heading"')
     assert.ok(pos >= 0 && pos < documents, field + ' appears before document and payment section')
   }
-  assert.ok(form.indexOf('ConsultationDraftPreview locale={uiLocale}') < form.indexOf('type="submit" disabled={pending}'))
+  assert.ok(form.indexOf('ConsultationDraftPreview locale={reportLocale}') < form.indexOf('type="submit" disabled={pending}'))
   assert.ok(!page.includes('Separate diagnostic report'))
   assert.ok(!page.includes('/assessments/new?kind=research_result'))
   assert.ok(preview.includes('new FormData(form)'))
