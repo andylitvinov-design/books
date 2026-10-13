@@ -1,11 +1,11 @@
 /* Profile assessment detail: compact, accessible and consistent with Holistic House. */
 .profile {
-  --ink:#392e32;
-  --muted:#786d69;
-  --wine:#762f49;
-  --wine-dark:#602039;
-  --line:#e9e0db;
-  --soft:#faf7f4;
+  --ink:#35433b;
+  --muted:#687970;
+  --teal:#297667;
+  --forest:#205f52;
+  --line:#d6e3da;
+  --soft:#f4f8f3;
   display:grid;
   gap:11px;
   max-width:none;
@@ -30,13 +30,13 @@
 }
 .sectionTitle { margin:0;align-self:center; }
 .eyebrow {
-  margin:0 0 5px!important;color:#916776;
+  margin:0 0 5px!important;color:#397668;
   font:800 10px/1.4 system-ui,sans-serif;
   letter-spacing:.12em;text-transform:uppercase;
 }
 .sectionTitle h2,.measureHeading h2,.actionsHeading h2 {
   margin:0 0 6px!important;
-  color:#392d31;
+  color:#35413a;
   font:400 clamp(21px,2.7vw,28px)/1.18 Georgia,serif;
   letter-spacing:-.02em;
 }
@@ -57,45 +57,45 @@
 .measureHeading h2 { margin:0!important; }
 .count,.countMuted {
   display:inline-block;flex:0 0 auto;padding:5px 9px;
-  border:1px solid #e6d2d8;border-radius:8px;background:#f8edf0;
-  color:#722e47;font:750 11px/1.35 system-ui,sans-serif;
+  border:1px solid #c6dccc;border-radius:8px;background:#e8f2eb;
+  color:#246b56;font:750 11px/1.35 system-ui,sans-serif;
 }
 .countMuted { color:#77726f;background:#f3f1ef;border-color:#e4e2df; }
 .measuredGrid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
 .measureCard {
   display:grid;gap:8px;min-width:0;
-  padding:11px 12px;border:1px solid #eadfdc;border-radius:11px;background:#fdfaf8;
+  padding:11px 12px;border:1px solid #dbe7de;border-radius:11px;background:#fffefa;
 }
 .measureTop { display:flex;justify-content:space-between;align-items:baseline;gap:8px;font:400 12px/1.35 system-ui,sans-serif; }
-.measureTop > span { font-weight:650;color:#4b3d3f;min-width:0;overflow-wrap:anywhere; }
-.measureTop strong { white-space:nowrap;color:#702f49;font:750 14px/1.2 system-ui,sans-serif;font-variant-numeric:tabular-nums; }
-.measureTop small { font-size:10px;color:#8a7778;font-weight:500; }
-.measuredBar { height:6px;border-radius:99px;overflow:hidden;background:#e9dde0; }
-.measuredBar span { display:block;height:100%;border-radius:99px;background:#925369;transition:width .2s ease; }
-.scaleSource { font:400 10.5px/1.4 system-ui,sans-serif;color:#8a7b76;font-variant-numeric:tabular-nums; }
+.measureTop > span { font-weight:650;color:#3c5e4e;min-width:0;overflow-wrap:anywhere; }
+.measureTop strong { white-space:nowrap;color:#286954;font:750 14px/1.2 system-ui,sans-serif;font-variant-numeric:tabular-nums; }
+.measureTop small { font-size:10px;color:#667d70;font-weight:500; }
+.measuredBar { height:6px;border-radius:99px;overflow:hidden;background:#d6e7dc; }
+.measuredBar span { display:block;height:100%;border-radius:99px;background:#397f6e;transition:width .2s ease; }
+.scaleSource { font:400 10.5px/1.4 system-ui,sans-serif;color:#71837a;font-variant-numeric:tabular-nums; }
 .profile .measureCard { color:inherit;cursor:pointer;transition:border-color .17s ease,background .17s ease; }
-.profile .measureCard:hover { border-color:#c9a4b1;background:#faf1f3; }
+.profile .measureCard:hover { border-color:#a1cbb6;background:#f1f8f3; }
 .profile .measureCard:focus-visible { outline:3px solid #9d5e73;outline-offset:2px; }
 .measureFooter { display:grid;gap:5px;min-width:0; }
 .measureFooter .scaleSource { overflow-wrap:anywhere; }
-.openReport { display:inline-flex;align-items:center;justify-self:start;gap:6px;color:var(--wine);font:750 11px/1.3 system-ui,sans-serif; }
+.openReport { display:inline-flex;align-items:center;justify-self:start;gap:6px;color:var(--teal);font:750 11px/1.3 system-ui,sans-serif; }
 .openReport svg { flex:none;transition:transform .17s ease; }
 .profile .measureCard:hover .openReport svg { transform:translateX(2px); }
 .disclaimer { margin:9px 0 0!important;color:#877b74;font:400 10.5px/1.5 system-ui,sans-serif!important; }
 .noData,.noPending {
-  margin:0;padding:15px;border:1px dashed #e4d8d0;border-radius:11px;
-  background:#faf7f3;color:#796e6a;font:400 12px/1.5 system-ui,sans-serif;
+  margin:0;padding:15px;border:1px dashed #d5e4d7;border-radius:11px;
+  background:#faf7f3;color:#687971;font:400 12px/1.5 system-ui,sans-serif;
 }
 .noPending p { margin:0 0 9px!important; }
 .noPending a {
   display:inline-flex;align-items:center;justify-content:center;
   padding:9px 13px;min-height:40px;border-radius:10px;
-  background:var(--wine);color:#fff!important;font-size:12px;font-weight:750;text-decoration:none;
+  background:var(--teal);color:#fff!important;font-size:12px;font-weight:750;text-decoration:none;
 }
 .profile .moreScales {
   display:inline-flex;align-items:center;gap:6px;min-height:39px;
-  margin:9px 0 0;padding:8px 11px;border:1px solid #d5c0c8;border-radius:10px;
-  background:#fffefa;color:var(--wine);cursor:pointer;font-size:11.5px;font-weight:750;
+  margin:9px 0 0;padding:8px 11px;border:1px solid #b8d2c2;border-radius:10px;
+  background:#fffefa;color:var(--teal);cursor:pointer;font-size:11.5px;font-weight:750;
 }
 .pending { background:#fffefc; }
 .pendingIntro { margin:0 0 11px!important;color:var(--muted);font:400 12px/1.5 system-ui,sans-serif!important; }
@@ -106,7 +106,7 @@
 }
 .pendingTop { display:flex;justify-content:space-between;align-items:flex-start;gap:10px; }
 .pendingTop h3 { margin:0 0 3px!important;font:700 13px/1.3 system-ui,sans-serif!important;letter-spacing:0;color:#504548; }
-.pendingTop p { margin:0!important;max-width:65ch;font:400 11px/1.42 system-ui,sans-serif!important;color:#827773!important; }
+.pendingTop p { margin:0!important;max-width:65ch;font:400 11px/1.42 system-ui,sans-serif!important;color:#62766b!important; }
 .status { flex:0 0 auto;padding:5px 8px;border:1px solid #e6e0dc;border-radius:7px;background:#efedeb;color:#78716d;white-space:nowrap;font:650 10px/1.25 system-ui,sans-serif; }
 .pendingScales { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:9px; }
 .pendingScale { display:grid;gap:4px;min-width:0; }
@@ -117,8 +117,8 @@
 .profile .pendingFooter button {
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   min-height:38px!important;padding:8px 12px!important;
-  border:1px solid #cbb0bb!important;border-radius:9px!important;
-  background:#fffefa!important;color:var(--wine)!important;
+  border:1px solid #bad8c8!important;border-radius:9px!important;
+  background:#fffefa!important;color:var(--teal)!important;
   cursor:pointer;font-size:11.5px!important;font-weight:750;
 }
 .profile .pendingFooter button:hover:not(:disabled) { background:#f7e9ee!important;border-color:#aa7e91!important; }
@@ -140,26 +140,26 @@
 .reportAction button {
   width:100%;height:100%!important;min-height:58px!important;max-width:none!important;
   padding:10px!important;border:1px solid #d9cac7!important;border-radius:11px!important;
-  background:#fff!important;color:#6b3b4c!important;font:700 12px/1.3 system-ui,sans-serif!important;
+  background:#fff!important;color:#286853!important;font:700 12px/1.3 system-ui,sans-serif!important;
 }
 .profile .specialistAction,.profile .secondaryAction,.profile .remainingAction,.profile .disabledAction {
   display:flex;align-items:center;justify-content:flex-start;gap:10px;
   min-height:58px;padding:11px 12px;border:1px solid #e0d3cf;border-radius:11px;
-  background:#fff;color:#624d52;line-height:1.26;
+  background:#fff;color:#4b6757;line-height:1.26;
 }
 .profile .remainingAction {
   grid-column:1 / -1;grid-row:1;
-  background:var(--wine);border-color:var(--wine);color:#fff;
+  background:var(--teal);border-color:var(--teal);color:#fff;
 }
-.profile .remainingAction:hover { background:var(--wine-dark); }
-.profile .specialistAction { background:#f8f0f0;border-color:#e8d9dc;color:#743e51; }
-.profile .secondaryAction { background:#fffcf8;border-color:#e7dad1;color:#6c574f; }
+.profile .remainingAction:hover { background:var(--forest); }
+.profile .specialistAction { background:#edf7f0;border-color:#d8e9da;color:#26725f; }
+.profile .secondaryAction { background:#fffcf8;border-color:#dbe6dc;color:#50695c; }
 .profile .disabledAction { background:#f5f3f1;border-color:#e7e4e1;color:#99908c;opacity:.72; }
 .actionGrid > * > svg { flex:0 0 auto; }
 .actionGrid > * > span { display:grid;gap:2px;min-width:0; }
 .actionGrid strong { font:750 12px/1.32 system-ui,sans-serif;overflow-wrap:anywhere; }
 .actionGrid small { font:400 10.5px/1.35 system-ui,sans-serif;opacity:.86;overflow-wrap:anywhere; }
-.profile button:focus-visible,.profile summary:focus-visible,.profile a:focus-visible { outline:3px solid #9b5571;outline-offset:2px; }
+.profile button:focus-visible,.profile summary:focus-visible,.profile a:focus-visible { outline:3px solid #297667;outline-offset:2px; }
 @media(max-width:800px) {
   .portraitSection { grid-template-columns:1fr;gap:8px; }
   .headWrap { width:min(100%,390px); }
@@ -183,4 +183,14 @@
 @media(prefers-reduced-motion:reduce) {
   .measuredBar span,.profile .measureCard,.openReport svg { transition:none; }
   .profile .measureCard:hover .openReport svg { transform:none; }
+}
+
+/* Integrated Profile shows testing tools only when the user opens details. */
+.profile{--soft:#f3f8f3}
+.profile .measureCard,.profile .pendingCard {box-shadow:none}
+.profile .remainingAction{background:#297667;color:#fff}
+.profile .moreScales:hover,.profile .pendingFooter button:hover{background:#e8f2eb}
+@media(max-width:520px){
+  .profile{gap:8px}
+  .profile .measureCard{padding:10px}
 }
