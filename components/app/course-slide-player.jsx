@@ -115,7 +115,7 @@ function OptionalNumber({ label, value, onChange, words }) {
 }
 
 function IllustratedMoment({ variant = 'calm', photo = false }) {
-  if (photo) return <div className={styles.photoMoment} aria-hidden="true">
+  if (photo) return <div className={styles.photoMoment} data-photo={variant} aria-hidden="true">
     <span className={styles.photoSparkle}><Sparkles size={21}/></span>
   </div>
   return <div className={styles.illustration} data-art={variant} aria-hidden="true">
@@ -300,7 +300,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'phrase' && <>
-            <div className={styles.bigIcon}><Feather size={62} strokeWidth={1.4}/></div>
+            <IllustratedMoment photo variant="books"/>
             <blockquote className={styles.quote}>{lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
           </>}
