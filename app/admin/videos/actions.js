@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { books } from '@/data/library'
 import { getRemedy } from '@/data/remedies'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
@@ -57,6 +57,8 @@ export async function saveSiteVideoAction(input) {
     return { ok: false, error: error?.code === 'conflict' ? 'conflict' : 'storage' }
   }
 
+  // Invalidate only the published/public snapshot, not cabinet, reports or editor data.
+  revalidateTag('holistic-house-published-site-videos')
   const page = videoPagePath(record.slot, record.locale, record.entityId).split(/[?#]/)[0]
   revalidatePath(page)
   // The same consultation video is deliberately reused beside both consultation entry points.

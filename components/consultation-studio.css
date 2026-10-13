@@ -120,6 +120,60 @@
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
+/* Select a prescription alone or reveal optional invoice details. */
+.consultation-studio-document-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  margin: 5px 0 15px;
+}
+.consultation-studio-document-choice {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 15px 16px !important;
+  border: 1px solid #dfd2c3;
+  border-radius: 16px;
+  background: #fffdf9;
+  color: #403329;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.consultation-studio-document-choice[data-selected="true"] {
+  border-color: #86b8b4;
+  background: #eaf6f3;
+}
+.consultation-studio-document-choice input[type="checkbox"] {
+  flex: 0 0 23px;
+  width: 23px !important;
+  height: 23px !important;
+  min-height: 23px !important;
+  margin: 0;
+  accent-color: #187b85;
+  cursor: pointer;
+}
+.consultation-studio-document-choice input:focus-visible {
+  outline: 2px solid #187b85;
+  outline-offset: 4px;
+}
+.consultation-studio-document-choice span { display: grid; min-width: 0; gap: 4px; }
+.consultation-studio-document-choice strong { color: #294a4d; font-size: 15px; font-weight: 750; }
+.consultation-studio-document-choice small { color: #776c61; font-size: 11px; line-height: 1.4; }
+.consultation-studio-invoice-panel {
+  margin-top: 8px;
+  padding-top: 18px;
+  border-top: 1px solid #e2dacf;
+}
+.consultation-studio-invoice-panel h3 {
+  margin: 0 0 14px;
+  color: #3e5960;
+  font-size: 15px;
+  font-weight: 750;
+}
+.consultation-existing-payment-note { margin: 12px 0 0; color: #756457; font-size: 12px; line-height: 1.5; }
+
 .consultation-studio-card {
   min-width: 0;
   border: 1px solid var(--studio-border);
@@ -506,6 +560,9 @@
   .consultation-studio-payment-grid > .consultation-studio-payment-status { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
+  .consultation-studio-document-choices { grid-template-columns: minmax(0, 1fr); }
+  .consultation-studio-document-choice { padding: 14px 15px !important; }
+
   .consultation-studio-shell {
     padding: 13px 14px calc(36px + env(safe-area-inset-bottom)) !important;
   }
@@ -871,4 +928,57 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .consultation-studio-submit .consultation-primary-action { transition: none; }
+}
+
+
+/* Consultation report analysis + client notes — modern responsive input cards. */
+.consultation-report-notes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0 6px;
+}
+.consultation-studio .consultation-report-note-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 5px;
+  padding: 16px;
+  border: 1px solid #cde4e5;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #f2fafb, #fbfffe);
+  color: #295266;
+}
+.consultation-studio .consultation-report-note-card:nth-child(2) {
+  border-color: #d8e6dc;
+  background: linear-gradient(145deg, #f1faf5, #fdfffb);
+}
+.consultation-studio .consultation-report-note-card > strong {
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+.consultation-studio .consultation-report-note-card > small {
+  color: #5a7881;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.consultation-studio .consultation-report-note-card textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 126px;
+  margin-top: 9px;
+  padding: 12px 13px;
+  border: 1px solid #cadfe2;
+  border-radius: 11px;
+  background: #fff;
+  font-size: 16px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.consultation-studio .consultation-report-note-card:focus-within { border-color: #5faba9; }
+@media (max-width: 700px) {
+  .consultation-report-notes-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .consultation-studio .consultation-report-note-card { padding: 14px; }
 }

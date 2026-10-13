@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
-import { FreeInsightsPaths } from "@/components/free-insights-paths";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { RelationshipsSpotlight } from "@/components/relationships-spotlight";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
@@ -24,6 +23,7 @@ const copy = {
     heroTitle: "Найдите больше ясности и внутренней опоры",
     heroIntro: "Три бесплатных способа начать: анализ ситуации, профиль У-Син и тесты стресса и личности. Личные консультации — по желанию.",
     heroPrimary: "Бесплатный разбор ситуации",
+    heroBook: "Записаться на консультацию",
     heroSecondary: "Четыре предложения",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте самостоятельно",
@@ -56,6 +56,7 @@ const copy = {
     heroTitle: "Explore your question. Find a clearer way forward.",
     heroIntro: "Three free ways to begin: a situation review, a Wu Xing resource profile, or stress and personality tests. Personal sessions are optional.",
     heroPrimary: "Free situation review",
+    heroBook: "Book a consultation",
     heroSecondary: "Explore four services",
     startKicker: "Other ways to explore",
     startTitle: "Explore at your own pace",
@@ -130,6 +131,13 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
               {text.heroPrimary}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
             <AcquisitionEventLink
+              className="service-home-button service-home-button--consultation"
+              href={`/${locale}/services#solutions`}
+              event="service_request_start"
+            >
+              {text.heroBook}<span aria-hidden="true">→</span>
+            </AcquisitionEventLink>
+            <AcquisitionEventLink
               className="service-home-button service-home-button--secondary"
               href="#core-services"
               event="service_view"
@@ -139,8 +147,6 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           </div>
         </div>
       </section>
-
-      <FreeInsightsPaths locale={locale} testHref={entry.selfCheck.href} />
 
       <ServicesSolutions locale={locale} variant="home" />
       <RelationshipsSpotlight locale={locale} />

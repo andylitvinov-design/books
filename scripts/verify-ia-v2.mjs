@@ -49,6 +49,93 @@ async function go(page, path) {
   await page.evaluate(() => document.fonts.ready)
   return response
 }
+
+async function verifyPublicHeaderMatrix(page, engine) {
+  const originalViewport = page.viewportSize()
+  const inViewport = async (locator, label) => {
+    await expect(locator).toBeVisible()
+    const box = await locator.boundingBox()
+    const { width, height } = page.viewportSize()
+    assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1 && box.y >= -1 && box.y + box.height <= height + 1 && box.width >= 44 && box.height >= 44, label + ': visible 44px control must fit viewport')
+  }
+  for (const locale of ['en', 'ru', 'es']) {
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['services', '/' + locale + '/services'], ['library', '/' + locale + '/library']]) {
+      for (const width of [320, 360, 374, 375, 390, 430, 768, 1023]) {
+        const label = engine + '/' + locale + '/' + surface + '/' + width
+        await page.setViewportSize({ width, height: 900 })
+        assert.equal((await go(page, path)).status(), 200, label)
+        await page.waitForLoadState('networkidle')
+        const header = page.locator('header.house-header--services')
+        const expected = getSiteNavigation(locale)
+        const expectedHeader = expected.map(item => ({ id: item.id, href: item.id === 'cabinet' ? '/' + (locale === 'es' ? 'en' : locale) + '/app' : item.href }))
+        assert.deepEqual(await header.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
+        const cabinet = header.locator('a.site-cabinet-entry')
+        const menu = header.locator('details.site-language-menu')
+        const trigger = menu.locator('summary')
+        await expect(trigger).toHaveText(locale.toUpperCase())
+        await expect(cabinet).toHaveAttribute('href', '/' + (locale === 'es' ? 'en' : locale) + '/app')
+        await expect(menu).toHaveJSProperty('open', false)
+        await inViewport(cabinet, label + '/cabinet')
+        await inViewport(trigger, label + '/language')
+        if (width >= 768) {
+          for (const link of await header.locator('[data-nav-item]').all()) {
+            await expect(link).toBeVisible()
+            const box = await link.boundingBox()
+            assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1, label + ': tablet navigation link must remain in bounds')
+          }
+        }
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Closed menu overflow: ' + label)
+        // Use the real keyboard sequence; opening details alone does not test
+        // the React Escape handler or its focus-return behavior after hydration.
+        await cabinet.focus()
+        await cabinet.press('Tab')
+        await expect(trigger).toBeFocused()
+        await trigger.press('Enter')
+        await expect(menu).toHaveJSProperty('open', true)
+        const choices = menu.locator('.site-language-menu-list > a, .site-language-menu-list > button')
+        assert.deepEqual(await choices.evaluateAll(elements => elements.map(el => el.getAttribute('lang'))), ['ru', 'en', 'es'])
+        for (const choice of await choices.all()) await inViewport(choice, label + '/language-choice')
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Open menu overflow: ' + label)
+        await trigger.press('Tab')
+        await expect(choices.first()).toBeFocused()
+        await page.keyboard.press('Escape')
+        await expect(menu).toHaveJSProperty('open', false)
+        await expect(trigger).toBeFocused()
+        await inViewport(trigger, label + '/language-after-escape')
+        await header.screenshot({ path: evidence + '/header-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
+        const bottom = page.locator('.mobile-bottom-navigation')
+        const expectedBottom = expected.filter(item => item.id !== 'relationships')
+        const bottomLinks = bottom.locator('[data-nav-item]')
+        assert.deepEqual(await bottomLinks.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedBottom.map(item => ({ id: item.id, href: item.href })), label + ': exact six bottom destinations')
+        await expect(bottomLinks).toHaveCount(6)
+        await expect(bottom.locator('[aria-current="page"]')).toHaveCount(1)
+        await expect(bottom.locator('[data-nav-item="' + surface + '"]')).toHaveAttribute('aria-current', 'page')
+        if (width < 768) {
+          await inViewport(bottom, label + '/bottom-navigation')
+          await bottomLinks.first().focus()
+          let previousRight = 0
+          for (let index = 0; index < expectedBottom.length; index++) {
+            const link = bottomLinks.nth(index)
+            await inViewport(link, label + '/bottom-' + expectedBottom[index].id)
+            await expect(link).toHaveAccessibleName(expectedBottom[index].label)
+            await expect(link).toBeFocused()
+            const box = await link.boundingBox()
+            assert.ok(box.x >= previousRight - 1, label + ': bottom navigation items must not overlap')
+            previousRight = box.x + box.width
+            if (index < expectedBottom.length - 1) await link.press('Tab')
+          }
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Bottom navigation overflow: ' + label)
+          await bottom.screenshot({ path: evidence + '/bottom-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
+        } else {
+          await expect(bottom).toBeHidden()
+        }
+        pass('Public navigation: ' + label)
+      }
+    }
+  }
+  await page.setViewportSize(originalViewport)
+  pass(engine + ': public header Home/Services/Library EN/RU/ES at 320/360/374/375/390/430/768/1023px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible six-slot mobile bottom navigation and keyboard order')
+}
 try {
   await redis(['FLUSHDB']) // Dedicated ephemeral service database, not a configured production store.
   bridge = createServer(certificate, async (request, response) => {
@@ -137,7 +224,10 @@ try {
         // intentionally keeps six destinations; Home exposes the hub spotlight.
         const mobileIds = ['home', 'library', 'services', 'academy', 'about', 'cabinet']
         const expectedItems = selector === '.mobile-bottom-navigation'
-          ? expected.filter(item => mobileIds.includes(item.id)) : expected
+          ? expected.filter(item => mobileIds.includes(item.id))
+          : expected.map(item => item.id === 'cabinet'
+              ? { ...item, href: `/${locale === 'es' ? 'en' : locale}/app` }
+              : item)
         assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
         if (selector === '.mobile-bottom-navigation') await expect(nav.locator('[data-nav-item]')).toHaveCount(6)
         await expect(nav.locator('[data-nav-item="library"]')).toHaveAttribute('aria-current', 'page')
@@ -156,6 +246,7 @@ try {
     }
   }
   pass('Desktop hub entry and six-slot mobile navigation, Library EN/RU/ES, active states, 320–1280px, tap targets and bottom spacing')
+  await verifyPublicHeaderMatrix(page, 'chromium')
   for (const path of ['/en/books', '/ru/books', '/es/books', '/en/homeopathy', '/ru/homeopathy', '/es/homeopathy', '/en/services', '/ru/services', '/es/services', '/en/about', '/ru/about', '/es/about']) assert.equal((await go(page, path)).status(), 200, path)
   const sitemap = await (await fetch(origin + '/sitemap.xml')).text()
   for (const locale of ['en', 'ru', 'es']) assert.ok(sitemap.includes(`/${locale}/library`))
@@ -231,14 +322,25 @@ try {
   await admin.getByRole('button', { name: 'Archive', exact: true }).click()
   await expect(admin.getByText('This record is archived and is not visible to the client.', { exact: true })).toBeVisible()
   assert.equal((await fresh.findClientAssessment(id)).status, 'archived')
+  // Client reports use the new consultation studio, not the retired research-result editor.
+  await go(admin, '/admin/reports/new')
+  const clientReportLink = admin.locator(`a.master-client-row[href="/admin/consultations/new?clientId=${a.id}"]`)
+  await expect(clientReportLink).toBeVisible()
+  await clientReportLink.click()
+  await expect(admin).toHaveURL(origin + `/admin/consultations/new?clientId=${a.id}`)
+  await expect(admin.locator('.consultation-client-selector input[name="clientId"]')).toHaveValue(a.id)
+  await expect(admin.locator('.consultation-client-selected-row strong')).toHaveText(a.fullName)
+  await expect(admin.locator('textarea[name="analysis"]')).toBeVisible()
+  await expect(admin.locator('textarea[name="additionalNotes"]')).toBeVisible()
+  await expect(admin.locator('input[name="includeRecommendation"]')).toBeChecked()
+  await expect(admin.locator('input[name="includeInvoice"]')).not.toBeChecked()
+  await expect(admin.locator('select[name="kind"]')).toHaveCount(0)
+  await admin.screenshot({ path: `${evidence}/synthetic-practitioner-new-consultation.png`, fullPage: true })
+  // Previously shared bookmarks should reach the same studio after owner/client validation.
   await go(admin, `/admin/clients/${a.id}/assessments/new?kind=research_result`)
-  await expect(admin.locator('select[name="kind"]')).toHaveValue('research_result')
-  await admin.locator('input[name="title"]').fill('Research result · synthetic')
-  await admin.locator('input[name="occurredOn"]').fill('2026-10-01')
-  await admin.getByRole('button', { name: 'Save draft', exact: true }).click()
-  await expect(admin).toHaveURL(/\/assessments\/[a-f0-9-]+\/edit$/)
-  await admin.screenshot({ path: `${evidence}/synthetic-practitioner-draft.png`, fullPage: true })
-  pass('Actual owner Unshare/Edit/Archive and second research-result creation, with store readback')
+  await expect(admin).toHaveURL(origin + `/admin/consultations/new?clientId=${a.id}`)
+  await expect(admin.locator('.consultation-client-selector input[name="clientId"]')).toHaveValue(a.id)
+  pass('Actual owner Unshare/Edit/Archive, report picker handoff and old research-result redirect to the new consultation studio')
   await go(pa, '/en/client'); await expect(pa).toHaveURL(origin + '/en/client')
   await expect(pa.locator(`a[href="/en/client/${links.a.selector}"]`)).toBeHidden()
   await pa.getByText('Already have a private link from Andy?', { exact: true }).click()
@@ -264,6 +366,8 @@ try {
   pass('Resume EN/RU/ES, application restart persistence, rotation/revocation invalidation and no private browser storage')
   secondBrowser = await webkit.launch()
   const safari = await secondBrowser.newContext({ ...common, viewport: { width: 390, height: 844 } }), sp = await safari.newPage()
+  sp.on('pageerror', error => errors.push(error.message))
+  await verifyPublicHeaderMatrix(sp, 'webkit')
   await go(sp, '/ru/library')
   await expect(sp.locator('.mobile-bottom-navigation [data-nav-item="cabinet"]')).toBeVisible()
   assert.ok(await sp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))

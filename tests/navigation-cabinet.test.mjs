@@ -193,8 +193,9 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
   const homeChoice = await readFile('components/consultation-choice-capture.tsx', 'utf8')
   assert.match(home, /<HomepageContactCta locale=\{locale\}/)
   assert.match(homeContact, /data-home-contact-capture/)
-  assert.match(homeContact, /<ConsultationChoiceCapture/)
-  assert.match(homeContact, /variant="service"/)
+  assert.match(homeContact, /<HomepageFreeCapture locale=\{locale\}/)
+  assert.doesNotMatch(homeContact, /variant="service"/)
+  assert.match(await readFile('components/homepage-free-capture.tsx', 'utf8'), /data-home-free-capture="true"/)
   assert.match(homeChoice, /whatsappEnquiryUrl/)
   assert.match(homeChoice, /t\.me\/AndyTherapist/)
   for (const source of [homeopathy, services, spanishServices, library, academyRecord, remedies, remedyPage, bookReader]) {
@@ -223,4 +224,25 @@ test('compact language menu and cabinet next-step remain available after IA inte
   assert.doesNotMatch(cabinet, /localStorage/)
   assert.match(esAboutVerifier, /site-language-menu-trigger/)
   assert.match(esPublicVerifier, /site-language-menu-trigger/)
+})
+
+test('top site header keeps a visible direct link to the private personal app on mobile', async () => {
+  const [nav, home, header, styles] = await Promise.all([
+    readFile('components/site-navigation.tsx', 'utf8'),
+    readFile('components/holistic-house-home.tsx', 'utf8'),
+    readFile('components/public-site-header.tsx', 'utf8'),
+    readFile('app/holistic-house-home.css', 'utf8'),
+  ])
+
+  assert.match(home, /<SiteNavigation locale=\{locale\}/)
+  assert.match(header, /<SiteNavigation locale=\{locale\}/)
+  assert.match(nav, /filter\(item => item\.id !== 'cabinet'\)/)
+  assert.match(nav, /className="site-cabinet-entry"/)
+  assert.match(nav, /href=\{\`\/\$\{activeLocale === 'es' \? 'en' : activeLocale\}\/app\`\}/)
+  assert.match(nav, /data-nav-item="cabinet"/)
+  for (const localeCopy of ['My cabinet', 'Личный кабинет', 'Mi espacio']) assert.ok(nav.includes(localeCopy))
+  assert.match(styles, /\.house-header--services \.site-navigation > \.site-cabinet-entry/)
+  assert.match(styles, /\.house-header--services \.site-navigation > a \{ display: none; \}/)
+  assert.match(styles, /\.house-header--services \.site-cabinet-entry__compact/)
+  assert.match(styles, /@media \(max-width: 374px\)/)
 })

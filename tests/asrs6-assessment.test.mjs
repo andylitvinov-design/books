@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { ASRS6_DEFINITIONS } from '../data/assessments/asrs-v1-6-nyu.js'
 import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition, validateAnswers, provenance } from '../lib/assessments/definitions.js'
@@ -17,7 +18,7 @@ import { gaugeModel, gaugeChange } from '../lib/assessments/dashboard-gauges.js'
 import { normalizeDimension } from '../lib/profile/summary.js'
 import { scorePortraitDimension } from '../lib/assessments/psych-portrait.js'
 import { buildProfileAssessmentView } from '../lib/profile/profile-assessment-view.js'
-import { courseMeasuredProfile, goalForChosenScale } from '../lib/inner-growth/course-strategy.js'
+import { courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale } from '../lib/inner-growth/course-strategy.js'
 import { buildClientReport } from '../lib/profile/client-report.js'
 
 const source = JSON.parse(readFileSync(new URL('../docs/assessments/sources/asrs6/instrument-extraction.json',import.meta.url),'utf8'))
@@ -167,6 +168,7 @@ test('Insights, all scales and profile show discrete count, never favorable gaug
     assert.equal(course.scales[0].eligible,false)
     assert.equal(course.scales[0].priorityPercent,null)
     assert.equal(course.eligible.length,0)
+    assert.deepEqual(courseSuggestedFocus(course),[])
     assert.equal(goalForChosenScale('asrs-6::'+d.key,locale),null)
     const client=buildClientReport({results:[previous,result],locale,now:new Date('2026-10-12T21:00:00Z')})
     assert.equal(client.counts.tests,1);assert.equal(client.counts.attempts,2)
@@ -260,4 +262,29 @@ test('history titles use the exact catalog instrument instead of a generic Perso
   const timeline=text('components/app/app-workspace.jsx').split('function HistoryView(')[1]
   assert.match(timeline,/title: assessmentHistoryTitle\(r, locale\)/)
   assert.doesNotMatch(timeline,/title: r.definitionKey[^\n]*c.personality/)
+})
+
+
+test('actual course-completion summary renders ASRS counts without a meter in EN/RU and preserves ordinary scales',()=>{
+  for(const locale of ['en','ru'])for(const count of [0,3,4,6]){
+    const result={...score([2,2,2,3,3,3].map((v,i)=>i<count?v:0),locale),id:'synthetic-course-asrs',accountId:'synthetic-account',measurementAt:'2026-10-12T20:00:00Z'}
+    const profile=courseMeasuredProfile({results:[result],testKeys:['asrs-6'],locale,now:Date.parse('2026-10-12T21:00:00Z')})
+    assert.equal(profile.scales[0].type,'screening_count')
+    assert.deepEqual(courseSuggestedFocus(profile),[])
+    const html=execFileSync(process.execPath,[new URL('./helpers/render-course-summary.mjs',import.meta.url).pathname],{
+      input:JSON.stringify({profile,locale}),encoding:'utf8',maxBuffer:1024*1024,
+    })
+    assert.match(html,/data-course-screening-count/)
+    assert.match(html,/data-course-screening-scale="true"/)
+    assert.doesNotMatch(html,/<meter\b/)
+    assert.match(html,new RegExp('<strong>'+count+'<small> / 0–6</small></strong>'))
+    assert.match(html,locale==='ru'?/не измеряет тяжесть или ежедневный прогресс/:/does not measure severity or daily progress/)
+    assert.match(html,locale==='ru'?/не диагноз/:/not diagnosis/)
+    assert.doesNotMatch(html,/data-course-use-suggested/)
+  }
+  assert.match(text('components/app/course-r3-steps.module.css'),/\[data-course-screening-count\]\{grid-column:1 \/ -1;grid-row:2\}/)
+  const ordinary={scales:[{id:'hh-weekly-pulse::weekly.tension',testKey:'hh-weekly-pulse',label:'Tension',score:7,min:0,max:10,type:'reported_difficulty',eligible:true,priorityPercent:70,resultId:'synthetic-weekly'}],eligible:[],priority:[]}
+  const html=execFileSync(process.execPath,[new URL('./helpers/render-course-summary.mjs',import.meta.url).pathname],{input:JSON.stringify({profile:ordinary,locale:'en'}),encoding:'utf8',maxBuffer:1024*1024})
+  assert.match(html,/<meter min="0" max="10" value="7"/)
+  assert.doesNotMatch(html,/data-course-screening-count/)
 })

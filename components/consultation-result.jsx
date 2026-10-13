@@ -1,6 +1,7 @@
 'use client'
 
 import { CabinetLinkActions } from './cabinet-link-actions'
+import './consultation-report.css'
 import { useEffect, useState } from 'react'
 import { ConsultationDocumentActions } from './consultation-document-actions'
 import { resultCopy, resultDocumentText } from '@/lib/consultations/result-copy'
@@ -49,7 +50,10 @@ export function ConsultationResult({ clientId, patientName, dateIssued, language
       </fieldset>
     </section>
 
-    {clientId && <section aria-label={ru ? 'Кабинет клиента' : 'Client cabinet'}><CabinetLinkActions clientId={clientId} locale={locale} /></section>}
+    <div className="consultation-report-review-hint" role="note">
+      <strong>{ru ? 'Сначала просмотрите отчёт' : 'Preview before sharing'}</strong>
+      <p>{labels.reviewHint}</p>
+    </div>
 
     <div className="consultation-result-documents">
       {documents.map(document => {
@@ -75,5 +79,7 @@ export function ConsultationResult({ clientId, patientName, dateIssued, language
         </section>
       })}
     </div>
+    {clientId && <section aria-label={ru ? 'Кабинет клиента' : 'Client cabinet'}><CabinetLinkActions clientId={clientId} locale={locale} /></section>}
   </>
 }
+

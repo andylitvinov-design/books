@@ -24,7 +24,7 @@ test('new client form explains the next step in both languages', async () => {
   assert.ok(page.includes('action={createClientAction}'))
 })
 
-test('consultation page preselects client and links the separate report editor', async () => {
+test('consultation page preselects client without a separate diagnostic report shortcut', async () => {
   const [page, selector] = await Promise.all([
     read('app/admin/consultations/new/page.js'),
     read('components/consultation-client-selector.jsx'),
@@ -33,7 +33,9 @@ test('consultation page preselects client and links the separate report editor',
   assert.ok(page.includes("params?.created === '1'"))
   assert.ok(page.includes('options.find(client => client.id === selectedClientId)'))
   assert.ok(page.includes('selectedClientId={selectedClientId}'))
-  assert.ok(page.includes('/assessments/new?kind=research_result'))
+  assert.ok(!page.includes('/assessments/new?kind=research_result'))
+  assert.ok(!page.includes('Separate diagnostic report'))
+  assert.ok(page.includes('Client history'))
   assert.ok(page.includes('role="status"'))
   assert.ok(selector.includes('clients.find((client) => client.id === selectedClientId)'))
   assert.ok(selector.includes('name="clientId" value={selected?.id ??'))

@@ -12,9 +12,9 @@ export default async function ConsultationResult({ params }) {
   const store = getPrescriptionStore()
   const recommendation = store ? await store.findById(id) : undefined
   const payment = recommendation?.paymentDocumentId ? await store.findById(recommendation.paymentDocumentId) : undefined
-  if (!recommendation || recommendation.kind === 'payment' || !payment || payment.kind !== 'payment') notFound()
+  if (!recommendation || recommendation.kind === 'payment' || (recommendation.paymentDocumentId && payment?.kind !== 'payment')) notFound()
   const documents = [
-    { record: payment, kind: 'payment', paymentStatus: payment.paymentStatus, currency: payment.currency, amount: payment.amount, editHref: `/admin/payments/${payment.id}#edit-payment` },
+    ...(payment ? [{ record: payment, kind: 'payment', paymentStatus: payment.paymentStatus, currency: payment.currency, amount: payment.amount, editHref: `/admin/payments/${payment.id}#edit-payment` }] : []),
     { record: recommendation, kind: 'recommendation', recommendationType: recommendation.recommendationType, count: recommendation.items.length, editHref: `/admin/prescriptions/${recommendation.id}#edit-recommendation` },
   ].map(({ record, ...display }) => ({ ...display, id: record.id, active: record.status === 'active', revoke: revokeConsultationDocumentAction.bind(null, id, record.id), reactivate: reactivateConsultationDocumentAction.bind(null, id, record.id) }))
   return <main className="prescription-admin-shell consultation-result">

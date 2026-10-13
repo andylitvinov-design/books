@@ -11,6 +11,7 @@ import { authorizePrescriptionRequest } from '@/lib/prescriptions/session'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { appEnabled } from '@/lib/app/config'
 import { SavePrivateDocumentControl } from '@/components/app/save-private-document-control'
+import { ReportInvitationGate } from '@/components/app/report-invitation-gate'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +31,14 @@ export default async function ClientPrescriptionPage({ params, searchParams }) {
   const cabinetAction = record.clientId && appEnabled()
     ? <SavePrivateDocumentControl selector={selector} locale={locale} appAvailable />
     : null
-  if (record.kind === 'payment') return <PaymentDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} cabinetAction={cabinetAction} />
-  return <PrescriptionDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} cabinetAction={cabinetAction} />
+  const viewer = record.kind === 'payment'
+    ? <PaymentDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} cabinetAction={cabinetAction} />
+    : <PrescriptionDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} cabinetAction={cabinetAction} />
+  // Print is an already-authorized, explicit action from the document toolbar.
+  if (print === '1') return viewer
+  return (
+    <ReportInvitationGate locale={locale} kind="document" saveAction={cabinetAction}>
+      {viewer}
+    </ReportInvitationGate>
+  )
 }

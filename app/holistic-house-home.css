@@ -55,6 +55,43 @@
 .house-header--services .site-language-switch { font-size: 12px; }
 .house-header--services .site-language-switch > * { min-height: 44px; padding-inline: 8px; }
 
+/* A direct, always-visible entrance to the private Google-authenticated app. */
+.house-header--services .site-navigation > .site-cabinet-entry {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  border: 1px solid #d6bdab;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #f2e6d9;
+  color: #70452e;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.house-header--services .site-cabinet-entry svg { width: 18px; height: 18px; flex: 0 0 18px; stroke-width: 1.8; }
+.house-header--services .site-cabinet-entry__compact { display: none; }
+.house-header--services .site-navigation > .site-cabinet-entry:hover,
+.house-header--services .site-navigation > .site-cabinet-entry[aria-current="page"] {
+  border-color: #a77b5d;
+  background: #e9d7c5;
+  color: #513222;
+}
+.house-header--services .site-navigation > .site-cabinet-entry:focus-visible {
+  outline: 3px solid #9b7056;
+  outline-offset: 3px;
+}
+@media (max-width: 1023px) {
+  .house-header--services .site-cabinet-entry__full { display: none; }
+  .house-header--services .site-cabinet-entry__compact { display: inline; }
+}
+
 .service-home-hero {
   position: relative;
   isolation: isolate;
@@ -150,6 +187,8 @@
 .service-home-button:hover { transform: translateY(-2px); }
 .service-home-button--primary { background: var(--hh-accent); color: #fffaf4; }
 .service-home-button--primary:hover { background: #7d482e; }
+.service-home-button--consultation { background: #fffaf4; border-color: #996346; color: #643e2b; box-shadow: 0 2px 10px rgb(92 61 42 / .09); }
+.service-home-button--consultation:hover { background: #eee1d2; }
 .service-home-button--secondary { background: rgba(251,247,239,.6); color: #78492f; }
 .service-home-button--secondary:hover { background: #fbf7ef; }
 
@@ -404,7 +443,7 @@ a.service-home-start-card:hover {
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .house-header--services { gap: 18px; padding-inline: 4vw; }
-  .house-header--services .site-navigation { gap: 12px; }
+  .house-header--services .site-navigation { gap: 12px; flex-wrap: wrap; }
   .house-header--services .site-navigation > a { font-size: 11px; }
   .house-header--services .house-wordmark { font-size: 28px; }
   .house-header--services .house-wordmark span { font-size: 8px; letter-spacing: .1em; }
@@ -424,6 +463,17 @@ a.service-home-start-card:hover {
   .house-header--services .house-wordmark span { margin-top: 6px; font-size: 8px; letter-spacing: .14em; }
   .house-header--services .site-navigation { margin-left: auto; flex-shrink: 0; }
   .house-header--services .site-navigation > a { display: none; }
+  .house-header--services { gap: 8px; padding-inline: clamp(12px, 3.8vw, 22px); }
+  .house-header--services .house-wordmark { min-width: 0; flex-shrink: 1; font-size: clamp(21px, 6vw, 27px); }
+  .house-header--services .site-navigation { gap: 7px; flex-wrap: nowrap; }
+  .house-header--services .site-navigation > .site-cabinet-entry {
+    display: inline-flex;
+    min-height: 44px;
+    gap: 5px;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .house-header--services .site-cabinet-entry svg { width: 17px; height: 17px; flex-basis: 17px; }
   .house-header--services .site-language-switch { margin: 0; font-size: 12px; }
   .house-header--services .site-language-switch > * { padding-inline: 7px; }
   .service-home-hero { min-height: 410px; align-items: flex-start; }
@@ -479,9 +529,11 @@ a.service-home-start-card:hover {
 }
 
 @media (max-width: 374px) {
-  .house-header--services { padding-inline: 16px; gap: 6px; }
-  .house-header--services .house-wordmark { font-size: 26px; }
+  .house-header--services { padding-inline: 8px; gap: 2px; }
+  .house-header--services .house-wordmark { font-size: 19px; }
   .house-header--services .house-wordmark span { font-size: 7px; }
+  .house-header--services .site-cabinet-entry__compact { display: none; }
+  .house-header--services .site-navigation > .site-cabinet-entry { width: 44px; padding-inline: 0; }
   .service-home-hero-copy { padding-inline: 16px; }
   .service-home-intro { max-width: 75%; }
   .service-home-card-grid { grid-template-columns: 1fr; gap: 10px; }
@@ -720,6 +772,7 @@ a.service-home-start-card:hover {
   min-width: 0;
   margin: 18px auto 40px;
   padding: 0 20px;
+  scroll-margin-top: 96px;
 }
 .house-home--services .home-contact-choice [data-consultation-capture="service"] {
   width: 100%;
@@ -731,4 +784,8 @@ a.service-home-start-card:hover {
     margin: 12px auto 34px;
     padding: 0 16px;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .house-header--services .site-navigation > .site-cabinet-entry { transition: none; }
 }

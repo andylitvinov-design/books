@@ -8,11 +8,24 @@ import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
 
 function input(formData) {
-  const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'followUp']
+  const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'analysis', 'additionalNotes', 'followUp']
   const data = Object.fromEntries(fields.map((key) => [key, formData.get(key) ?? undefined]))
+  data.includeRecommendation = formData.get('includeRecommendation') === 'on'
+  data.includeInvoice = formData.get('includeInvoice') === 'on'
   data.consultationDate = formData.get('dateIssued')
   data.items = JSON.parse(String(formData.get('itemsJson') ?? '[]'))
   return data
+}
+
+function safeConsultationError(error) {
+  const message = error instanceof Error ? error.message : ''
+  if (/Select at least one document/i.test(message)) return 'Select a prescription, an invoice, or both.'
+  if (/amount/i.test(message)) return 'Enter an invoice amount greater than zero (up to two decimal places).'
+  if (/service/i.test(message)) return 'Enter the service name for the invoice.'
+  if (/date/i.test(message)) return 'Choose a valid consultation date.'
+  if (/client|patient name/i.test(message)) return 'Choose an existing client or complete the new client details.'
+  if (/remedy|item|granules|times per day|potency/i.test(message)) return 'Choose a valid remedy and check the prescription fields.'
+  return 'Documents could not be saved. Please try again. If the error persists, contact the site administrator.'
 }
 
 export async function createConsultationAction(previous, formData) {
@@ -26,8 +39,10 @@ export async function createConsultationAction(previous, formData) {
     if (formData.get('clientMode') === 'new') data.newClient = { fullName: data.patientName, preferredLocale: data.languagePreference, email: formData.get('clientEmail') ?? '', phone: formData.get('clientPhone') ?? '' }
     else { data.clientId = String(formData.get('clientId') ?? ''); if (!data.clientId) throw new Error('Choose a client') }
     pair = await createConsultation(data, { store, requestId: String(formData.get('requestId') ?? '') }) }
-  catch { return { error: 'Documents could not be saved. Check the client, date, remedies and payment settings, then try again.' } }
-  redirect(`/admin/consultations/${pair.recommendation.id}`)
+  catch (error) { return { error: safeConsultationError(error) } }
+  redirect(pair.recommendation
+    ? `/admin/consultations/${pair.recommendation.id}`
+    : `/admin/payments/${pair.payment.id}`)
 }
 
 export async function updateConsultationAction(id, previous, formData) {
@@ -36,10 +51,13 @@ export async function updateConsultationAction(id, previous, formData) {
   const store = getPrescriptionStore()
   const recommendation = store ? await store.findById(id) : undefined
   const payment = recommendation?.paymentDocumentId ? await store.findById(recommendation.paymentDocumentId) : undefined
-  if (!recommendation || !payment) return { error: 'Consultation unavailable.' }
-  if (formData.get('recommendationRevision') !== recommendation.updatedAt || formData.get('paymentRevision') !== payment.updatedAt) return { error: 'This consultation changed in another window. Reload before saving.' }
+  if (!recommendation || recommendation.kind === 'payment') return { error: 'Consultation unavailable.' }
+  if (formData.get('recommendationRevision') !== recommendation.updatedAt ||
+    (payment && formData.get('includeInvoice') === 'on' && formData.get('paymentRevision') !== payment.updatedAt)) {
+    return { error: 'This consultation changed in another window. Reload before saving.' }
+  }
   try { await updateConsultation(recommendation, payment, input(formData), { store }) }
-  catch { return { error: 'Changes could not be saved. Check the fields, or reload if this consultation changed in another window.' } }
+  catch (error) { return { error: safeConsultationError(error) } }
   redirect(`/admin/consultations/${id}`)
 }
 

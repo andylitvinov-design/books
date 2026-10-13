@@ -16,7 +16,7 @@ export const metadata = {
 const COPY = {
   en: {
     title: 'Create client report',
-    intro: 'Choose a client, write a personal report and review it before sharing.',
+    intro: 'Choose a client to open the new consultation editor with that client selected.',
     choose: '1 · Choose a client',
     search: 'Search clients',
     placeholder: 'Client name',
@@ -24,14 +24,14 @@ const COPY = {
     reset: 'Clear',
     empty: 'No matching active clients. Add a client first.',
     newClient: '+ Create a new client',
-    create: 'Create report',
-    note: 'Reports begin as private drafts. Only your explicit Share action makes a report visible to its recipient. Nothing is emailed or published automatically.',
+    create: 'Open consultation',
+    note: 'Enter analysis, remedies and notes in the new consultation editor. Preview the PDF before creating documents. Documents stay private until you explicitly share them.',
     back: 'Back to My Practice',
     unavailable: 'The private client database is unavailable. Try again later.',
   },
   ru: {
     title: 'Создать отчёт клиенту',
-    intro: 'Выберите клиента, подготовьте персональный отчёт и проверьте его перед отправкой.',
+    intro: 'Выберите клиента — он сразу откроется в новой форме консультации.',
     choose: '1 · Выберите клиента',
     search: 'Найти клиента',
     placeholder: 'Имя клиента',
@@ -39,8 +39,8 @@ const COPY = {
     reset: 'Очистить',
     empty: 'Активные клиенты не найдены. Сначала добавьте клиента.',
     newClient: '+ Создать нового клиента',
-    create: 'Создать отчёт',
-    note: 'Отчёт создаётся как приватный черновик. Клиент увидит его только после вашего подтверждения «Открыть доступ». Письма и публичная публикация не отправляются автоматически.',
+    create: 'Открыть консультацию',
+    note: 'В новой форме добавьте анализ, препараты и примечания. Проверьте PDF перед созданием документов. Клиент не получит доступ, пока вы сами не откроете его.',
     back: 'Назад к My Practice',
     unavailable: 'База клиентов временно недоступна. Попробуйте позже.',
   },
@@ -78,7 +78,7 @@ export default async function NewClientReport({ searchParams }) {
       {store && !clients.length && <p className="master-client-list-empty">{t.empty}</p>}
       <div className="master-client-list">
         {clients.map(client => <Link key={client.id} className="master-client-row" prefetch={false}
-          href={`/admin/clients/${client.id}/assessments/new?kind=research_result`}>
+          href={`/admin/consultations/new?clientId=${encodeURIComponent(client.id)}`}>
           <span className="master-client-monogram" aria-hidden="true">{client.fullName.slice(0,1).toUpperCase()}</span>
           <span className="master-client-row-info"><strong>{client.fullName}</strong><small>{client.preferredLocale?.toUpperCase() || 'EN'}</small></span>
           <span className="master-client-row-end">{t.create} →</span>

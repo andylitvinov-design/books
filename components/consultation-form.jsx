@@ -2,8 +2,10 @@
 
 import { ConsultationClientSelector } from './consultation-client-selector'
 import './consultation-studio.css'
+import './consultation-report.css'
 import { ClipboardList, FileCheck2, UsersRound } from 'lucide-react'
 import { ConsultationTextImport } from './consultation-text-import'
+import { ConsultationDraftPreview } from './consultation-draft-preview'
 import { useActionState, useEffect, useMemo, useState } from 'react'
 import { initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
@@ -36,9 +38,25 @@ const copy = {
     reportHomeopathy: 'Гомеопатия',
     reportBach: 'Бах',
     reportMixed: 'Гомеопатия + Бах',
-    note: 'Примечание',
-    notePlaceholder: 'Свободное примечание для клиента…',
+    note: 'Общие инструкции (дополнительно)',
+    notePlaceholder: 'Общие указания для клиента…',
+    analysis: 'Анализ',
+    analysisHint: 'Замеры состояния, динамика симптомов и наблюдения',
+    analysisPlaceholder: 'Например: дата наблюдения, показатели и изменения состояния…',
+    clientNotes: 'Примечания',
+    clientNotesHint: 'Ваши дополнительные советы и пояснения клиенту',
+    clientNotesPlaceholder: 'Что важно делать, наблюдать или обсудить на следующей консультации…',
     payment: 'Оплата',
+    prescriptionChoice: 'Рецепт',
+    prescriptionChoiceHint: 'Назначения и рекомендации клиенту',
+    invoiceChoice: 'Инвойс',
+    invoiceChoiceHint: 'Счёт или квитанция об оплате',
+    invoiceDetails: 'Данные для инвойса',
+    prescriptionOnlyHint: 'Будет сохранён только рецепт. Инвойс не создаётся.',
+    invoiceOnlyHint: 'Будет сохранён только счёт. Рецепт не создаётся.',
+    receiptOnlyHint: 'Будет сохранена только квитанция. Рецепт не создаётся.',
+    noDocumentError: 'Отметьте хотя бы один документ: рецепт или инвойс.',
+    existingPaymentHint: 'Ранее созданный счёт остаётся в истории. Чтобы отозвать его, используйте действия документа.',
     paid: 'Оплачено — Квитанция',
     unpaid: 'Не оплачено — Счёт',
     paymentSettings: 'Настройки оплаты',
@@ -58,7 +76,7 @@ const copy = {
     recommendationsHeading: 'Рекомендации',
     recommendationsHint: 'Добавьте препараты или эссенции для документа.',
     documentsHeading: 'Документы и оплата',
-    documentsHint: 'Примечания клиенту и параметры счёта.',
+    documentsHint: 'Выберите, какие документы оформить. Инвойс не обязателен.',
     createHeading: 'Всё готово к оформлению?',
     saveHeading: 'Сохранить изменения',
     invoiceHint: 'Будут подготовлены рекомендация и счёт. Ссылки клиенту передаются отдельно.',
@@ -90,9 +108,25 @@ const copy = {
     reportHomeopathy: 'Homeopathy',
     reportBach: 'Bach',
     reportMixed: 'Homeopathy + Bach',
-    note: 'Note',
-    notePlaceholder: 'Free note for the client…',
+    note: 'General instructions (optional)',
+    notePlaceholder: 'General client instructions…',
+    analysis: 'Analysis',
+    analysisHint: 'State measurements, symptom changes and observations',
+    analysisPlaceholder: 'For example: observation date, measured scores and changes…',
+    clientNotes: 'Notes',
+    clientNotesHint: 'Additional guidance and practical next steps for the client',
+    clientNotesPlaceholder: 'Things to do, observe or discuss at follow-up…',
     payment: 'Payment',
+    prescriptionChoice: 'Prescription',
+    prescriptionChoiceHint: 'Remedies and client recommendations',
+    invoiceChoice: 'Invoice',
+    invoiceChoiceHint: 'An invoice or paid receipt',
+    invoiceDetails: 'Invoice details',
+    prescriptionOnlyHint: 'Only the prescription will be saved. No invoice is created.',
+    invoiceOnlyHint: 'Only the invoice will be saved. No prescription is created.',
+    receiptOnlyHint: 'Only the receipt will be saved. No prescription is created.',
+    noDocumentError: 'Select at least one document: prescription or invoice.',
+    existingPaymentHint: 'The existing payment document stays in the client history. Revoke it from document actions if needed.',
     paid: 'Paid — Receipt',
     unpaid: 'Not paid — Invoice',
     paymentSettings: 'Payment settings',
@@ -112,7 +146,7 @@ const copy = {
     recommendationsHeading: 'Recommendations',
     recommendationsHint: 'Add remedies or essences to the document.',
     documentsHeading: 'Documents & payment',
-    documentsHint: 'A note for the client and invoice details.',
+    documentsHint: 'Choose which documents to create. An invoice is optional.',
     createHeading: 'Ready to prepare documents?',
     saveHeading: 'Save your changes',
     invoiceHint: 'A recommendation and invoice will be prepared. Client links are shared separately.',
@@ -133,8 +167,12 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [focused, setFocused] = useState(null)
   const [error, setError] = useState('')
   const [paymentStatus, setPaymentStatus] = useState(payment?.paymentStatus ?? 'unpaid')
+  const [includeRecommendation, setIncludeRecommendation] = useState(true)
+  const [includeInvoice, setIncludeInvoice] = useState(Boolean(payment))
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
+  const [analysis, setAnalysis] = useState(consultation?.analysis ?? '')
+  const [additionalNotes, setAdditionalNotes] = useState(consultation?.additionalNotes ?? '')
   const [uiLocale, setUiLocale] = useState('en')
 
   useEffect(() => {
@@ -229,13 +267,17 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   }
 
   return <form action={submit} className="prescription-admin-form consultation-form consultation-form--compact consultation-studio" onSubmit={(event) => {
-    if (!validateConsultationRows(items)) {
+    if (!includeRecommendation && !includeInvoice) {
+      event.preventDefault()
+      setError(labels.noDocumentError)
+    } else if (includeRecommendation && !validateConsultationRows(items)) {
       event.preventDefault()
       setError(labels.chooseError)
     } else {
       setError('')
     }
   }}>
+    <input type="hidden" name="consultationId" value={consultation?.id ?? ''} />
     <input type="hidden" name="recommendationRevision" value={consultation?.updatedAt ?? ''} />
     <input type="hidden" name="paymentRevision" value={payment?.updatedAt ?? ''} />
     <input type="hidden" name="requestId" value={requestId ?? ''} />
@@ -271,7 +313,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       </div>
     </section>
 
-    <section className="consultation-studio-card" aria-labelledby="consultation-items-heading">
+    {includeRecommendation && <section className="consultation-studio-card" aria-labelledby="consultation-items-heading">
       <div className="consultation-studio-section-head">
         <span className="consultation-studio-section-index" aria-hidden="true">02</span>
         <div>
@@ -363,7 +405,29 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
 
       <ConsultationTextImport remedies={remedies} onApply={applyParsed} uiLocale={uiLocale} />
       <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Проверьте рекомендации самостоятельно. Потенция и схема приёма остаются пустыми до вашего решения.' : 'Review recommendations yourself. Potency and dosing stay blank until you enter them.'}</p>
-    </section>
+    </section>}
+
+    {includeRecommendation && <section className="consultation-studio-card consultation-report-notes-panel" aria-label={labels.analysis + ' & ' + labels.clientNotes}>
+      <div className="consultation-review-notes-title">
+        <h2>{uiLocale === 'ru' ? 'Анализ и примечания' : 'Analysis & notes'}</h2>
+        <p>{uiLocale === 'ru' ? 'Добавьте замеры состояния и персональные указания, которые войдут в PDF-отчёт.' : 'Record state measurements and personalized guidance for the client PDF.'}</p>
+      </div>
+      <div className="consultation-report-note-grid">
+        <label className="consultation-report-note">
+          <span>{labels.analysis}</span>
+          <small>{labels.analysisHint}</small>
+          <textarea name="analysis" rows={4} maxLength={5000} value={analysis} onChange={(event) => setAnalysis(event.target.value)} placeholder={labels.analysisPlaceholder} />
+        </label>
+        <label className="consultation-report-note">
+          <span>{labels.clientNotes}</span>
+          <small>{labels.clientNotesHint}</small>
+          <textarea name="additionalNotes" rows={4} maxLength={5000} value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} placeholder={labels.clientNotesPlaceholder} />
+        </label>
+      </div>
+      <label className="consultation-note consultation-legacy-instructions">{labels.note}
+        <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
+      </label>
+    </section>}
 
     <section className="consultation-studio-card" aria-labelledby="consultation-documents-heading">
       <div className="consultation-studio-section-head">
@@ -375,11 +439,22 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         <FileCheck2 aria-hidden="true" size={21} strokeWidth={1.5} />
       </div>
 
-      <label className="consultation-note">{labels.note}<textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} /></label>
+    <div className="consultation-studio-document-choices" role="group" aria-label={labels.documentsHeading}>
+      <label className="consultation-studio-document-choice" data-selected={includeRecommendation}>
+        <input type="checkbox" name="includeRecommendation" checked={includeRecommendation} onChange={(event) => { setIncludeRecommendation(event.target.checked); setError('') }} />
+        <span><strong>{labels.prescriptionChoice}</strong><small>{labels.prescriptionChoiceHint}</small></span>
+      </label>
+      <label className="consultation-studio-document-choice" data-selected={includeInvoice}>
+        <input type="checkbox" name="includeInvoice" checked={includeInvoice} onChange={(event) => { setIncludeInvoice(event.target.checked); setError('') }} />
+        <span><strong>{labels.invoiceChoice}</strong><small>{labels.invoiceChoiceHint}</small></span>
+      </label>
+    </div>
 
-      <div className="consultation-payment-row consultation-studio-payment-grid">
+      {includeInvoice && <div className="consultation-studio-invoice-panel">
+        <h3>{labels.invoiceDetails}</h3>
+        <div className="consultation-payment-row consultation-studio-payment-grid">
         <label className="consultation-studio-payment-service">{labels.service}<input name="service" required defaultValue={payment?.service ?? ''} /></label>
-        <label>{labels.amount}<input name="amount" inputMode="decimal" required defaultValue={payment ? (payment.amount / 100).toFixed(2) : ''} /></label>
+        <label>{labels.amount}<input name="amount" type="number" inputMode="decimal" min="0.01" max="1000000" step="0.01" required defaultValue={payment ? (payment.amount / 100).toFixed(2) : ''} /></label>
         <label>{labels.currency}<select name="currency" defaultValue={payment?.currency ?? 'CAD'}>{['CAD', 'USD', 'EUR', 'UAH'].map((code) => <option key={code}>{code}</option>)}</select></label>
         <label className="consultation-studio-payment-status">{labels.payment}<select name="paymentStatus" value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}><option value="received">{labels.paid}</option><option value="unpaid">{labels.unpaid}</option></select></label>
       </div>
@@ -390,15 +465,26 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <label>{labels.documentNumber}<input name="documentNumber" defaultValue={payment?.documentNumber ?? ''} /></label>
         </div>
       </details>
+      </div>}
+      {!includeInvoice && payment && <p className="consultation-existing-payment-note">{labels.existingPaymentHint}</p>}
     </section>
 
     <div className="consultation-studio-submit">
       <div className="consultation-studio-submit-copy">
         <strong>{consultation ? labels.saveHeading : labels.createHeading}</strong>
-        <span>{paymentStatus === 'received' ? labels.receiptHint : labels.invoiceHint}</span>
+        <span>{includeRecommendation
+          ? includeInvoice
+            ? paymentStatus === 'received' ? labels.receiptHint : labels.invoiceHint
+            : labels.prescriptionOnlyHint
+          : includeInvoice
+            ? paymentStatus === 'received' ? labels.receiptOnlyHint : labels.invoiceOnlyHint
+            : labels.noDocumentError}</span>
       </div>
       {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
-      <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>{pending ? labels.saving : consultation ? labels.save : labels.create}</button>
+      <div className="consultation-studio-submit-buttons">
+        <ConsultationDraftPreview locale={uiLocale} includeRecommendation={includeRecommendation} includeInvoice={includeInvoice} disabled={pending} />
+        <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>{pending ? labels.saving : consultation ? labels.save : labels.create}</button>
+      </div>
     </div>
   </form>
 }

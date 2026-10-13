@@ -39,6 +39,13 @@ try {
       page.evaluate(() => window.innerWidth),
       page.evaluate(() => document.documentElement.scrollWidth),
     ]);
+    if (scrollWidth > width + 1) {
+      const offenders = await page.evaluate(() => Array.from(document.querySelectorAll("body *")).map(node => {
+        const rect = node.getBoundingClientRect();
+        return { tag: node.tagName.toLowerCase(), className: String(node.className?.baseVal ?? node.className ?? "").slice(0, 100), x: Math.round(rect.x), right: Math.round(rect.right), width: Math.round(rect.width) };
+      }).filter(item => item.right > innerWidth + 1 && item.width > 0 && item.x < innerWidth).slice(0, 15));
+      console.error("Overflow elements " + label, JSON.stringify(offenders));
+    }
     assert.ok(scrollWidth <= width + 1, "Horizontal overflow: " + label + " (" + scrollWidth + " > " + width + ")");
   };
   const visible = async (locator) => locator.waitFor({ state: "visible", timeout: 30000 });
@@ -57,6 +64,11 @@ try {
       await visible(page.locator('[data-free-insights="public"]'));
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
+      const cabinetEntry = page.locator("header.house-header--services a.site-cabinet-entry");
+      await visible(cabinetEntry);
+      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "top cabinet link opens the authenticated app");
+      const cabinetBounds = await cabinetEntry.boundingBox();
+      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the visible header: " + locale + "/" + width);
       await assertViewport(page, locale + "/services/" + width);
       if (width === 390 || width === 1188) {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });

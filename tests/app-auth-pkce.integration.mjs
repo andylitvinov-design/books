@@ -124,7 +124,7 @@ test('overlapping route starts exchange the selected flow and return only to its
   provider(t,a.challenge)
   const response=await routeCallback(a,b.cookies)
   assert.equal(response.status,303)
-  assert.equal(response.headers.get('location'),origin+'/en/app/continue?intent='+intentA)
+  assert.equal(response.headers.get('location'),origin+'/en/app/continue?intent='+intentA+'&auto=1')
   assert(response.cookies.getAll().some(c=>/^hh-app-auth(\.\d+)?$/.test(c.name)&&c.value))
 })
 test('cancelled older callback does not clear the newer verifier or unrelated session cookies', async () => {

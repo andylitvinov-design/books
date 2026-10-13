@@ -1,4 +1,5 @@
 'use client'
+import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, FileText, Heart, House, Leaf, Moon, Smile, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
@@ -41,6 +42,7 @@ import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
+import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
 function message(error, c) {
@@ -171,6 +173,44 @@ export default function AppWorkspace({ locale, path = [] }) {
     }
   }
   async function completePlan(result, destination = 'report') {
+    if (searchParams.get('course') === '1') {
+      const courseState = await appFetch('course')
+      // Validate membership against the server-owned confirmed set, not only
+      // the URL. Normal non-course tests still use their original result flow.
+      if (isCourseTest(courseState, result.definitionKey)) {
+        // A course owns its NEXT-test choice, but a completed test must still
+        // count in the ordinary account-wide selection. Sync that ledger
+        // independently; stale plan revisions never block course progression.
+        try {
+          const snapshot = await appFetch('bootstrap')
+          const active = snapshot.activeTestPlan
+          if (active?.status === 'active' && active.definitionIds?.includes(result.definitionId)) {
+            const plan = await appFetch('test-plans/' + encodeURIComponent(active.id))
+            await appFetch('test-plans/' + encodeURIComponent(active.id) + '/advance', {
+              completedRunId: result.runId,
+              expectedRevision: plan.revision,
+            })
+          }
+        } catch {
+          // The saved result and authoritative course state remain intact.
+        }
+        const nextKey = coursePendingKeys(courseState)[0]
+        if (nextKey) {
+          const nextRun = await startOrResumeCourseTest({
+            courseState, key: nextKey, locale, request: appFetch,
+          })
+          await load()
+          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=quick&course=1')
+        } else {
+          await load()
+          router.push(root + '/course?tests=complete')
+        }
+        return
+      }
+      await load()
+      router.push(root + '/results/' + encodeURIComponent(result.id))
+      return
+    }
     const planId = searchParams.get('plan')
     let advanced = null
     if (planId) {
@@ -364,9 +404,10 @@ export default function AppWorkspace({ locale, path = [] }) {
               id={recordId}
               locale={locale}
               initialMode={searchParams.get('mode') === 'quick' ? 'quick' : null}
+              courseMode={searchParams.get('course') === '1'}
               onExit={async () => {
                 await load()
-                router.push(root + '/tests')
+                router.push(searchParams.get('course') === '1' ? root + '/course' : root + '/tests')
               }}
               onComplete={async (result, destination) => {
                 await completePlan(result, destination)
@@ -423,6 +464,10 @@ function SaveContinuation({ data, locale, reload }) {
   const params = useSearchParams()
   const router = useRouter()
   const intentId = params.get('intent') || ''
+  const autoSave = params.get('auto') === '1'
+  const authFailure = params.get('auth') || ''
+  const autoStarted = useRef('')
+  const committing = useRef(false)
   const [intent, setIntent] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -440,6 +485,8 @@ function SaveContinuation({ data, locale, reload }) {
         setIntent(value)
         if (value.expired)
           setError(ru ? 'Время подтверждения истекло. Вернитесь к результату и нажмите «Сохранить» ещё раз.' : 'This confirmation expired. Return to the result and choose Save again.')
+        else if (authFailure)
+          setError(ru ? 'Вход через Google не был завершён. Документ ещё не сохранён.' : 'Google sign-in was not completed. Your document has not been saved.')
       })
       .catch(() => {
         if (live) setError(ru ? 'Не удалось открыть подтверждение сохранения.' : 'This save confirmation is unavailable.')
@@ -447,22 +494,17 @@ function SaveContinuation({ data, locale, reload }) {
     return () => {
       live = false
     }
-  }, [intentId, ru])
+  }, [intentId, ru, authFailure])
 
-  async function commit() {
-    if (!intentId || busy) return
+  const commit = useCallback(async () => {
+    if (!intentId || committing.current) return
+    committing.current = true
     setBusy(true)
     setError('')
     try {
       const saved = await appFetch('save-intents/' + intentId + '/commit', { confirmed: true })
       await reload()
-      router.replace(
-        saved.sourceKind === 'delivered_report'
-          ? `/${locale}/app/reports/${saved.resource.id}`
-          : saved.sourceKind === 'legacy_document'
-            ? `/${locale}/app/documents/${saved.resource.id}`
-            : `/${locale}/app/results/${saved.resource.id}`,
-      )
+      router.replace(savedResourcePath(locale, saved.sourceKind, saved.resource.id))
     } catch (e) {
       setError(
         e?.code === 'SAVE_INTENT_EXPIRED'
@@ -478,9 +520,23 @@ function SaveContinuation({ data, locale, reload }) {
               : 'The selected item could not be saved.',
       )
     } finally {
+      committing.current = false
       setBusy(false)
     }
-  }
+  }, [intentId, locale, reload, router, ru])
+
+  // The explicit recipient click created an item-scoped HttpOnly save intent.
+  // Resume only that selection after Google sign-in (and any new-account consent).
+  useEffect(() => {
+    if (!canAutoContinueSave({ automatic: autoSave, authStatus: authFailure, intent })) return
+    if (autoStarted.current === intentId) return
+    autoStarted.current = intentId
+    if (intent.status === 'committed' && intent.resourceId) {
+      router.replace(savedResourcePath(locale, intent.sourceKind, intent.resourceId))
+      return
+    }
+    void commit()
+  }, [autoSave, authFailure, intent, intentId, commit, locale, router])
 
   const sourceTitle =
     intent?.sourceKind === 'delivered_report'
@@ -504,6 +560,9 @@ function SaveContinuation({ data, locale, reload }) {
     <section className="hh-panel hh-entry">
       <p className="hh-kicker">{ru ? 'Подтверждение' : 'Confirmation'}</p>
       <h1>{ru ? 'Сохранить в личном кабинете' : 'Save to your Cabinet'}</h1>
+      {autoSave && !authFailure && intent && !intent.expired && (
+        <p role="status">{ru ? 'Сохраняем и открываем ваш документ в личном кабинете…' : 'Saving and opening your document in your personal Cabinet…'}</p>
+      )}
       {intent && !intent.expired && (
         <>
           <p><strong>{sourceTitle}</strong></p>
@@ -527,13 +586,7 @@ function SaveContinuation({ data, locale, reload }) {
           {intent.status === 'committed' && intent.resourceId ? (
             <Link
               className="hh-primary"
-              href={
-                intent.sourceKind === 'delivered_report'
-                  ? `/${locale}/app/reports/${intent.resourceId}`
-                  : intent.sourceKind === 'legacy_document'
-                    ? `/${locale}/app/documents/${intent.resourceId}`
-                    : `/${locale}/app/results/${intent.resourceId}`
-              }
+              href={savedResourcePath(locale, intent.sourceKind, intent.resourceId)}
               prefetch={false}
             >
               {ru ? 'Открыть сохранённый материал' : 'Open saved item'}
@@ -1017,7 +1070,7 @@ function RunnerAnswerChoices({ definition, question, selected, onChoose, locale,
   )
 }
 
-function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
+function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode = false }) {
   const c = COPY[locale],
     [run, setRun] = useState(null),
     [error, setError] = useState(null),
@@ -1391,7 +1444,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null }) {
       )}
       {(isContext || (mode === 'quick' && allAnswered) ||
         (mode === 'guided' && index === def.questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
-        <TestFinishActions locale={locale} disabled={busy || Boolean(operation.current) || !allAnswered}
+        <TestFinishActions locale={locale} courseMode={courseMode}
+          disabled={busy || Boolean(operation.current) || !allAnswered}
           onReport={() => finish('report')} onNext={() => finish('next')} />
       )}
       <div className="hh-actions hh-runner-actions">
