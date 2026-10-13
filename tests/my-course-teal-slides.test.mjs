@@ -39,6 +39,8 @@ test('approved blue-turquoise design is scoped only to My Course and uses actual
 
 test('one meaningful lesson unit becomes one slide; guided sections each get a separate step', () => {
   assert.match(slides, /function buildSlides\(lesson\)/)
+  assert.match(slides, /idea: Leaf/)
+  assert.doesNotMatch(slides, /\bFeather\b/)
   assert.match(slides, /guided\.map\(\(section, index\) => \(\{ key: 'guided-' \+ index, kind: 'guided', section \}\)\)/)
   for (const kind of ['checkin','idea','recall','phrase','guided','ritual','transfer','symbol','reflection','moment','feedback']) {
     assert.match(slides, new RegExp("kind: '" + kind + "'"))
