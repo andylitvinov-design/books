@@ -1,3 +1,5 @@
+import { IPIP_TEAMWORK_CATALOG } from './ipip-via-r-teamwork-2026.js'
+import { IPIP_SELF_EFFICACY_CATALOG } from './ipip-neo-self-efficacy-2026.js'
 import { deepFreeze } from '../../lib/assessments/contracts.js'
 import { EXPANDED_CATALOG_V2 } from './catalog-v2.js'
 import { EXPANDED_CATALOG_V3 } from './expanded-battery-v3.js'
@@ -21,6 +23,8 @@ export const MONITORING_AXES = deepFreeze([
 ])
 
 export const MONITORING_CATALOG = deepFreeze([
+  ...IPIP_TEAMWORK_CATALOG,
+  ...IPIP_SELF_EFFICACY_CATALOG,
   {
     key: 'hh-bach-flower-profile',
     version: 'v1',
