@@ -30,7 +30,7 @@ self.addEventListener('push', (event) => {
     ru ? 'Holistic House · Мой курс' : 'Holistic House · My course',
     { body:ru ? 'Небольшая практика на сегодня ждёт вас. 5–12 минут в удобном ритме.'
       : 'Your gentle daily practice is ready. Take 5–12 minutes when it suits you.',
-      icon:'/icon.svg',badge:'/icon.svg',tag:'hh-course-reminder',
+      icon:'/icons/holistic-house-teal.svg',badge:'/icons/holistic-house-teal.svg',tag:'hh-course-reminder',
       renotify:false,data:{path} }
   ))
 })

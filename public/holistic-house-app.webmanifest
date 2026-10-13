@@ -10,13 +10,13 @@
   "theme_color": "#163d38",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/icons/holistic-house-teal.svg",
       "type": "image/svg+xml",
       "sizes": "any",
       "purpose": "any"
     },
     {
-      "src": "/icon.svg",
+      "src": "/icons/holistic-house-teal.svg",
       "type": "image/svg+xml",
       "sizes": "any",
       "purpose": "maskable"
