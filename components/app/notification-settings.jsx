@@ -2,6 +2,7 @@
 import {useEffect,useState} from 'react'
 import {Bell,BellOff,Clock3,Sparkles} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
+import LiveActivityControl from './live-activity-control'
 import styles from './notification-settings.module.css'
 const COPY={
  ru:{title:'Уведомления на телефон',intro:'Красивые и спокойные напоминания — только с вашего разрешения.',
@@ -125,6 +126,7 @@ export default function NotificationSettings({locale='en',compact=false}){
     </>}
     {notice&&<p role="status" className={styles.success}>{notice}</p>}
     {error&&state&&<p role="alert" className={styles.subtle}>{error}</p>}
+    <LiveActivityControl locale={locale} serverReady={Boolean(state?.liveActivitiesAvailable)} />
     {!compact&&<p className={styles.subtle}>{c.native} {c.planned}</p>}
   </section>
 }

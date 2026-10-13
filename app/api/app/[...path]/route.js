@@ -4,6 +4,7 @@ import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
+import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
@@ -349,6 +350,10 @@ async function handle(request, { params }) {
       const notifications = createNotificationRepository(config)
       if (joined === 'notifications' && method === 'GET')
         return json(await notifications.state(actor))
+      if (joined === 'notifications/live-token' && method === 'POST')
+        return json(await registerLiveActivity(config,actor,await readBody(request)),201)
+      if (joined === 'notifications/live-stop' && method === 'POST')
+        return json(await stopLiveActivity(config,actor,await readBody(request)))
       if (joined === 'notifications/subscribe' && method === 'POST')
         return json(await notifications.subscribe(actor, await readBody(request)), 201)
       if (joined === 'notifications/unsubscribe' && method === 'POST')
@@ -368,7 +373,12 @@ async function handle(request, { params }) {
       if ((path[1] === 'today' || path[1] === 'progress') && method === 'GET')
         return json(await daily.read(actor, locale))
       if (method === 'POST' && ['activate','checkin','session','review','preferences','pause','resume','new-cycle'].includes(path[1]))
-        return json(await daily.command(actor, path[1], await readBody(request), locale))
+      {
+        const updated=await daily.command(actor,path[1],await readBody(request),locale)
+        if(['session','pause','resume','review','new-cycle'].includes(path[1]))
+          await updateLiveActivities(config,actor,updated).catch(()=>{})
+        return json(updated)
+      }
       throw new AppError('NOT_FOUND', 404)
     }
     if (joined === 'course') {
