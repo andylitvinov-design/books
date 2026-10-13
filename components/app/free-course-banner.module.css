@@ -1,0 +1,14 @@
+.banner{margin:18px 0 0;padding:clamp(16px,3vw,24px);border:1px solid #dfc9c6;border-radius:18px;background:#faf3ed;color:#493a35;min-width:0;overflow-wrap:anywhere}
+.eyebrow{margin:0 0 7px!important;font-size:.8rem!important;font-weight:750;line-height:1.45!important;color:#71353e}
+.title{margin:0 0 8px!important;font:500 clamp(1.25rem,3vw,1.6rem)/1.25 Georgia,serif!important;color:#493a35!important}
+.intro{margin:0 0 16px!important;max-width:65ch;font-size:1rem!important;line-height:1.5!important}
+.actions{display:flex;align-items:flex-start;flex-wrap:wrap;gap:12px 18px;min-width:0}
+.start{display:inline-flex;align-items:center;justify-content:center;min-height:44px;max-width:100%;box-sizing:border-box;padding:10px 16px;border:1px solid #793943;border-radius:12px;background:#793943;color:#fff!important;font:750 .95rem/1.4 system-ui,sans-serif;text-align:center;text-decoration:none!important}
+.start:hover{background:#65303a;border-color:#65303a}
+.more{flex:1 1 220px;min-width:0;margin:0}
+.more>summary{box-sizing:border-box;min-height:44px;padding:11px 5px;cursor:pointer;font-size:.95rem;font-weight:750;line-height:1.4;color:#71353e;text-decoration:underline;text-underline-offset:3px}
+.start:focus-visible,.more>summary:focus-visible{outline:3px solid #71353e;outline-offset:3px}
+.information{max-width:65ch;padding:1px 0 0}
+.information p{margin:10px 0 0!important;font-size:.92rem!important;line-height:1.55!important}
+@media(max-width:530px){.actions{display:block}.start{width:100%}.more{margin-top:8px}.more>summary{padding:11px 0}}
+@media print{.banner{display:none}}

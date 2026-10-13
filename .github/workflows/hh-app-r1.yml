@@ -20,6 +20,8 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - run: npm run test:app
+      - name: Optional free-course banner render contracts
+        run: node --conditions=react-server --test tests/course-banner/after-report.test.mjs
       - name: Client report HTML/PDF, privacy and long-content regressions
         run: node --test tests/canonical-pdf.test.mjs tests/client-report-notes-preview.test.mjs tests/distance-homeopathy-report.test.mjs tests/client-report-design.test.mjs tests/consultation-draft-preview.test.mjs tests/consultation-report-language.test.mjs
       - name: Real SDK PKCE and callback cookie regressions
@@ -31,6 +33,35 @@ jobs:
         env: {NEXT_TELEMETRY_DISABLED: '1'}
       - run: npx --no-install tsc --noEmit
       - run: npm run pwa:check && npm run native:check
+  course-banner-browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HH_TEST_BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - name: Isolated synthetic browser tools
+        run: |
+          mkdir -p /tmp/hh-course-banner-tools
+          npm install --prefix /tmp/hh-course-banner-tools --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-course-banner-tools/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-course-banner-tools/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: EN/RU course disclosure, keyboard and narrow-screen acceptance
+        run: node tests/course-banner/browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: course-banner-synthetic-${{ matrix.browser }}
+          path: artifacts/course-banner/
+          retention-days: 7
   database:
     runs-on: ubuntu-latest
     timeout-minutes: 15
