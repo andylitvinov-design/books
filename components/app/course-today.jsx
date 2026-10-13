@@ -257,7 +257,7 @@ export default function CourseToday({locale='en'}){
         {cycle?.primaryScaleLabel?' · '+cycle.primaryScaleLabel:''}
       </p>}
       {isV3&&cycle.activeFocusRole==='support'&&<p className={styles.supportRole}>{t.supportFocus}: {activeName}</p>}
-      {lesson?.workbook?.skill&&<p className={styles.heroSkill}><strong>{t.skillLabel}:</strong> {lesson.workbook.skill}</p>
+      {lesson?.workbook?.skill&&<p className={styles.heroSkill}><strong>{t.skillLabel}:</strong> {lesson.workbook.skill}</p>}
       <p className={styles.focus}>{activeName}{cycle?.activeScaleLabel?' · '+cycle.activeScaleLabel:''} · {problem}</p>
       <p className={styles.hint}>{t.day} {cycle.day} {t.of} {cycle.durationDays} · {t.date}: {cycle.todayLocalDate} · {cycle.timeZone}</p>
     </div>
@@ -268,7 +268,7 @@ export default function CourseToday({locale='en'}){
   {paused&&<p className={styles.note}>{t.paused}</p>}
   {isFinished&&<p className={styles.notice}><CheckCircle2 size={20}/>{t.completed}</p>}
   {isV3&&data.returnSuggestion==='restart'&&!isFinished&&
-    <p className={styles.returnMessage} data-course-gentle-return>{t.afterGap}</p>
+    <p className={styles.returnMessage} data-course-gentle-return>{t.afterGap}</p>}
   <section className={styles.journeyPanel} aria-labelledby="course-journey-heading" data-course-journey>
     <div className={styles.journeyHeading}>
       <div><p className="hh-kicker">HOLISTIC HOUSE · 14 DAYS</p>
