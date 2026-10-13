@@ -59,7 +59,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
   }
   for (const locale of ['en', 'ru', 'es']) {
     for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['services', '/' + locale + '/services'], ['library', '/' + locale + '/library']]) {
-      for (const width of [374, 375, 390]) {
+      for (const width of [374, 375, 390, 768, 1023]) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         await page.setViewportSize({ width, height: 900 })
         assert.equal((await go(page, path)).status(), 200, label)
@@ -73,6 +73,13 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await expect(menu).toHaveJSProperty('open', false)
         await inViewport(cabinet, label + '/cabinet')
         await inViewport(trigger, label + '/language')
+        if (width >= 768) {
+          for (const link of await header.locator('[data-nav-item]').all()) {
+            await expect(link).toBeVisible()
+            const box = await link.boundingBox()
+            assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1, label + ': tablet navigation link must remain in bounds')
+          }
+        }
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Closed menu overflow: ' + label)
         // Use the real keyboard sequence; opening details alone does not test
         // the React Escape handler or its focus-return behavior after hydration.
@@ -95,7 +102,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
       }
     }
   }
-  pass(engine + ': public header Home/Services/Library EN/RU/ES at 374/375/390px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return')
+  pass(engine + ': public header Home/Services/Library EN/RU/ES at 374/375/390/768/1023px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return')
 }
 try {
   await redis(['FLUSHDB']) // Dedicated ephemeral service database, not a configured production store.
