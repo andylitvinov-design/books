@@ -5,7 +5,7 @@ import {
   GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS,
   courseDay, courseLesson, growthSuggestions, suggestedCourseTopics,
 } from '../lib/inner-growth/course-model.js'
-import { courseRecommendedTests, courseMeasuredProfile, goalForChosenScale } from '../lib/inner-growth/course-strategy.js'
+import { courseRecommendedTests, courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale } from '../lib/inner-growth/course-strategy.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
@@ -92,7 +92,8 @@ test('one private six-milestone route reuses tests, insights and keeps mobile bo
   assert.match(css, /repeat\(6,minmax\(0,1fr\)\)/)
   const r3=read('components/app/course-r3-steps.jsx')
   assert.match(r3, /root\+'\/tests/)
-  assert.match(r3, /root\+'\/portfolio/)
+  const completion=read('components/app/course-completion-review.jsx')
+  assert.match(completion, /root\+'\/results\/'/)
   assert.match(ui, /COURSE_STEPS/)
 })
 
@@ -148,8 +149,10 @@ test('first-screen free start is separate from optional account-owned course int
   assert.match(r3, /onCourseCommand\('confirm-tests',\{testKeys:chosenTests\}\)/)
   assert.match(r3, /stage===3/)
   assert.match(r3, /courseMeasuredProfile/)
-  assert.match(r3, /className=\{styles\.measuredPanel\}/)
-  assert.match(r3, /<meter className=\{styles\.scaleMeter\} min=\{item\.min\} max=\{item\.max\} value=\{item\.score\}/)
+  const review=read('components/app/course-completion-review.jsx')
+  assert.match(r3, /<CourseCompletionReview/)
+  assert.match(review, /className=\{styles\.briefSummary\}/)
+  assert.match(review, /<meter min=\{scale\.min\} max=\{scale\.max\} value=\{scale\.score\}/)
   assert.match(r3, /chosenScales/)
   assert.match(r3, /role="alert"/)
   assert.match(battery, /const fromCourse = searchParams\.get\('course'\) === '1'/)
@@ -201,4 +204,64 @@ test('measured profile prioritizes high difficulties and low resources without r
   const wrong=weeklyResult({'weekly.tension':8})
   wrong.dimensions[0].direction='higher-reported-wellbeing'
   assert.equal(courseMeasuredProfile({results:[wrong],testKeys:['hh-weekly-pulse']}).eligible.length,0)
+})
+
+test('top-three focus recommendations use only genuine eligible scales in direction-aware order', () => {
+  const input = weeklyResult({
+    'weekly.tension': 7, 'weekly.recovery': 2, 'weekly.clarity': 4,
+    'weekly.connection': 6,
+  })
+  const profile = courseMeasuredProfile({results:[input],testKeys:['hh-weekly-pulse']})
+  const recommended = courseSuggestedFocus(profile,3)
+  assert.equal(recommended.length,3)
+  assert.deepEqual(recommended.map(item=>item.id),profile.eligible.slice(0,3).map(item=>item.id))
+  assert.ok(recommended.every(item=>item.eligible && item.recent))
+  assert.ok(recommended.every(item=>item.resultId===input.id && item.practice && item.label))
+  assert.deepEqual(courseSuggestedFocus({eligible:[]}),[])
+  assert.deepEqual(courseSuggestedFocus({eligible:[{id:'not-real',score:8,priorityPercent:90,eligible:false}]}),[])
+  assert.deepEqual(courseSuggestedFocus(null),[])
+})
+
+test('course summary suggests three focus areas with direct stage-2 review to stage-4 start', () => {
+  const r3=read('components/app/course-r3-steps.jsx')
+  const review=read('components/app/course-completion-review.jsx')
+  const picker=read('components/app/course-focus-picker.jsx')
+  const css=read('components/app/course-r3-steps.module.css')
+  const finishCss=read('components/app/test-finish-actions.module.css')
+  assert.match(r3,/courseSuggestedFocus\(profile,3\)/)
+  assert.match(r3,/onSuggested=\{\(\)=>submitFocusSelection\(suggestedScales\.map/)
+  assert.match(r3,/const reviewed=await onCourseCommand\('review'\)/)
+  assert.match(r3,/revision=reviewed\.course\.revision/)
+  assert.match(r3,/action:'choose-goals',expectedRevision:revision/)
+  assert.match(r3,/consent:true,durationDays:14/)
+  assert.match(r3,/onAlternative=\{openManualFocus\}/)
+  assert.match(r3,/setScaleView\('manual'\)/)
+  assert.match(r3,/setScaleView\('recommended'\)/)
+  assert.match(r3,/<CourseFocusPicker/)
+  assert.match(review,/data-course-recommended-focus/)
+  assert.match(review,/data-course-use-suggested/)
+  assert.match(review,/data-course-choose-other-scales/)
+  assert.match(review,/t\.acceptSuggested\.replace\('\{count\}'/)
+  assert.match(picker,/profile\.eligible\.map/)
+  assert.match(picker,/data-course-confirm-manual-scales/)
+  assert.match(picker,/data-course-back-to-suggested/)
+  assert.match(picker,/chosenScales\.length >= 5/)
+  assert.match(css,/\.focusActions > button\.burgundyPrimary\{[\s\S]*?background:#b64b31!important/)
+  assert.match(css,/\.focusActions > button\.whiteSecondary\{[\s\S]*?background:#fffdf9!important/)
+  assert.match(css,/@media\(max-width:530px\)/)
+  assert.match(finishCss,/:global\(\.hh-app\) \.wrap > button\.courseNext/)
+  assert.match(finishCss,/grid-column:1 \/ -1/)
+  assert.match(finishCss,/background:#b64b31!important/)
+})
+
+test('daily course form and lesson CTA styling match the post-test review', () => {
+  const jsx=read('components/app/course-today.jsx')
+  const css=read('components/app/course-today.module.css')
+  assert.match(jsx,/data-course-activation/)
+  assert.match(jsx,/styles\.activatePanel/)
+  assert.match(jsx,/styles\.activatePrimary/)
+  assert.match(css,/\.activateHeading/)
+  assert.match(css,/\.activateFields/)
+  assert.match(css,/\.shell \.cardTitle strong/)
+  assert.match(css,/\.shell button\.nextButton/)
 })

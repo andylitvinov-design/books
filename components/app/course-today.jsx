@@ -167,13 +167,22 @@ export default function CourseToday({locale='en'}){
  const problem=target.label||''
  const activeName=GROWTH_GOALS[cycle?.activeGoal||cycle?.primaryGoal]?.title?.[locale]||''
  const beforeValue=v=>v===null||v===undefined?null:v
- if(data.requiresTarget) return <section className={'hh-panel '+styles.shell}>
-   <p className="hh-kicker">Holistic House · My Course</p><h2>{t.activateText}</h2>
-   <label className={styles.field}>{t.problem}<input maxLength={160} value={targetLabel} onChange={e=>setTargetLabel(e.target.value)} placeholder={ru?'Напряжение при общении':'Tension during conversations'}/></label>
-   <label className={styles.field}>{t.intention}<textarea maxLength={300} value={intention} onChange={e=>setIntention(e.target.value)} /></label>
-   <p className={styles.hint}>{t.consent}</p>
-   <button type="button" className="hh-primary" disabled={busy||targetLabel.trim().length<3}
-     onClick={()=>submit('activate',{problemLabel:targetLabel,intention,timeZone:timezone()},()=>setExpanded('checkin'))}>{t.activate}</button>
+ if(data.requiresTarget) return <section className={'hh-panel '+styles.shell+' '+styles.activatePanel}
+    data-course-activation>
+   <header className={styles.activateHeading}>
+     <p className="hh-kicker">Holistic House · My Course</p>
+     <h2>{t.activateText}</h2>
+     <p>{t.consent}</p>
+   </header>
+   <div className={styles.activateFields}>
+     <label className={styles.field}>{t.problem}<input maxLength={160} value={targetLabel} onChange={e=>setTargetLabel(e.target.value)} placeholder={ru?'Напряжение при общении':'Tension during conversations'}/></label>
+     <label className={styles.field}>{t.intention}<textarea maxLength={300} value={intention} onChange={e=>setIntention(e.target.value)}/></label>
+   </div>
+   <button type="button" className={'hh-primary '+styles.activatePrimary}
+     disabled={busy||targetLabel.trim().length<3}
+     onClick={()=>submit('activate',{problemLabel:targetLabel,intention,timeZone:timezone()},()=>setExpanded('checkin'))}>
+     {t.activate}<ArrowRight size={18} aria-hidden="true"/>
+   </button>
    {error&&<p role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error})</p>}
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
