@@ -36,8 +36,14 @@ const copy = {
     reportHomeopathy: 'Гомеопатия',
     reportBach: 'Бах',
     reportMixed: 'Гомеопатия + Бах',
-    note: 'Примечание',
-    notePlaceholder: 'Свободное примечание для клиента…',
+    note: 'Общие инструкции (дополнительно)',
+    notePlaceholder: 'Общие указания для клиента…',
+    analysis: 'Анализ',
+    analysisHint: 'Замеры состояния, динамика симптомов и наблюдения',
+    analysisPlaceholder: 'Например: дата наблюдения, показатели и изменения состояния…',
+    additionalNotes: 'Примечания',
+    additionalNotesHint: 'Ваши дополнительные советы и пояснения клиенту',
+    additionalNotesPlaceholder: 'Что важно делать, наблюдать или обсудить на следующей консультации…',
     payment: 'Оплата',
     prescriptionChoice: 'Рецепт',
     prescriptionChoiceHint: 'Назначения и рекомендации клиенту',
@@ -100,8 +106,14 @@ const copy = {
     reportHomeopathy: 'Homeopathy',
     reportBach: 'Bach',
     reportMixed: 'Homeopathy + Bach',
-    note: 'Note',
-    notePlaceholder: 'Free note for the client…',
+    note: 'General instructions (optional)',
+    notePlaceholder: 'General client instructions…',
+    analysis: 'Analysis',
+    analysisHint: 'State measurements, symptom changes and observations',
+    analysisPlaceholder: 'For example: observation date, measured scores and changes…',
+    additionalNotes: 'Notes',
+    additionalNotesHint: 'Additional guidance and practical next steps for the client',
+    additionalNotesPlaceholder: 'Things to do, observe or discuss at follow-up…',
     payment: 'Payment',
     prescriptionChoice: 'Prescription',
     prescriptionChoiceHint: 'Remedies and client recommendations',
@@ -157,6 +169,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [includeInvoice, setIncludeInvoice] = useState(Boolean(payment))
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
+  const [analysis, setAnalysis] = useState(consultation?.analysis ?? '')
+  const [additionalNotes, setAdditionalNotes] = useState(consultation?.additionalNotes ?? '')
   const [uiLocale, setUiLocale] = useState('en')
 
   useEffect(() => {
@@ -388,6 +402,18 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
 
       <ConsultationTextImport remedies={remedies} onApply={applyParsed} uiLocale={uiLocale} />
       <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Проверьте рекомендации самостоятельно. Потенция и схема приёма остаются пустыми до вашего решения.' : 'Review recommendations yourself. Potency and dosing stay blank until you enter them.'}</p>
+      {includeRecommendation && <div className="consultation-report-note-grid">
+        <label className="consultation-report-note">
+          <span>{labels.analysis}</span>
+          <small>{labels.analysisHint}</small>
+          <textarea name="analysis" rows={4} maxLength={5000} value={analysis} onChange={(event) => setAnalysis(event.target.value)} placeholder={labels.analysisPlaceholder} />
+        </label>
+        <label className="consultation-report-note">
+          <span>{labels.additionalNotes}</span>
+          <small>{labels.additionalNotesHint}</small>
+          <textarea name="additionalNotes" rows={4} maxLength={5000} value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} placeholder={labels.additionalNotesPlaceholder} />
+        </label>
+      </div>}
     </section>}
 
     <section className="consultation-studio-card" aria-labelledby="consultation-documents-heading">
