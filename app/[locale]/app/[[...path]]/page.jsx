@@ -11,6 +11,7 @@ export const metadata = {
   title: 'My tests | Holistic House',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
+  manifest: '/holistic-house.webmanifest',
 }
 export default async function AppPage({ params }) {
   const { locale, path = [] } = await params
