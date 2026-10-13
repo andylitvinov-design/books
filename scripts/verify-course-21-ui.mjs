@@ -17,7 +17,7 @@ const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium,browser=awai
 // UI context blocks workers; production SW and full database journeys are unchanged.
 // https://playwright.dev/docs/api/class-page#page-route
 const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,serviceWorkers:'block'}),page=await context.newPage()
-const output='artifacts/app-r1/course-21-'+engine.name(),checks=[],pageErrors=[],posts=[],requests=[]
+const output='artifacts/app-r1/course-21-'+engine.name(),checks=[],pageErrors=[],posts=[],requests=[],effectRequests=[]
 await mkdir(output,{recursive:true})
 const course={id:'synthetic-21-course',sourceCourseId:'synthetic-r3-course',revision:1,status:'active',durationDays:21,contentVersion:COURSE_CONTENT_21_VERSION,timeZone:'UTC'}
 const rows=['mood','tension','clarity','recovery','connection','energy','load','functioning'].map((key,index)=>({
@@ -166,6 +166,7 @@ async function respondPersonal(route,url,body){
  if(value.error)fixtureErrors.push('Unexpected synthetic v2 choice rejection '+url.search)
  return fulfillCourse(route,value,responseMode,value.error?422:200)
 }
+page.on('request',request=>{const url=new URL(request.url());if(!['GET','HEAD'].includes(request.method())||url.origin!==origin||url.pathname.startsWith('/api/'))effectRequests.push({method:request.method(),url:request.url()})})
 page.on('pageerror',e=>pageErrors.push(e.message))
 await page.route('**/api/app/course**',async route=>{
  const url=new URL(route.request().url()),path=url.pathname
@@ -279,7 +280,25 @@ async function verifyPersonalUI(){
  await component.getByLabel('My reflection',{exact:false}).fill('SYNTHETIC V2 UNSENT REFLECTION')
  const unchangedPreview=JSON.stringify(fixture),beforeOptions=posts.length
  await expect(component.getByRole('button',{name:'View prepared alternative',exact:true})).toHaveCount(0)
- await expect(component.locator('[data-course-note-adjustment]')).toHaveCount(0)
+ const noteHelper=component.locator('[data-course-note-adjustment]')
+ await expect(noteHelper).toBeVisible()
+ const beforeLocalSuggestion=requests.length,beforeSuggestionEffects=effectRequests.length
+ await component.getByRole('button',{name:'Suggest an adjustment from this note',exact:true}).click()
+ await expect(noteHelper).toContainText('No complete supported practice preference matched')
+ await expect(noteHelper.getByRole('button',{name:'Confirm this practice adjustment',exact:true})).toHaveCount(0)
+ assert.equal(requests.length,beforeLocalSuggestion);assert.equal(posts.length,beforeOptions);assert.equal(effectRequests.length,beforeSuggestionEffects)
+ await component.getByLabel('My note',{exact:false}).fill('This exercise takes too long.')
+ await component.getByRole('button',{name:'Suggest an adjustment from this note',exact:true}).click()
+ await expect(noteHelper).toContainText('Use the prepared short practice')
+ await expect(noteHelper.getByRole('button',{name:'Confirm this practice adjustment',exact:true})).toBeVisible()
+ await noteHelper.getByRole('button',{name:'Keep my current preferences',exact:true}).click()
+ await expect(noteHelper.getByRole('button',{name:'Confirm this practice adjustment',exact:true})).toHaveCount(0)
+ await expect(component.getByLabel('My note',{exact:false})).toHaveValue('This exercise takes too long.')
+ await expect(component.getByLabel('My reflection',{exact:false})).toHaveValue('SYNTHETIC V2 UNSENT REFLECTION')
+ assert.equal(JSON.stringify(fixture),unchangedPreview)
+ assert.equal(requests.length,beforeLocalSuggestion);assert.equal(posts.length,beforeOptions);assert.equal(effectRequests.length,beforeSuggestionEffects)
+ passed('v2 local note helper abstains or previews a prepared option without API/provider effects; cancel preserves draft and saved state')
+ await component.getByLabel('My note',{exact:false}).fill('SYNTHETIC V2 UNSENT NOTE')
  await expect(component.getByRole('button',{name:'View a grounding alternative',exact:true})).toHaveCount(0)
  const target=component.getByRole('combobox',{name:'Goal for this practice',exact:true})
  assert.deepEqual(await target.locator('option').evaluateAll(options=>options.map(option=>option.value)),['',...fixture.personalPlan.selectedScaleIds])
