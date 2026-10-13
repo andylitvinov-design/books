@@ -492,3 +492,37 @@
 }
 @media(max-width:355px){.shell .questHero h2{font-size:23px!important;max-width:81%}.shell .questHero .heroPurpose{max-width:79%}.heroPhoto{opacity:.62}.shell .questDayPill{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.courseInsights>summary svg{transition:none}}
+
+
+/* A single-purpose My Course landing screen. Navigation changes what is rendered,
+   rather than stacking the path, workbook, graph and settings below Today's CTA. */
+.viewSwitch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:100%;max-width:670px;margin:0 auto 3px;padding:4px;border:1px solid #cfe9eb;border-radius:16px;background:#eaf8fb}
+.viewSwitch button{display:grid;place-items:center;min-height:43px;padding:7px 8px!important;border:1px solid transparent!important;border-radius:12px!important;background:transparent!important;color:#59869a!important;font:790 clamp(12px,2.4vw,14px)/1.3 system-ui,-apple-system,sans-serif!important;white-space:normal;cursor:pointer}
+.viewSwitch button[aria-pressed=true]{border-color:#b8e3e7!important;background:#fff!important;color:#087e97!important;box-shadow:0 3px 9px #3b829a13}
+.viewSwitch button:focus-visible{outline:3px solid #0791ac;outline-offset:2px}
+.shell[data-course-view=today]{max-width:670px}
+.shell[data-course-view=today] .questHero{min-height:300px;border-radius:23px}
+.shell[data-course-view=today] .heroInner{min-height:300px;align-content:center;gap:14px}
+.shell[data-course-view=today] .heroBrand{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:none;color:#188498}
+.shell[data-course-view=today] .questHero h2{max-width:83%;margin-top:6px;font-size:clamp(27px,4vw,35px)!important}
+.shell[data-course-view=today] .heroPurpose{max-width:72%;font-size:14px!important;line-height:1.45!important;-webkit-line-clamp:1;line-clamp:1}
+.shell[data-course-view=today] .todayPrimary{min-height:53px!important;margin-top:10px!important}
+.shell[data-course-view=today] .heroProgress{margin-top:5px}
+.shell[data-course-view=path],.shell[data-course-view=details]{max-width:850px}
+.shell[data-course-view=details]{gap:14px}
+@media(max-width:620px){
+ .viewSwitch{max-width:none;gap:3px;margin-bottom:3px;padding:3px;border-radius:13px}
+ .viewSwitch button{min-height:42px;padding:8px 4px!important;font-size:12px!important}
+ .shell[data-course-view=today] .questHero{min-height:315px;border-radius:19px}
+ .shell[data-course-view=today] .heroInner{min-height:315px;padding:17px 15px;gap:13px}
+ .shell[data-course-view=today] .questHero h2{font-size:27px!important;max-width:89%}
+ .shell[data-course-view=today] .heroPurpose{font-size:13px!important;max-width:83%}
+ .shell[data-course-view=today] .heroPhoto{width:79%;opacity:.8}
+ .shell[data-course-view=today] .todayPrimary{min-height:52px!important;margin-top:15px!important}
+}
+@media(max-width:360px){
+ .viewSwitch button{font-size:11px!important}
+ .shell[data-course-view=today] .questHero h2{font-size:25px!important}
+ .shell[data-course-view=today] .heroPhoto{opacity:.7}
+}
+@media(prefers-reduced-motion:reduce){.viewSwitch button{transition:none!important}}
