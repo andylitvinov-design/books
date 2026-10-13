@@ -32,7 +32,7 @@ test("homepage keeps genuine paid consultation navigation while free services li
   const freeCapture = read("components/homepage-free-capture.tsx");
   assert.match(home, /heroBook: "Book a consultation"/);
   assert.match(home, /heroBook: "Записаться на консультацию"/);
-  assert.match(home, /href=\{\x60\/\$\{locale\}\/services#solutions\x60\}/);
+  assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
   assert.match(home, /className="service-home-button service-home-button--consultation"/);
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
@@ -51,9 +51,31 @@ test("bypass paid transformation for owned ready-compressed WebP images only", (
   const services = read("components/services-solutions.tsx");
   assert.match(player, /unoptimized=\{approvedPoster\.endsWith\("\.webp"\)\}/);
   assert.match(player, /unoptimized=\{fallbackPoster\.endsWith\("\.webp"\)\}/);
-  assert.match(services, /unoptimized=\{isHome && homepageMedia\[offer\.id\]\.endsWith\("\.webp"\)\}/);
+  assert.match(services, /unoptimized=\{\(isHome \? homepageMedia\[offer\.id\] : offer\.image\)\.endsWith\("\.webp"\)\}/);
   assert.match(player, /https:\/\/www\.youtube-nocookie\.com\/embed/);
   // Portrait PNG and third-party YouTube stills keep their original optimized flow.
   assert.match(read("components/holistic-house-home.tsx"), /src="\/images\/holistic-house\/andy-about\.png"/);
   assert.match(player, /src=\{\x60https:\/\/i\.ytimg\.com\/vi\//);
+});
+
+
+test("known first-party testimonial stills avoid speculative YouTube thumbnail transformations", () => {
+  const source = read("components/site-video-player.tsx");
+  const testimonials = read("components/personal-testimonials.tsx");
+  assert.match(source, /poster && \(!fallbackPoster \|\| localPosterFailed\)/);
+  assert.match(source, /!isHeygen && fallbackPoster && !localPosterFailed/);
+  assert.match(source, /onError=\{\(\) => setLocalPosterFailed\(true\)\}/);
+  assert.match(testimonials, /locallyArchivedVideoPosterIds/);
+  assert.match(testimonials, /testimonial-posters\/\$\{item\.id\}\.webp/);
+  assert.match(source, /https:\/\/www\.youtube-nocookie\.com\/embed/);
+});
+
+test("only immutable-by-name public poster folders have a bounded CDN policy", () => {
+  const config = read("next.config.ts");
+  assert.match(config, /\/images\/holistic-house\/video-posters\/\:path\*/);
+  assert.match(config, /\/images\/holistic-house\/testimonial-posters\/\:path\*/);
+  assert.match(config, /public, max-age=3600, s-maxage=86400/);
+  assert.doesNotMatch(config, /source: "\/(?:api|admin|client|app)\//);
+  const privateMiddleware = read("middleware.ts");
+  assert.match(privateMiddleware, /private, no-store, max-age=0, must-revalidate/);
 });

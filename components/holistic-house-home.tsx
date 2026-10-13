@@ -127,15 +127,15 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <h1 id="house-title"><span>{text.heroTitle}</span></h1>
           <p className="service-home-intro">{text.heroIntro}</p>
           <div className="service-home-actions">
-            <AcquisitionEventLink className="service-home-button service-home-button--primary" href={`/${locale}/services/free-situation-review`} event="service_request_start">
-              {text.heroPrimary}<span aria-hidden="true">→</span>
-            </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--consultation"
-              href={`/${locale}/services#solutions`}
+              href={`/${locale}/services#consultation`}
               event="service_request_start"
             >
               {text.heroBook}<span aria-hidden="true">→</span>
+            </AcquisitionEventLink>
+            <AcquisitionEventLink className="service-home-button service-home-button--primary" href={`/${locale}/services/free-situation-review`} event="service_request_start">
+              {text.heroPrimary}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--secondary"
