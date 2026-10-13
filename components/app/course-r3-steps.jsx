@@ -1,6 +1,9 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { appFetch } from '@/lib/app/client-fetch'
+import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 import { ArrowRight, Check, ClipboardList, Heart, Plus, SlidersHorizontal } from 'lucide-react'
 import { COURSE_TOPICS, GROWTH_GOALS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests } from '@/lib/inner-growth/course-strategy'
@@ -23,6 +26,10 @@ const UI = {
     returnTests: 'Open all My Tests and filters', pendingTitle: 'Complete your remaining tests',
     pendingText: 'Results already in your Cabinet count automatically. You only need the tests that are still missing.',
     allDone: 'All selected tests have compatible completed results.', review: 'See my measured profile',
+    congratulations: 'Congratulations! You have completed your course tests.',
+    completeDescription: 'Every test you selected has a saved result. Here is a short overview of your measured scales.',
+    briefSummary: 'My course test results', noMeasuredScales: 'This questionnaire has no compatible displayable scales; its original result remains in My Tests.',
+    viewMyResults: 'View results and choose my focus areas', reviseSelection: 'Change the course test selection',
     reviewDisabled: 'Complete each remaining selected test to see your full profile.',
     profileTitle: 'Your current measured profile', profileIntro: 'These are the latest compatible scales from the tests you selected. Select any report to read its interpretation.',
     profileLink: 'Open full results portfolio', scaleGuide: 'Each bar shows the raw position in that questionnaire’s own range, not a health grade.', profileNone: 'No eligible measurements yet. Choose other questionnaires or review existing reports.',
@@ -53,6 +60,10 @@ const UI = {
     returnTests: 'Открыть все тесты и фильтры', pendingTitle: 'Пройти оставшиеся тесты',
     pendingText: 'Уже пройденные тесты из кабинета учитываются автоматически. Осталось выполнить только недостающие.',
     allDone: 'Все выбранные тесты уже пройдены в совместимых версиях.', review: 'Посмотреть мой профиль',
+    congratulations: 'Поздравляем! Вы прошли все тесты курса.',
+    completeDescription: 'Результаты выбранных тестов сохранены. Ниже краткая сводка измеренных шкал.',
+    briefSummary: 'Результаты тестов курса', noMeasuredScales: 'Для этого опросника нет совместимых шкал для сводки; исходный результат сохранён в «Моих тестах».',
+    viewMyResults: 'Смотреть результаты и выбрать направления работы', reviseSelection: 'Изменить набор тестов курса',
     reviewDisabled: 'Для полного профиля сначала пройдите недостающие выбранные тесты.',
     profileTitle: 'Мой текущий профиль по тестам', profileIntro: 'Здесь реальные шкалы из выбранных тестов и последние совместимые результаты. Нажмите на отчёт, чтобы увидеть подробности.',
     profileLink: 'Открыть полный профиль результатов', scaleGuide: 'Полоска показывает положение балла внутри шкалы конкретного теста, а не уровень здоровья.', profileNone: 'Пока нет подходящих измерений. Можно подобрать дополнительные тесты или посмотреть прошлые отчёты.',
@@ -85,6 +96,7 @@ async function saveExistingAccountPlan(items) {
 
 export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onState,onError,root}) {
   const t=UI[locale]||UI.en,ru=locale==='ru'
+  const router=useRouter()
   const current=state.course||{}, assessment=state.assessments||{}
   const [concerns,setConcerns]=useState(current.concerns||'')
   const [focusTags,setFocusTags]=useState(current.focusTags||[])
@@ -98,6 +110,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [intention]=useState('')
   const [goalsAccepted,setGoalsAccepted]=useState(false)
   const [localBusy,setLocalBusy]=useState(false)
+  const [openingTest,setOpeningTest]=useState(false)
+  const [showCompletedOptions,setShowCompletedOptions]=useState(false)
   const predicted=useMemo(()=>suggestedCourseTopics(concerns),[concerns])
   const ranked=useMemo(()=>courseRecommendedTests({
     // A written concern may be the only confirmed request. Derive its
@@ -116,6 +130,21 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const confirmedStatuses=assessment.selectedTests||[]
   const pending=confirmedStatuses.filter(item=>!item.completed)
   const minScales=Math.min(3,profile.eligible.length)
+
+  async function openFirstCourseTest() {
+    if (openingTest || localBusy || busy) return
+    setOpeningTest(true)
+    onError('')
+    try {
+      // A fresh, owner-scoped read is authoritative after edits in another tab.
+      const fresh=await appFetch('course')
+      const key=coursePendingKeys(fresh)[0]
+      if (!key) { onState(fresh); return }
+      const run=await startOrResumeCourseTest({ courseState:fresh, key, locale, request:appFetch })
+      router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=quick&course=1')
+    } catch(error) { onError(error.message||'COURSE_TEST_UNAVAILABLE') }
+    finally { setOpeningTest(false) }
+  }
 
   useEffect(()=>{
     if(stage!==2 || testsTouched) return
@@ -148,6 +177,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       const saved=await onCourseCommand('confirm-tests',{testKeys:chosenTests})
       onState(saved)
       setTestsTouched(false)
+      setShowCompletedOptions(false)
     } catch(error){onError(error.message||'COURSE_TEST_SELECTION_UNAVAILABLE')}
     finally {setLocalBusy(false)}
   }
@@ -174,6 +204,42 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       disabled={busy||predicted.urgent||(!focusTags.length&&!concerns.trim())}
       onClick={()=>onAct('intake',{concerns,focusTags})}>{t.confirmFocus}<ArrowRight size={17}/></button>
   </section>
+
+  if(stage===2 && confirmed && pending.length===0 && !showCompletedOptions) {
+    return <section className={'hh-panel '+styles.section+' '+styles.completeScreen}
+      data-course-testing-complete>
+      <header className={styles.completeHero} role="status">
+        <span className={styles.completeSymbol}><Check size={25} aria-hidden="true"/></span>
+        <h2>{t.congratulations}</h2><p>{t.completeDescription}</p>
+        <strong>{confirmedStatuses.length} / {confirmedStatuses.length} {t.completed.toLowerCase()}</strong>
+      </header>
+      <section className={styles.briefSummary} aria-label={t.briefSummary}>
+        <h3>{t.briefSummary}</h3>
+        <p className={styles.small}>{t.scaleGuide}</p>
+        {confirmedStatuses.map(item=>{
+          const scales=profile.scales.filter(scale=>scale.testKey===item.key)
+          const meta=optionByKey.get(item.key)
+          return <article key={item.key} className={styles.summaryTest}>
+            <div className={styles.summaryHeading}><strong>{meta?.title||item.key}</strong>
+              {item.resultId&&<Link href={root+'/results/'+encodeURIComponent(item.resultId)}>
+                {t.report}<ArrowRight size={13}/></Link>}
+            </div>
+            {scales.length?<ul className={styles.briefScales}>{scales.map(scale=><li key={scale.id}>
+              <span>{scale.label}</span>
+              <meter min={scale.min} max={scale.max} value={scale.score}
+                aria-label={scale.label+': '+scale.score+' ('+scale.min+'–'+scale.max+')'}/>
+              <strong>{scale.score}<small> / {scale.min}–{scale.max}</small></strong>
+            </li>)}</ul>:<p className={styles.small}>{t.noMeasuredScales}</p>}
+          </article>
+        })}
+      </section>
+      <button className={'hh-primary '+styles.cta} type="button" disabled={busy}
+        onClick={()=>onAct('review')}>{t.viewMyResults}<ArrowRight size={17}/></button>
+      <button type="button" className={styles.secondary} onClick={()=>setShowCompletedOptions(true)}>
+        {t.reviseSelection}
+      </button>
+    </section>
+  }
 
   if(stage===2) {
     const visible=showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
@@ -219,7 +285,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           })}
         </div>
         {pending.length===0?<p className={styles.completed}>{t.allDone}</p>:
-          <Link className={styles.ctaLink} href={root+'/tests?filter=remaining'}>{t.pendingTitle}<ArrowRight size={17}/></Link>}
+          <button type="button" className={styles.ctaLink} disabled={busy||localBusy||openingTest}
+            onClick={openFirstCourseTest}>{t.pendingTitle}<ArrowRight size={17}/></button>}
         <button type="button" disabled={busy||localBusy||pending.length>0}
           className={'hh-primary '+styles.cta} onClick={()=>onAct('review')}>{t.review}<ArrowRight size={17}/></button>
         {pending.length>0&&<p className={styles.small}>{t.reviewDisabled}</p>}

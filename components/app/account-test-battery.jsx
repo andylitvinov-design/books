@@ -16,6 +16,7 @@ import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { INSIGHTS_TEST_CATEGORIES } from '@/lib/assessments/insights-categories'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
+import { courseTestKeys, coursePendingKeys, groupCourseTestRows, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 import styles from './account-test-battery.module.css'
 
 const COPY = {
@@ -66,8 +67,9 @@ function TestSymbol({topics}) {
   return <span className={styles.iconTile} data-theme={key} aria-hidden="true"><Icon size={23} strokeWidth={1.8}/></span>
 }
 
-async function api(path, body) {
+async function api(path, body, { signal } = {}) {
   const response = await fetch('/api/app/' + path, {
+    signal,
     method: body ? 'POST' : 'GET', cache: 'no-store', credentials: 'same-origin',
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
@@ -123,6 +125,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const insightsCategory = INSIGHTS_TEST_CATEGORIES.some((item) => item.key === requestedCategory) ? requestedCategory : null
   const once = useRef(false)
   const [plan, setPlan] = useState(null)
+  const [courseState, setCourseState] = useState(null)
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
   const [exploring, setExploring] = useState(openFromInsights)
@@ -168,7 +171,38 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const currentPlan = plan === null
     ? (data.activeTestPlan || (data.latestTestPlan?.status === 'cancelled' ? null : data.latestTestPlan) || null)
     : (plan.status === 'cancelled' ? null : plan)
-  const rows = useMemo(() => planRows(currentPlan, data, locale), [currentPlan, data, locale])
+  useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+    api('course', undefined, { signal: controller.signal }).then(course => {
+      if (active) setCourseState(course)
+    }).catch(error => {
+      if (active && error.name !== 'AbortError') setCourseState(null)
+    })
+    // Safari/WebKit can treat an unfinished course fetch as a cross-origin
+    // navigation rejection when a user immediately opens a test. Cancel it.
+    return () => { active = false; controller.abort() }
+  }, [data.account?.id, data.results?.length])
+  const courseKeys = courseTestKeys(courseState)
+  const courseStatusByKey = new Map((courseState?.assessments?.selectedTests || [])
+    .map(item => [item.key, item]))
+  const rows = useMemo(() => {
+    const regular = planRows(currentPlan, data, locale)
+    const selected = new Set(regular.map(row => row.key))
+    // A course is a named subset in My Tests even if another account plan
+    // was opened later. It must not change or replace the saved battery.
+    const catalogue = buildExplorerEntries({ locale, audience: 'account' })
+    const missingIds = courseTestKeys(courseState).filter(key => !selected.has(key))
+      .map(key => catalogue.find(entry => entry.key === key && entry.selectable)?.definition?.id)
+      .filter(Boolean)
+    const missing = missingIds.length
+      ? planRows({ definitionIds: missingIds, completedRunIds: [] }, data, locale)
+      : []
+    const completedKeys = new Set((courseState?.assessments?.selectedTests || [])
+      .filter(item => item.completed).map(item => item.key))
+    return [...regular, ...missing].map(row => completedKeys.has(row.key)
+      ? { ...row, completedInPlan: true } : row)
+  }, [currentPlan, data, locale, courseState])
   const completed = rows.filter((row) => row.completedInPlan).length
   const pastRows = useMemo(() => {
     const ids = [...new Set((data.results || []).map((result) => result.definitionId).filter(Boolean))]
@@ -346,10 +380,58 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     void create(conflict.keys, true, conflict.preferences)
   }
 
+  async function openNextCourseTest() {
+    if (busy) return
+    setBusy(true); setError('')
+    try {
+      const fresh = await api('course')
+      const key = coursePendingKeys(fresh)[0]
+      if (!key) {
+        router.push(root + '/course?tests=complete')
+        return
+      }
+      const run = await startOrResumeCourseTest({
+        courseState: fresh, key, locale, request: api,
+      })
+      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1')
+    } catch (cause) {
+      setError(c.error + ' (' + (cause.code || cause.message || 'COURSE_UNAVAILABLE') + ')')
+      setBusy(false)
+    }
+  }
+
+  const listRows = statusFilter === 'completed' ? pastRows : rows
+  const visibleRows = listRows.filter(row => {
+    const done = statusFilter === 'completed' ? Boolean(row.result) : row.completedInPlan
+    const status = done ? 'completed' : row.run ? 'inProgress' : 'notStarted'
+    return (statusFilter === 'all') ||
+      (statusFilter === 'remaining' && !done) ||
+      (statusFilter === status)
+  })
+  const groupedRows = groupCourseTestRows(visibleRows, courseState)
+  const groups = courseKeys.length
+    ? [
+      { id: 'course', rows: groupedRows.course },
+      { id: 'other', rows: groupedRows.other },
+    ].filter(group => group.rows.length)
+    : [{ id: 'all', rows: groupedRows.other }]
+  const coursePending = coursePendingKeys(courseState)
+
   async function openTest(row) {
     setBusy(true)
     setError('')
     try {
+      if (isCourseTest(courseState, row.key) && !courseStatusByKey.get(row.key)?.completed) {
+        const fresh = await api('course')
+        if (isCourseTest(fresh, row.key) &&
+            coursePendingKeys(fresh).includes(row.key)) {
+          const run = await startOrResumeCourseTest({
+            courseState: fresh, key: row.key, locale, request: api,
+          })
+          router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1')
+          return
+        }
+      }
       const run = row.run || await api('runs', {
         definitionKey: row.definition.key,
         definitionVersion: row.definition.version,
@@ -389,8 +471,30 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                   {statusFilter === 'completed' ? pastRows.length : rows.length}
                 </span>
               </div>
-              <div className={styles.group}>
-                {(statusFilter === 'completed' ? pastRows : rows).map((row) => {
+              {groups.map(group => <section key={group.id}
+                className={group.id === 'course' ? styles.courseGroup : styles.otherGroup}
+                data-course-test-group={group.id === 'course' ? 'true' : undefined}>
+                {group.id !== 'all' && <header className={styles.courseGroupHeader}>
+                  <div className={styles.groupHeading}>
+                    <h3>{group.id === 'course'
+                      ? (locale === 'ru' ? 'Тесты моего курса' : 'My course tests')
+                      : (locale === 'ru' ? 'Остальные выбранные тесты' : 'Other selected tests')}</h3>
+                    {group.id === 'course' && <p>{locale === 'ru'
+                      ? 'Идут в отдельном порядке. Завершённые тесты засчитываются автоматически.'
+                      : 'A separate sequence. Previously completed tests count automatically.'}</p>}
+                  </div>
+                  {group.id === 'course' && <div className={styles.groupActions}>
+                    <strong>{courseStatusByKey.size ? [...courseStatusByKey.values()].filter(item => item.completed).length : 0}/{courseKeys.length}</strong>
+                    {coursePending.length
+                      ? <button type="button" className={styles.courseNextButton}
+                          disabled={busy} onClick={openNextCourseTest}>
+                          {locale === 'ru' ? 'Продолжить курс' : 'Continue course'} <ArrowRight size={15}/>
+                        </button>
+                      : <Link href={root + '/course'}>{locale === 'ru' ? 'Открыть курс' : 'Open my course'} <ArrowRight size={15}/></Link>}
+                  </div>}
+                </header>}
+                <div className={styles.group}>
+                {group.rows.map((row) => {
                   const done = statusFilter === 'completed' ? Boolean(row.result) : row.completedInPlan
                   const state = done ? 'completed' : row.run ? 'inProgress' : 'notStarted'
                   const status = row.run ? c.underway : done ? c.finished : c.pending
@@ -427,7 +531,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                       {row.result && <Link href={root + '/results/' + encodeURIComponent(row.result.id)}
                         prefetch={false}>{c.see}</Link>}
                     </div>
-                    {currentPlan?.status === 'active' && statusFilter !== 'completed' &&
+                    {group.id !== 'course' && currentPlan?.status === 'active' &&
+                      currentPlan.definitionIds.includes(row.definition.id) && statusFilter !== 'completed' &&
                       <button type="button" className={styles.removeButton} disabled={busy}
                         onClick={() => removeSelectedTest(row)}
                         title={c.remove + ': ' + row.title}
@@ -437,7 +542,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                       </button>}
                   </article>
                 })}
-              </div>
+                </div>
+              </section>)}
               <details className={styles.filterDetails} open={statusFiltersOpen}
                 onToggle={(event) => setStatusFiltersOpen(event.currentTarget.open)}>
                 <summary>{locale === 'ru' ? 'Отфильтровать список по статусу' : 'Filter this list by status'}</summary>

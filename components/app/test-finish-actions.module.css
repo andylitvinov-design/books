@@ -11,3 +11,11 @@
 .note{grid-column:1/-1;font-size:11px;line-height:1.5;color:#746b63;margin:0 2px}
 @media(max-width:670px){.wrap{grid-template-columns:minmax(0,1fr);gap:10px}.wrap button{min-height:58px;font-size:13px;border-radius:13px}}
 @media(prefers-reduced-motion:reduce){.wrap button{transition:none}}
+
+/* Course mode has one unambiguous next-test action. Reports appear only
+   after the entire selected course testing phase is complete. */
+.courseNext{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #2f705d;background:#336f60;color:#fff;border-radius:15px;padding:16px 18px;text-align:left;font-weight:800;line-height:1.4;cursor:pointer}
+.courseNext:hover:not(:disabled){background:#275d4e}
+.courseNext:disabled{opacity:.6;cursor:wait}
+.courseNext:focus-visible{outline:3px solid #c8a569;outline-offset:3px}
+.courseNext .icon{color:#fff}
