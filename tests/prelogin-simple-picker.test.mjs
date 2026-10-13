@@ -39,7 +39,8 @@ test('topics immediately update the existing catalog while detailed selection st
   assert.match(explorer, /rankExplorerEntries\(filtered,/)
   assert.match(explorer, /depth=\{depth\}/)
   assert.match(explorer, /maxMinutes=\{maxMinutes\}/)
-  assert.match(explorer, /professionalOnly=\{stylesFilter\.length === 1/)
+  assert.match(explorer, /testKinds=\{kinds\}/)
+  assert.match(picker, /data-test-kind-checkbox/)
   assert.match(css, /\.advanced\[open\] \.chevron/)
   assert.match(picker, /TOPICS = HOME_TEST_TOPICS\.map/)
   assert.deepEqual(HOME_TEST_TOPICS.map(({ key }) => key),
