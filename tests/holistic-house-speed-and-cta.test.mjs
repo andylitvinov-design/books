@@ -14,6 +14,10 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.match(publicSource, /tags: \['holistic-house-published-site-videos'\]/);
   assert.match(publicSource, /toPublishedSiteVideo\(record\)/);
   assert.match(publicSource, /noStore\(\)/);
+  assert.match(publicSource, /if \(!getSiteVideoStore\(\)\)/);
+  assert.match(publicSource, /return approvedBuiltInVideos\(\)/);
+  assert.match(publicSource, /readStoredPublishedVideos\(\)/);
+  assert.ok(publicSource.indexOf("if (!getSiteVideoStore())") < publicSource.indexOf("return await readStoredPublishedVideos()"), "storage-off must bypass the cross-request cache");
   assert.match(actions, /revalidateTag\('holistic-house-published-site-videos'\)/);
   assert.match(actions, /await store\.save\(record, input\.expectedRevision\)/);
   assert.ok(actions.indexOf("await store.save") < actions.indexOf("revalidateTag("));

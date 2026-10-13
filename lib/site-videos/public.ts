@@ -8,20 +8,21 @@ import { builtInSiteVideoRecords } from './defaults.js';
 import type { PublishedSiteVideo, SiteVideoStore } from './model.js';
 import { getSiteVideoStore } from './store.js';
 
-// Cache only the already-filtered, public-facing snapshot. Neither private records,
-// editorial drafts nor request-specific cookies or CSP nonces enter this data cache.
-// Every page still renders dynamically; the administrator invalidates this tag on save.
-const readPublishedSiteVideos = unstable_cache(
+function approvedBuiltInVideos(): Record<string, PublishedSiteVideo> {
+  // Storage-off mode is cheap and deterministic. Never share its cache key
+  // with a previous storage-on process (e.g. isolated CI followed by fallback).
+  return Object.fromEntries(builtInSiteVideoRecords().flatMap(record => {
+    const video = toPublishedSiteVideo(record);
+    return video ? [[record.key, video]] : [];
+  }));
+}
+
+// Cache only already-filtered published data from the configured server store.
+// No draft fields, session data, cookies or per-request CSP nonce are cached.
+const readStoredPublishedVideos = unstable_cache(
   async (): Promise<Record<string, PublishedSiteVideo>> => {
     const store = getSiteVideoStore() as SiteVideoStore | undefined;
-    if (!store) {
-      console.warn('[site-videos] Public video storage is not configured.');
-      // Preserve the approved pre-KV publications, never unpublished drafts.
-      return Object.fromEntries(builtInSiteVideoRecords().flatMap(record => {
-        const video = toPublishedSiteVideo(record);
-        return video ? [[record.key, video]] : [];
-      }));
-    }
+    if (!store) throw new Error('Public video storage was disabled before cache fill');
     const videos: Record<string, PublishedSiteVideo> = {};
     for (const record of await store.list()) {
       const video = toPublishedSiteVideo(record);
@@ -29,19 +30,22 @@ const readPublishedSiteVideos = unstable_cache(
     }
     return videos;
   },
-  ['holistic-house:published-videos:v1'],
+  ['holistic-house:published-videos:stored:v2'],
   { revalidate: 60, tags: ['holistic-house-published-site-videos'] },
 );
 
-/** React request deduplication plus a bounded cross-request cache of public data. */
+/** Dynamic HTML, bounded data cache only. Never cache the storage-off fallback. */
 export const getPublishedSiteVideos = cache(async (): Promise<Record<string, PublishedSiteVideo>> => {
-  // Dynamic document HTML is intentional: the CSP nonce and locale vary by request.
-  // The private cabinet and account/API no-store boundary are unaffected.
+  // The document's CSP nonce and locale can change on every request.
   noStore();
+  if (!getSiteVideoStore()) {
+    console.warn('[site-videos] Public video storage is not configured.');
+    return approvedBuiltInVideos();
+  }
   try {
-    return await readPublishedSiteVideos();
+    return await readStoredPublishedVideos();
   } catch {
-    // Do not cache a transient Redis error as an empty public video library.
+    // A transient Redis error must not poison the cache with an empty record.
     console.error('[site-videos] Published videos could not be read.');
     return {};
   }
