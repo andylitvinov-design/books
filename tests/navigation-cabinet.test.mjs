@@ -193,8 +193,9 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
   const homeChoice = await readFile('components/consultation-choice-capture.tsx', 'utf8')
   assert.match(home, /<HomepageContactCta locale=\{locale\}/)
   assert.match(homeContact, /data-home-contact-capture/)
-  assert.match(homeContact, /<ConsultationChoiceCapture/)
-  assert.match(homeContact, /variant="service"/)
+  assert.match(homeContact, /<HomepageFreeCapture locale=\{locale\}/)
+  assert.doesNotMatch(homeContact, /variant="service"/)
+  assert.match(await readFile('components/homepage-free-capture.tsx', 'utf8'), /data-home-free-capture="true"/)
   assert.match(homeChoice, /whatsappEnquiryUrl/)
   assert.match(homeChoice, /t\.me\/AndyTherapist/)
   for (const source of [homeopathy, services, spanishServices, library, academyRecord, remedies, remedyPage, bookReader]) {
