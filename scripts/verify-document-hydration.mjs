@@ -30,7 +30,7 @@ try{
    const request=response.request()
    if(request.isNavigationRequest()&&request.frame()===page.mainFrame())documents.push(response)
   })
-  page.on('pageerror',error=>errors.push({path,message:error.message}))
+  page.on('pageerror',error=>{errors.push({path,message:error.message});console.error('COURSE_V6_BROWSER_EXCEPTION',path,error.message)})
   page.on('console',message=>{
    if(message.type()==='error'&&/hydrat(?:e|ed|ion)|server rendered HTML/i.test(message.text()))errors.push({path,message:message.text()})
   })
