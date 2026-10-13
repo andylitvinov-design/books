@@ -32,7 +32,6 @@ export default async function ClientDetail({ params }) {
         workKicker: 'РАБОЧЕЕ МЕСТО СПЕЦИАЛИСТА',
         workTitle: 'Отчёт и назначения',
         workHint: 'Составьте консультацию, укажите препараты и рекомендации. Готовые документы сохранятся в истории клиента.',
-        newReport: 'Создать диагностический отчёт',
         onlyOwner: 'Карточка специалиста',
         documentCount: 'документов',
         active: 'Активен',
@@ -46,7 +45,6 @@ export default async function ClientDetail({ params }) {
         workKicker: 'PRACTITIONER WORKSPACE',
         workTitle: 'Reports & recommendations',
         workHint: 'Prepare a consultation, enter remedies and notes. Saved documents will appear in this client’s history.',
-        newReport: 'Create diagnostic report',
         onlyOwner: 'Practitioner record',
         documentCount: 'documents',
         active: 'Active',
@@ -92,9 +90,6 @@ export default async function ClientDetail({ params }) {
             ? <>
                 <Link className="client-detail-action-primary" href={`/admin/consultations/new?clientId=${id}`} prefetch={false}>
                   + {copy.new} <span aria-hidden="true">→</span>
-                </Link>
-                <Link className="client-detail-action-secondary" href={`/admin/clients/${id}/assessments/new?kind=research_result`} prefetch={false}>
-                  {labels.newReport} <span aria-hidden="true">↗</span>
                 </Link>
               </>
             : <span className="client-detail-archived">{labels.archived}</span>}
