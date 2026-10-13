@@ -66,26 +66,28 @@ for (const [name, build, input, dateY, lineY] of [
     assert.equal((final.match(/\/Signature Do/g) ?? []).length, 1)
     // Recommendation signatures flow with the content; invoices retain their
     // approved fixed geometry. Verify actual spacing rather than old coordinates.
-    const dateMatch = final.match(name === 'recommendation'
-      ? /1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(2026-09-18\)/
-      : /1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Odesa, Ukraine, 2026-09-18/)
-    assert.ok(dateMatch, 'date is present on the signed final page')
-    const actualDateY = Number(dateMatch[1])
     if (name === 'recommendation') {
-      assert.ok(actualDateY > 230 && actualDateY < 700, 'flowed signature stays inside a safe A4 text area')
+      const stamp = final.match(/q 120 0 0 47 83 (\d+(?:\.\d+)?) cm \/Signature Do Q/)
+      const dateMatch = final.match(/1 0 0 1 224 (\d+(?:\.\d+)?) Tm \(2026-09-18\)/)
+      assert.ok(stamp, 'original signature retained in compact signed panel')
+      assert.ok(dateMatch, 'date belongs to the compact signed panel')
+      const stampY = Number(stamp[1])
+      const dateY = Number(dateMatch[1])
+      assert.ok(stampY > 78 && stampY + 47 < 755, 'compact signature stays on A4')
+      assert.ok(dateY > 80 && dateY < 755)
+      assert.equal(stampY, dateY - 6, 'signature image and date align inside one compact panel')
+      assert.doesNotMatch(final, /Tm \(\+380 93 478 88 27\)/)
     } else {
-      assert.equal(actualDateY, dateY, 'invoice/receipt keep the original date position')
+      const dateMatch = final.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Odesa, Ukraine, 2026-09-18/)
+      assert.ok(dateMatch, 'date stays in the original invoice closing')
+      const actualDateY = Number(dateMatch[1])
+      assert.equal(actualDateY, dateY)
+      const { width, height, offsetX, gap } = DOCUMENT_TEMPLATE.signature
+      assert.ok(final.includes('q ' + width + ' 0 0 ' + height + ' ' + (68 + offsetX) + ' ' + (lineY + gap) + ' cm /Signature Do Q'))
+      assert.ok(actualDateY - (lineY + gap + height) > 30)
+      assert.ok(lineY - 72 > 63)
+      assert.match(final, /Tm \(\+380 93 478 88 27\)/)
     }
-    const actualLineY = name === 'recommendation' ? actualDateY - 103 : lineY
-    const { width, height, offsetX, gap } = DOCUMENT_TEMPLATE.signature
-    assert.ok(final.includes('q ' + width + ' 0 0 ' + height + ' ' + (68 + offsetX) + ' ' + (actualLineY + gap) + ' cm /Signature Do Q'))
-    assert.ok(actualDateY - (actualLineY + gap + height) > 30, 'date must not overlap the signature')
-    assert.ok(actualLineY - (name === 'recommendation' ? 44 : 72) > 63, 'signed closing must not collide with the disclaimer')
-    const contentBeforeDate = final.slice(0, final.indexOf('68 ' + actualDateY + ' Tm'))
-    const baselines = [...contentBeforeDate.matchAll(/1 0 0 1 \d+(?:\.\d+)? (\d+(?:\.\d+)?) Tm/g)].map(match => Number(match[1]))
-    assert.ok(baselines.every(baseline => baseline > actualDateY + 10), 'prior content must end above date and signature')
     assert.match(final, /Tm \(Andrii Litvinov\)/)
-    if (name === 'recommendation') assert.doesNotMatch(final, /Tm \(\+380 93 478 88 27\)/)
-    else assert.match(final, /Tm \(\+380 93 478 88 27\)/)
   })
 }
