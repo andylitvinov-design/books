@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Brain, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
-import { FreeInsightsPaths } from '@/components/free-insights-paths'
 import './profile-domains.css'
 
 const DOMAINS = PROFILE_AREAS
@@ -42,7 +41,7 @@ const WORDS = {
     selected: 'selected', emptyLegacyPsy: 'Psychological test reports shared by Andy will appear here. Your Google Cabinet also keeps results from tests you complete yourself.',
     google: 'Open my Google Cabinet',
     archiveTitle: 'My personal reports', archiveHint: 'Your specialist’s reports, recommendations and original documents are kept in one place.',
-    overview: 'Profile at a glance', profileReports: 'Personal reports', remedyRecords: 'Remedy records', discover: 'Explore free services', support: 'Personal support',
+    overview: 'Profile at a glance', profileReports: 'Personal reports', remedyRecords: 'Remedy records', discover: 'Explore services', support: 'Personal support',
   },
   ru: {
     eyebrow: 'ЛИЧНОЕ ПРОСТРАНСТВО · HOLISTIC HOUSE',
@@ -75,7 +74,7 @@ const WORDS = {
     selected: 'подобрано', emptyLegacyPsy: 'Здесь будут психологические отчёты от Andy. Результаты самостоятельно пройденных тестов сохраняются в вашем Google-кабинете.',
     google: 'Открыть Google-кабинет',
     archiveTitle: 'Мои личные отчёты', archiveHint: 'Отчёты специалиста и оригинальные рекомендации собраны в одном месте.',
-    overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Бесплатные услуги', support: 'Личная поддержка',
+    overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Посмотреть услуги', support: 'Личная поддержка',
   },
 }
 const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10))
@@ -304,9 +303,8 @@ export function ProfileDomains({
       {reportsContent}
     </section>}
     <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
-    <details className="hh-domain-discover">
-      <summary><Sparkles size={16} aria-hidden="true" /><span>{t.discover}</span><ChevronDown size={16} aria-hidden="true" /></summary>
-      <FreeInsightsPaths locale={locale} variant="cabinet" testHref={external ? '/' + locale + '/client' : '/' + locale + '/app/tests'} />
-    </details>
+    <Link className="hh-domain-services-link" href={'/' + locale + '/services'} prefetch={false}>
+      <Sparkles size={16} aria-hidden="true" />{t.discover}<ArrowRight size={16} aria-hidden="true" />
+    </Link>
   </section>
 }
