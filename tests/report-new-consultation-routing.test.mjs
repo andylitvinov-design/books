@@ -32,6 +32,17 @@ test('existing client report actions do not link to the old research editor', as
   assert.doesNotMatch(panel, /new\?kind=research_result/)
 })
 
+test('isolated browser acceptance visits current studio and verifies legacy redirect', async () => {
+  const script = await read('scripts/verify-ia-v2.mjs')
+  assert.match(script, /clientReportLink\.click\(\)/)
+  assert.match(script, /consultation-client-selector input\[name="clientId"\]/)
+  assert.match(script, /textarea\[name="analysis"\]/)
+  assert.match(script, /textarea\[name="additionalNotes"\]/)
+  assert.match(script, /input\[name="includeInvoice"\]/)
+  assert.match(script, /toHaveCount\(0\)/)
+  assert.match(script, /old research-result redirect to the new consultation studio/)
+})
+
 test('old direct research-result URL redirects only after owner/client validation', async () => {
   const legacy = await read('app/admin/clients/[id]/assessments/new/page.js')
   const auth = legacy.indexOf('if (!await requireAdminRequest())')
