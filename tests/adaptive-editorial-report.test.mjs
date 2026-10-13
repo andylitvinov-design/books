@@ -77,3 +77,24 @@ test('mobile report and print use adaptive layouts without static page counts', 
   assert.match(styles, /break-inside:avoid/)
   assert.match(view, /<DocumentSignature date=\{document\.dateIssued\} locale=\{locale\} compact/)
 })
+
+test('realistic RU example keeps the practitioner signature with the core report', () => {
+  const report = buildPrescriptionPdf({
+    patientName: 'Synthetic Example Client',
+    dateIssued: '2026-10-13',
+    recommendationType: 'homeopathy',
+    analysis: 'Было: к цели интерес 3/10 так как не было активного внимания.\nПосле сессии: к цели стало 6/10.\nПрием препаратов должен увеличить активность к цели до 7.3/10.',
+    additionalNotes: 'Схема:\n- принимать препарат 2-3 раза в день по инструкции,\n- раз в день ставить препарат на свое фото и запускать намерение.\n\nМожно вести личный дневник наблюдений, отмечать уровень интереса по шкале в 10 баллов.\nДлительность: 10 дней.',
+    items: [{remedySlug:'veratrum-album',displayName:'Veratrum Album',potency:'30',granules:'8',timesPerDay:'3',remedyPath:'/ru/homeopathy/remedies/veratrum-album'}],
+  }, 'ru', origin)
+  const full = source(report)
+  // The detailed original appendix is a separate following page; it must never
+  // steal the core report's signed closing and create an almost empty page.
+  const pages = [...full.matchAll(/\/Type \/Page\b[^]*?\/Contents (\d+) 0 R/g)].map(match => {
+    const matchHeader = full.match(new RegExp('\\n' + match[1] + ' 0 obj\\n<< /Length (\\d+) >>\\nstream\\n'))
+    return full.slice(matchHeader.index + matchHeader[0].length,matchHeader.index + matchHeader[0].length + Number(matchHeader[1]))
+  })
+  const signaturePage = pages.findIndex(page => /\/Signature Do Q/.test(page))
+  assert.equal(signaturePage, 0, 'compact realistic consultation keeps its approved signature on the first A4 page')
+  assert.ok(pages.slice(1).some(page => /\/RemedyPhoto1 Do Q/.test(page)), 'full approved appendix follows')
+})
