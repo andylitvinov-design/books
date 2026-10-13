@@ -83,3 +83,28 @@
 .aboutTest summary{cursor:pointer;color:#456e63;font-weight:650;outline-offset:3px}
 .aboutTest p{margin:6px 0 0;font-size:.73rem;line-height:1.5;color:#6a625b}
 .aboutTest[open]{padding:4px 0 5px}
+
+/* Course tests are a distinct first group, with their own next-test action. */
+.courseGroup,.otherGroup{display:grid;gap:9px;min-width:0}
+.courseGroup{border:1px solid #c6dfd0;background:linear-gradient(150deg,#f0f8f2,#fbfaf4);border-radius:17px;padding:13px;margin:6px 0 11px}
+.otherGroup{padding-top:8px}
+.courseGroupHeader{display:flex;gap:12px;align-items:center;justify-content:space-between;min-width:0}
+.groupHeading{min-width:0;flex:1}
+.groupHeading h3{font:800 .91rem/1.3 system-ui,-apple-system,sans-serif!important;letter-spacing:0;color:#286a57;margin:0!important}
+.otherGroup .groupHeading h3{color:#6b5e50;font-size:.84rem!important}
+.groupHeading p{font:.72rem/1.35 system-ui,-apple-system,sans-serif;color:#5e7469;margin:4px 0 0!important}
+.groupActions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
+.groupActions>strong{color:#286a57;font-size:.77rem}
+.courseNextButton,.groupActions>a{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:7px 11px;border:1px solid #2f705e;border-radius:10px;background:#347766;color:#fff!important;text-decoration:none!important;font-weight:780;font-size:.74rem;cursor:pointer}
+.groupActions>a:hover,.courseNextButton:hover:not(:disabled){background:#275c4d}
+.courseNextButton:disabled{opacity:.6}
+.courseGroup .row{grid-template-columns:38px minmax(0,1fr) auto;border-color:#d3e2d9}
+@media(max-width:760px){
+ .courseGroup{padding:10px 8px}
+ .courseGroupHeader{align-items:flex-start}
+ .groupHeading p{font-size:.68rem}
+ .groupActions{gap:5px}
+ .courseNextButton,.groupActions>a{font-size:.69rem;padding:6px 8px}
+ .courseGroup .row{grid-template-columns:35px minmax(0,1fr) auto}
+}
+@media(max-width:370px){.courseGroupHeader{flex-wrap:wrap}.groupActions{justify-content:flex-start}.courseGroup .row{grid-template-columns:30px minmax(0,1fr) auto}}
