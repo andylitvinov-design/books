@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
+import { installCheckoutResponseProbe } from './service-cart-response-probe.mjs'
 import { mkdir, writeFile } from 'node:fs/promises'
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright')
@@ -237,6 +238,7 @@ try {
     const h = await harness(), delayed = deferred()
     try {
       mark('delayed checkout: account switch or unmount')
+      await h.page.evaluate(installCheckoutResponseProbe)
       h.state.checkout = () => delayed.promise
       await h.addSession()
       const requested = h.page.waitForRequest((request) => request.url().endsWith('/commerce/checkout'))
@@ -272,6 +274,7 @@ try {
     const h = await harness(), delayed = deferred()
     try {
       mark('delayed checkout: account switch or unmount')
+      await h.page.evaluate(installCheckoutResponseProbe)
       h.state.checkout = () => delayed.promise
       await h.addSession()
       const requested = h.page.waitForRequest((request) => request.url().endsWith('/commerce/checkout'))
@@ -280,10 +283,14 @@ try {
       await h.cart.locator('a[href="/en/services/free-situation-review"]').click()
       await h.page.waitForURL(origin + '/en/services/free-situation-review')
       await h.cart.waitFor({ state: 'detached' })
-      const response = h.page.waitForResponse((value) => value.url().endsWith('/commerce/checkout'))
+      const identitiesBefore = h.state.identities.length, readsBefore = h.state.reads.length
       delayed.resolve({ body: { order: order(existingOrder, 'open'), redirectUrl: 'https://checkout.stripe.com/c/pay/synthetic-unmounted' } })
       mark('delayed checkout: response after SPA unmount')
-      await bounded((await response).finished(), 'checkout response body after unmount'); await settle(h.page)
+      await h.page.waitForFunction(() => window.__serviceCartCheckoutProbe?.settled === 1)
+      await settle(h.page)
+      assert.deepEqual(await h.page.evaluate(() => window.__serviceCartCheckoutProbe), { received: 1, settled: 1, jsonReads: 0 })
+      assert.equal(h.state.identities.length, identitiesBefore, 'stale checkout must not re-read identity')
+      assert.equal(h.state.reads.length, readsBefore, 'stale checkout must not start order polling')
       assert.equal(h.page.url(), origin + '/en/services/free-situation-review')
     } catch (error) { await captureFailure(h, error); throw error } finally { delayed.resolve({ status: 503, body: { error: 'TEST_CLEANUP' } }); await h.context.close() }
   }
