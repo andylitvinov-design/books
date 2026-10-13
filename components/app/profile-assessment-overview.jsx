@@ -56,7 +56,7 @@ const dateString=(value,locale)=>{
  return new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-CA',{dateStyle:'medium'}).format(new Date(value))
 }
 
-export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children}) {
+export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children,showPortrait=true}) {
  const c=COPY[locale]||COPY.en
  const root='/'+locale+'/app'
  const view=buildProfileAssessmentView(data,locale)
@@ -73,7 +73,7 @@ export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children
    try{await onBeginTest(row)}catch{setError(c.error);setWorking('')}
  }
  return <div className={styles.profile} data-profile-assessment-overview>
-   <section className={styles.portraitSection} aria-labelledby="profile-portrait-heading">
+   {showPortrait && <section className={styles.portraitSection} aria-labelledby="profile-portrait-heading">
      <div className={styles.sectionTitle}>
        <p className={styles.eyebrow}>{c.kicker}</p>
        <h2 id="profile-portrait-heading">{c.heading}</h2>
@@ -83,7 +83,7 @@ export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children
        <TestExplorerVisual compact locale={locale} coverage={coverageForFocus([])} portrait={portrait} />
        <div className={styles.headNote}><CheckCircle2 size={17} aria-hidden="true"/>{c.portraitCaption}</div>
      </div>
-   </section>
+   </section>}
 
    <section className={styles.measured} aria-labelledby="profile-measured-heading">
      <div className={styles.measureHeading}>
@@ -172,3 +172,4 @@ export function ProfileAssessmentOverview({data,locale='en',onBeginTest,children
    </section>
  </div>
 }
+

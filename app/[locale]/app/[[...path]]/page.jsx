@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import AppWorkspace from '@/components/app/app-workspace'
 import './workspace.css'
 import './assessment-dashboard.css'
@@ -16,5 +16,7 @@ export default async function AppPage({ params }) {
   const { locale, path = [] } = await params
   if (!['en', 'ru'].includes(locale)) notFound()
   if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course'].includes(path[0]) && path.length)) notFound()
+  // Existing Analysis bookmarks are permanently useful: open the merged report archive.
+  if (path[0] === 'analysis' && path.length === 1) redirect('/' + locale + '/app/portrait#personal-reports')
   return <AppWorkspace locale={locale} path={path} />
 }

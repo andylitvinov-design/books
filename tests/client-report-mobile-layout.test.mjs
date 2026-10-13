@@ -22,7 +22,7 @@ test('large-text client PDF uses a compact continuation header and preserves pri
   assert.ok(pages >= 2, 'long report should exercise continuation pages')
   assert.equal(source.split('/Lighthouse Do Q').length - 1, 1,
     'repeat only the compact text header, not the full-size letterhead')
-  assert.ok(source.includes('190 766 Tm'), 'cover retains the approved letterhead')
+  assert.ok(source.includes('143 779 Tm'), 'recommendation has the condensed lighthouse letterhead')
   assert.ok(source.includes('68 797 Tm'), 'continuation has an uncluttered running header')
   assert.ok(source.includes('11.7 Tf'), 'state analysis uses larger A4 text')
   assert.ok(source.includes('MOBILE-OBSERVATION-44'), 'last line is preserved')

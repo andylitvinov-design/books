@@ -6,11 +6,13 @@ import { recommendationCopy, recommendationGuidance, recommendationItemType, rem
 import { DocumentAutoPrint } from './document-auto-print'
 import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
+import { extractReportProgress } from '@/lib/documents/report-progress'
 import './consultation-report.css'
 
 export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
+  const progress = extractReportProgress(document.analysis)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
   const seenProfiles = new Set()
   const selectedProfiles = document.items.map(item => ({ item, remedy: item.remedySlug ? getRemedy(locale, item.remedySlug) : undefined }))
@@ -35,7 +37,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />{cabinetAction}
     </div>}
     <article className="canonical-document">
-      <DocumentAutoPrint enabled={admin && autoPrint} /><DocumentLetterhead />
+      <DocumentAutoPrint enabled={admin && autoPrint} /><DocumentLetterhead compact />
       <header className="canonical-report-heading">
         <p className="canonical-report-eyebrow">{locale === 'ru' ? 'HOLISTIC HOUSE · ПЕРСОНАЛЬНЫЙ ОТЧЁТ' : 'HOLISTIC HOUSE · PERSONAL REPORT'}</p>
         <h1>{labels.title}</h1>
@@ -45,6 +47,21 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           {document.recommendationNumber && <div><dt>{labels.number}</dt><dd>{document.recommendationNumber}</dd></div>}
         </dl>
         <p className="canonical-intro">{labels.intro}</p>
+        {progress && <section className="canonical-progress" aria-label={locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}>
+          <h2>{locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}</h2>
+          <div className="canonical-progress-grid">
+            {[
+              { key: 'before', label: locale === 'ru' ? 'До сессии' : 'Before', value: progress.before },
+              { key: 'after', label: locale === 'ru' ? 'После сессии' : 'After', value: progress.after },
+              ...(progress.target !== undefined ? [{ key: 'target', label: locale === 'ru' ? 'Цель (план)' : 'Target (planned)', value: progress.target }] : []),
+            ].map(({ key, label, value }) => <div className={`canonical-progress-item canonical-progress-item--${key}`} key={key}>
+              <span>{label}</span>
+              <strong>{value}<small>/10</small></strong>
+              <div className="canonical-progress-track" aria-hidden="true"><i style={{ width: `${value * 10}%` }} /></div>
+            </div>)}
+          </div>
+          {progress.target !== undefined && <p className="canonical-progress-caption">{locale === 'ru' ? 'Цель — планируемый ориентир, не измеренный результат.' : 'The target is a planned reference, not a measured result.'}</p>}
+        </section>}
       </header>
       {document.analysis && <section className="canonical-general canonical-report-analysis">
         <h2>{labels.analysis}</h2>
@@ -88,7 +105,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       {document.additionalNotes && <section className="canonical-general canonical-report-notes"><h2>{labels.additionalNotes}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.additionalNotes}</p></section>}
       {document.generalInstructions && <section className="canonical-general canonical-general-instructions"><h2>{labels.general}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.generalInstructions}</p></section>}
       {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
-      <DocumentSignature date={document.dateIssued} locale={locale} />
+      <DocumentSignature date={document.dateIssued} locale={locale} compact />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
 
       {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
