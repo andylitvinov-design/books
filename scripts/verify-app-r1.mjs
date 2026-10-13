@@ -480,7 +480,7 @@ try {
  await page.goto(origin+'/en/app');await ready()
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
   await page.goto(origin+'/en/app/analysis');await ready()
-  await expect(page).toHaveURL(/\\/en\\/app\\/portrait#personal-reports/)
+  await expect(page).toHaveURL(/\/en\/app\/portrait#personal-reports/)
   await expect(page.locator('[data-personal-portrait-summary]')).toBeVisible()
   await expect(page.locator('[data-profile-report-archive]')).toBeVisible()
   await expect(page.locator('[data-personal-reports]')).toBeVisible()
