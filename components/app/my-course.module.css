@@ -191,3 +191,6 @@
 .testChoices .testMatch{border-color:#cfe9ea;background:#fff}
 .suggestionToggle{color:#108da3!important}
 @media(max-width:530px){.root{gap:11px}.hero{padding:18px 16px;border-radius:20px}.hero h1{font-size:29px}.details{padding:16px}.heroMark{width:94px;height:94px}.heroActions :global(.hh-primary){min-height:50px}}
+
+.heroMark{overflow:hidden;background:#daf6f8;border-color:#a1dce1}
+.heroMark img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 35%;border-radius:inherit}
