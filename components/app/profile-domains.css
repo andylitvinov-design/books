@@ -244,3 +244,16 @@
   .hh-domain-report-archive-head h2{font-size:23px}
   .hh-domain-psych-details>[data-profile-page]{padding:7px}
 }
+
+/* One quiet route to public services rather than another three-offer form. */
+.hh-profile-domains .hh-domain-services-link {
+  display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;
+  width:fit-content;max-width:100%;min-height:41px;
+  margin:5px 0 0;padding:9px 12px;
+  background:#edf7f0;border:1px solid #c2ddce;border-radius:10px;
+  color:#286b58!important;text-decoration:none!important;
+  font:700 12px/1.35 system-ui,sans-serif;
+}
+.hh-profile-domains .hh-domain-services-link svg:last-child{margin-left:4px}
+.hh-profile-domains .hh-domain-services-link:hover{background:#deefe4;border-color:#99c6b0}
+.hh-profile-domains .hh-domain-services-link:focus-visible{outline:3px solid #297667;outline-offset:2px}
