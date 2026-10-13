@@ -123,10 +123,44 @@ async function collectWebkitTrace() {
   try {
     file = await open('output/tantra-testimonials/webkit-gstreamer.log', 'r');
     const { size } = await file.stat();
-    const start = Math.max(0, size - 2 * 1024 * 1024);
-    const tail = Buffer.alloc(size - start);
-    const { bytesRead } = await file.read(tail, 0, tail.length, start);
-    return { bytes: size, tailStartByte: start, truncated: start > 0, text: tail.subarray(0, bytesRead).toString('utf8') };
+    const limit = 2 * 1024 * 1024;
+    const readRange = async (start, length) => {
+      const buffer = Buffer.alloc(length);
+      let used = 0;
+      while (used < length) {
+        const { bytesRead } = await file.read(buffer, used, length - used, start + used);
+        if (!bytesRead) break;
+        used += bytesRead;
+      }
+      return buffer.subarray(0, used).toString('utf8');
+    };
+    const prefixEndByte = Math.min(size, limit);
+    const start = Math.max(prefixEndByte, size - limit);
+    const prefix = await readRange(0, prefixEndByte);
+    const text = await readRange(start, size - start);
+    // Keep relevant backend transitions even when verbose network logs fill the middle.
+    // Both scan memory and retained output are bounded; never retain all network logs.
+    const selected = [], chunk = Buffer.alloc(64 * 1024);
+    let offset = 0, pending = '', matchedLines = 0, clippedLines = 0;
+    const retain = line => {
+      if (!/seek|state.?change|reset|flush|segment|EOS|end.of.stream|PAUSED|PLAYING|error|warning/i.test(line)) return;
+      matchedLines++;
+      selected.push(line.slice(0, 4096));
+      if (selected.length > 2048) selected.splice(512, 1);
+    };
+    while (offset < size) {
+      const { bytesRead } = await file.read(chunk, 0, Math.min(chunk.length, size - offset), offset);
+      if (!bytesRead) break;
+      offset += bytesRead;
+      const lines = (pending + chunk.subarray(0, bytesRead).toString('utf8')).split('\n');
+      pending = lines.pop();
+      for (const line of lines) retain(line);
+      if (pending.length > 8192) { pending = pending.slice(0, 8192); clippedLines++; }
+    }
+    if (pending) retain(pending);
+    return { bytes: size, prefixEndByte, prefix, tailStartByte: start, truncated: start > prefixEndByte, text,
+      transitions: { lines: selected, matchedLines, omittedLines: Math.max(0, matchedLines - selected.length), clippedLines, scannedBytes: offset } };
+
   } catch (error) {
     return { unavailable: error.message };
   } finally { try { await file?.close(); } catch { /* Diagnostics must not replace a verification failure. */ } }
