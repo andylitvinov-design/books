@@ -20,7 +20,7 @@ test('only explicit start/end self-ratings create two measured values', () => {
     { before: 3, after: 5 })
 })
 
-test('compact PDF draws only start/end while preserving the author's full analysis text', () => {
+test('compact PDF draws only start/end and preserves the complete authored analysis', () => {
   const template = getOwnerReportTextTemplate('en')
   const document = {
     patientName: 'SYNTHETIC PDF TEST',
