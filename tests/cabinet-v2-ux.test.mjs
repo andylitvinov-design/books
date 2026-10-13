@@ -137,8 +137,12 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
 
   assert.match(workspace, /getPortraitNextStep/)
   assert.doesNotMatch(workspace, /\['reports', c\.reports, '\/reports'\]/)
-  assert.match(workspace, /\['consultations', c\.consultations, '\/consultations'\]/)
-  assert.match(workspace, /\['monitoring', c\.monitoring, '\/monitoring'\]/)
+  // These tools remain available via the account menu and direct authenticated routes,
+  // rather than occupying slots in the new five-destination bottom navigation.
+  assert.match(workspace, /<Link href=\{root \+ '\/monitoring'\}/)
+  assert.match(workspace, /page === 'consultations'/)
+  assert.match(workspace, /page === 'monitoring'/)
+  assert.match(workspace, /<PersonalPortraitSummary data=\{data\} locale=\{locale\}/)
   assert.match(workspace, /function ReportsIndex/)
   assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
   assert.match(workspace, /LatestChange/)
