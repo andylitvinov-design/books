@@ -258,3 +258,13 @@
 @media print{
  .workbookPrompt,.workbookTask,.workbookFinish,.workingPosition{break-inside:avoid}
 }
+
+/* Private, opt-in journal review. Never show notes in public previews. */
+.workbookHistory{padding:14px 18px;border:1px solid #e0dbce;border-radius:17px;background:#fffdf9}
+.workbookHistory summary{cursor:pointer;font-size:15px;font-weight:800;color:#53463c;line-height:1.5}
+.workbookHistory details[open] summary{margin-bottom:11px}
+.workbookHistory ol{display:grid;gap:10px;padding:0;margin:13px 0 0;list-style:none}
+.workbookHistory li{min-width:0;padding:13px 15px;border:1px solid #e5e1d8;border-radius:12px;background:#f9faf5}
+.workbookHistory li strong{font-size:12px;color:#43715d}
+.workbookHistory li p{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0 0;font-size:13px;line-height:1.6;color:#49443c}
+@media(max-width:620px){.workbookHistory{padding:12px}}
