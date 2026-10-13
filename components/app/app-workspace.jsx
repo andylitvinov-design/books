@@ -401,7 +401,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
-          {page === 'course' && <><MyCourse data={data} locale={locale} /><NotificationSettings locale={locale} compact /></>}
+          {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
           {page === 'monitoring' && (
             <PsiMonitoring
