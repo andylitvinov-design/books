@@ -257,11 +257,24 @@ test('embeds a Unicode Cyrillic font for Russian prescriptions instead of transl
 
 test('keeps the PDF footer below general instructions instead of overlapping it', () => {
   const record = createPrescription({ ...baseInput, status: 'active' })
-  const source = buildPrescriptionPdf(getClientPrescription(record, 'en'), 'en', 'https://books.example.test').toString('latin1')
-  const instructionY = Number(source.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Fixture\/test content only/)?.[1])
-  const signatureY = Number(source.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Andrii Litvinov/)?.[1])
-
-  assert.ok(signatureY <= instructionY - 20)
+  const pdf = buildPrescriptionPdf(getClientPrescription(record, 'en'), 'en', 'https://books.example.test')
+  const source = pdf.toString('latin1')
+  const streams = [...source.matchAll(/\/Type \/Page\b[^]*?\/Contents (\d+) 0 R/g)].map(match => {
+    const object = source.match(new RegExp(\`\\n\${match[1]} 0 obj\\n<< /Length (\\d+) >>\\nstream\\n\`))
+    assert.ok(object, 'PDF page must have a content stream')
+    const start = object.index + object[0].length
+    return source.slice(start, start + Number(object[1]))
+  })
+  const instructionPage = streams.findIndex(stream => /Tm \(Fixture\/test content only/.test(stream))
+  const signaturePage = streams.findIndex(stream => /Tm \(Andrii Litvinov/.test(stream))
+  assert.ok(instructionPage >= 0 && signaturePage >= 0, 'both text and signature must be present')
+  assert.ok(signaturePage >= instructionPage, 'signed closing must follow the instructions')
+  if (instructionPage === signaturePage) {
+    const instructionY = Number(streams[instructionPage].match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Fixture\/test content only/)?.[1])
+    const signatureY = Number(streams[signaturePage].match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Andrii Litvinov/)?.[1])
+    assert.ok(Number.isFinite(instructionY) && Number.isFinite(signatureY))
+    assert.ok(signatureY <= instructionY - 20, 'same-page signature must not overlap the instructions')
+  }
 })
 
 test('paginates a long bilingual-safe prescription without dropping items or instructions', () => {
