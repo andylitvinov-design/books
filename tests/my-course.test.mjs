@@ -1,3 +1,4 @@
+import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.js'
 import { COURSE_JOURNEY, COURSE_PHASES } from '../data/inner-growth/course-journey.js'
 import { SHARED_DAYS } from '../data/inner-growth/shared-days.js'
 import { TRACKS, lessonFor, isCompleteLibrary } from '../lib/inner-growth/lesson-library.js'
@@ -329,4 +330,67 @@ test('personal 14-day roadmap uses the same day-specific approved focus and real
   assert.match(css, /\.journeyGrid/)
   assert.match(css, /\.journeyDay\[data-day-state='today'\]/)
   assert.match(css, /background:#b64b31/)
+})
+
+
+test('skills workbook v2 includes fourteen unique, bilingual, non-clinical learning prompts',()=>{
+  assert.equal(WORKBOOK_DAYS.length,14)
+  assert.equal(new Set(WORKBOOK_DAYS.map(item=>item.key)).size,14)
+  assert.deepEqual(WORKBOOK_DAYS.map(item=>item.day),Array.from({length:14},(_,i)=>i+1))
+  for(const day of WORKBOOK_DAYS) {
+    for(const locale of ['ru','en']) {
+      const item=workbookDay(day.day,locale)
+      assert.equal(item.day,day.day)
+      for(const field of ['method','skill','question','sentenceStarter','microPractice','workingPosition','takeaway']) {
+        assert.ok(item[field]?.length>=10,day.key+' lacks '+locale+' '+field)
+      }
+    }
+  }
+  assert.equal(workbookDay(0),null)
+  assert.equal(workbookDay(15),null)
+  assert.equal(workbookDay(2.5),null)
+  assert.match(workbookDay(3,'ru').question,/правил/)
+  assert.match(workbookDay(5,'en').microPractice,/believable|neutral/i)
+  assert.match(workbookDay(9,'ru').sentenceStarter,/Если/)
+  assert.match(workbookDay(14,'en').microPractice,/not a guarantee/i)
+})
+
+test('all 84 current lessons gain workbooks without changing legacy lesson IDs',()=>{
+  for(const [domain,lessons] of Object.entries(TRACKS)) {
+    assert.equal(lessons.length,14)
+    for(let day=1;day<=14;day++) {
+      const en=lessonFor(domain,day,'en')
+      const ru=lessonFor(domain,day,'ru')
+      assert.match(en.id,/hh-growth-r2-v1$/)
+      assert.equal(en.id,ru.id)
+      assert.equal(en.workbook.key,workbookDay(day).key)
+      assert.equal(ru.workbook.question,workbookDay(day,'ru').question)
+      assert.equal(en.journey.phase,COURSE_JOURNEY[day-1].phase)
+      assert.ok(en.workbook.version && en.workbook.version===ru.workbook.version)
+      assert.equal(en.sections.length,5)
+    }
+  }
+})
+
+test('workbook content appears in daily cards while private journal remains owner-scoped and sealed',()=>{
+  const service=read('lib/app/growth-daily.js')
+  const jsx=read('components/app/course-today.jsx')
+  const css=read('components/app/course-today.module.css')
+  assert.match(service,/const anchor=primary/)
+  assert.match(service,/primary\.grounding\[lang\]/)
+  assert.match(service,/cycle\.preferences\?\.imagery==='no_imagery'/)
+  assert.match(service,/workbookSkill:preview\?\.workbook\?\.skill/)
+  assert.match(service,/reflection:openSealed\(currentSession\.reflection_ciphertext/)
+  assert.match(service,/where account_id=\$1 and cycle_id=\$2/)
+  assert.match(jsx,/data-course-workbook/)
+  assert.match(jsx,/data-course-micro-experiment/)
+  assert.match(jsx,/data-course-continuation/)
+  assert.match(jsx,/setReflection\(response\.currentSession\.reflection\|\|''\)/)
+  assert.match(jsx,/placeholder=\{lesson\?\.workbook\?\.sentenceStarter/)
+  assert.match(jsx,/readOnly=\{completed\}/)
+  assert.match(jsx,/maxLength=\{500\}/)
+  assert.doesNotMatch(jsx,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
+  assert.match(css,/\.workbookPrompt/)
+  assert.match(css,/\.workbookTask/)
+  assert.match(css,/\.anchorBox/)
 })
