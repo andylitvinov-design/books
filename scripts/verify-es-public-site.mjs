@@ -15,7 +15,9 @@ const evidence = '/tmp/site-video-evidence';
 const results = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
-const nav = ['/es', '/es/library', '/es/services', '/es/academy', '/es/about', '/es/client'];
+// Canonical SiteNavigation uses the supported English account route for ES.
+// Verified unchanged at 84d5d171; legacy /es/client remains separately tested.
+const nav = ['/es', '/es/library', '/es/services', '/es/academy', '/es/about', '/en/app'];
 mkdirSync(evidence, { recursive: true });
 let app, proxy, stage = 'start';
 try {
@@ -119,6 +121,14 @@ try {
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Client-entry overflow: '+language);
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
+        stage=`${engine} ${width} Spanish account navigation`;
+        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
+        await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));
+        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page.locator('html')).toHaveAttribute('lang','en');
+        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
+        await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();
@@ -148,7 +158,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'six shared Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five Spanish destinations plus supported EN account entry',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }
