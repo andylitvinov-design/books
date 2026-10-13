@@ -69,7 +69,7 @@ test('PDF keeps custom analysis, notes and general instructions separated, inclu
     }
     assert.doesNotMatch(source, /PRIVATE-SYNTHETIC-000/)
     assert.match(source, /HOLISTIC HOUSE/)
-    assert.match(source, /0\.926 0\.970 0\.969 rg/)
+    assert.match(source, /0\.984 0\.961 0\.941 rg/)
     assert.equal(getClientPrescription(record, locale).internalNotes, undefined)
   }
   assert.equal(recommendationCopy('ru').analysis, 'АНАЛИЗ СОСТОЯНИЯ')
