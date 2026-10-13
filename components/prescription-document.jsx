@@ -54,9 +54,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           <h2>{locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}</h2>
           <div className="canonical-progress-grid">
             {[
-              { key: 'before', label: locale === 'ru' ? 'До сессии' : 'Before', value: progress.before },
-              { key: 'after', label: locale === 'ru' ? 'После сессии' : 'After', value: progress.after },
-              ...(progress.target !== undefined ? [{ key: 'target', label: locale === 'ru' ? 'Цель (план)' : 'Target (planned)', value: progress.target }] : []),
+              { key: 'before', label: locale === 'ru' ? 'Начало' : 'Start', value: progress.before },
+              { key: 'after', label: locale === 'ru' ? 'Конец' : 'End', value: progress.after },
             ].map(({ key, label, value }) => <div className={`canonical-progress-item canonical-progress-item--${key}`} key={key}>
               <div className="canonical-progress-dial" aria-hidden="true" style={{ '--progress': `${value * 10}%` }}>
                 <strong>{value}<small>/10</small></strong>
@@ -64,7 +63,6 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
               <span>{label}</span>
             </div>)}
           </div>
-          {progress.target !== undefined && <p className="canonical-progress-caption">{locale === 'ru' ? 'Цель — планируемый ориентир, не измеренный результат.' : 'The target is a planned reference, not a measured result.'}</p>}
         </section>}
       </header>
       {document.analysis && <section className="canonical-general canonical-report-analysis">
@@ -120,6 +118,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
 
       {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
         <h2>{locale === 'ru' ? 'Приложение' : 'Appendix'}</h2>
+        <p className="canonical-remedy-appendix-description">{locale === 'ru' ? 'Полные тексты описаний выбранных препаратов из библиотеки Holistic House' : 'Complete library descriptions of all selected remedies'}</p>
         {selectedProfiles.map(({ item, remedy }) => <section className="canonical-remedy-profile" key={item.remedySlug}>
           <h3>{remedy.canonical_latin_name}</h3>
           {remedy.primary_image ? <figure className="canonical-remedy-profile-photo">
@@ -127,7 +126,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={remedy.primary_image} alt={remedy.primary_image_alt || remedy.canonical_latin_name} loading="lazy" decoding="async" />
           </figure> : <p className="canonical-remedy-photo-unavailable">{locale === 'ru' ? 'Исходная фотография отсутствует в базе.' : 'No source photograph is available in the library.'}</p>}
-          <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url} variant="book" showEssence={false} expandSupplementary />
+          <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url} variant="book" showEssence={false} expandSupplementary fullSource />
           {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
             {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open full remedy profile →'}
           </Link></p>}
