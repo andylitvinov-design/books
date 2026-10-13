@@ -529,8 +529,8 @@ a.service-home-start-card:hover {
 }
 
 @media (max-width: 374px) {
-  .house-header--services { padding-inline: 11px; gap: 4px; }
-  .house-header--services .house-wordmark { font-size: 21px; }
+  .house-header--services { padding-inline: 8px; gap: 2px; }
+  .house-header--services .house-wordmark { font-size: 19px; }
   .house-header--services .house-wordmark span { font-size: 7px; }
   .house-header--services .site-cabinet-entry__compact { display: none; }
   .house-header--services .site-navigation > .site-cabinet-entry { width: 44px; padding-inline: 0; }
