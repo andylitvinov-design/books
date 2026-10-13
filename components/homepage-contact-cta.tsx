@@ -8,7 +8,7 @@ import type { Locale } from "@/data/remedies";
  */
 export function HomepageContactCta({ locale }: { locale: Locale }) {
   return (
-    <div className="home-contact-choice" data-home-contact-capture lang={locale}>
+    <div id="home-consultation" className="home-contact-choice" data-home-contact-capture lang={locale}>
       <ConsultationChoiceCapture
         locale={locale}
         variant="service"

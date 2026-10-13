@@ -146,10 +146,10 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
         ) : (
           <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
             {!isHeygen && fallbackPoster && (
-              <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
+              <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
             )}
             {approvedPoster && poster ? (
-              <Image className="site-video-poster" src={approvedPoster} alt="" fill priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
+              <Image className="site-video-poster" src={approvedPoster} alt="" fill unoptimized={approvedPoster.endsWith(".webp")} priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
             ) : isHeygen ? (
               <Film aria-hidden="true" className="site-video-generic-poster" strokeWidth={0.8} style={{ position: "absolute", width: "50%", height: "70%", opacity: 0.12 }} />
             ) : poster ? (
