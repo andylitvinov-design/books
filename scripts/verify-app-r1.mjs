@@ -199,6 +199,13 @@ async function verifyPublicServiceConversionJourneys(){
     await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
+     const guideHeading=servicePage.locator('#distance-homeopathy-guide h1')
+     await expect(guideHeading).toBeVisible()
+     const headingSize=await guideHeading.evaluate(node=>({
+      scroll:node.scrollWidth,client:node.clientWidth,font:getComputedStyle(node).fontSize,
+     }))
+     assert.ok(headingSize.scroll<=headingSize.client+1,
+      'Distance-homeopathy heading must wrap inside its '+width+'px '+locale+' article: '+JSON.stringify(headingSize))
      const articleLink=servicePage.locator('a[href="#distance-homeopathy-guide"]')
      await expect(articleLink).toBeVisible()
      const rect=await articleLink.evaluate(node=>{
