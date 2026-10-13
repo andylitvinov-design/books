@@ -3,6 +3,7 @@ import { recommendationCopy, recommendationGuidance, recommendationItemType, rem
 import { DocumentAutoPrint } from './document-auto-print'
 import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
+import './consultation-report.css'
 
 export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
