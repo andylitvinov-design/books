@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { CircleUserRound } from 'lucide-react';
 import type { Locale } from '@/data/remedies';
 import { localePath, saveUiLocale } from '@/lib/ui-locale';
 import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from '@/lib/public-locales';
@@ -10,12 +11,19 @@ import { useNavigationLocale } from './use-navigation-locale';
 
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
 
+const cabinetEntryCopy = {
+  en: { full: 'My cabinet', compact: 'Cabinet', aria: 'Open personal cabinet' },
+  ru: { full: 'Личный кабинет', compact: 'Кабинет', aria: 'Открыть личный кабинет' },
+  es: { full: 'Mi espacio', compact: 'Espacio', aria: 'Abrir mi espacio personal (en inglés)' },
+} as const;
+
 export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const pathname = usePathname();
   const menuRef = useRef<HTMLDetailsElement>(null);
   const preference = useNavigationLocale(locale);
   const activeLocale = locale ?? preference;
   const text = navigationCopy[activeLocale];
+  const cabinet = cabinetEntryCopy[activeLocale];
   const current = activeNavigationId(pathname);
   const localizedPath = /^\/(ru|en|es)(?=\/|$)/.test(pathname);
   const available = hasSpanishCounterpart(pathname);
@@ -68,9 +76,21 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   }
 
   return <nav aria-label={text.navigation} className="site-navigation">
-    {getSiteNavigation(activeLocale).map(item => item.external
+    {getSiteNavigation(activeLocale).filter(item => item.id !== 'cabinet').map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
+    <Link
+      className="site-cabinet-entry"
+      href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`}
+      prefetch={false}
+      data-nav-item="cabinet"
+      aria-current={current === 'cabinet' ? 'page' : undefined}
+      aria-label={cabinet.aria}
+    >
+      <CircleUserRound aria-hidden="true" />
+      <span className="site-cabinet-entry__full">{cabinet.full}</span>
+      <span className="site-cabinet-entry__compact">{cabinet.compact}</span>
+    </Link>
     <span className="site-language-switch"><details className="site-language-menu" ref={menuRef}>
       <summary className="site-language-menu-trigger" aria-label={text.language}>{activeLocale.toUpperCase()}</summary>
       <span className="site-language-menu-list">{languages.map(next => localizedPath || next === 'es' || !onLocaleChange
