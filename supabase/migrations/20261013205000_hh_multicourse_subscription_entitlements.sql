@@ -4,10 +4,11 @@ begin;
 alter table app_private.growth_courses drop constraint if exists growth_courses_account_id_key;
 alter table app_private.growth_courses drop constraint if exists growth_courses_status_check;
 alter table app_private.growth_courses add constraint growth_courses_status_check
-  check (status in ('active','paused','completed','archived'));
+  check (status in ('active','paused','completed','archived','locked'));
 alter table app_private.growth_courses
   add column if not exists is_primary boolean not null default false,
   add column if not exists finished_at timestamptz;
+-- Locked courses are read-only but keep encrypted notes and progress for resubscription.
 -- Previously finished cycles did not mark their parent courses as completed.
 update app_private.growth_courses c set status='completed',finished_at=coalesce(
   (select max(finished_at) from app_private.growth_cycles v where v.course_id=c.id and v.status='completed'), now())
