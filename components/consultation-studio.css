@@ -125,6 +125,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 11px;
+  margin: 5px 0 15px;
 }
 .consultation-studio-document-choice {
   display: flex !important;
