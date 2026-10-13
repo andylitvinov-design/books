@@ -1,4 +1,5 @@
 'use client'
+import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, FileText, Heart, House, Leaf, Moon, Smile, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
@@ -422,6 +423,10 @@ function SaveContinuation({ data, locale, reload }) {
   const params = useSearchParams()
   const router = useRouter()
   const intentId = params.get('intent') || ''
+  const autoSave = params.get('auto') === '1'
+  const authFailure = params.get('auth') || ''
+  const autoStarted = useRef('')
+  const committing = useRef(false)
   const [intent, setIntent] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -439,6 +444,8 @@ function SaveContinuation({ data, locale, reload }) {
         setIntent(value)
         if (value.expired)
           setError(ru ? 'Время подтверждения истекло. Вернитесь к результату и нажмите «Сохранить» ещё раз.' : 'This confirmation expired. Return to the result and choose Save again.')
+        else if (authFailure)
+          setError(ru ? 'Вход через Google не был завершён. Документ ещё не сохранён.' : 'Google sign-in was not completed. Your document has not been saved.')
       })
       .catch(() => {
         if (live) setError(ru ? 'Не удалось открыть подтверждение сохранения.' : 'This save confirmation is unavailable.')
@@ -446,22 +453,17 @@ function SaveContinuation({ data, locale, reload }) {
     return () => {
       live = false
     }
-  }, [intentId, ru])
+  }, [intentId, ru, authFailure])
 
-  async function commit() {
-    if (!intentId || busy) return
+  const commit = useCallback(async () => {
+    if (!intentId || committing.current) return
+    committing.current = true
     setBusy(true)
     setError('')
     try {
       const saved = await appFetch('save-intents/' + intentId + '/commit', { confirmed: true })
       await reload()
-      router.replace(
-        saved.sourceKind === 'delivered_report'
-          ? `/${locale}/app/reports/${saved.resource.id}`
-          : saved.sourceKind === 'legacy_document'
-            ? `/${locale}/app/documents/${saved.resource.id}`
-            : `/${locale}/app/results/${saved.resource.id}`,
-      )
+      router.replace(savedResourcePath(locale, saved.sourceKind, saved.resource.id))
     } catch (e) {
       setError(
         e?.code === 'SAVE_INTENT_EXPIRED'
@@ -477,9 +479,23 @@ function SaveContinuation({ data, locale, reload }) {
               : 'The selected item could not be saved.',
       )
     } finally {
+      committing.current = false
       setBusy(false)
     }
-  }
+  }, [intentId, locale, reload, router, ru])
+
+  // The explicit recipient click created an item-scoped HttpOnly save intent.
+  // Resume only that selection after Google sign-in (and any new-account consent).
+  useEffect(() => {
+    if (!canAutoContinueSave({ automatic: autoSave, authStatus: authFailure, intent })) return
+    if (autoStarted.current === intentId) return
+    autoStarted.current = intentId
+    if (intent.status === 'committed' && intent.resourceId) {
+      router.replace(savedResourcePath(locale, intent.sourceKind, intent.resourceId))
+      return
+    }
+    void commit()
+  }, [autoSave, authFailure, intent, intentId, commit, locale, router])
 
   const sourceTitle =
     intent?.sourceKind === 'delivered_report'
@@ -503,6 +519,9 @@ function SaveContinuation({ data, locale, reload }) {
     <section className="hh-panel hh-entry">
       <p className="hh-kicker">{ru ? 'Подтверждение' : 'Confirmation'}</p>
       <h1>{ru ? 'Сохранить в личном кабинете' : 'Save to your Cabinet'}</h1>
+      {autoSave && !authFailure && intent && !intent.expired && (
+        <p role="status">{ru ? 'Сохраняем и открываем ваш документ в личном кабинете…' : 'Saving and opening your document in your personal Cabinet…'}</p>
+      )}
       {intent && !intent.expired && (
         <>
           <p><strong>{sourceTitle}</strong></p>
@@ -526,13 +545,7 @@ function SaveContinuation({ data, locale, reload }) {
           {intent.status === 'committed' && intent.resourceId ? (
             <Link
               className="hh-primary"
-              href={
-                intent.sourceKind === 'delivered_report'
-                  ? `/${locale}/app/reports/${intent.resourceId}`
-                  : intent.sourceKind === 'legacy_document'
-                    ? `/${locale}/app/documents/${intent.resourceId}`
-                    : `/${locale}/app/results/${intent.resourceId}`
-              }
+              href={savedResourcePath(locale, intent.sourceKind, intent.resourceId)}
               prefetch={false}
             >
               {ru ? 'Открыть сохранённый материал' : 'Open saved item'}
