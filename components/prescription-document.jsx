@@ -33,7 +33,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       {document.analysis && <section className="canonical-general canonical-report-analysis">
         <h2>{labels.analysis}</h2>
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
-      </section>
+      </section>}
 
       {groups.map((group) => <section className="canonical-remedy-group" key={group.type}>
         {group.title && <h2 className="canonical-remedy-group-title">{group.title}</h2>}
