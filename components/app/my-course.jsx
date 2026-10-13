@@ -8,6 +8,7 @@ import CourseToday from './course-today'
 import Course14DayOverview from './course-14-day-overview'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
+import './my-course-theme.css'
 
 const WORDS = {
   en: {
