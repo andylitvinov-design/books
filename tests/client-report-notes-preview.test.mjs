@@ -144,8 +144,8 @@ test('owner-authored consultation example is an editable draft only for new reco
 
   const form = await readFile('components/consultation-form.jsx', 'utf8')
   assert.match(form, /if \(!consultation\) \{/)
-  assert.match(form, /current \|\| OWNER_REPORT_TEXT_TEMPLATE\.analysis/)
-  assert.match(form, /current \|\| OWNER_REPORT_TEXT_TEMPLATE\.additionalNotes/)
+  assert.match(form, /getOwnerReportTextTemplate\(initialReportLocale\)\.analysis/)
+  assert.match(form, /getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes/)
   assert.match(form, /consultation-template-notice/)
   assert.match(form, /Проверьте и замените замеры/)
   assert.match(form, /consultation-template-review/)
