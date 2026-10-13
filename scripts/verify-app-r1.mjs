@@ -15,6 +15,7 @@ const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{execut
 // request headers, bodies, query strings, cookies, or auth handoff URLs.
 const pendingRequests=new Map()
 context.on('request',request=>{const url=new URL(request.url());if(url.origin===origin)pendingRequests.set(request,{path:url.pathname,type:request.resourceType()})})
+context.on('response',response=>{const value=pendingRequests.get(response.request());if(value)value.status=response.status()})
 context.on('requestfinished',request=>pendingRequests.delete(request))
 context.on('requestfailed',request=>pendingRequests.delete(request))
 let page=await context.newPage()

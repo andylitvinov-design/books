@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright')
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || 'http://127.0.0.1:3100'
@@ -105,7 +105,45 @@ try {
       assert.equal(first.body.locale, locale); assert.match(first.body.operationId, uuid)
       assert.equal(first.expected, accountA); await h.count(1)
       const viewport = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }))
-      assert.ok(viewport.scroll <= viewport.width + 1, `${locale}/${width} horizontal overflow`)
+      if (viewport.scroll > viewport.width + 1) {
+        const diagnostic = await page.evaluate(() => {
+          const cart = document.querySelector('[data-service-cart]')
+          const bounds = (element) => {
+            const rect = element.getBoundingClientRect(), style = getComputedStyle(element)
+            return { tag: element.tagName.toLowerCase(), id: element.id,
+              className: String(element.className?.baseVal ?? element.className ?? ''),
+              scope: element.closest('[data-service-cart]') ? 'cart' : 'page',
+              text: element.textContent?.trim().replace(/\s+/g, ' ').slice(0, 100),
+              left: rect.left + scrollX, right: rect.right + scrollX, width: rect.width,
+              clientWidth: element.clientWidth, scrollWidth: element.scrollWidth,
+              display: style.display, minWidth: style.minWidth, maxWidth: style.maxWidth,
+              whiteSpace: style.whiteSpace, overflowWrap: style.overflowWrap,
+              overflowX: style.overflowX, grid: style.gridTemplateColumns, flexWrap: style.flexWrap }
+          }
+          const elements = Array.from(document.querySelectorAll('body *')).map(bounds)
+          const outsideViewport = elements.filter((item) => item.width > 0 && (item.right > innerWidth + 1 || item.left < -1))
+          const visibleOverflow = elements.filter((item) => item.width > 0 && item.overflowX === 'visible' && item.scrollWidth > item.clientWidth + 1)
+          const result = { width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+            cart: bounds(cart), outsideViewport: outsideViewport.slice(0, 60), visibleOverflow: visibleOverflow.slice(0, 60),
+            scrollWidthWithoutCart: null }
+          // Diagnostic only: retain the original full-page assertion and restore
+          // the cart immediately. This separates a baseline page/header issue
+          // from cart content without clipping or accepting either overflow.
+          const originalStyle = cart.getAttribute('style')
+          try {
+            cart.style.setProperty('display', 'none', 'important')
+            result.scrollWidthWithoutCart = document.documentElement.scrollWidth
+          } finally {
+            if (originalStyle === null) cart.removeAttribute('style')
+            else cart.setAttribute('style', originalStyle)
+          }
+          return result
+        })
+        console.error(`Overflow diagnostics ${locale}/${width}`, JSON.stringify(diagnostic))
+        await writeFile(`${output}/${locale}-${width}-overflow.json`, JSON.stringify(diagnostic, null, 2) + '\n')
+        await page.screenshot({ path: `${output}/${locale}-${width}-overflow.png`, fullPage: true })
+      }
+      assert.ok(viewport.scroll <= viewport.width + 1, `${locale}/${width} horizontal overflow (${viewport.scroll} > ${viewport.width})`)
       const targets = await cart.locator('button').evaluateAll((buttons) => buttons.map((button) => ({ width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })))
       assert.ok(targets.every((target) => target.width >= 44 && target.height >= 44))
       await page.keyboard.press('Tab')
