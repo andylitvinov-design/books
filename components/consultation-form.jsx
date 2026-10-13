@@ -462,7 +462,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         : 'Your saved example is loaded as an editable draft. Review and replace all client-specific measurements and guidance before saving.'}</p>}
       {!consultation && <button type="button" className="consultation-reload-template" onClick={restoreReportTemplate}>
         {labels.reloadTemplate} {reportLocale === 'ru' ? 'русском' : 'English'}
-      </button>
+      </button>}
       <div className="consultation-report-note-grid">
         <label className="consultation-report-note">
           <span>{labels.analysis}</span>
