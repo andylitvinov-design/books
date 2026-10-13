@@ -68,7 +68,7 @@ export function ConsultationDocumentActions({
         {(revoke || reactivate) && <form action={active ? revoke : reactivate}>
           {!active && <p>{reactivateHelp}</p>}
           <button type="submit">{active ? revokeLabel : reactivateLabel}</button>
-        </form>
+        </form>}
       </div>
     </details>
 
