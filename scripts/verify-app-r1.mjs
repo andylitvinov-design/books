@@ -2,6 +2,7 @@ import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
 import {createHmac} from 'node:crypto'
+import {billingStatusRequestDiagnostic,installBillingStatusLifecycleDiagnostics} from './billing-status-browser-diagnostics.mjs'
 import {MONITORING_CATALOG} from '../data/assessments/catalog.js'
 import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
@@ -15,11 +16,21 @@ const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{execut
 // request headers, bodies, query strings, cookies, or auth handoff URLs.
 const pendingRequests=new Map()
 context.on('request',request=>{const url=new URL(request.url());if(url.origin===origin)pendingRequests.set(request,{path:url.pathname,type:request.resourceType()})})
-context.on('response',response=>{const value=pendingRequests.get(response.request());if(value)value.status=response.status()})
+context.on('response',response=>{const value=pendingRequests.get(response.request());if(value)value.status=response.status();const url=new URL(response.url());if(url.origin===origin&&url.pathname==='/api/app/billing/status')console.log('SYNTHETIC_BILLING_STATUS_DIAGNOSTIC',JSON.stringify({kind:'response-headers',at:Date.now(),path:url.pathname,status:response.status()}))})
 context.on('requestfinished',request=>pendingRequests.delete(request))
-context.on('requestfailed',request=>pendingRequests.delete(request))
+context.on('requestfailed',request=>{
+ const diagnostic=billingStatusRequestDiagnostic(origin,request)
+ if(diagnostic)console.log('SYNTHETIC_BILLING_STATUS_DIAGNOSTIC',JSON.stringify(diagnostic))
+ pendingRequests.delete(request)
+})
+await context.exposeBinding('__hhBillingStatusDiagnostic',(_source,event)=>{
+ const kinds=['request-start','signal-abort','pagehide','beforeunload','visibilitychange']
+ if(event&&kinds.includes(event.kind)&&event.path==='/api/app/billing/status'&&typeof event.at==='number'&&typeof event.pagePath==='string'&&/^\/[a-zA-Z0-9/_-]*$/.test(event.pagePath)&&['visible','hidden'].includes(event.visibility))
+  console.log('SYNTHETIC_BILLING_STATUS_DIAGNOSTIC',JSON.stringify(event))
+})
+await context.addInitScript(installBillingStatusLifecycleDiagnostics)
 let page=await context.newPage()
-const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
+const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message);if(error.message.includes('/api/app/billing/status due to access control checks.'))console.log('SYNTHETIC_BILLING_STATUS_PAGEERROR_AT',Date.now())}
 page.on('pageerror',capturePageError)
 const checks=[]
 function passed(name){checks.push(name);console.log('PASS '+name)}
