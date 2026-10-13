@@ -35,3 +35,19 @@
  .questRunner :global(.hh-runner-actions .hh-primary){flex-basis:100%;order:-1}
 }
 @media(prefers-reduced-motion:reduce){.questRunner *{animation:none!important;transition:none!important}}
+
+
+/* Guided psychological tests: one authentic question per sky-blue card, no answer grading. */
+.questRunner{background:linear-gradient(180deg,#fcffff,#f5fcfd)!important;border-color:#cce9ed!important;color:#173e5a;box-shadow:0 12px 29px #1580a414!important}
+.questRunner :global(.hh-runner-instructions){color:#668a9e!important}
+.questRunner :global(.hh-runner-question){background:linear-gradient(125deg,#f2fcfe,#fff)!important;border-color:#cde8ed!important}
+.questRunner :global(.hh-runner-question h1){color:#183f60!important}
+.questRunner :global(.hh-runner-segments span.is-current){background:#44bfd0!important}
+.questRunner :global(.hh-runner-segments span.is-done){background:#0b9eaf!important}
+.questRunner :global(.hh-runner-progress-copy){color:#108ca6!important}
+.questRunner :global(.hh-scale button){border-color:#cce4ea!important;border-bottom-color:#b2d6e0!important;background:#fff!important;color:#315f79!important}
+.questRunner :global(.hh-scale button[aria-pressed=true]){background:#e1f9f7!important;color:#067e94!important;border-color:#0aa9ba!important;border-bottom-color:#068399!important}
+.questRunner :global(.hh-scale button:hover:not(:disabled)){border-color:#20b6c1!important}
+.questRunner :global(.hh-runner-actions .hh-primary){border-color:#098fa8!important;border-bottom-color:#08798a!important;background:linear-gradient(100deg,#17bcc8,#038dab)!important;color:white!important}
+.questRunner :global(.hh-runner-complete){background:#e6f9f7;border-color:#b9e8e5}
+@media(max-width:650px){.questRunner{padding:13px!important}.questRunner :global(.hh-runner-question){min-height:245px;padding:17px 14px!important}}

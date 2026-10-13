@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, LockKeyhole, Sparkles } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import CourseToday from './course-today'
 import Course14DayOverview from './course-14-day-overview'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
+import './my-course-theme.css'
 
 const WORDS = {
   en: {
@@ -186,7 +187,7 @@ export function MyCourse({ data, locale = 'en' }) {
           <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
         </div>
       </div>
-      <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
+      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/andy-about.png" alt="" width={118} height={118} loading="lazy" /></div>
     </header>}
     {stage === 0 && <Course14DayOverview locale={locale} />}
     {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
@@ -226,7 +227,7 @@ export function MyCourse({ data, locale = 'en' }) {
 
     {stage === 4 && <CourseToday locale={locale} />}
 
-    <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>
+    {stage !== 4 && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>
 }
 

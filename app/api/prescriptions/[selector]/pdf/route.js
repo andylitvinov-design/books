@@ -4,6 +4,7 @@ import { metadataBaseFor } from '@/data/site-metadata'
 import { isSupportedLocale } from '@/data/remedies'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
 import { buildPrescriptionPdf, buildPaymentPdf } from '@/lib/prescriptions/pdf'
+import { reportPdfFilename } from '@/lib/documents/report-filename'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { authorizePrescriptionRequest } from '@/lib/prescriptions/session'
 
@@ -22,7 +23,7 @@ export async function GET(request, { params }) {
   return new NextResponse(pdf, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': record.kind === 'payment' ? `attachment; filename="${document.paymentStatus === 'received' ? 'receipt' : 'invoice'}.pdf"` : 'attachment; filename="homeopathic-prescription.pdf"',
+      'Content-Disposition': record.kind === 'payment' ? `attachment; filename="${document.paymentStatus === 'received' ? 'receipt' : 'invoice'}.pdf"` : `attachment; filename="${reportPdfFilename(document)}"`,
       'Cache-Control': 'private, no-store, max-age=0',
       'X-Robots-Tag': 'noindex, nofollow, noarchive',
       'Referrer-Policy': 'no-referrer',

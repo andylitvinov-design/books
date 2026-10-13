@@ -27,9 +27,18 @@ test("Testimonials restore original 2 MP4 videos and the correctly identified Al
   const archive = JSON.parse(archived);
   assert.equal(archive.html5Videos.ru.length, 2);
   assert.deepEqual(archive.youtubeIds, ["qM_nFUkYJ1k"]);
-  assert.match(reviews, /html5Videos\.ru\.map/);
-  assert.match(reviews, /<AcademyVideoPlayer youtubeId="qM_nFUkYJ1k"/);
-  assert.match(reviews, /controls playsInline preload="none"/);
+  const videoReviews = await readFile("components/tantra-video-testimonials.tsx", "utf8");
+  assert.match(reviews, /import \{ TantraVideoTestimonials \} from "@\/components\/tantra-video-testimonials"/);
+  assert.equal((reviews.match(/<TantraVideoTestimonials\b/g) ?? []).length, 1);
+  assert.match(reviews, /videos=\{tantraReikiArchive\.html5Videos\.ru\}/);
+  assert.doesNotMatch(reviews, /<video\b|<AcademyVideoPlayer\b/);
+  assert.match(videoReviews, /^"use client";/);
+  assert.match(videoReviews, /props\.videos\.map\(\(video, i\) =>/);
+  assert.equal((videoReviews.match(/<video\b/g) ?? []).length, 1);
+  assert.equal((videoReviews.match(/<AcademyVideoPlayer\b/g) ?? []).length, 1);
+  assert.match(videoReviews, /<source src=\{video\.src\} type=\{video\.type\}/);
+  assert.match(videoReviews, /<AcademyVideoPlayer key=\{youtubeSession\} youtubeId="qM_nFUkYJ1k"/);
+  assert.match(videoReviews, /controls playsInline preload="none"/);
 });
 
 test("English reviews use authored English copy and display no untranslated Russian screenshot gallery", async () => {

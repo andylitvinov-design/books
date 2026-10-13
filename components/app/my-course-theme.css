@@ -1,0 +1,24 @@
+/* Holistic House course-only theme. Other cabinet sections keep their own palettes. */
+.hh-app:has([data-my-course]),.hh-app:has([data-course-before-signup]){--hh-course-cyan:#08a2b7;--hh-course-blue:#48b7dc;--hh-course-mint:#e2f8f5;--hh-course-ink:#163f5b;background:linear-gradient(180deg,#effafe 0%,#f7fcfe 48%,#f4fcfd 100%)!important;color:var(--hh-course-ink);min-height:100dvh}
+.hh-app:has([data-my-course]) .hh-header,.hh-app:has([data-course-before-signup]) .hh-header{background:linear-gradient(100deg,#e6f7fb,#f5fefd)!important;border-bottom:1px solid #cde9ed}
+.hh-app:has([data-my-course]) .hh-brand{color:#174a69!important}
+.hh-app:has([data-my-course]) .hh-brand span{color:#678fa3!important}
+.hh-app:has([data-my-course]) .hh-master-header-link{background:#e7f9fa!important;border-color:#9fdae2!important;color:#126e87!important}
+.hh-app:has([data-my-course]) .hh-account-menu>summary{background:#fff!important;border-color:#d0e8ec!important;color:#2c6077!important}
+.hh-app:has([data-my-course]) .hh-nav a[aria-current=page]{color:#0c93ab!important;border-color:#41b9ca!important;background:#e7f9fb!important}
+.hh-app:has([data-my-course]) .hh-mobile-app-nav{background:#fbffff!important;border-top:1px solid #d8e9ed!important;box-shadow:0 -5px 14px #2e9ab31a}
+.hh-app:has([data-my-course]) .hh-mobile-app-nav a{color:#607e90!important}
+.hh-app:has([data-my-course]) .hh-mobile-app-nav a[aria-current=page]{background:#ddf6f6!important;color:#057e91!important}
+.hh-app:has([data-my-course]) .hh-mobile-app-nav a[aria-current=page] svg{color:#058ea4!important}
+.hh-app:has([data-my-course]) [data-my-course]{color:#173f5c}
+.hh-app:has([data-course-before-signup]) .hh-entry{border-color:#c9e9ed!important;background:#fbffff!important;color:#174663}
+.hh-app:has([data-course-before-signup]) .hh-entry .hh-primary{background:linear-gradient(100deg,#14b9c7,#088eaa)!important;border-color:#058ca5!important;color:#fff!important}
+@media(max-width:620px){
+ .hh-app:has([data-my-course]) .hh-header{padding-top:12px!important;padding-bottom:11px!important}
+ .hh-app:has([data-my-course]) .hh-mobile-app-nav{padding-bottom:env(safe-area-inset-bottom)}
+}
+@media(prefers-reduced-motion:reduce){.hh-app:has([data-my-course]) *{scroll-behavior:auto!important}}
+
+/* The course's approved self-help/safety text is accessible in its Details screen;
+   do not append the global footer to the one-task daily dashboard. */
+.hh-app:has([data-my-course]) > .hh-footer{display:none!important}

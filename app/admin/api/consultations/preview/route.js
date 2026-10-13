@@ -4,6 +4,7 @@ import { metadataBaseFor } from '@/data/site-metadata'
 import { createConsultationDraftPreview } from '@/lib/consultations/draft-preview'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { buildPaymentPdf, buildPrescriptionPdf } from '@/lib/prescriptions/pdf'
+import { reportPdfFilename } from '@/lib/documents/report-filename'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 
 export const runtime = 'nodejs'
@@ -69,7 +70,7 @@ export async function POST(request) {
     const pdf = await (kind === 'payment' ? buildPaymentPdf : buildPrescriptionPdf)(
       document, locale, metadataBaseFor().origin,
     )
-    const filename = kind === 'recommendation' ? 'client-report-preview.pdf'
+    const filename = kind === 'recommendation' ? reportPdfFilename(document, { preview: true })
       : document.paymentStatus === 'received' ? 'receipt-preview.pdf' : 'invoice-preview.pdf'
     return new NextResponse(pdf, {
       headers: {

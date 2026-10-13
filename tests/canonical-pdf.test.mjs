@@ -10,8 +10,8 @@ test('canonical PDF has A4 letterhead, lighthouse and active remedy link without
   assert.match(source, /\/MediaBox \[0 0 595.28 841.89\]/)
   assert.match(source, /ANDRII LITVINOV/)
   assert.match(source, /\/Subtype \/Image/)
-  assert.match(source, /190 766 Tm/)
-  assert.match(source, /68 668 m/)
+  assert.match(source, /143 779 Tm/)
+  assert.match(source, /68 716 m/)
   assert.match(source, /\/URI \(https:\/\/example.test\/en\/homeopathy\/remedies\/arsenicum-album\)/)
   assert.doesNotMatch(source, /PRIVATE-NOTE/)
   const guidance = recommendationGuidance({ ...recommendation, recommendationType: 'homeopathy' }, 'en')
@@ -55,7 +55,8 @@ test('Bach PDF renders the Bach title and automatic mixture instructions', () =>
     items: [{ displayName: 'Mimulus' }, { displayName: 'Larch' }],
   }
   const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
-  assert.match(source, /BACH FLOWER ESSENCE RECOMMENDATION/)
+  assert.match(source, /BACH FLOWER ESSENCE/)
+  assert.match(source, /RECOMMENDATION/, 'long editorial title wraps to a second line')
   const guidance = recommendationGuidance(document, 'en')
   assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Prepare a mixture: add 5 drops')))
   assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Take 2')))

@@ -1,5 +1,5 @@
 import type { PublicLocale } from "@/lib/public-locales";
-import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { TantraVideoTestimonials } from "@/components/tantra-video-testimonials";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
 import englishSource from "@/data/academy/tantra-reiki-ru-en.generated.json";
 
@@ -110,24 +110,17 @@ export function TantraReikiTestimonials({ locale }: { locale: PublicLocale }) {
         </div>
       </details>
 
-      <details className="tantra-source-disclosure tantra-review-video-section" id="tantra-russian-video-testimonials" open={locale !== "en"}>
-        <summary>{l.video} · {l.language}</summary>
-        <p className="tantra-review-video-note">{l.language}</p>
-        <div className="tantra-review-videos">
-          {tantraReikiArchive.html5Videos.ru.map((video, i) => (
-            <figure className="tantra-review-video" key={video.src}>
-              <video controls playsInline preload="none" poster={video.poster ?? undefined}>
-                <source src={video.src} type={video.type} />
-              </video>
-              <figcaption>{l.native} {i + 1}{locale === "en" ? " · Russian audio" : ""}</figcaption>
-            </figure>
-          ))}
-          <figure className="tantra-review-video">
-            <AcademyVideoPlayer youtubeId="qM_nFUkYJ1k" title={l.youtube} />
-            <figcaption>{l.youtube}</figcaption>
-          </figure>
-        </div>
-      </details>
+      <TantraVideoTestimonials
+        key={locale}
+        initiallyOpen={locale !== "en"}
+        summary={`${l.video} · ${l.language}`}
+        language={l.language}
+        nativeLabel={l.native}
+        nativeSuffix={locale === "en" ? " · Russian audio" : ""}
+        youtubeTitle={l.youtube}
+        videos={tantraReikiArchive.html5Videos.ru}
+      />
     </section>
   );
 }
+

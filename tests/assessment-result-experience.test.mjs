@@ -30,7 +30,10 @@ test('every runnable, versioned assessment produces EN/RU score-tied advice with
         assert.ok(section.steps.every(step => step.length > 40), def.key)
         assert.ok(section.followUp.length > 30, def.key)
       }
-      assert.match(report.note, locale === 'ru' ? /не клинический порог/ : /not a clinical cutoff/)
+      if (def.key === 'asrs-6') {
+        assert.equal(report.sections[0].bandBasis, 'screening')
+        assert.match(report.note, locale === 'ru' ? /не шкала тяжести/ : /not a severity scale/)
+      } else assert.match(report.note, locale === 'ru' ? /не клинический порог/ : /not a clinical cutoff/)
     }
   }
 })
