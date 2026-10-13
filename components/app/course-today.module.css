@@ -393,3 +393,37 @@
  .symbolContent{break-inside:avoid}
  .journeyPanel{break-inside:avoid}
 }
+
+
+/* Gamified v5 primary surface: the long author reference stays collapsed below
+   the quest instead of leading with a scrollable questionnaire. */
+.questHero{display:grid;gap:9px;padding:clamp(16px,2.9vw,23px);background:linear-gradient(130deg,#fffdf8,#eff5ed);border:1px solid #d9e2d5;border-radius:20px;min-width:0;color:#403831}
+.questTopline{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.questTopline .hh-kicker{margin:0!important;color:#786d62;font-size:10px!important;letter-spacing:.1em}
+.questDayPill{flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid #e9d4c9;border-radius:999px;background:#fff9f2;color:#944738;font-size:12px;font-weight:800}
+.questHero h2{margin:1px 0 0!important;font:850 clamp(22px,4vw,28px)/1.2 system-ui,-apple-system,sans-serif!important;letter-spacing:-.03em;color:#38352f}
+.questHero .heroPurpose{margin:0!important;font-size:14px!important;line-height:1.48!important;color:#665b50}
+.questHero .focusRoleBanner{font-size:12px!important;line-height:1.4!important;margin:0!important;padding:8px 10px}
+.questHero .heroSkill{margin:0;font-size:13px;line-height:1.5;color:#466b57}
+.questHero .supportRole{margin:0!important;font-size:12px;color:#6a685b}
+.questHeroFooter{display:flex;align-items:center;justify-content:space-between;gap:11px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #e1e6dc}
+.questHeroFooter>span{font-size:12px;font-weight:750;color:#48705a}
+.questHero button.todayPrimary{display:inline-flex!important;align-items:center;justify-content:center;gap:9px;min-width:210px;width:auto;min-height:48px;margin:0!important;padding:10px 16px!important;border:1px solid #8b3428!important;border-bottom:4px solid #6d2c22!important;border-radius:13px!important;background:#a64634!important;color:white!important;font-size:13px!important;font-weight:800!important;text-decoration:none!important;box-shadow:none!important}
+.questHero button.todayPrimary:hover{background:#903a2d!important}
+.questHero button.questReview{display:flex;align-items:center;gap:4px;padding:9px 12px!important;font-size:12px!important;color:#547762!important;border:1px solid #bfcfbd!important;border-radius:11px!important;background:#fffdfa!important}
+.classicPanel{border:1px solid #e7dcd0;border-radius:17px;background:#fffdf9}
+.classicPanel>summary{cursor:pointer;padding:13px 18px;font-size:12px;font-weight:800;line-height:1.5;color:#846f60}
+.classicPanel[open]>summary{border-bottom:1px solid #e9dfd1}
+.classicPanel>.journeyPanel{margin:10px}
+.classicPanel>.card{margin:10px}
+@media(max-width:620px){
+ .questHero{gap:7px;padding:14px;border-radius:17px}
+ .questHero h2{font-size:23px!important}
+ .questHero .heroPurpose{font-size:13px!important}
+ .questHeroFooter{align-items:stretch;gap:10px}
+ .questHeroFooter>span{flex:1;align-self:center}
+ .questHero button.todayPrimary{width:100%;min-height:48px}
+ .questHero button.questReview{width:100%;justify-content:center}
+ .classicPanel>summary{padding:12px 14px}
+ .classicPanel>.card,.classicPanel>.journeyPanel{margin:8px}
+}
