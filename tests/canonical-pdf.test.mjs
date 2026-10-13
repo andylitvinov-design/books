@@ -55,7 +55,8 @@ test('Bach PDF renders the Bach title and automatic mixture instructions', () =>
     items: [{ displayName: 'Mimulus' }, { displayName: 'Larch' }],
   }
   const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
-  assert.match(source, /BACH FLOWER ESSENCE RECOMMENDATION/)
+  assert.match(source, /BACH FLOWER ESSENCE/)
+  assert.match(source, /RECOMMENDATION/, 'long editorial title wraps to a second line')
   const guidance = recommendationGuidance(document, 'en')
   assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Prepare a mixture: add 5 drops')))
   assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Take 2')))
