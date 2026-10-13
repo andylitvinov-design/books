@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Eye, FileText, Loader2, X } from 'lucide-react'
+import { reportPdfFilename } from '@/lib/documents/report-filename'
 
 const translations = {
   ru: {
@@ -11,6 +12,7 @@ const translations = {
     title: 'Предпросмотр документа',
     unsaved: 'Предпросмотр без сохранения и отправки клиенту.',
     newTab: 'Открыть PDF отдельно',
+    save: 'Сохранить PDF',
     close: 'Закрыть',
     error: 'Не получилось подготовить предпросмотр. Проверьте данные и попробуйте ещё раз.',
   },
@@ -21,6 +23,7 @@ const translations = {
     title: 'Document preview',
     unsaved: 'Private preview. No saving, client link or delivery.',
     newTab: 'Open PDF separately',
+    save: 'Save PDF',
     close: 'Close',
     error: 'Could not prepare the preview. Check the fields and try again.',
   },
@@ -31,12 +34,14 @@ export function ConsultationDraftPreview({ locale = 'en', includeRecommendation,
   const [loading, setLoading] = useState('')
   const [error, setError] = useState('')
   const [previewUrl, setPreviewUrl] = useState('')
+  const [previewFilename, setPreviewFilename] = useState('')
   const objectUrlRef = useRef('')
 
   function closePreview() {
     if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
     objectUrlRef.current = ''
     setPreviewUrl('')
+    setPreviewFilename('')
   }
 
   useEffect(() => {
@@ -71,8 +76,13 @@ export function ConsultationDraftPreview({ locale = 'en', includeRecommendation,
       const blob = await response.blob()
       if (blob.type !== 'application/pdf' || blob.size < 100) throw new Error(labels.error)
       closePreview()
-      const url = URL.createObjectURL(blob)
+      const filename = kind === 'recommendation'
+        ? reportPdfFilename({ dateIssued: formData.get('dateIssued') }, { preview: true })
+        : kind === 'payment' ? 'invoice-preview.pdf' : 'preview.pdf'
+      const file = new File([blob], filename, { type: 'application/pdf' })
+      const url = URL.createObjectURL(file)
       objectUrlRef.current = url
+      setPreviewFilename(filename)
       setPreviewUrl(url)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : labels.error)
@@ -104,6 +114,7 @@ export function ConsultationDraftPreview({ locale = 'en', includeRecommendation,
         <iframe title={labels.title} src={previewUrl} className="consultation-preview-frame" />
         <div className="consultation-preview-footer">
           <a href={previewUrl} target="_blank" rel="noopener noreferrer">{labels.newTab}</a>
+          <a href={previewUrl} download={previewFilename}>{labels.save}</a>
           <button type="button" onClick={closePreview}>{labels.close}</button>
         </div>
       </div>
