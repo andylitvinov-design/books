@@ -394,6 +394,31 @@ try {
  await guestPickerContext.close()
  passed('pre-login test picker, optional filters, recommendations and full database')
 
+ // Public course-information preview is intentionally available before Google
+ // login and before voluntary personal course-data consent. No private scores
+ // or account session are needed to read all fourteen genuine day names.
+ for (const [language, title] of [
+   ['en','What happens during the 14 days?'],
+   ['ru','Что вас ждёт за 14 дней?'],
+ ]) {
+   await page.goto(origin+'/'+language+'/app/course')
+   const overview=page.locator('[data-course-before-signup="guest"]')
+   await expect(overview).toBeVisible({timeout:20000})
+   await expect(overview.getByRole('heading',{name:title,exact:true})).toBeVisible()
+   await expect(overview.locator('[data-course-phase]')).toHaveCount(4)
+   const detailed=overview.locator('[data-course-14-day-list]')
+   await detailed.locator('summary').click()
+   await expect(detailed.locator('[data-course-day]')).toHaveCount(14)
+   for (const width of [320,390]) {
+     await page.setViewportSize({width,height:844})
+     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
+       language+' public course preview must fit the mobile viewport')
+   }
+   await screenshotEvidence(page,{path:output+'/course-public-'+language+'.png',fullPage:false})
+ }
+ await page.setViewportSize({width:390,height:844})
+ passed('anonymous EN/RU course preview shows four phases and all 14 real days without account access')
+
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
