@@ -272,7 +272,7 @@ async function verifyPersonalUI(){
  assert.equal(activated.activationToken,'synthetic-personal-preview-token');assert.equal(activated.consentVersion,'synthetic-personal-consent-v2');assert.equal(activated.consent,true)
  assert.deepEqual(activated.selectedR3ScaleKeys,personalRows.slice(0,3).map(row=>row.r3ScaleKey));assert.equal(activated.loadMinutes,2);assert.deepEqual(activated.weeklyAccents,personalAccents)
  assert.ok(requests.some(r=>r.responseMode==='v2-command-activate'&&r.method==='POST'&&r.fulfilledStatus===200))
- await component.getByRole('button',{name:'Skip check-in and continue',exact:true}).click();await expect(component.locator('article[lang="en"]')).toContainText('2 min, approximately')
+ await component.getByRole('button',{name:'Skip check-in and continue',exact:true}).click();await expect(component.locator('article[data-content-language="en"]')).toContainText('2 min, approximately')
  passed('v2 synthetic8: six eligible goals, aggregate/unsupported visible; 3–5 bounds, 2/5-minute choices, three weekly accents, new unchecked consent and exact activation')
 
  await showPersonal('en',personalDaily())
@@ -308,7 +308,7 @@ async function verifyPersonalUI(){
  start=requests.length
  await component.getByRole('button',{name:'View short practice',exact:true}).click();await expect(component).toHaveAttribute('aria-busy','false')
  const shortRead=assertPersonalQuery(start,{locale:'en',choice:'short',targetScaleId:personalRows[2].id,alternative:'true'},'v2-day-choice-short')
- await expect(component.locator('article[lang="en"]')).toContainText('2 min, approximately')
+ await expect(component.locator('article[data-content-language="en"]')).toContainText('2 min, approximately')
  assert.equal(posts.length,beforeOptions);assert.equal(JSON.stringify(fixture),unchangedPreview,'GET previews must not mutate the synthetic saved snapshot')
  await expect(component.getByLabel('My note',{exact:false})).toHaveValue('SYNTHETIC V2 UNSENT NOTE')
  await expect(component.getByLabel('My reflection',{exact:false})).toHaveValue('SYNTHETIC V2 UNSENT REFLECTION')
@@ -370,16 +370,22 @@ async function verifyPersonalUI(){
  const beforeLanguage=posts.length;start=requests.length
  await editor.getByRole('combobox',{name:'Language of future lesson text',exact:true}).selectOption('ru');await expect(editor.getByRole('checkbox',{name:personalLabel(0,'ru'),exact:true})).toBeVisible();await expect(component).toHaveAttribute('aria-busy','false')
  assertPersonalQuery(start,{locale:'ru'},'v2-snapshot');assert.equal(posts.length,beforeLanguage)
- await expect(revisionConsent).not.toBeChecked();await expect(saveRevision).toBeDisabled();await expect(component.locator('article[lang="en"]')).toContainText('SYNTHETIC PREPARED EN LESSON')
- await revisionConsent.check();await saveRevision.click();await expect(editor).toHaveCount(0);await expect(component.locator('article[lang="ru"]')).toContainText('СИНТЕТИЧЕСКИЙ ТЕКСТ УРОКА RU')
+ await expect(revisionConsent).not.toBeChecked();await expect(saveRevision).toBeDisabled();await expect(component.locator('article[data-content-language="en"]')).toContainText('SYNTHETIC PREPARED EN LESSON')
+ await revisionConsent.check();await saveRevision.click();await expect(editor).toHaveCount(0);await expect(component.locator('article[data-content-language="ru"]')).toContainText('СИНТЕТИЧЕСКИЙ ТЕКСТ УРОКА RU')
+ await expect(component.locator('article[data-content-language="ru"]')).toHaveAttribute('lang','en')
+ await expect(component.locator('article[data-content-language="ru"] h3')).toHaveAttribute('lang','ru')
+ await expect(component.locator('article[data-content-language="ru"] section[lang="ru"]')).toContainText('СИНТЕТИЧЕСКИЙ ТЕКСТ УРОКА RU')
  const languageRevision=posts.at(-1);assert.equal(languageRevision.contentLocale,'ru');assert.equal(languageRevision.loadMinutes,5);assert.equal(languageRevision.expectedRevision,10);assert.equal(languageRevision.expectedPlanRevision,4);assert.deepEqual(fixture.history,originalHistory)
  start=requests.length;const beforeReview=posts.length
- await component.getByRole('button',{name:'Revisit day 1',exact:true}).click();await expect(component.locator('[data-course-21-review] article[lang="en"]')).toContainText('SYNTHETIC PREPARED EN LESSON')
+ await component.getByRole('button',{name:'Revisit day 1',exact:true}).click();await expect(component.locator('[data-course-21-review] article[data-content-language="en"]')).toContainText('SYNTHETIC PREPARED EN LESSON')
  assertPersonalQuery(start,{locale:'en',reviewDay:'1'},'v2-review-day');assert.equal(posts.length,beforeReview)
  const saved=component.locator('[data-course-saved-observations]').first();await saved.locator('summary').click();await expect(saved).toContainText('SYNTHETIC V2 SAVED NOTE')
  const beforePageLanguage=posts.length
- await showPersonal('ru',structuredClone(fixture));await expect(component.locator('article[lang="ru"]')).toContainText('СИНТЕТИЧЕСКИЙ ТЕКСТ УРОКА RU');assert.equal(posts.length,beforePageLanguage)
- await showPersonal('ru',personalDaily({contentLocale:'en'}));await expect(component.locator('article[lang="en"]')).toContainText('SYNTHETIC PREPARED EN LESSON');await expect(component.locator('[data-personal-plan]')).toContainText('Язык урока: EN');assert.equal(posts.length,beforePageLanguage)
+ await showPersonal('ru',structuredClone(fixture));await expect(component.locator('article[data-content-language="ru"]')).toContainText('СИНТЕТИЧЕСКИЙ ТЕКСТ УРОКА RU');assert.equal(posts.length,beforePageLanguage)
+ await showPersonal('ru',personalDaily({contentLocale:'en'}));await expect(component.locator('article[data-content-language="en"]')).toContainText('SYNTHETIC PREPARED EN LESSON');await expect(component.locator('[data-personal-plan]')).toContainText('Язык урока: EN');assert.equal(posts.length,beforePageLanguage)
+ await expect(component.locator('article[data-content-language="en"]')).toHaveAttribute('lang','ru')
+ await expect(component.locator('article[data-content-language="en"] h3')).toHaveAttribute('lang','en')
+ await expect(component.locator('article[data-content-language="en"] section[lang="en"]')).toContainText('SYNTHETIC PREPARED EN LESSON')
  passed('v2 page language never translates pinned lessons; reviewed future-language changes require new consent and preserve original-language historical lesson text')
 
  await showPersonal('en',personalDaily());const beforeCancel=posts.length
@@ -398,7 +404,7 @@ async function verifyPersonalUI(){
  const goals=component.locator('[data-personal-review-goals]');await expect(goals).toHaveCount(1);await expect(goals.locator('li')).toHaveCount(5)
  for(let index=0;index<5;index++)await expect(goals).toContainText(personalLabel(index))
  await expect(component.getByRole('combobox',{name:'Goal for this practice',exact:true})).toHaveCount(0)
- await expect(component.locator('article[lang="en"]')).not.toContainText('This week’s goal');await expect(component.locator('article[lang="en"]')).not.toContainText('A brief reminder')
+ await expect(component.locator('article[data-content-language="en"]')).not.toContainText('This week’s goal');await expect(component.locator('article[data-content-language="en"]')).not.toContainText('A brief reminder')
  const beforeWholeReview=posts.length;start=requests.length
  await component.getByRole('button',{name:'Revisit day 7',exact:true}).click();await expect(goals).toHaveCount(2)
  assertPersonalQuery(start,{locale:'en',reviewDay:'7'},'v2-review-day');assert.equal(posts.length,beforeWholeReview)
@@ -442,7 +448,7 @@ async function verifyPersonalUI(){
   const start=component.getByRole('button',{name:copy.start,exact:true});await start.focus();await page.keyboard.press('Enter')
   const dialog=component.getByRole('dialog',{name:copy.dialog,exact:true});await expect(dialog).toBeVisible();await expect(dialog.getByRole('checkbox')).not.toBeChecked()
   await personalLayout(component,lang,width,'consent');await page.keyboard.press('Escape');await expect(dialog).toBeHidden();await expect(start).toBeFocused()
-  await showPersonal(lang,personalDaily({contentLocale:'en'}));await expect(component.locator('article[lang="en"]')).toContainText('SYNTHETIC PREPARED EN LESSON')
+  await showPersonal(lang,personalDaily({contentLocale:'en'}));await expect(component.locator('article[data-content-language="en"]')).toContainText('SYNTHETIC PREPARED EN LESSON')
   await personalLayout(component,lang,width,'daily')
   const edit=component.getByRole('button',{name:copy.edit,exact:true});await edit.focus();await page.keyboard.press('Enter')
   const form=component.locator('[data-personal-plan-editor]');await expect(form.getByRole('checkbox',{name:personalLabel(3),exact:true})).toBeEnabled()
