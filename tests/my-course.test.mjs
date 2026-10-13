@@ -4,6 +4,7 @@ import { SYMBOLIC_LAB_V4, symbolicLabDay } from '../data/inner-growth/symbolic-l
 import { DEEP_PRACTICE_DAYS, deepPracticeDay } from '../data/inner-growth/deep-practice-v3.js'
 import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.js'
 import { COURSE_JOURNEY, COURSE_PHASES } from '../data/inner-growth/course-journey.js'
+import { COURSE_PRE_ENROLMENT_PHASES, coursePreEnrolmentPlan } from '../lib/inner-growth/course-pre-enrolment.js'
 import { SHARED_DAYS } from '../data/inner-growth/shared-days.js'
 import { TRACKS, lessonFor, isCompleteLibrary, COURSE_CONTENT_VERSION, COURSE_WORKBOOK_VERSION } from '../lib/inner-growth/lesson-library.js'
 import assert from 'node:assert/strict'
@@ -644,4 +645,47 @@ test('V4 daily layout offers one primary Today CTA, optional foldable roadmap an
   assert.match(server,/const version=resolveCycleVersion\(cycle\.content_version\)/)
   assert.match(server,/const lesson=lessonFor\(focus\.goal,today\.day,'en','standard',version\)/)
   assert.doesNotMatch(ui,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
+})
+
+test('pre-enrolment preview covers all 14 source-of-truth days in four concise bilingual stages', () => {
+  assert.equal(COURSE_PRE_ENROLMENT_PHASES.length,4)
+  for(const locale of ['en','ru']){
+    const groups=coursePreEnrolmentPlan(locale)
+    assert.deepEqual(groups.map(group=>[group.start,group.end]),[[1,3],[4,7],[8,11],[12,14]])
+    assert.equal(groups.length,4)
+    assert.ok(groups.every(group=>group.title.length>5 && group.summary.length>20))
+    const days=groups.flatMap(group=>group.days)
+    assert.deepEqual(days.map(item=>item.day),Array.from({length:14},(_,index)=>index+1))
+    assert.equal(new Set(days.map(item=>item.day)).size,14)
+    for(const day of days){
+      assert.equal(day.title,COURSE_JOURNEY[day.day-1].heading[locale])
+      assert.ok(day.title.length>6)
+    }
+  }
+  assert.notDeepEqual(coursePreEnrolmentPlan('en')[0].title,coursePreEnrolmentPlan('ru')[0].title)
+})
+
+test('guests can inspect course plan before Google login and signed-in clients before consent', () => {
+  const landing=read('components/app/my-course.jsx')
+  const app=read('components/app/app-workspace.jsx')
+  const preview=read('components/app/course-14-day-overview.jsx')
+  const css=read('components/app/course-14-day-overview.module.css')
+  assert.match(app, /page === 'course' && <Course14DayOverview locale=\{locale\} compact \/>/)
+  assert.match(landing, /stage === 0 && <Course14DayOverview locale=\{locale\} \/>/)
+  const beforeConsent=landing.indexOf('stage === 0 && <Course14DayOverview')
+  const afterHero=landing.indexOf('stage === 0 && <header')
+  const consent=landing.indexOf('ref={startDialogRef}')
+  assert.ok(afterHero>=0 && beforeConsent>afterHero && consent>beforeConsent,
+    'the preview appears after the main CTA and before course registration')
+  assert.match(preview, /data-course-14-day-overview/)
+  assert.match(preview, /data-course-before-signup/)
+  assert.match(preview, /data-course-phase/)
+  assert.match(preview, /data-course-14-day-list/)
+  assert.match(preview, /data-course-day=\{day\.day\}/)
+  assert.match(preview, /<details/)
+  assert.match(preview, /<summary/)
+  assert.match(preview, /aria-label=\{t\.title\}/)
+  assert.match(css, /@media\(max-width:530px\)/)
+  assert.match(css, /\.phases\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(preview, /localStorage|sessionStorage|fetch\(|dangerouslySetInnerHTML|client data/i)
 })
