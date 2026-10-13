@@ -84,8 +84,5 @@ const countPosts=h=>h.calls.filter(call=>call.body).length;
   const declarations={};layoutCSS.walkRules(rule=>{if(rule.selectors.includes(selector))rule.walkDecls(declaration=>{declarations[declaration.prop]=declaration.value})});
   assert.equal(declarations['inline-size'],'100%');assert.equal(declarations['max-inline-size'],'100%');for(const key of ['overflow','overflow-x','overflow-y'])assert(!['hidden','clip'].includes(declarations[key]));
  }
- const nativeSelect={};layoutCSS.walkRules(rule=>{if(rule.selectors.includes('.planSettings select'))rule.walkDecls(declaration=>{nativeSelect[declaration.prop]=declaration.value})});
- assert.equal(nativeSelect.width,'0');assert.equal(nativeSelect['min-width'],'100%');assert.equal(nativeSelect['max-width'],'100%');
- for(const key of ['overflow','overflow-x','overflow-y'])assert(!['hidden','clip'].includes(nativeSelect[key]));
  console.log('PASS bilingual real SSR, safe sources, escaped text, pinned lang attribute, no-store transport and CSS');
 })().catch(error=>{console.error(error);process.exitCode=1});

@@ -246,14 +246,14 @@ async function personalLayout(component,lang,width,stage){
  assert.deepEqual(missingDescriptions,[],'Visible descriptions must reference existing elements')
  await page.evaluate(()=>document.fonts?.ready)
  const geometry=await layoutGeometry()
- const fieldsetOverflow=await component.locator('[data-personal-plan-editor] fieldset:visible').evaluateAll(elements=>elements.some(element=>element.scrollWidth>element.clientWidth+1))
+ const fieldsetOverflow=await component.locator('[data-personal-plan-settings]:visible,[data-personal-plan-settings] fieldset:visible').evaluateAll(elements=>elements.some(element=>element.scrollWidth>element.clientWidth+1))
  // WebKit can count an unpainted native selected caption in ancestor scrollWidth.
  // Keep that metric for diagnosis; gate actual viewport and visible control boxes.
- const controlGeometry=await component.locator('[data-personal-plan-editor] select:visible').evaluateAll(elements=>elements.map(element=>{
+ const controlGeometry=await component.locator('[data-personal-plan-settings] select:visible').evaluateAll(elements=>elements.map(element=>{
   const box=element.getBoundingClientRect(),label=element.parentElement.getBoundingClientRect(),fieldset=element.closest('fieldset').getBoundingClientRect()
   return {width:box.width,labelWidth:label.width,left:box.left,right:box.right,fieldsetLeft:fieldset.left,fieldsetRight:fieldset.right}
  }))
- const controlsFit=(stage!=='editor'||controlGeometry.length>0)&&controlGeometry.every(box=>box.width>0&&Math.abs(box.width-box.labelWidth)<=1&&box.left>=box.fieldsetLeft-1&&box.right<=box.fieldsetRight+1)
+ const controlsFit=(!['profile','editor'].includes(stage)||controlGeometry.length>0)&&controlGeometry.every(box=>box.width>0&&Math.abs(box.width-box.labelWidth)<=1&&box.left>=box.fieldsetLeft-1&&box.right<=box.fieldsetRight+1)
  if(geometry.documentWidth>geometry.innerWidth+1||fieldsetOverflow||!controlsFit)await writeFile(output+'/overflow-'+lang+'-'+width+'-'+stage+'.json',JSON.stringify({diagnosticOnly:true,browser:engine.name(),browserVersion:browser.version(),lang,width,stage,fieldsetOverflow,controlsFit,controlGeometry,baseline:geometry},null,2))
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1),false,stage+' must not overflow the viewport')
  assert.ok(controlsFit,'Native plan controls must retain full label width inside their fieldset')
