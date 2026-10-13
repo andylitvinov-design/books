@@ -6,7 +6,7 @@ import styles from './course-r3-steps.module.css'
 
 export default function CourseFocusPicker({
   t, locale = 'en', profile, suggested, chosenScales, chosenGoals,
-  onToggleScale, onToggleGoal, problemLabel, onProblemLabel,
+  onToggleScale, onToggleGoal, onSetPrimaryScale, problemLabel, onProblemLabel,
   minScales, busy, onContinue, onBack,
 }) {
   const hasScales = profile.eligible.length > 0
@@ -68,6 +68,18 @@ export default function CourseFocusPicker({
             {selected && <Check className={styles.checkedMark} size={17} aria-hidden="true"/>}
           </label>
         })}
+      </div>}
+      {hasScales&&chosenScales.length>0&&<div className={styles.primaryScaleChoice}
+        data-course-primary-scale-choice>
+        <label htmlFor="course-main-scale">{t.mainSkillTitle}</label>
+        <select id="course-main-scale" value={chosenScales[0]} disabled={busy}
+          onChange={event=>onSetPrimaryScale?.(event.target.value)}>
+          {chosenScales.map(id=>{
+            const scale=profile.eligible.find(item=>item.id===id)
+            return <option key={id} value={id}>{scale?.label||id}</option>
+          })}
+        </select>
+        <p>{t.mainSkillHelp}</p>
       </div>}
       <p className={styles.pickerDisclaimer}>{t.traitNote}</p>
     </section>
