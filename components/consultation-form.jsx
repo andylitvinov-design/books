@@ -403,7 +403,14 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
 
       <ConsultationTextImport remedies={remedies} onApply={applyParsed} uiLocale={uiLocale} />
       <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Проверьте рекомендации самостоятельно. Потенция и схема приёма остаются пустыми до вашего решения.' : 'Review recommendations yourself. Potency and dosing stay blank until you enter them.'}</p>
-      {includeRecommendation && <div className="consultation-report-note-grid">
+    </section>}
+
+    {includeRecommendation && <section className="consultation-studio-card consultation-report-notes-panel" aria-label={labels.analysis + ' & ' + labels.clientNotes}>
+      <div className="consultation-review-notes-title">
+        <h2>{uiLocale === 'ru' ? 'Анализ и примечания' : 'Analysis & notes'}</h2>
+        <p>{uiLocale === 'ru' ? 'Добавьте замеры состояния и персональные указания, которые войдут в PDF-отчёт.' : 'Record state measurements and personalized guidance for the client PDF.'}</p>
+      </div>
+      <div className="consultation-report-note-grid">
         <label className="consultation-report-note">
           <span>{labels.analysis}</span>
           <small>{labels.analysisHint}</small>
@@ -414,7 +421,10 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <small>{labels.clientNotesHint}</small>
           <textarea name="additionalNotes" rows={4} maxLength={5000} value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} placeholder={labels.clientNotesPlaceholder} />
         </label>
-      </div>}
+      </div>
+      <label className="consultation-note consultation-legacy-instructions">{labels.note}
+        <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
+      </label>
     </section>}
 
     <section className="consultation-studio-card" aria-labelledby="consultation-documents-heading">
@@ -426,8 +436,6 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         </div>
         <FileCheck2 aria-hidden="true" size={21} strokeWidth={1.5} />
       </div>
-
-      {includeRecommendation && <label className="consultation-note">{labels.note}<textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} /></label>}
 
     <div className="consultation-studio-document-choices" role="group" aria-label={labels.documentsHeading}>
       <label className="consultation-studio-document-choice" data-selected={includeRecommendation}>
