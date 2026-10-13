@@ -158,18 +158,26 @@ async function assertPublicViewportFits(target,label){
   // original strict assertion. This runs only in isolated synthetic CI.
   const offenders=await target.evaluate(()=>{
    const viewport=window.innerWidth
-   return [...document.querySelectorAll('body *')].filter(node=>{
-    const rect=node.getBoundingClientRect()
-    return rect.width>0&&rect.right>viewport+1&&rect.left>=0&&
-      getComputedStyle(node).visibility!=='hidden'
-   }).slice(0,12).map(node=>({
-    tag:node.tagName.toLowerCase(),
-    className:typeof node.className==='string'?node.className.slice(0,100):'',
-    right:Math.round(node.getBoundingClientRect().right),
-    label:(node.getAttribute('aria-label')||node.textContent||'').trim().slice(0,70),
-   }))
+   const roots=[document.documentElement,document.body]
+   const all=[...roots,...document.querySelectorAll('body *')]
+   const metrics=all.map(node=>{
+    const box=node.getBoundingClientRect()
+    const style=getComputedStyle(node)
+    return {
+     tag:node.tagName.toLowerCase(),
+     className:typeof node.className==='string'?node.className.slice(0,100):'',
+     left:Math.round(box.left),right:Math.round(box.right),
+     width:Math.round(box.width),client:node.clientWidth,scroll:node.scrollWidth,
+     overflow:style.overflowX,position:style.position,
+     label:(node.getAttribute('aria-label')||node.textContent||'').trim().slice(0,58),
+    }
+   })
+   const byExcess=metrics.filter(m=>m.scroll>m.client+1||m.right>viewport+1||m.left< -1)
+    .sort((a,b)=>(b.scroll-b.client)-(a.scroll-a.client)||b.right-a.right).slice(0,18)
+   const byRight=metrics.filter(m=>m.width>0).sort((a,b)=>b.right-a.right).slice(0,10)
+   return {document:{width:viewport,htmlScroll:document.documentElement.scrollWidth,bodyScroll:document.body.scrollWidth},byExcess,byRight}
   })
-  console.error('PUBLIC_OVERFLOW_ELEMENTS',label,JSON.stringify(offenders))
+  console.error('PUBLIC_OVERFLOW_GEOMETRY',label,JSON.stringify(offenders))
  }
  assert.ok(scroll<=width+1,`Public overflow: ${label} (${scroll} > ${width})`)
 }
