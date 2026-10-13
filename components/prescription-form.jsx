@@ -99,6 +99,8 @@ export function PrescriptionForm({ action, prescription, remedies }) {
         <button className="prescription-add" type="button" onClick={() => setItems((current) => [...current, ...initialPrescriptionRows(null, remedies, 1)])}><Plus size={16} />Add remedy</button>
       </fieldset>
 
+      <label className="prescription-instructions">Analysis <span className="prescription-form-hint">Measurements and state observations · included in the client report</span><textarea name="analysis" defaultValue={prescription?.analysis ?? ''} maxLength={5000} placeholder="Record measurements, state and progress…" rows={4} /></label>
+      <label className="prescription-instructions">Notes <span className="prescription-form-hint">Additional practical guidance · included in the client report</span><textarea name="additionalNotes" defaultValue={prescription?.additionalNotes ?? ''} maxLength={5000} placeholder="Additional tips and next steps…" rows={4} /></label>
       <label className="prescription-instructions">General instructions <span className="prescription-form-hint">Optional · included on the client page and PDF</span><textarea name="generalInstructions" value={generalInstructions} onChange={(event) => setGeneralInstructions(event.target.value)} placeholder="Instructions for the client…" rows={3} /></label>
       <label className="prescription-instructions">Follow-up<textarea name="followUp" defaultValue={prescription?.followUp} rows={2} /></label>
       <input type="hidden" name="practitionerName" value="Andrii Litvinov" />
