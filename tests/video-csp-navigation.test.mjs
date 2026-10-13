@@ -153,9 +153,12 @@ test("Tantra videos use canonical originals and posters match first-party hashes
 test("English Tantra testimonials prioritize Litten and Margaret and disclose Russian video audio", async () => {
   const component = await source("components/tantra-reiki-testimonials.tsx");
   assert.match(component, /id="tantra-original-english-testimonials" open=\{locale === "en"\}/);
-  assert.match(component, /id="tantra-russian-video-testimonials" open=\{locale !== "en"\}/);
-  assert.match(component, /<summary>\{l.video\} · \{l.language\}<\/summary>/);
+  assert.match(component, /initiallyOpen=\{locale !== "en"\}/);
+  const disclosure = await source("components/tantra-video-testimonials.tsx");
+  assert.match(disclosure, /id="tantra-russian-video-testimonials"/);
+  assert.match(component, /summary=\{`\$\{l.video\} · \$\{l.language\}`\}/);
   assert.match(component, /Alena · Tantra Reiki testimonial · Russian audio/);
   assert.match(component, /locale === "en" \? " · Russian audio" : ""/);
-  assert.ok(component.indexOf('id="tantra-original-english-testimonials"') < component.indexOf('id="tantra-russian-video-testimonials"'));
+  assert.ok(component.indexOf('id="tantra-original-english-testimonials"') < component.indexOf('<TantraVideoTestimonials'));
 });
+
