@@ -167,3 +167,30 @@
   .testChoices{padding:16px 14px}
   .activeProgress{padding:3px 0}
 }
+
+
+/* Cohesive teal My Course entry/setup; shared app tabs and test logic remain unchanged. */
+.root{--course-forest:#078b9b;--course-line:#d2eaf0;color:#173f5a;gap:13px}
+.hero{border-color:#c3e9ec;background:linear-gradient(115deg,#f4feff,#ddf8f7);box-shadow:0 10px 28px #148ca517}
+.hero h1{color:#173f59;letter-spacing:-.03em}
+.hero p:not(:first-child){color:#4f7b8c}
+.heroMark{border-color:#b7e7eb;color:#029eae;background:#dcf8fb}
+.meta{color:#0e91a7}
+.heroActions :global(.hh-primary),.details > :global(.hh-primary),.dialogActions :global(.hh-primary){background:linear-gradient(100deg,#19bbca,#0292ac)!important;border:1px solid #038da5!important;border-bottom:4px solid #07798d!important;color:#fff!important}
+.details,.chapter,.testChoices{border-color:#cfeced;background:#fff}
+.details h2,.chapter h2{color:#1b4b68}
+.timeline li{border-color:#d8eaed;background:#faffff}
+.timeline .current{border-color:#61c1cb;background:#e7f9fb}
+.timeline .current .number,.timeline .passed .number{background:#0baab9}
+.number{background:#e6f6f8;color:#1c8799}
+.activeProgress strong{color:#138ca1}
+.activeProgress progress{accent-color:#0aa5bc}
+.startDialog{border-color:#bedfe7;background:#fff}
+.consent input{accent-color:#0ca6b7}
+.testChoices{background:#f3fcfd}
+.testChoices .testMatch{border-color:#cfe9ea;background:#fff}
+.suggestionToggle{color:#108da3!important}
+@media(max-width:530px){.root{gap:11px}.hero{padding:18px 16px;border-radius:20px}.hero h1{font-size:29px}.details{padding:16px}.heroMark{width:94px;height:94px}.heroActions :global(.hh-primary){min-height:50px}}
+
+.heroMark{overflow:hidden;background:#daf6f8;border-color:#a1dce1}
+.heroMark img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 35%;border-radius:inherit}
