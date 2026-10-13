@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import CourseGuidedTimer from './course-guided-timer'
+import { CourseQuestMap, CourseQuestPlayer } from './course-quest'
 import styles from './course-today.module.css'
 
 const UI={
@@ -161,6 +162,7 @@ export default function CourseToday({locale='en'}){
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
+ const [questOpen,setQuestOpen]=useState(false)
  const [severity,setSeverity]=useState(null),[interference,setInterference]=useState(null),[resource,setResource]=useState(null)
  const [dailyNote,setDailyNote]=useState(''),[beforeNow,setBeforeNow]=useState(null),[afterNow,setAfterNow]=useState(null)
  const [feedback,setFeedback]=useState('skip'),[reflection,setReflection]=useState('')
@@ -187,6 +189,7 @@ export default function CourseToday({locale='en'}){
     setStage(0)
     setSymbolMode('image')
     setExpanded('checkin')
+    setQuestOpen(false)
   }else {
     if(response?.currentSession){
       setBeforeNow(response.currentSession.beforeNow)
@@ -214,7 +217,8 @@ export default function CourseToday({locale='en'}){
     const result=await api(action,locale,body)
     hydrate(result)
     if(after)after()
-  }catch(e){setError(e.message)}
+    return result
+  }catch(e){setError(e.message);return null}
   finally{setBusy(false)}
  }
  const timezone=()=>{
@@ -256,26 +260,28 @@ export default function CourseToday({locale='en'}){
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
  return <section className={styles.shell} data-daily-course>
-  <header className={styles.hero}>
-    <div><p className="hh-kicker">MY COURSE · HOLISTIC HOUSE</p>
-      <h2>{t.welcome}</h2>
-      <p className={styles.heroDay}>{t.day} {cycle.day} · {lesson?.title||lesson?.journey?.heading}</p>
-      <p className={styles.heroPurpose}>{lesson?.journey?.purpose}</p>
-      {isV3&&<p className={styles.focusRoleBanner} data-course-primary-skill>
-        <strong>{t.coreFocus}: </strong>
-        {GROWTH_GOALS[cycle?.primaryGoal]?.title?.[locale]||activeName}
-        {cycle?.primaryScaleLabel?' · '+cycle.primaryScaleLabel:''}
-      </p>}
-      {isV3&&cycle.activeFocusRole==='support'&&<p className={styles.supportRole}>{t.supportFocus}: {activeName}</p>}
-      {lesson?.workbook?.skill&&<p className={styles.heroSkill}><strong>{t.skillLabel}:</strong> {lesson.workbook.skill}</p>}
-      <p className={styles.focus}>{activeName}{cycle?.activeScaleLabel?' · '+cycle.activeScaleLabel:''} · {problem}</p>
-      <p className={styles.hint}>{t.day} {cycle.day} {t.of} {cycle.durationDays} · {t.date}: {cycle.todayLocalDate} · {cycle.timeZone}</p>
-      {!isFinished&&!paused&&<a href="#course-today-lesson" className={styles.todayPrimary}
-        data-course-today-primary onClick={()=>setExpanded(today?'thought':'checkin')}>
-        {t.openToday}<ArrowRight size={17} aria-hidden="true"/>
-      </a>}
+  <header className={styles.questHero}>
+    <div className={styles.questTopline}>
+      <p className="hh-kicker">HOLISTIC HOUSE · MY COURSE</p>
+      <span className={styles.questDayPill}>{t.day} {cycle.day} {t.of} {cycle.durationDays}</span>
     </div>
-    <div className={styles.counter}><strong>{progress.practiceCount||0}<span>/{cycle.durationDays}</span></strong><small>{t.count}</small></div>
+    <h2>{lesson?.title||lesson?.journey?.heading}</h2>
+    <p className={styles.heroPurpose}>{lesson?.journey?.purpose}</p>
+    {isV3&&<p className={styles.focusRoleBanner} data-course-primary-skill>
+      <strong>{t.coreFocus}: </strong>{GROWTH_GOALS[cycle?.primaryGoal]?.title?.[locale]||activeName}
+      {cycle?.primaryScaleLabel?' · '+cycle.primaryScaleLabel:''}
+    </p>}
+    {isV3&&cycle.activeFocusRole==='support'&&<p className={styles.supportRole}>{t.supportFocus}: {activeName}</p>}
+    {lesson?.workbook?.skill&&<p className={styles.heroSkill}><strong>{t.skillLabel}:</strong> {lesson.workbook.skill}</p>}
+    <div className={styles.questHeroFooter}>
+      <span>{progress.practiceCount||0} / {cycle.durationDays} {t.count}</span>
+      {!isFinished&&!paused&&<button type="button" className={styles.todayPrimary}
+        data-course-today-primary onClick={()=>setQuestOpen(true)}>
+        {t.openToday}<ArrowRight size={17} aria-hidden="true"/>
+      </button>}
+      {completed&&!isFinished&&<button type="button" className={styles.questReview}
+        onClick={()=>setQuestOpen(true)}>{ru?'Повторить день':'Review today'}<ChevronRight size={15}/></button>}
+    </div>
   </header>
   <progress className={styles.progress} max={cycle.durationDays} value={progress.practiceCount||0} aria-label={t.engagement}/>
   {error&&<p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error}) <button type="button" onClick={reload}>{t.retry}</button></p>}
@@ -283,6 +289,21 @@ export default function CourseToday({locale='en'}){
   {isFinished&&<p className={styles.notice}><CheckCircle2 size={20}/>{t.completed}</p>}
   {isV3&&data.returnSuggestion==='restart'&&!isFinished&&
     <p className={styles.returnMessage} data-course-gentle-return>{t.afterGap}</p>}
+  <CourseQuestMap locale={locale} cycle={cycle} progress={progress}
+    roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
+    onPlay={()=>setQuestOpen(true)}/>
+  {questOpen&&<CourseQuestPlayer key={cycle.id+':'+cycle.day} locale={locale}
+    data={data} busy={busy} onClose={()=>setQuestOpen(false)}
+    onCheckin={body=>submit('checkin',body)}
+    onSession={body=>submit('session',body)}
+    onPreferences={patch=>submit('preferences',{
+      expectedRevision:cycle.revision,
+      length:patch.length||cycle.preferences?.length||'standard',
+      imagery:patch.imagery||cycle.preferences?.imagery||'optional',
+      checkinFrequency:cycle.preferences?.checkinFrequency||'daily',
+    })}/>}
+  <details className={styles.classicPanel}>
+    <summary>{ru?'Полный текст урока и дополнительные настройки':'Full lesson text and additional settings'}</summary>
   <details className={styles.journeyPanel} data-course-journey>
     <summary className={styles.journeyHeading}>
       <span className={styles.journeyToggleLabel}>{t.showJourney}<ChevronDown size={16} aria-hidden="true"/></span>
@@ -462,6 +483,7 @@ export default function CourseToday({locale='en'}){
       },()=>setExpanded(''))}>{t.finish}<Check size={17}/></button>}
    </DailyCard>
   </>}
+  </details>
   <section className={styles.graph} aria-labelledby="course-problem-graph">
    <header><div><h3 id="course-problem-graph">{t.symptoms}</h3><p className={styles.hint}>{t.history}</p></div><span>{progress.observations||0} {t.rating}</span></header>
    <div className={styles.chart} role="img" aria-label={t.symptoms+': '+(progress.days||[]).map(d=>d.date+' '+(d.severity??t.none)).join('; ')}>
