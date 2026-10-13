@@ -182,3 +182,44 @@
   .shell .hero{border-radius:17px}
   .shell .cardContent{padding:0 14px 17px}
 }
+
+/* A visible 14-day curriculum: one purposeful preview card per calendar day.
+   Keep primary navigation burgundy; distinguish today, completed and past
+   without equating completion with clinical improvement. */
+.heroDay{margin:8px 0 5px!important;font:800 clamp(17px,2.5vw,21px)/1.35 system-ui,-apple-system,sans-serif;color:#8e3a2d}
+.heroPurpose{margin:0 0 11px!important;font-size:14px!important;line-height:1.6!important;color:#51463d}
+.journeyPanel{display:grid;gap:15px;padding:clamp(16px,2.7vw,22px);border:1px solid #e4d9cd;border-radius:20px;background:#fffdf9}
+.journeyHeading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}
+.journeyHeading h3{font:800 clamp(20px,3vw,26px)/1.25 system-ui,-apple-system,sans-serif;margin:4px 0 7px;color:#403a32}
+.journeyHeading p:not(:global(.hh-kicker)){font-size:13px;line-height:1.6;color:#71665a;margin:0;max-width:630px}
+.journeyCount{white-space:nowrap;padding:9px 11px;border-radius:12px;background:#eef5eb;color:#385c49;font-weight:800;font-variant-numeric:tabular-nums;font-size:13px}
+.journeyGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.journeyDay{display:flex;flex-direction:column;gap:7px;min-width:0;padding:14px;border:1px solid #e7ded3;border-radius:16px;background:#fffefa}
+.journeyMeta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:5px;font-size:11px;font-weight:800;color:#7b7066}
+.journeyMeta span:first-child{color:#8c4637;font-variant-numeric:tabular-nums}
+.journeyDay h4{font:800 15px/1.4 system-ui,-apple-system,sans-serif;color:#41382f;margin:3px 0 0}
+.journeyTheme{margin:0!important;font-size:12px!important;line-height:1.45!important;color:#6e5e50}
+.journeyFocus{margin:0!important;font-size:11px!important;line-height:1.45!important;color:#456a56;font-weight:750}
+.journeyOutcome{margin:4px 0 0!important;font-size:12px!important;line-height:1.5!important;color:#62564b}
+.journeyOutcome strong{color:#494037}
+.journeyDay[data-day-state='today']{border:2px solid #b64b31;padding:13px;background:#fff8f2;box-shadow:0 4px 13px #a7522420}
+.journeyDay[data-day-state='completed']{background:#f4f8f1;border-color:#cbdcc9}
+.journeyDay[data-day-state='completed'] .journeyMeta span:last-child{color:#39745d}
+.journeyDay[data-day-state='past']{background:#f8f6f1}
+.journeyAction{display:inline-flex;gap:7px;align-items:center;justify-content:center;margin-top:auto;padding:10px 11px;min-height:40px;border-radius:11px;background:#b64b31;color:#fff!important;text-decoration:none!important;font-size:12px;font-weight:800}
+.journeyAction:hover,.journeyAction:focus-visible{background:#933728;color:#fff!important}
+.journeyAction:focus-visible{outline:3px solid #e2a991;outline-offset:2px}
+@media(max-width:850px){.journeyGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){
+ .journeyPanel{padding:13px;border-radius:17px}
+ .journeyHeading h3{font-size:21px}
+ .journeyCount{font-size:12px;padding:7px}
+ .journeyGrid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(235px,75%);overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x proximity;padding-bottom:7px}
+ .journeyDay{scroll-snap-align:start;min-height:203px}
+ .journeyDay h4{font-size:15px}
+}
+@media print{
+ .journeyGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}
+ .journeyAction{display:none}
+ .journeyDay{break-inside:avoid}
+}

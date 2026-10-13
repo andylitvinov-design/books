@@ -44,6 +44,9 @@ const UI={
   urgentHelp:'For immediate danger or thoughts of self-harm, contact local emergency or crisis services. This course is not monitored.',
   learn:'Read this thought',prompt:'Review the practice',dayReview:'Your week in perspective',
   action:'Try in ordinary life',markDone:'Finish today’s lesson',date:'Local course day',
+  journeyTitle:'Your 14-day learning map',journeyIntro:'Each day brings a new theme and a small practical takeaway. Your chosen scales shape the lesson topics.',
+  outcome:'A small takeaway',planned:'Coming up',pastDay:'Earlier day',doneDay:'Completed',todayDay:'Today',openToday:'Open today’s practice',
+  optionalResult:'An invitation, not a requirement. You may skip an action or return to it later.',
  },
  ru:{
   welcome:'Ваш ежедневный курс',open:'Открыть',close:'Свернуть',day:'День',of:'из',mins:'минут',daily:'Мой ежедневный замер',
@@ -82,6 +85,9 @@ const UI={
   urgentHelp:'При непосредственной опасности или мыслях о причинении себе вреда обратитесь в местную экстренную или кризисную службу. За курсом никто не следит в реальном времени.',
   learn:'Прочитать мысль',prompt:'Посмотреть упражнение',dayReview:'Неделя в перспективе',
   action:'Применить в обычной жизни',markDone:'Завершить сегодняшний урок',date:'Местный день курса',
+  journeyTitle:'Карта моего 14-дневного курса',journeyIntro:'Каждый день — новая тема и небольшой практический результат. Темы уроков учитывают выбранные вами шкалы.',
+  outcome:'Что можно взять с собой',planned:'Впереди',pastDay:'Прошедший день',doneDay:'Завершено',todayDay:'Сегодня',openToday:'Перейти к практике дня',
+  optionalResult:'Это приглашение, а не обязанность. Действие можно пропустить или выполнить позже.',
  }
 }
 async function api(action,locale,body){
@@ -107,7 +113,7 @@ function Rating({value,onChange,label,optional=false}){
   </label>
 }
 function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,children}){
- return <section className={styles.card} data-course-card={number}>
+ return <section className={styles.card} data-course-card={number} id={number==='checkin'?'course-today-lesson':undefined}>
   <button type="button" className={styles.cardHeader} aria-expanded={expanded} onClick={onToggle}>
     <span className={styles.cardIcon}><Icon aria-hidden="true" size={20}/></span>
     <span className={styles.cardTitle}><strong>{title}</strong><small>{subtitle}</small></span>
@@ -166,6 +172,9 @@ export default function CourseToday({locale='en'}){
  const reviewed=reportDay&&data.reviews?.some(r=>r.day===reportDay)
  const problem=target.label||''
  const activeName=GROWTH_GOALS[cycle?.activeGoal||cycle?.primaryGoal]?.title?.[locale]||''
+ // The thought and everyday action are separate cards; do not make the
+ // guided timer repeat their text as additional meditation steps.
+ const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind))
  const beforeValue=v=>v===null||v===undefined?null:v
  if(data.requiresTarget) return <section className={'hh-panel '+styles.shell+' '+styles.activatePanel}
     data-course-activation>
@@ -189,7 +198,10 @@ export default function CourseToday({locale='en'}){
  return <section className={styles.shell} data-daily-course>
   <header className={styles.hero}>
     <div><p className="hh-kicker">MY COURSE · HOLISTIC HOUSE</p>
-      <h2>{t.welcome}</h2><p className={styles.focus}>{activeName}{cycle?.activeScaleLabel?' · '+cycle.activeScaleLabel:''} · {problem}</p>
+      <h2>{t.welcome}</h2>
+      <p className={styles.heroDay}>{t.day} {cycle.day} · {lesson?.title||lesson?.journey?.heading}</p>
+      <p className={styles.heroPurpose}>{lesson?.journey?.purpose}</p>
+      <p className={styles.focus}>{activeName}{cycle?.activeScaleLabel?' · '+cycle.activeScaleLabel:''} · {problem}</p>
       <p className={styles.hint}>{t.day} {cycle.day} {t.of} {cycle.durationDays} · {t.date}: {cycle.todayLocalDate} · {cycle.timeZone}</p>
     </div>
     <div className={styles.counter}><strong>{progress.practiceCount||0}<span>/{cycle.durationDays}</span></strong><small>{t.count}</small></div>
@@ -198,6 +210,33 @@ export default function CourseToday({locale='en'}){
   {error&&<p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error}) <button type="button" onClick={reload}>{t.retry}</button></p>}
   {paused&&<p className={styles.note}>{t.paused}</p>}
   {isFinished&&<p className={styles.notice}><CheckCircle2 size={20}/>{t.completed}</p>}
+  <section className={styles.journeyPanel} aria-labelledby="course-journey-heading" data-course-journey>
+    <div className={styles.journeyHeading}>
+      <div><p className="hh-kicker">HOLISTIC HOUSE · 14 DAYS</p>
+        <h3 id="course-journey-heading">{t.journeyTitle}</h3>
+        <p>{t.journeyIntro}</p>
+      </div>
+      <span className={styles.journeyCount}>{progress.practiceCount||0} / 14</span>
+    </div>
+    <div className={styles.journeyGrid} role="list">
+      {(data.roadmap||[]).map(item=><article key={item.day} role="listitem"
+        className={styles.journeyDay} data-day-state={item.status}
+        aria-current={item.status==='today'?'step':undefined}>
+        <div className={styles.journeyMeta}>
+          <span>{t.day} {String(item.day).padStart(2,'0')}</span>
+          <span>{item.status==='completed'?t.doneDay:item.status==='today'?t.todayDay:item.status==='past'?t.pastDay:t.planned}</span>
+        </div>
+        <h4>{item.title}</h4>
+        <p className={styles.journeyTheme}>{item.heading} · {item.phaseTitle}</p>
+        <p className={styles.journeyFocus}>{item.focusTitle}{item.scaleLabel?' · '+item.scaleLabel:''}</p>
+        <p className={styles.journeyOutcome}><strong>{t.outcome}:</strong> {item.outcome}</p>
+        {item.status==='today'&&!isFinished&&<a href="#course-today-lesson"
+          className={styles.journeyAction} onClick={()=>setExpanded('checkin')}>
+          {t.openToday}<ArrowRight size={15} aria-hidden="true"/>
+        </a>}
+      </article>)}
+    </div>
+  </section>
   {!isFinished&&<>
    <DailyCard number="checkin" title={'01 · '+t.daily} subtitle="~30 sec" icon={ClipboardList}
     expanded={expanded==='checkin'} onToggle={()=>setExpanded(x=>x==='checkin'?'':'checkin')} completed={Boolean(today)}>
@@ -249,28 +288,29 @@ export default function CourseToday({locale='en'}){
          checkinFrequency:cycle.preferences?.checkinFrequency||'daily'})}>{t.comfort}</button>
      </div>
      <div className={styles.lessonStep}>
-       <span>{t.step} {stage+1} {t.of} {lesson?.sections?.length||5} · <Clock3 size={13} aria-hidden="true"/> ~{lesson?.sections?.[stage]?.seconds||0}s</span>
-       <h3>{lesson?.sections?.[stage]?.title}</h3>
-       <p>{lesson?.sections?.[stage]?.text}</p>
-       {lesson?.sections?.[stage] && <CourseGuidedTimer
+       <span>{t.step} {stage+1} {t.of} {guidedSections.length} · <Clock3 size={13} aria-hidden="true"/> ~{guidedSections[stage]?.seconds||0}s</span>
+       <h3>{guidedSections[stage]?.title}</h3>
+       <p>{guidedSections[stage]?.text}</p>
+       {guidedSections[stage] && <CourseGuidedTimer
          key={cycle.id+'-'+cycle.day+'-'+stage+'-'+(cycle.preferences?.length||'standard')}
-         seconds={lesson.sections[stage].seconds} locale={locale}/>}
+         seconds={guidedSections[stage].seconds} locale={locale}/>}
      </div>
      <div className={styles.actions}>
        <button type="button" className="hh-primary" onClick={()=>{
-         if(stage < (lesson?.sections?.length||5)-1)setStage(x=>x+1)
+         if(stage < guidedSections.length-1)setStage(x=>x+1)
          else {setStage(0);setExpanded('ritual')}
-       }}>{stage<(lesson?.sections?.length||5)-1?t.next:t.action}<ArrowRight size={16}/></button>
+       }}>{stage<guidedSections.length-1?t.next:t.action}<ArrowRight size={16}/></button>
        <button type="button" onClick={()=>setStage(0)}><RotateCcw size={15}/>{t.restart}</button>
      </div>
      <details className={styles.transcript}><summary>{t.prompt}</summary>
-       {lesson?.sections?.map((s,i)=><p key={i}><strong>{i+1}. {s.title}</strong> — {s.text}</p>)}
+       {guidedSections.map((s,i)=><p key={i}><strong>{i+1}. {s.title}</strong> — {s.text}</p>)}
      </details>
    </DailyCard>
    <DailyCard number="ritual" title={'04 · '+t.ritual} subtitle={t.action} icon={Sprout}
     expanded={expanded==='ritual'} onToggle={()=>setExpanded(x=>x==='ritual'?'':'ritual')}>
       <p>{lesson?.ritual}</p>
-      <p className={styles.hint}>{t.quickTip}</p>
+      <p className={styles.journeyOutcome}><strong>{t.outcome}:</strong> {lesson?.journey?.outcome}</p>
+      <p className={styles.hint}>{t.optionalResult} {t.quickTip}</p>
       <button type="button" className={styles.nextButton} onClick={()=>setExpanded('reflection')}>{t.next}<ArrowRight size={16}/></button>
    </DailyCard>
    <DailyCard number="reflection" title={'05 · '+t.reflection} subtitle={t.private} icon={HeartHandshake}
