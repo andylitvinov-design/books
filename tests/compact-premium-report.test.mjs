@@ -56,7 +56,7 @@ test('remedy appendix headings are legible and all narrative copy is retained', 
     ['ОСНОВА', 'ЭТАП РАЗВИТИЯ'])
   assert.ok(blocks.some(block => block.text === 'Исходный авторский текст.'))
   assert.ok(blocks.some(block => block.text === 'Вторая строка.'))
-  assert.equal(blocks.filter(block => block.kind === 'space').length, 1)
+  assert.equal(blocks.filter(block => block.kind === 'space').length, 2)
 })
 
 test('download names are meaningful and never contain patient identity', () => {
