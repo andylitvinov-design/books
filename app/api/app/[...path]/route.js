@@ -346,16 +346,18 @@ async function handle(request, { params }) {
     }
     if (path[0] === 'course' && path.length === 2) {
       const daily = createDailyCourseRepository(config)
-      const locale = new URL(request.url).searchParams.get('locale') === 'ru' ? 'ru' : 'en'
+      const params = new URL(request.url).searchParams
+      const locale = params.get('locale') === 'ru' ? 'ru' : 'en'
+      const courseId = params.get('courseId')
       if ((path[1] === 'today' || path[1] === 'progress') && method === 'GET')
-        return json(await daily.read(actor, locale))
+        return json(await daily.read(actor, locale, courseId))
       if (method === 'POST' && ['activate','checkin','session','review','preferences','pause','resume','new-cycle'].includes(path[1]))
-        return json(await daily.command(actor, path[1], await readBody(request), locale))
+        return json(await daily.command(actor, path[1], await readBody(request), locale, courseId))
       throw new AppError('NOT_FOUND', 404)
     }
     if (joined === 'course') {
       const growth = createGrowthCourseRepository(config)
-      if (method === 'GET') return json(await growth.read(actor))
+      if (method === 'GET') return json(await growth.read(actor, new URL(request.url).searchParams.get('courseId')))
       if (method === 'POST') return json(await growth.command(actor, await readBody(request)))
       throw new AppError('NOT_FOUND', 404)
     }
@@ -409,7 +411,9 @@ async function handle(request, { params }) {
         }
       }
       exported.savedReports = savedReports
-      exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
+      const growth = await createGrowthCourseRepository(config).read(actor)
+      exported.growthCourse = growth.course
+      exported.growthCourses = growth.courses
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
       const response = json(exported)
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
