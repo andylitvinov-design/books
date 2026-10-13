@@ -2,6 +2,7 @@
 
 import { ConsultationClientSelector } from './consultation-client-selector'
 import './consultation-studio.css'
+import './consultation-report.css'
 import { ClipboardList, FileCheck2, UsersRound } from 'lucide-react'
 import { ConsultationTextImport } from './consultation-text-import'
 import { useActionState, useEffect, useMemo, useState } from 'react'
