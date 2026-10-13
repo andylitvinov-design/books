@@ -52,7 +52,17 @@ test("Academy English videos preserve verified origins and load players only on 
   assert.match(recording, /locale === "en" \? <EnglishGuidedMeditations focus="tantra-reiki"/);
   assert.doesNotMatch(recording, /tantra-russian-review/);
   assert.match(recording, /<TantraReikiTestimonials locale=\{locale\} \/>/);
-  assert.match(reviews, /qM_nFUkYJ1k/);
+  const videoReviews = await readFile("components/tantra-video-testimonials.tsx", "utf8");
+  assert.match(reviews, /import \{ TantraVideoTestimonials \} from "@\/components\/tantra-video-testimonials"/);
+  assert.equal((reviews.match(/<TantraVideoTestimonials\b/g) ?? []).length, 1);
+  assert.match(reviews, /videos=\{tantraReikiArchive\.html5Videos\.ru\}/);
+  assert.doesNotMatch(reviews, /<video\b|<AcademyVideoPlayer\b/);
+  assert.match(videoReviews, /^"use client";/);
+  assert.match(videoReviews, /props\.videos\.map\(\(video, i\) =>/);
+  assert.equal((videoReviews.match(/<video\b/g) ?? []).length, 1);
+  assert.equal((videoReviews.match(/<AcademyVideoPlayer\b/g) ?? []).length, 1);
+  assert.match(videoReviews, /<source src=\{video\.src\} type=\{video\.type\}/);
+  assert.match(videoReviews, /youtubeId="qM_nFUkYJ1k"/);
   assert.match(reviews, /Video testimonials/);
   assert.match(reviews, /Russian audio/);
 });

@@ -4,6 +4,11 @@ on:
     paths:
       - 'middleware.ts'
       - 'components/tantra-reiki-testimonials.tsx'
+      - 'components/tantra-video-testimonials.tsx'
+      - 'components/academy-video-player.tsx'
+      - 'components/csp-navigation-boundary.tsx'
+      - 'lib/csp-prehydration.js'
+      - 'tests/tantra-video-lifecycle.test.mjs'
       - 'data/academy/tantra-reiki-full.generated.json'
       - 'data/academy/tantra-native-assets.json'
       - 'public/images/tantra-reiki/**'
@@ -27,12 +32,12 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Validate scoped changes
         run: |
-          node --test tests/video-csp-navigation.test.mjs
-          npx eslint middleware.ts components/tantra-reiki-testimonials.tsx
+          node --test tests/video-csp-navigation.test.mjs tests/tantra-video-lifecycle.test.mjs
+          npx eslint middleware.ts components/tantra-reiki-testimonials.tsx components/tantra-video-testimonials.tsx
           npx tsc --noEmit
       - name: Install isolated browser tools
         run: |
-          npm install --prefix /tmp/tantra-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          npm install --prefix /tmp/tantra-tools --no-package-lock --ignore-scripts @playwright/test@1.64.0
           ln -s /tmp/tantra-tools/node_modules/@playwright node_modules/@playwright
           /tmp/tantra-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Build proposed application
@@ -55,3 +60,4 @@ jobs:
           name: tantra-testimonial-verification
           path: output/tantra-testimonials/verification.json
           if-no-files-found: warn
+

@@ -33,7 +33,7 @@ test('four original EN/RU questionnaires are unique, content-hashed and genuinel
   assert.equal(PERSONALITY_TYPE_DEFINITIONS.length,8)
   assert.equal(PERSONALITY_TYPE_CATALOG.length,4)
   assert.equal(new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id)).size,8)
-  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,109)
+  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,110)
   for(const [key,,questionCount,scaleCount] of CASES){
     const item=MONITORING_CATALOG.find(c=>c.key===key)
     assert.ok(item?.startable && item.rightsStatus==='cleared' && item.guestEligible)
@@ -220,7 +220,7 @@ test('all sixteen socionics mappings use an explicit independent code fixture',(
 
 test('canonical 170 prior definitions and earlier 169/153-definition baselines remain unchanged',()=>{
   const ids=new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id))
-  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!ids.has(d.id))
+  const prior=ASSESSMENT_DEFINITIONS.filter(d=>d.key!=='asrs-6'&&!ids.has(d.id))
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
   assert.equal(prior.length,170)
   assert.equal(digest(prior),'2b7a4c102bbcf65ed0b6f3d3530d803c93dfa8f27456b5c2bf4a490ea6fc3e93')

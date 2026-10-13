@@ -271,7 +271,7 @@ test('keeps the PDF footer below general instructions instead of overlapping it'
   assert.ok(signaturePage >= instructionPage, 'signed closing must follow the instructions')
   if (instructionPage === signaturePage) {
     const instructionY = Number(streams[instructionPage].match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Fixture\/test content only/)?.[1])
-    const signatureY = Number(streams[signaturePage].match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Andrii Litvinov/)?.[1])
+    const signatureY = Number(streams[signaturePage].match(/1 0 0 1 (?:68|224) (\d+(?:\.\d+)?) Tm \(Andrii Litvinov/)?.[1])
     assert.ok(Number.isFinite(instructionY) && Number.isFinite(signatureY))
     assert.ok(signatureY <= instructionY - 20, 'same-page signature must not overlap the instructions')
   }

@@ -1,3 +1,4 @@
+import { ASRS6_CATALOG } from './asrs-v1-6-nyu.js'
 import { deepFreeze } from '../../lib/assessments/contracts.js'
 import { EXPANDED_CATALOG_V2 } from './catalog-v2.js'
 import { EXPANDED_CATALOG_V3 } from './expanded-battery-v3.js'
@@ -727,6 +728,7 @@ export const MONITORING_CATALOG = deepFreeze([
   },
   ...COMPASSION_CATALOG,
   ...MHC_SF_CATALOG,
+  ...ASRS6_CATALOG,
   {
     key: 'functioning-review',
     version: 'planned',

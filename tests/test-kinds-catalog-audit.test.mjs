@@ -94,3 +94,19 @@ test('public and full explorer expose actual checkboxes and type icon labels', a
   assert.match(intent, /kinds: TEST_KINDS\.map/)
   assert.match(intent, /'kinds'/)
 })
+
+
+// ASRS is a discrete source-pinned screening count, not a generic sum or course goal.
+test('ASRS6 EN/RU versions are source-documented and supported by the key audit', () => {
+  const catalog = MONITORING_CATALOG.find(item => item.key === 'asrs-6')
+  assert.ok(catalog?.startable)
+  for (const locale of ['en', 'ru']) {
+    const definition = getAssessmentDefinition('asrs-6', 'v1', locale)
+    assert.equal(testKindFor({ key: catalog.key, source: 'product', catalog, definition }), 'professional')
+    assert.deepEqual(auditTestKey({ catalog, definition }), {
+      status: 'ready', basis: 'source_documented', scorer: 'asrs-v1-6-classic:v1', reportReady: true,
+    })
+    const unsupported = { ...definition, scoringVersion: 'unsupported-test-version' }
+    assert.equal(auditTestKey({ catalog, definition: unsupported }).status, 'key_review')
+  }
+})

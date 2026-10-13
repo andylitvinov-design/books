@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
-import { assessmentHistoryGroups, nextPersonalRecommendation, resultChangeSummary } from '@/lib/assessments/personal-guidance'
+import { assessmentHistoryGroups, assessmentHistoryTitle, nextPersonalRecommendation, resultChangeSummary } from '@/lib/assessments/personal-guidance'
 import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
@@ -16,6 +16,7 @@ import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
 import { periodComparison, periodWindow, resultsForPeriod } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
@@ -1084,9 +1085,11 @@ function RunnerAnswerChoices({ definition, question, selected, onChoose, locale,
       <div className={anchors ? 'hh-scale hh-scale-words' : 'hh-scale'}>
         {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(value => (
           <button key={value} type="button" aria-pressed={selected === value}
+            className={asrs6ChoiceClass(definition, question, value)}
             disabled={disabled} onClick={() => void onChoose(value)}>
-            <strong>{value}</strong>
-            {anchors && <span>{anchors[value - min]}</span>}
+            {definition.key !== 'asrs-6' && <strong>{value}</strong>}
+            {anchors && <span lang={definition.instrumentLocale}>{anchors[value - min]}</span>}
+            <Asrs6ChoiceMarker definition={definition} question={question} value={value} />
           </button>
         ))}
       </div>
@@ -1173,6 +1176,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     timeUnit = locale === 'ru' ? 'мин' : 'min',
     timeframe = def?.key === 'hh-bach-flower-profile'
       ? (locale === 'ru' ? 'Часть ответов относится к текущей ситуации, часть — к привычным эмоциональным реакциям. Отвечайте без спешки.' : 'Some statements describe your present situation; others concern your recurring emotional patterns. Answer at your own pace.')
+      : def?.timeframe === 'past-6-months'
+        ? (locale === 'ru' ? 'За последние 6 месяцев' : 'Over the past 6 months')
       : def?.timeframe === 'past-2-weeks'
       ? (locale === 'ru' ? 'За последние 2 недели' : 'Over the past 2 weeks')
       : def?.timeframe === 'past-30-days'
@@ -1387,6 +1392,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
 
       <p className="hh-runner-instructions">{timeframe}</p>
       {def.instructions && <p className="hh-runner-instructions" lang={def.instrumentLocale}>{def.instructions}</p>}
+      <Asrs6SourceNotice definition={def} startedAt={run.startedAt} locale={locale} />
 
       {mode === 'quick' ? (
         <div className="hh-quick-form" aria-label={locale === 'ru' ? 'Все вопросы теста' : 'All test questions'}>
@@ -1981,7 +1987,7 @@ function PortfolioPage({ data, locale }) {
             const latest = group.latest
             const report = buildAssessmentResultReport(latest, locale)
             const first = report.sections[0]
-            const main = latest.dimensions?.[0]
+            const main = first?.bandBasis === 'unavailable' ? null : latest.dimensions?.[0]
             return (
               <article className="hh-insights-test-card" key={group.key}>
                 <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}
@@ -2118,8 +2124,8 @@ function ProfileOverview({ profile, locale }) {
           </div>
           <p>
             {ru
-              ? 'Каждая шкала показана на собственной позиции 0–100 для удобства графика. Это не общий балл здоровья: у разных шкал разный смысл направления.'
-              : 'Each scale is mapped to its own 0–100 position for visualization only. This is not a combined health score; different scales have different directions.'}
+              ? 'Непрерывные шкалы показаны на собственной позиции 0–100 только для графика. Скрининговый подсчёт ASRS показан отдельным числом без процентной полосы. Это не общий балл здоровья.'
+              : 'Continuous scales are mapped to their own 0–100 position for visualization only. The ASRS screening count is shown separately without a percentage bar. This is not a combined health score.'}
           </p>
         </div>
         {rows.length ? (
@@ -2130,14 +2136,16 @@ function ProfileOverview({ profile, locale }) {
                   <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
                   <strong>{readableScaleName(row, locale)}</strong>
                 </div>
-                <div
+                {row.displayKind === 'screening-count' || row.key === 'symptoms.asrs6.shaded_count' ? (
+                  <span data-screening-count>{ru ? 'Скрининговый подсчёт 0–6; порог 4. Не шкала тяжести.' : 'Screening count 0–6; threshold 4. Not a severity scale.'}</span>
+                ) : Number.isFinite(row.currentPercent) ? <div
                   className="hh-profile-chart-track"
                   role="img"
                   aria-label={
                     `${readableScaleName(row, locale)}: ${profileNumber(row.value)} / ${row.max}`
                   }
                 >
-                  <i style={{ width: `${row.currentPercent || 0}%` }} />
+                  <i style={{ width: `${row.currentPercent}%` }} />
                   {Number.isFinite(row.priorPercent) && (
                     <b
                       style={{ left: `${row.priorPercent}%` }}
@@ -2148,7 +2156,7 @@ function ProfileOverview({ profile, locale }) {
                       }
                     />
                   )}
-                </div>
+                </div> : <span>{ru ? 'Позиция недоступна' : 'Position unavailable'}</span>}
                 <div className="hh-profile-chart-values">
                   <strong>{profileNumber(row.value)} / {row.max}</strong>
                   <span>
@@ -2298,13 +2306,15 @@ function MetricCard({ dimension, locale, onSelect }) {
         {dimension.value}
         <small> / {dimension.max}</small>
       </strong>
-      <span className="hh-meter" aria-hidden="true">
+      {dimension.displayKind === 'screening-count' || dimension.key === 'symptoms.asrs6.shaded_count' ? (
+        <span data-screening-count>{locale === 'ru' ? 'Скрининговый подсчёт; порог 4. Не шкала тяжести.' : 'Screening count; threshold 4. Not a severity scale.'}</span>
+      ) : <span className="hh-meter" aria-hidden="true">
         <i
           style={{
             width: `${(100 * (dimension.value - dimension.min)) / (dimension.max - dimension.min)}%`,
           }}
         />
-      </span>
+      </span>}
       <small>
         {dateLabel(dimension.measurementAt, locale)} · {def.instrumentLocale.toUpperCase()}
       </small>
@@ -2957,7 +2967,7 @@ function HistoryView({ data, locale, reload }) {
     ...results.map((r) => ({
       id: r.id,
       date: r.measurementAt,
-      title: r.definitionKey === 'hh-current-state' ? c.state : r.definitionKey === 'hh-weekly-pulse' ? c.weekly : c.personality,
+      title: assessmentHistoryTitle(r, locale),
       href: `/${locale}/app/results/${r.id}`,
     })),
     ...(data.moodCheckins || []).map((mood) => ({
@@ -3542,3 +3552,4 @@ function Privacy({ locale, logout, onDeleted }) {
     </section>
   )
 }
+
