@@ -1,0 +1,134 @@
+/* Clear document-language decision, separate from the site UI language. */
+.report-language-picker {
+  min-width: 0;
+  margin: 16px 0 4px;
+  padding: 18px 20px;
+  border: 1px solid #dbc0c7;
+  border-radius: 17px;
+  background: linear-gradient(120deg, #fff9f7 0%, #fdf5f3 56%, #fcf9f6 100%);
+  box-shadow: 0 5px 15px rgb(103 41 61 / 4%);
+}
+.report-language-picker legend {
+  padding: 0 7px;
+  color: #632b3d;
+  font-size: 17px;
+  font-weight: 780;
+  letter-spacing: -.015em;
+}
+.report-language-picker-hint,
+.report-language-picker-scope {
+  margin: 0 0 12px;
+  color: #755e68;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.report-language-picker-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 480px);
+}
+.report-language-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  padding: 12px 17px;
+  border: 1px solid #d6bdc4;
+  border-radius: 13px;
+  background: #fff;
+  color: #623346;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.report-language-choice:hover { border-color: #9d6878; }
+.report-language-choice[data-selected="true"] {
+  border-color: #69283f;
+  background: #69283f;
+  color: #fff;
+  box-shadow: 0 5px 13px rgb(105 40 63 / 17%);
+}
+.report-language-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+.report-language-choice:focus-within { outline: 3px solid #c68b9b; outline-offset: 3px; }
+.report-language-choice-title { font-size: 16px; font-weight: 760; }
+.report-language-choice-code {
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .075em;
+  opacity: .8;
+}
+.report-language-picker-scope { margin: 11px 0 0; font-size: 12px; }
+.consultation-report-language-note {
+  margin: 11px 0 13px;
+  padding: 10px 13px;
+  border-left: 3px solid #82384d;
+  border-radius: 8px;
+  background: #fff9f8;
+  color: #6c4657;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.consultation-report-language-note strong { color: #642c3e; }
+.consultation-reload-template {
+  margin: 0 0 13px;
+  padding: 8px 12px;
+  border: 1px solid #bd9aa4;
+  border-radius: 9px;
+  background: #fff;
+  color: #693145;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.consultation-reload-template:hover { background: #fff2f3; }
+@media (max-width: 500px) {
+  .report-language-picker { padding: 16px 14px; }
+  .report-language-choice { padding: 11px; min-height: 51px; gap: 6px; }
+  .report-language-choice-title { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-language-choice { transition: none; }
+}
+
+
+/* Compact, high-contrast language selector: both choices remain fully visible. */
+.report-language-picker {
+  margin: 12px 0 0;
+  padding: 13px 15px;
+  border: 1px solid #e6d8dc;
+  border-radius: 12px;
+  background: #fcf8f7;
+  box-shadow: none;
+}
+.report-language-picker legend { color: #602a40; font-size: 15px; font-weight: 750; }
+.report-language-picker-hint,
+.report-language-picker-scope { margin: 0 0 9px; color: #705f65; font-size: 12px; line-height: 1.35; }
+.report-language-picker-choices { width: 100%; gap: 8px; }
+.report-language-choice {
+  min-height: 43px;
+  padding: 9px 12px;
+  gap: 8px;
+  border-radius: 9px;
+  box-shadow: none;
+}
+.report-language-choice[data-selected="true"] { border-color: #692e44; background: #692e44; box-shadow: none; }
+.report-language-choice-title { font-size: 14px; }
+.report-language-choice-code { padding: 2px 5px; font-size: 10px; }
+.report-language-picker-scope { margin: 9px 0 0; font-size: 11px; line-height: 1.4; }
+@media (max-width: 500px) {
+  .report-language-picker { margin-top: 10px; padding: 11px 12px; }
+  .report-language-picker-hint { font-size: 11px; }
+  .report-language-choice { min-height: 42px; padding: 8px 10px; }
+  .report-language-choice-title { font-size: 14px; }
+}

@@ -29,13 +29,12 @@ const copy = {
   },
 }
 
-export function ConsultationClientSelector({ clients, selectedClientId, uiLocale = 'ru' }) {
+export function ConsultationClientSelector({ clients, selectedClientId, uiLocale = 'ru', onClientChange }) {
   const labels = copy[uiLocale] ?? copy.ru
   const initial = clients.find((client) => client.id === selectedClientId)
   const [selected, setSelected] = useState(initial)
   const [query, setQuery] = useState(initial?.fullName ?? '')
   const [creating, setCreating] = useState(false)
-  const [locale, setLocale] = useState(initial?.preferredLocale ?? 'en')
   const matches = clients
     .filter((client) => client.fullName.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
     .slice(0, 10)
@@ -43,8 +42,8 @@ export function ConsultationClientSelector({ clients, selectedClientId, uiLocale
   function choose(client) {
     setSelected(client)
     setQuery(client.fullName)
-    setLocale(client.preferredLocale)
     setCreating(false)
+    onClientChange?.(client)
   }
 
   function reset() {
@@ -63,7 +62,7 @@ export function ConsultationClientSelector({ clients, selectedClientId, uiLocale
         <strong>{selected.fullName}</strong>
         <span>{selected.consultationCount} {labels.consultations}{selected.lastConsultation ? ' · ' + selected.lastConsultation : ''}</span>
       </div>
-      <label className="consultation-client-language"><span>{labels.language}</span><select name="languagePreference" value={locale} onChange={(event) => setLocale(event.target.value)}><option value="en">EN</option><option value="ru">RU</option></select></label>
+      <span className="consultation-client-preference">{labels.language}: {selected.preferredLocale === 'ru' ? 'RU' : 'EN'}</span>
       <button type="button" className="consultation-client-change" onClick={reset}>{labels.change}</button>
     </div> : <>
       <div className="consultation-client-search consultation-client-search--compact">
@@ -87,7 +86,6 @@ export function ConsultationClientSelector({ clients, selectedClientId, uiLocale
 
       {creating && <div className="consultation-new-client-fields consultation-new-client-fields--compact">
         <label>{labels.fullName}<input name="patientName" value={query} onChange={(event) => setQuery(event.target.value)} required maxLength={200} /></label>
-        <label>{labels.language}<select name="languagePreference" value={locale} onChange={(event) => setLocale(event.target.value)}><option value="en">English</option><option value="ru">Русский</option></select></label>
         <label>{labels.email}<input type="email" name="clientEmail" maxLength={254} /></label>
         <label>{labels.phone}<input name="clientPhone" maxLength={80} /></label>
       </div>}

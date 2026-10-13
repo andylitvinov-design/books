@@ -119,3 +119,20 @@
 
 /* Compact evidence paragraph alongside the separately expandable measured-scale guide. */
 .testInfo .methodology{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden;color:#796f65;font-size:.73rem;line-height:1.42;margin-top:2px}
+
+
+/* Test-kind selection is accessible from the short picker, not just full catalog. */
+.kindFilters{min-width:0;margin:12px 0 15px;padding:13px 15px;border:1px solid #dedbd2;border-radius:15px;background:#faf9f5}
+.kindFilters legend{padding:0 5px;font-size:.91rem;font-weight:750;color:#4b3b32}
+.kindFilters>p{margin:2px 0 11px;color:#796f66;font-size:.8rem;line-height:1.4}
+.kindChoices{display:flex;gap:8px;flex-wrap:wrap}
+.kindChoice{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;border:1px solid #ded5cc;border-radius:12px;background:#fffefa;color:#594d43;font-size:.84rem;font-weight:700;cursor:pointer}
+.kindChoice[data-checked=true]{border-color:#a25852;background:#faede8;color:#743a40}
+.kindChoice input{width:18px;height:18px;margin:0;accent-color:#8a3a46;cursor:pointer}
+.kindChoice svg{flex:0 0 auto}
+.kindChoice:focus-within{outline:2px solid #793b44;outline-offset:2px}
+.testInfo .testKindBadge{display:inline-flex;align-items:center;gap:5px;justify-self:start;width:max-content;max-width:100%;font-size:.73rem;padding:4px 8px;border-radius:9px;background:#f3eee7;border:1px solid #eaded1;color:#714c37;font-weight:700}
+.testInfo .testKindBadge[data-test-kind-badge=monitoring]{background:#e9f3ef;border-color:#d6e9df;color:#296456}
+.testInfo .testKindBadge[data-test-kind-badge=hobby]{background:#f4eef6;border-color:#e5d7ec;color:#776088}
+.testInfo .testKindBadge svg{flex:0 0 auto}
+@media(max-width:620px){.kindChoices{display:grid;grid-template-columns:1fr}.kindChoice{width:100%}}

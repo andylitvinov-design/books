@@ -60,11 +60,13 @@ export default function CourseCompletionReview({
           <span className={styles.suggestNumber} aria-hidden="true">{index + 1}</span>
           <div>
             <strong>{scale.label}</strong>
+            {index===0&&<small className={styles.recommendKicker}>{t.mainSkillTitle}</small>}
             <small>{scale.testTitle} · {scale.score} ({scale.min}–{scale.max})</small>
             <p>{scale.practice}</p>
           </div>
         </li>)}
       </ol>}
+      {suggested.length > 0 && <p className={styles.recommendNote}>{t.mainSkillHelp}</p>}
       {suggested.length > 0 && <p className={styles.recommendNote}>{t.recommendationSafety}</p>}
     </section>
 

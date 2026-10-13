@@ -9,6 +9,7 @@ type RemedyContentProps = {
   sourceUrl?: string;
   variant: "standalone" | "book";
   showEssence?: boolean;
+  expandSupplementary?: boolean;
 };
 
 type Section = {
@@ -178,7 +179,7 @@ function SectionLayout({ sections, locale, variant, sourceUrl }: { sections: Sec
   return rendered;
 }
 
-export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence = true }: RemedyContentProps) {
+export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence = true, expandSupplementary = false }: RemedyContentProps) {
   const labels = copy[locale];
   const content = splitDescription(remedy.description);
   const supplementaryCount = countSupplementarySources(remedy.supplementary_materials);
@@ -187,7 +188,7 @@ export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence 
     {showEssence ? <RemedyEssence locale={locale} remedy={remedy} /> : null}
     {content.intro.length ? <div className="remedy-content-intro"><ContentBlocks blocks={content.intro} locale={locale} sourceUrl={sourceUrl} /></div> : null}
     <SectionLayout locale={locale} sections={content.sections} sourceUrl={sourceUrl} variant={variant} />
-    {content.supplementary ? <details className="remedy-supplementary" open={false}>
+    {content.supplementary ? <details className="remedy-supplementary" open={expandSupplementary}>
       <summary>{labels.supplementary}{supplementaryCount ? ` (${supplementaryCount})` : ""}</summary>
       <div><ContentBlocks blocks={content.supplementary.blocks} locale={locale} sourceUrl={sourceUrl} /></div>
     </details> : null}

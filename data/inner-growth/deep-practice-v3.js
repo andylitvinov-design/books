@@ -1,0 +1,52 @@
+// Original Holistic House My Course v3 teaching scaffolds.
+// Active recall is optional and non-evaluative. These are not diagnoses,
+// clinical exposure tasks, safety assessments or treatment protocols.
+export const DEEP_PRACTICE_DAYS=Object.freeze([
+  Object.freeze({day:1, recall:{ru:"Перед началом назовите один навык, который хотите развивать. Не нужно оценивать себя.",en:"Before starting, name one skill you want to practise, without grading yourself."},
+    microAction:{ru:"Выберите одну посильную ситуацию и отметьте действие, которое зависит от вас.",en:"Choose one manageable situation and name an action within your control."},
+    review:{ru:"Что сегодня было реально доступно: наблюдение, действие или отдых?",en:"What was genuinely available today: observing, acting or resting?"}}),
+  Object.freeze({day:2, recall:{ru:"Вспомните без подсказки: какую небольшую цель вы выбрали вчера?",en:"Without looking back, what small direction did you choose yesterday?"},
+    microAction:{ru:"Заметив привычный сигнал, попробуйте описать ситуацию → мысль/ощущение → ответ.",en:"When a familiar cue appears, try naming situation → thought/sensation → response."},
+    review:{ru:"Удалось ли заметить цепочку до действия или уже после него? Оба ответа подходят.",en:"Did you notice the chain before or after acting? Both are useful."}}),
+  Object.freeze({day:3, recall:{ru:"Какой сигнал или цепочку реакции вы уже научились замечать?",en:"Which cue or reaction chain can you already recognise?"},
+    microAction:{ru:"Найдите одно внутреннее «надо» и добавьте: «это мысль, а не приказ».",en:"Notice one inner 'must' and add: 'this is a thought, not a command'."},
+    review:{ru:"Какое правило стало немного заметнее? Необязательно менять его сегодня.",en:"Which rule became more noticeable? There is no need to change it today."}}),
+  Object.freeze({day:4, recall:{ru:"Вспомните выбранную цель и один ранний сигнал.",en:"Recall your chosen goal and one early cue."},
+    microAction:{ru:"На 20–40 секунд найдите вокруг две нейтральные формы и одну удобную точку опоры; дышите естественно.",en:"For 20–40 seconds, notice two neutral shapes and one comfortable point of support; breathe naturally."},
+    review:{ru:"Была ли пауза удобной, нейтральной или неприятной?",en:"Did the pause feel workable, neutral or uncomfortable?"}}),
+  Object.freeze({day:5, recall:{ru:"Как можно было бы сделать паузу без визуализации и специальных дыхательных техник?",en:"How might you pause without imagery or forced breathing?"},
+    microAction:{ru:"Проверьте одну старую мысль: что её подтверждает, что не полностью совпадает? Запишите осторожную альтернативу.",en:"Look at one old thought: what supports it, what does not fully fit? Write a tentative alternative."},
+    review:{ru:"Новая фраза достаточно правдоподобна? Можно оставить старую мысль без спора.",en:"Does the phrase feel believable? It is fine to simply notice the old thought."}}),
+  Object.freeze({day:6, recall:{ru:"Можете вспомнить вчерашнюю более гибкую фразу, не заглядывая в записи?",en:"Can you recall yesterday's flexible phrase without checking notes?"},
+    microAction:{ru:"Сформулируйте ожидаемый результат и один безопасный опыт с маленькой нагрузкой; можно выбрать только план.",en:"Name a prediction and one safe low-pressure experiment; planning without doing it is also acceptable."},
+    review:{ru:"Что вы ожидали проверить и насколько действие оказалось посильным?",en:"What did you plan to learn, and did the action feel manageable?"}}),
+  Object.freeze({day:7, recall:{ru:"Какие два приёма за неделю показались наиболее подходящими?",en:"Which two skills felt most acceptable this week?"},
+    microAction:{ru:"Просмотрите записи за неделю и выберите продолжение, облегчение нагрузки или отдых без самооценки.",en:"Review your week and choose to continue, reduce the load, or rest without self-grading."},
+    review:{ru:"Что стоит сохранить, изменить или пока отложить?",en:"What would you keep, adjust or set aside for now?"}}),
+  Object.freeze({day:8, recall:{ru:"Без подсказки: какая фраза или пауза помогала вам хотя бы иногда?",en:"Without prompting, which phrase or pause sometimes helped?"},
+    microAction:{ru:"Свяжите одно безопасное маленькое действие со своей ценностью: забота, ясность или уважение.",en:"Link one small safe action to a value such as care, clarity or respect."},
+    review:{ru:"Действие выражало вашу ценность, даже если чувство не изменилось?",en:"Did the action express your value even if your feelings stayed the same?"}}),
+  Object.freeze({day:9, recall:{ru:"Когда вы в последний раз пробовали навык из первых шести дней?",en:"When did you last use a skill from the first six days?"},
+    microAction:{ru:"Составьте план «если возникнет знакомая ситуация, тогда попробую ответ на 20–60 секунд».",en:"Write an if–then plan: if a familiar cue occurs, then try a 20–60 second response."},
+    review:{ru:"Какая подсказка делает этот план реалистичным?",en:"What cue makes this plan realistic for you?"}}),
+  Object.freeze({day:10, recall:{ru:"Вспомните свой план «если — то», не читая вчерашний ответ.",en:"Recall your if–then plan without rereading yesterday's note."},
+    microAction:{ru:"Сравните ожидание и реальное наблюдение после безопасного действия; не оценивайте себя как успешного/неуспешного.",en:"Compare your expectation with what you noticed after a safe action, without pass/fail labels."},
+    review:{ru:"Что вы узнали и какой следующий шаг можно уменьшить или изменить?",en:"What did you learn, and how could your next step be smaller or different?"}}),
+  Object.freeze({day:11, recall:{ru:"Какой результат маленькой проверки оказался неожиданным или нейтральным?",en:"Which part of your small experiment felt surprising or neutral?"},
+    microAction:{ru:"Если что-то сорвалось, попробуйте короткую поддерживающую фразу или попросите уместную помощь.",en:"If a plan was interrupted, try a brief supportive phrase or an appropriate request for help."},
+    review:{ru:"Какую поддержку вы можете предложить себе без давления?",en:"What support could you offer yourself without pressure?"}}),
+  Object.freeze({day:12, recall:{ru:"Сможете назвать три знакомых приёма без заглядывания в уроки?",en:"Can you name three familiar tools before looking back at the lessons?"},
+    microAction:{ru:"Объедините два доступных приёма и запасной вариант на случай усталости или препятствия.",en:"Combine two accessible tools and a gentle backup if fatigue or obstacles arise."},
+    review:{ru:"Какая минимальная версия плана сработает в напряжённый день?",en:"What is the smallest version of this plan for a difficult day?"}}),
+  Object.freeze({day:13, recall:{ru:"Попробуйте самостоятельно выбрать нужный инструмент из своего набора.",en:"Try choosing one of your familiar tools without a prompt."},
+    microAction:{ru:"Мысленно пройдите одну обычную ситуацию: какой приём, пауза или помощь подходят именно здесь?",en:"Rehearse one ordinary situation: which tool, pause or support fits here?"},
+    review:{ru:"Что помогло выбрать, а от чего разумно отказаться?",en:"What helped you choose, and what was wise to leave out?"}}),
+  Object.freeze({day:14, recall:{ru:"Без подсказки: каковы ваши сигнал, небольшое действие и запасной вариант?",en:"Without prompting, can you name your cue, small action and backup?"},
+    microAction:{ru:"Составьте добровольный план на 2–4 недели с напоминанием, поддержкой и возможностью вернуться после пропуска.",en:"Create an optional 2–4 week plan with a cue, support and a way to resume after a missed day."},
+    review:{ru:"Что вы действительно узнали о себе? Оценки не доказывают действие курса.",en:"What did you genuinely learn? Self-ratings do not prove the course caused change."}}),
+])
+export function deepPracticeDay(day,locale='en'){
+ if(!Number.isInteger(day)||day<1||day>14)return null
+ const entry=DEEP_PRACTICE_DAYS[day-1],language=locale==='ru'?'ru':'en'
+ return {day:entry.day,recall:entry.recall[language],microAction:entry.microAction[language],review:entry.review[language]}
+}

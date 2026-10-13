@@ -1,5 +1,14 @@
 import type { NextConfig } from "next";
 
+// Server-side client PDFs must be able to load the published remedy catalogue
+// and the approved source JPEGs even in Vercel's traced function filesystem.
+const reportPdfAssets = [
+  "./assets/fonts/NotoSans-Regular.ttf",
+  "./assets/documents/*",
+  "./content/remedies/**/*.md",
+  "./public/media/remedies/**/*",
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -12,6 +21,12 @@ const nextConfig: NextConfig = {
   ] },
   async headers() {
     return [
+      // Versioned public video artwork is safe to cache; never apply this policy
+      // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
+      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*"].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600" }],
+      })),
       {
         source: "/:path*",
         headers: [
@@ -44,8 +59,8 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingIncludes: {
     "/[locale]/client/[selector]/documents/[id]": ["./assets/documents/*"],
-    "/api/client/[selector]/documents/[id]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
-    "/[locale]/prescriptions/[selector]": ["./assets/documents/andrii-signature-left-90.png"],
+    "/api/client/[selector]/documents/[id]/pdf": reportPdfAssets,
+    "/[locale]/prescriptions/[selector]": ["./assets/documents/andrii-signature-left-90.png", "./content/remedies/**/*.md"],
     "/admin/documents/[id]": ["./assets/documents/andrii-signature-left-90.png"],
     "/document-preview/[kind]": ["./assets/documents/andrii-signature-left-90.png"],
     // Tracing keys are route globs, not literal Next.js dynamic-segment names.
@@ -57,9 +72,15 @@ const nextConfig: NextConfig = {
       "./source-books/book-3-maya-tradition/outputs/*.html",
     ],
     "/[locale]/homeopathy/remedies/[slug]": ["./content/remedies/**/*.md"],
-    "/api/prescriptions/[selector]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
-    "/document-preview/[kind]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
-    "/admin/api/documents/[id]/pdf": ["./assets/fonts/NotoSans-Regular.ttf", "./assets/documents/*"],
+    "/api/prescriptions/[selector]/pdf": reportPdfAssets,
+    "/document-preview/[kind]/pdf": reportPdfAssets,
+    "/admin/api/documents/[id]/pdf": reportPdfAssets,
+    "/admin/api/consultations/preview": reportPdfAssets,
+    // The wildcard forms cover Next.js dynamic route globs during tracing.
+    "/api/prescriptions/*/pdf": reportPdfAssets,
+    "/document-preview/*/pdf": reportPdfAssets,
+    "/admin/api/documents/*/pdf": reportPdfAssets,
+    "/api/client/*/documents/*/pdf": reportPdfAssets,
   },
 };
 

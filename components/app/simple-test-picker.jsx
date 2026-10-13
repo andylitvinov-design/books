@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
+import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, GraduationCap, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
+import { TEST_KINDS } from '@/lib/assessments/test-kinds'
 
 const TEXT = {
   en: {
@@ -75,9 +76,20 @@ const TEXT = {
 }
 
 // These keys are mapped to existing test facets and shared with Insights.
+const TEST_KIND_ICONS = { professional: GraduationCap, monitoring: Activity, hobby: Sparkles }
 const TOPIC_ICONS = { stress: Zap, anxiety: Heart, mood: Smile, sleep: Moon,
   body: Sun, relationships: Users, resources: Leaf, attention: Target }
 const TOPICS = HOME_TEST_TOPICS.map((topic) => ({ ...topic, Icon: TOPIC_ICONS[topic.key] }))
+
+function KindBadge({ entry, locale }) {
+  const kind = TEST_KINDS.find((type) => type.key === entry.testKind)
+  if (!kind) return null
+  const Icon = TEST_KIND_ICONS[kind.key]
+  return <span className={styles.testKindBadge} data-test-kind-badge={kind.key}
+    title={kind.description[locale] || kind.description.en}>
+    <Icon size={14} aria-hidden="true" /> {kind.label[locale] || kind.label.en}
+  </span>
+}
 
 function iconFor(entry) {
   const topics = entry.topics || []
@@ -96,7 +108,7 @@ export function SimpleTestPicker({
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
   maxMinutes, onMaxMinutes,
-  professionalOnly, onProfessional,
+  testKinds = [], onToggleTestKind, onClearTestKinds,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
   matchCount, onStart, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
@@ -106,6 +118,7 @@ export function SimpleTestPicker({
   const [showAllProblems, setShowAllProblems] = useState(false)
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
+  const testKindsKey = [...testKinds].sort().join('|')
   const allProblems = problemsForTopics(focus)
   const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
     ...allProblems.filter((item) => !problems.includes(item.key))]
@@ -114,14 +127,14 @@ export function SimpleTestPicker({
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
     setShowAllProblems(false)
-  }, [focusKey, depth, maxMinutes, professionalOnly, problemKey])
+  }, [focusKey, depth, maxMinutes, testKindsKey, problemKey])
   const visibleRecommendations = recommendations.slice(0, visibleCount)
   const remainingCount = Math.max(0, recommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
   const format = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''))
   const selectedKeys = new Set(activeBattery.map((item) => item.key))
   const minutes = activeBattery.reduce((total, item) => total + (item.durationMinutes || 0), 0)
-  const hasExtraFilters = maxMinutes > 0 || professionalOnly || depth !== 'balanced'
+  const hasExtraFilters = maxMinutes > 0 || testKinds.length > 0 || depth !== 'balanced'
 
   return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker>
     <header className={styles.hero}>
@@ -204,11 +217,25 @@ export function SimpleTestPicker({
               <button key={minutes} type="button" aria-pressed={maxMinutes===minutes} onClick={() => onMaxMinutes(minutes)}>{label}</button>
             )}
           </div>
-          <button className={styles.professional} type="button" aria-pressed={professionalOnly} onClick={onProfessional}>{professionalOnly ? '✓ ' : ''}{c.professional}</button>
         </div>
-        <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); if (professionalOnly) onProfessional() }}>{c.clear}</button>
+        <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>
       </div>
     </details>
+
+    <fieldset className={styles.kindFilters} data-test-kind-filter>
+      <legend>{locale === 'ru' ? 'Выберите типы тестов' : locale === 'es' ? 'Elige tipos de pruebas' : 'Choose types of tests'}</legend>
+      <p>{locale === 'ru' ? 'Можно отметить несколько типов одновременно. Остальные фильтры тоже сохранятся.' : locale === 'es' ? 'Puedes seleccionar varios tipos a la vez.' : 'Select one or more types. Other filters still apply.'}</p>
+      <div className={styles.kindChoices}>
+        {TEST_KINDS.map((kind) => {
+          const Icon = TEST_KIND_ICONS[kind.key]
+          return <label className={styles.kindChoice} key={kind.key} data-checked={testKinds.includes(kind.key)}>
+            <input type="checkbox" data-test-kind-checkbox value={kind.key} checked={testKinds.includes(kind.key)} onChange={() => onToggleTestKind?.(kind.key)} />
+            <Icon size={19} aria-hidden="true" />
+            <span>{kind.label[locale] || kind.label.en}</span>
+          </label>
+        })}
+      </div>
+    </fieldset>
 
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations">
       <div className={styles.sectionHeader}>
@@ -231,6 +258,7 @@ export function SimpleTestPicker({
             <span className={styles.testArt} aria-hidden="true"><Icon size={24} strokeWidth={1.7}/></span>
             <span className={styles.testInfo}>
               <strong>{entry.title}</strong>
+              <KindBadge entry={entry} locale={locale} />
               <small>{entry.description || entry.category}</small>
               {entry.methodology && <small className={styles.methodology}>{entry.methodology}</small>}
             </span>

@@ -15,7 +15,9 @@ const evidence = '/tmp/site-video-evidence';
 const results = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
-const nav = ['/es', '/es/library', '/es/services', '/es/academy', '/es/about', '/es/client'];
+// The top-level cabinet entry now goes to the supported English app; the
+// separate /es/client landing remains a valid Spanish language counterpart.
+const nav = ['/es', '/es/library', '/es/services', '/es/academy', '/es/about', '/en/app'];
 mkdirSync(evidence, { recursive: true });
 let app, proxy, stage = 'start';
 try {

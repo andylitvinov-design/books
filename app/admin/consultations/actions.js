@@ -10,8 +10,10 @@ import { createConsultation, updateConsultation } from '@/lib/consultations/serv
 function input(formData) {
   const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'analysis', 'additionalNotes', 'followUp']
   const data = Object.fromEntries(fields.map((key) => [key, formData.get(key) ?? undefined]))
+  if (!['ru', 'en'].includes(data.languagePreference)) throw new Error('Choose report language')
   data.includeRecommendation = formData.get('includeRecommendation') === 'on'
   data.includeInvoice = formData.get('includeInvoice') === 'on'
+  data.includeDistanceHomeopathy = formData.get('includeDistanceHomeopathy') === 'on'
   data.consultationDate = formData.get('dateIssued')
   data.items = JSON.parse(String(formData.get('itemsJson') ?? '[]'))
   return data
@@ -23,6 +25,7 @@ function safeConsultationError(error) {
   if (/amount/i.test(message)) return 'Enter an invoice amount greater than zero (up to two decimal places).'
   if (/service/i.test(message)) return 'Enter the service name for the invoice.'
   if (/date/i.test(message)) return 'Choose a valid consultation date.'
+  if (/language/i.test(message)) return 'Choose the report language: English or Russian.'
   if (/client|patient name/i.test(message)) return 'Choose an existing client or complete the new client details.'
   if (/remedy|item|granules|times per day|potency/i.test(message)) return 'Choose a valid remedy and check the prescription fields.'
   return 'Documents could not be saved. Please try again. If the error persists, contact the site administrator.'

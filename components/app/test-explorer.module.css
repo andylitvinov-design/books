@@ -657,3 +657,19 @@
 .explorer .rowBody .sourceLink{display:inline-block;color:#356f65;font-size:.75rem;text-decoration:underline;text-underline-offset:2px;margin-left:8px;font-weight:650}
 .explorer .rowBody .sourceLink:focus-visible{outline:2px solid #356f65;outline-offset:2px}
 @media(max-width:760px){.explorer .rowBody>.methodology{font-size:.73rem;line-height:1.43}}
+
+
+/* Three auditable assessment kinds, independent of presentation-style facets. */
+.kindFilters{margin:12px 0 4px;min-width:0;padding:12px;border:1px solid #dedacf;border-radius:14px;background:#faf8f4}
+.kindFilters legend{padding:0 5px;font-weight:750;font-size:.83rem;color:#47372e}
+.kindChoices{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.kindChoice{min-height:43px;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid #d3d7d0;border-radius:12px;background:#fffefa;cursor:pointer;color:#514239;font-size:.85rem;font-weight:650}
+.kindChoice[data-checked=true]{border-color:#8a4b46;background:#f7e9e5;color:#793e40}
+.kindChoice input{width:17px;height:17px;margin:0;accent-color:#8a3945;cursor:pointer}
+.kindChoice svg{flex:0 0 auto;opacity:.92}
+.kindChoice:focus-within{outline:2px solid #7f3943;outline-offset:2px}
+.testKindBadge{display:inline-flex;align-items:center;gap:5px;width:max-content;max-width:100%;font-size:.72rem;line-height:1.25;padding:4px 8px;border-radius:10px;background:#f3eee8;border:1px solid #e5dcd2;color:#684738;font-weight:650}
+.testKindBadge[data-test-kind-badge=monitoring]{background:#e9f3ef;color:#2e695b;border-color:#d4e7df}
+.testKindBadge[data-test-kind-badge=hobby]{background:#f4eef6;color:#766085;border-color:#e7daeb}
+.testKindBadge svg{flex:0 0 auto}
+@media(max-width:590px){.kindChoices{display:grid;grid-template-columns:1fr;gap:6px}.kindChoice{width:100%;min-width:0}}

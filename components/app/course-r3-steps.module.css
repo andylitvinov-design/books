@@ -315,3 +315,10 @@
 .briefScales li[data-course-screening-scale="true"]{grid-template-columns:minmax(0,1fr) auto}
 .briefScales li[data-course-screening-scale="true"] > [data-course-screening-count]{grid-column:1 / -1;grid-row:2}
 .briefScales li[data-course-screening-scale="true"] > strong{color:#574e45}
+/* Visible informed choice of the main skill before launching the V3 cycle. */
+.primaryScaleChoice{display:grid;gap:9px;margin:16px 0;padding:15px 17px;border:1px solid #dfd2c2;border-radius:15px;background:#fffbf4}
+.primaryScaleChoice label{font-size:15px;font-weight:800;color:#743f31}
+.primaryScaleChoice select{width:100%;min-height:45px;max-width:100%;padding:10px 12px;border:1px solid #cdbda7;border-radius:10px;background:#fff;color:#3e382f;font-size:15px}
+.primaryScaleChoice select:focus-visible{outline:3px solid #e3b3a3;outline-offset:2px}
+.primaryScaleChoice p{margin:0!important;font-size:13px;line-height:1.6;color:#6d6359}
+@media(max-width:530px){.primaryScaleChoice{padding:13px}}

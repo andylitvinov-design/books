@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 import { createConsultation, updateConsultation } from '../lib/consultations/service.js'
+import { OWNER_REPORT_TEXT_TEMPLATE } from '../lib/consultations/owner-report-template.js'
 import { documentActionUrls } from '../lib/consultations/result-actions.js'
 import { recommendationCopy } from '../lib/documents/recommendation.js'
 import { buildPrescriptionPdf } from '../lib/prescriptions/pdf.js'
@@ -68,7 +69,7 @@ test('PDF keeps custom analysis, notes and general instructions separated, inclu
     }
     assert.doesNotMatch(source, /PRIVATE-SYNTHETIC-000/)
     assert.match(source, /HOLISTIC HOUSE/)
-    assert.match(source, /0\.926 0\.970 0\.969 rg/)
+    assert.match(source, /0\.984 0\.961 0\.941 rg/)
     assert.equal(getClientPrescription(record, locale).internalNotes, undefined)
   }
   assert.equal(recommendationCopy('ru').analysis, 'АНАЛИЗ СОСТОЯНИЯ')
@@ -130,6 +131,66 @@ test('bilingual practitioner editors expose both separate notes textareas', asyn
   }
   assert.match(studio, /Анализ/)
   assert.match(studio, /Примечания/)
-  assert.match(studio, /useState\(consultation\?\.analysis \?\? ''\)/)
-  assert.match(studio, /useState\(consultation\?\.additionalNotes \?\? ''\)/)
+  assert.match(studio, /useState\(\(\) => consultation\?\.analysis \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.analysis\)/)
+  assert.match(studio, /useState\(\(\) => consultation\?\.additionalNotes \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes\)/)
+})
+
+test('owner-authored consultation example is an editable draft only for new records', async () => {
+  assert.match(OWNER_REPORT_TEXT_TEMPLATE.analysis, /3\/10/)
+  assert.match(OWNER_REPORT_TEXT_TEMPLATE.analysis, /7\.3\/10/)
+  assert.match(OWNER_REPORT_TEXT_TEMPLATE.additionalNotes, /Схема:/)
+  assert.match(OWNER_REPORT_TEXT_TEMPLATE.additionalNotes, /личный дневник наблюдений/)
+  assert.doesNotMatch(JSON.stringify(OWNER_REPORT_TEXT_TEMPLATE), /Litvinov Vadim/i)
+
+  const form = await readFile('components/consultation-form.jsx', 'utf8')
+  assert.match(form, /if \(!consultation\) \{/)
+  assert.match(form, /getOwnerReportTextTemplate\(initialReportLocale\)\.analysis/)
+  assert.match(form, /getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes/)
+  assert.match(form, /consultation-template-notice/)
+  assert.match(form, /Проверьте и замените замеры/)
+  assert.match(form, /consultation-template-review/)
+  assert.match(form, /checked=\{templateReviewed\}/)
+  assert.match(form, /required/)
+  // Existing consultations still initialize from the persisted patient record.
+  assert.match(form, /useState\(\(\) => consultation\?\.analysis \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.analysis\)/)
+  assert.match(form, /useState\(\(\) => consultation\?\.additionalNotes \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes\)/)
+})
+
+test('the generated private PDF has a distinct clickable remedy description URL', async () => {
+  const rendering = await readFile('lib/prescriptions/pdf.js', 'utf8')
+  assert.match(rendering, /Подробнее о препарате/)
+  assert.match(rendering, /Read remedy description/)
+  assert.match(rendering, /linkWidth = measurePdfText\(linkLabel, linkSize\)/)
+  assert.match(rendering, /page\.links\.push\(\{ url, x: linkX, y, width: linkWidth \}\)/)
+  for (const locale of ['en', 'ru']) {
+    const record = createPrescription({
+      patientName: 'Synthetic Client',
+      practitionerName: 'Test Practitioner',
+      status: 'active',
+      items: [{ remedySlug: 'arsenicum-album' }],
+    })
+    const doc = getClientPrescription(record, locale)
+    const source = buildPrescriptionPdf(doc, locale, 'https://example.test').toString('latin1')
+    const expectedUrl = `https://example.test/${locale}/homeopathy/remedies/arsenicum-album`
+    assert.ok(source.includes('/URI (' + expectedUrl + ')'))
+    // A link on the name and a separately indicated 'Read remedy description' action.
+    assert.ok((source.match(/\/Subtype \/Link/g) || []).length >= 2)
+  }
+})
+
+test('documents ready keeps preview, open, download, share, print and edit controls visible', async () => {
+  const [actions, styles] = await Promise.all([
+    readFile('components/consultation-document-actions.jsx', 'utf8'),
+    readFile('components/consultation-report.css', 'utf8'),
+  ])
+  assert.match(actions, /href=\{urls\.previewPdf\}/)
+  assert.match(actions, /href=\{urls\.open\}/)
+  assert.match(actions, /href=\{urls\.pdf\}/)
+  assert.match(actions, /consultation-share-action/)
+  assert.match(actions, /href=\{urls\.print\}/)
+  assert.match(actions, /href=\{editHref\}/)
+  assert.match(actions, /revokeLabel : reactivateLabel/)
+  assert.doesNotMatch(actions, /<details/)
+  assert.match(styles, /\.consultation-result \.consultation-document-actions/)
+  assert.match(styles, /\.consultation-document-secondary-actions/)
 })

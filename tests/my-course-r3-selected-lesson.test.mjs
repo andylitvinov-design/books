@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {coursePracticeFocus} from '../lib/inner-growth/course-strategy.js'
-import {lessonFor} from '../lib/inner-growth/lesson-library.js'
+import {lessonFor,COURSE_CONTENT_V3} from '../lib/inner-growth/lesson-library.js'
 import {GROWTH_GOALS} from '../lib/inner-growth/course-model.js'
 
 const scales=['hh-weekly-pulse::weekly.tension','hh-weekly-pulse::weekly.clarity']
@@ -34,9 +34,23 @@ test('R1/R2 courses without measured choices retain all original14-day lesson id
 })
 test('repository read and session write call the same focus selector, never validate against primary alone',()=>{
  const source=readFileSync(new URL('../lib/app/growth-daily.js',import.meta.url),'utf8')
- assert.match(source,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,dayInfo\.day,locale\)/)
- assert.match(source,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,today\.day,locale\)/)
- assert.match(source,/const lesson=lessonFor\(focus\.goal,today\.day,'en'\)/)
+ assert.match(source,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,dayInfo\.day,locale,contentVersion\)/)
+ assert.match(source,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,today\.day,locale,version\)/)
+ assert.match(source,/const lesson=lessonFor\(focus\.goal,today\.day,'en','standard',version\)/)
  assert.doesNotMatch(source,/const lesson=lessonFor\(cycle\.primary_domain,today\.day/)
  assert.match(source,/input\.lessonId!==lesson\.id/)
+})
+
+test('V3 uses a stable primary focus on scheduled days but preserves the older R3 rotation',()=>{
+ for(const locale of ['en','ru']){
+  const old=coursePracticeFocus(scales,'calm_regulation',2,locale)
+  const updated=coursePracticeFocus(scales,'calm_regulation',2,locale,COURSE_CONTENT_V3)
+  assert.equal(old.goal,'attention_clarity')
+  assert.equal(updated.goal,'calm_regulation')
+  assert.equal(updated.role,'primary')
+  const shown=lessonFor(updated.goal,2,locale,'quick',COURSE_CONTENT_V3)
+  const accepted=lessonFor(updated.goal,2,'en','standard',COURSE_CONTENT_V3)
+  assert.equal(shown.id,accepted.id)
+  assert.notEqual(shown.id,lessonFor(old.goal,2,locale).id)
+ }
 })

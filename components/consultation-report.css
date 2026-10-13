@@ -267,3 +267,883 @@
   .consultation-preview-heading strong { font-size: 19px; }
   .consultation-preview-footer { flex-wrap: wrap; }
 }
+
+/* Documents ready — editorial Holistic House layout with every action visible. */
+.consultation-result {
+  max-width: 1020px;
+  padding-bottom: calc(52px + env(safe-area-inset-bottom));
+}
+.consultation-result .consultation-result-topbar--dense {
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 15px 24px;
+  padding: 22px 0 20px;
+  border-bottom: 1px solid #ddcbb9;
+}
+.consultation-result .consultation-result-breadcrumb {
+  color: #86654f;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.consultation-result .consultation-result-topbar--dense h1 {
+  margin: 6px 0 0;
+  color: #382b25;
+  font-size: clamp(34px, 5vw, 52px);
+  letter-spacing: -.035em;
+  line-height: 1.04;
+}
+.consultation-result .consultation-result-top-actions {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.consultation-result .consultation-result-top-actions .consultation-result-new-link,
+.consultation-result .consultation-result-top-actions .consultation-result-logout {
+  max-width: none;
+  min-height: 43px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+}
+.consultation-result .consultation-result-top-actions .consultation-result-new-link {
+  border: 1px solid #c5a892;
+  background: #fffaf4;
+  color: #70452e;
+}
+.consultation-result .consultation-result-summary--dense {
+  gap: 18px;
+  margin: 17px 0 0;
+  padding: 18px 21px;
+  border: 1px solid #e0d0be;
+  border-radius: 18px;
+  background: #fffcf7;
+}
+.consultation-result .consultation-result-client--inline {
+  align-items: baseline;
+  gap: 8px;
+}
+.consultation-result .consultation-result-client--inline > span {
+  color: #895940;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+.consultation-result .consultation-result-client--inline > strong {
+  color: #3c302a;
+  font-size: clamp(22px, 2.9vw, 29px);
+}
+.consultation-result .consultation-result-client--inline > p {
+  color: #716255;
+  font-size: 13px;
+}
+.consultation-result .consultation-report-review-hint {
+  margin: 15px 0 17px;
+  padding: 15px 19px;
+  border: 1px solid #b8d8d9;
+  border-left: 5px solid #267d87;
+  border-radius: 15px;
+  background: #eff9f8;
+}
+.consultation-result .consultation-report-review-hint strong {
+  color: #1a5360;
+  font-size: 17px;
+}
+.consultation-result .consultation-report-review-hint p {
+  color: #4d7278;
+  font-size: 14px;
+}
+.consultation-result .consultation-result-documents {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.consultation-result .consultation-document-card--dense {
+  padding: clamp(18px, 3vw, 25px);
+  border: 1px solid #dbc7b5;
+  border-radius: 19px;
+  background: #fffdf9;
+  box-shadow: 0 9px 22px rgba(66, 47, 36, .05);
+}
+.consultation-result .consultation-document-heading--inline {
+  align-items: baseline;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #e8dcd1;
+}
+.consultation-result .consultation-document-heading--inline h2 {
+  color: #8c5335;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .10em;
+  line-height: 1.45;
+}
+.consultation-result .consultation-document-heading--inline .consultation-document-meta {
+  color: #40312a;
+  font-size: 20px;
+  text-align: left;
+}
+.consultation-result .consultation-document-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.consultation-result .consultation-document-actions > a,
+.consultation-result .consultation-document-actions > button,
+.consultation-result .consultation-document-secondary-actions > a,
+.consultation-result .consultation-document-secondary-actions > form > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 49px;
+  padding: 10px 12px;
+  border: 1px solid #cdb6a2;
+  border-radius: 12px;
+  background: #fff;
+  color: #594637;
+  font: 700 13px/1.35 system-ui, sans-serif;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.consultation-result .consultation-document-actions > a.consultation-action-primary {
+  border-color: #65364e;
+  background: #65364e;
+  color: #fff;
+}
+.consultation-result .consultation-document-actions > a.consultation-action-primary:hover {
+  background: #4b263a;
+}
+.consultation-result .consultation-document-actions > .consultation-share-action {
+  border-color: #8ebfbe;
+  background: #eaf6f5;
+  color: #1b6470;
+}
+.consultation-result .consultation-document-actions > button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.consultation-result .consultation-document-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 11px;
+}
+.consultation-result .consultation-document-secondary-actions > form {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+.consultation-result .consultation-document-secondary-actions > form > p {
+  margin: 0;
+  color: #725f51;
+  font-size: 12px;
+}
+.consultation-result .consultation-document-secondary-actions > form > button.consultation-access-revoke {
+  border-color: #dfc7c2;
+  color: #8b4340;
+  background: #fffaf9;
+}
+.consultation-result .consultation-document-secondary-actions > form > button.consultation-access-restore {
+  border-color: #a2c9b4;
+  background: #f0faf4;
+  color: #27614c;
+}
+.consultation-result .consultation-copy-feedback {
+  margin-top: 10px;
+  color: #4e7076;
+  font-size: 12px;
+}
+.consultation-result .consultation-cabinet-card--dense {
+  margin-top: 15px;
+  padding: 21px;
+  border: 1px solid #cbdedb;
+  border-radius: 18px;
+  background: #f4faf7;
+}
+.consultation-result :is(a, button):focus-visible {
+  outline: 3px solid #c17983;
+  outline-offset: 3px;
+}
+.consultation-studio .consultation-template-notice {
+  margin: 15px 0 0;
+  padding: 12px 15px;
+  border: 1px solid #e1cda9;
+  border-radius: 10px;
+  background: #fffbef;
+  color: #755338;
+  font-size: 13px;
+  line-height: 1.5;
+}
+/* The web document also exposes remedy descriptions without relying on color. */
+.canonical-document .canonical-remedy > a {
+  display: inline-flex;
+  margin: 8px 0;
+  color: #135f79;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .consultation-result .consultation-result-topbar--dense { align-items: flex-start; padding-top: 14px; }
+  .consultation-result .consultation-result-top-actions { flex-direction: row; }
+  .consultation-result .consultation-result-summary--dense { padding: 15px; flex-wrap: wrap; }
+  .consultation-result .consultation-document-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .consultation-result .consultation-document-card--dense { padding: 17px; }
+}
+@media (max-width: 390px) {
+  .consultation-result .consultation-result-topbar--dense h1 { font-size: 36px; }
+  .consultation-result .consultation-result-top-actions { width: 100%; }
+  .consultation-result .consultation-result-top-actions .consultation-result-new-link,
+  .consultation-result .consultation-result-top-actions form { flex: 1 1 130px; }
+  .consultation-result .consultation-document-actions > a,
+  .consultation-result .consultation-document-actions > button,
+  .consultation-result .consultation-document-secondary-actions > a,
+  .consultation-result .consultation-document-secondary-actions > form > button {
+    min-height: 49px;
+    padding: 10px 7px;
+    font-size: 12px;
+  }
+  .consultation-result .consultation-document-secondary-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.consultation-studio .consultation-template-review {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 13px;
+  padding: 12px 15px;
+  border: 1px solid #d8c8ba;
+  border-radius: 12px;
+  background: #fffdfa;
+  color: #4b483e;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.consultation-studio .consultation-template-review input[type="checkbox"] {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: #65364e;
+}
+.consultation-studio .consultation-template-review input:focus-visible {
+  outline: 3px solid #a87591;
+  outline-offset: 3px;
+}
+
+/* Original remedy descriptions and optional guide in client HTML/print reports. */
+.canonical-remedy-profiles {
+  margin-top: 48px;
+  padding-top: 28px;
+  border-top: 2px solid #9b6976;
+}
+.canonical-remedy-profiles > h2 { color: #6d3042; margin-bottom: 9px; }
+.canonical-remedy-profiles > p { color: #5c5655; margin-bottom: 22px; }
+.canonical-remedy-profile { border-top: 1px solid #e5d8d8; padding: 26px 0 32px; }
+.canonical-remedy-profile > h3 { color: #643147; font-size: 22px; margin: 0 0 14px; }
+.canonical-remedy-profile-photo { margin: 16px 0 21px; }
+.canonical-remedy-profile-photo img { display: block; width: auto; max-width: 100%; max-height: 340px; object-fit: contain; border-radius: 14px; }
+.canonical-remedy-profile .remedy-content-pair { display: block; }
+.canonical-remedy-profile .remedy-content-section { margin: 16px 0; }
+.canonical-remedy-profile-link a { text-decoration: underline; text-underline-offset: 3px; }
+@media print {
+  .canonical-remedy-profiles { break-before: page; }
+  .canonical-remedy-profile { break-inside: auto; }
+  .canonical-remedy-profile h3 { break-after: avoid; }
+  .canonical-remedy-profile-photo { break-inside: avoid; }
+}
+
+.canonical-remedy-photo-unavailable { font-size: .88rem; color: #806d6f; font-style: italic; margin: 8px 0 18px; }
+
+/* Holistic House client report — editorial print-safe redesign */
+/* Keep colors clear and contrast high on screen, in browser print, and in PDF preview. */
+.prescription-shell.canonical-shell {
+  max-width: 940px;
+}
+.canonical-shell .canonical-document {
+  max-width: 830px;
+  margin-inline: auto;
+  padding: clamp(27px, 6vw, 60px);
+  border: 1px solid #e6d8ca;
+  border-top: 6px solid #64354b;
+  border-radius: 4px;
+  background: #fffdfa;
+  box-shadow: 0 18px 52px rgba(52, 33, 35, .10);
+  color: #342b2a;
+  font: 14px/1.65 Arial, Helvetica, sans-serif;
+  letter-spacing: 0;
+}
+.canonical-document .canonical-letterhead {
+  gap: 22px;
+  margin: 0 0 30px;
+  padding: 0 0 24px;
+  border-bottom: 1px solid #dfd0c2;
+}
+.canonical-document .canonical-letterhead img {
+  width: 92px;
+  height: 92px;
+  flex: 0 0 92px;
+}
+.canonical-document .canonical-practitioner {
+  margin: 0 0 5px;
+  color: #4d283b;
+  font: 26px/1.15 Georgia, 'Times New Roman', serif;
+}
+.canonical-document .canonical-credentials {
+  color: #665955;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.canonical-document .canonical-contact {
+  margin-top: 9px;
+  color: #685c54;
+  font-size: 11px;
+}
+.canonical-document .canonical-report-eyebrow {
+  margin: 0 0 9px;
+  color: #854e63;
+  font: 700 10px/1.5 Arial, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.canonical-document .canonical-report-heading h1 {
+  margin: 0 0 22px;
+  color: #37252c;
+  font: 400 clamp(26px, 4vw, 37px)/1.18 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.025em;
+}
+.canonical-document .canonical-client {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 15px 23px;
+  padding: 19px 22px;
+  border: 1px solid #e8d8c8;
+  border-left: 4px solid #64354b;
+  border-radius: 12px;
+  background: #f9f4ee;
+}
+.canonical-document .canonical-client > div { min-width: 0; }
+.canonical-document .canonical-client dt {
+  margin-bottom: 5px;
+  color: #725d58;
+  font: 700 10px/1.4 Arial, sans-serif;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.canonical-document .canonical-client dd {
+  margin: 0;
+  color: #3a292b;
+  font: 700 15px/1.45 Arial, sans-serif;
+  overflow-wrap: anywhere;
+}
+.canonical-document .canonical-intro {
+  margin: 20px 0 30px;
+  max-width: 66ch;
+  color: #514744;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.canonical-document .canonical-remedy-group {
+  margin-top: 28px;
+}
+.canonical-document .canonical-remedy-group-title {
+  margin: 0 0 14px;
+  padding: 0 0 10px;
+  border-bottom: 2px solid #dcc5c7;
+  color: #67364b;
+  font: 700 12px/1.4 Arial, sans-serif;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  break-after: avoid;
+}
+.canonical-document .canonical-remedy {
+  margin: 0 0 14px;
+  padding: 20px 22px;
+  border: 1px solid #e7dad0;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(66, 45, 38, .035);
+  break-inside: auto;
+}
+.canonical-document .canonical-remedy-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 13px;
+  break-after: avoid;
+}
+.canonical-document .canonical-remedy-number {
+  flex: 0 0 38px;
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #64354b;
+  color: #fff;
+  font: 700 13px/1 Arial, sans-serif;
+  letter-spacing: .03em;
+}
+.canonical-document .canonical-remedy-title { min-width: 0; flex: 1 1 auto; }
+.canonical-document .canonical-remedy-title h3 {
+  margin: 0;
+  color: #37252c;
+  font: 400 23px/1.25 Georgia, 'Times New Roman', serif;
+  overflow-wrap: anywhere;
+}
+.canonical-document .canonical-remedy-title h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+.canonical-document .canonical-remedy-title h3 a:hover { color: #763b54; }
+.canonical-document .canonical-remedy-schedule {
+  display: inline-flex;
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  max-width: 100%;
+  border-radius: 7px;
+  background: #f7f0ed;
+  color: #704758;
+  font: 700 12px/1.45 Arial, sans-serif;
+  text-align: left;
+  white-space: normal;
+}
+.canonical-document .canonical-remedy > a.canonical-remedy-profile-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 16px 0 1px 51px;
+  padding: 9px 13px;
+  max-width: calc(100% - 51px);
+  border: 1px solid #dbc2c9;
+  border-radius: 9px;
+  background: #faf3f5;
+  color: #673047;
+  font: 700 12px/1.4 Arial, sans-serif;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.canonical-document .canonical-remedy > a.canonical-remedy-profile-action:hover {
+  background: #f3e5ea;
+  border-color: #b68c9b;
+}
+.canonical-document .canonical-remedy > a.canonical-remedy-profile-action:focus-visible,
+.canonical-document a:focus-visible {
+  outline: 3px solid #c58b9d;
+  outline-offset: 3px;
+}
+.canonical-document .canonical-remedy-fields {
+  display: grid;
+  gap: 0;
+  margin: 15px 0 0;
+}
+.canonical-document .canonical-remedy-fields > div {
+  display: grid;
+  grid-template-columns: minmax(92px, 122px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #eee7e1;
+  break-inside: avoid;
+}
+.canonical-document .canonical-remedy-fields dt,
+.canonical-document .canonical-remedy-fields dd { display: block; }
+.canonical-document .canonical-remedy-fields dt {
+  color: #76595a;
+  font: 700 11px/1.5 Arial, sans-serif;
+}
+.canonical-document .canonical-remedy-fields dd {
+  margin: 0;
+  color: #342c2b;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document .canonical-report-analysis,
+.canonical-shell .canonical-document .canonical-report-notes,
+.canonical-document .canonical-general-instructions {
+  margin: 22px 0;
+  padding: 21px 23px;
+  border: 1px solid #e0c9c9;
+  border-left: 4px solid #64354b;
+  border-radius: 11px;
+  background: #fbf6f4;
+  box-shadow: none;
+  break-inside: auto;
+}
+.canonical-shell .canonical-document .canonical-report-notes {
+  border-color: #e1d6c5;
+  border-left-color: #9b7352;
+  background: #fcf9f3;
+}
+.canonical-document .canonical-general-instructions {
+  border-color: #e6dad1;
+  border-left-color: #ae9078;
+  background: #fffdf9;
+}
+.canonical-shell .canonical-document .canonical-report-analysis h2,
+.canonical-shell .canonical-document .canonical-report-notes h2,
+.canonical-document .canonical-general-instructions h2 {
+  margin: 0 0 11px;
+  color: #63364a;
+  font: 700 13px/1.45 Arial, sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.canonical-shell .canonical-document .canonical-report-analysis p,
+.canonical-shell .canonical-document .canonical-report-notes p,
+.canonical-document .canonical-general-instructions p {
+  margin: 0;
+  color: #3b302e;
+  font-size: 13px;
+  line-height: 1.78;
+  white-space: pre-wrap;
+}
+.canonical-document .canonical-guidance {
+  margin: 24px 0;
+  padding: 21px 23px;
+  border: 1px solid #e2d2c4;
+  border-radius: 11px;
+  background: #f9f5ee;
+  break-inside: auto;
+}
+.canonical-document .canonical-guidance h2 {
+  margin: 0 0 12px;
+  color: #63364a;
+  font: 700 14px/1.5 Arial, sans-serif;
+}
+.canonical-document .canonical-guidance h3 { color: #72585a; }
+.canonical-document .canonical-guidance ul { margin-left: 18px; }
+.canonical-document .canonical-guidance li { margin-bottom: 7px; }
+.canonical-document .canonical-guidance-contact { color: #665957; }
+.canonical-document .canonical-follow-up {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px 18px;
+  margin-top: 20px;
+  padding: 15px 18px;
+  border-top: 1px solid #e1d3c8;
+  border-bottom: 1px solid #e1d3c8;
+  color: #5c474b;
+}
+.canonical-document .canonical-follow-up span {
+  font: 700 11px/1.5 Arial, sans-serif;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.canonical-document .canonical-follow-up strong {
+  color: #3a292c;
+  font: 600 14px/1.5 Arial, sans-serif;
+}
+.canonical-document .canonical-signature { margin-top: 30px; }
+.canonical-document .canonical-signature strong { color: #4b2939; }
+.canonical-document .canonical-disclaimer {
+  margin-top: 30px;
+  padding-top: 14px;
+  border-top: 1px solid #eee3dc;
+  color: #756d68;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.canonical-document .canonical-remedy-profiles {
+  margin-top: 48px;
+  padding-top: 27px;
+  border-top: 3px solid #64354b;
+}
+.canonical-document .canonical-remedy-profiles > h2 {
+  margin: 0 0 8px;
+  color: #63364a;
+  font: 400 27px/1.25 Georgia, serif;
+}
+.canonical-document .canonical-remedy-profiles > p { color: #625553; }
+.canonical-document .canonical-remedy-profile {
+  padding: 23px 0 28px;
+  border-top: 1px solid #e5d7ce;
+}
+.canonical-document .canonical-remedy-profile > h3 {
+  color: #60364a;
+  font: 400 22px/1.3 Georgia, serif;
+}
+.canonical-document .canonical-remedy-profile-photo img {
+  max-height: 310px;
+  border: 1px solid #ecdfd4;
+  border-radius: 10px;
+  background: #fff;
+}
+.canonical-document .canonical-remedy-profile-link a {
+  color: #66374d;
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document { padding: 24px 18px 30px; }
+  .canonical-document .canonical-letterhead { gap: 13px; }
+  .canonical-document .canonical-letterhead img { width: 62px; height: 62px; flex-basis: 62px; }
+  .canonical-document .canonical-practitioner { font-size: 20px; }
+  .canonical-document .canonical-contact { font-size: 10px; }
+  .canonical-document .canonical-report-heading h1 { font-size: 26px; }
+  .canonical-document .canonical-client { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; }
+  .canonical-document .canonical-client > div + div { padding-top: 12px; border-top: 1px solid #eadbd1; }
+  .canonical-document .canonical-remedy { padding: 16px; }
+  .canonical-document .canonical-remedy-title h3 { font-size: 20px; }
+  .canonical-document .canonical-remedy-number { flex-basis: 32px; width: 32px; height: 32px; }
+  .canonical-document .canonical-remedy > a.canonical-remedy-profile-action { margin-left: 0; max-width: 100%; }
+  .canonical-document .canonical-remedy-fields > div { grid-template-columns: 1fr; gap: 3px; }
+  .canonical-shell .canonical-document .canonical-report-analysis,
+  .canonical-shell .canonical-document .canonical-report-notes,
+  .canonical-document .canonical-general-instructions,
+  .canonical-document .canonical-guidance { padding: 17px; }
+}
+@media print {
+  @page { size: A4; margin: 13mm 12mm; }
+  .canonical-shell .canonical-document {
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0 !important;
+    border: 0;
+    border-top: 0;
+    border-radius: 0;
+    background: #fff;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .canonical-document .canonical-letterhead { break-after: avoid; }
+  .canonical-document .canonical-report-heading,
+  .canonical-document .canonical-remedy-heading,
+  .canonical-document .canonical-remedy-group-title { break-after: avoid; }
+  .canonical-document .canonical-remedy { box-shadow: none; border-radius: 6px; }
+  .canonical-document .canonical-remedy-fields > div { break-inside: avoid; }
+  .canonical-shell .canonical-document .canonical-report-analysis,
+  .canonical-shell .canonical-document .canonical-report-notes,
+  .canonical-document .canonical-guidance { break-inside: auto; }
+  .canonical-document .canonical-remedy-profiles { break-before: page; }
+  .canonical-document .canonical-remedy-profile-photo { break-inside: avoid; }
+  .canonical-document a { color: #603248; }
+}
+
+
+/* Compact document handoff controls: preserve every action and full labels. */
+.consultation-result .consultation-report-review-hint {
+  margin: 11px 0 12px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: #f1f8f7;
+}
+.consultation-result .consultation-report-review-hint strong { font-size: 15px; }
+.consultation-result .consultation-report-review-hint p { margin: 4px 0 0; font-size: 13px; line-height: 1.38; }
+.consultation-result .consultation-document-card--dense {
+  padding: clamp(15px, 2.5vw, 21px);
+  border-color: #e5d6cc;
+  border-radius: 15px;
+  box-shadow: 0 4px 16px rgb(52 33 35 / 4%);
+}
+.consultation-result .consultation-document-heading--inline { padding-bottom: 10px; gap: 6px 12px; }
+.consultation-result .consultation-document-actions { gap: 8px; margin-top: 11px; }
+.consultation-result .consultation-document-secondary-actions { gap: 8px; margin-top: 8px; }
+.consultation-result .consultation-document-actions > a,
+.consultation-result .consultation-document-actions > button,
+.consultation-result .consultation-document-secondary-actions > a,
+.consultation-result .consultation-document-secondary-actions > form > button {
+  min-height: 44px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.28;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: normal;
+  hyphens: none;
+}
+.consultation-result .consultation-cabinet-card--dense { padding: 15px; border-radius: 14px; margin-top: 11px; }
+@media (max-width: 700px) {
+  .consultation-result .consultation-result-summary--dense { gap: 9px; margin-top: 12px; }
+  .consultation-result .consultation-document-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .consultation-result .consultation-document-secondary-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .consultation-result .consultation-document-secondary-actions > form:last-child { grid-column: 1 / -1; }
+  .consultation-result .consultation-document-actions > a,
+  .consultation-result .consultation-document-actions > button,
+  .consultation-result .consultation-document-secondary-actions > a,
+  .consultation-result .consultation-document-secondary-actions > form > button { min-height: 44px; padding: 9px 8px; font-size: 13px; }
+}
+/* Client reading surface: larger body type, less leading, cleaner editorial rhythm. */
+.canonical-shell .canonical-document {
+  padding: clamp(20px, 3.6vw, 42px);
+  background: #fff;
+  color: #302b2a;
+  font: 16px/1.44 Arial, Helvetica, sans-serif;
+}
+.canonical-document .canonical-letterhead { margin-bottom: 20px; padding-bottom: 16px; gap: 15px; }
+.canonical-document .canonical-practitioner { font-size: 25px; }
+.canonical-document .canonical-report-heading h1 { margin-bottom: 16px; }
+.canonical-document .canonical-client { gap: 10px 18px; padding: 14px 16px; }
+.canonical-document .canonical-client dd { font-size: 16px; line-height: 1.35; }
+.canonical-document .canonical-intro { margin: 16px 0 18px; font-size: 15px; line-height: 1.43; }
+.canonical-document .canonical-remedy-group { margin-top: 18px; }
+.canonical-document .canonical-remedy { margin-bottom: 11px; padding: 16px 18px; }
+.canonical-document .canonical-remedy-fields { margin-top: 10px; }
+.canonical-document .canonical-remedy-fields > div { gap: 9px; padding: 7px 0; }
+.canonical-document .canonical-remedy-fields dt { font-size: 12px; line-height: 1.3; }
+.canonical-document .canonical-remedy-fields dd { font-size: 15px; line-height: 1.43; }
+.canonical-shell .canonical-document .canonical-report-analysis,
+.canonical-shell .canonical-document .canonical-report-notes,
+.canonical-document .canonical-general-instructions { margin: 16px 0; padding: 16px 18px; }
+.canonical-shell .canonical-document .canonical-report-analysis p,
+.canonical-shell .canonical-document .canonical-report-notes p,
+.canonical-document .canonical-general-instructions p { font-size: 16px; line-height: 1.43; }
+.canonical-document .canonical-guidance { margin: 16px 0; padding: 17px 19px; }
+.canonical-document .canonical-guidance :is(p,li) { font-size: 15px; line-height: 1.45; }
+.canonical-document .canonical-guidance li { margin-bottom: 4px; }
+.canonical-document .canonical-remedy-profiles { margin-top: 28px; padding-top: 18px; }
+.canonical-document .canonical-remedy-profile { padding: 17px 0 20px; }
+.canonical-document .canonical-remedy-profile .remedy-content-section { margin: 10px 0; font-size: 16px; line-height: 1.44; }
+.canonical-document .canonical-remedy-profile :is(p,li) { font-size: 16px; line-height: 1.44; }
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document { padding: 18px 15px 24px; font-size: 16px; }
+  .canonical-document .canonical-letterhead { margin-bottom: 15px; gap: 10px; }
+  .canonical-document .canonical-letterhead img { width: 58px; height: 58px; flex-basis: 58px; }
+  .canonical-document .canonical-practitioner { font-size: 19px; }
+  .canonical-document .canonical-report-heading h1 { font-size: 25px; }
+  .canonical-document .canonical-client { gap: 8px; padding: 12px 14px; }
+  .canonical-shell .canonical-document .canonical-report-analysis,
+  .canonical-shell .canonical-document .canonical-report-notes,
+  .canonical-document .canonical-general-instructions,
+  .canonical-document .canonical-guidance { padding: 14px 15px; }
+}
+@media print {
+  .canonical-shell .canonical-document { padding: 0 !important; font-size: 12.2pt; line-height: 1.32; }
+  .canonical-document .canonical-client dd,
+  .canonical-document .canonical-remedy-fields dd,
+  .canonical-shell .canonical-document .canonical-report-analysis p,
+  .canonical-shell .canonical-document .canonical-report-notes p,
+  .canonical-document .canonical-general-instructions p { font-size: 11.8pt; line-height: 1.34; }
+  .canonical-document .canonical-remedy { box-shadow: none; }
+}
+
+/* Client-report appendix: readable on phones and compact in print. */
+.canonical-shell .canonical-document .canonical-remedy-profiles {
+  margin-top: 32px;
+  padding-top: 20px;
+}
+.canonical-shell .canonical-document .canonical-remedy-profiles > h2 {
+  margin: 0 0 8px;
+  color: #603248;
+  font: 400 28px/1.2 Georgia, 'Times New Roman', serif;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile {
+  display: flow-root;
+  padding: 18px 0 22px;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile > h3 {
+  margin: 0 0 11px;
+  color: #513044;
+  font: 400 24px/1.2 Georgia, 'Times New Roman', serif;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile-photo {
+  float: right;
+  width: min(33%, 196px);
+  max-width: 45%;
+  margin: 1px 0 10px 18px;
+  break-inside: avoid;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 230px;
+  object-fit: contain;
+  border: 1px solid #e7d8cd;
+  border-radius: 8px;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body {
+  margin-top: 0;
+  color: #30292a;
+  font: 18.5px/1.36 Arial, Helvetica, sans-serif;
+  overflow-wrap: break-word;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body p {
+  margin: .3em 0 0;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body :is(p, li) {
+  font-size: inherit;
+  line-height: inherit;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-intro {
+  margin-bottom: .42rem;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-pair {
+  display: block;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section {
+  margin: .62rem 0 0;
+  padding: 0;
+  border-top: 0;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section h3 {
+  margin: 0 0 .18em;
+  color: #603248;
+  font-size: 19px;
+  line-height: 1.25;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile-link {
+  clear: both;
+  margin-top: 12px;
+  padding-top: 3px;
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document .canonical-remedy-profile {
+    padding: 14px 0 18px;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile > h3 {
+    font-size: 23px;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile-photo {
+    width: clamp(105px, 39%, 155px);
+    max-width: 46%;
+    margin: 1px 0 8px 12px;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body {
+    font-size: 18px;
+    line-height: 1.34;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section h3 {
+    font-size: 18px;
+  }
+}
+@media print {
+  .canonical-shell .canonical-document .canonical-remedy-profile-photo {
+    float: right;
+    width: 31%;
+    max-width: 190px;
+    margin: 1px 0 7px 13px;
+    break-inside: avoid;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body {
+    font-size: 12pt;
+    line-height: 1.28;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile {
+    break-inside: auto;
+  }
+}
