@@ -941,3 +941,209 @@
   .canonical-document .canonical-remedy-profile-photo { break-inside: avoid; }
   .canonical-document a { color: #603248; }
 }
+
+
+/* Compact document handoff controls: preserve every action and full labels. */
+.consultation-result .consultation-report-review-hint {
+  margin: 11px 0 12px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: #f1f8f7;
+}
+.consultation-result .consultation-report-review-hint strong { font-size: 15px; }
+.consultation-result .consultation-report-review-hint p { margin: 4px 0 0; font-size: 13px; line-height: 1.38; }
+.consultation-result .consultation-document-card--dense {
+  padding: clamp(15px, 2.5vw, 21px);
+  border-color: #e5d6cc;
+  border-radius: 15px;
+  box-shadow: 0 4px 16px rgb(52 33 35 / 4%);
+}
+.consultation-result .consultation-document-heading--inline { padding-bottom: 10px; gap: 6px 12px; }
+.consultation-result .consultation-document-actions { gap: 8px; margin-top: 11px; }
+.consultation-result .consultation-document-secondary-actions { gap: 8px; margin-top: 8px; }
+.consultation-result .consultation-document-actions > a,
+.consultation-result .consultation-document-actions > button,
+.consultation-result .consultation-document-secondary-actions > a,
+.consultation-result .consultation-document-secondary-actions > form > button {
+  min-height: 44px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.28;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: normal;
+  hyphens: none;
+}
+.consultation-result .consultation-cabinet-card--dense { padding: 15px; border-radius: 14px; margin-top: 11px; }
+@media (max-width: 700px) {
+  .consultation-result .consultation-result-summary--dense { gap: 9px; margin-top: 12px; }
+  .consultation-result .consultation-document-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .consultation-result .consultation-document-secondary-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .consultation-result .consultation-document-secondary-actions > form:last-child { grid-column: 1 / -1; }
+  .consultation-result .consultation-document-actions > a,
+  .consultation-result .consultation-document-actions > button,
+  .consultation-result .consultation-document-secondary-actions > a,
+  .consultation-result .consultation-document-secondary-actions > form > button { min-height: 44px; padding: 9px 8px; font-size: 13px; }
+}
+/* Client reading surface: larger body type, less leading, cleaner editorial rhythm. */
+.canonical-shell .canonical-document {
+  padding: clamp(20px, 3.6vw, 42px);
+  background: #fff;
+  color: #302b2a;
+  font: 16px/1.44 Arial, Helvetica, sans-serif;
+}
+.canonical-document .canonical-letterhead { margin-bottom: 20px; padding-bottom: 16px; gap: 15px; }
+.canonical-document .canonical-practitioner { font-size: 25px; }
+.canonical-document .canonical-report-heading h1 { margin-bottom: 16px; }
+.canonical-document .canonical-client { gap: 10px 18px; padding: 14px 16px; }
+.canonical-document .canonical-client dd { font-size: 16px; line-height: 1.35; }
+.canonical-document .canonical-intro { margin: 16px 0 18px; font-size: 15px; line-height: 1.43; }
+.canonical-document .canonical-remedy-group { margin-top: 18px; }
+.canonical-document .canonical-remedy { margin-bottom: 11px; padding: 16px 18px; }
+.canonical-document .canonical-remedy-fields { margin-top: 10px; }
+.canonical-document .canonical-remedy-fields > div { gap: 9px; padding: 7px 0; }
+.canonical-document .canonical-remedy-fields dt { font-size: 12px; line-height: 1.3; }
+.canonical-document .canonical-remedy-fields dd { font-size: 15px; line-height: 1.43; }
+.canonical-shell .canonical-document .canonical-report-analysis,
+.canonical-shell .canonical-document .canonical-report-notes,
+.canonical-document .canonical-general-instructions { margin: 16px 0; padding: 16px 18px; }
+.canonical-shell .canonical-document .canonical-report-analysis p,
+.canonical-shell .canonical-document .canonical-report-notes p,
+.canonical-document .canonical-general-instructions p { font-size: 16px; line-height: 1.43; }
+.canonical-document .canonical-guidance { margin: 16px 0; padding: 17px 19px; }
+.canonical-document .canonical-guidance :is(p,li) { font-size: 15px; line-height: 1.45; }
+.canonical-document .canonical-guidance li { margin-bottom: 4px; }
+.canonical-document .canonical-remedy-profiles { margin-top: 28px; padding-top: 18px; }
+.canonical-document .canonical-remedy-profile { padding: 17px 0 20px; }
+.canonical-document .canonical-remedy-profile .remedy-content-section { margin: 10px 0; font-size: 16px; line-height: 1.44; }
+.canonical-document .canonical-remedy-profile :is(p,li) { font-size: 16px; line-height: 1.44; }
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document { padding: 18px 15px 24px; font-size: 16px; }
+  .canonical-document .canonical-letterhead { margin-bottom: 15px; gap: 10px; }
+  .canonical-document .canonical-letterhead img { width: 58px; height: 58px; flex-basis: 58px; }
+  .canonical-document .canonical-practitioner { font-size: 19px; }
+  .canonical-document .canonical-report-heading h1 { font-size: 25px; }
+  .canonical-document .canonical-client { gap: 8px; padding: 12px 14px; }
+  .canonical-shell .canonical-document .canonical-report-analysis,
+  .canonical-shell .canonical-document .canonical-report-notes,
+  .canonical-document .canonical-general-instructions,
+  .canonical-document .canonical-guidance { padding: 14px 15px; }
+}
+@media print {
+  .canonical-shell .canonical-document { padding: 0 !important; font-size: 12.2pt; line-height: 1.32; }
+  .canonical-document .canonical-client dd,
+  .canonical-document .canonical-remedy-fields dd,
+  .canonical-shell .canonical-document .canonical-report-analysis p,
+  .canonical-shell .canonical-document .canonical-report-notes p,
+  .canonical-document .canonical-general-instructions p { font-size: 11.8pt; line-height: 1.34; }
+  .canonical-document .canonical-remedy { box-shadow: none; }
+}
+
+/* Client-report appendix: readable on phones and compact in print. */
+.canonical-shell .canonical-document .canonical-remedy-profiles {
+  margin-top: 32px;
+  padding-top: 20px;
+}
+.canonical-shell .canonical-document .canonical-remedy-profiles > h2 {
+  margin: 0 0 8px;
+  color: #603248;
+  font: 400 28px/1.2 Georgia, 'Times New Roman', serif;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile {
+  display: flow-root;
+  padding: 18px 0 22px;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile > h3 {
+  margin: 0 0 11px;
+  color: #513044;
+  font: 400 24px/1.2 Georgia, 'Times New Roman', serif;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile-photo {
+  float: right;
+  width: min(33%, 196px);
+  max-width: 45%;
+  margin: 1px 0 10px 18px;
+  break-inside: avoid;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 230px;
+  object-fit: contain;
+  border: 1px solid #e7d8cd;
+  border-radius: 8px;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body {
+  margin-top: 0;
+  color: #30292a;
+  font: 18.5px/1.36 Arial, Helvetica, sans-serif;
+  overflow-wrap: break-word;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body p {
+  margin: .3em 0 0;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body :is(p, li) {
+  font-size: inherit;
+  line-height: inherit;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-intro {
+  margin-bottom: .42rem;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-pair {
+  display: block;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section {
+  margin: .62rem 0 0;
+  padding: 0;
+  border-top: 0;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section h3 {
+  margin: 0 0 .18em;
+  color: #603248;
+  font-size: 19px;
+  line-height: 1.25;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile-link {
+  clear: both;
+  margin-top: 12px;
+  padding-top: 3px;
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document .canonical-remedy-profile {
+    padding: 14px 0 18px;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile > h3 {
+    font-size: 23px;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile-photo {
+    width: clamp(105px, 39%, 155px);
+    max-width: 46%;
+    margin: 1px 0 8px 12px;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body {
+    font-size: 18px;
+    line-height: 1.34;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section h3 {
+    font-size: 18px;
+  }
+}
+@media print {
+  .canonical-shell .canonical-document .canonical-remedy-profile-photo {
+    float: right;
+    width: 31%;
+    max-width: 190px;
+    margin: 1px 0 7px 13px;
+    break-inside: avoid;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body {
+    font-size: 12pt;
+    line-height: 1.28;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile {
+    break-inside: auto;
+  }
+}

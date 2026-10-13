@@ -7,7 +7,7 @@ import test from 'node:test'
 import ts from 'typescript'
 
 const require = createRequire(import.meta.url)
-const read = path => readFileSync(new URL('../../' + path, import.meta.url), 'utf8')
+const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const source = read('components/app/free-course-banner.jsx')
 const compiled = ts.transpileModule(source, {
   fileName: 'free-course-banner.jsx',

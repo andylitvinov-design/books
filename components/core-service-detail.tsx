@@ -148,7 +148,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
           <AcquisitionEventLink className={styles.primary} href={whatsappUrl} target="_blank" rel="noopener noreferrer" prefetch={false} event="service_request_start" attributes={{ "data-contact-channel":"whatsapp", "data-service-request":kind }}>{t.action}<ArrowUpRight size={20} aria-hidden="true"/></AcquisitionEventLink>
           <p className={styles.note}>{t.note}</p>
           {kind === "alchemy" && <Link href="#distance-homeopathy-guide" className={styles.homeopathyGuideLink}>
-            {locale === "ru" ? "Как работать с препаратами дистанционно — читать статью" : "Distance homeopathy — how to work with remedies"}
+            <span>{locale === "ru" ? "Как работать с препаратами дистанционно — читать статью" : "Distance homeopathy — how to work with remedies"}</span>
             <ArrowUpRight size={17} aria-hidden="true" />
           </Link>}
           <aside className={styles.andrey}>

@@ -91,11 +91,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       <DocumentSignature date={document.dateIssued} locale={locale} />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
 
-      {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Описание препаратов' : 'Remedy profiles'}>
-        <h2>{locale === 'ru' ? 'Описание выбранных препаратов' : 'About your selected remedies'}</h2>
-        <p>{locale === 'ru'
-          ? 'Авторские описания и фотографии из библиотеки Holistic House. Материал для ознакомления и самонаблюдения, не медицинская инструкция.'
-          : 'Original descriptions and photographs from the Holistic House library. Educational material for reflection, not medical instructions.'}</p>
+      {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
+        <h2>{locale === 'ru' ? 'Приложение' : 'Appendix'}</h2>
         {selectedProfiles.map(({ item, remedy }) => <section className="canonical-remedy-profile" key={item.remedySlug}>
           <h3>{remedy.canonical_latin_name}</h3>
           {remedy.primary_image ? <figure className="canonical-remedy-profile-photo">
