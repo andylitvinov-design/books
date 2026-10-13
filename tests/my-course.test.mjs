@@ -11,7 +11,7 @@ import {
   GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS,
   courseDay, courseLesson, growthSuggestions, suggestedCourseTopics,
 } from '../lib/inner-growth/course-model.js'
-import { courseRecommendedTests, courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale } from '../lib/inner-growth/course-strategy.js'
+import { courseRecommendedTests, courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale, coursePracticeFocus } from '../lib/inner-growth/course-strategy.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
@@ -320,7 +320,7 @@ test('personal 14-day roadmap uses the same day-specific approved focus and real
   const ui = read('components/app/course-today.jsx')
   const css = read('components/app/course-today.module.css')
   assert.match(server, /const roadmap=COURSE_JOURNEY\.map/)
-  assert.match(server, /coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,plannedDay,locale\)/)
+  assert.match(server, /coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,plannedDay,locale,contentVersion\)/)
   assert.match(server, /Boolean\(history\.days\[plannedDay-1\]\?\.sessionCompleted\)/)
   assert.match(server, /roadmap,/)
   assert.match(ui, /data-course-journey/)
