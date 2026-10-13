@@ -557,3 +557,23 @@ test('V3 persists the chosen content version and uses the exact same lesson ID f
   assert.doesNotMatch(component,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
   assert.doesNotMatch(service,/select \* from app_private\.growth_sessions(?! where account_id)/)
 })
+
+
+test('client consciously chooses or confirms the V3 main skill before activating the cycle',()=>{
+  const picker=read('components/app/course-focus-picker.jsx')
+  const pickerCss=read('components/app/course-r3-steps.module.css')
+  const steps=read('components/app/course-r3-steps.jsx')
+  const summary=read('components/app/course-completion-review.jsx')
+  const service=read('lib/app/growth-course.js')
+  assert.match(picker,/data-course-primary-scale-choice/)
+  assert.match(picker,/id="course-main-scale"/)
+  assert.match(picker,/onSetPrimaryScale\?\.\(event\.target\.value\)/)
+  assert.match(steps,/onSetPrimaryScale=\{key=>setChosenScales/)
+  assert.match(steps,/mainSkillTitle:/)
+  assert.match(steps,/mainSkillHelp:/)
+  assert.match(summary,/index===0&&/)
+  assert.match(summary,/t\.mainSkillTitle/)
+  assert.match(pickerCss,/\.primaryScaleChoice/)
+  assert.match(service,/scales = strictArray\(body\.scaleKeys/)
+  assert.match(service,/scale_keys=\$3/)
+})
