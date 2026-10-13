@@ -55,17 +55,20 @@ async function verifyPublicHeaderMatrix(page, engine) {
   const inViewport = async (locator, label) => {
     await expect(locator).toBeVisible()
     const box = await locator.boundingBox()
-    const width = page.viewportSize().width
-    assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1 && box.width >= 44 && box.height >= 44, label + ': visible 44px control must fit viewport')
+    const { width, height } = page.viewportSize()
+    assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1 && box.y >= -1 && box.y + box.height <= height + 1 && box.width >= 44 && box.height >= 44, label + ': visible 44px control must fit viewport')
   }
   for (const locale of ['en', 'ru', 'es']) {
     for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['services', '/' + locale + '/services'], ['library', '/' + locale + '/library']]) {
-      for (const width of [374, 375, 390, 768, 1023]) {
+      for (const width of [320, 360, 374, 375, 390, 430, 768, 1023]) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         await page.setViewportSize({ width, height: 900 })
         assert.equal((await go(page, path)).status(), 200, label)
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
+        const expected = getSiteNavigation(locale)
+        const expectedHeader = expected.map(item => ({ id: item.id, href: item.id === 'cabinet' ? '/' + (locale === 'es' ? 'en' : locale) + '/app' : item.href }))
+        assert.deepEqual(await header.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
         const cabinet = header.locator('a.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
         const trigger = menu.locator('summary')
@@ -100,11 +103,38 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await expect(trigger).toBeFocused()
         await inViewport(trigger, label + '/language-after-escape')
         await header.screenshot({ path: evidence + '/header-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
+        const bottom = page.locator('.mobile-bottom-navigation')
+        const expectedBottom = expected.filter(item => item.id !== 'relationships')
+        const bottomLinks = bottom.locator('[data-nav-item]')
+        assert.deepEqual(await bottomLinks.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedBottom.map(item => ({ id: item.id, href: item.href })), label + ': exact six bottom destinations')
+        await expect(bottomLinks).toHaveCount(6)
+        await expect(bottom.locator('[aria-current="page"]')).toHaveCount(1)
+        await expect(bottom.locator('[data-nav-item="' + surface + '"]')).toHaveAttribute('aria-current', 'page')
+        if (width < 768) {
+          await inViewport(bottom, label + '/bottom-navigation')
+          await bottomLinks.first().focus()
+          let previousRight = 0
+          for (let index = 0; index < expectedBottom.length; index++) {
+            const link = bottomLinks.nth(index)
+            await inViewport(link, label + '/bottom-' + expectedBottom[index].id)
+            await expect(link).toHaveAccessibleName(expectedBottom[index].label)
+            await expect(link).toBeFocused()
+            const box = await link.boundingBox()
+            assert.ok(box.x >= previousRight - 1, label + ': bottom navigation items must not overlap')
+            previousRight = box.x + box.width
+            if (index < expectedBottom.length - 1) await link.press('Tab')
+          }
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Bottom navigation overflow: ' + label)
+          await bottom.screenshot({ path: evidence + '/bottom-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
+        } else {
+          await expect(bottom).toBeHidden()
+        }
+        pass('Public navigation: ' + label)
       }
     }
   }
   await page.setViewportSize(originalViewport)
-  pass(engine + ': public header Home/Services/Library EN/RU/ES at 374/375/390/768/1023px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return')
+  pass(engine + ': public header Home/Services/Library EN/RU/ES at 320/360/374/375/390/430/768/1023px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible six-slot mobile bottom navigation and keyboard order')
 }
 try {
   await redis(['FLUSHDB']) // Dedicated ephemeral service database, not a configured production store.
