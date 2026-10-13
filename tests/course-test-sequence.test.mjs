@@ -49,6 +49,29 @@ test('reopens the draft for the selected instrument instead of creating duplicat
   assert.deepEqual(called, ['bootstrap'])
 })
 
+test('only confirmed course tests can start, and a missing draft creates just one run', async () => {
+  await assert.rejects(startOrResumeCourseTest({
+    courseState: selection, key: 'not-in-course', request: async () => ({}),
+  }), /COURSE_TEST_SELECTION_REQUIRED/)
+
+  const definition = getAssessmentDefinition('phq-4', 'v1', 'en')
+  const calls = []
+  const newRun = await startOrResumeCourseTest({
+    courseState: selection, key: definition.key, locale: 'en',
+    request: async (path, body) => {
+      calls.push([path, body])
+      if (path === 'bootstrap') return { activeTestPlan: { definitionIds: [definition.id] }, runs: [] }
+      if (path === 'runs') return { id: 'new-course-run' }
+      throw new Error('UNEXPECTED_CALL')
+    },
+  })
+  assert.equal(newRun.id, 'new-course-run')
+  assert.deepEqual(calls.map(x => x[0]), ['bootstrap', 'runs'])
+  assert.equal(calls[1][1].definitionKey, definition.key)
+  assert.equal(calls[1][1].definitionVersion, definition.version)
+  assert.match(calls[1][1].operationId, /^[a-f0-9-]{36}$/)
+})
+
 test('course finish overrides ordinary report buttons and ordinary account battery navigation', () => {
   const runner = readFileSync(new URL('../components/app/app-workspace.jsx', import.meta.url), 'utf8')
   const finish = readFileSync(new URL('../components/app/test-finish-actions.jsx', import.meta.url), 'utf8')
