@@ -1,6 +1,5 @@
 import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.js'
 import { COURSE_JOURNEY, COURSE_PHASES } from '../data/inner-growth/course-journey.js'
-import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.js'
 import { SHARED_DAYS } from '../data/inner-growth/shared-days.js'
 import { TRACKS, lessonFor, isCompleteLibrary, COURSE_CONTENT_VERSION, COURSE_WORKBOOK_VERSION } from '../lib/inner-growth/lesson-library.js'
 import assert from 'node:assert/strict'
