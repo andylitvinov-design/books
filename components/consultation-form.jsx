@@ -173,6 +173,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
   const [analysis, setAnalysis] = useState(consultation?.analysis ?? '')
+  const [templateReviewed, setTemplateReviewed] = useState(Boolean(consultation))
   const [additionalNotes, setAdditionalNotes] = useState(consultation?.additionalNotes ?? '')
   const [uiLocale, setUiLocale] = useState('en')
 
@@ -437,6 +438,17 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <textarea name="additionalNotes" rows={4} maxLength={5000} value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} placeholder={labels.clientNotesPlaceholder} />
         </label>
       </div>
+      {!consultation && <label className="consultation-template-review">
+        <input
+          type="checkbox"
+          checked={templateReviewed}
+          onChange={(event) => setTemplateReviewed(event.target.checked)}
+          required
+        />
+        <span>{uiLocale === 'ru'
+          ? 'Я проверил(а) и отредактировал(а) шаблон для этого клиента. Это персональные рекомендации, а не готовое назначение.'
+          : 'I have reviewed and adapted this template for this client. This is personal guidance, not a ready-made prescription.'}</span>
+      </label>}
       <label className="consultation-note consultation-legacy-instructions">{labels.note}
         <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
       </label>
