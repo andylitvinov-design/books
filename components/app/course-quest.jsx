@@ -52,7 +52,7 @@ const COPY = {
     lesson: 'Day', of: 'of', stage: 'Step', stop: 'Pause and return to map',
     savedCheckin: 'Your earlier check-in is available to correct.',
     seenBefore: 'Feel free to review. No duplicate reward will be granted.',
-    restart: 'Start again',
+    restart: 'Start again', saveError: 'The change could not be saved. Please try again.',
   },
   ru: {
     map: 'Мой путь обучения', pathIntro: 'Четыре главы · четырнадцать маленьких шагов',
@@ -97,7 +97,7 @@ const COPY = {
     lesson: 'День', of: 'из', stage: 'Шаг', stop: 'Пауза и возврат на карту',
     savedCheckin: 'Предыдущий замер можно уточнить.',
     seenBefore: 'Вы можете перечитать урок. Баллы повторно не начисляются.',
-    restart: 'Начать заново',
+    restart: 'Начать заново', saveError: 'Не удалось сохранить. Попробуйте ещё раз.',
   },
 }
 
@@ -207,16 +207,17 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
   const [symbolMode, setSymbolMode] = useState('words')
   const [rewardEarned, setRewardEarned] = useState(false)
   const [localBusy, setLocalBusy] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const containerRef = useRef(null)
   const closeRef = useRef(onClose)
   const checkinOperation = useRef(null)
   const sessionOperation = useRef(null)
-  closeRef.current = onClose
   const sections = (lesson.sections || []).filter(item => ['arrive', 'meditation', 'finish'].includes(item.kind))
   const noImagery = cycle.preferences?.imagery === 'no_imagery'
   const mainSteps = [t.checkin, t.insight, t.practice, t.action, t.reflection]
   const headline = step === 5 ? (initiallyCompleted && !rewardEarned ? t.completeOld : t.complete) : mainSteps[step]
   const pending = busy || localBusy
+  closeRef.current = () => { if (!pending) onClose() }
   const alreadySaved = Boolean(data.currentSession)
 
   useEffect(() => {
@@ -248,6 +249,7 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
       resource === today.resource && note === (today.note || '')
     if (unchanged) { setStep(1); return }
     setLocalBusy(true)
+    setSaveError('')
     try {
       if (!checkinOperation.current) checkinOperation.current = crypto.randomUUID()
       const result = await onCheckin({
@@ -255,12 +257,15 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
         ...(today ? { expectedRevision: today.revision } : {}),
       })
       if (result) { checkinOperation.current = null; setStep(1) }
-    } finally { setLocalBusy(false) }
+      else setSaveError(t.saveError)
+    } catch { setSaveError(t.saveError) }
+    finally { setLocalBusy(false) }
   }
 
   async function saveLesson() {
     if (alreadySaved) { setStep(5); return }
     setLocalBusy(true)
+    setSaveError('')
     try {
       if (!sessionOperation.current) sessionOperation.current = crypto.randomUUID()
       const result = await onSession({
@@ -268,12 +273,17 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
         feedback, beforeNow: before, afterNow: after, reflection,
       })
       if (result) { sessionOperation.current = null; setRewardEarned(true); setStep(5) }
-    } finally { setLocalBusy(false) }
+      else setSaveError(t.saveError)
+    } catch { setSaveError(t.saveError) }
+    finally { setLocalBusy(false) }
   }
 
   async function setPracticePreference(patch) {
     setLocalBusy(true)
-    try { await onPreferences(patch) } finally { setLocalBusy(false) }
+    setSaveError('')
+    try { if (!await onPreferences(patch)) setSaveError(t.saveError) }
+    catch { setSaveError(t.saveError) }
+    finally { setLocalBusy(false) }
   }
 
   function advance() {
@@ -288,7 +298,7 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
     <div className={styles.playerFrame}>
       <header className={styles.playerHeader}>
         <button className={styles.iconButton} type="button" aria-label={t.close}
-          onClick={onClose}><X size={25}/></button>
+          disabled={pending} onClick={onClose}><X size={25}/></button>
         <div className={styles.stepBars} role="progressbar" aria-label={t.stage}
           aria-valuemin={0} aria-valuemax={5} aria-valuenow={Math.min(step, 5)}>
           {mainSteps.map((name, index) => <span key={name} data-state={index < step ? 'done' : index === step ? 'current' : 'next'} />)}
@@ -298,6 +308,7 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
       <main className={styles.playerMain} key={step}>
         <p className={styles.eyebrow}>{t.lesson} {cycle.day} · {step < 5 ? t.stage + ' ' + (step + 1) + ' ' + t.of + ' 5' : t.finished}</p>
         <h2>{headline}</h2>
+        {saveError && <p className={styles.saveError} role="alert">{saveError}</p>}
         {step === 0 && <>
           <p className={styles.prompt}>{data.target?.label || lesson.journey?.heading}</p>
           <p className={styles.description}>{t.checkinPrompt}</p>
@@ -404,7 +415,7 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
           </div>
           <button type="button" className={styles.primaryButton} disabled={pending}
             onClick={step === 0 ? () => void saveCheckin() : advance}>
-            {step === 0 ? t.saveNext : step === 4 ? (alreadySaved ? t.backMap : t.finish) : t.next}
+            {step === 0 ? (Number.isInteger(severity) ? t.saveNext : t.next) : step === 4 ? (alreadySaved ? t.backMap : t.finish) : t.next}
             {step === 4 ? <Check size={18}/> : <ArrowRight size={18}/>}
           </button>
           <small>{t.pointsNotGrades}</small>

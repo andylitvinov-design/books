@@ -140,3 +140,6 @@
 @media(max-width:360px){.pathLabel strong{font-size:10px}.pathRow[data-side=left] .pathLabel{left:calc(50% + 25px)}.pathRow[data-side=right] .pathLabel{right:calc(50% + 25px)}.feedbackChoices button{font-size:11px!important}}
 @media(prefers-reduced-motion:reduce){.mapShell *, .playerOverlay *{animation:none!important;transition:none!important}}
 @media print{.playerOverlay,.pathNode,.pointBox{display:none!important}}
+
+/* Give save/retry feedback inside the full-screen mission; the page error is behind the dialog. */
+.saveError{display:block!important;padding:11px 13px;margin:0;border:1px solid #d9a69a;border-radius:12px;background:#fff1eb;color:#873b31;font-size:13px;font-weight:750;line-height:1.5}
