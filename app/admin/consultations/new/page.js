@@ -55,9 +55,6 @@ export default async function NewConsultation({ searchParams }) {
         </div>
       </div>
       <div className="consultation-client-created-links">
-        <Link className="consultation-client-created-report-link" href={`/admin/clients/${createdClient.id}/assessments/new?kind=research_result`} prefetch={false}>
-          {ru ? 'Отдельный диагностический отчёт ↗' : 'Separate diagnostic report ↗'}
-        </Link>
         <Link className="consultation-client-created-history-link" href={`/admin/clients/${createdClient.id}`} prefetch={false}>
           {ru ? 'История клиента' : 'Client history'}
         </Link>
