@@ -1,0 +1,102 @@
+.root{display:grid;gap:20px;min-width:0;color:#433d35;font-size:15px;line-height:1.6;overflow-wrap:anywhere}
+.root *{box-sizing:border-box}
+.root h2,.root h3,.root h4,.root p{margin:0}
+.root h2{font-size:clamp(25px,4vw,36px);line-height:1.2;letter-spacing:-.025em}
+.root h3{font-size:clamp(21px,3vw,27px);line-height:1.3}
+.root h4{font-size:18px;line-height:1.4}
+.root a{color:#2c6653;text-decoration:underline;text-underline-offset:3px}
+.root button{appearance:none;font:inherit;font-weight:650;line-height:1.4;min-height:44px;max-width:100%;padding:10px 15px;border:1px solid #bfd1c4;border-radius:12px;background:#f4f8f1;color:#2b604e;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+.root button:hover:not(:disabled){background:#e8f0e3;border-color:#71967f}
+.root button:disabled{cursor:not-allowed;opacity:.55}
+.root :is(button,input,select,textarea,a,summary):focus-visible{outline:3px solid #35775e;outline-offset:3px}
+.root input[type=checkbox]{appearance:auto;accent-color:#306650;width:20px;height:20px;min-width:20px;margin:2px 0 0}
+.root .primary{background:#326b56;color:#fff;border-color:#326b56}
+.root .primary:hover:not(:disabled){background:#275440;color:#fff}
+.root .textButton{justify-self:start;background:transparent;border-color:transparent;padding-left:0;text-decoration:underline;text-underline-offset:4px}
+.hero{display:grid;gap:12px;padding:clamp(20px,4vw,34px);border:1px solid #dddfcf;border-radius:22px;background:linear-gradient(120deg,#f3f7ed,#fffaf1)}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.11em;color:#3d705c}
+.card{display:grid;gap:18px;padding:clamp(17px,3vw,28px);border:1px solid #e1d6c8;border-radius:22px;background:#fffdf8;min-width:0}
+.small{font-size:13px;line-height:1.6;color:#6a6157}
+.row,.actions,.links{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-width:0}
+.row{justify-content:space-between}
+.actions button{flex:0 1 auto}
+.links{font-size:13px;gap:8px 18px}
+.notice,.error{display:grid;gap:10px;padding:14px 16px;border-radius:13px;border:1px solid #cfdbc9;background:#f4f7ed}
+.error{border-color:#cba98e;background:#fff3e6;color:#74462c}
+.error button,.notice button{justify-self:start}
+.priority{display:grid;gap:10px;padding:17px;background:#f1f6ee;border:1px solid #ceddcb;border-radius:16px}
+.priority ol{margin:0;padding-left:24px;display:grid;gap:5px}
+.priority a{display:inline-block;padding:7px 0}
+.scaleGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;min-width:0}
+.scale{display:grid;align-content:start;gap:10px;min-width:0;border:1px solid #e1d6c8;background:#fffaf3;border-radius:16px;padding:17px;scroll-margin-top:90px}
+.scale[data-selected=true]{border-color:#79a88d;background:#f2f7ee}
+.check{display:flex;align-items:flex-start;gap:11px;min-height:44px;cursor:pointer;min-width:0}
+.check span,.check strong{min-width:0;flex:1}
+.scale .check{font-size:16px;line-height:1.45}
+.tag{justify-self:start;border:1px solid #c8dcca;background:#e8f0e2;color:#3a6450;border-radius:99px;padding:3px 9px;font-size:11px;font-weight:750}
+.score{font-size:28px;line-height:1.2;font-weight:750;color:#344d40}
+.score small{font-size:12px;font-weight:500}
+.meter{width:100%;height:15px;accent-color:#739d76}
+.meter::-webkit-meter-bar{background:#e9e1d6;border-radius:10px;border:0}
+.meter::-webkit-meter-optimum-value{background:#799c73;border-radius:10px}
+.meter::-moz-meter-bar{background:#799c73}
+.dialog{max-width:600px;width:calc(100% - 28px);max-height:calc(100dvh - 40px);margin:auto;overflow:auto;overscroll-behavior:contain;border:1px solid #d8d1bf;border-radius:20px;padding:clamp(20px,4vw,30px);color:#433d35;background:#fffdf8;box-shadow:0 20px 70px #2b332c33}
+.dialog::backdrop{background:#1d2e27a6}
+.dialog>*+*{margin-top:17px}
+.dialog ul{padding-left:22px}
+.dialog .actions{margin-top:22px}
+.progress{width:100%;height:11px;accent-color:#527e5b;border:0;border-radius:10px;background:#e7e1d4}
+.progress::-webkit-progress-bar{background:#e7e1d4;border-radius:10px}
+.progress::-webkit-progress-value{background:#527e5b;border-radius:10px}
+.progress::-moz-progress-bar{background:#527e5b;border-radius:10px}
+.checkin,.feedback{display:grid;gap:14px;min-width:0;padding:18px;background:#f7f7ed;border:1px solid #d8dec9;border-radius:16px;margin:0}
+.feedback legend{font-size:18px;font-weight:750;padding:0 7px}
+.formGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;min-width:0}
+.field{display:grid;align-content:start;gap:7px;font-size:14px;font-weight:650;min-width:0}
+.field :is(input,select,textarea){width:100%;min-width:0;min-height:46px;border:1px solid #c8c6b5;border-radius:10px;padding:11px 12px;font:inherit;font-size:16px;font-weight:400;line-height:1.4;color:#433d35;background:#fffefa}
+.field input[type=number]{max-width:180px}
+.field textarea{resize:vertical;min-height:104px}
+.details{padding:15px 18px;border-radius:16px;border:1px solid #ddd7c8;background:#fbfaf2;min-width:0}
+.details summary{min-height:44px;display:list-item;align-content:center;cursor:pointer;font-weight:700;color:#375f4c;line-height:1.5;padding:7px 0}
+.details[open]>*:not(summary){margin-top:16px}
+.details section{display:grid;gap:10px}
+.details ol{margin:0;padding-left:25px;display:grid;gap:7px}
+.lesson{display:grid;gap:24px;min-width:0;padding-top:10px}
+.lesson header{display:grid;gap:8px}
+.lesson section{display:grid;gap:10px}
+.lessonSection p,.preserveText{white-space:pre-wrap}
+.curriculum{display:grid;gap:14px;background:#f2f5ec;border-left:3px solid #8cad87;padding:16px 18px;margin:0;border-radius:0 12px 12px 0}
+.curriculum dt{font-size:12px;font-weight:800;color:#46684f;margin-bottom:4px}
+.curriculum dd{margin:0}
+.thought{padding:17px 20px;background:#fbf1e0;border-radius:14px}
+.thought p{font-size:18px;font-style:italic;color:#6a553b}
+.skip{padding-top:14px;border-top:1px solid #e3dbcd;display:grid;gap:12px}
+.skip>button{justify-self:start}
+.history{display:grid;gap:12px;padding-top:10px}
+.history ol{display:grid;gap:9px;list-style:none;padding:0;margin:0}
+.history li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #e8dfd2;padding-bottom:9px}
+.history button{font-size:13px}
+.review{border-top:2px solid #cad9c7;padding-top:20px;display:grid;gap:20px}
+.review>.row>p{flex:1 1 230px}
+.safety{font-size:12px;line-height:1.7;color:#706559;padding:0 8px 8px}
+@media(max-width:700px){.scaleGrid,.formGrid{grid-template-columns:minmax(0,1fr)}.root{gap:15px}.hero,.card{border-radius:17px}.actions{align-items:stretch}.actions button{flex:1 1 190px}.dialog .actions{flex-direction:column}.dialog .actions button{flex:auto}.checkin,.feedback{padding:14px}.row{align-items:flex-start}.root .primary{width:100%}.score{font-size:26px}}
+@media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important}}
+
+.history li > details{flex-basis:100%;min-width:0}
+.mappingContext{display:grid;gap:9px;font-size:13px;line-height:1.65;min-width:0}
+.mappingContext:empty{display:none}
+.mappingContext h5,.planSettings h5,.planEditor h5{margin:0;font-size:14px}
+.personalPlan,.planEditor,.dayOptions{display:grid;gap:14px;min-width:0}
+.personalPlan{padding:18px;border:1px solid #ceddcb;border-radius:16px;background:#f3f7ed}
+.personalPlan>button{justify-self:start}
+.planEditor{padding-top:14px;border-top:1px solid #ceddcb}
+.planSettings{display:grid;gap:14px;min-width:0;padding:16px;border:1px solid #d8dec9;border-radius:14px;margin:0;background:#fafbf4}
+.planSettings>legend{padding:0 7px;font-size:17px;font-weight:700}
+.weekAccents{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;min-width:0;padding:12px;border:1px solid #d8dec9;border-radius:12px;margin:0}
+.weekAccents>legend{padding:0 6px;font-weight:650}
+/* Bound nested fieldsets explicitly; WebKit can retain native-select intrinsic overflow. */
+.planSettings,.weekAccents{inline-size:100%;max-inline-size:100%}
+/* Bound only native caption overflow (WebKit284644); keep every ancestor unclipped. */
+.planSettings select{overflow-x:hidden}
+.dayOptions{padding:16px;border:1px solid #ceddcb;border-radius:14px;background:#f4f7ed}
+@media(max-width:700px){.weekAccents{grid-template-columns:minmax(0,1fr)}.personalPlan,.planSettings,.dayOptions{padding:13px}}

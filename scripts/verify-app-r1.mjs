@@ -12,6 +12,18 @@ await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{}),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
 let page=await context.newPage()
+// Synthetic-only diagnostics: no request bodies, cookies, headers or tokens.
+// Keep the bounded sequence so a failed route transition has evidence beyond
+// the final screenshot. This observes the real app; it does not intercept it.
+const navigationMarkers=[]
+function marker(kind,detail){navigationMarkers.push({kind,...detail});if(navigationMarkers.length>100)navigationMarkers.shift()}
+function observeNavigation(target){
+ target.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/app/'))marker('request',{method:request.method(),path:url.pathname})})
+ target.on('response',response=>{const url=new URL(response.url());if(url.pathname.startsWith('/api/app/'))marker('response',{method:response.request().method(),path:url.pathname,status:response.status()})})
+ target.on('requestfailed',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/app/'))marker('requestfailed',{method:request.method(),path:url.pathname,error:request.failure()?.errorText})})
+ target.on('framenavigated',frame=>{if(frame===target.mainFrame()){const url=new URL(frame.url());marker('navigation',{path:url.pathname,hasPlan:url.searchParams.has('plan')})}})
+}
+observeNavigation(page)
 const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
 page.on('pageerror',capturePageError)
 const checks=[]
@@ -105,7 +117,17 @@ async function enterTest(name='Current State Check',mode='Guided'){
   const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
   if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
-  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+  const [planResponse]=await Promise.all([
+   page.waitForResponse(response=>new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST'),
+   page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click(),
+  ])
+  assert.equal(planResponse.status(),201)
+  const createdPlan=await planResponse.json()
+  assert.match(createdPlan.id,/^[\da-f-]{36}$/i)
+  // create() shows saved rows before reload() and its route replacement finish.
+  // Finish that user action before starting the next, distinct run navigation.
+  await expect(page).toHaveURL(origin+'/en/app/tests?plan='+encodeURIComponent(createdPlan.id))
+  await ready()
   await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
   await expect(page.locator('#my-tests-list')).toBeVisible()
  }
@@ -131,6 +153,30 @@ async function savedClick(button){
  await expect(page.getByRole('status')).toHaveText('Saved securely')
 }
 async function answerCurrent(value){await savedClick(page.locator('.hh-scale').getByRole('button',{name:String(value),exact:true}));await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
+async function goBackAndResumeCurrentDraft(){
+ const previous=new URL(page.url()),runId=previous.pathname.split('/').at(-1),planId=previous.searchParams.get('plan')
+ assert.match(runId,/^[\da-f-]{36}$/i);assert.ok(planId)
+ const before=await api('runs/'+runId);assert.equal(before.status,200)
+ assert.ok(Object.values(before.data.answers).includes(7),'first answer must be acknowledged before browser Back')
+ // Exercise the browser history action itself, without page.goto/retry-click
+ // or a mocked route. The server still owns the same in-progress draft.
+ await page.goBack()
+ await expect(page).toHaveURL(origin+'/en/app/tests?plan='+encodeURIComponent(planId))
+ // Do not use ready() here: its error-recovery reload could repair a broken
+ // history restoration and conceal the behavior this check must exercise.
+ await expect(page.locator((await page.evaluate(()=>innerWidth<=760))?'.hh-mobile-app-nav':'.hh-nav')).toBeVisible()
+ await page.waitForLoadState('networkidle')
+ const row=page.locator('article').filter({has:page.getByRole('heading',{name:'Current State Check',exact:true})}).filter({has:page.getByRole('button',{name:/^(Start test|Continue test)/})}).first()
+ const resume=row.getByRole('button',{name:/^(Start test|Continue test)/})
+ await expect(resume).toBeEnabled();await resume.click()
+ await expect(page).toHaveURL(origin+'/en/app/runs/'+runId+'?mode=quick&plan='+encodeURIComponent(planId))
+ await expect(page.locator('.hh-runner')).toBeVisible()
+ await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
+ await expect(page.locator('.hh-runner--guided .hh-runner-question').getByRole('heading',{name:'How much energy and inner support do you feel right now?'})).toBeVisible()
+ const after=await api('runs/'+runId);assert.equal(after.status,200)
+ assert.deepEqual(after.data.answers,before.data.answers)
+ passed('real browser Back returns to committed plan; resume opens same draft with saved answer and question')
+}
 async function saveAndExit(){
  await page.getByRole('button',{name:'Save and exit'}).click()
  // Do not cancel the in-flight save with a scripted page.goto. Wait for the app's own navigation.
@@ -409,7 +455,7 @@ try {
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
  await screenshotEvidence(page,{path:output+'/current-state-runner.png',fullPage:true})
- await answerCurrent(7);await saveAndExit()
+ await answerCurrent(7);await goBackAndResumeCurrentDraft();await saveAndExit()
  await page.reload();await ready();await enterTest();await expect(page.getByRole('heading',{name:'How much energy and inner support do you feel right now?'})).toBeVisible();passed('saved answers and progress resume after reload')
  for(const v of[3,6,8,5])await answerCurrent(v)
  await page.getByText('Add optional context',{exact:true}).click();await page.getByLabel('Anything else you want to note?').fill('Synthetic private context, not a real person.');await page.getByLabel('What changed or seems to trigger this?').fill('Synthetic trigger.');await page.getByLabel('What would you like to change?').fill('Synthetic desired change.')
@@ -688,7 +734,7 @@ try {
  assert.ok(savedBeforeSignout?.definitionIds?.length>0,'synthetic owner has a saved battery')
  await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
- await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
+ await page.close();page=await context.newPage();page.on('pageerror',capturePageError);observeNavigation(page)
 
  await page.goto(origin+'/en/client')
  await expect(page.getByRole('heading',{name:'Choose your tests',exact:true})).toBeVisible()
@@ -799,6 +845,6 @@ try {
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
-} catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
+} catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/failure-dom.html',await page.content().catch(()=>''));await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,navigationMarkers,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
 finally{await browser.close()}
 

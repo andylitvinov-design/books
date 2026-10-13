@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Trash2, Zap } from 'lucide-react'
 import { TestExplorer } from './test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
@@ -117,6 +117,46 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const c = COPY[locale] || COPY.en
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const currentHref = pathname + (searchParams.toString() ? '?' + searchParams.toString() : '')
+  const navigationTarget = useRef(null)
+  const navigationOrigin = useRef(null)
+  const navigationEpoch = useRef(0)
+  const observedHref = useRef(currentHref)
+  const mounted = useRef(true)
+  const [pendingNavigation, setPendingNavigation] = useState(null)
+  useEffect(() => {
+    if (observedHref.current !== currentHref) {
+      observedHref.current = currentHref
+      navigationEpoch.current += 1
+    }
+  }, [currentHref])
+  useEffect(() => {
+    // A committed competing URL (for example Back to another filtered list)
+    // cancels the pending action too. Never replay its old destination.
+    if (pendingNavigation && (currentHref === pendingNavigation || currentHref !== navigationOrigin.current)) {
+      navigationTarget.current = null
+      navigationOrigin.current = null
+      setPendingNavigation(null)
+    }
+  }, [currentHref, pendingNavigation])
+  useEffect(() => {
+    mounted.current = true
+    const cancelPendingNavigation = () => {
+      navigationEpoch.current += 1
+      if (!navigationTarget.current) return
+      navigationTarget.current = null
+      navigationOrigin.current = null
+      setPendingNavigation(null)
+    }
+    // Back can revisit an identical URL, so pathname/search alone is not a
+    // complete cancellation signal. The person's history action wins.
+    window.addEventListener('popstate', cancelPendingNavigation)
+    return () => {
+      mounted.current = false
+      window.removeEventListener('popstate', cancelPendingNavigation)
+    }
+  }, [])
   const openFromInsights = searchParams.get('explore') === '1'
   const fromCourse = searchParams.get('course') === '1'
   const requestedCategory = searchParams.get('category')
@@ -124,6 +164,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const once = useRef(false)
   const [plan, setPlan] = useState(null)
   const [busy, setBusy] = useState(false)
+  const interactionBlocked = busy || Boolean(pendingNavigation)
   const [initializing, setInitializing] = useState(true)
   const [exploring, setExploring] = useState(openFromInsights)
   useEffect(() => {
@@ -196,6 +237,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }, [entries, currentPlan, data.latestTestPlan, data.results, rows, locale])
 
   async function create(keys, replaceActive = false, selectionPreferences = undefined) {
+    if (busy || navigationTarget.current) return
+    const actionEpoch = navigationEpoch.current
     const valid = validTestKeys(keys)
     const selected = valid?.map((key) => entries.find((entry) => entry.key === key && entry.selectable))
     if (!selected || selected.some((entry) => !entry?.definition)) {
@@ -240,8 +283,23 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       // Reconcile the saved account state before replacing the handoff URL.
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
-      router.replace(fromCourse ? root + '/course' : root + '/tests?plan=' + encodeURIComponent(created.id))
+      // The selection is already saved. Do not pull someone back after they
+      // navigated away or pressed Back while that request was still pending.
+      if (!mounted.current || navigationEpoch.current !== actionEpoch) return
+      const destination = fromCourse ? root + '/course' : root + '/tests?plan=' + encodeURIComponent(created.id)
+      // A router call is not a committed URL. Keep the newly visible rows
+      // locked until that exact destination renders; otherwise a fast Start
+      // click can overlap the pending plan replacement with a run navigation.
+      if (currentHref !== destination) {
+        navigationOrigin.current = currentHref
+        navigationTarget.current = destination
+        setPendingNavigation(destination)
+        router.replace(destination)
+      }
     } catch (cause) {
+      navigationTarget.current = null
+      navigationOrigin.current = null
+      setPendingNavigation(null)
       if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
       else if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
       else setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
@@ -293,7 +351,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     document.getElementById('my-tests-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
   async function removeSelectedTest(row) {
-    if (!currentPlan || currentPlan.status !== 'active' || busy) return
+    if (!currentPlan || currentPlan.status !== 'active' || busy || navigationTarget.current) return
     setBusy(true);setError('');setNotice('')
     try {
       const updated = await api('test-plans/' + encodeURIComponent(currentPlan.id) + '/remove', {
@@ -342,11 +400,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }
 
   function applyNewSelection() {
-    if (!Array.isArray(conflict?.keys) || !conflict.keys.length || busy) return
+    if (!Array.isArray(conflict?.keys) || !conflict.keys.length || busy || navigationTarget.current) return
     void create(conflict.keys, true, conflict.preferences)
   }
 
   async function openTest(row) {
+    if (busy || navigationTarget.current) return
     setBusy(true)
     setError('')
     try {
@@ -420,7 +479,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                       </small>}
                     </div>
                     <div className={styles.rowActions}>
-                      <button type="button" className="hh-primary" disabled={busy} onClick={() => openTest(row)}>
+                      <button type="button" className="hh-primary" disabled={interactionBlocked} onClick={() => openTest(row)}>
                         {row.run ? c.resume : done ? c.repeat : c.begin}
                         <ArrowRight aria-hidden="true" size={16}/>
                       </button>
@@ -428,7 +487,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                         prefetch={false}>{c.see}</Link>}
                     </div>
                     {currentPlan?.status === 'active' && statusFilter !== 'completed' &&
-                      <button type="button" className={styles.removeButton} disabled={busy}
+                      <button type="button" className={styles.removeButton} disabled={interactionBlocked}
                         onClick={() => removeSelectedTest(row)}
                         title={c.remove + ': ' + row.title}
                         aria-label={c.remove + ': ' + row.title}
@@ -494,8 +553,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             <p>{c.pendingDescription}</p>
           </div>
           <div className={styles.reviewActions}>
-            <button type="button" disabled={busy} onClick={keepSavedSet}>{c.keep}</button>
-            <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
+            <button type="button" disabled={interactionBlocked} onClick={keepSavedSet}>{c.keep}</button>
+            <button type="button" disabled={interactionBlocked} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
           </div>
         </aside>}
         <TestExplorer key={(currentPlan?.id || 'new') + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
@@ -503,7 +562,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
-          onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
+          onResumeRun={(run)=>{ if (!busy && !navigationTarget.current) router.push(root+'/runs/'+encodeURIComponent(run.id)) }}/>
       </section>}
   </>
 }

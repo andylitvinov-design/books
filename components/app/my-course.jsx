@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import CourseToday from './course-today'
 import CourseR3Steps from './course-r3-steps'
+import CourseDaily21 from './course-daily-21'
+import { appFetch } from '@/lib/app/client-fetch'
 import styles from './my-course.module.css'
 
 const WORDS = {
@@ -134,6 +135,17 @@ export function MyCourse({ data, locale = 'en' }) {
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
   const startDialogRef = useRef(null)
+  const [daily21, setDaily21] = useState({ available:false, hasCourse:false })
+  const [daily21Mounted, setDaily21Mounted] = useState(false)
+  const [showDaily21, setShowDaily21] = useState(false)
+  const dailyUnavailable = useCallback(() => {
+    setDaily21({ available:false, hasCourse:false })
+    setShowDaily21(false)
+  }, [])
+  const dailyActivated = useCallback(() => {
+    setDaily21({ available:true, hasCourse:true })
+    setShowDaily21(true)
+  }, [])
 
   async function refresh() {
     setError('')
@@ -142,7 +154,7 @@ export function MyCourse({ data, locale = 'en' }) {
       setState(response)
     } catch (e) { setError(e.message) }
   }
-  useEffect(() => { void refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void refresh() }, [])
 
   async function act(action, values = {}) {
     if (busy) return
@@ -167,8 +179,19 @@ export function MyCourse({ data, locale = 'en' }) {
   }
 
   const stage = state?.course?.stage || 0
+  useEffect(() => {
+    if (stage !== 3) { setShowDaily21(false); return }
+    let current = true
+    void appFetch('course-21?locale=' + locale).then(response => {
+      if (!current) return
+      const hasCourse = Boolean(response.available && response.course)
+      setDaily21({ available:Boolean(response.available && (response.enrollmentReady || hasCourse)), hasCourse })
+      if (hasCourse) { setDaily21Mounted(true); setShowDaily21(true) }
+    }).catch(() => { if (current) setDaily21({ available:false, hasCourse:false }) })
+    return () => { current = false }
+  }, [stage, locale, state?.course?.id])
   const visibleStep = stage === 1 ? 2 : stage === 2
-    ? ((state?.course?.testKeys || []).length ? 4 : 3) : stage === 3 ? 5 : stage === 4 ? 6 : 1
+    ? ((state?.course?.testKeys || []).length ? 4 : 3) : stage === 3 ? (daily21.hasCourse ? 6 : 5) : stage === 4 ? 6 : 1
 
   if (state === undefined && !error) return <section className={'hh-panel ' + styles.root} aria-busy="true"><p>{ru ? 'Открываем ваш курс…' : 'Opening your course…'}</p></section>
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
@@ -216,11 +239,24 @@ export function MyCourse({ data, locale = 'en' }) {
       </div>
     </dialog>}
 
+    {stage === 3 && daily21.available && !showDaily21 && <section className="hh-panel">
+      <h2>{ru ? 'Ваш маршрут на 21 учебный день' : 'Your 21-learning-day route'}</h2>
+      <p>{daily21.hasCourse ? (ru ? 'Ваша программа и история уроков сохранены. Можно продолжить с текущего шага или вернуться к пройденному.' : 'Your programme and lesson history are saved. Continue from the current step or revisit earlier lessons.') : (ru ? 'Три недели небольших практик по выбранным шкалам. Пропуски не обнуляют пройденное. Перед началом вы отдельно подтвердите участие.' : 'Three weeks of small practices linked to your chosen scales. Missed days do not reset progress. You will confirm participation separately before starting.')}</p>
+      <button type="button" className="hh-primary" onClick={() => { setDaily21Mounted(true); setShowDaily21(true) }}>
+        {daily21.hasCourse ? (ru ? 'Открыть мою программу' : 'Open my programme') : (ru ? 'Посмотреть 21-дневную программу' : 'Review the 21-day programme')}
+      </button>
+    </section>}
+    <div hidden={showDaily21 || daily21.hasCourse}>
     {stage >= 1 && stage <= 3 && <CourseR3Steps
       stage={stage} locale={locale} data={data} state={state} busy={busy}
       onAct={act} onCourseCommand={courseCommand}
       onState={setState} onError={setError} root={root}
     />}
+    </div>
+    {daily21Mounted && <div hidden={!showDaily21 || stage !== 3}>
+      <CourseDaily21 locale={locale} onUnavailable={dailyUnavailable}
+        onCancel={() => setShowDaily21(false)} onActivated={dailyActivated}/>
+    </div>}
 
     {stage === 4 && <CourseToday locale={locale} />}
 
