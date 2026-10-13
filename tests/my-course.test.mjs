@@ -1,3 +1,6 @@
+import { COURSE_JOURNEY, COURSE_PHASES } from '../data/inner-growth/course-journey.js'
+import { SHARED_DAYS } from '../data/inner-growth/shared-days.js'
+import { TRACKS, lessonFor, isCompleteLibrary } from '../lib/inner-growth/lesson-library.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -264,4 +267,66 @@ test('daily course form and lesson CTA styling match the post-test review', () =
   assert.match(css,/\.activateFields/)
   assert.match(css,/\.shell \.cardTitle strong/)
   assert.match(css,/\.shell button\.nextButton/)
+})
+
+
+test('14-day course passport has fourteen distinct bilingual steps aligned to the approved arc', () => {
+  assert.equal(COURSE_JOURNEY.length, 14)
+  assert.deepEqual(COURSE_JOURNEY.map(item => item.day), Array.from({ length: 14 }, (_, i) => i + 1))
+  const headings = new Set()
+  for (const [index, arc] of COURSE_JOURNEY.entries()) {
+    assert.equal(arc.phase, SHARED_DAYS[index].phase)
+    assert.ok(COURSE_PHASES[arc.phase])
+    for (const language of ['en', 'ru']) {
+      assert.ok(arc.heading[language]?.length > 5)
+      assert.ok(arc.purpose[language]?.length > 15)
+      assert.ok(arc.outcome[language]?.length > 5)
+      assert.ok(COURSE_PHASES[arc.phase][language])
+      headings.add(language + ':' + arc.heading[language])
+    }
+  }
+  assert.equal(headings.size, 28)
+  assert.equal(COURSE_JOURNEY[6].phase, 'review')
+  assert.equal(COURSE_JOURNEY[13].phase, 'review')
+})
+
+test('all 84 existing personal lessons retain unique texts and show the new day passport in English and Russian', () => {
+  assert.equal(Object.keys(TRACKS).length, 6)
+  assert.equal(Object.values(TRACKS).reduce((sum, items) => sum + items.length, 0), 84)
+  assert.ok(isCompleteLibrary())
+  for (const domain of Object.keys(TRACKS)) {
+    for (let day = 1; day <= 14; day++) {
+      const en = lessonFor(domain, day, 'en', 'standard')
+      const ru = lessonFor(domain, day, 'ru', 'quick')
+      assert.ok(en && ru)
+      assert.equal(en.day, day)
+      assert.equal(en.journey.heading, COURSE_JOURNEY[day - 1].heading.en)
+      assert.equal(ru.journey.outcome, COURSE_JOURNEY[day - 1].outcome.ru)
+      assert.equal(en.journey.phase, SHARED_DAYS[day - 1].phase)
+      assert.equal(en.sections.length, 5)
+      assert.equal(ru.sections.length, 5)
+      assert.notEqual(en.title, ru.title)
+      assert.ok(en.ritual.length > 10)
+      assert.ok(ru.ritual.length > 10)
+    }
+  }
+})
+
+test('personal 14-day roadmap uses the same day-specific approved focus and real saved completion state', () => {
+  const server = read('lib/app/growth-daily.js')
+  const ui = read('components/app/course-today.jsx')
+  const css = read('components/app/course-today.module.css')
+  assert.match(server, /const roadmap=COURSE_JOURNEY\.map/)
+  assert.match(server, /coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,plannedDay,locale\)/)
+  assert.match(server, /Boolean\(history\.days\[plannedDay-1\]\?\.sessionCompleted\)/)
+  assert.match(server, /roadmap,/)
+  assert.match(ui, /data-course-journey/)
+  assert.match(ui, /data-day-state=\{item\.status\}/)
+  assert.match(ui, /data-course-card=\{number\}/)
+  assert.match(ui, /guidedSections=\(lesson\?\.sections\|\|\[\]\)\.filter/)
+  assert.match(ui, /\['arrive','meditation','finish'\]/)
+  assert.doesNotMatch(ui, /seconds=\{lesson\.sections\[stage\]\.seconds\}/)
+  assert.match(css, /\.journeyGrid/)
+  assert.match(css, /\.journeyDay\[data-day-state='today'\]/)
+  assert.match(css, /background:#b64b31/)
 })
