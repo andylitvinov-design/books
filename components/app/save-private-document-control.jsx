@@ -40,7 +40,7 @@ export function SavePrivateDocumentControl({ selector, documentId = null, locale
         operationId: crypto.randomUUID(),
       })
       if (intent.signedIn) {
-        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id))
+        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id) + '&auto=1')
         return
       }
       const auth = await api('auth/start', { locale, intentId: intent.id })
