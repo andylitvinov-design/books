@@ -1953,7 +1953,8 @@ function PortfolioPage({ data, locale }) {
             const main = latest.dimensions?.[0]
             return (
               <article className="hh-insights-test-card" key={group.key}>
-                <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}>
+                <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}
+                  aria-label={(ru ? 'Открыть отчёт и рекомендации: ' : 'Open analysis & recommendations: ') + group.title}>
                   <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact /></div>
                   <div className="hh-insights-test-body">
                     <div className="hh-insights-test-meta">
