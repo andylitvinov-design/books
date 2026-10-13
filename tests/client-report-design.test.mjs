@@ -30,13 +30,18 @@ test('client PDF uses warm Holistic House styling without losing text, links or 
     assert.match(source, /0\.984 0\.961 0\.941 rg/)
     for (const value of [
       'Synthetic Client', 'TEST-2026-10', 'SYNTHETIC-ANALYSIS-VISIBILITY',
-      'SYNTHETIC-GUIDANCE-VISIBILITY', 'SYNTHETIC-PURPOSE',
+      'SYNTHETIC-GUIDANCE-VISIBILITY',
     ]) assert.ok(source.includes(value), `Missing original report field: ${value}`)
     assert.match(source, /\/URI \(https:\/\/example\.test\/en\/homeopathy\/remedies\/synthetic-remedy\)/)
     assert.doesNotMatch(source, /PRIVATE-PRACTITIONER-ONLY/)
     assert.match(source, /\/MediaBox \[0 0 595\.28 841\.89\]/)
     assert.match(source, /\/ToUnicode/)
-    if (locale === 'en') assert.match(source, /PERSONAL REPORT/)
+    // Russian labels cause the full line (including Latin field values) to be
+    // encoded with the PDF's embedded Unicode font rather than literal text.
+    if (locale === 'en') {
+      assert.match(source, /PERSONAL REPORT/)
+      assert.match(source, /SYNTHETIC-PURPOSE/)
+    }
   }
 })
 
