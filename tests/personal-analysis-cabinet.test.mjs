@@ -5,40 +5,39 @@ import { generatePractitionerReportPdf } from '../lib/profile/practitioner-repor
 
 const src = path => readFile(path, 'utf8')
 
-test('both authorized cabinets expose three photo-led free Analysis offers and report links', async () => {
-  const [google, route, legacy, legacyRoute, panel, style] = await Promise.all([
+test('both authorized cabinets now keep analysis reports in Profile; legacy links still work', async () => {
+  const [google, route, legacy, legacyRoute, panel, style, profile] = await Promise.all([
     src('components/app/app-workspace.jsx'),
     src('app/[locale]/app/[[...path]]/page.jsx'),
     src('components/client-cabinet.jsx'),
     src('app/[locale]/client/[selector]/page.js'),
     src('components/app/personal-analysis-panel.jsx'),
     src('components/app/personal-analysis.css'),
+    src('components/app/profile-domains.jsx'),
   ])
-  assert.match(route, /'analysis'/)
-  assert.match(google, /\['analysis', locale === 'ru' \? 'Личный анализ' : 'Personal analysis', '\/analysis'\]/)
-  assert.match(google, /page === 'analysis' && <PersonalAnalysisPanel/)
-  assert.match(google, /<Link href=\{root \+ '\/analysis'\}/)
-  assert.match(google, /aria-current=\{page === 'analysis' \? 'page'/)
-  assert.match(legacy, /client-cabinet-sections/)
-  assert.match(legacy, /\?view=analysis/)
-  assert.match(legacy, /<PersonalAnalysisPanel locale=\{locale\} reports=\{personalReports\} legacyReports=\{legacyReports\} selector=\{selector\}/)
+  assert.match(route, /path\[0\] === 'analysis' && path\.length === 1/)
+  assert.match(route, /redirect\('\/' \+ locale \+ '\/app\/portrait#personal-reports'\)/)
+  assert.doesNotMatch(google, /\['analysis', locale === 'ru'/)
+  assert.match(google, /<ProfileDomains locale=\{locale\} mode="account"/)
+  assert.match(google, /reportsContent=\{<PersonalAnalysisPanel key=\{data\.account\.id\}/)
+  assert.match(google, /embedded \/>\}/)
+  assert.match(profile, /id="personal-reports"/)
+  assert.match(profile, /\{reportsContent\}/)
+  assert.match(legacy, /\['profile','analysis'\]\.includes\(view\)/)
+  assert.match(legacy, /focusReports=\{view === 'analysis'\}/)
+  assert.match(legacy, /<PersonalAnalysisPanel locale=\{locale\} reports=\{personalReports\} legacyReports=\{legacyReports\} selector=\{selector\} embedded \/>/)
   assert.match(legacy, /personalReports = assessments\.filter\(item => item\.kind === 'research_result'\)/)
   assert.match(legacy, /legacyReports = documents\.filter\(document => document\.type === 'report'\)/)
   assert.match(legacyRoute, /const requestedView = \(await searchParams\)\?\.view/)
   assert.match(legacyRoute, /\['analysis', 'profile'\]\.includes\(requestedView\)/)
+  assert.match(panel, /embedded = false/)
+  assert.match(panel, /if \(embedded\) return <div className="hh-personal-analysis hh-personal-analysis--embedded"/)
+  assert.match(panel, /<PersonalAnalysisReportList reports=\{\[\.\.\.visibleReports, \.\.\.legacyReports\]\}/)
+  assert.match(style, /\.hh-profile-domains \.hh-personal-analysis--embedded/)
+  // Old free paths still exist publicly but do not get cloned into Profile.
   assert.match(panel, /services\/free-situation-review/)
   assert.match(panel, /services\/dao-health-profile/)
-  assert.match(panel, /\/app\/tests\?mode=recommendations/)
-  assert.match(panel, /\/client\/tests/)
   assert.match(panel, /data-analysis-offer=\{offer\.id\}/)
-  assert.match(panel, /<Image src=\{offer\.image\}/)
-  assert.match(panel, /services\/alchemy-of-soul/)
-  assert.match(panel, /Я — Цель — Проблема/)
-  assert.match(panel, /У-Син/)
-  assert.match(panel, /not a medical diagnosis/)
-  assert.match(panel, /БЕСПЛАТНО/)
-  assert.match(style, /@media \(max-width: 620px\)/)
-  assert.match(style, /\.hh-analysis-offers \{ grid-template-columns: 1fr/)
   assert.match(style, /\.hh-analysis-reports-empty/)
 })
 
