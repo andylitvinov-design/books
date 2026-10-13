@@ -85,3 +85,14 @@ test('course finish overrides ordinary report buttons and ordinary account batte
   assert.match(course, /profile\.scales/)
   assert.match(account, /data-course-test-group/)
 })
+
+test('unfinished My Course makes the next test burgundy and test-list edits secondary', () => {
+  const ui = readFileSync(new URL('../components/app/course-r3-steps.jsx', import.meta.url), 'utf8')
+  const css = readFileSync(new URL('../components/app/course-r3-steps.module.css', import.meta.url), 'utf8')
+  assert.match(ui, /className=\{'hh-primary '\+styles\.ctaLink\}/)
+  assert.match(ui, /confirmed \? styles\.editSelection : 'hh-primary '\+styles\.cta/)
+  assert.match(ui, /\{pending\.length===0&&<button type="button"/)
+  assert.match(css, /\.progress > button\.ctaLink \{[\s\S]*?background: #a53f34;[\s\S]*?color: #fff;/)
+  assert.match(css, /\.selectionActions > button\.editSelection \{[\s\S]*?background: #fffefa;/)
+  assert.match(css, /@media \(max-width: 530px\) \{\s*\.progress > button\.ctaLink/)
+})

@@ -111,3 +111,67 @@
 .ctaLink:disabled{opacity:.55;cursor:wait}
 @media(max-width:600px){.briefSummary{padding:12px}.briefScales li{grid-template-columns:minmax(0,1fr) 90px auto;gap:7px}.briefScales li>span{font-size:12px}.briefScales strong{font-size:12px}.briefScales small{font-size:10px}}
 @media(max-width:370px){.briefScales li{grid-template-columns:minmax(0,1fr) auto}.briefScales meter{grid-column:1 / -1;grid-row:2;max-width:none}}
+
+/*
+ * A single unmistakable primary action during the test phase.
+ * The test-selection editor is secondary; the next test is the only
+ * saturated CTA until the full course battery has finished.
+ */
+.progress > button.ctaLink {
+  display: flex;
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 18px;
+  background: #a53f34;
+  color: #fff;
+  border: 1px solid #a53f34;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: clamp(16px, 2.2vw, 18px);
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 5px 14px rgb(101 40 34 / 12%);
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.progress > button.ctaLink:hover:not(:disabled) {
+  background: #842e28;
+  border-color: #842e28;
+}
+.progress > button.ctaLink:disabled {
+  background: #a53f34;
+  border-color: #a53f34;
+  color: #fff;
+  box-shadow: none;
+  opacity: .55;
+}
+.progress > button.ctaLink:focus-visible {
+  outline: 3px solid #d7a567;
+  outline-offset: 3px;
+}
+.selectionActions > button.editSelection {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  min-height: 43px;
+  padding: 9px 14px;
+  border: 1px solid #becfbe;
+  border-radius: 12px;
+  background: #fffefa;
+  color: #496a59;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: none;
+}
+.selectionActions > button.editSelection:hover:not(:disabled) {
+  background: #edf5ed;
+  border-color: #9dbda9;
+}
+@media (max-width: 530px) {
+  .progress > button.ctaLink { min-height: 58px; padding: 13px 12px; font-size: 16px; }
+  .selectionActions > button.editSelection { justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress > button.ctaLink { transition: none; }
+}
