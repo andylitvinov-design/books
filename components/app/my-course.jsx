@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, LockKeyhole, Sparkles } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import CourseToday from './course-today'
 import Course14DayOverview from './course-14-day-overview'
