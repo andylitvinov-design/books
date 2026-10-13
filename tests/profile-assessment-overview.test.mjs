@@ -136,7 +136,7 @@ test('Profile result cards open the exact private analysis and recommendations p
   const more = overview.indexOf('data-profile-extra-tools')
   const actions = overview.indexOf('data-profile-actions')
   assert.ok(head > 0 && measured > head && grey > measured && more > grey && actions > more)
-  assert.match(workspace, /<ProfileAssessmentOverview data=\{data\} locale=\{locale\} onBeginTest=\{beginSelectedTest\}>/)
+  assert.match(workspace, /<ProfileAssessmentOverview data=\{data\} locale=\{locale\} onBeginTest=\{beginSelectedTest\} showPortrait=\{false\}>/)
   assert.match(overview, /buildPsychPortrait\(\(data.results \|\| \[\]\)\.filter\(isProfessionalProfileTest\)\)/)
   assert.match(overview, /href=\{\`\$\{root\}\/results\/\$\{encodeURIComponent\(row.sourceResultId\)\}\`\}/)
   assert.match(overview, /data-measured-scale aria-label=/)
