@@ -225,7 +225,7 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
 async function focusWithoutScroll(locator) {
   await locator.evaluate(el => el.focus({ preventScroll: true }));
 }
-async function verifyRepeatedClose(page, cycles = 3) {
+async function verifyRepeatedClose(page, cycles = 3, engine) {
   const disclosure = page.locator('#tantra-russian-video-testimonials');
   if (!await disclosure.evaluate(el => el.open)) await disclosure.locator('summary').click();
   const observations = [];
@@ -252,13 +252,34 @@ async function verifyRepeatedClose(page, cycles = 3) {
     await page.waitForTimeout(350);
     const after = await disclosure.locator('video').evaluateAll(videos => videos.map(el => el.currentTime));
     after.forEach((time, index) => assert.ok(Math.abs(time - paused[index]) < 0.05, 'Closed player must stay paused'));
+    const reopening = await disclosure.locator('video').evaluateAll(videos => ({
+      at: performance.now(), frames: videos.map(el => el.__tantraPresentedFrame?.at ?? -1),
+    }));
     await page.keyboard.press(cycle % 2 === 0 ? 'Enter' : 'Space');
     await expect.poll(() => disclosure.evaluate(el => el.open)).toBe(true);
     for (const index of [0, 1]) await expect(disclosure.locator('video').nth(index)).toBeVisible();
     await expect.poll(() => disclosure.locator('video').evaluateAll(videos => videos.every(el => el.paused))).toBe(true);
     await expect(disclosure.locator('iframe')).toHaveCount(0);
     await expect(disclosure.locator('button.academy-video-poster')).toBeVisible();
-    observations.push({ participant: activeIndex + 1, cycle: cycle + 1, active, before, paused, after, youtubeFixtureOnly: true });
+    // Observe the reopened state through backend reconstruction, before another
+    // explicit play. A cached currentTime or immediate paused sample is insufficient.
+    if (engine === 'webkit') {
+      for (const index of [0, 1]) {
+        const video = disclosure.locator('video').nth(index);
+        await video.scrollIntoViewIfNeeded();
+        await expect.poll(() => video.evaluate((el, { at, time }) => {
+          const frame = el.__tantraPresentedFrame;
+          return !!(frame && frame.at > at && Math.abs(frame.mediaTime - time) < 0.2);
+        }, { at: Math.max(reopening.at, reopening.frames[index]), time: paused[index] }), { timeout: 20000 }).toBe(true);
+      }
+    }
+    await page.waitForTimeout(350);
+    const reopened = await disclosure.locator('video').evaluateAll(videos => videos.map(el => ({ paused: el.paused, time: el.currentTime })));
+    assert.ok(reopened.every(video => video.paused), 'Reopened videos must remain paused through pipeline restoration');
+    reopened.forEach((video, index) => assert.ok(Math.abs(video.time - paused[index]) < 0.05, 'Reopened videos must retain position until explicit play'));
+    const unsolicitedPlay = await page.evaluate(at => (window.__tantraNativeTimeline ?? []).filter(event => event.type === 'play' && event.at >= at), reopening.at);
+    assert.deepEqual(unsolicitedPlay, [], 'Reopening must not trigger delayed native replay');
+    observations.push({ participant: activeIndex + 1, cycle: cycle + 1, active, before, paused, after, reopened, youtubeFixtureOnly: true });
   }
   return observations;
 }
@@ -297,7 +318,7 @@ async function verifyDelayedHydration(browser, engine, locale) {
     // A real app click creating the iframe proves the client component hydrated.
     await disclosure.locator('button.academy-video-poster').click();
     await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toBeVisible();
-    observed.cycles = await verifyRepeatedClose(page);
+    observed.cycles = await verifyRepeatedClose(page, 3, engine);
     observed.deferredScripts = deferredScripts;
     assert.deepEqual(errors, []);
     observed.ok = true;
@@ -464,7 +485,7 @@ try {
             await expect(alena).toHaveAttribute('title', /Alena|Алёна/);
             await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toHaveText('Allowed YouTube renderer');
             journey.stage = { phase: 'per-participant-close-cleanup' };
-            const closeCycles = await verifyRepeatedClose(page, 1);
+            const closeCycles = await verifyRepeatedClose(page, 1, engine);
             journey.closeCleanup = { participantsVerified: [1, 2], closeCycles, nativePaused: true, nativePositionRetained: true, youtubeIframeRemoved: true, reopenRequiresClick: true, youtubeFixtureOnly: true };
             assert.deepEqual(pageErrors, []);
             journey.ok = true;

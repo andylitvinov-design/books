@@ -90,6 +90,27 @@ test('source contract: locale key and original titles/audio labels stay in serve
 });
 test('cleanup handler contains no direct provider command/fetch, autoplay or CSP mutation', () => {
   assert.doesNotMatch(source, /fetch\(|postMessage\(|\.play\(|autoplay=|innerHTML|contentWindow|location\./);
-  assert.match(source, /<summary>\{props.summary\}<\/summary>/);
+  assert.match(source, /<summary onClickCapture=\{onSummaryClickCapture\}>\{props.summary\}<\/summary>/);
   assert.match(source, /onToggle=\{onToggle\}/);
+});
+
+for (const locale of Object.keys(labels)) test(`${locale}: summary activation pauses while still open without canceling native activation`, () => {
+  const model = mount({ ...labels[locale], videos, initiallyOpen: true });
+  const tree = model.render(); const summary = flatten(tree).find(x => x.type === 'summary');
+  const media = [12.5, 47].map(currentTime => ({ currentTime, paused: false, pause() { this.openWhenPaused=details.open; this.paused = true; } }));
+  const details = { open: true, querySelectorAll(selector) { assert.equal(selector, 'video'); return media; } };
+  summary.props.onClickCapture({ currentTarget: { closest(selector) { assert.equal(selector, 'details'); return details; } }, preventDefault() { assert.fail('Native activation must not be prevented'); }, stopPropagation() { assert.fail('Native activation must propagate'); } });
+  assert.deepEqual(media.map(x => x.paused), [true, true]);
+  assert.deepEqual(media.map(x => x.currentTime), [12.5, 47]);assert.deepEqual(media.map(x=>x.openWhenPaused),[true,true]);assert.equal(details.open, true);assert.equal(model.updates(), 0);
+  details.open = false;tree.props.onToggle({currentTarget: details});assert.equal(model.updates(), 1);
+});
+test('opening summary and absent ancestor never pause or reset any player', () => {
+  const model=mount({...labels.en,videos,initiallyOpen:false});const summary=flatten(model.render()).find(x=>x.type==='summary');
+  for(const details of [null,{open:false,querySelectorAll(){assert.fail('Opening must not access media')}}])summary.props.onClickCapture({currentTarget:{closest(){return details}}});
+  assert.equal(model.updates(),0);
+});
+test('native explicit play is not intercepted and media identity is preserved', () => {
+ const model=mount({...labels.en,videos,initiallyOpen:true});const tree=model.render();
+ for(const el of flatten(tree).filter(x=>x.type==='video')){assert.equal(el.props.onPlay,undefined);assert.equal(el.props.onPlayCapture,undefined);assert.equal(el.props.onClickCapture,undefined);assert.equal(el.props.controls,true);}
+ assert.doesNotMatch(source,/currentTime\s*=|preventDefault\(|stopPropagation\(/);
 });

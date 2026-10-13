@@ -17,6 +17,15 @@ type Props = {
 export function TantraVideoTestimonials(props: Props) {
   const [youtubeSession, setYoutubeSession] = useState(0);
 
+  function onSummaryClickCapture(event: SyntheticEvent<HTMLElement>) {
+    const details = event.currentTarget.closest("details");
+    if (!details?.open) return;
+    // Pause before the native default action hides the videos. WebKit can save
+    // the running pipeline state when hidden, then replay it after reopening.
+    // Keep default mouse/keyboard activation and every explicit media play intact.
+    details.querySelectorAll("video").forEach((video) => video.pause());
+  }
+
   function onToggle(event: SyntheticEvent<HTMLDetailsElement>) {
     const details = event.currentTarget;
     if (details.open) return;
@@ -30,7 +39,7 @@ export function TantraVideoTestimonials(props: Props) {
 
   return (
     <details className="tantra-source-disclosure tantra-review-video-section" id="tantra-russian-video-testimonials" open={props.initiallyOpen} onToggle={onToggle}>
-      <summary>{props.summary}</summary>
+      <summary onClickCapture={onSummaryClickCapture}>{props.summary}</summary>
       <p className="tantra-review-video-note">{props.language}</p>
       <div className="tantra-review-videos">
         {props.videos.map((video, i) => (
