@@ -316,7 +316,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     ['monitoring', c.monitoring, '/monitoring'],
     ['history', c.history, '/history'],
     ['consultations', c.consultations, '/consultations'],
-    ['course', locale === 'ru' ? 'Мой курс' : 'My course', '/course'],
+    ['course', locale === 'ru' ? 'Мои курсы' : 'My courses', '/course'],
   ]
   return (
     <main className="hh-app">
@@ -332,7 +332,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               {c.portrait}
             </Link>
             <Link href={root + '/analysis'} prefetch={false}>{locale === 'ru' ? 'Личный анализ' : 'Personal analysis'}</Link>
-            <Link href={root + '/course'} prefetch={false}>{locale === 'ru' ? 'Мой курс' : 'My course'}</Link>
+            <Link href={root + '/course'} prefetch={false}>{locale === 'ru' ? 'Мои курсы' : 'My courses'}</Link>
             <Link href={root + '/history'} prefetch={false}>
               {c.history}
             </Link>
@@ -463,7 +463,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
         <Link href={root + '/analysis'} prefetch={false} aria-current={page === 'analysis' ? 'page' : undefined}><FileText aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Анализ' : 'Analysis'}</span></Link>
         <Link href={root + '/portrait'} prefetch={false} aria-current={page === 'portrait' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Профиль' : 'Profile'}</span></Link>
-        <Link href={root + '/course'} prefetch={false} aria-current={page === 'course' ? 'page' : undefined}><BookOpen aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мой курс' : 'My course'}</span></Link>
+        <Link href={root + '/course'} prefetch={false} aria-current={page === 'course' ? 'page' : undefined}><BookOpen aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои курсы' : 'My courses'}</span></Link>
       </nav>}
     </main>
   )
