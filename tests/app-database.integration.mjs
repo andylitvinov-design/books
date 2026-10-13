@@ -1683,3 +1683,31 @@ test('ASRS6 EN/RU account zero and mixed results preserve discrete counts and al
     }
   }
 })
+
+
+test('push subscriptions and preferences are account-owned, RLS-protected and removable', async () => {
+  const {createECDH,randomBytes} = await import('node:crypto')
+  const {createNotificationRepository} = await import('../lib/app/notification-repository.js')
+  const vapid=createECDH('prime256v1');vapid.generateKeys()
+  const env={HH_PUSH_PUBLIC_KEY:vapid.getPublicKey().toString('base64url'),
+    HH_PUSH_PRIVATE_KEY:vapid.getPrivateKey().toString('base64url'),
+    HH_PUSH_SUBJECT:'mailto:tests@example.invalid'}
+  const push=createNotificationRepository(config,env)
+  const key=createECDH('prime256v1');key.generateKeys()
+  const subscription={endpoint:'https://web.push.apple.com/synthetic-test-'+randomUUID(),keys:{
+    p256dh:key.getPublicKey().toString('base64url'),auth:randomBytes(16).toString('base64url')}}
+  assert.equal((await push.state(a)).enabled,false)
+  const saved=await push.subscribe(a,{subscription,locale:'ru',timeZone:'America/Toronto'})
+  assert.equal(saved.enabled,true);assert.equal(saved.deviceCount,1);assert.equal(saved.locale,'ru')
+  const changed=await push.preferences(a,{enabled:true,courseReminders:false,
+    reminderHour:20,timeZone:'America/Toronto',locale:'ru'})
+  assert.equal(changed.reminderHour,20);assert.equal(changed.courseReminders,false)
+  assert.equal((await transaction(config,v2Actor,db=>db.query('select id from app_private.push_subscriptions'))).rows.length,0)
+  assert.equal((await transaction(config,v2Actor,db=>db.query('select account_id from app_private.notification_preferences'))).rows.length,0)
+  await assert.rejects(()=>rawAs(a,'authenticated',db=>db.query('select * from app_private.push_subscriptions')),
+    error=>error.code==='42501')
+  await assert.rejects(()=>push.subscribe(v2Actor,{subscription,locale:'ru',timeZone:'America/Toronto'}),
+    error=>error.code==='DEVICE_ALREADY_REGISTERED')
+  const removed=await push.unsubscribe(a,{endpoint:null})
+  assert.equal(removed.enabled,false);assert.equal(removed.deviceCount,0)
+})

@@ -40,12 +40,14 @@ import {
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import MyCourse from '@/components/app/my-course'
+import NotificationSettings from '@/components/app/notification-settings'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
+import { isNativePsiAlchemy } from '@/lib/native/client'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
@@ -169,6 +171,16 @@ export default function AppWorkspace({ locale, path = [] }) {
   async function logout(allDevices = false) {
     setBusy(true)
     try {
+      // End account-bound Live Activities before clearing the verified session.
+      if (isNativePsiAlchemy()) {
+        try {
+          const { Capacitor, registerPlugin } = await import('@capacitor/core')
+          if (Capacitor.getPlatform() === 'ios') {
+            await appFetch('notifications/live-stop', { activityId: null })
+            await registerPlugin('HHCourseActivity').stop({})
+          }
+        } catch { /* Sign-out must still complete even if iOS is offline. */ }
+      }
       await appFetch('auth/logout', { allDevices })
     } catch (e) {
       setError(e)
@@ -390,7 +402,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
-          {page === 'course' && <MyCourse data={data} locale={locale} />}
+          {page === 'course' && <><MyCourse data={data} locale={locale} /><NotificationSettings locale={locale} compact /></>}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
           {page === 'monitoring' && (
             <PsiMonitoring
@@ -443,6 +455,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
+              <NotificationSettings locale={locale} />
               <Privacy
                 locale={locale}
                 logout={logout}
