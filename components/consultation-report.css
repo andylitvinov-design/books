@@ -568,3 +568,5 @@
   .canonical-remedy-profile h3 { break-after: avoid; }
   .canonical-remedy-profile-photo { break-inside: avoid; }
 }
+
+.canonical-remedy-photo-unavailable { font-size: .88rem; color: #806d6f; font-style: italic; margin: 8px 0 18px; }
