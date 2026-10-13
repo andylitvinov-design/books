@@ -1,0 +1,604 @@
+[
+  {
+    "synthetic": true,
+    "key": "cbi-personal",
+    "locale": "en",
+    "score": 58.33,
+    "report": {
+      "rulesVersion": "2026-10-12.v6",
+      "explanationsVersion": "2026-10-12.v1",
+      "definitionVersion": "v1",
+      "title": "Your report and practical recommendations",
+      "intro": "Each measure has a score-specific interpretation and practical next steps. Published screening categories are kept separate from descriptive questionnaire ranges.",
+      "purpose": "Validated six-item CBI personal burnout subscale; 0–100, higher = more exhaustion. Source: Borritz et al. (2006). Original English only.",
+      "methodology": "Copenhagen Burnout Inventory, Danish occupational-health research, personal exhaustion subscale. Published psychological research measure; interpretation requires context, and scores do not establish a diagnosis.",
+      "contextNote": null,
+      "note": "A descriptive position on a scale is not a clinical cutoff. Even published screening bands do not establish a diagnosis or replace a clinical assessment; suggestions are not treatment prescriptions.",
+      "scaleGuide": {
+        "key": "cbi-personal",
+        "version": "v1",
+        "language": "en",
+        "instrumentLanguage": "en",
+        "title": "Copenhagen Burnout Inventory — Personal Burnout",
+        "purpose": "Validated six-item CBI personal burnout subscale; 0–100, higher = more exhaustion. Source: Borritz et al. (2006). Original English only.",
+        "timeframe": "in general",
+        "sourceTitle": "Copenhagen Burnout Inventory (CBI): Personal Burnout",
+        "sourceUrl": "https://nfa.dk/vaerktoejer/spoergeskemaer/spoergeskema-til-maaling-af-udbraendthed-cbi/copenhagen-burnout-inventory-cbi",
+        "kind": "instrument",
+        "questions": 6,
+        "suggestedRepeatDays": 30,
+        "measurementAxes": [
+          "stress"
+        ],
+        "skillAxes": [
+          "stress"
+        ],
+        "scales": [
+          {
+            "key": "symptoms.cbi_personal.total",
+            "label": "Copenhagen Burnout Inventory — Personal Burnout",
+            "axis": "stress",
+            "axisLabel": "Stress load",
+            "type": "reported_difficulty",
+            "min": 0,
+            "max": 100,
+            "direction": "lower-reported-difficulty",
+            "timeframe": "in general",
+            "watch": "Notice when demands feel heavier and how they affect your day.",
+            "action": "Compare exhaustion with time available for rest, sleep and your personal obligations.",
+            "skill": "Recovery and a manageable pace",
+            "canChooseSkill": true,
+            "bands": {
+              "basis": "descriptive",
+              "rows": [],
+              "note": "These values describe the position within the possible answer range; they are not clinical cutoffs. Compare only compatible repeated measures."
+            }
+          }
+        ],
+        "documentPath": "docs/assessments/guides/cbi-personal.md",
+        "disclaimer": "A questionnaire score reflects reported answers, not a clinical diagnosis. Personality traits do not need fixing; any skill practice is optional."
+      },
+      "sections": [
+        {
+          "key": "symptoms.cbi_personal.total",
+          "domain": "burnout",
+          "title": "Exhaustion & burnout",
+          "construct": "Copenhagen Burnout Inventory (CBI): Personal Burnout",
+          "min": 0,
+          "max": 100,
+          "explanation": {
+            "construct": "The authors define personal burnout as prolonged physical and psychological exhaustion. The six questions cover tiredness, physical and emotional exhaustion, feeling unable to continue, feeling worn out and weakness. This subscale asks about exhaustion in general, regardless of whether you work; it does not establish that work caused it.",
+            "calculation": "Mean across 6 items: 58.33. Responses from 0–4 are converted to points by multiplying by 25. Possible range: 0–100. Time frame: your general self-description.",
+            "count": 6,
+            "reverse": 0,
+            "method": "mean",
+            "label": "Mean response score",
+            "anchors": "Response points in this form: 0 = Never/almost never; 25 = Seldom; 50 = Sometimes; 75 = Often; 100 = Always.",
+            "steps": [
+              "For 7 days, separately note physical tiredness, emotional depletion and what you could not manage. Add sleep and recovery context; the total cannot tell which experience contributed most.",
+              "Choose one demand you can reduce or share and one realistic recovery period. If exhaustion is persistent, worsening or affects daily activities, discuss both physical and psychological contributors with a healthcare professional."
+            ],
+            "followUp": null,
+            "classificationNote": null,
+            "reading": "The mean of 58.33 lies between response points 50 (sometimes) and 75 (often). This averages six answers; it does not say every answer had that frequency. The 0–100 scale is not a percentage of burnout. This original scoring sheet does not provide individual clinical mild/moderate/severe cutoffs.",
+            "limitation": "This explains the registered form. A score alone does not establish a norm comparison, diagnosis or cause.",
+            "mixed": false,
+            "sourceReview": {
+              "status": "original-guidance",
+              "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
+              "reviewed": "2026-10-12",
+              "scope": "Original NFA form: constructs, item counts, anchors, mean, work reversal and missingness; no clinical severity thresholds."
+            },
+            "explanationOrigin": "Holistic House paraphrase of the original form and scoring guidance, not a verbatim author interpretation.",
+            "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=1",
+            "sourceTitle": "Copenhagen Burnout Inventory (CBI): Personal Burnout",
+            "citation": "Borritz M et al. Burnout among employees in human service work: design and baseline findings of the PUMA study. Scand J Public Health. 2006;34:49–58.",
+            "provenance": "cbi-personal / v1 / en / official-en-v1",
+            "languageNote": null,
+            "completeness": "This site saves a score only after every item is answered. That is stricter than the original CBI rule, which permits scoring with at least 3 personal, 4 work or 3 client items answered.",
+            "recommendationNote": "Optional Holistic House reflection steps, not the instrument authors’ treatment instructions.",
+            "classificationMeaning": "Your answers fall in the middle part of this reported difficulties scale. This is only a descriptive position within its possible scores, not a clinical cutoff, norm or diagnosis."
+          },
+          "band": "Mean response score",
+          "bandBasis": "descriptive",
+          "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=1",
+          "classificationSource": null,
+          "steps": [
+            "For 7 days, separately note physical tiredness, emotional depletion and what you could not manage. Add sleep and recovery context; the total cannot tell which experience contributed most.",
+            "Choose one demand you can reduce or share and one realistic recovery period. If exhaustion is persistent, worsening or affects daily activities, discuss both physical and psychological contributors with a healthcare professional."
+          ],
+          "followUp": "If persistent exhaustion or physical weakness affects daily life, consider discussing it with a healthcare professional rather than assuming the cause is burnout.",
+          "recommendedReview": false,
+          "value": 58.33,
+          "meaning": "Holistic House paraphrase of the original form and scoring guidance, not a verbatim author interpretation. The authors define personal burnout as prolonged physical and psychological exhaustion. The six questions cover tiredness, physical and emotional exhaustion, feeling unable to continue, feeling worn out and weakness. This subscale asks about exhaustion in general, regardless of whether you work; it does not establish that work caused it. Mean across 6 items: 58.33. Responses from 0–4 are converted to points by multiplying by 25. Possible range: 0–100. Time frame: your general self-description. The mean of 58.33 lies between response points 50 (sometimes) and 75 (often). This averages six answers; it does not say every answer had that frequency. The 0–100 scale is not a percentage of burnout. This original scoring sheet does not provide individual clinical mild/moderate/severe cutoffs."
+        }
+      ],
+      "personalityType": null,
+      "seekSupport": "If difficulties persist, worsen or interfere with daily life, contact a qualified professional. Responses are not monitored in real time.",
+      "status": "available",
+      "origin": "database",
+      "identity": {
+        "definitionId": "1dc07474-20bf-55ac-a3f4-5259a798e915",
+        "definitionKey": "cbi-personal",
+        "definitionVersion": "v1",
+        "instrumentLocale": "en",
+        "translationVersion": "official-en-v1",
+        "contentHash": "sha256:5df7220051a06a926e17cd9544522e91fb7f10ba945afaad18d68bc8e6abd427",
+        "scoringKey": "configured",
+        "scoringVersion": "v1",
+        "resultVersion": "v1",
+        "timeframe": "general"
+      },
+      "uiLocale": "en",
+      "interpretationVersion": "2026-10-12.v1",
+      "payloadHash": "sha256:42182de072ea61517ddef948a95b661afb81df52ac2a3c16fc8638affffb48df"
+    }
+  },
+  {
+    "synthetic": true,
+    "key": "cbi-personal",
+    "locale": "ru",
+    "score": 58.33,
+    "report": {
+      "rulesVersion": "2026-10-12.v6",
+      "explanationsVersion": "2026-10-12.v1",
+      "definitionVersion": "v1",
+      "title": "Ваш отчёт и конкретные рекомендации",
+      "intro": "Для каждого показателя приведены интерпретация его значения и практические шаги по теме этого теста. Опубликованные скрининговые диапазоны отделены от описательных шкал.",
+      "purpose": "Шесть вопросов CBI о личном истощении, шкала 0–100. Чем выше балл, тем сильнее ощущаемое истощение. Borritz и др. (2006); вопросы EN.",
+      "methodology": "Копенгагенский опросник выгорания (CBI), датские исследования охраны труда, подшкала личного истощения. Психологическая исследовательская методика с опубликованными работами; баллы требуют контекста и не устанавливают диагноз.",
+      "contextNote": null,
+      "note": "Описательное положение на шкале — не клинический порог. Даже опубликованные скрининговые диапазоны не устанавливают диагноз и не заменяют клиническую оценку; советы не являются назначением лечения.",
+      "scaleGuide": {
+        "key": "cbi-personal",
+        "version": "v1",
+        "language": "ru",
+        "instrumentLanguage": "en",
+        "title": "CBI — личное истощение (EN)",
+        "purpose": "Шесть вопросов CBI о личном истощении, шкала 0–100. Чем выше балл, тем сильнее ощущаемое истощение. Borritz и др. (2006); вопросы EN.",
+        "timeframe": "в целом",
+        "sourceTitle": "Copenhagen Burnout Inventory (CBI): Personal Burnout",
+        "sourceUrl": "https://nfa.dk/vaerktoejer/spoergeskemaer/spoergeskema-til-maaling-af-udbraendthed-cbi/copenhagen-burnout-inventory-cbi",
+        "kind": "instrument",
+        "questions": 6,
+        "suggestedRepeatDays": 30,
+        "measurementAxes": [
+          "stress"
+        ],
+        "skillAxes": [
+          "stress"
+        ],
+        "scales": [
+          {
+            "key": "symptoms.cbi_personal.total",
+            "label": "CBI — личное истощение (EN)",
+            "axis": "stress",
+            "axisLabel": "Нагрузка и стресс",
+            "type": "reported_difficulty",
+            "min": 0,
+            "max": 100,
+            "direction": "lower-reported-difficulty",
+            "timeframe": "в целом",
+            "watch": "Отмечайте, когда нагрузка сильнее и как она влияет на день.",
+            "action": "Сопоставьте истощение с возможностью отдыха, сном и личными обязанностями.",
+            "skill": "Восстановление и посильный темп",
+            "canChooseSkill": true,
+            "bands": {
+              "basis": "descriptive",
+              "rows": [],
+              "note": "Значения описывают ответы внутри диапазона, но не являются клиническими порогами. Сравнивать можно только совместимые повторные измерения."
+            }
+          }
+        ],
+        "documentPath": "docs/assessments/guides/cbi-personal.md",
+        "disclaimer": "Балл отражает ответы на опросник и не заменяет обследование. Личностные черты не нужно «исправлять», а упражнения выбираются только добровольно."
+      },
+      "sections": [
+        {
+          "key": "symptoms.cbi_personal.total",
+          "domain": "burnout",
+          "title": "Истощение и выгорание",
+          "construct": "Copenhagen Burnout Inventory (CBI): Personal Burnout",
+          "min": 0,
+          "max": 100,
+          "explanation": {
+            "construct": "Авторы определяют личное выгорание как продолжительное физическое и психологическое истощение. Шесть вопросов охватывают усталость, физическое и эмоциональное истощение, ощущение невозможности продолжать, измотанность и слабость. Эта шкала касается истощения в целом, независимо от работы; она не устанавливает, что причиной была работа.",
+            "calculation": "Среднее по 6 пунктам: 58,33. Ответы 0–4 переводятся в баллы умножением на 25. Возможный диапазон: 0–100. Период: общее самоописание.",
+            "count": 6,
+            "reverse": 0,
+            "method": "mean",
+            "label": "Средний балл ответов",
+            "anchors": "Опоры ответов в форме: 0 = Never/almost never; 25 = Seldom; 50 = Sometimes; 75 = Often; 100 = Always.",
+            "steps": [
+              "В течение 7 дней отдельно отмечайте физическую усталость, эмоциональное истощение и непосильные дела. Добавляйте контекст сна и восстановления: общий балл не показывает, что внесло больший вклад.",
+              "Выберите одну нагрузку, которую можно уменьшить или разделить, и реальное время восстановления. Если истощение сохраняется, усиливается или мешает делам, обсудите с врачом физические и психологические факторы."
+            ],
+            "followUp": null,
+            "classificationNote": null,
+            "reading": "Средний балл 58,33 находится между опорами 50 (иногда) и 75 (часто). Это среднее по шести ответам, а не утверждение, что каждый ответ был именно таким. 0–100 здесь не процент выгорания. В первоисточнике этих правил нет клинических границ «лёгкое / среднее / тяжёлое» для отдельного человека.",
+            "limitation": "Это объяснение зарегистрированной формы. Сравнение с нормой, диагноз или вывод о причине из одного балла не следует.",
+            "mixed": false,
+            "sourceReview": {
+              "status": "original-guidance",
+              "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
+              "reviewed": "2026-10-12",
+              "scope": "Original NFA form: constructs, item counts, anchors, mean, work reversal and missingness; no clinical severity thresholds."
+            },
+            "explanationOrigin": "Изложение Holistic House по исходной форме и правилам авторов; не дословная авторская интерпретация.",
+            "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=1",
+            "sourceTitle": "Copenhagen Burnout Inventory (CBI): Personal Burnout",
+            "citation": "Borritz M et al. Burnout among employees in human service work: design and baseline findings of the PUMA study. Scand J Public Health. 2006;34:49–58.",
+            "provenance": "cbi-personal / v1 / en / official-en-v1",
+            "languageNote": "Вопросы — английский оригинал. Русское пояснение не является валидированной русской адаптацией опросника.",
+            "completeness": "Здесь результат сохраняется только при ответах на все пункты. Это более строгое правило сайта: исходная CBI допускает подсчёт при ответах минимум на 3 личных, 4 рабочих или 3 клиентских пункта.",
+            "recommendationNote": "Практические предложения Holistic House для самонаблюдения, не авторские назначения по баллу.",
+            "classificationMeaning": "Ваш показатель находится в средней части шкалы сообщаемых трудностей. Это только описательное положение внутри доступных баллов, а не клинический порог, норма или диагноз."
+          },
+          "band": "Средний балл ответов",
+          "bandBasis": "descriptive",
+          "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=1",
+          "classificationSource": null,
+          "steps": [
+            "В течение 7 дней отдельно отмечайте физическую усталость, эмоциональное истощение и непосильные дела. Добавляйте контекст сна и восстановления: общий балл не показывает, что внесло больший вклад.",
+            "Выберите одну нагрузку, которую можно уменьшить или разделить, и реальное время восстановления. Если истощение сохраняется, усиливается или мешает делам, обсудите с врачом физические и психологические факторы."
+          ],
+          "followUp": "Если постоянное истощение или физическая слабость мешают повседневной жизни, обсудите это с врачом, не приписывая автоматически всё выгоранию.",
+          "recommendedReview": false,
+          "value": 58.33,
+          "meaning": "Изложение Holistic House по исходной форме и правилам авторов; не дословная авторская интерпретация. Авторы определяют личное выгорание как продолжительное физическое и психологическое истощение. Шесть вопросов охватывают усталость, физическое и эмоциональное истощение, ощущение невозможности продолжать, измотанность и слабость. Эта шкала касается истощения в целом, независимо от работы; она не устанавливает, что причиной была работа. Среднее по 6 пунктам: 58,33. Ответы 0–4 переводятся в баллы умножением на 25. Возможный диапазон: 0–100. Период: общее самоописание. Средний балл 58,33 находится между опорами 50 (иногда) и 75 (часто). Это среднее по шести ответам, а не утверждение, что каждый ответ был именно таким. 0–100 здесь не процент выгорания. В первоисточнике этих правил нет клинических границ «лёгкое / среднее / тяжёлое» для отдельного человека. Вопросы — английский оригинал. Русское пояснение не является валидированной русской адаптацией опросника."
+        }
+      ],
+      "personalityType": null,
+      "seekSupport": "Если трудности сохраняются, нарастают или мешают повседневной жизни, обратитесь к квалифицированному специалисту. Ответы не отслеживаются в реальном времени.",
+      "status": "available",
+      "origin": "database",
+      "identity": {
+        "definitionId": "1dc07474-20bf-55ac-a3f4-5259a798e915",
+        "definitionKey": "cbi-personal",
+        "definitionVersion": "v1",
+        "instrumentLocale": "en",
+        "translationVersion": "official-en-v1",
+        "contentHash": "sha256:5df7220051a06a926e17cd9544522e91fb7f10ba945afaad18d68bc8e6abd427",
+        "scoringKey": "configured",
+        "scoringVersion": "v1",
+        "resultVersion": "v1",
+        "timeframe": "general"
+      },
+      "uiLocale": "ru",
+      "interpretationVersion": "2026-10-12.v1",
+      "payloadHash": "sha256:0f6e6454ea65316dca33614fa274d5c53dd0977e1c0cfc48557927b279c1588a"
+    }
+  },
+  {
+    "synthetic": true,
+    "key": "phq-9",
+    "locale": "en",
+    "score": 12,
+    "report": {
+      "rulesVersion": "2026-10-12.v6",
+      "explanationsVersion": "2026-10-12.v1",
+      "definitionVersion": "v1",
+      "title": "Your report and practical recommendations",
+      "intro": "Each measure has a score-specific interpretation and practical next steps. Published screening categories are kept separate from descriptive questionnaire ranges.",
+      "purpose": "A deeper PHQ-9 mood symptom check with an explicit safety question. Not a diagnosis.",
+      "methodology": "PHQ-9 from Kroenke, Spitzer and colleagues, developed for depression symptom screening. Professional published screening measure; useful as a symptom signal, but not a diagnosis.",
+      "contextNote": null,
+      "note": "A descriptive position on a scale is not a clinical cutoff. Even published screening bands do not establish a diagnosis or replace a clinical assessment; suggestions are not treatment prescriptions.",
+      "scaleGuide": {
+        "key": "phq-9",
+        "version": "v1",
+        "language": "en",
+        "instrumentLanguage": "en",
+        "title": "Mood Deep Dive",
+        "purpose": "A deeper PHQ-9 mood symptom check with an explicit safety question. Not a diagnosis.",
+        "timeframe": "past two weeks",
+        "sourceTitle": "Patient Health Questionnaire 9 (PHQ-9)",
+        "sourceUrl": "https://cde.nlm.nih.gov/formView?tinyId=mJsGoMU1m",
+        "kind": "instrument",
+        "questions": 9,
+        "suggestedRepeatDays": 14,
+        "measurementAxes": [
+          "mood"
+        ],
+        "skillAxes": [],
+        "scales": [
+          {
+            "key": "symptoms.phq9.total",
+            "label": "Mood Deep Dive",
+            "axis": "mood",
+            "axisLabel": "Mood & feelings",
+            "type": "trait",
+            "min": 0,
+            "max": 27,
+            "direction": "non-normative",
+            "timeframe": "past two weeks",
+            "watch": "Notice how a tendency shows up in different settings; no trait is inherently a defect.",
+            "action": "If low mood, reduced interest or other symptoms persist, review their effect on functioning with a qualified clinician.",
+            "skill": "Supportive routines and emotional awareness",
+            "canChooseSkill": false,
+            "bands": {
+              "basis": "screening",
+              "rows": [
+                {
+                  "code": "minimal",
+                  "from": 0,
+                  "to": 4,
+                  "label": "minimal reported symptoms",
+                  "source": "https://www.phqscreeners.com/"
+                },
+                {
+                  "code": "mild",
+                  "from": 5,
+                  "to": 9,
+                  "label": "mild reported symptoms",
+                  "source": "https://www.phqscreeners.com/"
+                },
+                {
+                  "code": "moderate",
+                  "from": 10,
+                  "to": 14,
+                  "label": "moderate reported symptoms",
+                  "source": "https://www.phqscreeners.com/"
+                },
+                {
+                  "code": "moderately_severe",
+                  "from": 15,
+                  "to": 19,
+                  "label": "moderately severe reported symptoms",
+                  "source": "https://www.phqscreeners.com/"
+                },
+                {
+                  "code": "severe",
+                  "from": 20,
+                  "to": 27,
+                  "label": "severe reported symptoms",
+                  "source": "https://www.phqscreeners.com/"
+                }
+              ],
+              "note": "Published boundaries describe screening or reference categories; they do not establish a diagnosis."
+            }
+          }
+        ],
+        "documentPath": "docs/assessments/guides/phq-9.md",
+        "disclaimer": "A questionnaire score reflects reported answers, not a clinical diagnosis. Personality traits do not need fixing; any skill practice is optional."
+      },
+      "sections": [
+        {
+          "key": "symptoms.phq9.total",
+          "domain": "mood",
+          "title": "Mood & emotional wellbeing",
+          "construct": "Depressive symptom burden",
+          "min": 0,
+          "max": 27,
+          "explanation": {
+            "construct": "The PHQ-9 sums the reported frequency of nine depressive symptoms over two weeks, including mood, interest, sleep, energy, appetite, self-evaluation, concentration, movement and thoughts of death or self-harm. The total is not a safety assessment: the safety item must be considered separately, even when the total is small.",
+            "calculation": "Sum across 9 items: 12. Possible range: 0–27. Time frame: the past two weeks.",
+            "count": 9,
+            "reverse": 0,
+            "method": "sum",
+            "label": "Summed response score",
+            "anchors": "Response points in this form: 0 = Not at all; 1 = Several days; 2 = More than half the days; 3 = Nearly every day.",
+            "followUp": null,
+            "classificationNote": null,
+            "reading": "This explains the registered form. A score alone does not establish a norm comparison, diagnosis or cause.",
+            "limitation": "This explains the registered form. A score alone does not establish a norm comparison, diagnosis or cause.",
+            "mixed": false,
+            "sourceReview": {
+              "status": "original-guidance",
+              "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+              "reviewed": "2026-10-12",
+              "scope": "Spitzer/Williams/Kroenke author manual hosted by Case Western: pages 2–3 and 5–8, constructs, coding, variants and limits. No treatment algorithm implemented."
+            },
+            "explanationOrigin": "Holistic House paraphrase of the original form and scoring guidance, not a verbatim author interpretation.",
+            "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+            "sourceTitle": "Patient Health Questionnaire 9 (PHQ-9)",
+            "citation": null,
+            "provenance": "phq-9 / v1 / en / official-en-v1",
+            "languageNote": null,
+            "completeness": null,
+            "recommendationNote": "Optional Holistic House reflection steps, not the instrument authors’ treatment instructions.",
+            "classificationMeaning": "Your score falls within the published 10–14 point range (screening category): moderate reported symptoms. Self-reports do not diagnose a condition or establish its cause."
+          },
+          "band": "moderate reported symptoms",
+          "bandBasis": "screening",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+          "classificationSource": "https://www.phqscreeners.com/",
+          "steps": [
+            "If low mood, reduced interest or other symptoms persist, review their effect on functioning with a qualified clinician.",
+            "Note your mood once each evening for a week, alongside one event that influenced it and one thing that helped.",
+            "Choose one small, realistic source of connection or enjoyable activity and notice how you feel before and after it."
+          ],
+          "followUp": "An elevated screening result is a reason to discuss symptoms and their everyday impact with a qualified professional; it is not a diagnosis. Seek emergency help if you face immediate danger.",
+          "recommendedReview": true,
+          "value": 12,
+          "meaning": "Holistic House paraphrase of the original form and scoring guidance, not a verbatim author interpretation. The PHQ-9 sums the reported frequency of nine depressive symptoms over two weeks, including mood, interest, sleep, energy, appetite, self-evaluation, concentration, movement and thoughts of death or self-harm. The total is not a safety assessment: the safety item must be considered separately, even when the total is small. Sum across 9 items: 12. Possible range: 0–27. Time frame: the past two weeks. This explains the registered form. A score alone does not establish a norm comparison, diagnosis or cause. Your score falls within the published 10–14 point range (screening category): moderate reported symptoms. Self-reports do not diagnose a condition or establish its cause. Category reference: https://www.phqscreeners.com/"
+        }
+      ],
+      "personalityType": null,
+      "seekSupport": "If difficulties persist, worsen or interfere with daily life, contact a qualified professional. Responses are not monitored in real time.",
+      "status": "available",
+      "origin": "database",
+      "identity": {
+        "definitionId": "a251ab33-c65a-4eaf-a74c-43e4cb219c4c",
+        "definitionKey": "phq-9",
+        "definitionVersion": "v1",
+        "instrumentLocale": "en",
+        "translationVersion": "official-en-v1",
+        "contentHash": "sha256:04e213b6b64ccc7534d493d3c567d3adc7ca7a5e606c8ef2990449c4ee812b58",
+        "scoringKey": "configured",
+        "scoringVersion": "v1",
+        "resultVersion": "v1",
+        "timeframe": "past-2-weeks"
+      },
+      "uiLocale": "en",
+      "interpretationVersion": "2026-10-12.v1",
+      "payloadHash": "sha256:e5772a785da60188ee2a8bf6f1e2efae6a5fdb32623d0003ee4eba27f16fa2d9"
+    }
+  },
+  {
+    "synthetic": true,
+    "key": "phq-9",
+    "locale": "ru",
+    "score": 12,
+    "report": {
+      "rulesVersion": "2026-10-12.v6",
+      "explanationsVersion": "2026-10-12.v1",
+      "definitionVersion": "v1",
+      "title": "Ваш отчёт и конкретные рекомендации",
+      "intro": "Для каждого показателя приведены интерпретация его значения и практические шаги по теме этого теста. Опубликованные скрининговые диапазоны отделены от описательных шкал.",
+      "purpose": "Более глубокая шкала PHQ-9 с прямым вопросом безопасности. Не диагноз; вопросы на английском.",
+      "methodology": "PHQ-9 Kroenke, Spitzer и соавт., созданная для скрининга депрессивных симптомов. Опубликованная профессиональная скрининговая шкала; помогает заметить симптомы, но не устанавливает диагноз.",
+      "contextNote": null,
+      "note": "Описательное положение на шкале — не клинический порог. Даже опубликованные скрининговые диапазоны не устанавливают диагноз и не заменяют клиническую оценку; советы не являются назначением лечения.",
+      "scaleGuide": {
+        "key": "phq-9",
+        "version": "v1",
+        "language": "ru",
+        "instrumentLanguage": "en",
+        "title": "Глубокая проверка настроения · EN",
+        "purpose": "Более глубокая шкала PHQ-9 с прямым вопросом безопасности. Не диагноз; вопросы на английском.",
+        "timeframe": "последние две недели",
+        "sourceTitle": "Patient Health Questionnaire 9 (PHQ-9)",
+        "sourceUrl": "https://cde.nlm.nih.gov/formView?tinyId=mJsGoMU1m",
+        "kind": "instrument",
+        "questions": 9,
+        "suggestedRepeatDays": 14,
+        "measurementAxes": [
+          "mood"
+        ],
+        "skillAxes": [],
+        "scales": [
+          {
+            "key": "symptoms.phq9.total",
+            "label": "Глубокая проверка настроения · EN",
+            "axis": "mood",
+            "axisLabel": "Настроение и чувства",
+            "type": "trait",
+            "min": 0,
+            "max": 27,
+            "direction": "non-normative",
+            "timeframe": "последние две недели",
+            "watch": "Отмечайте проявления особенности в разных ситуациях; ни одна черта не является дефектом.",
+            "action": "Если сниженное настроение, потеря интереса или иные симптомы сохраняются, обсудите влияние на жизнь со специалистом.",
+            "skill": "Поддерживающие привычки и осознание чувств",
+            "canChooseSkill": false,
+            "bands": {
+              "basis": "screening",
+              "rows": [
+                {
+                  "code": "minimal",
+                  "from": 0,
+                  "to": 4,
+                  "label": "минимально выраженные симптомы",
+                  "source": "https://www.phqscreeners.com/"
+                },
+                {
+                  "code": "mild",
+                  "from": 5,
+                  "to": 9,
+                  "label": "слабо выраженные симптомы",
+                  "source": "https://www.phqscreeners.com/"
+                },
+                {
+                  "code": "moderate",
+                  "from": 10,
+                  "to": 14,
+                  "label": "умеренно выраженные симптомы",
+                  "source": "https://www.phqscreeners.com/"
+                },
+                {
+                  "code": "moderately_severe",
+                  "from": 15,
+                  "to": 19,
+                  "label": "значительно выраженные симптомы",
+                  "source": "https://www.phqscreeners.com/"
+                },
+                {
+                  "code": "severe",
+                  "from": 20,
+                  "to": 27,
+                  "label": "сильно выраженные симптомы",
+                  "source": "https://www.phqscreeners.com/"
+                }
+              ],
+              "note": "Опубликованные границы относятся к скрининговой оценке или справочному диапазону, не устанавливают диагноз."
+            }
+          }
+        ],
+        "documentPath": "docs/assessments/guides/phq-9.md",
+        "disclaimer": "Балл отражает ответы на опросник и не заменяет обследование. Личностные черты не нужно «исправлять», а упражнения выбираются только добровольно."
+      },
+      "sections": [
+        {
+          "key": "symptoms.phq9.total",
+          "domain": "mood",
+          "title": "Настроение и эмоциональное состояние",
+          "construct": "Depressive symptom burden",
+          "min": 0,
+          "max": 27,
+          "explanation": {
+            "construct": "PHQ-9 суммирует частоту девяти депрессивных симптомов за две недели: настроение, интерес, сон, силы, аппетит, отношение к себе, концентрацию, движения и мысли о смерти или самоповреждении. Сумма не является оценкой безопасности: соответствующий пункт рассматривается отдельно даже при небольшом итоге.",
+            "calculation": "Сумма по 9 пунктам: 12. Возможный диапазон: 0–27. Период: последние две недели.",
+            "count": 9,
+            "reverse": 0,
+            "method": "sum",
+            "label": "Суммарный балл ответов",
+            "anchors": "Опоры ответов в форме: 0 = Not at all; 1 = Several days; 2 = More than half the days; 3 = Nearly every day.",
+            "followUp": null,
+            "classificationNote": null,
+            "reading": "Это объяснение зарегистрированной формы. Сравнение с нормой, диагноз или вывод о причине из одного балла не следует.",
+            "limitation": "Это объяснение зарегистрированной формы. Сравнение с нормой, диагноз или вывод о причине из одного балла не следует.",
+            "mixed": false,
+            "sourceReview": {
+              "status": "original-guidance",
+              "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+              "reviewed": "2026-10-12",
+              "scope": "Spitzer/Williams/Kroenke author manual hosted by Case Western: pages 2–3 and 5–8, constructs, coding, variants and limits. No treatment algorithm implemented."
+            },
+            "explanationOrigin": "Изложение Holistic House по исходной форме и правилам авторов; не дословная авторская интерпретация.",
+            "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+            "sourceTitle": "Patient Health Questionnaire 9 (PHQ-9)",
+            "citation": null,
+            "provenance": "phq-9 / v1 / en / official-en-v1",
+            "languageNote": "Вопросы — английский оригинал. Русское пояснение не является валидированной русской адаптацией опросника.",
+            "completeness": null,
+            "recommendationNote": "Практические предложения Holistic House для самонаблюдения, не авторские назначения по баллу.",
+            "classificationMeaning": "Ваш результат попадает в диапазон 10–14 баллов (скрининговая категория): умеренно выраженные симптомы. Ответы не устанавливают диагноз и не доказывают причину."
+          },
+          "band": "умеренно выраженные симптомы",
+          "bandBasis": "screening",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+          "classificationSource": "https://www.phqscreeners.com/",
+          "steps": [
+            "Если сниженное настроение, потеря интереса или иные симптомы сохраняются, обсудите влияние на жизнь со специалистом.",
+            "В течение недели вечером отмечайте настроение, одно повлиявшее событие и то, что помогло.",
+            "Выберите одно небольшое посильное действие для общения или приятной активности и сравните состояние до и после."
+          ],
+          "followUp": "Повышенный скрининговый показатель — повод обсудить симптомы и их влияние на жизнь с квалифицированным специалистом. Он не устанавливает диагноз. При непосредственной угрозе безопасности обращайтесь в экстренную службу.",
+          "recommendedReview": true,
+          "value": 12,
+          "meaning": "Изложение Holistic House по исходной форме и правилам авторов; не дословная авторская интерпретация. PHQ-9 суммирует частоту девяти депрессивных симптомов за две недели: настроение, интерес, сон, силы, аппетит, отношение к себе, концентрацию, движения и мысли о смерти или самоповреждении. Сумма не является оценкой безопасности: соответствующий пункт рассматривается отдельно даже при небольшом итоге. Сумма по 9 пунктам: 12. Возможный диапазон: 0–27. Период: последние две недели. Это объяснение зарегистрированной формы. Сравнение с нормой, диагноз или вывод о причине из одного балла не следует. Ваш результат попадает в диапазон 10–14 баллов (скрининговая категория): умеренно выраженные симптомы. Ответы не устанавливают диагноз и не доказывают причину. Вопросы — английский оригинал. Русское пояснение не является валидированной русской адаптацией опросника. Источник диапазонов: https://www.phqscreeners.com/"
+        }
+      ],
+      "personalityType": null,
+      "seekSupport": "Если трудности сохраняются, нарастают или мешают повседневной жизни, обратитесь к квалифицированному специалисту. Ответы не отслеживаются в реальном времени.",
+      "status": "available",
+      "origin": "database",
+      "identity": {
+        "definitionId": "a251ab33-c65a-4eaf-a74c-43e4cb219c4c",
+        "definitionKey": "phq-9",
+        "definitionVersion": "v1",
+        "instrumentLocale": "en",
+        "translationVersion": "official-en-v1",
+        "contentHash": "sha256:04e213b6b64ccc7534d493d3c567d3adc7ca7a5e606c8ef2990449c4ee812b58",
+        "scoringKey": "configured",
+        "scoringVersion": "v1",
+        "resultVersion": "v1",
+        "timeframe": "past-2-weeks"
+      },
+      "uiLocale": "ru",
+      "interpretationVersion": "2026-10-12.v1",
+      "payloadHash": "sha256:b99bfe3fb61d259c73e8e6af477b3e0f288120f02ffe816c051db068e201e07c"
+    }
+  }
+]

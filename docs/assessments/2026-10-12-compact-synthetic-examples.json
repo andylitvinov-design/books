@@ -1,0 +1,312 @@
+[
+  {
+    "synthetic": true,
+    "testKey": "cbi-personal",
+    "uiLocale": "en",
+    "interpretationVersion": "2026-10-13.v1",
+    "blocks": [
+      {
+        "label": "Status and score",
+        "scales": [
+          {
+            "key": "symptoms.cbi_personal.total",
+            "score": 58.33,
+            "status": "The mean of 58.33 lies between response points 50 (sometimes) and 75 (often)."
+          }
+        ]
+      },
+      {
+        "label": "What this means",
+        "scales": [
+          {
+            "key": "symptoms.cbi_personal.total",
+            "meaning": "Six answers describe general physical and psychological exhaustion. The score does not identify its cause or a percentage of burnout."
+          }
+        ]
+      },
+      {
+        "label": "Something you could try",
+        "selectedScale": "symptoms.cbi_personal.total",
+        "recommendation": "You could notice physical tiredness and emotional exhaustion separately for a week, alongside sleep and demands.",
+        "course": {
+          "goalId": "energy_agency",
+          "title": "Energy & agency",
+          "description": "Notice recovery needs and take small realistic steps toward chosen goals.",
+          "matchScope": "related-general-practice"
+        }
+      },
+      {
+        "label": "A next step",
+        "nextStep": "If exhaustion persists or interferes with ordinary activities, discuss sleep, health and workload with a healthcare professional."
+      },
+      {
+        "label": "About this test",
+        "name": "Copenhagen Burnout Inventory (CBI): Personal Burnout",
+        "purpose": "Validated six-item CBI personal burnout subscale; 0–100, higher = more exhaustion.",
+        "evidence": "Published research measure. The score describes self-report; individual norms are not established here. CBI attribution: Borritz et al. (2006), PUMA study.",
+        "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=1",
+        "sourceNote": "Text is a Holistic House explanation; practical steps are authored by Holistic House.",
+        "context": null,
+        "languageNote": null
+      }
+    ]
+  },
+  {
+    "synthetic": true,
+    "testKey": "cbi-personal",
+    "uiLocale": "ru",
+    "interpretationVersion": "2026-10-13.v1",
+    "blocks": [
+      {
+        "label": "Статус и оценка",
+        "scales": [
+          {
+            "key": "symptoms.cbi_personal.total",
+            "score": 58.33,
+            "status": "Средний балл 58,33 находится между опорами 50 (иногда) и 75 (часто)."
+          }
+        ]
+      },
+      {
+        "label": "Что это означает",
+        "scales": [
+          {
+            "key": "symptoms.cbi_personal.total",
+            "meaning": "Шесть ответов описывают общую физическую и психологическую истощённость. Балл не показывает её причину и не означает процент выгорания."
+          }
+        ]
+      },
+      {
+        "label": "Что может поддержать",
+        "selectedScale": "symptoms.cbi_personal.total",
+        "recommendation": "Можно в течение недели замечать физическую усталость и эмоциональное истощение отдельно, записывая рядом сон и нагрузку.",
+        "course": {
+          "goalId": "energy_agency",
+          "title": "Энергия и действие",
+          "description": "Замечать потребность в восстановлении и делать небольшие реальные шаги к целям.",
+          "matchScope": "related-general-practice"
+        }
+      },
+      {
+        "label": "Следующий шаг",
+        "nextStep": "Если истощение сохраняется или мешает обычным делам, обсудите с врачом сон, здоровье и нагрузку."
+      },
+      {
+        "label": "Об этом тесте",
+        "name": "Copenhagen Burnout Inventory (CBI): Personal Burnout",
+        "purpose": "Шесть вопросов CBI о личном истощении, шкала 0–100.",
+        "evidence": "Опубликованная исследовательская шкала. Результат описывает самоотчёт; индивидуальные нормы здесь не устанавливаются. Источник CBI: Borritz и др. (2006), исследование PUMA.",
+        "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=1",
+        "sourceNote": "Текст — изложение Holistic House; практические шаги подготовлены Holistic House.",
+        "context": null,
+        "languageNote": "Вопросы на английском; русское пояснение не является валидированным переводом теста."
+      }
+    ]
+  },
+  {
+    "synthetic": true,
+    "testKey": "phq-9",
+    "uiLocale": "en",
+    "interpretationVersion": "2026-10-13.v1",
+    "blocks": [
+      {
+        "label": "Status and score",
+        "scales": [
+          {
+            "key": "symptoms.phq9.total",
+            "score": 12,
+            "status": "12 / 27 — moderate reported symptoms"
+          }
+        ]
+      },
+      {
+        "label": "What this means",
+        "scales": [
+          {
+            "key": "symptoms.phq9.total",
+            "meaning": "Sum of the frequency of nine depressive symptoms over the past two weeks. The category describes your responses, not a confirmed depression diagnosis."
+          }
+        ]
+      },
+      {
+        "label": "Something you could try",
+        "selectedScale": "symptoms.phq9.total",
+        "recommendation": "You could note which symptoms disrupt sleep, work, relationships or self-care.",
+        "course": null
+      },
+      {
+        "label": "A next step",
+        "nextStep": "Arrange a qualified assessment of symptoms and their effect on daily life; bring this result and concrete examples."
+      },
+      {
+        "label": "About this test",
+        "name": "Patient Health Questionnaire 9 (PHQ-9)",
+        "purpose": "A deeper PHQ-9 mood symptom check with an explicit safety question.",
+        "evidence": "Published symptom screening. Categories guide a discussion; diagnosis requires a separate assessment.",
+        "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+        "sourceNote": "Text is a Holistic House explanation; practical steps are authored by Holistic House.",
+        "context": null,
+        "languageNote": null
+      }
+    ]
+  },
+  {
+    "synthetic": true,
+    "testKey": "phq-9",
+    "uiLocale": "ru",
+    "interpretationVersion": "2026-10-13.v1",
+    "blocks": [
+      {
+        "label": "Статус и оценка",
+        "scales": [
+          {
+            "key": "symptoms.phq9.total",
+            "score": 12,
+            "status": "12 / 27 — умеренно выраженные симптомы"
+          }
+        ]
+      },
+      {
+        "label": "Что это означает",
+        "scales": [
+          {
+            "key": "symptoms.phq9.total",
+            "meaning": "Сумма частоты девяти депрессивных симптомов за последние две недели. Этот диапазон описывает ответы, а не подтверждает депрессию."
+          }
+        ]
+      },
+      {
+        "label": "Что может поддержать",
+        "selectedScale": "symptoms.phq9.total",
+        "recommendation": "Можно отметить, какие симптомы мешают сну, работе, общению или заботе о себе.",
+        "course": null
+      },
+      {
+        "label": "Следующий шаг",
+        "nextStep": "Договоритесь об оценке симптомов и их влияния на жизнь с квалифицированным специалистом; возьмите результаты и примеры."
+      },
+      {
+        "label": "Об этом тесте",
+        "name": "Patient Health Questionnaire 9 (PHQ-9)",
+        "purpose": "Более глубокая шкала PHQ-9 с прямым вопросом безопасности.",
+        "evidence": "Опубликованный скрининг симптомов. Категория помогает выбрать повод для обсуждения; диагноз требует отдельной оценки.",
+        "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+        "sourceNote": "Текст — изложение Holistic House; практические шаги подготовлены Holistic House.",
+        "context": null,
+        "languageNote": "Вопросы на английском; русское пояснение не является валидированным переводом теста."
+      }
+    ]
+  },
+  {
+    "synthetic": true,
+    "testKey": "erq",
+    "uiLocale": "en",
+    "interpretationVersion": "2026-10-13.v1",
+    "blocks": [
+      {
+        "label": "Status and score",
+        "scales": [
+          {
+            "key": "resources.erq.reappraisal",
+            "score": 4,
+            "status": "Mean across 6 items: 4. Range: 1–7."
+          },
+          {
+            "key": "resources.erq.suppression",
+            "score": 5.25,
+            "status": "Mean across 4 items: 5.25. Range: 1–7."
+          }
+        ]
+      },
+      {
+        "label": "What this means",
+        "scales": [
+          {
+            "key": "resources.erq.reappraisal",
+            "meaning": "Habitually changing how a situation is understood to change its emotional impact. A higher mean means more use of reappraisal, not proven effectiveness."
+          },
+          {
+            "key": "resources.erq.suppression",
+            "meaning": "Habitually restraining the outward expression of an emotion that is already present. A higher mean means more restraint, not less emotion inside."
+          }
+        ]
+      },
+      {
+        "label": "Something you could try",
+        "selectedScale": "resources.erq.reappraisal",
+        "recommendation": "Describe one upsetting event using the first interpretation that came to mind. Write a second plausible interpretation without denying the facts or your feelings.",
+        "course": null
+      },
+      {
+        "label": "A next step",
+        "nextStep": "Compare how each interpretation affects your emotion and available choices."
+      },
+      {
+        "label": "About this test",
+        "name": "Emotion Regulation Questionnaire (ERQ)",
+        "purpose": "Professional ERQ profile of cognitive reappraisal and expressive suppression.",
+        "evidence": "Published research measure. The score describes self-report; individual norms are not established here. Measures strategy use, not strategy effectiveness or depressive symptoms.",
+        "source": "https://www.cmu.edu/common-cold-project/measures-by-study/psychological-and-social-constructs/other-psychological-measures/emotion-regulation.html",
+        "sourceNote": "Text is a Holistic House explanation; practical steps are authored by Holistic House.",
+        "context": null,
+        "languageNote": null
+      }
+    ]
+  },
+  {
+    "synthetic": true,
+    "testKey": "erq",
+    "uiLocale": "ru",
+    "interpretationVersion": "2026-10-13.v1",
+    "blocks": [
+      {
+        "label": "Статус и оценка",
+        "scales": [
+          {
+            "key": "resources.erq.reappraisal",
+            "score": 4,
+            "status": "Среднее по 6 пунктам: 4. Диапазон: 1–7."
+          },
+          {
+            "key": "resources.erq.suppression",
+            "score": 5.25,
+            "status": "Среднее по 4 пунктам: 5,25. Диапазон: 1–7."
+          }
+        ]
+      },
+      {
+        "label": "Что это означает",
+        "scales": [
+          {
+            "key": "resources.erq.reappraisal",
+            "meaning": "Привычка менять понимание ситуации, чтобы изменить её эмоциональное воздействие. Более высокий средний балл означает более частое применение переоценки, а не доказанную успешность стратегии."
+          },
+          {
+            "key": "resources.erq.suppression",
+            "meaning": "Привычка сдерживать внешнее выражение уже возникшей эмоции. Более высокий средний балл означает больше такого сдерживания, а не меньше чувств внутри."
+          }
+        ]
+      },
+      {
+        "label": "Что может поддержать",
+        "selectedScale": "resources.erq.reappraisal",
+        "recommendation": "Опишите неприятное событие так, как сначала его поняли. Запишите второе правдоподобное объяснение, не отрицая факты и чувства.",
+        "course": null
+      },
+      {
+        "label": "Следующий шаг",
+        "nextStep": "Сравните, как каждое объяснение влияет на эмоцию и возможные действия."
+      },
+      {
+        "label": "Об этом тесте",
+        "name": "Emotion Regulation Questionnaire (ERQ)",
+        "purpose": "Профессиональный ERQ-профиль когнитивной переоценки и подавления экспрессии; вопросы на английском.",
+        "evidence": "Опубликованная исследовательская шкала. Результат описывает самоотчёт; индивидуальные нормы здесь не устанавливаются. Измеряет применение стратегий, а не их успешность или симптомы депрессии.",
+        "source": "https://www.cmu.edu/common-cold-project/measures-by-study/psychological-and-social-constructs/other-psychological-measures/emotion-regulation.html",
+        "sourceNote": "Текст — изложение Holistic House; практические шаги подготовлены Holistic House.",
+        "context": null,
+        "languageNote": "Вопросы на английском; русское пояснение не является валидированным переводом теста."
+      }
+    ]
+  }
+]

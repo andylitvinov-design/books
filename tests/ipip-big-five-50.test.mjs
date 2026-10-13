@@ -9,7 +9,7 @@ import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 
 const key = 'ipip-big-five-50'
 const definition = IPIP_BIG_FIVE_50_EN_V1

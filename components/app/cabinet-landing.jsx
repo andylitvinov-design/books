@@ -935,6 +935,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             </header>
 
+            <PersonalResultReport result={guestResult} locale={locale} />
+            <details className="cabinet-result-raw-details">
+              <summary>{locale === 'ru' ? 'Посмотреть исходные баллы и шкалы' : 'View recorded scores and scales'}</summary>
             <section className="cabinet-result-section" aria-labelledby="guest-result-values">
               <div className="cabinet-result-section-heading">
                 <div>
@@ -964,7 +967,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             </section>
 
-            <PersonalResultReport result={guestResult} locale={locale} />
+            </details>
             <div className="cabinet-result-actions-grid">
               <section className="cabinet-result-save-panel">
                 <p className="about-kicker">{locale === 'ru' ? 'Сохранить динамику' : 'Keep your history'}</p>

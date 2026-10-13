@@ -45,8 +45,9 @@ export function ScoreGauge({ dimension, locale = 'en', compact = false }) {
   </figure>
 }
 
-export function ScoreTrend({ current, previous, dimensionKey, locale = 'en', compact = false }) {
+export function ScoreTrend({ current, previous, dimensionKey, locale = 'en', compact = false, descriptive = false }) {
   const change = gaugeChange(current, previous, dimensionKey)
+  if (descriptive && ['improved','worsened'].includes(change.state)) change.state = 'changed'
   const ru = locale === 'ru'
   const labels = {
     baseline: ru ? 'Первый замер' : 'First measurement',

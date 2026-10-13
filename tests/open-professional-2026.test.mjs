@@ -14,7 +14,7 @@ import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessme
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { interpretationPlan, interpretationRegistryCoverage, classificationDirection } from '../lib/assessments/interpretation-registry.js'
 

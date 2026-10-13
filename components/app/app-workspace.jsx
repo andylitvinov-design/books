@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, FileText, Heart, House, Leaf, Moon, Smile, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { COPY, labelFor, explanationFor } from './copy'
+import { COPY, labelFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { assessmentHistoryGroups, nextPersonalRecommendation, resultChangeSummary } from '@/lib/assessments/personal-guidance'
@@ -14,7 +14,9 @@ import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
+import { InsightTestScales } from '@/components/app/insight-test-scales'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { validSupportGoal } from '@/lib/assessments/course-targets'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
 import { periodComparison, periodWindow, resultsForPeriod } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
@@ -50,6 +52,12 @@ function message(error, c) {
       : error?.code === 'NOT_FOUND'
         ? c.notFound
         : c.error
+}
+function preparedScaleMeaning(result, key, locale) {
+  const report = buildAssessmentResultReport(result, locale)
+  if (report.status !== 'available') return report.note
+  const section = report.sections.find(item => item.key === key)
+  return section?.compact?.meaning || report.note
 }
 function dateLabel(value, locale) {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
@@ -141,10 +149,21 @@ export default function AppWorkspace({ locale, path = [] }) {
       window.removeEventListener('pagehide', hide)
     }
   }, [load, router])
+  useEffect(() => {
+    if (state !== 'ready' || !data) return
+    try {
+      const goal = sessionStorage.getItem('hh-pending-course-goal')
+      if (goal) sessionStorage.removeItem('hh-pending-course-goal')
+      if (validSupportGoal(goal)) router.replace(`/${locale}/app/course?support=${encodeURIComponent(goal)}`)
+    } catch { /* The course remains available if session storage is disabled. */ }
+  }, [state, data, locale, router])
   async function signin() {
     setBusy(true)
     setError(null)
     try {
+      // Preserve only an explicitly requested, public course topic across sign-in.
+      const goal = page === 'course' ? searchParams.get('support') : null
+      if (validSupportGoal(goal)) { try { sessionStorage.setItem('hh-pending-course-goal', goal) } catch { /* Optional navigation context. */ } }
       const result = await appFetch('auth/start', {
         locale,
         serviceId: searchParams.get('service') || null,
@@ -242,6 +261,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           <h1>{state === 'unavailable' ? c.unavailable : c.welcome}</h1>
           <p>{state === 'unavailable' ? c.unavailableText : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
+          {page === 'course' && <p>{locale === 'ru' ? 'Бесплатный курс содержит готовые практики. Войдите, чтобы выбрать направление; запись начинается только после вашего согласия.' : 'The free course uses prepared practices. Sign in to choose a direction; enrolment starts only with your consent.'}</p>}
           {state !== 'unavailable' && (
             <button className="hh-primary" onClick={signin} disabled={busy}>
               {c.signin}
@@ -337,7 +357,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
-          {page === 'course' && <MyCourse data={data} locale={locale} />}
+          {page === 'course' && <MyCourse data={data} locale={locale} requestedSupport={searchParams.get('support')} />}
           {page === 'analysis' && <PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
           {page === 'monitoring' && (
@@ -1861,24 +1881,9 @@ function PortfolioPage({ data, locale }) {
                 {categoryGroups.map(group => {
             const latest = group.latest
             const report = buildAssessmentResultReport(latest, locale)
-            const first = report.sections[0]
-            const main = latest.dimensions?.[0]
             return (
               <article className="hh-insights-test-card" key={group.key}>
-                <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}>
-                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact /></div>
-                  <div className="hh-insights-test-body">
-                    <div className="hh-insights-test-meta">
-                      <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
-                    </div>
-                    <h2>{group.title}</h2>
-                    {first && <p className="hh-insights-test-summary">{first.construct}: <strong>{first.value}</strong> · {first.band}</p>}
-                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} />}
-                    {latest.dimensions?.length > 1 &&
-                      <p className="hh-insights-test-scores">+ {latest.dimensions.length - 1} {ru ? 'дополнительных шкал' : 'more scales'}</p>}
-                    <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
-                  </div>
-                </Link>
+                <InsightTestScales result={latest} report={report} previous={group.periodPrior} title={group.title} date={dateLabel(latest.measurementAt,locale)} locale={locale}/>
                 {group.count > 1 && (
                   <details className="hh-insights-history">
                     <summary>{ru ? `История прохождений (${group.count})` : `Assessment history (${group.count})`}</summary>
@@ -1946,7 +1951,7 @@ function PortfolioPage({ data, locale }) {
             <div className="hh-panel hh-detail">
               <button type="button" onClick={() => setSelected(null)}>{ru ? 'Закрыть' : 'Close'}</button>
               <h2>{readableScaleName(selected, locale)}</h2>
-              <p>{explanationFor(selected.key, locale)}</p>
+              <p>{preparedScaleMeaning(data.results.find(result => result.id === selected.sourceResultId), selected.key, locale)}</p>
               <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{ru ? 'Полный отчёт' : 'Full report'}</Link>
             </div>
           )}
@@ -2468,7 +2473,7 @@ function ResultPage({ id, locale, data }) {
           <p className="hh-kicker">{c.result}</p>
           <h1>{title}</h1>
           <p className="hh-result-intro">
-            {locale === 'ru' ? 'Ваш результат и два практических шага на неделю.' : 'Your score and two practical next steps for this week.'}
+            {locale === 'ru' ? 'Ваш результат и поддержка по выбранной теме.' : 'Your result and support for the topic you choose.'}
           </p>
         </div>
         <div className="hh-result-meta">
@@ -2517,7 +2522,7 @@ function ResultPage({ id, locale, data }) {
               <section className="hh-result-metric" key={d.key}>
                 <div className="hh-result-metric-copy">
                   <h3>{readableScaleName(d, locale)}</h3>
-                  {explanationFor(d.key, locale) && <p>{explanationFor(d.key, locale)}</p>}
+                  <p>{preparedScaleMeaning(result, d.key, locale)}</p>
                 </div>
                 <div className="hh-result-score">
                   <strong>{d.value}</strong>

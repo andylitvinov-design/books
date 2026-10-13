@@ -1,0 +1,2936 @@
+{
+  "version": "2026-10-12.v1",
+  "base": "575f87639fbecd4b503e899124ac5b24c2e37429",
+  "scope": "Active, rights-cleared, startable catalog keys only. Synthetic scoring; no client records.",
+  "counts": {
+    "keys": 109,
+    "dimensions": 232,
+    "newDimensions": 184,
+    "sourceStatusCounts": {
+      "original-hh-definition": 67,
+      "original-form": 21,
+      "original-guidance": 15,
+      "research-source": 1,
+      "original-publication-abstract": 2,
+      "existing-instrument-specific-guidance": 3
+    }
+  },
+  "records": [
+    {
+      "key": "hh-bach-flower-profile",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:9097f93771fc9aa137fadb87a77f2d7468b16874a4cd45c7babec2f2d99848b9",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": "https://github.com/andylitvinov-design/report/blob/main/src/data/mockData.js",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "bach.agrimony",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.aspen",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.beech",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.centaury",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.cerato",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.cherry_plum",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.chestnut_bud",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.chicory",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.clematis",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.crab_apple",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.elm",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.gentian",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.gorse",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.heather",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.holly",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.honeysuckle",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.hornbeam",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.impatiens",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.larch",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.mimulus",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.mustard",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.oak",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.olive",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.pine",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.red_chestnut",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.rock_rose",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.rock_water",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.scleranthus",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.star_of_bethlehem",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.sweet_chestnut",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.vervain",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.vine",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.walnut",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.water_violet",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.white_chestnut",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.wild_oat",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.wild_rose",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        },
+        {
+          "key": "bach.willow",
+          "explanation": "preserved-instrument-specific",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-current-state",
+      "version": "v2",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:ff9cb8875304b744829e570dacb39c1fd2feebca158184cb5e56ac9ef794423d",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.problem_intensity",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "state.resource",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "state.tension",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "state.fatigue",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "state.life_impact",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "mini-ipip-20",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:90b6a606ad9ff09a80379e983caf58be69d8a70072fde24c7172bb43aa0240eb",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/newScoringInstructions.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.extraversion",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newScoringInstructions.htm"
+        },
+        {
+          "key": "trait.agreeableness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newScoringInstructions.htm"
+        },
+        {
+          "key": "trait.conscientiousness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newScoringInstructions.htm"
+        },
+        {
+          "key": "trait.neuroticism",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newScoringInstructions.htm"
+        },
+        {
+          "key": "trait.intellect_imagination",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newScoringInstructions.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-weekly-pulse",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:e0db859b3e3c888643ef199e1034507687b0692b77ea6932c2cbacacfb2767d7",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "weekly.mood",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "weekly.tension",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "weekly.load",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "weekly.recovery",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "weekly.energy",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "weekly.clarity",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "weekly.connection",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "weekly.functioning",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "phq-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:a18df8048a4b70fd34ab27e8344efea51e538deab3f1f37219171e34d31d4bcf",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Spitzer/Williams/Kroenke author manual hosted by Case Western: pages 2–3 and 5–8, constructs, coding, variants and limits. No treatment algorithm implemented."
+      },
+      "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+      "categorySource": "https://pubmed.ncbi.nlm.nih.gov/19616305/",
+      "dimensions": [
+        {
+          "key": "symptoms.phq4.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf"
+        },
+        {
+          "key": "symptoms.phq4.depression",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf"
+        },
+        {
+          "key": "symptoms.phq4.anxiety",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "k6",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:1cdfc9c4f7b67fa0218062a1393b51aa89154f1ef50e3bd02b44336379445f46",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Author site and scoring sheet; nonspecific distress, coding 0–4, sums 0–24/0–40. Not a subtype diagnosis."
+      },
+      "source": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf",
+      "categorySource": "https://pmc.ncbi.nlm.nih.gov/articles/mid/NIHMS447801/",
+      "dimensions": [
+        {
+          "key": "symptoms.k6.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "phq-9",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:04e213b6b64ccc7534d493d3c567d3adc7ca7a5e606c8ef2990449c4ee812b58",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Spitzer/Williams/Kroenke author manual hosted by Case Western: pages 2–3 and 5–8, constructs, coding, variants and limits. No treatment algorithm implemented."
+      },
+      "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+      "categorySource": "https://www.phqscreeners.com/",
+      "dimensions": [
+        {
+          "key": "symptoms.phq9.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "gad-7",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:e94b48a147790054e4b114402e855e56e732238a67a18b2f74945d80244f6db1",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Spitzer/Williams/Kroenke author manual hosted by Case Western: pages 2–3 and 5–8, constructs, coding, variants and limits. No treatment algorithm implemented."
+      },
+      "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+      "categorySource": "https://jamanetwork.com/journals/jamainternalmedicine/fullarticle/410326",
+      "dimensions": [
+        {
+          "key": "symptoms.gad7.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-resource-pulse",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:80621529165c1c239cf93a30129ece25d010da05a01bd71e560231a3711d7afb",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resource.energy",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resource.self_support",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resource.support",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resource.connection",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resource.agency",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resource.meaning",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-monthly-profile",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:d42a6dcd75854b7d5026d71147b34c02419a6073b7d10f1644b22dc55a0175d9",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.monthly.self",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.monthly.relationships",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.monthly.body",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.monthly.work",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.monthly.meaning",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.monthly.support",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.monthly.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "phq-2",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:2cd80bebd2ac1ca94bd435453ce8e21013961e49e9d8998261c37c57030c32a4",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Spitzer/Williams/Kroenke author manual hosted by Case Western: pages 2–3 and 5–8, constructs, coding, variants and limits. No treatment algorithm implemented."
+      },
+      "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+      "categorySource": "https://pubmed.ncbi.nlm.nih.gov/19616305/",
+      "dimensions": [
+        {
+          "key": "symptoms.phq2.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "gad-2",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:ee059226263689325c949adefcda6e3b7c6f4779218a246c9154e8173e7be878",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Spitzer/Williams/Kroenke author manual hosted by Case Western: pages 2–3 and 5–8, constructs, coding, variants and limits. No treatment algorithm implemented."
+      },
+      "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+      "categorySource": "https://pubmed.ncbi.nlm.nih.gov/19616305/",
+      "dimensions": [
+        {
+          "key": "symptoms.gad2.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "k10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:ef3c5d328e0b3abca3d0a78cd23b4d5a5bfe02605fa99b3a75bcd721108121d5",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Author site and scoring sheet; nonspecific distress, coding 0–4, sums 0–24/0–40. Not a subtype diagnosis."
+      },
+      "source": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "symptoms.k10.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-social-battery",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:0636174ef6a2f53bae1d02cc651c4a0de6fee35ed66db9376dc56ca3880f6897",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.social_battery.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-focus-mode",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:3773d1f2c944b394f5382f5d8b17f7a454a44e2bcb5bc8211165b1ec4993f0c2",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.focus_mode.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-stress-weather",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:ddc04e63d869d3b04d03e162829d27902c6f627b024a6cf840c2e12e79e3f5b4",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.stress_weather.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-recharge-decoder",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:370349ab2476c36087ca60221eac2d57b5212c8d03a17ceb86feb88080a749ea",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.recharge_decoder.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-boundary-radar",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:59381c8650246283304447e6aff89dfaf4a0e9e1bf2cc4623c17f70b2bfd4dad",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.boundary_radar.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-tiny-joys",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:d9193d167aabe53668955537341e28010824ca34a6fb7e23e58dcb40d321ccf9",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.tiny_joys.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "erq",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:86b3c6a2fc11462c66620b6835de10fc8beac4f568d756c7783b0fcdb6609181",
+      "sourceReview": {
+        "status": "research-source",
+        "reviewed": "2026-10-12",
+        "scope": "CMU Common Cold Project primary research measure documentation: purpose, anchors, 6/4 item means."
+      },
+      "source": "https://www.cmu.edu/common-cold-project/measures-by-study/psychological-and-social-constructs/other-psychological-measures/emotion-regulation.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.erq.reappraisal",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://www.cmu.edu/common-cold-project/measures-by-study/psychological-and-social-constructs/other-psychological-measures/emotion-regulation.html"
+        },
+        {
+          "key": "resources.erq.suppression",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://www.cmu.edu/common-cold-project/measures-by-study/psychological-and-social-constructs/other-psychological-measures/emotion-regulation.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "phq-15",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:6f1a2bbd823baffceebc8016985fa13f823686440b1b6433a16a58de38a4b4bf",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Spitzer/Williams/Kroenke author manual hosted by Case Western: pages 2–3 and 5–8, constructs, coding, variants and limits. No treatment algorithm implemented."
+      },
+      "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+      "categorySource": "https://pubmed.ncbi.nlm.nih.gov/11914441/",
+      "dimensions": [
+        {
+          "key": "symptoms.phq15.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "brcs",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:36909454f6d0151efeb26e7e253194548dc1683e2db579f68ba1b186a7739a44",
+      "sourceReview": {
+        "status": "original-publication-abstract",
+        "reviewed": "2026-10-12",
+        "scope": "Sinclair and Wallston 2004 abstract: adaptive coping, four items, rheumatoid arthritis validation samples. Detailed scoring comes from registered definition; full original text not reviewed here."
+      },
+      "source": "https://doi.org/10.1177/1073191103258144",
+      "categorySource": "https://cih.jhu.edu/measurement/brief-resilient-coping-scale-brcs/",
+      "dimensions": [
+        {
+          "key": "resources.brcs.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://doi.org/10.1177/1073191103258144"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-sleep-reset",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:5193ec0bdbdf251935899ea030280cdf68426645ca082749bcd7b5f682708d7a",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.sleep_reset.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-morning-battery",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:4dfb657aaed69210a0be7f76721cb50e01178e09a1a2bd9dab8f0b7d797010d1",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.morning_battery.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-evening-landing",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:bbaf4f43032f4017b108e5276116ef450b09bdd622f4fc8089a7cc071ec0e79b",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.evening_landing.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-decision-fog",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:f88bd28da38cd8886591cd12809cb2c7562d6c89779ac2de3decb44d410833ee",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.decision_fog.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-start-button",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:aed348ff231309765c159d722ab5d15fc9f7f977823468518fe660c1cbcb880d",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.start_button.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-screen-saturation",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:66c0afe8731d6d5fba0971c8f47e3a743a30b9d3ae3007f94e23adb5f32083c5",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.screen_saturation.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": true
+    },
+    {
+      "key": "hh-inner-critic",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:66e2b7edff29397c40c2fdefe6f60dad6e8e2be91129f933479686825beb13a6",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.inner_critic.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-inner-ally",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:8e2e407c809d82fd174acfb1101a21bf10e7e88fd34113376bc442f18f50ea40",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.inner_ally.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-meaning-compass",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:cc0ab07c0cc6317501c9710ca0cf3bb45a295ae24ef2794e130e7f66a234d954",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.meaning_compass.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-motivation-spark",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:157b8891fa54d5cebd652d397e3f21329d19389537c63d3725234d950e7cee88",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.motivation_spark.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-change-readiness",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:f37f0dc1f9f9b58613134b7c6a9088477a1b4ef8ef9dd4c9c2353eae402fb122",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.change_readiness.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-workload-weather",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:fc097227dfbbaa0d7ca97bd1f1373fa63b37ac26d0d2f537aec56c0ef73836a9",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.workload_weather.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-body-signals",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:67a0be7b84107ac5e41d9d0fc9a9a6182cc774dde6595e166fec8138e928cb2f",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.body_signals.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-rest-permission",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:4de1146596ca14226ff739fed116df06d40077e5ad0077fc20bef701b85dc1a5",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.rest_permission.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-closeness-compass",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:b4300ea711448ac2aff87460f8265547f63cab62c8723c4be56383595095e51b",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.closeness_compass.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-confidence-pulse",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:ceba332c736059cf7e3faa47418f835b388aaf6f55abebf962a470ba89cb900c",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.confidence_pulse.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-playfulness-pulse",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:3084c3324390cf9d64ffded9917f0226a5c2ebe3ba0f01de08db96992fedd608",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.playfulness_pulse.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-daily-rhythm",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:caa15f54bf26134980bbf322b991fb9841d7ea925764c0d3355840945a2fe788",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.daily_rhythm.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-money-pressure",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:7991d7d69831c2e8e06724090c463d921f001ac5b2939772501c113972debcec",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.money_pressure.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": true
+    },
+    {
+      "key": "hh-overthinking-loop",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:2f5e5c8e227c58e6229ad6e34caf54e00d797924a37c4fdeaf1307de3a425128",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.overthinking_loop.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": true
+    },
+    {
+      "key": "hh-felt-safety",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:88fba1c7ff6ca1a26fc368351f5d55cb5b89ad886bcf8fc881b3df2294c7e9ad",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.felt_safety.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-emotion-clarity",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:f9791a64ffbc8116a2c0f4d6b74a44264cf7f777f9f1fc6ed317fb2e94eee7ea",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.emotion_clarity.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-loss-adjustment",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:00d003687b63a09d5414f3626be7b06a963e453c15c94b931848641dff540875",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.loss_adjustment.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-belonging",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:3c33992af4e355167111b38f7f51ea2aa71116103790d2fe0e9222b28e4d2b05",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.belonging.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-conflict-repair",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:81431d3e392eaa5462dcd8c1b2c6a7de93e31bdaa46487c031766318e74117e5",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.conflict_repair.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-family-roles",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:38d26052de8ca7253024aaf341583225da0e7ca3e2176d3d1c26c4f43ff6b832",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.family_roles.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-inner-imagery",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:d36b08688ba6637c3eec663e09a1419506a5038bb5b8a0db34d2d70eb6c3a73e",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.inner_imagery.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-values-direction",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:263078b8df5261d1f6cbe6bf2a26bc65666054bec447f3abf99e30099f6ed05f",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.values_direction.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-life-transition",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:9e6e0842af0c7063b543b56ecaaeb70dac87f2ad5d01cf473b625ccac9b1f07e",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.life_transition.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-speaking-up",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:26bbe8cceeac0594dacddcfee2d373819a8dad16551f4a70f503eab14a2305fe",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.speaking_up.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-sustainable-pace",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:60bfde93a89d3e652e74c18d2fd13abc3628d4a07634d6fd9e059709e9f993b6",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.sustainable_pace.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-support-seeking",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:c4d059e26d67bc6c503f9f3d4d6a05fa6286f729ba226013d487e3fd99948656",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.support_seeking.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-sensory-comfort",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:1753b08c2e5e67b5b0f78dffb21064b91c0142d2b466e26f152b1c279f4ee9e2",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.sensory_comfort.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-goal-obstacles",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:a65c763622b2f5d018a218b895909da08a56d09865267dccbb7273b066ac294d",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.goal_obstacles.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-body-mind-context",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:d6a019b3ef40f97d5330a002126e7d76d55f52164eddb2ec7926466b97c09c92",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.body_mind_context.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-energy-drains",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:9ff345ab11edf7054752049b239477cc677c6bd6b069b932d953ddf60ba2f77e",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.energy_drains.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-social-ease",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:e50aad3439aada2300370251b42d211efd9cfeb7d86b0868953ddadadb3c8d77",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.social_ease.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-solitude-choice",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:a65d4973b04ad7c4a98c3a0c09ef00dcf24f014fcd72844bb9a54a25dbd0627e",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.solitude_choice.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-relationship-balance",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:5773507974e8a7041a1caa0b26a47602b048bc731874494b103cd656941b9815",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.relationship_balance.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-approval-pressure",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:e8d9b02b92f2963e60b9b0380352e3aff90e23c8b0c97865bb4a4f18abb3b19f",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "state.approval_pressure.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-perfectionism-pressure",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:fd57fd8304918582f865d69da053b5a93a88d57fa5a1634aefb75e6ad718d3bd",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.perfectionism_pressure.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-uncertainty-flexibility",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:1014945c034dc30499bd722b6cabd5f48ff81857e63fc194874bbf1ccb5d5bea",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.uncertainty_flexibility.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-role-freedom",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:5431485146aac7704a9cf1e9a366429170562be1f8ce8df8f8ddfc49e8704599",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.role_freedom.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-work-boundaries",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:6254cba308b9b9b58f603d72a3fc7a2b35a89e1215d0d634eb1dd4fa5849a751",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.work_boundaries.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-love-affection",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:e9395e60762e7d06904f65157dfc3e3a67423051704b45077c359e91d796dbf0",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.love_affection.expressing",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.love_affection.receiving",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-trust-dialogue",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:797a7700a5fdcc65c79c2f08278662922f462f61133fb78196e68aa87cd20124",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.trust_dialogue.honesty",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.trust_dialogue.discernment",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-emotional-intimacy",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:85d23c3876b9e38249bf32cbf196134a31966077ad372ac9d68d2cbc32071e25",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.emotional_intimacy.opening",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.emotional_intimacy.pacing",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-intimacy-consent",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:8c010dfda8e74a6fa53a1fe7b765c813c67a1678e097abd5e499f27eb44c67d1",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.intimacy_consent.agency",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.intimacy_consent.mutuality",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-desire-dialogue",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:0dea33394838c2835912e4aa1feacbd4be9c5fc308a4ef2ed950714305950a5a",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.desire_dialogue.awareness",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.desire_dialogue.dialogue",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-sexual-self-kindness",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:bcd817a3fc97aa8092fcebdfdc357f8ae310875517b63f5d914e4d5ba3f261a7",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.sexual_self_kindness.kindness",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.sexual_self_kindness.choice",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-tantra-presence",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:401bbd8d8f929d46a2841ed63c8db571064b05b992ef23590ae6a06787395550",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.tantra_presence.grounding",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.tantra_presence.choice",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-sensual-joy",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:b9cc026b3fea14ad361f41e946a922aa61abc0f3c614944311b1fd273c74cece",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.sensual_joy.senses",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "resources.sensual_joy.playfulness",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "phq-8",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:0abed0977cfc5fa7ef2a2ae2064a0147c4ccf66b9b8ae5ba7f5d590f8a553f8f",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Spitzer/Williams/Kroenke author manual hosted by Case Western: pages 2–3 and 5–8, constructs, coding, variants and limits. No treatment algorithm implemented."
+      },
+      "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
+      "categorySource": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3108293/",
+      "dimensions": [
+        {
+          "key": "symptoms.phq_8.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "cbi-personal",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:5df7220051a06a926e17cd9544522e91fb7f10ba945afaad18d68bc8e6abd427",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Original NFA form: constructs, item counts, anchors, mean, work reversal and missingness; no clinical severity thresholds."
+      },
+      "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=1",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "symptoms.cbi_personal.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=1"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "cbi-work",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:a24afa8d64328d749f6402c59c29422f5149b0f757404e9f1dd8841cf89b897e",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Original NFA form: constructs, item counts, anchors, mean, work reversal and missingness; no clinical severity thresholds."
+      },
+      "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=2",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "symptoms.cbi_work.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=2"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "cbi-client",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:0365a10d247c864ade245ed1b2a34f0ac545156eb514d13b5bad66566ce6e616",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
+        "reviewed": "2026-10-12",
+        "scope": "Original NFA form: constructs, item counts, anchors, mean, work reversal and missingness; no clinical severity thresholds."
+      },
+      "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=2",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "symptoms.cbi_client.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf#page=2"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "cdc-hrqol-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:b628fbdf99ec2869b353c7098bd600f90ad31c3cd8d23a079936bb23d804b875",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "CDC original HRQOL-14 modules; exact day-count constructs and self-rated health categories. Derived indexes follow the unchanged registered scorer."
+      },
+      "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "function.hrqol4.general_health",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        },
+        {
+          "key": "symptoms.hrqol4.physically_unhealthy_days",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        },
+        {
+          "key": "symptoms.hrqol4.mentally_unhealthy_days",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        },
+        {
+          "key": "function.hrqol4.activity_limitation_days",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        },
+        {
+          "key": "symptoms.hrqol4.unhealthy_days_index",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        },
+        {
+          "key": "resources.hrqol4.healthy_days_index",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "cdc-healthy-days-symptoms",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:75a7f10c0322d8092b4ed88d68d71c7c5da711b6cd53dcd4ef724eca2c003e70",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "CDC original HRQOL-14 modules; exact day-count constructs and self-rated health categories. Derived indexes follow the unchanged registered scorer."
+      },
+      "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "symptoms.cdc_healthy_days.pain_days",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        },
+        {
+          "key": "symptoms.cdc_healthy_days.sad_days",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        },
+        {
+          "key": "symptoms.cdc_healthy_days.anxiety_days",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        },
+        {
+          "key": "symptoms.cdc_healthy_days.sleep_days",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        },
+        {
+          "key": "resources.cdc_healthy_days.vitality_days",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "rses-10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:12b7cf0a24a21f2b89eec5456fa46fc277ba800ffb3e14a0d51aa9d82212be7a",
+      "sourceReview": {
+        "status": "original-guidance",
+        "reviewed": "2026-10-12",
+        "scope": "Rosenberg custodian UMD guidance: ten-item global self-esteem, reversal, 0–30 scoring; population-specific norms required."
+      },
+      "source": "https://socy.umd.edu/about-us/using-rosenberg-self-esteem-scale",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.rses_10.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://socy.umd.edu/about-us/using-rosenberg-self-esteem-scale"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ces-d-20",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:b81ffa4771939ad5edcca7eb3a52f2b43b11d0aea9376403e862073f4143046d",
+      "sourceReview": {
+        "status": "original-publication-abstract",
+        "url": "https://journals.sagepub.com/doi/abs/10.1177/014662167700100306",
+        "reviewed": "2026-10-12",
+        "scope": "Radloff 1977 abstract: depressive symptoms in the general population. The registered 20-item form supplies past-week wording and reversal; full original manual not newly reviewed here."
+      },
+      "source": "https://journals.sagepub.com/doi/abs/10.1177/014662167700100306",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "symptoms.ces_d_20.total",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://journals.sagepub.com/doi/abs/10.1177/014662167700100306"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-big-five-50",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:345b4697313e391676818d22197335b8e02a7271eabf3de014bf468148d3c034",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/newBigFive5broadKey.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.ipip50.extraversion",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newBigFive5broadKey.htm"
+        },
+        {
+          "key": "trait.ipip50.agreeableness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newBigFive5broadKey.htm"
+        },
+        {
+          "key": "trait.ipip50.conscientiousness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newBigFive5broadKey.htm"
+        },
+        {
+          "key": "trait.ipip50.emotional_stability",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newBigFive5broadKey.htm"
+        },
+        {
+          "key": "trait.ipip50.intellect_imagination",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/newBigFive5broadKey.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-socionics-32",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:739325e95feb1f299566200752b0c65de243f3e4e9fee0a4c767e53e84090aa6",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.hh_socionics.e",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.i",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.n",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.s",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.l",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.f",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.j",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_socionics.p",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-enneagram-36",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:1714cac50b4078864bc98ffbdcd3b35f27ae1454abb3a60579213263e226d566",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.hh_enneagram.one",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.two",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.three",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.four",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.five",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.six",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.seven",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.eight",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_enneagram.nine",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-disc-style-20",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:d20ee32781a21001b350c244f578041480b6b249665f495443cfb82ec983ec08",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.hh_disc.d",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_disc.i",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_disc.s",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_disc.c",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "hh-temperaments-16",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:c20a70040618f094adb4e71b94b642f1acd1a6ee612434b888a0ce4de27219b0",
+      "sourceReview": {
+        "status": "original-hh-definition",
+        "reviewed": "2026-10-12",
+        "scope": "Current registered HH questions and scoring; authored reflection, no independent norms."
+      },
+      "source": null,
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.hh_temperament.sanguine",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_temperament.choleric",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_temperament.phlegmatic",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        },
+        {
+          "key": "trait.hh_temperament.melancholic",
+          "explanation": "new-registered-form-explanation",
+          "source": null
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-aspect-volatility-10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:ae14c686ba6291bbe82550dfc4d2936ac7897d389439b9a5c654bb7f9d097154",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/BFASKeys.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.bfas.volatility",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/BFASKeys.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-aspect-withdrawal-10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:fd781447ecae0ac836db3c84281ce92fa880f1a9bf9954769de0a8876def884d",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/BFASKeys.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.bfas.withdrawal",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/BFASKeys.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-aspect-compassion-10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:1860ef7842dfd9a5ee5000da7572c3b0b286b8cb226af908b2fb5dc9f8ada3fa",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/BFASKeys.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.bfas.compassion",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/BFASKeys.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-aspect-industriousness-10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:04e6c71c699c983908c11b88dcb752c7482c30774b8a9978936b12a4b398071d",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/BFASKeys.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.bfas.industriousness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/BFASKeys.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-aspect-orderliness-10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:93f411874648fb1734db5bf18b0721a8341067635284f22c34f9c160a7b18e55",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/BFASKeys.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.bfas.orderliness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/BFASKeys.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-aspect-intellect-10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:2780b06c9d987f20cb7f02f4d9e3b6a1e66a40ebad337590f16b3ff25364bfd5",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/BFASKeys.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.bfas.intellect",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/BFASKeys.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-aspect-openness-10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:d5564f06da9690f2dbeb676a4b8aa2c19e4c2300a3930716d314f29975430838",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/BFASKeys.htm",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.bfas.openness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/BFASKeys.htm"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-capacity-for-love-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:666d2327041564f4036e9f47475f4c15b904894de3db7ad7a5b20f21e965ace7",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.capacity_for_love",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-curiosity-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:164ea9630780cbf614116351683339437b5c28cd7076117b0c7478eca37a1b13",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.curiosity",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-forgiveness-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:8e7c130cd2eebf63ed2f63a1a618649c62023b61295be76928ae6d5fbf329828",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.forgiveness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-gratitude-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:14393dab628bd5effafac43818528c5a088f6eb83336da4ab03d1d7eec6d555b",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.gratitude",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-hope-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:81ace526b975bdc6178023cded42686939c21314b44b600944b5278d5e3889e3",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.hope",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-humor-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:65c42bba797dac55a98d47c5e5e28877259ad71283a106e15888565807d8e081",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.humor",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-perseverance-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:7fdef804146664b189154653d856946b7d275b192b4b5832442418c2a41fda9d",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.perseverance",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-creativity-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:0abdbd7e8b1432dea5ad37eea960d71251284dcd59a0f25a702de0ec80687fef",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.creativity",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-social-intelligence-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:c8287dd0a258e65d78008fe4a8750e2a9bb15f106b7e1fb97a486c3004dc2afc",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.social_intelligence",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "ipip-via-r-zest-4",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:1e54753d89c37efd782cc28eb2b70862c83417daf08d1af419a07a1f007f32ee",
+      "sourceReview": {
+        "status": "original-form",
+        "reviewed": "2026-10-12",
+        "scope": "Official IPIP construct headings, item content and keying. Plain-language summaries are HH paraphrases; no norms or percentile conversion."
+      },
+      "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.via.zest",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://ipip.ori.org/IPIP-VIA-R_Key.html"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "tipi-10",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:6f06f6388d14f825d708dff59421e36645198ad2aca4f4e53dba9153c39af834",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
+        "reviewed": "2026-10-12",
+        "scope": "Author guidance: two-item means with reversal; especially brief form with reduced precision."
+      },
+      "source": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "trait.tipi.extraversion",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/"
+        },
+        {
+          "key": "trait.tipi.agreeableness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/"
+        },
+        {
+          "key": "trait.tipi.conscientiousness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/"
+        },
+        {
+          "key": "trait.tipi.emotional_stability",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/"
+        },
+        {
+          "key": "trait.tipi.openness",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "mspss",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:8be799e2ccc49824968be3f56cd9200cd881a2c19276754b4bc7c85c025a8fbc",
+      "sourceReview": {
+        "status": "original-guidance",
+        "url": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
+        "reviewed": "2026-10-12",
+        "scope": "Zimet author site and linked two-page form: construct, 12 items, four each for family/friends/significant other, item membership, means and lack of established population norms."
+      },
+      "source": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.mspss.significant_other",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2"
+        },
+        {
+          "key": "resources.mspss.family",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2"
+        },
+        {
+          "key": "resources.mspss.friends",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2"
+        },
+        {
+          "key": "resources.mspss.overall",
+          "explanation": "new-registered-form-explanation",
+          "source": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "scs-sf",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:3275b6aaaa19c8f52a2f892ac94384626984d50f561f404fda9cbee3d912503f",
+      "sourceReview": {
+        "status": "existing-instrument-specific-guidance",
+        "scope": "Preserved existing guarded instrument-specific explanation; see instrument source audit."
+      },
+      "source": "https://self-compassion.org/wp-content/uploads/2021/03/SCS-SF-information.pdf#page=3",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.scs_sf.total",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://self-compassion.org/wp-content/uploads/2021/03/SCS-SF-information.pdf#page=3"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "compassion-scale",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:0b77d1eb4e39a6a91eb461447dbec57c4b879ecff2c20e80eec36dd2e04578bb",
+      "sourceReview": {
+        "status": "existing-instrument-specific-guidance",
+        "scope": "Preserved existing guarded instrument-specific explanation; see instrument source audit."
+      },
+      "source": "https://self-compassion.org/wp-content/uploads/2021/03/CS-information.pdf#page=3",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.cs.total",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://self-compassion.org/wp-content/uploads/2021/03/CS-information.pdf#page=3"
+        },
+        {
+          "key": "resources.cs.kindness",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://self-compassion.org/wp-content/uploads/2021/03/CS-information.pdf#page=3"
+        },
+        {
+          "key": "resources.cs.common_humanity",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://self-compassion.org/wp-content/uploads/2021/03/CS-information.pdf#page=3"
+        },
+        {
+          "key": "resources.cs.mindfulness",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://self-compassion.org/wp-content/uploads/2021/03/CS-information.pdf#page=3"
+        },
+        {
+          "key": "resources.cs.indifference_reversed",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://self-compassion.org/wp-content/uploads/2021/03/CS-information.pdf#page=3"
+        }
+      ],
+      "mixedComposite": false
+    },
+    {
+      "key": "mhc-sf",
+      "version": "v1",
+      "instrumentLocale": "en",
+      "contentHash": "sha256:c70b5b61ad92d2daad15dbaf4e145d27262abe94cc9f2a64eda275c257b6a853",
+      "sourceReview": {
+        "status": "existing-instrument-specific-guidance",
+        "scope": "Preserved existing guarded instrument-specific explanation; see instrument source audit."
+      },
+      "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6",
+      "categorySource": null,
+      "dimensions": [
+        {
+          "key": "resources.mhc_sf.total",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6"
+        },
+        {
+          "key": "resources.mhc_sf.emotional",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6"
+        },
+        {
+          "key": "resources.mhc_sf.social",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6"
+        },
+        {
+          "key": "resources.mhc_sf.psychological",
+          "explanation": "preserved-instrument-specific",
+          "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6"
+        }
+      ],
+      "mixedComposite": false
+    }
+  ]
+}
