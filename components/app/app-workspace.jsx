@@ -22,6 +22,7 @@ import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { ProfileDomains } from '@/components/app/profile-domains'
+import { PersonalPortraitSummary } from '@/components/app/personal-portrait-summary'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
@@ -38,6 +39,8 @@ import {
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import MyCourse from '@/components/app/my-course'
+import courseQuizStyles from './course-quiz.module.css'
+import Course14DayOverview from '@/components/app/course-14-day-overview'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -203,7 +206,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             courseState, key: nextKey, locale, request: appFetch,
           })
           await load()
-          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=quick&course=1')
+          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=guided&course=1')
         } else {
           await load()
           router.push(root + '/course?tests=complete')
@@ -283,14 +286,18 @@ export default function AppWorkspace({ locale, path = [] }) {
       <main className="hh-app">
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
-          <h1>{state === 'unavailable' ? c.unavailable : c.welcome}</h1>
-          <p>{state === 'unavailable' ? c.unavailableText : c.intro}</p>
+          <h1>{state === 'unavailable' ? c.unavailable : page === 'course'
+            ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course') : c.welcome}</h1>
+          <p>{state === 'unavailable' ? c.unavailableText : page === 'course'
+            ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
+              : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
             <button className="hh-primary" onClick={signin} disabled={busy}>
               {c.signin}
             </button>
           )}
+          {page === 'course' && <Course14DayOverview locale={locale} compact />}
           {state === 'error' && <button onClick={load}>{c.retry}</button>}
           {error && state !== 'signed-out' && state !== 'unavailable' && (
             <p role="alert">{message(error, c)}</p>
@@ -302,14 +309,13 @@ export default function AppWorkspace({ locale, path = [] }) {
         </section>
       </main>
     )
+  // Five first-class destinations. Monitoring/history remain available from Insights
+  // and account settings; /analysis stays as an old-link alias to Profile reports.
   const nav = [
+    ['home', locale === 'ru' ? 'Главная' : 'Home', locale === 'ru' ? '/?lang=ru' : '/?lang=en'],
     ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', ''],
     ['portfolio', locale === 'ru' ? 'Результаты' : 'Insights', '/portfolio'],
     ['portrait', c.portrait, '/portrait'],
-    ['analysis', locale === 'ru' ? 'Личный анализ' : 'Personal analysis', '/analysis'],
-    ['monitoring', c.monitoring, '/monitoring'],
-    ['history', c.history, '/history'],
-    ['consultations', c.consultations, '/consultations'],
     ['course', locale === 'ru' ? 'Мой курс' : 'My course', '/course'],
   ]
   return (
@@ -325,7 +331,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <Link href={root + '/portrait'} prefetch={false}>
               {c.portrait}
             </Link>
-            <Link href={root + '/analysis'} prefetch={false}>{locale === 'ru' ? 'Личный анализ' : 'Personal analysis'}</Link>
+            <Link href={root + '/portrait#personal-reports'} prefetch={false}>{locale === 'ru' ? 'Мои отчёты' : 'My reports'}</Link>
             <Link href={root + '/course'} prefetch={false}>{locale === 'ru' ? 'Мой курс' : 'My course'}</Link>
             <Link href={root + '/history'} prefetch={false}>
               {c.history}
@@ -356,9 +362,9 @@ export default function AppWorkspace({ locale, path = [] }) {
           {nav.map(([id, label, url]) => (
             <Link
               key={id}
-              href={root + url}
+              href={id === 'home' ? url : root + url}
               prefetch={false}
-              aria-current={page === id || (id === 'portrait' && page === 'portfolio') ? 'page' : undefined}
+              aria-current={page === id ? 'page' : undefined}
             >
               {label}
             </Link>
@@ -374,7 +380,9 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portrait' && (
             <>
-              <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}>
+              <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
+                overviewContent={<PersonalPortraitSummary data={data} locale={locale} />}
+                reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} embedded />}>
                 <Portrait data={data} locale={locale} />
               </ProfileDomains>
               <PracticeEntry data={data} locale={locale} />
@@ -382,7 +390,6 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
-          {page === 'analysis' && <PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
           {page === 'monitoring' && (
             <PsiMonitoring
@@ -406,7 +413,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               key={recordId}
               id={recordId}
               locale={locale}
-              initialMode={searchParams.get('mode') === 'quick' ? 'quick' : null}
+              initialMode={searchParams.get('mode') === 'quick' ? 'quick' : searchParams.get('mode') === 'guided' ? 'guided' : null}
               courseMode={searchParams.get('course') === '1'}
               onExit={async () => {
                 await load()
@@ -455,7 +462,6 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={locale === 'ru' ? '/?lang=ru' : '/?lang=en'} prefetch={false}><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
         <Link href={root} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
         <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
-        <Link href={root + '/analysis'} prefetch={false} aria-current={page === 'analysis' ? 'page' : undefined}><FileText aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Анализ' : 'Analysis'}</span></Link>
         <Link href={root + '/portrait'} prefetch={false} aria-current={page === 'portrait' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Профиль' : 'Profile'}</span></Link>
         <Link href={root + '/course'} prefetch={false} aria-current={page === 'course' ? 'page' : undefined}><BookOpen aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мой курс' : 'My course'}</span></Link>
       </nav>}
@@ -1079,7 +1085,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
     [showDiscard, setShowDiscard] = useState(false),
-    [mode, setMode] = useState(initialMode === 'quick' ? 'quick' : null),
+    [mode, setMode] = useState(initialMode === 'guided' && courseMode ? 'guided' : initialMode === 'quick' ? 'quick' : null),
     [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
     inflight = useRef(false)
@@ -1317,7 +1323,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     )
 
   return (
-    <section className={`hh-runner hh-panel hh-runner--${mode || 'guided'}`}>
+    <section className={`hh-runner hh-panel hh-runner--${mode || 'guided'} ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-course-quiz={courseMode ? 'true' : undefined}>
       <header className="hh-runner-head">
         <div className="hh-runner-topline">
           <p className="hh-kicker">
@@ -2326,7 +2332,9 @@ function Portrait({ data, locale }) {
         <p className="hh-fine">{c.private}</p>
       </div>
 
-      <ProfileAssessmentOverview data={data} locale={locale} onBeginTest={beginSelectedTest}>
+      <details className="hh-domain-psych-details" data-profile-deep-dive>
+        <summary>{locale === 'ru' ? 'Подробные шкалы, непройденные тесты и инструменты' : 'Detailed scales, pending tests and profile tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
+      <ProfileAssessmentOverview data={data} locale={locale} onBeginTest={beginSelectedTest} showPortrait={false}>
         <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
         <div className="hh-profile-mood">
           <MoodCheckIn
@@ -2360,6 +2368,7 @@ function Portrait({ data, locale }) {
         <ReportsFromAndy data={data} locale={locale} />
         <ClientMaterialsFromAndy locale={locale} />
       </ProfileAssessmentOverview>
+      </details>
     </section>
   )
 }
@@ -2824,7 +2833,7 @@ function SavedReportPage({ id, locale, reload }) {
     try {
       await appFetch('reports/' + id + '/remove', {})
       await reload()
-      router.replace('/' + locale + '/app/analysis')
+      router.replace('/' + locale + '/app/portrait#personal-reports')
     } catch (e) {
       setError(e)
       setBusy(false)
@@ -2835,8 +2844,8 @@ function SavedReportPage({ id, locale, reload }) {
       <section className="hh-panel">
         <h1>{ru ? 'Отчёт больше недоступен' : 'Report no longer available'}</h1>
         <p>{ru ? 'Ссылка в истории может оставаться как запись, но содержимое было отозвано или исходный отчёт больше недоступен.' : 'The history reference may remain, but the content was withdrawn or the source report is no longer available.'}</p>
-        <Link className="hh-primary" href={'/' + locale + '/app/analysis'} prefetch={false}>
-          {ru ? 'К личному анализу' : 'Back to Personal Analysis'}
+        <Link className="hh-primary" href={'/' + locale + '/app/portrait#personal-reports'} prefetch={false}>
+          {ru ? 'К моим отчётам' : 'Back to My Reports'}
         </Link>
       </section>
     )
@@ -2851,8 +2860,8 @@ function SavedReportPage({ id, locale, reload }) {
         {ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}
       </p>
       <div className="hh-actions">
-        <Link href={'/' + locale + '/app/analysis'} prefetch={false}>
-          {ru ? 'Личный анализ' : 'Personal analysis'}
+        <Link href={'/' + locale + '/app/portrait#personal-reports'} prefetch={false}>
+          {ru ? 'Мои отчёты' : 'My reports'}
         </Link>
         <button type="button" disabled={busy} onClick={remove}>
           {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}

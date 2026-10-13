@@ -1,0 +1,37 @@
+/* My Course tests reuse the exact original instrument, scorer, safety gates and
+   autosave. Only the presentation changes; there are no right/wrong answers. */
+.questRunner{max-width:780px!important;margin:0 auto 36px!important;padding:clamp(18px,3vw,28px)!important;background:#fffdf9!important;border:1px solid #e4d7ca!important;border-radius:24px!important;box-shadow:0 12px 36px #553b2510!important;color:#413a32}
+.questRunner :global(.hh-runner-head){display:grid;gap:12px!important;padding-bottom:15px!important;margin-bottom:16px!important;border-bottom:1px solid #e9dfd4!important}
+.questRunner :global(.hh-runner-topline){display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.questRunner :global(.hh-kicker){font-size:11px!important;letter-spacing:.09em!important;color:#896c59!important}
+.questRunner :global(.hh-runner-segments){display:flex!important;flex-wrap:nowrap;gap:3px;max-width:100%;overflow:hidden;margin:5px 0!important}
+.questRunner :global(.hh-runner-segments span){height:9px!important;min-width:2px;flex:1;border-radius:9px;background:#e6e1d9!important}
+.questRunner :global(.hh-runner-segments span.is-current){background:#bc7568!important}
+.questRunner :global(.hh-runner-segments span.is-done){background:#4c8d6d!important}
+.questRunner :global(.hh-runner-progress-copy){display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px!important;color:#587461!important;font-weight:750}
+.questRunner :global(.hh-runner-instructions){font-size:12px!important;line-height:1.5!important;color:#837264!important;margin:0 0 8px!important}
+.questRunner :global(.hh-runner-question){padding:clamp(17px,3.5vw,28px)!important;margin:14px 0!important;border:1px solid #dfe5dc!important;border-radius:22px!important;background:linear-gradient(140deg,#f8faf5,#fffefa)!important;min-width:0}
+.questRunner :global(.hh-runner-question legend){float:none;max-width:100%;font-size:13px}
+.questRunner :global(.hh-runner-question h1){margin:0 0 18px!important;font:830 clamp(22px,4vw,30px)/1.3 system-ui,-apple-system,sans-serif!important;letter-spacing:-.025em;color:#413a32}
+.questRunner :global(.hh-scale){display:grid!important;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:10px!important;width:100%}
+.questRunner :global(.hh-scale button){display:grid!important;place-items:center;gap:5px;min-width:0!important;min-height:62px!important;margin:0!important;padding:11px 7px!important;border:2px solid #ded5c9!important;border-bottom:4px solid #c9bfb3!important;border-radius:15px!important;background:#fffefa!important;color:#574b41!important;box-shadow:none!important;cursor:pointer;transition:border-color .16s,transform .16s}
+.questRunner :global(.hh-scale button strong){font-size:19px!important;line-height:1.2}
+.questRunner :global(.hh-scale button span){text-align:center;font-size:11px!important;line-height:1.35!important}
+.questRunner :global(.hh-scale button[aria-pressed=true]){background:#e7f2e9!important;color:#286248!important;border-color:#65a181!important;border-bottom-color:#3d785b!important}
+.questRunner :global(.hh-scale button:hover:not(:disabled)){transform:translateY(-2px);border-color:#91af9b!important}
+.questRunner :global(.hh-runner-actions){display:flex!important;gap:12px;flex-wrap:wrap;align-items:center;margin:18px 0 0!important}
+.questRunner :global(.hh-runner-actions .hh-primary){display:flex!important;justify-content:center;align-items:center;flex:1;min-height:53px!important;padding:12px 19px!important;border:1px solid #8b3328!important;border-bottom:4px solid #6d2d23!important;border-radius:13px!important;background:#a64634!important;color:#fff!important;font-size:15px!important;font-weight:800!important}
+.questRunner :global(.hh-runner-actions button:not(.hh-primary)){min-height:43px!important;border:1px solid #e6dccc!important;border-radius:11px!important;background:#fffdf8!important;color:#69594d!important;font-size:13px!important;font-weight:700!important}
+.questRunner :global(.hh-runner-complete){padding:20px;background:#edf5eb;border:1px solid #d0e2d1;border-radius:16px}
+.questRunner :global(.hh-day-count-select select){min-height:54px;padding:10px 12px;border:2px solid #d7e2d7;border-radius:12px;background:#fff}
+.questRunner :global(.hh-runner-mode-toggle){font-size:12px}
+.questRunner :global(.hh-runner-methodology){margin-top:16px}
+@media(max-width:650px){
+ .questRunner{margin:0 -6px 18px!important;padding:14px!important;border-radius:17px!important}
+ .questRunner :global(.hh-runner-question){padding:17px 13px!important;margin:9px 0!important;min-height:280px}
+ .questRunner :global(.hh-runner-question h1){font-size:23px!important}
+ .questRunner :global(.hh-scale){grid-template-columns:repeat(2,minmax(0,1fr))}
+ .questRunner :global(.hh-scale:not(.hh-scale-words)){grid-template-columns:repeat(auto-fit,minmax(56px,1fr))}
+ .questRunner :global(.hh-runner-actions .hh-primary){flex-basis:100%;order:-1}
+}
+@media(prefers-reduced-motion:reduce){.questRunner *{animation:none!important;transition:none!important}}

@@ -210,7 +210,7 @@ export function PersonalAnalysisReportList({ locale = 'en', reports = [], select
   </section>
 }
 
-export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyReports = [], selector = null }) {
+export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyReports = [], selector = null, embedded = false }) {
   const t = WORDS[locale === 'ru' ? 'ru' : 'en']
   const [verified, setVerified] = useState(null)
   useEffect(() => {
@@ -228,6 +228,11 @@ export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyRepor
     return () => { active = false }
   }, [selector, reports.length])
   const visibleReports = selector ? reports : (verified ?? reports)
+  // The unified Profile owns this archive. Legacy /analysis links may still render
+  // the existing standalone experience while all report access rules remain unchanged.
+  if (embedded) return <div className="hh-personal-analysis hh-personal-analysis--embedded" data-personal-reports>
+    <PersonalAnalysisReportList reports={[...visibleReports, ...legacyReports]} locale={locale} selector={selector} />
+  </div>
   return <section className="hh-personal-analysis" aria-label={t.title}>
     <header className="hh-personal-analysis-header"><p>{t.eyebrow}</p><h1>{t.title}</h1><div>{t.intro}</div></header>
     <PersonalAnalysisOffers locale={locale} selector={selector} />
