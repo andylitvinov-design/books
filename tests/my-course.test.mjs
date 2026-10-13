@@ -447,6 +447,13 @@ test('workbook personal notes use existing owner scoped encrypted course session
   assert.match(server,/seal\(reflection,context\(actor,id,'course\.session_note'\),config\)/)
   assert.match(server,/where account_id=\$1 and cycle_id=\$2/)
   assert.match(server,/workbookSkill:preview\?\.workbook\?\.skill/)
+  assert.match(server,/const journalHistory=sessions\.filter\(row=>row\.reflection_ciphertext\)/)
+  assert.match(server,/reflection:openSealed\(row\.reflection_ciphertext,context\(actor,row\.id,'course\.session_note'\),config\)/)
+  assert.match(server,/journalHistory,/)
+  assert.match(ui,/data-course-journal-history/)
+  assert.match(ui,/data\.journalHistory\.map/)
+  assert.match(css,/\.workbookHistory/)
+
   assert.match(server,/const anchor=primary\?\{/)
   assert.match(lesson,/COURSE_WORKBOOK_VERSION/)
   assert.match(css,/\.workbookPrompt/)
