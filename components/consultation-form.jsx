@@ -9,7 +9,8 @@ import { ConsultationDraftPreview } from './consultation-draft-preview'
 import { useActionState, useEffect, useMemo, useState } from 'react'
 import { initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
-import { OWNER_REPORT_TEXT_TEMPLATE } from '@/lib/consultations/owner-report-template'
+import { getOwnerReportTextTemplate } from '@/lib/consultations/owner-report-template'
+import { ReportLanguagePicker } from './report-language-picker'
 import { readUiLocale } from '@/lib/ui-locale'
 
 const copy = {
@@ -47,6 +48,10 @@ const copy = {
     clientNotes: 'Примечания',
     clientNotesHint: 'Ваши дополнительные советы и пояснения клиенту',
     clientNotesPlaceholder: 'Что важно делать, наблюдать или обсудить на следующей консультации…',
+    reportTextLanguageNotice: 'Язык отчёта:',
+    reportTextManualNote: 'Ваш авторский текст не переводится автоматически. Проверьте его перед отправкой клиенту.',
+    reloadTemplate: 'Подставить шаблон на',
+    templateReplaceConfirm: 'Заменить ваш текст анализа и примечаний шаблоном на выбранном языке?',
     payment: 'Оплата',
     prescriptionChoice: 'Рецепт',
     prescriptionChoiceHint: 'Назначения и рекомендации клиенту',
@@ -117,6 +122,10 @@ const copy = {
     clientNotes: 'Notes',
     clientNotesHint: 'Additional guidance and practical next steps for the client',
     clientNotesPlaceholder: 'Things to do, observe or discuss at follow-up…',
+    reportTextLanguageNotice: 'Report language:',
+    reportTextManualNote: 'Your own text is not translated automatically. Review it before sharing with the client.',
+    reloadTemplate: 'Load template in',
+    templateReplaceConfirm: 'Replace your analysis and notes with the selected-language template?',
     payment: 'Payment',
     prescriptionChoice: 'Prescription',
     prescriptionChoiceHint: 'Remedies and client recommendations',
@@ -163,6 +172,11 @@ function detectedType(items) {
 }
 
 export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId }) {
+  const selectedClientLocale = clients.find((client) => client.id === selectedClientId)?.preferredLocale
+  const initialReportLocale = consultation?.languagePreference === 'ru' || consultation?.languagePreference === 'en'
+    ? consultation.languagePreference
+    : selectedClientLocale === 'ru' ? 'ru' : 'en'
+  const [reportLocale, setReportLocale] = useState(initialReportLocale)
   const [state, submit, pending] = useActionState(action, {})
   const [items, setItems] = useState(() => initialConsultationRows(consultation, remedies, consultation ? 1 : 1))
   const [focused, setFocused] = useState(null)
@@ -173,19 +187,10 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [includeDistanceHomeopathy, setIncludeDistanceHomeopathy] = useState(consultation?.includeDistanceHomeopathy === true)
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
-  const [analysis, setAnalysis] = useState(consultation?.analysis ?? '')
+  const [analysis, setAnalysis] = useState(() => consultation?.analysis ?? getOwnerReportTextTemplate(initialReportLocale).analysis)
   const [templateReviewed, setTemplateReviewed] = useState(Boolean(consultation))
-  const [additionalNotes, setAdditionalNotes] = useState(consultation?.additionalNotes ?? '')
+  const [additionalNotes, setAdditionalNotes] = useState(() => consultation?.additionalNotes ?? getOwnerReportTextTemplate(initialReportLocale).additionalNotes)
   const [uiLocale, setUiLocale] = useState('en')
-
-  useEffect(() => {
-    // Only prefill unsaved new consultations. Editing an existing document
-    // always uses its stored text, including intentionally empty fields.
-    if (!consultation) {
-      setAnalysis((current) => current || OWNER_REPORT_TEXT_TEMPLATE.analysis)
-      setAdditionalNotes((current) => current || OWNER_REPORT_TEXT_TEMPLATE.additionalNotes)
-    }
-  }, [consultation])
 
   useEffect(() => {
     setUiLocale(readUiLocale(document.cookie))
@@ -197,6 +202,30 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const labels = copy[uiLocale]
   const reportType = useMemo(() => detectedType(items), [items])
   const reportLabel = reportType === 'mixed' ? labels.reportMixed : reportType === 'bach' ? labels.reportBach : labels.reportHomeopathy
+
+  function changeReportLocale(nextLocale) {
+    const next = nextLocale === 'ru' ? 'ru' : 'en'
+    if (next === reportLocale) return
+    if (!consultation) {
+      const previousTemplate = getOwnerReportTextTemplate(reportLocale)
+      const nextTemplate = getOwnerReportTextTemplate(next)
+      // Only replace untouched examples; never silently destroy practitioner notes.
+      setAnalysis((current) => !current.trim() || current === previousTemplate.analysis ? nextTemplate.analysis : current)
+      setAdditionalNotes((current) => !current.trim() || current === previousTemplate.additionalNotes ? nextTemplate.additionalNotes : current)
+      setTemplateReviewed(false)
+    }
+    setReportLocale(next)
+  }
+
+  function restoreReportTemplate() {
+    if (consultation) return
+    const template = getOwnerReportTextTemplate(reportLocale)
+    if ((analysis !== template.analysis || additionalNotes !== template.additionalNotes) &&
+        !window.confirm(labels.templateReplaceConfirm)) return
+    setAnalysis(template.analysis)
+    setAdditionalNotes(template.additionalNotes)
+    setTemplateReviewed(false)
+  }
 
   const update = (index, value) => setItems((current) => current.map((item, i) => i === index ? { ...item, ...value } : item))
 
@@ -314,15 +343,15 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       </div>
       <div className="consultation-studio-client-layout">
         {!consultation
-          ? <ConsultationClientSelector clients={clients} selectedClientId={selectedClientId} uiLocale={uiLocale} />
+          ? <ConsultationClientSelector clients={clients} selectedClientId={selectedClientId} uiLocale={uiLocale} onClientChange={(client) => changeReportLocale(client.preferredLocale)} />
           : <div className="consultation-edit-client-row">
               <label>{labels.client}<input name="patientName" value={consultation.patientName} readOnly /></label>
-              <label>{uiLocale === 'ru' ? 'Язык' : 'Language'}<select name="languagePreference" defaultValue={consultation?.languagePreference === 'ru' ? 'ru' : 'en'}><option value="en">EN</option><option value="ru">RU</option></select></label>
             </div>}
         <div className="consultation-quick-meta consultation-quick-meta--date-only">
           <label>{labels.date}<input type="date" name="dateIssued" required value={dateIssued} onChange={(event) => setDateIssued(event.target.value)} /></label>
         </div>
       </div>
+      <ReportLanguagePicker locale={reportLocale} onChange={changeReportLocale} uiLocale={uiLocale} />
     </section>
 
     {includeRecommendation && <section className="consultation-studio-card" aria-labelledby="consultation-items-heading">
@@ -424,9 +453,16 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         <h2>{uiLocale === 'ru' ? 'Анализ и примечания' : 'Analysis & notes'}</h2>
         <p>{uiLocale === 'ru' ? 'Добавьте замеры состояния и персональные указания, которые войдут в PDF-отчёт.' : 'Record state measurements and personalized guidance for the client PDF.'}</p>
       </div>
+      <p className="consultation-report-language-note" role="note">
+        <strong>{labels.reportTextLanguageNotice} {reportLocale === 'ru' ? 'Русский' : 'English'}</strong>
+        {' '}{labels.reportTextManualNote}
+      </p>
       {!consultation && <p className="consultation-template-notice" role="note">{uiLocale === 'ru'
         ? 'Поля заполнены вашим примером как редактируемым шаблоном. Проверьте и замените замеры, выводы и инструкции для этого клиента перед сохранением.'
         : 'Your saved example is loaded as an editable draft. Review and replace all client-specific measurements and guidance before saving.'}</p>}
+      {!consultation && <button type="button" className="consultation-reload-template" onClick={restoreReportTemplate}>
+        {labels.reloadTemplate} {reportLocale === 'ru' ? 'русском' : 'English'}
+      </button>
       <div className="consultation-report-note-grid">
         <label className="consultation-report-note">
           <span>{labels.analysis}</span>
@@ -517,7 +553,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       </div>
       {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
       <div className="consultation-studio-submit-buttons">
-        <ConsultationDraftPreview locale={uiLocale} includeRecommendation={includeRecommendation} includeInvoice={includeInvoice} disabled={pending} />
+        <ConsultationDraftPreview locale={reportLocale} includeRecommendation={includeRecommendation} includeInvoice={includeInvoice} disabled={pending} />
         <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>{pending ? labels.saving : consultation ? labels.save : labels.create}</button>
       </div>
     </div>
