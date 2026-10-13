@@ -1,6 +1,7 @@
 'use client'
 
 import { CabinetLinkActions } from './cabinet-link-actions'
+import './consultation-report.css'
 import { useEffect, useState } from 'react'
 import { ConsultationDocumentActions } from './consultation-document-actions'
 import { resultCopy, resultDocumentText } from '@/lib/consultations/result-copy'
