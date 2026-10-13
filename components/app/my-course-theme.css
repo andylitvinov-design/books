@@ -18,3 +18,7 @@
  .hh-app:has([data-my-course]) .hh-mobile-app-nav{padding-bottom:env(safe-area-inset-bottom)}
 }
 @media(prefers-reduced-motion:reduce){.hh-app:has([data-my-course]) *{scroll-behavior:auto!important}}
+
+/* The course's approved self-help/safety text is accessible in its Details screen;
+   do not append the global footer to the one-task daily dashboard. */
+.hh-app:has([data-my-course]) > .hh-footer{display:none!important}

@@ -129,8 +129,8 @@ function OptionalNumber({ label, value, onChange, t }) {
 
 export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], paused, finished, onPlay }) {
   const t = COPY[locale] || COPY.en
-  const [selected, setSelected] = useState(cycle.day)
-  useEffect(() => { setSelected(cycle.day) }, [cycle.id, cycle.day])
+  const [selected, setSelected] = useState(null)
+  useEffect(() => { setSelected(null) }, [cycle.id, cycle.day])
   const count = Number(progress.practiceCount) || 0
   // Do not incentivize recording sensitive symptoms: only saved lessons earn XP.
   const xp = 20 * count
