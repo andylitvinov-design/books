@@ -100,9 +100,10 @@ test('remedy appendix is concise and the original PDF photo floats at top right'
   const pdf = buildPrescriptionPdf(report, 'en', origin).toString('latin1')
   assert.match(pdf, /\(APPENDIX\)/)
   assert.doesNotMatch(pdf, /SELECTED REMEDY PROFILES|Original texts and photographs from the Holistic House library/)
-  const photo = pdf.match(/q (\d+) 0 0 (\d+) ([\d.]+) ([\d.]+) cm \/RemedyPhoto1 Do Q/)
-  assert.ok(photo, 'The approved remedy image should appear in the PDF')
-  assert.ok(Number(photo[3]) > 350, 'Remedy picture must be at the upper right, not the left margin')
+  const photos = [...pdf.matchAll(/q (\d+) 0 0 (\d+) ([\d.]+) ([\d.]+) cm \/RemedyPhoto1 Do Q/g)]
+  assert.ok(photos.length >= 2, 'The same approved image appears in the recommendation and the appendix')
+  assert.ok(photos.some(photo => Number(photo[3]) > 350), 'Appendix photo must float at the upper right')
+  assert.ok(photos.some(photo => Number(photo[3]) < 180), 'Cover thumbnail belongs beside the selected remedy')
 
   const [jsx, css] = await Promise.all([
     readFile('components/prescription-document.jsx', 'utf8'),
