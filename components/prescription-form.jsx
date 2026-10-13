@@ -26,6 +26,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
   const [patientName, setPatientName] = useState(prescription?.patientName ?? '')
   const [dateIssued, setDateIssued] = useState(prescription?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [generalInstructions, setGeneralInstructions] = useState(prescription?.generalInstructions ?? '')
+  const [includeDistanceHomeopathy, setIncludeDistanceHomeopathy] = useState(prescription?.includeDistanceHomeopathy === true)
   const [importUndo, setImportUndo] = useState(null)
   const update = (index, changes) => setItems((current) => current.map((item, i) => i === index ? { ...item, ...changes } : item))
   const selectedCount = items.filter((item) => item.remedySlug || item.displayNameOverride).length
@@ -102,6 +103,12 @@ export function PrescriptionForm({ action, prescription, remedies }) {
       <label className="prescription-instructions">Analysis <span className="prescription-form-hint">Measurements and state observations · included in the client report</span><textarea name="analysis" defaultValue={prescription?.analysis ?? ''} maxLength={5000} placeholder="Record measurements, state and progress…" rows={4} /></label>
       <label className="prescription-instructions">Notes <span className="prescription-form-hint">Additional practical guidance · included in the client report</span><textarea name="additionalNotes" defaultValue={prescription?.additionalNotes ?? ''} maxLength={5000} placeholder="Additional tips and next steps…" rows={4} /></label>
       <label className="prescription-instructions">General instructions <span className="prescription-form-hint">Optional · included on the client page and PDF</span><textarea name="generalInstructions" value={generalInstructions} onChange={(event) => setGeneralInstructions(event.target.value)} placeholder="Instructions for the client…" rows={3} /></label>
+      <label className="prescription-distance-homeopathy-choice" data-selected={includeDistanceHomeopathy}>
+        <input name="includeDistanceHomeopathy" type="checkbox" checked={includeDistanceHomeopathy} onChange={event => setIncludeDistanceHomeopathy(event.target.checked)} />
+        <span><strong>Distance homeopathy · Дистанционная гомеопатия</strong>
+          <small>Include the full illustrated guide as the final appendix of the client's report and PDF.</small>
+        </span>
+      </label>
       <label className="prescription-instructions">Follow-up<textarea name="followUp" defaultValue={prescription?.followUp} rows={2} /></label>
       <input type="hidden" name="practitionerName" value="Andrii Litvinov" />
       <input type="hidden" name="practitionerRole" value="Psychological Consultant · Hypnotherapist · Homeopath" />
