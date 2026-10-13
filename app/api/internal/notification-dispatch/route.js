@@ -9,10 +9,12 @@ export const dynamic='force-dynamic'
 export const revalidate=0
 export const maxDuration=60
 function authorized(request,env) {
-  if(!env.CRON_SECRET)return false
   const supplied=Buffer.from(request.headers.get('authorization')||'')
-  const expected=Buffer.from('Bearer '+env.CRON_SECRET)
-  return supplied.length===expected.length&&timingSafeEqual(supplied,expected)
+  return [env.HH_PUSH_CRON_SECRET,env.CRON_SECRET].some(secret=>{
+    if(typeof secret!=='string'||secret.length<32)return false
+    const expected=Buffer.from('Bearer '+secret)
+    return supplied.length===expected.length&&timingSafeEqual(supplied,expected)
+  })
 }
 export async function GET(request) {
   if(!authorized(request,process.env))
