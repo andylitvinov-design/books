@@ -46,6 +46,7 @@ import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
+import { isNativePsiAlchemy } from '@/lib/native/client'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
@@ -169,6 +170,16 @@ export default function AppWorkspace({ locale, path = [] }) {
   async function logout(allDevices = false) {
     setBusy(true)
     try {
+      // End account-bound Live Activities before clearing the verified session.
+      if (isNativePsiAlchemy()) {
+        try {
+          const { Capacitor, registerPlugin } = await import('@capacitor/core')
+          if (Capacitor.getPlatform() === 'ios') {
+            await appFetch('notifications/live-stop', { activityId: null })
+            await registerPlugin('HHCourseActivity').stop({})
+          }
+        } catch { /* Sign-out must still complete even if iOS is offline. */ }
+      }
       await appFetch('auth/logout', { allDevices })
     } catch (e) {
       setError(e)
