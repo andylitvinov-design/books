@@ -49,21 +49,24 @@ test('Documents Ready uses compact cards with a primary cabinet action and three
 })
 
 
-test('Documents Ready compact mode hides secondary actions under More and uses dense mobile controls', async () => {
+test('Documents Ready exposes all document actions without hidden More controls and remains mobile responsive', async () => {
   const [result, cabinet, actions, css] = await Promise.all([
     readFile('components/consultation-result.jsx', 'utf8'),
     readFile('components/cabinet-link-actions.jsx', 'utf8'),
     readFile('components/consultation-document-actions.jsx', 'utf8'),
-    readFile('app/globals.css', 'utf8'),
+    readFile('components/consultation-report.css', 'utf8'),
   ])
   assert.match(result, /consultation-result-topbar--dense/)
   assert.match(result, /consultation-result-summary--dense/)
   assert.match(result, /consultation-document-card--dense/)
   assert.match(cabinet, /consultation-cabinet-card--dense/)
   assert.match(cabinet, /Copy link/)
-  assert.match(actions, /consultation-document-more/)
-  assert.match(actions, />\{ru \? 'Ещё' : 'More'\}</)
-  assert.match(css, /Documents Ready — single-screen mobile density/)
-  assert.match(css, /consultation-cabinet-actions--dense[\s\S]*grid-template-columns: 1\.35fr 1fr 1fr/)
-  assert.match(css, /consultation-document-actions > a[\s\S]*min-height: 36px/)
+  assert.doesNotMatch(actions, /<details/)
+  assert.match(actions, /consultation-share-action/)
+  assert.match(actions, /consultation-document-secondary-actions/)
+  assert.match(actions, /href=\{urls\.print\}/)
+  assert.match(actions, /href=\{editHref\}/)
+  assert.match(actions, /revokeLabel : reactivateLabel/)
+  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/)
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
 })
