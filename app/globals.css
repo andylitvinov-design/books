@@ -5748,3 +5748,55 @@
 .master-material-copy small { font-size: 11px; color: #52735f; }
 .client-detail-material-row > a { flex: 1; min-width: 0; }
 @media (max-width: 440px) { .client-detail-material-row { flex-wrap: wrap; } .client-detail-material-row > a { flex-basis: 100%; } .master-material-copy { flex: 1; } }
+
+
+/* Holistic House owner review & client report sections. */
+.consultation-report-review-hint {
+  margin: 14px 0 18px;
+  padding: 14px 18px;
+  border: 1px solid #bfdfdb;
+  border-radius: 14px;
+  background: #eff9f7;
+  color: #295c64;
+}
+.consultation-report-review-hint > strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+.consultation-report-review-hint > p {
+  margin: 5px 0 0;
+  color: #547078;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.canonical-document .canonical-report-analysis,
+.canonical-document .canonical-report-notes {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border: 1px solid #cfe3e2;
+  border-left: 4px solid #2f828e;
+  border-radius: 10px;
+  background: #f4fbfa;
+  break-inside: avoid;
+}
+.canonical-document .canonical-report-notes {
+  border-color: #d4e6da;
+  border-left-color: #5b9981;
+  background: #f6fbf7;
+}
+.canonical-document .canonical-report-analysis h2,
+.canonical-document .canonical-report-notes h2 {
+  margin: 0;
+  color: #286576;
+  font-size: 16px;
+  letter-spacing: .02em;
+}
+.canonical-document .canonical-report-analysis p,
+.canonical-document .canonical-report-notes p { line-height: 1.7; }
+@media (max-width: 600px) {
+  .consultation-report-review-hint { padding: 13px 14px; }
+  .canonical-document .canonical-report-analysis,
+  .canonical-document .canonical-report-notes { padding: 13px 14px; }
+}

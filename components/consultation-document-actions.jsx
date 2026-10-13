@@ -52,14 +52,15 @@ export function ConsultationDocumentActions({
 
   return <>
     <div className="consultation-result-actions consultation-document-actions">
-      <a className="consultation-action-primary" href={urls.open}>{labels.open}</a>
-      <a href={urls.pdf} download>{locale === 'ru' ? 'PDF' : 'PDF'}</a>
-      <a href={urls.print}>{labels.print}</a>
+      <a className="consultation-action-primary" href={urls.previewPdf} target="_blank" rel="noopener noreferrer">{labels.previewPdf}</a>
+      <a href={urls.open} target="_blank" rel="noopener noreferrer">{labels.open}</a>
+      <a href={urls.pdf} download>{labels.pdf}</a>
     </div>
 
     <details className="consultation-document-more">
       <summary>{ru ? 'Ещё' : 'More'}</summary>
       <div className="consultation-document-more-grid">
+        <a href={urls.print} target="_blank" rel="noopener noreferrer">{labels.print}</a>
         <button className="consultation-copy" type="button" disabled={!active || copying} onClick={copy}>
           {copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}
         </button>

@@ -36,8 +36,15 @@ const copy = {
     reportHomeopathy: 'Гомеопатия',
     reportBach: 'Бах',
     reportMixed: 'Гомеопатия + Бах',
-    note: 'Примечание',
-    notePlaceholder: 'Свободное примечание для клиента…',
+    note: 'Общие инструкции (дополнительно)',
+    notePlaceholder: 'Общие инструкции к рекомендациям…',
+    reportNotesHeading: 'Анализ и примечания',
+    analysisLabel: 'Анализ',
+    analysisHelp: 'Замеры состояния, жалобы и динамика изменений',
+    analysisPlaceholder: 'Например: уровень напряжения до практики 7/10, после 4/10; качество сна 6/10…',
+    additionalNotesLabel: 'Примечания',
+    additionalNotesHelp: 'Дополнительные подсказки клиенту — что делать дальше',
+    additionalNotesPlaceholder: 'На что обратить внимание, упражнения, личные рекомендации и следующие шаги…',
     payment: 'Оплата',
     prescriptionChoice: 'Рецепт',
     prescriptionChoiceHint: 'Назначения и рекомендации клиенту',
@@ -100,8 +107,15 @@ const copy = {
     reportHomeopathy: 'Homeopathy',
     reportBach: 'Bach',
     reportMixed: 'Homeopathy + Bach',
-    note: 'Note',
-    notePlaceholder: 'Free note for the client…',
+    note: 'General instructions (optional)',
+    notePlaceholder: 'General instructions for the recommendations…',
+    reportNotesHeading: 'Analysis and notes',
+    analysisLabel: 'Analysis',
+    analysisHelp: 'State measurements, observations and change over time',
+    analysisPlaceholder: 'Example: tension before an exercise 7/10, afterwards 4/10; sleep quality 6/10…',
+    additionalNotesLabel: 'Notes',
+    additionalNotesHelp: 'Additional guidance and next steps for your client',
+    additionalNotesPlaceholder: 'What to focus on, exercises, personal guidance and next steps…',
     payment: 'Payment',
     prescriptionChoice: 'Prescription',
     prescriptionChoiceHint: 'Remedies and client recommendations',
@@ -157,6 +171,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [includeInvoice, setIncludeInvoice] = useState(Boolean(payment))
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
+  const [analysis, setAnalysis] = useState(consultation?.analysis ?? '')
+  const [additionalNotes, setAdditionalNotes] = useState(consultation?.additionalNotes ?? '')
   const [uiLocale, setUiLocale] = useState('en')
 
   useEffect(() => {
@@ -388,6 +404,18 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
 
       <ConsultationTextImport remedies={remedies} onApply={applyParsed} uiLocale={uiLocale} />
       <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Проверьте рекомендации самостоятельно. Потенция и схема приёма остаются пустыми до вашего решения.' : 'Review recommendations yourself. Potency and dosing stay blank until you enter them.'}</p>
+      {includeRecommendation && <div className="consultation-report-notes-grid" role="group" aria-label={labels.reportNotesHeading}>
+        <label className="consultation-report-note-card">
+          <strong>{labels.analysisLabel}</strong>
+          <small>{labels.analysisHelp}</small>
+          <textarea name="analysis" value={analysis} onChange={(event) => setAnalysis(event.target.value)} rows={4} maxLength={5000} placeholder={labels.analysisPlaceholder} />
+        </label>
+        <label className="consultation-report-note-card">
+          <strong>{labels.additionalNotesLabel}</strong>
+          <small>{labels.additionalNotesHelp}</small>
+          <textarea name="additionalNotes" value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} rows={4} maxLength={5000} placeholder={labels.additionalNotesPlaceholder} />
+        </label>
+      </div>}
     </section>}
 
     <section className="consultation-studio-card" aria-labelledby="consultation-documents-heading">
