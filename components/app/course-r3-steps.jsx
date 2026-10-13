@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { appFetch } from '@/lib/app/client-fetch'
 import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
-import { COURSE_TOPICS, GROWTH_GOALS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
+import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
 import CourseCompletionReview from './course-completion-review'
 import CourseFocusPicker from './course-focus-picker'
@@ -139,7 +139,6 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [fallbackGoals,setFallbackGoals]=useState([])
   const [problemLabel,setProblemLabel]=useState((current.concerns||'').trim().slice(0,160))
   const [intention]=useState('')
-  const [goalsAccepted,setGoalsAccepted]=useState(false)
   const [localBusy,setLocalBusy]=useState(false)
   const [openingTest,setOpeningTest]=useState(false)
   const [showCompletedOptions,setShowCompletedOptions]=useState(false)
