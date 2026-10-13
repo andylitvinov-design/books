@@ -93,10 +93,10 @@ function CourseTile({course,locale,t,hero=false,onOpen,onClose,onMakePrimary,onU
   </article>
 }
 export default function MyCoursesDashboard({
-  courses=[],membership={},locale='en',busy=false,onOpen,onNew,onClose,onPrimary,onUnlock,onCheckout,
+  courses=[],membership={},locale='en',busy=false,paywall=false,onOpen,onNew,onClose,onPrimary,onUnlock,onCheckout,
 }){
   const t=copy[locale]||copy.en
-  const [openPlans,setOpenPlans]=useState(false)
+  const [openPlans,setOpenPlans]=useState(paywall)
   const [openHistory,setOpenHistory]=useState(false)
   const [closing,setClosing]=useState(null)
   const [planError,setPlanError]=useState('')
@@ -121,7 +121,7 @@ export default function MyCoursesDashboard({
       <div className={styles.extraGrid}>{others.map(course=><CourseTile key={course.id} course={course} locale={locale} t={t}
         onOpen={onOpen} onClose={setClosing} onMakePrimary={onPrimary} onUnlock={onUnlock} busy={busy}/>)}</div>
     </section>}
-    <button type="button" className={styles.addTile} disabled={busy} onClick={()=>full?setOpenPlans(true):onNew()}>
+    <button type="button" className={styles.addTile} disabled={busy} onClick={onNew}>
       <Plus size={26}/><strong>{t.add}</strong><small>{full?t.full:t.addNote}</small>
     </button>
     {full&&<p className={styles.limitTip}><LockKeyhole size={14}/>{t.full}</p>}
