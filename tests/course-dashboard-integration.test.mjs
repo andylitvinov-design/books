@@ -263,3 +263,65 @@ test('an archived setup opens its history without presenting editable intake or 
   assert.match(textOf(h.tree), /read-only/)
   h.unmount()
 })
+
+test('active primary course first entry opens Today, with explicit My courses management still reachable',async()=>{
+ const active=course('course-a',4)
+ const h=mount('my-course',{props:{data:account('owner-a')},fetcher:()=>courseView(active)})
+ await h.settle()
+ assert.equal(findPart(h.tree,'CourseToday').props.courseId,'course-a')
+ assert.equal(findPart(h.tree,'MyCoursesDashboard'),undefined)
+ assert.equal(nodes(h.tree).filter(n=>n.type==='select').length,0)
+ findButton(h.tree,'My courses').props.onClick();await h.settle()
+ assert.equal(findPart(h.tree,'CourseToday'),undefined)
+ assert.ok(findPart(h.tree,'MyCoursesDashboard'))
+ assert.equal(h.calls.filter(x=>x.body).length,0)
+ h.unmount()
+})
+
+test('Today first entry uses only the server-selected course for free and multiple-course owners', async () => {
+  for (const tier of ['free', 'advanced']) {
+    const active = course('server-selected', 4)
+    const h = mount('my-course', { props: { data: account('owner-a') }, fetcher: () => courseView(active, {
+      courses: tier === 'free' ? [active] : [course('other-active', 4), active],
+      access: { ...access, tier, activeCourseLimit: tier === 'free' ? 1 : 5, activeCourseCount: tier === 'free' ? 1 : 2 },
+    }) })
+    await h.settle()
+    assert.equal(findPart(h.tree, 'CourseToday').props.courseId, active.id)
+    assert.equal(h.calls[0].options.headers['X-HH-Account-ID'], 'owner-a')
+    assert.equal(h.calls.filter(call => call.body).length, 0)
+    h.unmount()
+  }
+})
+
+test('no authoritative selected course never infers Today from a multiple-course list', async () => {
+  for (const courses of [[], [course('one', 4), course('two', 4)]]) {
+    const h = mount('my-course', { props: { data: account('owner-a') }, fetcher: () => courseView(null, { courses }) })
+    await h.settle()
+    assert.equal(findPart(h.tree, 'CourseToday'), undefined)
+    assert.equal(h.calls.filter(call => call.body).length, 0)
+    h.unmount()
+  }
+})
+
+test('explicit selected course cannot be replaced by a different server default', async () => {
+  const h = mount('my-course', { props: { data: account('owner-a') }, search: '?courseId=chosen', fetcher: () => courseView(course('different', 4)) })
+  await h.settle()
+  assert.equal(findPart(h.tree, 'CourseToday'), undefined)
+  assert.match(h.calls[0].path, /courseId=chosen/)
+  assert.equal(h.navigations.length, 0)
+  h.unmount()
+})
+
+test('a delayed previous-owner default cannot open Today after the account changes', async () => {
+  const slow = deferred()
+  const h = mount('my-course', { props: { data: account('owner-a') }, fetcher: (_path, options) =>
+    options.headers['X-HH-Account-ID'] === 'owner-a' ? slow.promise : courseView(course('owner-b-selected', 4)) })
+  await h.settle()
+  h.render({ data: account('owner-b') }); await h.settle()
+  slow.resolve(courseView(course('owner-a-selected', 4))); await h.settle()
+  assert.equal(findPart(h.tree, 'CourseToday').props.courseId, 'owner-b-selected')
+  assert.equal(findPart(h.tree, 'CourseToday').props.accountId, 'owner-b')
+  assert.ok(h.navigations.every(url => !url.includes('owner-a-selected')))
+  assert.equal(h.calls.filter(call => call.body).length, 0)
+  h.unmount()
+})

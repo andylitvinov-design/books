@@ -171,7 +171,7 @@ export function MyCourse({ data, locale = 'en' }) {
   const newCourseId = useRef(null)
   currentAccount.current = accountId
 
-  const refresh = useCallback(async (courseId = selectedCourse.current, { background = false, updateUrl = true } = {}) => {
+  const refresh = useCallback(async (courseId = selectedCourse.current, { background = false, updateUrl = true, openPrimaryToday = false } = {}) => {
     const epoch = generation.current, version = ++readVersion.current
     readController.current?.abort()
     const controller = new AbortController()
@@ -184,7 +184,9 @@ export function MyCourse({ data, locale = 'en' }) {
       if (courseId && response.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
       selectedCourse.current = response.course?.id || null
       setSnapshot({ accountId, value: response })
-      if (updateUrl) replaceCourseUrl(selectedCourse.current)
+      if (openPrimaryToday && !courseId && response.course?.stage === 4 && response.course.status !== 'archived') {
+        setView('detail');replaceCourseUrl(selectedCourse.current)
+      } else if (updateUrl) replaceCourseUrl(selectedCourse.current)
       return response
     } catch (e) { if (isCurrent()) setError(e.message); return null }
     finally { if (readController.current === controller) readController.current = null }
@@ -197,7 +199,7 @@ export function MyCourse({ data, locale = 'en' }) {
     startDialogRef.current?.close()
     selectedCourse.current = selectedCourseFromUrl()
     setView(selectedCourse.current ? 'detail' : 'list')
-    void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) })
+    void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current), openPrimaryToday: true })
     const navigate = () => {
       generation.current += 1; actionLock.current = null; setBusy(false)
       selectedCourse.current = selectedCourseFromUrl()
@@ -349,7 +351,7 @@ export function MyCourse({ data, locale = 'en' }) {
     {!showDashboard && courses.length > 0 && <button type="button" className={styles.backCourses} onClick={() => changeView('list')}>
       ← {ru ? 'Мои курсы' : 'My courses'}
     </button>}
-    {!showDashboard && view === 'detail' && courses.length > 0 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
+    {!showDashboard && stage !== 4 && view === 'detail' && courses.length > 0 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
       <h2 id={selectorId + '-heading'}>{t.courses}</h2>
       <label htmlFor={selectorId}>{t.chooseCourse}</label>
       <select id={selectorId} value={state.course?.id || ''} disabled={busy} onChange={event => selectCourse(event.target.value)}>
@@ -427,7 +429,7 @@ export function MyCourse({ data, locale = 'en' }) {
 
     {!showDashboard && stage === 4 && <CourseToday locale={locale} key={state.course.id} courseId={state.course.id} accountId={accountId} access={access} onCourseChange={courseChanged} />}
 
-    <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>
+    {stage !== 4 && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>
 }
 

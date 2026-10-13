@@ -31,7 +31,9 @@ reminder. Native ActivityKit and rich EN/RU preview remain present.
   authorization. The draft `/api/app/notifications/dispatch` URL exports that same
   GET handler, sharing the same daily claim ledger. It cannot invoke the retired
   encrypted draft repository or sender, including through HH_COURSE_PUSH_* flags.
-- Course and Settings each display one canonical notification settings surface.
+- After canonical PR470, only Settings displays the canonical notification surface.
+  The course route preserves the single-purpose Today screen without notification
+  setup or a permanent promotion card; confirmed lesson offers remain nonmodal.
   Owner changes abort requests; duplicate clicks are locked. The native control
   propagates owner identity, resets interrupted work and cleans delayed listeners.
 - Root service worker imports one push/click handler. The handler retains fixed

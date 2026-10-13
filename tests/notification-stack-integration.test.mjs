@@ -26,11 +26,12 @@ test('root worker installs exactly one safe push and click listener',async()=>{
  let work;listeners.get('push')[0]({data:{json:()=>({locale:'ru',body:'private health data'})},waitUntil:p=>work=p});await work
  assert.equal(shown.length,1);assert.doesNotMatch(JSON.stringify(shown),/private health data/)
 })
-test('one canonical settings surface per page, with rich native preview retained',()=>{
+test('canonical settings surface only in Settings, with rich native preview retained',()=>{
  const app=read('components/app/app-workspace.jsx')
  assert.doesNotMatch(app,/CourseNotificationSettings|components\/pwa\/course-notification-settings/)
- assert.equal((app.match(/<NotificationSettings /g)||[]).length,2)
- assert.match(app,/page === 'course'[\s\S]*NotificationSettings/)
+ assert.equal((app.match(/<NotificationSettings /g)||[]).length,1)
+ assert.match(app,/page === 'course' && <MyCourse data=\{data\} locale=\{locale\} \/>/)
+ assert.doesNotMatch(app,/SubscriptionHousePromo/)
  assert.match(app,/page === 'settings'[\s\S]*NotificationSettings/)
  for(const tag of ['styles.preview','<LiveActivityControl','notifications/test','notifications/preferences'])assert.ok(read('components/app/notification-settings.jsx').includes(tag))
 })
