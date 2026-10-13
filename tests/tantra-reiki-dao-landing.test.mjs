@@ -66,7 +66,17 @@ test("correct Level 1 meditation remains separate and immediately precedes testi
   assert.match(meditations, /Follow Andrey’s Level 1 video practice/);
   assert.match(meditations, /!isTantraVideo \? <p>\{item\.description\}<\/p> : null/);
   assert.match(reviews, /englishSource\.blocks\[sourceIndex\]\.text/);
-  assert.match(reviews, /qM_nFUkYJ1k/);
+  const videoReviews = await readFile("components/tantra-video-testimonials.tsx", "utf8");
+  assert.match(reviews, /import \{ TantraVideoTestimonials \} from "@\/components\/tantra-video-testimonials"/);
+  assert.equal((reviews.match(/<TantraVideoTestimonials\b/g) ?? []).length, 1);
+  assert.match(reviews, /videos=\{tantraReikiArchive\.html5Videos\.ru\}/);
+  assert.doesNotMatch(reviews, /<video\b|<AcademyVideoPlayer\b/);
+  assert.match(videoReviews, /^"use client";/);
+  assert.match(videoReviews, /props\.videos\.map\(\(video, i\) =>/);
+  assert.equal((videoReviews.match(/<video\b/g) ?? []).length, 1);
+  assert.equal((videoReviews.match(/<AcademyVideoPlayer\b/g) ?? []).length, 1);
+  assert.match(videoReviews, /<source src=\{video\.src\} type=\{video\.type\}/);
+  assert.match(videoReviews, /youtubeId="qM_nFUkYJ1k"/);
   assert.ok(page.indexOf('<EnglishGuidedMeditations focus="tantra-reiki"') < page.indexOf('<TantraReikiTestimonials locale='));
 });
 
