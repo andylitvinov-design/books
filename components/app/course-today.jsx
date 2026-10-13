@@ -52,6 +52,7 @@ const UI={
   anchorTitle:'Repeat a familiar resource',anchorIntro:'Optional 30–60 seconds, even on days with a different topic.',
   sentenceStarter:'If it helps, begin with',journalHelp:'One honest sentence is enough; the note is kept privately in your account.',
   continuedLearning:'My next few weeks',noHabitGuarantee:'Fourteen days offer a starting cycle, not a guarantee that a habit or belief has changed.',
+  savedWorkbookHistory:'My saved reflections',savedWorkbookIntro:'Your previous private notes may help you review your learning. Older notes might come from an earlier lesson version.',savedNote:'Saved note',
  },
  ru:{
   welcome:'Ваш ежедневный курс',open:'Открыть',close:'Свернуть',day:'День',of:'из',mins:'минут',daily:'Мой ежедневный замер',
@@ -98,6 +99,7 @@ const UI={
   anchorTitle:'Повторить знакомую опору',anchorIntro:'По желанию 30–60 секунд, даже когда тема дня отличается.',
   sentenceStarter:'Можно начать так',journalHelp:'Достаточно одного честного предложения. Запись приватно хранится в кабинете.',
   continuedLearning:'Мои следующие недели',noHabitGuarantee:'14 дней — стартовый цикл, а не гарантия закрепившейся привычки или изменившегося убеждения.',
+  savedWorkbookHistory:'Мои сохранённые наблюдения',savedWorkbookIntro:'Предыдущие приватные записи помогают осмыслить путь. Старые записи могли быть сделаны до обновления программы.',savedNote:'Сохранённая заметка',
  }
 }
 async function api(action,locale,body){
@@ -396,6 +398,16 @@ export default function CourseToday({locale='en'}){
    </p>:<p className={styles.hint}>{t.noChange}</p>}
    <p className={styles.hint}>{t.changeText}</p>
   </section>
+  {data.journalHistory?.length>0&&<section className={styles.workbookHistory} data-course-journal-history>
+    <details>
+      <summary>{t.savedWorkbookHistory} ({data.journalHistory.length})</summary>
+      <p className={styles.hint}>{t.savedWorkbookIntro}</p>
+      <ol>{data.journalHistory.map(item=><li key={item.day}>
+        <strong>{t.day} {item.day} · {t.savedNote}</strong>
+        <p>{item.reflection}</p>
+      </li>)}</ol>
+    </details>
+  </section>}
   {reportDay&&!reviewed&&<section className={styles.review}>
     <h3>{reportDay===7?t.firstWeek:t.lastWeek}</h3><p>{t.weeklyText}</p>
     <textarea rows={3} maxLength={650} value={reviewNote} onChange={e=>setReviewNote(e.target.value)} placeholder={t.weeklyText}/>
