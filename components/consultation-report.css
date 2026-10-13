@@ -267,3 +267,282 @@
   .consultation-preview-heading strong { font-size: 19px; }
   .consultation-preview-footer { flex-wrap: wrap; }
 }
+
+/* Documents ready — editorial Holistic House layout with every action visible. */
+.consultation-result {
+  max-width: 1020px;
+  padding-bottom: calc(52px + env(safe-area-inset-bottom));
+}
+.consultation-result .consultation-result-topbar--dense {
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 15px 24px;
+  padding: 22px 0 20px;
+  border-bottom: 1px solid #ddcbb9;
+}
+.consultation-result .consultation-result-breadcrumb {
+  color: #86654f;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.consultation-result .consultation-result-topbar--dense h1 {
+  margin: 6px 0 0;
+  color: #382b25;
+  font-size: clamp(34px, 5vw, 52px);
+  letter-spacing: -.035em;
+  line-height: 1.04;
+}
+.consultation-result .consultation-result-top-actions {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.consultation-result .consultation-result-top-actions .consultation-result-new-link,
+.consultation-result .consultation-result-top-actions .consultation-result-logout {
+  max-width: none;
+  min-height: 43px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+}
+.consultation-result .consultation-result-top-actions .consultation-result-new-link {
+  border: 1px solid #c5a892;
+  background: #fffaf4;
+  color: #70452e;
+}
+.consultation-result .consultation-result-summary--dense {
+  gap: 18px;
+  margin: 17px 0 0;
+  padding: 18px 21px;
+  border: 1px solid #e0d0be;
+  border-radius: 18px;
+  background: #fffcf7;
+}
+.consultation-result .consultation-result-client--inline {
+  align-items: baseline;
+  gap: 8px;
+}
+.consultation-result .consultation-result-client--inline > span {
+  color: #895940;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+.consultation-result .consultation-result-client--inline > strong {
+  color: #3c302a;
+  font-size: clamp(22px, 2.9vw, 29px);
+}
+.consultation-result .consultation-result-client--inline > p {
+  color: #716255;
+  font-size: 13px;
+}
+.consultation-result .consultation-report-review-hint {
+  margin: 15px 0 17px;
+  padding: 15px 19px;
+  border: 1px solid #b8d8d9;
+  border-left: 5px solid #267d87;
+  border-radius: 15px;
+  background: #eff9f8;
+}
+.consultation-result .consultation-report-review-hint strong {
+  color: #1a5360;
+  font-size: 17px;
+}
+.consultation-result .consultation-report-review-hint p {
+  color: #4d7278;
+  font-size: 14px;
+}
+.consultation-result .consultation-result-documents {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.consultation-result .consultation-document-card--dense {
+  padding: clamp(18px, 3vw, 25px);
+  border: 1px solid #dbc7b5;
+  border-radius: 19px;
+  background: #fffdf9;
+  box-shadow: 0 9px 22px rgba(66, 47, 36, .05);
+}
+.consultation-result .consultation-document-heading--inline {
+  align-items: baseline;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #e8dcd1;
+}
+.consultation-result .consultation-document-heading--inline h2 {
+  color: #8c5335;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .10em;
+  line-height: 1.45;
+}
+.consultation-result .consultation-document-heading--inline .consultation-document-meta {
+  color: #40312a;
+  font-size: 20px;
+  text-align: left;
+}
+.consultation-result .consultation-document-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.consultation-result .consultation-document-actions > a,
+.consultation-result .consultation-document-actions > button,
+.consultation-result .consultation-document-secondary-actions > a,
+.consultation-result .consultation-document-secondary-actions > form > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 49px;
+  padding: 10px 12px;
+  border: 1px solid #cdb6a2;
+  border-radius: 12px;
+  background: #fff;
+  color: #594637;
+  font: 700 13px/1.35 system-ui, sans-serif;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.consultation-result .consultation-document-actions > a.consultation-action-primary {
+  border-color: #65364e;
+  background: #65364e;
+  color: #fff;
+}
+.consultation-result .consultation-document-actions > a.consultation-action-primary:hover {
+  background: #4b263a;
+}
+.consultation-result .consultation-document-actions > .consultation-share-action {
+  border-color: #8ebfbe;
+  background: #eaf6f5;
+  color: #1b6470;
+}
+.consultation-result .consultation-document-actions > button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.consultation-result .consultation-document-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 11px;
+}
+.consultation-result .consultation-document-secondary-actions > form {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+.consultation-result .consultation-document-secondary-actions > form > p {
+  margin: 0;
+  color: #725f51;
+  font-size: 12px;
+}
+.consultation-result .consultation-document-secondary-actions > form > button.consultation-access-revoke {
+  border-color: #dfc7c2;
+  color: #8b4340;
+  background: #fffaf9;
+}
+.consultation-result .consultation-document-secondary-actions > form > button.consultation-access-restore {
+  border-color: #a2c9b4;
+  background: #f0faf4;
+  color: #27614c;
+}
+.consultation-result .consultation-copy-feedback {
+  margin-top: 10px;
+  color: #4e7076;
+  font-size: 12px;
+}
+.consultation-result .consultation-cabinet-card--dense {
+  margin-top: 15px;
+  padding: 21px;
+  border: 1px solid #cbdedb;
+  border-radius: 18px;
+  background: #f4faf7;
+}
+.consultation-result :is(a, button):focus-visible {
+  outline: 3px solid #c17983;
+  outline-offset: 3px;
+}
+.consultation-studio .consultation-template-notice {
+  margin: 15px 0 0;
+  padding: 12px 15px;
+  border: 1px solid #e1cda9;
+  border-radius: 10px;
+  background: #fffbef;
+  color: #755338;
+  font-size: 13px;
+  line-height: 1.5;
+}
+/* The web document also exposes remedy descriptions without relying on color. */
+.canonical-document .canonical-remedy > a {
+  display: inline-flex;
+  margin: 8px 0;
+  color: #135f79;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .consultation-result .consultation-result-topbar--dense { align-items: flex-start; padding-top: 14px; }
+  .consultation-result .consultation-result-top-actions { flex-direction: row; }
+  .consultation-result .consultation-result-summary--dense { padding: 15px; flex-wrap: wrap; }
+  .consultation-result .consultation-document-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .consultation-result .consultation-document-card--dense { padding: 17px; }
+}
+@media (max-width: 390px) {
+  .consultation-result .consultation-result-topbar--dense h1 { font-size: 36px; }
+  .consultation-result .consultation-result-top-actions { width: 100%; }
+  .consultation-result .consultation-result-top-actions .consultation-result-new-link,
+  .consultation-result .consultation-result-top-actions form { flex: 1 1 130px; }
+  .consultation-result .consultation-document-actions > a,
+  .consultation-result .consultation-document-actions > button,
+  .consultation-result .consultation-document-secondary-actions > a,
+  .consultation-result .consultation-document-secondary-actions > form > button {
+    min-height: 49px;
+    padding: 10px 7px;
+    font-size: 12px;
+  }
+  .consultation-result .consultation-document-secondary-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.consultation-studio .consultation-template-review {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 13px;
+  padding: 12px 15px;
+  border: 1px solid #d8c8ba;
+  border-radius: 12px;
+  background: #fffdfa;
+  color: #4b483e;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.consultation-studio .consultation-template-review input[type="checkbox"] {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: #65364e;
+}
+.consultation-studio .consultation-template-review input:focus-visible {
+  outline: 3px solid #a87591;
+  outline-offset: 3px;
+}
