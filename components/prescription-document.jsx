@@ -1,4 +1,7 @@
 import Link from 'next/link'
+import { getRemedy } from '@/data/remedies'
+import { RemedyContent } from './remedy-content'
+import { DistanceHomeopathyGuide } from './distance-homeopathy-guide'
 import { recommendationCopy, recommendationGuidance, recommendationItemType, remedySchedule } from '@/lib/documents/recommendation'
 import { DocumentAutoPrint } from './document-auto-print'
 import { PrescriptionActions } from './prescription-actions'
@@ -9,6 +12,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
+  const selectedProfiles = document.items.map(item => ({ item, remedy: item.remedySlug ? getRemedy(locale, item.remedySlug) : undefined }))
+    .filter(({ remedy }) => Boolean(remedy))
   const mixed = document.recommendationType === 'mixed'
   const groups = mixed
     ? [
@@ -68,6 +73,27 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       {document.followUp && <p className="canonical-follow-up">{labels.followUp}: {document.followUp}</p>}
       <DocumentSignature date={document.dateIssued} locale={locale} />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
+
+      {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Описание препаратов' : 'Remedy profiles'}>
+        <h2>{locale === 'ru' ? 'Описание выбранных препаратов' : 'About your selected remedies'}</h2>
+        <p>{locale === 'ru'
+          ? 'Авторские описания и фотографии из библиотеки Holistic House. Материал для ознакомления и самонаблюдения, не медицинская инструкция.'
+          : 'Original descriptions and photographs from the Holistic House library. Educational material for reflection, not medical instructions.'}</p>
+        {selectedProfiles.map(({ item, remedy }) => <section className="canonical-remedy-profile" key={item.remedySlug}>
+          <h3>{remedy.canonical_latin_name}</h3>
+          {remedy.primary_image && <figure className="canonical-remedy-profile-photo">
+            {/* The published original image is retained rather than substituted or generated. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={remedy.primary_image} alt={remedy.primary_image_alt || remedy.canonical_latin_name} loading="lazy" decoding="async" />
+          </figure>}
+          <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url} variant="book" showEssence={false} expandSupplementary />
+          {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
+            {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open full remedy profile →'}
+          </Link></p>}
+        </section>)}
+      </section>}
+
+      {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
     </article>
   </main>
 }
