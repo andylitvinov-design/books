@@ -36,11 +36,14 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       <Link href={`/${alternateLocale}/prescriptions/${selector}`}>{alternateLocale.toUpperCase()}</Link>
       <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />{cabinetAction}
     </div>}
-    <article className="canonical-document">
+    <article className="canonical-document canonical-document--editorial">
       <DocumentAutoPrint enabled={admin && autoPrint} /><DocumentLetterhead compact />
       <header className="canonical-report-heading">
-        <p className="canonical-report-eyebrow">{locale === 'ru' ? 'HOLISTIC HOUSE · ПЕРСОНАЛЬНЫЙ ОТЧЁТ' : 'HOLISTIC HOUSE · PERSONAL REPORT'}</p>
-        <h1>{labels.title}</h1>
+        <div className="canonical-report-hero">
+          <p className="canonical-report-eyebrow">{locale === 'ru' ? 'HOLISTIC HOUSE · ПЕРСОНАЛЬНЫЙ ОТЧЁТ' : 'HOLISTIC HOUSE · PERSONAL REPORT'}</p>
+          <h1>{labels.title}</h1>
+          <p className="canonical-report-hero-subtitle">{locale === 'ru' ? 'Индивидуальные рекомендации по итогам консультации' : 'Individual guidance from your consultation'}</p>
+        </div>
         <dl className="canonical-client">
           <div><dt>{labels.patient}</dt><dd>{document.patientName}</dd></div>
           <div><dt>{labels.date}</dt><dd><time dateTime={document.dateIssued}>{document.dateIssued}</time></dd></div>
@@ -55,9 +58,10 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
               { key: 'after', label: locale === 'ru' ? 'После сессии' : 'After', value: progress.after },
               ...(progress.target !== undefined ? [{ key: 'target', label: locale === 'ru' ? 'Цель (план)' : 'Target (planned)', value: progress.target }] : []),
             ].map(({ key, label, value }) => <div className={`canonical-progress-item canonical-progress-item--${key}`} key={key}>
+              <div className="canonical-progress-dial" aria-hidden="true" style={{ '--progress': `${value * 10}%` }}>
+                <strong>{value}<small>/10</small></strong>
+              </div>
               <span>{label}</span>
-              <strong>{value}<small>/10</small></strong>
-              <div className="canonical-progress-track" aria-hidden="true"><i style={{ width: `${value * 10}%` }} /></div>
             </div>)}
           </div>
           {progress.target !== undefined && <p className="canonical-progress-caption">{locale === 'ru' ? 'Цель — планируемый ориентир, не измеренный результат.' : 'The target is a planned reference, not a measured result.'}</p>}
@@ -74,7 +78,13 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           itemNumber += 1
           const number = itemNumber
           const schedule = remedySchedule(item, locale, document.recommendationType)
+          const sourceRemedy = item.remedySlug ? getRemedy(locale, item.remedySlug) : null
           return <section className="canonical-remedy" key={number}>
+            {sourceRemedy?.primary_image && <figure className="canonical-remedy-card-photo">
+              {/* Reuse the client's selected original library image, never a stock substitute. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={sourceRemedy.primary_image} alt={sourceRemedy.primary_image_alt || sourceRemedy.canonical_latin_name} loading="lazy" decoding="async" />
+            </figure>}
             <div className="canonical-remedy-heading">
               <span className="canonical-remedy-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
               <div className="canonical-remedy-title">
