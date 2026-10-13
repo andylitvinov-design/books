@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { requestBilling, requestBillingStatus, verifiedBillingRedirect } from '../lib/billing/client-session.js'
 
 test('billing requests bind expected bootstrap account for status and every mutation', async () => {
-  for (const action of ['status', 'checkout', 'portal', 'cancel', 'reconcile']) {
+  for (const action of ['status', 'checkout', 'portal', 'cancel', 'reconcile', 'sessionRequest']) {
     let args
     await requestBilling('owner-A', action, action === 'status' ? undefined : {}, async (...value) => {
       args = value; return { ok: true, json: async () => ({ available: true }) }

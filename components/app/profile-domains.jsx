@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Brain, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
-import { FreeInsightsPaths } from '@/components/free-insights-paths'
 import './profile-domains.css'
 
 const DOMAINS = PROFILE_AREAS
@@ -14,7 +13,7 @@ const WORDS = {
   en: {
     eyebrow: 'PRIVATE SPACE · HOLISTIC HOUSE',
     title: 'My profile',
-    reports: 'Reports & personal development',
+    reports: 'Your resources, personal perspectives and chosen direction of growth',
     intro: 'Four perspectives on your journey. Explore what is available, follow changes over time, and choose support only when you want it.',
     psychology: 'Psychological', homeopathy: 'Homeopathy', wu_xing: 'Wu Xing', hypnotherapy: 'Hypnotherapy',
     psyDetail: 'Psychological profile', homeoDetail: 'Homeopathic profile', wuDetail: 'Five-element resource profile', hypnoDetail: 'Hypnotherapist recommendations',
@@ -35,18 +34,19 @@ const WORDS = {
     compare: 'View test history', assessments: 'My tests', analysis: 'Personal analysis',
     request: 'Request personal support', consultation: 'Request consultation', freeWu: 'Request free resource analysis',
     learnMore: 'Explore consultation options', date: 'Dated', loading: 'Opening your saved materials…',
-    incomplete: 'Some saved materials could not be opened. You can still use My reports to access the available originals.',
+    incomplete: 'Some saved materials could not be opened. Available originals remain accessible in My personal reports below.',
     private: 'Private to your cabinet. Nothing is sent to a practitioner when you open a profile; a consultation request does not attach test answers or reports automatically.',
     unknown: 'Available when shared', recent: 'recent', reportsCount: 'personal reports',
-    visibleLimit: 'Recent saved materials are shown here. Your complete archive remains available under Personal analysis.',
+    visibleLimit: 'Recent saved materials are shown here. Your complete archive is in My personal reports below.',
     selected: 'selected', emptyLegacyPsy: 'Psychological test reports shared by Andy will appear here. Your Google Cabinet also keeps results from tests you complete yourself.',
     google: 'Open my Google Cabinet',
-    overview: 'Profile at a glance', profileReports: 'Personal reports', remedyRecords: 'Remedy records', discover: 'Explore free services', support: 'Personal support',
+    archiveTitle: 'My personal reports', archiveHint: 'Your specialist’s reports, recommendations and original documents are kept in one place.',
+    overview: 'Profile at a glance', profileReports: 'Personal reports', remedyRecords: 'Remedy records', discover: 'Explore services', support: 'Personal support',
   },
   ru: {
     eyebrow: 'ЛИЧНОЕ ПРОСТРАНСТВО · HOLISTIC HOUSE',
     title: 'Мой профиль',
-    reports: 'Отчёты и личная динамика',
+    reports: 'Ваши ресурсы, индивидуальные особенности и направления развития',
     intro: 'Четыре стороны вашего профиля. Вы можете спокойно изучить записи, увидеть изменения и обратиться за поддержкой, когда захотите.',
     psychology: 'Психология', homeopathy: 'Гомеопатия', wu_xing: 'У-Син', hypnotherapy: 'Гипнотерапия',
     psyDetail: 'Психологический профиль', homeoDetail: 'Гомеопатический профиль', wuDetail: 'Ресурсы по пяти стихиям У-Син', hypnoDetail: 'Рекомендации гипнотерапевта',
@@ -67,13 +67,14 @@ const WORDS = {
     compare: 'Динамика тестов', assessments: 'Мои тесты', analysis: 'Личный анализ',
     request: 'Запросить личную поддержку', consultation: 'Запросить консультацию', freeWu: 'Запросить бесплатную диагностику ресурсов',
     learnMore: 'Варианты консультации', date: 'Дата', loading: 'Открываем сохранённые материалы…',
-    incomplete: 'Некоторые материалы открыть не удалось. Доступные оригиналы остаются во вкладке «Личный анализ».',
+    incomplete: 'Некоторые материалы открыть не удалось. Доступные оригиналы — ниже, в разделе «Мои личные отчёты».',
     private: 'Доступно только вам. Просмотр профиля ничего не отправляет специалисту; при запросе консультации ответы тестов и отчёты не прикрепляются автоматически.',
     unknown: 'После передачи отчёта', recent: 'последних', reportsCount: 'личных отчётов',
-    visibleLimit: 'Здесь показаны последние сохранённые материалы. Полный архив — во вкладке «Личный анализ».',
+    visibleLimit: 'Здесь показаны последние материалы. Полный архив доступен ниже в разделе «Мои личные отчёты».',
     selected: 'подобрано', emptyLegacyPsy: 'Здесь будут психологические отчёты от Andy. Результаты самостоятельно пройденных тестов сохраняются в вашем Google-кабинете.',
     google: 'Открыть Google-кабинет',
-    overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Бесплатные услуги', support: 'Личная поддержка',
+    archiveTitle: 'Мои личные отчёты', archiveHint: 'Отчёты специалиста и оригинальные рекомендации собраны в одном месте.',
+    overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Посмотреть услуги', support: 'Личная поддержка',
   },
 }
 const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10))
@@ -159,6 +160,7 @@ function ProfileServiceOffer({ area, locale }) {
 export function ProfileDomains({
   locale = 'en', mode = 'account', selector = null, assessments = [], homeopathyUpdates = [],
   results = [], savedReports = [], savedDocuments = [], children = null,
+  overviewContent = null, reportsContent = null, focusReports = false,
 }) {
   const ru = locale === 'ru'
   const t = WORDS[ru ? 'ru' : 'en']
@@ -168,7 +170,16 @@ export function ProfileDomains({
   const [fetchedDocuments, setFetchedDocuments] = useState([])
   const [fetchState, setFetchState] = useState('idle')
   const mounted = useRef(true)
+  const focusedArchive = useRef(false)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+  useEffect(() => {
+    if (!reportsContent || focusedArchive.current) return
+    if (!focusReports && window.location.hash !== '#personal-reports') return
+    focusedArchive.current = true
+    // Profile is client-rendered after account bootstrap; browser fragment scrolling
+    // can happen before its report archive exists, so complete it after mount.
+    requestAnimationFrame(() => document.getElementById('personal-reports')?.scrollIntoView({ block: 'start' }))
+  }, [focusReports, reportsContent])
   useEffect(() => { setInteractive(true) }, [])
   const external = mode === 'legacy'
   const recentResults = useMemo(() => ordered(results.map(result => ({ ...result, occurredOn: String(result.measurementAt || '').slice(0, 10) }))), [results])
@@ -216,15 +227,6 @@ export function ProfileDomains({
   }))
   const panelTitle = { psychology: t.psyDetail, homeopathy: t.homeoDetail, wu_xing: t.wuDetail, hypnotherapy: t.hypnoDetail }
   const mayBeLimited = !external && (savedReports.filter(r => r.available !== false).length > 30 || savedDocuments.filter(d => d.kind === 'recommendation').length > 20)
-  // Counts come from authorized records only; never turn an absent report into a score.
-  const reportCount = external ? reports.filter(report => report.available !== false).length : savedReports.filter(report => report.available !== false).length
-  const remedyCount = external ? homeopathyUpdates.length : savedDocuments.filter(document => document.kind === 'recommendation').length
-  const latestDate = external ? ordered(assessments)[0]?.occurredOn : recentResults[0]?.occurredOn
-  const glance = [
-    { label: external ? t.profileReports : t.testResults, value: external ? reportCount : recentResults.length },
-    { label: external ? t.remedyRecords : t.profileReports, value: external ? remedyCount : reportCount },
-    { label: t.latest, value: readableDate(latestDate, locale) || '—' },
-  ]
 
   return <section className="hh-profile-domains" data-profile-domains data-profile-interactive={interactive ? "true" : "false"}>
     <header className="hh-domain-hero">
@@ -233,10 +235,8 @@ export function ProfileDomains({
         <h1>{t.title}</h1>
         <p className="hh-domain-hero-subtitle">{t.reports}</p>
       </div>
-      <dl className="hh-domain-glance" aria-label={t.overview}>
-        {glance.map(item => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}
-      </dl>
     </header>
+    {overviewContent}
     <div className="hh-domain-tabs" role="tablist" aria-label={t.title}>
       {entries.map(({ key, summary }) => {
         const Icon = ICONS[key]
@@ -267,6 +267,7 @@ export function ProfileDomains({
           <ReportsHistory reports={psychologicalReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.emptyLegacyPsy} t={t} />
           <Link className="hh-domain-secondary-link" href={'/' + locale + '/app/portrait'} prefetch={false}>{t.google} <ArrowRight size={16} /></Link>
         </> : <>
+          <div className="hh-domain-heading"><div><p className="hh-domain-eyebrow">{t.psychology}</p><h2>{t.psyDetail}</h2><p>{t.psyIntro}</p></div></div>
           {children}
           <div className="hh-domain-link-row"><Link href={'/' + locale + '/app/history'} prefetch={false}>{t.compare} <ArrowRight size={16} /></Link><Link href={'/' + locale + '/app/tests'} prefetch={false}>{t.assessments} <ArrowRight size={16} /></Link></div>
           {psychologicalReports.length > 0 && <ReportsHistory reports={psychologicalReports} locale={locale} title={t.reportHistory} empty={t.noPsy} t={t} />}
@@ -285,7 +286,7 @@ export function ProfileDomains({
         </div>}
         {(external || fetchState !== 'loading') && active === 'wu_xing' && <ReportsHistory reports={wuReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noWu} t={t} />}
         {(external || fetchState !== 'loading') && active === 'hypnotherapy' && <ReportsHistory reports={hypnoReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.noHypno} t={t} />}
-        <Link className="hh-domain-secondary-link" href={external ? '/' + locale + '/client/' + encodeURIComponent(selector) + '?view=analysis' : '/' + locale + '/app/analysis'} prefetch={false}>{t.seeAll} <ArrowRight size={16} /></Link>
+        <Link className="hh-domain-secondary-link" href={external ? '/' + locale + '/client/' + encodeURIComponent(selector) + '?view=analysis' : '/' + locale + '/app/portrait#personal-reports'} prefetch={false}>{t.seeAll} <ArrowRight size={16} /></Link>
         {fetchState === 'partial' && <p role="status" className="hh-domain-caution">{t.incomplete}</p>}
         {mayBeLimited && <p className="hh-domain-caution">{t.visibleLimit}</p>}
       </section>}
@@ -294,10 +295,16 @@ export function ProfileDomains({
         <ProfileServiceOffer area={active} locale={locale} />
       </details>
     </div>
+    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive" aria-labelledby="hh-profile-reports-title" data-profile-report-archive>
+      <header className="hh-domain-report-archive-head">
+        <div><p className="hh-domain-eyebrow">HOLISTIC HOUSE</p><h2 id="hh-profile-reports-title">{t.archiveTitle}</h2><p>{t.archiveHint}</p></div>
+        <ArrowRight size={21} aria-hidden="true" />
+      </header>
+      {reportsContent}
+    </section>}
     <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
-    <details className="hh-domain-discover">
-      <summary><Sparkles size={16} aria-hidden="true" /><span>{t.discover}</span><ChevronDown size={16} aria-hidden="true" /></summary>
-      <FreeInsightsPaths locale={locale} variant="cabinet" testHref={external ? '/' + locale + '/client' : '/' + locale + '/app/tests'} />
-    </details>
+    <Link className="hh-domain-services-link" href={'/' + locale + '/services'} prefetch={false}>
+      <Sparkles size={16} aria-hidden="true" />{t.discover}<ArrowRight size={16} aria-hidden="true" />
+    </Link>
   </section>
 }

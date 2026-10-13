@@ -1,3 +1,20 @@
+# Superseded draft notification implementation
+
+This PR427 draft design is inactive and retained only as implementation history.
+The merged canonical notification stack is authoritative: see
+[Phone notifications](../mobile-notifications.md) and
+[EUR notification reconciliation](../billing/NOTIFICATION-RECONCILIATION.md).
+Do not apply either draft SQL proposal or configure HH_COURSE_PUSH_* variables.
+They do not activate this candidate. Root POST/PATCH/DELETE draft mutations are
+not exposed, and the draft dispatcher URL aliases the canonical dispatcher.
+The old encrypted-storage, paid-entitlement, quiet-hours and final-locked-consent
+claims below describe the retired proposal, not the canonical live implementation.
+Canonical scheduling uses existing opt-in preferences, local hours 08–21, active
+cycles, unfinished daily lessons and the existing per-device/day claim ledger.
+No final locked consent recheck or draft paid gate is claimed for that sender.
+
+---
+
 # Course mini-app and private phone reminders
 
 Status: implementation prepared, sending intentionally disabled. No keys were generated, no database changes applied, no phone subscribed during development, and no push message sent.

@@ -12,7 +12,7 @@
     // Never render a supplied title, body, result, diagnosis, URL or record identifier.
     const href = `/${locale === 'ru' ? 'ru' : 'en'}/app/course`
     event.waitUntil(self.registration.showNotification('Holistic House', {
-      body: copy[locale], icon: '/course-icon/192', tag: 'hh-course-reminder',
+      body: copy[locale], icon: '/icons/holistic-house-teal.svg', badge: '/icons/holistic-house-teal.svg', renotify: false, tag: 'hh-course-reminder',
       data: { href }, requireInteraction: false,
     }))
   })

@@ -67,15 +67,15 @@ function TestSymbol({topics}) {
   return <span className={styles.iconTile} data-theme={key} aria-hidden="true"><Icon size={23} strokeWidth={1.8}/></span>
 }
 
-async function api(path, body, { signal } = {}) {
+async function request(path, body, { signal, accountId } = {}) {
   const response = await fetch('/api/app/' + path, {
     signal,
     method: body ? 'POST' : 'GET', cache: 'no-store', credentials: 'same-origin',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: { ...(accountId ? { 'X-HH-Account-ID': accountId } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   })
-  const json = await response.json().catch(() => ({}))
-  if (!response.ok) {
+  const json = await response.json()
+  if (!response.ok || json?.error || !json || typeof json !== 'object' || Array.isArray(json)) {
     const error = new Error(json.error || 'SERVICE_UNAVAILABLE')
     error.code = json.error
     throw error
@@ -121,11 +121,34 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const searchParams = useSearchParams()
   const openFromInsights = searchParams.get('explore') === '1'
   const fromCourse = searchParams.get('course') === '1'
+  const requestedCourseId = searchParams.get('courseId') || null
+  const accountId = data.account?.id
+  const scopeKey = JSON.stringify([accountId, requestedCourseId])
+  const scope = useRef({ key: scopeKey, revision: 0 }), mounted = useRef(false)
+  if (scope.current.key !== scopeKey) scope.current = { key: scopeKey, revision: scope.current.revision + 1 }
+  const scopeRevision = scope.current.revision
+  const isCurrent = () => mounted.current && scope.current.key === scopeKey && scope.current.revision === scopeRevision
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const requestedCategory = searchParams.get('category')
   const insightsCategory = INSIGHTS_TEST_CATEGORIES.some((item) => item.key === requestedCategory) ? requestedCategory : null
   const once = useRef(false)
   const [plan, setPlan] = useState(null)
   const [courseState, setCourseState] = useState(null)
+  const selectedCourseId = requestedCourseId || courseState?.course?.id || null
+  const courseHref = (params = {}, id = selectedCourseId) => {
+    const query = new URLSearchParams(params)
+    if (id) query.set('courseId', id)
+    return '/' + locale + '/app/course' + (query.size ? '?' + query.toString() : '')
+  }
+  async function api(path, body, options = {}) {
+    if (!isCurrent()) throw new Error('COURSE_SELECTION_CHANGED')
+    const isCourse = path === 'course'
+    const target = isCourse ? body?.courseId || selectedCourseId : null
+    const result = await request(isCourse && target ? path + '?courseId=' + encodeURIComponent(target) : path,
+      isCourse && body ? { ...body, courseId: target } : body, { ...options, accountId })
+    if (!isCurrent() || (isCourse && target && result.course?.id !== target)) throw new Error('COURSE_SELECTION_CHANGED')
+    return result
+  }
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
   const [exploring, setExploring] = useState(openFromInsights)
@@ -173,6 +196,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     : (plan.status === 'cancelled' ? null : plan)
   useEffect(() => {
     let active = true
+    setCourseState(null)
     const controller = new AbortController()
     api('course', undefined, { signal: controller.signal }).then(course => {
       if (active) setCourseState(course)
@@ -182,7 +206,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     // Safari/WebKit can treat an unfinished course fetch as a cross-origin
     // navigation rejection when a user immediately opens a test. Cancel it.
     return () => { active = false; controller.abort() }
-  }, [data.account?.id, data.results?.length])
+  }, [data.account?.id, data.results?.length, requestedCourseId]) // eslint-disable-line react-hooks/exhaustive-deps
   const courseKeys = courseTestKeys(courseState)
   const courseStatusByKey = new Map((courseState?.assessments?.selectedTests || [])
     .map(item => [item.key, item]))
@@ -260,13 +284,15 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       // deliberately checked in the full Explorer. Explicitly bind them to
       // that private course, not the default five or the account's entire
       // (possibly much larger) historical test-plan selection.
+      let returnCourseId = selectedCourseId
       if (fromCourse) {
         const current = await api('course')
         if (current.course?.stage !== 2) {
           throw Object.assign(new Error('COURSE_STAGE_CHANGED'), { code: 'COURSE_STAGE_CHANGED' })
         }
+        returnCourseId = current.course.id
         await api('course', {
-          action: 'confirm-tests',
+          action: 'confirm-tests', courseId: current.course.id,
           expectedRevision: current.course.revision,
           testKeys: valid,
         })
@@ -274,8 +300,10 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       // Reconcile the saved account state before replacing the handoff URL.
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
-      router.replace(fromCourse ? root + '/course' : root + '/tests?plan=' + encodeURIComponent(created.id))
+      if (!isCurrent()) return
+      router.replace(fromCourse ? courseHref({}, returnCourseId) : root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
+      if (!isCurrent()) return
       if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
       else if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
       else setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
@@ -341,8 +369,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setNotice(c.removed)
       if (updated.status === 'cancelled') setExploring(false)
       // Avoid keeping stale plan IDs in the URL after editing the current set.
-      if (requestedPlanId) router.replace(root + '/tests')
+      if (requestedPlanId && isCurrent()) router.replace(root + '/tests')
     } catch (cause) {
+      if (!isCurrent()) return
       if (cause.code === 'REVISION_CONFLICT') {
         setPlan(null)
         await reload()
@@ -387,14 +416,16 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       const fresh = await api('course')
       const key = coursePendingKeys(fresh)[0]
       if (!key) {
-        router.push(root + '/course?tests=complete')
+        router.push(courseHref({ tests: 'complete' }, fresh.course?.id))
         return
       }
       const run = await startOrResumeCourseTest({
         courseState: fresh, key, locale, request: api,
       })
-      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1')
+      if (!isCurrent()) return
+      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1&courseId=' + encodeURIComponent(fresh.course.id))
     } catch (cause) {
+      if (!isCurrent()) return
       setError(c.error + ' (' + (cause.code || cause.message || 'COURSE_UNAVAILABLE') + ')')
       setBusy(false)
     }
@@ -428,7 +459,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           const run = await startOrResumeCourseTest({
             courseState: fresh, key: row.key, locale, request: api,
           })
-          router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1')
+          if (!isCurrent()) return
+      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1&courseId=' + encodeURIComponent(fresh.course.id))
           return
         }
       }
@@ -440,9 +472,11 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       })
       const isPlanStep = currentPlan?.status === 'active' &&
         currentPlan.definitionIds.includes(row.definition.id)
+      if (!isCurrent()) return
       router.push(root + '/runs/' + encodeURIComponent(run.id) +
         '?mode=quick' + (isPlanStep ? '&plan=' + encodeURIComponent(currentPlan.id) : ''))
     } catch (cause) {
+      if (!isCurrent()) return
       setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
       setBusy(false)
     }
@@ -490,7 +524,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                           disabled={busy} onClick={openNextCourseTest}>
                           {locale === 'ru' ? 'Продолжить курс' : 'Continue course'} <ArrowRight size={15}/>
                         </button>
-                      : <Link href={root + '/course'}>{locale === 'ru' ? 'Открыть курс' : 'Open my course'} <ArrowRight size={15}/></Link>}
+                      : <Link href={courseHref()}>{locale === 'ru' ? 'Открыть курс' : 'Open my course'} <ArrowRight size={15}/></Link>}
                   </div>}
                 </header>}
                 <div className={styles.group}>

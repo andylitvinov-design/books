@@ -1,0 +1,25 @@
+{
+  "name": "Holistic House",
+  "short_name": "Holistic House",
+  "description": "My courses, insights, tests and wellbeing practice from Holistic House",
+  "lang": "en",
+  "start_url": "/en/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5faf7",
+  "theme_color": "#234f48",
+  "icons": [
+    {
+      "src": "/holistic-house-app.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/holistic-house-app.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

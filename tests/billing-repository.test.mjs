@@ -21,7 +21,7 @@ const settings = { provider: 'stripe', environment: 'sandbox' }
 const appConfig = { origins: ['https://holistic.test'], test: true }
 const checkoutContext = { locale: 'ru', origin: 'https://holistic.test', priceId: 'price_monthly' }
 const event = extra => ({ provider: 'stripe', environment: 'sandbox', customerId: 'cus_owner', eventId: 'evt_1', eventType: 'invoice.paid', ...extra })
-const snapshot = extra => ({ provider: 'stripe', environment: 'sandbox', customerId: 'cus_owner', subscriptionId: 'sub_1', planId: 'plus', status: 'active', paidThroughAt: '2099-01-01T00:00:00.000Z', currentPeriodEnd: '2099-01-01T00:00:00.000Z', cancelAtPeriodEnd: false, revokedAt: null, ...extra })
+const snapshot = extra => ({ provider: 'stripe', environment: 'sandbox', customerId: 'cus_owner', subscriptionId: 'sub_1', planId: 'start', status: 'active', paidThroughAt: '2099-01-01T00:00:00.000Z', currentPeriodEnd: '2099-01-01T00:00:00.000Z', cancelAtPeriodEnd: false, revokedAt: null, ...extra })
 const rowScope = row => [row.owner_id, row.provider, row.environment].join('|')
 
 // A deterministic transaction/row-lock fixture, not a substitute for executing
@@ -144,8 +144,8 @@ test('uses only billing role and transaction-local owner/environment scope', asy
 
 test('one durable pending checkout wins across different client operation IDs', async () => {
   const f = seeded(), repo = f.repository()
-  const first = await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'plus' }))
-  const second = await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: NEXT_OPERATION, planId: 'plus' }))
+  const first = await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'start' }))
+  const second = await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: NEXT_OPERATION, planId: 'start' }))
   assert.equal(first.operationId, OPERATION)
   assert.ok(Number.isFinite(Date.parse(first.createdAt)))
   assert.deepEqual({ locale: first.locale, origin: first.origin, priceId: first.priceId }, checkoutContext)
@@ -160,10 +160,10 @@ test('concurrent owner requests serialize before provider callbacks', async () =
   const blocked = new Promise(resolve => { releaseFirst = resolve })
   const first = repo.withOwner(actor(OWNER), async store => {
     order.push('first-start'); firstStarted(); await blocked
-    await store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'plus' }); order.push('first-end')
+    await store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'start' }); order.push('first-end')
   })
   await started
-  const second = repo.withOwner(actor(OWNER), async store => { order.push('second-start'); return store.prepareCheckout({ ...checkoutContext, operationId: NEXT_OPERATION, planId: 'plus' }) })
+  const second = repo.withOwner(actor(OWNER), async store => { order.push('second-start'); return store.prepareCheckout({ ...checkoutContext, operationId: NEXT_OPERATION, planId: 'start' }) })
   await Promise.resolve(); assert.deepEqual(order, ['first-start'])
   releaseFirst(); await first
   assert.equal((await second).operationId, OPERATION)
@@ -172,7 +172,7 @@ test('concurrent owner requests serialize before provider callbacks', async () =
 
 test('provider timeout rolls back completion but preserves committed prepare', async () => {
   const f = seeded(), repo = f.repository()
-  await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'plus' }))
+  await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'start' }))
   await assert.rejects(repo.withOwner(actor(OWNER), async store => {
     await store.saveCheckout({ operationId: OPERATION, providerCheckoutId: 'cs_1', url: 'https://checkout.stripe.com/c/1', expiresAt: '2099-01-01T00:00:00Z' })
     throw new Error('ambiguous provider timeout')
@@ -183,12 +183,12 @@ test('provider timeout rolls back completion but preserves committed prepare', a
 
 test('expired wall-clock checkout stays unresolved until provider-confirmed close', async () => {
   const f = seeded(), repo = f.repository()
-  await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'plus' }))
+  await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'start' }))
   await repo.withOwner(actor(OWNER), store => store.saveCheckout({ operationId: OPERATION, providerCheckoutId: 'cs_1', url: 'https://checkout.stripe.com/c/1', expiresAt: '2000-01-01T00:00:00Z' }))
-  const open = await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: NEXT_OPERATION, planId: 'plus' }))
+  const open = await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: NEXT_OPERATION, planId: 'start' }))
   assert.equal(open.operationId, OPERATION); assert.equal(open.status, 'open')
   await repo.withOwner(actor(OWNER), store => store.closeCheckout({ operationId: OPERATION, status: 'expired' }))
-  assert.equal((await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: NEXT_OPERATION, planId: 'plus' }))).operationId, NEXT_OPERATION)
+  assert.equal((await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: NEXT_OPERATION, planId: 'start' }))).operationId, NEXT_OPERATION)
   assert.equal(f.state().checkouts[0].checkout_url, null)
 })
 
@@ -296,11 +296,11 @@ test('commerce extension reuses scoped transaction without overriding ownership 
 
 test('durable checkout keeps original request parameters and rejects untrusted return origins', async () => {
   const f = seeded(), repo = f.repository()
-  await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'plus' }))
-  const repeated = await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, locale: 'en', priceId: 'price_changed', operationId: NEXT_OPERATION, planId: 'plus' }))
+  await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, operationId: OPERATION, planId: 'start' }))
+  const repeated = await repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, locale: 'en', operationId: NEXT_OPERATION, planId: 'start' }))
   assert.equal(repeated.locale, 'ru'); assert.equal(repeated.priceId, 'price_monthly')
   for (const origin of ['https://untrusted.test', 'https://holistic.test/private', 'https://user@holistic.test', 'http://holistic.test']) {
-    await assert.rejects(repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, origin, operationId: NEXT_OPERATION, planId: 'plus' })), /BILLING_INPUT_INVALID/)
+    await assert.rejects(repo.withOwner(actor(OWNER), store => store.prepareCheckout({ ...checkoutContext, origin, operationId: NEXT_OPERATION, planId: 'start' })), /BILLING_INPUT_INVALID/)
   }
 })
 

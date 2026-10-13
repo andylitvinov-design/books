@@ -318,3 +318,26 @@
 .primaryScaleChoice select:focus-visible{outline:3px solid #e3b3a3;outline-offset:2px}
 .primaryScaleChoice p{margin:0!important;font-size:13px;line-height:1.6;color:#6d6359}
 @media(max-width:530px){.primaryScaleChoice{padding:13px}}
+
+
+/* V6 blue-turquoise guided setup, recommendations and test confirmations. */
+.section{color:#173f5d}
+.section h2,.section h3{color:#184965}
+.section>p,.progress p{color:#54788a}
+.topics button,.testRow,.scaleOption{border-color:#d1e9ed;background:#fff}
+.topics button[aria-pressed=true],.testRow[data-checked=true],.scaleOption[data-checked=true]{background:#e6f9f7;border-color:#25b5bd;color:#146e82}
+.topics button[aria-pressed=true]{font-weight:800}
+.testRow>input,.scaleOption>input{accent-color:#079bae}
+.testBody strong{color:#214961}
+.match{color:#0d96aa}
+.secondary{background:#ecfafa;border-color:#b9dfe4;color:#147e94}
+.selectionActions,.progress,.measuredPanel,.formBottom,.primaryScaleChoice{background:#f5fcfe;border-color:#cbe8ec}
+.selectionActions strong,.progress>strong,.scaleOption em,.score strong{color:#158c9d}
+.section .progress > button.ctaLink,.section .focusActions > button.burgundyPrimary,.section .cta:global(.hh-primary){background:linear-gradient(100deg,#17b8c7,#078fa8)!important;color:#fff!important;border:1px solid #078da5!important;border-bottom:4px solid #07778b!important;border-radius:14px!important}
+.section .focusActions > button.whiteSecondary{background:#fff!important;color:#157e95!important;border-color:#cde7eb!important}
+.primaryScaleChoice label{color:#176c82}
+.primaryScaleChoice select{border-color:#b8dce3;color:#174a65}
+.completeHero{background:linear-gradient(145deg,#e3f8f9,#ffffff);border-color:#b9e5e7}
+.completeHero h2,.completeHero>strong{color:#178c9e}
+.completeSymbol{color:#059daf;border-color:#85cfd8}
+@media(max-width:530px){.section{padding:17px 13px}.testRow{border-radius:14px}.section .progress > button.ctaLink{min-height:52px!important}}

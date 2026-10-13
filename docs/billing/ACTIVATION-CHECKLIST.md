@@ -1,7 +1,10 @@
 # Activation checklist: approvals are not configuration
 
-Prepared 13 October 2026. The code PR does not apply any item below. All feature
-flags default off; proposals are outside `supabase/migrations`. No live account,
+Prepared 13 October 2026. The code PR does not apply any item below. New billing
+feature flags default off; billing proposals are outside `supabase/migrations`.
+Canonical notifications have a separate existing rollout, preserved as documented
+in [Notification reconciliation](NOTIFICATION-RECONCILIATION.md). Superseded PR427
+notification proposals and HH_COURSE_PUSH_* flags must not be activated. No live account,
 customer record, private key, payment or campaign was used for verification.
 
 ## 1. Code acceptance
@@ -50,19 +53,12 @@ Do not use a service-role or superuser connection for the application.
    no billing table reads are granted. Approve the exact administrator UUID before
    inserting it. Projection is bounded to 100 opaque account IDs and subscription
    provider/environment/status/paid-through/renewal fields, without health joins.
-5. `../pwa/course-notifications-schema.proposed.sql`: two private tables
-   `course_notification_preferences` and `course_push_devices`; environment,
-   timezone/quiet hours, consent and encrypted endpoint material; owner/session
-   FORCE RLS and scoped existing `hh_app_backend` grants. Default ends ROLLBACK.
-6. `../pwa/course-notification-dispatch.proposed.sql`: restricted
-   `hh_course_push_worker` role, private `course_push_deliveries` receipt ledger,
-   bounded fixed helpers for candidates/snapshot/claim/finish with no runtime
-   table grants. Helpers inspect only active account/course status, current paid
-   entitlement and opted-in notification preferences. Approve role membership
-   separately; no clinical scores, answers or notes are exposed.
+The two `../pwa/` SQL proposals are superseded/inactive. Do not apply them,
+grant `hh_course_push_worker`, or activate another notification ledger.
+See [canonical notification mapping](NOTIFICATION-RECONCILIATION.md).
 
-The proposed new memberships are only `hh_billing_backend`, `hh_crm_backend` and
-`hh_course_push_worker` to the verified existing restricted runtime LOGIN. Their
+The proposed new memberships are only `hh_billing_backend` and `hh_crm_backend`
+to the verified existing restricted runtime LOGIN. Their
 names, target and effects require action-time security approval; this document
 does not authorize granting them. No reverse grants of privileged application,
 billing or service roles to the new roles are permitted.
@@ -72,20 +68,21 @@ billing or service roles to the new roles are permitted.
 Server-only names: `HH_BILLING_PROVIDER=stripe`,
 `HH_BILLING_ENVIRONMENT=sandbox`, `HH_BILLING_SCHEMA_APPROVED`,
 `HH_BILLING_ENABLED`, `HH_STRIPE_RESTRICTED_KEY`, `HH_STRIPE_WEBHOOK_SECRET`,
-`HH_STRIPE_ACCOUNT_ID`, `HH_STRIPE_PLUS_PRICE_ID`,
+`HH_STRIPE_ACCOUNT_ID`, `HH_STRIPE_START_PRICE_ID`, `HH_STRIPE_ADVANCED_PRICE_ID`,
+`HH_STRIPE_PREMIUM_PRICE_ID`,
 `HH_STRIPE_PORTAL_CONFIGURATION_ID`. Never paste secret values into chat/source.
 Use the owner's secure deployment-secret workflow after exact approval.
 
 Restricted key scope needs Account read (merchant binding), Prices read,
 Customers read/write, Checkout Sessions read/write, Subscriptions read/write
-(cancel renewal), Invoices and Invoice Payments read, PaymentIntents/Charges read,
+(cancel renewal), Invoices and Invoice Payments read, PaymentIntents/Charges/Disputes read,
 and Billing Portal Sessions write with Configuration read as needed by Stripe.
 No refunds, transfers, payouts, balance changes or price writes are needed by the
 application. Verify the actual dashboard resource scopes against the chosen API.
 
-Previously verified sandbox identifiers:
+Historical sandbox identifiers; three EUR recurring prices still need independent verification:
 - Account `acct_1TL7DzIrCtuk8CIX`
-- Plus monthly USD 1000 cents: `price_1UQ4x8IrCtuk8CIX5gGkNftR`
+- Superseded Plus USD price (never use for new EUR plans): `price_1UQ4x8IrCtuk8CIX5gGkNftR`
 - Period-end cancellation portal: `bpc_1UQ4yhIrCtuk8CIXYQ7ZOH3X`
 - EUR 5000 / 30 minutes: `price_1UQ5O1IrCtuk8CIXD11XIGm9`
 - EUR 10000 / 60 minutes: `price_1UQ5O4IrCtuk8CIXCCTwwWIG`
@@ -117,17 +114,13 @@ verification, no-login unsubscribe endpoint, exact campaign/audience approval an
 durable recipient jobs remain work before any campaign is sent. Payment never
 implies marketing consent; no health-based segmentation is supported.
 
-Push names: `HH_COURSE_PUSH_ENVIRONMENT`, `HH_COURSE_PUSH_STORAGE_APPROVED`,
-`HH_COURSE_PUSH_ENABLED`, `HH_COURSE_PUSH_PUBLIC_KEY`,
-`HH_COURSE_PUSH_PRIVATE_KEY`, `HH_COURSE_PUSH_SUBJECT`,
-`HH_COURSE_PUSH_DELIVERY_APPROVED`, `HH_COURSE_PUSH_DISPATCH_APPROVED`,
-`HH_COURSE_PUSH_CRON_SECRET` (or the scheduler's `CRON_SECRET`). Generating and
-installing a matching VAPID key pair and scheduler credential needs security
-approval and secure handoff. Device permission/consent is always user-initiated.
-Only neutral encrypted reminder payloads go to Apple/Google/Mozilla push services.
-Review scheduler destination/frequency/cost before adapting the unapplied cron
-example. Confirm iPhone Home Screen and Android delivery, denial, revocation,
-quiet hours, multiple accounts and expiration with synthetic test accounts.
+Phone reminders retain the canonical `HH_PUSH_PUBLIC_KEY`, `HH_PUSH_PRIVATE_KEY`,
+`HH_PUSH_SUBJECT`, `HH_PUSH_CRON_SECRET` (or `CRON_SECRET`) and existing `/api/internal/notification-dispatch` schedule.
+Preserve the existing keys and explicit device consent. No HH_COURSE_PUSH_* flag
+or unapplied PR427 cron example activates this candidate. Native APNs configuration
+remains separate. See `docs/mobile-notifications.md` for current configuration
+and `NOTIFICATION-RECONCILIATION.md` for inherited starvation/consent-window risks,
+required SQL follow-up contract and real-device verification gates.
 
 ## 5. Live release is a separate decision
 
@@ -136,8 +129,52 @@ tax setup and final total display, renewal/refund/retention/privacy terms and
 service fulfillment approval. Production flags additionally require
 `HH_BILLING_PRODUCTION_APPROVED`, `HH_BILLING_TAX_REVIEW_APPROVED`,
 `HH_BILLING_TERMS_APPROVED`, `HH_COMMERCE_PRODUCTION_APPROVED`,
-`HH_CRM_PRODUCTION_APPROVED`, `HH_COURSE_PUSH_PRODUCTION_APPROVED` as applicable.
+`HH_CRM_PRODUCTION_APPROVED` as applicable.
 These flags are guards, not evidence of review. No automatic tax or alternate
 payment provider is activated. Changing provider does not migrate active payer
 contracts; a future adapter must route existing subscriptions by their persisted
 provider and require explicit payer authorization for migration.
+
+
+## EUR tiers, concurrent courses and monthly session credit
+
+The current requested catalogue is Free 1 course; Start EUR10/month 1 course/no ads;
+Advanced EUR20/month 5 courses/no ads; Premium EUR100/month 5 courses/no ads/free tests/
+one personal 60-minute session per paid month. No-ad inheritance for Advanced/Premium is an implementation assumption, not an additional user quote; confirm it for activation. Amounts are monthly cents 1000/2000/10000.
+The server requires three distinct verified recurring EUR prices, never the old USD price.
+Do not change active provider contracts by renaming their price. Portal tier changes remain
+disabled; this code permits cancellation/payment-method management, not immediate upgrades.
+
+Review `proposed-premium-session-schema.sql` independently by exact hash: one private credit
+table, restricted column writes, FORCE RLS for owner/provider/environment, stable period key,
+request operation uniqueness, and no booking/fulfillment privilege. Duplicate invoice events
+and refreshes must preserve a single credit. Refund/dispute holds prevent unfulfilled use.
+A fulfillment owner/workflow, booking confirmation, unused-credit treatment, cancellation,
+expiry and retention must be settled before `HH_PREMIUM_SESSION_FULFILLMENT_APPROVED`.
+
+Course concurrency requires its separate SQL proposal and owner-scoped atomic quota tests.
+Never merely remove the uniqueness constraint or trust a browser plan/limit. Downgrade keeps
+existing history and progress; it must not silently delete, terminate or restart old courses.
+Advanced/Premium sales remain closed until `HH_MULTICOURSE_SCHEMA_APPROVED` is appropriate.
+No database, grants, credentials, Stripe prices or flags were changed by this document.
+
+## Resolved dispute and session-credit recovery
+
+Charge.disputed is historical, not the final outcome. The verified merchant client
+lists and retrieves charge disputes; charge, payment intent, currency, amount and
+environment must match. Only authoritative won or warning_closed can restore
+otherwise valid paid coverage. Open, lost, unknown, mismatched and unavailable
+evidence stays held. Full refunds are never overridden; recovery makes no refunds.
+Sources: https://docs.stripe.com/api/charges/object and
+https://docs.stripe.com/api/disputes/object.
+
+Premium credits retain hold reason, charge/dispute/invoice/period identity and
+previous available/requested state. Only the same unexpired paid period can recover,
+with every specific dispute resolved and no refund/unknown/manual hold remaining.
+Requested stays requested with the same operation ID and timestamp; resolved hold
+history remains. Fulfilled/expired credits never revive.
+
+Unknown/mismatched provider evidence and legacy revocations without exact hold
+identity require manual reviewed recovery. Runtime has no manual-clear endpoint.
+Before sales approve this conservative policy and accountable manual review workflow.
+No automatic booking, fulfillment, refund or lost-dispute reversal is performed.

@@ -1,4 +1,9 @@
 {
-  "_status": "UNAPPLIED EXAMPLE ONLY. Requires explicit approval, capacity/cost review, secrets and database setup. Do not deploy this file as vercel.json.",
-  "crons": [{ "path": "/api/app/notifications/dispatch", "schedule": "*/5 * * * *" }]
+  "_status": "SUPERSEDED / INACTIVE PR427 DRAFT. Do not deploy or schedule. Canonical notifications retain the existing /api/internal/notification-dispatch schedule. See docs/billing/NOTIFICATION-RECONCILIATION.md.",
+  "crons": [
+    {
+      "path": "/api/app/notifications/dispatch",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }

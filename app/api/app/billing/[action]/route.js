@@ -20,7 +20,7 @@ async function handle(request, { params }) {
     const service = createBillingService(config)
     let result
     if (action === 'status' && request.method === 'GET') result = await service.status(actor)
-    else if (request.method === 'POST' && ['checkout', 'portal', 'cancel', 'reconcile'].includes(action)) {
+    else if (request.method === 'POST' && ['checkout', 'portal', 'cancel', 'reconcile', 'sessionRequest'].includes(action)) {
       await consumeRate(config, { op: `billing-${action}`, actor: actor.id }, 12, 60)
       const body = await readBody(request, 2048)
       result = await service[action](actor, body, origin)

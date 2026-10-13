@@ -97,7 +97,7 @@ test('daily course API and private migration do not create public client ownersh
  const page=read('components/app/my-course.jsx')
  assert.match(routes,/createDailyCourseRepository/)
  assert.match(routes,/const actor = await auth\.verified\(\)/)
- assert.match(repo,/transaction\(config,actor/)
+ assert.match(repo,/runTransaction\(config,actor/)
  assert.match(repo,/localDateKey/)
  assert.match(repo,/seal\(label/)
  assert.match(repo,/where account_id=\$1/)

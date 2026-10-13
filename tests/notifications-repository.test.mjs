@@ -76,7 +76,10 @@ test('schema proposal is rollback-only, owner-protected and outside live migrati
   assert.match(sql.trim(), /rollback;$/)
 })
 test('HTTP adapter binds account, origin, session and private response headers', () => {
-  const route = readFileSync('app/api/app/notifications/route.js', 'utf8')
+  const root = readFileSync('app/api/app/notifications/route.js', 'utf8')
+  const route = root + readFileSync('app/api/app/[...path]/route.js', 'utf8')
+  assert.match(root, /lib\/app\/notification-repository/)
+  assert.doesNotMatch(root, /lib\/notifications\/repository/)
   for (const fragment of ['requireSameOrigin(request, config)', 'await auth.verified()', "request.headers.get('x-hh-account-id') !== actor.id", 'headers: PRIVATE_HEADERS', 'readBody(request, 8192)', 'consumeRate']) assert.ok(route.includes(fragment))
   assert.doesNotMatch(route, /service_role|fetch\(.*endpoint|sendNotification/)
 })

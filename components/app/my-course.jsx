@@ -1,13 +1,17 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
-import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { ArrowRight, BookOpen, Check, LockKeyhole, Sparkles } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
+import { getCoursePreset } from '@/lib/inner-growth/course-presets'
+import CoursePresetCatalog from './course-preset-catalog'
+import MyCoursesDashboard from './my-courses-dashboard'
+import { useSubscription } from './subscription-access'
 import CourseToday from './course-today'
 import Course14DayOverview from './course-14-day-overview'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
+import './my-course-theme.css'
 
 const WORDS = {
   en: {
@@ -54,6 +58,13 @@ const WORDS = {
     compareNote: 'Course activity is different from psychological change. Repeat only suitable tests at their recommended intervals, then review comparable results in Insights.',
     issue: 'Your course is temporarily unavailable. No personal information has been saved by this page. Please try again.',
     retry: 'Try again', safe: 'You can skip or stop a practice. If distress is severe or persistent, seek support from a qualified healthcare professional.',
+    courses: 'My courses and history', chooseCourse: 'Choose a course', courseNumber: 'Course',
+    newCourse: 'Start another course', activeCount: 'Active courses', courseLimit: 'Plan limit',
+    limitReached: 'You have reached your active-course limit. Pause an active course before starting or resuming another.',
+    overLimit: 'Your existing active courses and history are preserved after a plan change. New courses and resuming paused courses are limited until you are below your current allowance.',
+    multiUnavailable: 'Additional courses are not available yet. Your current course and history are preserved.',
+    historySafe: 'Pausing frees an active-course place. It never deletes your course history or saved progress.',
+    courseStatuses: { draft: 'In setup', active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived' },
     interest: 'Based on your choices', notDiagnostic: 'Weekly Pulse is an original non-diagnostic self-report; these are not clinical thresholds.',
   },
   ru: {
@@ -100,19 +111,34 @@ const WORDS = {
     compareNote: 'Количество занятий не равно улучшению психического состояния. Сопоставляйте только совместимые результаты тестов в Insights и учитывайте рекомендованные интервалы.',
     issue: 'Курс временно недоступен. Эта страница не сохранила персональные сведения. Попробуйте ещё раз.',
     retry: 'Повторить', safe: 'Любое упражнение можно пропустить или остановить. Если состояние тяжёлое или ухудшается, обратитесь к квалифицированному специалисту.',
+    courses: 'Мои курсы и история', chooseCourse: 'Выберите курс', courseNumber: 'Курс',
+    newCourse: 'Начать ещё один курс', activeCount: 'Активные курсы', courseLimit: 'Лимит тарифа',
+    limitReached: 'Достигнут лимит активных курсов. Поставьте один курс на паузу, чтобы начать или возобновить другой.',
+    overLimit: 'После смены тарифа текущие активные курсы и история сохраняются. Начать новый или возобновить приостановленный курс можно, когда число активных курсов станет меньше лимита тарифа.',
+    multiUnavailable: 'Дополнительные курсы пока недоступны. Текущий курс и история сохраняются.',
+    historySafe: 'Пауза освобождает место для активного курса. История и сохранённый прогресс не удаляются.',
+    courseStatuses: { draft: 'Настройка', active: 'Активен', paused: 'На паузе', completed: 'Завершён', archived: 'В архиве' },
     interest: 'С учётом ваших тем', notDiagnostic: 'Weekly Pulse — авторский недиагностический самоотчёт; это не клинические пороги.',
   },
 }
 
-async function request(body) {
-  const response = await fetch('/api/app/course', {
-    method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+async function request(accountId, body, { courseId, signal } = {}) {
+  if (!accountId) throw new Error('ACCOUNT_REQUIRED')
+  const response = await fetch('/api/app/course' + (body?.courseId || courseId ? '?courseId=' + encodeURIComponent(body?.courseId || courseId) : ''), {
+    method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store', signal,
+    headers: { 'X-HH-Account-ID': accountId, ...(body ? { 'Content-Type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   })
-  const data = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(data.error || 'COURSE_UNAVAILABLE')
-  return data
+  const value = await response.json()
+  if (!response.ok || value?.error || !value || typeof value !== 'object' || Array.isArray(value)) throw new Error(value?.error || 'COURSE_UNAVAILABLE')
+  return value
+}
+const selectedCourseFromUrl = () => new URLSearchParams(window.location.search).get('courseId') || null
+function replaceCourseUrl(courseId) {
+  const url = new URL(window.location.href)
+  if (courseId) url.searchParams.set('courseId', courseId)
+  else url.searchParams.delete('courseId')
+  window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
 }
 
 function Journey({ stage, locale }) {
@@ -130,101 +156,276 @@ export function MyCourse({ data, locale = 'en' }) {
   const ru = locale === 'ru'
   const t = WORDS[locale] || WORDS.en
   const root = '/' + locale + '/app'
-  const [state, setState] = useState(undefined)
+  const accountId = data?.account?.id
+  const { status: billingStatus, phase: billingPhase } = useSubscription()
+  const billingScope = useRef(null)
+  const [snapshot, setSnapshot] = useState(undefined)
+  const state = snapshot?.accountId === accountId ? snapshot.value : undefined
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
-  const startDialogRef = useRef(null)
+  const [view, setView] = useState('list'), [selectedPreset, setSelectedPreset] = useState(null)
+  const startDialogRef = useRef(null), selectorId = useId()
+  const selectedCourse = useRef(null), currentAccount = useRef(accountId), mounted = useRef(false)
+  const generation = useRef(0), readVersion = useRef(0), readController = useRef(null), actionLock = useRef(null)
+  const newCourseId = useRef(null)
+  currentAccount.current = accountId
 
-  async function refresh() {
-    setError('')
+  const refresh = useCallback(async (courseId = selectedCourse.current, { background = false, updateUrl = true } = {}) => {
+    const epoch = generation.current, version = ++readVersion.current
+    readController.current?.abort()
+    const controller = new AbortController()
+    readController.current = controller
+    const isCurrent = () => mounted.current && currentAccount.current === accountId && generation.current === epoch && readVersion.current === version && !controller.signal.aborted
+    if (!background) { setError(''); setSnapshot(undefined) }
     try {
-      const response = await request()
-      setState(response)
-    } catch (e) { setError(e.message) }
+      const response = await request(accountId, undefined, { courseId, signal: controller.signal })
+      if (!isCurrent()) return null
+      if (courseId && response.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
+      selectedCourse.current = response.course?.id || null
+      setSnapshot({ accountId, value: response })
+      if (updateUrl) replaceCourseUrl(selectedCourse.current)
+      return response
+    } catch (e) { if (isCurrent()) setError(e.message); return null }
+    finally { if (readController.current === controller) readController.current = null }
+  }, [accountId])
+
+  useEffect(() => {
+    mounted.current = true; generation.current += 1
+    actionLock.current = null; newCourseId.current = null
+    setBusy(false); setOptIn(false); setSelectedPreset(null)
+    startDialogRef.current?.close()
+    selectedCourse.current = selectedCourseFromUrl()
+    setView(selectedCourse.current ? 'detail' : 'list')
+    void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) })
+    const navigate = () => {
+      generation.current += 1; actionLock.current = null; setBusy(false)
+      selectedCourse.current = selectedCourseFromUrl()
+      setView(selectedCourse.current ? 'detail' : 'list')
+      startDialogRef.current?.close()
+      void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) })
+    }
+    window.addEventListener('popstate', navigate)
+    return () => {
+      mounted.current = false; generation.current += 1; readVersion.current += 1
+      readController.current?.abort()
+      window.removeEventListener('popstate', navigate)
+    }
+  }, [refresh])
+
+  useEffect(() => {
+    if (billingPhase !== 'ready') return
+    const stamp = JSON.stringify([billingStatus?.entitlement?.tier, billingStatus?.entitlement?.paidThrough])
+    const previous = billingScope.current
+    billingScope.current = { accountId, stamp }
+    if (!previous || previous.accountId !== accountId || previous.stamp === stamp) return
+    // A confirmed entitlement change triggers an owner-scoped read only.
+    // Checkout clicks and redirect query strings never grant course capacity.
+    void refresh(selectedCourse.current, { background: true, updateUrl: Boolean(selectedCourseFromUrl()) })
+  }, [accountId, billingPhase, billingStatus?.entitlement?.tier, billingStatus?.entitlement?.paidThrough, refresh])
+
+  const viewGeneration = generation.current
+  function isSelected(courseId = state?.course?.id, epoch = viewGeneration) {
+    return mounted.current && currentAccount.current === accountId && generation.current === epoch && selectedCourse.current === courseId
   }
-  useEffect(() => { void refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  function acceptState(response) {
+    if (!isSelected() || response?.course?.id !== state?.course?.id) return
+    readVersion.current += 1; readController.current?.abort()
+    setSnapshot({ accountId, value: response })
+  }
+  function acceptError(message) { if (isSelected()) setError(message) }
+  function selectCourse(courseId) {
+    generation.current += 1; actionLock.current = null; setBusy(false)
+    selectedCourse.current = courseId
+    setView('detail')
+    startDialogRef.current?.close()
+    void refresh(courseId)
+  }
+
+  async function readSelectedCourse() {
+    const courseId = state?.course?.id, epoch = viewGeneration
+    if (!courseId || !isSelected(courseId, epoch)) throw new Error('COURSE_SELECTION_CHANGED')
+    const response = await request(accountId, undefined, { courseId })
+    if (!isSelected(courseId, epoch) || response.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
+    return response
+  }
+  async function courseCommand(action, values = {}) {
+    const courseId = state?.course?.id, epoch = viewGeneration
+    if (!courseId || !isSelected(courseId, epoch)) throw new Error('COURSE_SELECTION_CHANGED')
+    if (actionLock.current) throw new Error('COURSE_ACTION_PENDING')
+    const token = {}; actionLock.current = token; setBusy(true); setError('')
+    readVersion.current += 1; readController.current?.abort()
+    try {
+      const response = await request(accountId, { action, expectedRevision: state.course.revision, ...values, courseId })
+      if (!isSelected(courseId, epoch)) throw new Error('COURSE_SELECTION_CHANGED')
+      if (response.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
+      return response
+    } finally { if (actionLock.current === token) { actionLock.current = null; if (isSelected(courseId, epoch)) setBusy(false) } }
+  }
 
   async function act(action, values = {}) {
-    if (busy) return
-    setBusy(true)
-    setError('')
+    if (actionLock.current) return
+    if (action !== 'start') {
+      try { acceptState(await courseCommand(action, values)) }
+      catch (e) { acceptError(e.message) }
+      return
+    }
+    if (values.consent !== true || (values.presetId && !getCoursePreset(values.presetId))) return
+    const oldCourseId = selectedCourse.current, epoch = viewGeneration
+    if (!mounted.current || currentAccount.current !== accountId) return
+    const token = {}; actionLock.current = token; setBusy(true); setError('')
+    readVersion.current += 1; readController.current?.abort()
     try {
-      const response = await request({ action, ...(action === 'start' ? {} : { expectedRevision: state.course?.revision }), ...values })
-      setState(response)
-    } catch (e) { setError(e.message) }
-    finally { setBusy(false) }
+      newCourseId.current ||= crypto.randomUUID()
+      const response = await request(accountId, { action: 'start', consent: true, courseId: newCourseId.current,
+        newCourse: true, ...(values.presetId ? { presetId: values.presetId } : {}),
+      })
+      if (!isSelected(oldCourseId, epoch)) return
+      if (!response.course?.id || response.course.id !== newCourseId.current) throw new Error('COURSE_SELECTION_CHANGED')
+      readVersion.current += 1; readController.current?.abort()
+      selectedCourse.current = response.course.id
+      setSnapshot({ accountId, value: response }); replaceCourseUrl(response.course.id)
+      newCourseId.current = null; setView('detail')
+    } catch (e) { if (isSelected(oldCourseId, epoch)) setError(e.message) }
+    finally { if (actionLock.current === token) { actionLock.current = null; if (mounted.current && currentAccount.current === accountId && generation.current === epoch) setBusy(false) } }
   }
 
-  function openStartDialog() {
-    if (busy) return
-    setOptIn(false)
+  function openStartDialog(presetId = null) {
+    if (busy || (presetId !== null && !getCoursePreset(presetId))) return
+    if (view !== 'switch' && (atLimit || (courses.length > 0 && !access?.multiCourseEnabled))) return
+    setSelectedPreset(presetId); setOptIn(false)
     startDialogRef.current?.showModal()
   }
-
-  async function courseCommand(action,values={}) {
-    if (!state?.course) throw new Error('COURSE_NOT_STARTED')
-    return request({ action, expectedRevision:state.course.revision, ...values })
+  function changeView(next) {
+    // Leaving a detail page invalidates all of its callbacks, including when
+    // returning to the same course after cancelling a new-course selection.
+    generation.current += 1; readVersion.current += 1
+    readController.current?.abort(); actionLock.current = null; setBusy(false)
+    startDialogRef.current?.close(); setView(next)
+    if (next === 'list') {
+      replaceCourseUrl(null)
+      void refresh(selectedCourse.current, { background: true, updateUrl: false })
+    }
   }
+  function startAnother() { if (!busy && canAddCourse) changeView('new') }
+  async function manageCourse(action, item) {
+    const courseId = selectedCourse.current, epoch = viewGeneration
+    const target = courses.find(course => course.id === item.id && course.revision === item.revision)
+    if (!target || !isSelected(courseId, epoch) || actionLock.current) return
+    const token = {}; actionLock.current = token; setBusy(true); setError('')
+    readVersion.current += 1; readController.current?.abort()
+    try {
+      const response = await request(accountId, { action, courseId: target.id, expectedRevision: target.revision })
+      if (!isSelected(courseId, epoch)) return
+      if (response.course?.id !== target.id) throw new Error('COURSE_SELECTION_CHANGED')
+      readVersion.current += 1; readController.current?.abort()
+      selectedCourse.current = target.id
+      setSnapshot({ accountId, value: response })
+    } catch (e) { if (isSelected(courseId, epoch)) setError(e.message) }
+    finally { if (actionLock.current === token) { actionLock.current = null; if (mounted.current && currentAccount.current === accountId && generation.current === epoch) setBusy(false) } }
+  }
+  function courseChanged() { if (isSelected()) void refresh(state.course.id, { background: true }) }
 
-  const stage = state?.course?.stage || 0
+  const courses = Array.isArray(state?.courses) ? state.courses : state?.course ? [state.course] : []
+  const access = state?.access
+  const atLimit = Boolean(access && access.activeCourseCount >= access.activeCourseLimit)
+  const canAddCourse = Boolean(access?.multiCourseEnabled && !atLimit)
+  const showDashboard = courses.length > 0 && view === 'list'
+  const isHistory = ['completed', 'archived'].includes(state?.course?.status)
+  const stage = view === 'new' || view === 'switch' ? 0 : state?.course?.stage || 0
   const visibleStep = stage === 1 ? 2 : stage === 2
     ? ((state?.course?.testKeys || []).length ? 4 : 3) : stage === 3 ? 5 : stage === 4 ? 6 : 1
 
   if (state === undefined && !error) return <section className={'hh-panel ' + styles.root} aria-busy="true"><p>{ru ? 'Открываем ваш курс…' : 'Opening your course…'}</p></section>
-  if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
+  if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={() => refresh()}>{t.retry}</button></section>
 
   return <div className={styles.root} data-my-course>
-    {stage === 0 && <header className={styles.hero}>
+    {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
+      courses={courses} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
+      locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access?.multiCourseEnabled)} overLimit={access?.overLimit}
+      onOpen={course => selectCourse(course.id)} onNew={startAnother}
+      onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
+    />}
+    {!showDashboard && courses.length > 0 && <button type="button" className={styles.backCourses} onClick={() => changeView('list')}>
+      ← {ru ? 'Мои курсы' : 'My courses'}
+    </button>}
+    {!showDashboard && view === 'detail' && courses.length > 0 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
+      <h2 id={selectorId + '-heading'}>{t.courses}</h2>
+      <label htmlFor={selectorId}>{t.chooseCourse}</label>
+      <select id={selectorId} value={state.course?.id || ''} disabled={busy} onChange={event => selectCourse(event.target.value)}>
+        {courses.map((course, index) => <option key={course.id} value={course.id}>
+          {t.courseNumber} {index + 1} · {t.courseStatuses[course.status] || course.status} · {course.startedAt || course.updatedAt ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(course.startedAt || course.updatedAt)) : ''}
+        </option>)}
+      </select>
+      {access && <p role="status">{t.activeCount}: {access.activeCourseCount} / {access.activeCourseLimit} · {access.tier}</p>}
+      {access?.overLimit ? <p className={styles.notice}>{t.overLimit}</p> : atLimit ? <p className={styles.notice}>{t.limitReached}</p> : null}
+      {!access?.multiCourseEnabled && <p className={styles.small}>{t.multiUnavailable}</p>}
+      <p className={styles.small}>{t.historySafe}</p>
+      <button type="button" className="hh-primary" disabled={busy || !canAddCourse} onClick={startAnother}>{t.newCourse}</button>
+    </section>}
+    {!showDashboard && stage === 0 && <header className={styles.hero}>
       <div>
         <p className="hh-kicker">{t.eyebrow}</p>
-        <h1>{t.title}</h1>
-        <p className={styles.heroLead}>{t.intro}</p>
+        <h1>{ru ? 'Мои курсы' : 'My courses'}</h1>
+        <p className={styles.heroLead}>{ru ? 'Выберите направление с пятью фиксированными тестами или создайте курс под свой запрос. Пройдите тесты, изучите результаты, подтвердите направления и начните 14 дней практики.' : 'Choose a focus with five fixed tests or create your own course. Complete your tests, review your results, approve your focus areas and begin 14 days of practice.'}</p>
         <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
-        <div className={styles.heroActions}>
-          <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
-          <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
-        </div>
       </div>
-      <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
+      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/andy-about.png" alt="" width={118} height={118} loading="lazy" /></div>
     </header>}
-    {stage === 0 && <Course14DayOverview locale={locale} />}
-    {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
+    {!showDashboard && stage === 0 && <CoursePresetCatalog locale={locale} busy={busy}
+      onPreset={openStartDialog} onPersonal={() => openStartDialog(null)} switchMode={view === 'switch'} />}
+    {!showDashboard && stage === 0 && <Course14DayOverview locale={locale} />}
+    {!showDashboard && !isHistory && stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}
-    {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
+    {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:['COURSE_LIMIT_REACHED','ACTIVE_COURSE_LIMIT_REACHED'].includes(error)?t.limitReached:t.issue} ({error}) <button type="button" onClick={() => refresh()}>{t.retry}</button></p>}
 
-    {stage === 0 && <section className={'hh-panel ' + styles.details} id="course-details">
+    {!showDashboard && stage === 0 && <section className={'hh-panel ' + styles.details} id="course-details">
       <p className="hh-kicker">{t.how}</p>
       <h2>{t.detailTitle}</h2>
       <p>{t.detailIntro}</p>
       <Journey stage={1} locale={locale}/>
-      <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.note}</p>
     </section>}
 
-    {stage === 0 && <dialog ref={startDialogRef} className={styles.startDialog}
+    <dialog ref={startDialogRef} className={styles.startDialog}
       aria-labelledby="course-consent-heading" onClose={() => setOptIn(false)}>
-      <h2 id="course-consent-heading">{t.consentTitle}</h2>
+      <h2 id="course-consent-heading">{selectedPreset ? getCoursePreset(selectedPreset)?.title?.[ru ? 'ru' : 'en'] : t.consentTitle}</h2>
       <p>{t.consentHelp}</p>
       <label className={styles.consent}><input type="checkbox" checked={optIn}
         onChange={(e) => setOptIn(e.target.checked)}/><span>{t.consent}</span></label>
       <div className={styles.dialogActions}>
         <button type="button" className="hh-primary" disabled={!optIn || busy} onClick={() => {
+          if (!optIn || busy) return
+          const switching = view === 'switch'
           startDialogRef.current?.close()
-          void act('start', { consent: true })
+          if (switching) {
+            setView('detail')
+            void act(selectedPreset ? 'select-preset' : 'select-personal', { consent: true, ...(selectedPreset ? { presetId: selectedPreset } : {}) })
+          } else void act('start', { consent: true, ...(selectedPreset ? { presetId: selectedPreset } : {}) })
         }}>{t.consentConfirm}<ArrowRight size={17} aria-hidden="true"/></button>
         <button type="button" disabled={busy} onClick={() => startDialogRef.current?.close()}>{t.cancel}</button>
       </div>
-    </dialog>}
+    </dialog>
 
-    {stage >= 1 && stage <= 3 && <CourseR3Steps
+    {!showDashboard && !isHistory && stage >= 1 && stage <= 3 && <button type="button" disabled={busy} className={styles.backCourses}
+      onClick={() => changeView('switch')}>
+      {ru ? 'Изменить направление курса' : 'Change course direction'}
+    </button>}
+    {!showDashboard && !isHistory && stage >= 1 && stage <= 3 && <CourseR3Steps
       stage={stage} locale={locale} data={data} state={state} busy={busy}
-      onAct={act} onCourseCommand={courseCommand}
-      onState={setState} onError={setError} root={root}
+      key={accountId + ':' + state.course.id + ':' + (state.course.presetId || 'personal')}
+      onAct={act} onCourseCommand={courseCommand} onCourseRead={readSelectedCourse} isCourseCurrent={isSelected}
+      onState={acceptState} onError={acceptError} root={root}
     />}
 
-    {stage === 4 && <CourseToday locale={locale} />}
+    {!showDashboard && view === 'detail' && isHistory && stage < 4 && <section className={'hh-panel ' + styles.details} data-course-history-readonly>
+      <h2>{t.courseStatuses[state.course.status]}</h2>
+      <p>{ru ? 'Этот курс сохранён в истории. Его настройки доступны только для просмотра.' : 'This course is saved in your history. Its setup is now read-only.'}</p>
+      <p>{t.selected}: {state.course.testKeys?.length || 0}</p>
+    </section>}
+
+    {!showDashboard && stage === 4 && <CourseToday locale={locale} key={state.course.id} courseId={state.course.id} accountId={accountId} access={access} onCourseChange={courseChanged} />}
 
     <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>
   </div>

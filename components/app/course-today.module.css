@@ -393,3 +393,102 @@
  .symbolContent{break-inside:avoid}
  .journeyPanel{break-inside:avoid}
 }
+
+
+/* Gamified v5 primary surface: the long author reference stays collapsed below
+   the quest instead of leading with a scrollable questionnaire. */
+.questHero{display:grid;gap:9px;padding:clamp(16px,2.9vw,23px);background:linear-gradient(130deg,#fffdf8,#eff5ed);border:1px solid #d9e2d5;border-radius:20px;min-width:0;color:#403831}
+.questTopline{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.questTopline .hh-kicker{margin:0!important;color:#786d62;font-size:10px!important;letter-spacing:.1em}
+.questDayPill{flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid #e9d4c9;border-radius:999px;background:#fff9f2;color:#944738;font-size:12px;font-weight:800}
+.questHero h2{margin:1px 0 0!important;font:850 clamp(22px,4vw,28px)/1.2 system-ui,-apple-system,sans-serif!important;letter-spacing:-.03em;color:#38352f}
+.questHero .heroPurpose{margin:0!important;font-size:14px!important;line-height:1.48!important;color:#665b50}
+.questHero .focusRoleBanner{font-size:12px!important;line-height:1.4!important;margin:0!important;padding:8px 10px}
+.questHero .heroSkill{margin:0;font-size:13px;line-height:1.5;color:#466b57}
+.questHero .supportRole{margin:0!important;font-size:12px;color:#6a685b}
+.questHeroFooter{display:flex;align-items:center;justify-content:space-between;gap:11px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #e1e6dc}
+.questHeroFooter>span{font-size:12px;font-weight:750;color:#48705a}
+.questHero button.todayPrimary{display:inline-flex!important;align-items:center;justify-content:center;gap:9px;min-width:210px;width:auto;min-height:48px;margin:0!important;padding:10px 16px!important;border:1px solid #8b3428!important;border-bottom:4px solid #6d2c22!important;border-radius:13px!important;background:#a64634!important;color:white!important;font-size:13px!important;font-weight:800!important;text-decoration:none!important;box-shadow:none!important}
+.questHero button.todayPrimary:hover{background:#903a2d!important}
+.questHero button.questReview{display:flex;align-items:center;gap:4px;padding:9px 12px!important;font-size:12px!important;color:#547762!important;border:1px solid #bfcfbd!important;border-radius:11px!important;background:#fffdfa!important}
+.classicPanel{border:1px solid #e7dcd0;border-radius:17px;background:#fffdf9}
+.classicPanel>summary{cursor:pointer;padding:13px 18px;font-size:12px;font-weight:800;line-height:1.5;color:#846f60}
+.classicPanel[open]>summary{border-bottom:1px solid #e9dfd1}
+.classicPanel>.journeyPanel{margin:10px}
+.classicPanel>.card{margin:10px}
+@media(max-width:620px){
+ .questHero{gap:7px;padding:14px;border-radius:17px}
+ .questHero h2{font-size:23px!important}
+ .questHero .heroPurpose{font-size:13px!important}
+ .questHeroFooter{align-items:stretch;gap:10px}
+ .questHeroFooter>span{flex:1;align-self:center}
+ .questHero button.todayPrimary{width:100%;min-height:48px}
+ .questHero button.questReview{width:100%;justify-content:center}
+ .classicPanel>summary{padding:12px 14px}
+ .classicPanel>.card,.classicPanel>.journeyPanel{margin:8px}
+}
+
+
+/* Approved Holistic House turquoise My Course v6 — compact photo-led entry. */
+.shell{--course-deep:#173f5b;--course-teal:#078fa8;--course-cyan:#14afc1;--course-line:#c8e8eb;gap:12px;color:var(--course-deep)}
+.shell .questHero{position:relative;display:block;isolation:isolate;min-height:248px;padding:0;border:1px solid #bfe7e9;border-radius:24px;overflow:hidden;background:linear-gradient(125deg,#f8ffff,#e0f8f9 65%,#a8e3dc);box-shadow:0 14px 32px #178da515}
+.heroPhoto{position:absolute;inset:0 0 0 auto;z-index:-1;width:64%;background:linear-gradient(90deg,#f8ffff 3%,#e3f9f5b3 32%,#b7eeeb46 85%),url('/images/holistic-house/hero-olive-incense.webp') center/cover no-repeat;opacity:.87}
+.heroInner{position:relative;z-index:1;display:grid;gap:12px;padding:clamp(17px,3vw,26px);min-width:0}
+.questTopline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.heroBrand{font-size:10px;letter-spacing:.11em;font-weight:850;color:#478fa0}
+.shell .questDayPill{font-size:11px;line-height:1.3;padding:8px 11px;border:1px solid #aedfe3;border-radius:99px;background:#f6fefdde;color:#098c9d}
+.shell .questHero h2{max-width:min(78%,480px);font:850 clamp(24px,4vw,35px)/1.14 system-ui,-apple-system,sans-serif!important;color:#143b56;letter-spacing:-.04em;margin:0}
+.shell .questHero .heroPurpose{display:-webkit-box;max-width:min(76%,520px);overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;font-size:13px!important;line-height:1.55!important;color:#426e7c;margin:0!important}
+.shell .questHero button.todayPrimary{display:flex!important;align-items:center;justify-content:center;gap:10px;width:min(100%,390px);min-width:0;min-height:51px;margin:5px 0 1px!important;padding:11px 15px!important;background:linear-gradient(100deg,#16b4c3,#058ca8)!important;border:1px solid #028b9f!important;border-bottom:5px solid #067387!important;color:white!important;border-radius:15px!important;font-size:15px!important;font-weight:820!important;box-shadow:0 7px 20px #12a4b535}
+.shell .questHero button.todayPrimary:hover{background:linear-gradient(100deg,#10a9b7,#007f9c)!important}
+.heroProgress{display:grid;grid-template-columns:1fr auto;gap:5px 13px;align-items:center;width:min(100%,390px);padding-top:6px;border-top:1px solid #cbe9e6;font-size:11px;font-weight:790;color:#517a88}
+.heroProgress strong{color:#087f8c;font-variant-numeric:tabular-nums}
+.heroProgress progress{grid-column:1/-1;width:100%;height:8px;accent-color:#10acc0;overflow:hidden;border-radius:20px}
+.heroProgress progress::-webkit-progress-bar{background:#d3e8eb;border-radius:20px}
+.heroProgress progress::-webkit-progress-value{background:linear-gradient(90deg,#10c5c8,#058eaa);border-radius:20px}
+.focusDetails{border:1px solid #d2eaed;background:#fffefa;border-radius:15px;color:#456778}
+.focusDetails>summary{cursor:pointer;padding:10px 14px;font-size:12px;font-weight:780;color:#33849a}
+.focusDetails[open]{padding-bottom:10px}
+.focusDetails>p{margin:8px 14px!important;font-size:12px!important;color:#315f6f!important}
+.focusDetails .focusRoleBanner{border-color:#c8eae5;background:#edfaf8;color:#247e87!important}
+.quoteStrip{display:flex;align-items:center;gap:12px;padding:12px 15px;border:1px solid #d9eef0;border-radius:17px;background:linear-gradient(95deg,#f2fcfd,#ffffff);font:italic 13px/1.55 Georgia,serif;color:#517e8c;box-shadow:0 5px 17px #177d9b09}
+.quoteStrip svg{flex:none;color:#10a1a6}
+.classicPanel{border-color:#d8ebef;background:#fafdff}
+.classicPanel>summary{color:#53859a}
+.classicPanel .card,.classicPanel .journeyPanel{border-color:#d5e9eb}
+.courseInsights{border:1px solid #cfe9ed;border-radius:19px;background:#ffffff;overflow:hidden;box-shadow:0 5px 17px #197c980b}
+.courseInsights>summary{display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none;padding:14px 17px;color:#214e69}
+.courseInsights>summary::-webkit-details-marker{display:none}
+.courseInsights>summary>span:nth-child(2){display:grid;gap:3px;flex:1}
+.courseInsights>summary strong{font-size:15px;font-weight:820;color:#1b4c68}
+.courseInsights>summary small{font-size:11px;color:#7696a6}
+.courseInsights>summary>svg{color:#4e9cac;transition:transform .2s}
+.courseInsights[open]>summary>svg{transform:rotate(180deg)}
+.insightsIcon{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:14px;background:#e5f9f9;color:#0c9dad}
+.courseInsights>.graph,.courseInsights>.learningEvidence{margin:0 12px 13px;box-shadow:none;border-color:#d9eced;background:#fbffff;padding:17px}
+.courseInsights .graph h3,.courseInsights .learningEvidence h3{font-size:19px!important;color:#194e67}
+.courseInsights .bar{background:#24b7c5}
+.courseInsights .compare{color:#138e9b}
+.shell .review,.shell .retest,.shell .learningEvidence,.shell .workbookHistory{border-color:#cfe8ec;background:#fff}
+.shell .review h3,.shell .workbookHistory h3{color:#194b67}
+.shell .notice,.shell .note{background:#e5f9f8;border-color:#bce9e2;color:#1b8290}
+.shell .footer>a{color:#087f9b}
+.shell .footnote{color:#75909f}
+.shell .footer button:not(:global(.hh-primary)){color:#377b93;border-color:#cde7e8;background:#f6fcfc}
+@media(max-width:620px){
+ .shell .questHero{min-height:236px;border-radius:19px}
+ .heroInner{padding:14px 15px 15px;gap:10px}
+ .heroPhoto{width:66%;opacity:.8;background:linear-gradient(90deg,#f8ffff 4%,#e3f9f7d4 37%,#d7f5f300 100%),url('/images/holistic-house/hero-olive-incense.webp') center/cover no-repeat}
+ .shell .questHero h2{max-width:75%;font-size:25px!important}
+ .shell .questHero .heroPurpose{max-width:74%;font-size:12px!important;-webkit-line-clamp:2}
+ .questTopline{gap:5px}
+ .heroBrand{font-size:9px;letter-spacing:.05em}
+ .shell .questDayPill{padding:6px 9px;font-size:10px}
+ .shell .questHero button.todayPrimary{width:100%;min-height:49px;margin-top:6px!important;font-size:14px!important}
+ .heroProgress{width:100%}
+ .quoteStrip{padding:11px 12px;font-size:12px}
+ .courseInsights>summary{padding:12px}
+ .courseInsights>.graph,.courseInsights>.learningEvidence{padding:13px;margin:0 8px 9px}
+}
+@media(max-width:355px){.shell .questHero h2{font-size:23px!important;max-width:81%}.shell .questHero .heroPurpose{max-width:79%}.heroPhoto{opacity:.62}.shell .questDayPill{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.courseInsights>summary svg{transition:none}}

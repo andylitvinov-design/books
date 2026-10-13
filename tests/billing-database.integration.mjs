@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 import pg from 'pg'
 import { createBillingRepository } from '../lib/billing/repository.js'
+import { runTierDatabaseTests } from './helpers/subscription-tiers-db.mjs'
 import { prepareExtraDatabase, runExtraDatabaseTests } from './helpers/monetization-extra-db.mjs'
 
 // Explicit opt-in integration suite. It is intentionally NOT a *.test.mjs file.
@@ -38,7 +39,7 @@ const connection = assertIsolated()
 const { Client, Pool } = pg
 const billingConfig = { provider: 'stripe', environment: 'sandbox' }
 const appConfig = { test: true, origins: ['https://example.invalid'] }
-const checkoutInput = extra => ({ operationId: randomUUID(), planId: 'plus', locale: 'en',
+const checkoutInput = extra => ({ operationId: randomUUID(), planId: 'start', locale: 'en',
   origin: 'https://example.invalid', priceId: 'price_synthetic_monthly', ...extra })
 const errorCode = code => error => error?.code === code
 const event = (customerId, eventId = `evt_${randomUUID().replaceAll('-', '')}`) =>
@@ -112,7 +113,7 @@ async function rawAs(actor, role, fn, scope = null) {
 async function seedSubscription(repo, owner, overrides = {}) {
   const customerId = `cus_${owner.id.replaceAll('-', '')}`
   const snapshot = { provider: 'stripe', environment: 'sandbox', subscriptionId: `sub_${owner.id.replaceAll('-', '')}`,
-    customerId, planId: 'plus', status: 'active', paidThroughAt: '2099-01-01T00:00:00.000Z',
+    customerId, planId: 'start', status: 'active', paidThroughAt: '2099-01-01T00:00:00.000Z',
     currentPeriodEnd: '2099-01-01T00:00:00.000Z', cancelAtPeriodEnd: false, revokedAt: null, ...overrides }
   await repo.withOwner(owner, async store => { await store.saveCustomer({ customerId }); await store.saveSubscription(snapshot) })
   return snapshot
@@ -264,6 +265,15 @@ test('real isolated billing and CRM SQL grants, RLS, rollback and races', { time
       await assert.rejects(rawAs(reader, 'hh_crm_backend', db => db.query('select * from billing_private.crm_subscription_summary()')), errorCode('42501'))
     })
     await runExtraDatabaseTests(t, { admin, pool, appConfig, billingConfig, createOwner, seedSubscription, repo, rawAs, deferred, waitUntilBlocked })
+    for (const migration of ['20261003011500_hh_app_guest_report_flows.sql','20261003031000_hh_app_guest_report_hardening.sql','20261006165000_hh_test_explorer_plans.sql','20261012180000_hh_my_course_r3_account_scales.sql']) {
+      assertIsolated()
+      await admin.query(await readFile(new URL('../supabase/migrations/'+migration,import.meta.url),'utf8'))
+    }
+    await applyIsolatedProposal(admin, 'proposed-premium-session-schema.sql',
+      "DO $$ BEGIN RAISE EXCEPTION 'UNAPPLIED PREMIUM SESSION PROPOSAL: explicit approval required'; END $$;")
+    await applyIsolatedProposal(admin, 'proposed-concurrent-course-schema.sql',
+      "DO $$ BEGIN RAISE EXCEPTION 'UNAPPLIED CONCURRENT COURSE PROPOSAL: explicit approval required'; END $$;")
+    await runTierDatabaseTests(t, { admin, pool, appConfig, billingConfig, createOwner, seedSubscription, repo, rawAs })
   } finally {
     if (pool) await pool.end()
     if (admin) await admin.end()

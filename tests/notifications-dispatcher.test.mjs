@@ -93,6 +93,6 @@ test('scheduler secret rejects malformed/unicode/absent credentials without exce
 })
 test('proposal limits worker to fixed helpers, keeps claims durable and separates environments', () => {
   const sql = readFileSync('docs/pwa/course-notification-dispatch.proposed.sql', 'utf8')
-  for (const value of ['nologin noinherit nosuperuser nobypassrls', 'primary key(device_id,environment,local_day)', "status='retry'", "plan_id='plus'", 'paid_through_at', 'revoked_at is null', 'for update', 'for share', 'UNAPPLIED NOTIFICATION DISPATCH PROPOSAL']) assert.ok(sql.includes(value), value)
+  for (const value of ['nologin noinherit nosuperuser nobypassrls', 'primary key(device_id,environment,local_day)', "status='retry'", "plan_id in ('start','advanced','premium')", 'paid_through_at', 'revoked_at is null', 'for update', 'for share', 'UNAPPLIED NOTIFICATION DISPATCH PROPOSAL']) assert.ok(sql.includes(value), value)
   assert.doesNotMatch(sql, /select\s+\*|assessment_results|concerns_ciphertext|reflection_ciphertext|GRANT hh_app_backend TO/i)
 })

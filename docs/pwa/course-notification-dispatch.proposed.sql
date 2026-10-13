@@ -1,3 +1,6 @@
+-- SUPERSEDED / INACTIVE PR427 DRAFT: do not apply.
+-- Canonical notifications use existing app_private tables and dispatcher.
+-- See docs/billing/NOTIFICATION-RECONCILIATION.md.
 -- UNAPPLIED PROPOSAL. Requires explicit approval and isolated SQL/RLS testing.
 -- Depends on reviewed enrollment schema and billing subscription schema.
 -- No role membership, environment values, keys or cron are configured here.
@@ -26,7 +29,7 @@ revoke all on app_private.course_push_deliveries from public,anon,authenticated,
 -- The worker can execute only these fixed queries, not SELECT health/client tables.
 create function app_private.course_push_snapshot(p_device uuid,p_environment text,p_lock boolean)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare d record; p record; a record; c record; paid timestamptz; owner uuid; cycle_active boolean;
+declare d record; p record; a record; paid timestamptz; owner uuid; cycle_active boolean;
 begin
   if p_environment not in ('sandbox','live') then return null; end if;
   select account_id into owner from app_private.course_push_devices where id=p_device and environment=p_environment;
@@ -45,14 +48,15 @@ begin
   if not found then return null; end if;
   select status,onboarding_state into a from app.accounts where id=owner;
   if not found then return null; end if;
-  select status into c from app_private.growth_courses where account_id=owner;
-  select exists(select 1 from app_private.growth_cycles where account_id=owner and status='active') into cycle_active;
+  select exists(select 1 from app_private.growth_cycles cy
+    join app_private.growth_courses co on co.id=cy.course_id and co.account_id=cy.account_id
+    where cy.account_id=owner and cy.status='active' and co.status='active') into cycle_active;
   select max(paid_through_at) into paid from billing_private.subscriptions
-    where owner_id=owner and environment=p_environment and plan_id='plus' and is_current and revoked_at is null;
+    where owner_id=owner and environment=p_environment and plan_id in ('start','advanced','premium') and is_current and revoked_at is null;
   return jsonb_build_object(
     'accountId',owner,'deviceId',p_device,
     'accountActive',a.status='active' and a.onboarding_state='active',
-    'courseActive',coalesce(c.status='active',false) and cycle_active,
+    'courseActive',cycle_active,
     'deviceActive',d.revoked_at is null,'consentVersion',d.consent_version,
     'entitlementActive',coalesce(paid>clock_timestamp(),false),'paidThrough',paid,
     'subscriptionCiphertext',case when p_lock then d.subscription_ciphertext else null end,

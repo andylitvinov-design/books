@@ -1,18 +1,25 @@
-# Holistic House Plus: implementation and release gates
+# Holistic House subscriptions: implementation and release gates
 
 ## Delivered code, not a live billing activation
 
-The fixed Plus offer is **10 USD per month**. It appears after each successfully
-saved course lesson and after a successfully submitted test. It is dismissible,
-nonblocking, EN/RU, and does not change the ordered My Course test flow from PR421.
-The existing free account and guest behavior, saved reports and plan capacities
-are preserved. No new free monthly test quota has been introduced.
+The reviewed recurring catalogue is now EUR only:
+- Free: one concurrently active course.
+- Start: EUR 10/month, one concurrently active course, no first-party advertising.
+- Advanced: EUR 20/month, five concurrently active courses, no first-party advertising.
+- Premium: EUR 100/month, five concurrently active courses, no first-party advertising,
+  available tests included, and one personal 60-minute session per verified paid month.
 
-Paid benefits are unlimited access to available self-report tests, self-reported
-wellbeing tracking, existing self-guided support courses and removal of first-party
-promotional blocks. Retest guidance continues to apply. There are no diagnostic,
-treatment, guaranteed-outcome or real-time clinician-monitoring promises. Promotions
-are static Holistic House content, never third-party health targeting or tracking.
+No-ad inheritance for Advanced/Premium is an implementation assumption to confirm at activation; the user explicitly specified no ads for Start.
+
+Counts mean concurrent active courses, not lifetime purchases. Saved course/result history
+is preserved on cancellation, downgrade and expiry; no course is silently deleted or ended.
+Existing free account/guest testing is preserved; this change introduces no new test paywall.
+All retest guidance and educational/non-diagnostic limitations continue to apply.
+Premium session requests require a separate scheduling confirmation and never book a time.
+The old USD Plus price is not an approved fallback and grants no new EUR entitlement.
+
+Dismissible, nonblocking EN/RU offers can appear after successfully saved lessons/tests.
+They use static first-party content without health targeting. Paid access hides these promos.
 
 All new features default off or unavailable until their separately approved
 persistence, credentials and provider configuration exist. An unavailable checkout
@@ -56,14 +63,15 @@ configure secrets, apply SQL, send messages, merge or deploy.
   provider or rotate the fixed price against active contracts without an explicit
   migration. PayPal is a researched future candidate, not an implemented provider.
 
-## Verified sandbox configuration supplied by the owner workflow
+## Historical sandbox identifiers; EUR prices still require approval
 
 - Account: `acct_1TL7DzIrCtuk8CIX` (sandbox)
 - Product: `prod_VQwqC9Dx3v4EtB`
-- Price: `price_1UQ4x8IrCtuk8CIX5gGkNftR`
+- Superseded USD price: `price_1UQ4x8IrCtuk8CIX5gGkNftR` (not used by the EUR code)
 - Lookup key: `holistic_house_plus_monthly_usd_v1`
 - Portal configuration: `bpc_1UQ4yhIrCtuk8CIXYQ7ZOH3X`
-- Price is 1000 USD cents/month, no trial, tax unspecified.
+- Historical price is 1000 USD cents/month; it must not be relabelled or reused as EUR.
+- Three new recurring EUR price IDs (1000/2000/10000 cents) must be verified and configured. No Stripe price was created or changed by this implementation.
 - Portal: cancellation at period end, no prorations, invoice history and payment
   method changes, no subscription tier changes or public portal login page.
 
@@ -106,7 +114,8 @@ Stripe SDK 23.0.0 and API 2026-09-30.endive were checked against the installed S
 `HH_BILLING_PROVIDER=stripe`, `HH_BILLING_ENVIRONMENT=sandbox`,
 `HH_BILLING_SCHEMA_APPROVED`, `HH_BILLING_ENABLED`,
 `HH_STRIPE_RESTRICTED_KEY`, `HH_STRIPE_WEBHOOK_SECRET`,
-`HH_STRIPE_ACCOUNT_ID`, `HH_STRIPE_PLUS_PRICE_ID`,
+`HH_STRIPE_ACCOUNT_ID`, `HH_STRIPE_START_PRICE_ID`, `HH_STRIPE_ADVANCED_PRICE_ID`,
+`HH_STRIPE_PREMIUM_PRICE_ID`,
 `HH_STRIPE_PORTAL_CONFIGURATION_ID`.
 
 Production additionally requires `HH_BILLING_PRODUCTION_APPROVED`,
@@ -120,3 +129,21 @@ No NEXT_PUBLIC key/secret or entitlement override is supported.
 - https://docs.stripe.com/api/customer_portal/sessions/create
 - https://docs.stripe.com/events/manage-webhook-endpoints
 - https://docs.stripe.com/billing/taxes/collect-taxes
+
+
+## Separate entitlement infrastructure
+
+`HH_MULTICOURSE_SCHEMA_APPROVED` gates Advanced checkout; Premium additionally requires
+`HH_PREMIUM_SESSION_SCHEMA_APPROVED` and `HH_PREMIUM_SESSION_FULFILLMENT_APPROVED`.
+Flags are evidence of neither SQL approval nor a functioning operational workflow.
+`proposed-premium-session-schema.sql` remains outside the migration runner with a hard guard.
+The ledger keys credits by owner/provider/environment/subscription/paid-period-end. Replays
+cannot mint a second credit or consume a second one. Requests contain no address or health
+information, never send messages and never create appointments. A separate reviewed manual
+fulfillment workflow is required before enabling Premium sales.
+
+Payment confirmation uses exact server-held EUR prices and paid invoice lines backed by
+captured charges. A browser choice/return, ACTIVE status, metadata or unpaid price change
+cannot grant a tier. If a newer selected price is unpaid, still-paid earlier-tier coverage
+remains authoritative. Existing subscribers use the cancellation/payment-method portal;
+immediate tier-change/proration sales are not implemented or approved.

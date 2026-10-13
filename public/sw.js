@@ -1,3 +1,4 @@
+// A single shared push + notificationclick implementation; no second listener.
 importScripts('/course-notifications-sw.js')
 const CACHE_NAME = 'psialchemy-public-v1'
 const PRIVATE_PREFIXES = ['/en/client', '/ru/client', '/es/client', '/en/app', '/ru/app', '/es/app', '/en/report/', '/ru/report/', '/es/report/', '/api/app', '/api/client', '/ru/prescriptions/', '/en/prescriptions/', '/api/prescriptions/', '/api/prescription-access', '/api/admin/', '/admin', '/document-preview/']

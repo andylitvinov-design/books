@@ -43,3 +43,21 @@
 }
 @media(prefers-reduced-motion:reduce){.settings *,.offer *,.promo *{scroll-behavior:auto;transition:none;animation:none}}
 @media print{.offer,.promo,.purchase,.actions,.confirm{display:none!important}}
+.planSelection{display:grid;gap:14px;min-width:0}
+.planFieldset{min-width:0;margin:0;padding:0;border:0}
+.planFieldset legend{padding:0 0 10px;font-weight:700}
+.planGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.planCard{display:grid;align-content:start;gap:8px;min-width:0;min-height:44px;padding:14px;border:1px solid #b3c6b8;border-radius:13px;background:#fffdf8;cursor:pointer}
+.planCard[data-selected=true]{border:2px solid #386650;padding:13px;background:#edf3ec}
+.planHeading{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.planHeading input{flex:none;width:20px;height:20px;margin:0;accent-color:#386650}
+.planName{font-weight:750}
+.planPrice{flex-basis:100%;font-weight:700;color:#365e4f}
+.planDescription{display:grid;gap:7px;font-size:13px;line-height:1.55}
+.planCard:focus-within{outline:3px solid #295cbe;outline-offset:3px}
+.planFieldset:disabled .planCard{cursor:not-allowed;opacity:.65}
+.selectedPrice{font-weight:750;color:#365e4f}
+.offer .planGrid{grid-template-columns:minmax(0,1fr)}
+@media(max-width:620px){.planGrid{grid-template-columns:minmax(0,1fr)}}
+
+.sessionBenefit{display:grid;gap:12px;padding:16px;border:1px solid #b3c6b8;border-radius:14px;background:#f6f9f2}

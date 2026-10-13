@@ -1,3 +1,6 @@
+-- SUPERSEDED / INACTIVE PR427 DRAFT: do not apply.
+-- Canonical notifications use existing app_private tables and dispatcher.
+-- See docs/billing/NOTIFICATION-RECONCILIATION.md.
 -- PROPOSAL ONLY. Not an applied migration and deliberately outside supabase/migrations.
 -- Requires explicit owner approval, isolated database tests and least-privilege review.
 -- The default ending is ROLLBACK. Do not substitute COMMIT without authorization.
