@@ -326,7 +326,7 @@
  padding:8px 10px
 }
 .journeyPanel:not([open]){padding:14px 18px}
-.journeyPanel:not([open]) .journeyHeading p:not(:global(.hh-kicker)){display:none}
+.journeyPanel:not([open]) .journeyHeading p{display:none}
 .journeyPanel[open] .journeyGrid{margin-top:14px}
 .journeyPanel[open] .journeyToggleLabel svg{transform:rotate(180deg)}
 @media(max-width:620px){
