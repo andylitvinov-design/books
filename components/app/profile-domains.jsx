@@ -14,7 +14,7 @@ const WORDS = {
   en: {
     eyebrow: 'PRIVATE SPACE · HOLISTIC HOUSE',
     title: 'My profile',
-    reports: 'Reports & personal development',
+    reports: 'Your resources, personal perspectives and chosen direction of growth',
     intro: 'Four perspectives on your journey. Explore what is available, follow changes over time, and choose support only when you want it.',
     psychology: 'Psychological', homeopathy: 'Homeopathy', wu_xing: 'Wu Xing', hypnotherapy: 'Hypnotherapy',
     psyDetail: 'Psychological profile', homeoDetail: 'Homeopathic profile', wuDetail: 'Five-element resource profile', hypnoDetail: 'Hypnotherapist recommendations',
@@ -41,12 +41,13 @@ const WORDS = {
     visibleLimit: 'Recent saved materials are shown here. Your complete archive remains available under Personal analysis.',
     selected: 'selected', emptyLegacyPsy: 'Psychological test reports shared by Andy will appear here. Your Google Cabinet also keeps results from tests you complete yourself.',
     google: 'Open my Google Cabinet',
+    archiveTitle: 'My personal reports', archiveHint: 'Your specialist’s reports, recommendations and original documents are kept in one place.',
     overview: 'Profile at a glance', profileReports: 'Personal reports', remedyRecords: 'Remedy records', discover: 'Explore free services', support: 'Personal support',
   },
   ru: {
     eyebrow: 'ЛИЧНОЕ ПРОСТРАНСТВО · HOLISTIC HOUSE',
     title: 'Мой профиль',
-    reports: 'Отчёты и личная динамика',
+    reports: 'Ваши ресурсы, индивидуальные особенности и направления развития',
     intro: 'Четыре стороны вашего профиля. Вы можете спокойно изучить записи, увидеть изменения и обратиться за поддержкой, когда захотите.',
     psychology: 'Психология', homeopathy: 'Гомеопатия', wu_xing: 'У-Син', hypnotherapy: 'Гипнотерапия',
     psyDetail: 'Психологический профиль', homeoDetail: 'Гомеопатический профиль', wuDetail: 'Ресурсы по пяти стихиям У-Син', hypnoDetail: 'Рекомендации гипнотерапевта',
@@ -73,6 +74,7 @@ const WORDS = {
     visibleLimit: 'Здесь показаны последние сохранённые материалы. Полный архив — во вкладке «Личный анализ».',
     selected: 'подобрано', emptyLegacyPsy: 'Здесь будут психологические отчёты от Andy. Результаты самостоятельно пройденных тестов сохраняются в вашем Google-кабинете.',
     google: 'Открыть Google-кабинет',
+    archiveTitle: 'Мои личные отчёты', archiveHint: 'Отчёты специалиста и оригинальные рекомендации собраны в одном месте.',
     overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Бесплатные услуги', support: 'Личная поддержка',
   },
 }
@@ -159,6 +161,7 @@ function ProfileServiceOffer({ area, locale }) {
 export function ProfileDomains({
   locale = 'en', mode = 'account', selector = null, assessments = [], homeopathyUpdates = [],
   results = [], savedReports = [], savedDocuments = [], children = null,
+  overviewContent = null, reportsContent = null,
 }) {
   const ru = locale === 'ru'
   const t = WORDS[ru ? 'ru' : 'en']
@@ -216,15 +219,6 @@ export function ProfileDomains({
   }))
   const panelTitle = { psychology: t.psyDetail, homeopathy: t.homeoDetail, wu_xing: t.wuDetail, hypnotherapy: t.hypnoDetail }
   const mayBeLimited = !external && (savedReports.filter(r => r.available !== false).length > 30 || savedDocuments.filter(d => d.kind === 'recommendation').length > 20)
-  // Counts come from authorized records only; never turn an absent report into a score.
-  const reportCount = external ? reports.filter(report => report.available !== false).length : savedReports.filter(report => report.available !== false).length
-  const remedyCount = external ? homeopathyUpdates.length : savedDocuments.filter(document => document.kind === 'recommendation').length
-  const latestDate = external ? ordered(assessments)[0]?.occurredOn : recentResults[0]?.occurredOn
-  const glance = [
-    { label: external ? t.profileReports : t.testResults, value: external ? reportCount : recentResults.length },
-    { label: external ? t.remedyRecords : t.profileReports, value: external ? remedyCount : reportCount },
-    { label: t.latest, value: readableDate(latestDate, locale) || '—' },
-  ]
 
   return <section className="hh-profile-domains" data-profile-domains data-profile-interactive={interactive ? "true" : "false"}>
     <header className="hh-domain-hero">
@@ -233,10 +227,8 @@ export function ProfileDomains({
         <h1>{t.title}</h1>
         <p className="hh-domain-hero-subtitle">{t.reports}</p>
       </div>
-      <dl className="hh-domain-glance" aria-label={t.overview}>
-        {glance.map(item => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}
-      </dl>
     </header>
+    {overviewContent}
     <div className="hh-domain-tabs" role="tablist" aria-label={t.title}>
       {entries.map(({ key, summary }) => {
         const Icon = ICONS[key]
@@ -294,6 +286,13 @@ export function ProfileDomains({
         <ProfileServiceOffer area={active} locale={locale} />
       </details>
     </div>
+    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive" aria-labelledby="hh-profile-reports-title" data-profile-report-archive>
+      <header className="hh-domain-report-archive-head">
+        <div><p className="hh-domain-eyebrow">HOLISTIC HOUSE</p><h2 id="hh-profile-reports-title">{t.archiveTitle}</h2><p>{t.archiveHint}</p></div>
+        <ArrowRight size={21} aria-hidden="true" />
+      </header>
+      {reportsContent}
+    </section>}
     <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
     <details className="hh-domain-discover">
       <summary><Sparkles size={16} aria-hidden="true" /><span>{t.discover}</span><ChevronDown size={16} aria-hidden="true" /></summary>
