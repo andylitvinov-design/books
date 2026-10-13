@@ -12,6 +12,7 @@ function input(formData) {
   const data = Object.fromEntries(fields.map((key) => [key, formData.get(key) ?? undefined]))
   data.includeRecommendation = formData.get('includeRecommendation') === 'on'
   data.includeInvoice = formData.get('includeInvoice') === 'on'
+  data.includeDistanceHomeopathy = formData.get('includeDistanceHomeopathy') === 'on'
   data.consultationDate = formData.get('dateIssued')
   data.items = JSON.parse(String(formData.get('itemsJson') ?? '[]'))
   return data
