@@ -35,3 +35,29 @@ test('unknown endpoints, origins, queries, ordinary throws and uncaught rejectio
     assert.equal(classifyCspNavigationCancellation(diagnostic(), { ...detail, lifecycle: [...lifecycle, { type, time: 125 }] }), null);
   }
 });
+
+test('client homepage RSC cancellation requires the exact private-to-About history boundary', () => {
+  const privateLife = lifecycle.map(event => {
+    if (event.type === 'init' && event.documentProbe === 'old') return { ...event, url: origin + '/en/client' };
+    if (event.type === 'navigate') return { ...event, documentClass: 'private', navigationType: 'traverse', destination: origin + '/en/about' };
+    if (event.type === 'init' && event.documentProbe === 'new') return { ...event, url: origin + '/en/about' };
+    return event;
+  });
+  const privateDetail = { ...detail, lifecycle: privateLife };
+  assert.ok(classifyCspNavigationCancellation(diagnostic(), privateDetail));
+  for (const change of [
+    { documentClass: 'public-video' }, { navigationType: 'push' },
+    { destination: origin + '/en/services' }, { sameDocument: true },
+  ]) assert.equal(classifyCspNavigationCancellation(diagnostic(), { ...privateDetail, lifecycle: privateLife.map(event => event.type === 'navigate' ? { ...event, ...change } : event) }), null);
+  for (const source of ['/en/about-other', '/ru/client', '/en/client?unexpected=1']) {
+    assert.equal(classifyCspNavigationCancellation(diagnostic(), { ...privateDetail, lifecycle: privateLife.map(event => event.type === 'init' && event.documentProbe === 'old' ? { ...event, url: origin + source } : event) }), null);
+  }
+  for (const url of [origin + '/en/services/free-situation-review?_rsc=x', origin + '/api/app/unknown', origin + '/?_rsc=x&other=y', 'https://elsewhere.test/?_rsc=x']) {
+    assert.equal(classifyCspNavigationCancellation(diagnostic(url), privateDetail), null);
+  }
+  for (const time of [99, 141, 150, 151]) assert.equal(classifyCspNavigationCancellation(diagnostic(undefined, time), privateDetail), null);
+  for (const type of ['window-error', 'unhandled-rejection']) assert.equal(classifyCspNavigationCancellation(diagnostic(), { ...privateDetail, lifecycle: [...privateLife, { type, time: 125 }] }), null);
+  for (const type of ['navigate', 'pagehide']) assert.equal(classifyCspNavigationCancellation(diagnostic(), { ...privateDetail, lifecycle: privateLife.filter(event => event.type !== type) }), null);
+  for (const override of [{ engine: 'chromium' }, { readiness: 'loaded-history' }]) assert.equal(classifyCspNavigationCancellation(diagnostic(), { ...privateDetail, ...override }), null);
+  assert.equal(classifyCspNavigationCancellation({ time: 125, stack: 'Refused to connect because it violates Content Security Policy' }, privateDetail), null);
+});

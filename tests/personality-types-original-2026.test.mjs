@@ -168,7 +168,7 @@ test('migration, desktop and phone report paths preserve safety and private repo
  assert.match(helper,/20261011230000_hh_personality_types_original.sql/)
  assert.match(reportUi,/data-personality-type-summary/)
  assert.match(reportUi,/report\.personalityType\.headline/)
- assert.match(pdf,/Personality type hypothesis/)
+ assert.match(pdf,/prepared\.personalityType\.headline/)
  assert.doesNotMatch(reportUi,/localStorage|sessionStorage/)
 })
 

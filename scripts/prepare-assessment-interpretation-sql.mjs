@@ -1,3 +1,4 @@
+import {STORED_INTERPRETATION_VERSION as version} from '../lib/assessments/stored-interpretation.js'
 // Offline release compiler. No database connection or live mutation.
 import {mkdir,readFile,writeFile} from 'node:fs/promises'
 import {createHash} from 'node:crypto'
@@ -35,7 +36,7 @@ begin
    or p->'identity' is distinct from jsonb_build_object('definitionId',d->>'id','definitionKey',d->>'key','definitionVersion',d->>'version',
     'instrumentLocale',d->>'instrumentLocale','translationVersion',d->>'translationVersion','contentHash',d->>'contentHash',
     'scoringKey',d->>'scoringKey','scoringVersion',d->>'scoringVersion','resultVersion',d->>'resultVersion','timeframe',d->>'timeframe')
-   or p->>'uiLocale' not in ('en','ru') or p->>'interpretationVersion' is distinct from '2026-10-12.v1' then
+   or p->>'uiLocale' not in ('en','ru') or p->>'interpretationVersion' is distinct from '${version}' then
    raise exception 'REGISTERED_INSTRUMENT_MISMATCH: %',d->>'id';
   end if;
   select * into prior from app.assessment_interpretation_versions

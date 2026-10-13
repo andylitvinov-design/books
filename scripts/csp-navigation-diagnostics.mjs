@@ -16,7 +16,14 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     if (navigation.type !== 'navigate' || navigation.sameDocument !== false || Math.floor(navigation.time) > error.time) continue;
     const source = lifecycle.find(event => event.type === 'init' && event.documentProbe === navigation.documentProbe);
     if (!source || new URL(source.url).origin !== url.origin) continue;
-    if (new URL(source.url).pathname !== (bootstrap ? '/en/client' : '/en/about')) continue;
+    const sourcePath = new URL(source.url).pathname;
+    // The same shared-header home prefetch was observed during private Back/
+    // Forward teardown. Accept only that traced client -> About traversal.
+    const clientHomePrefetch = prefetch && url.pathname === '/'
+      && source.url === new URL('/en/client', origin).href
+      && navigation.documentClass === 'private' && navigation.navigationType === 'traverse'
+      && navigation.destination === new URL('/en/about', origin).href;
+    if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch) continue;
     const nextDocument = lifecycle.find(event => event.type === 'init' && event.time > navigation.time && event.documentProbe !== navigation.documentProbe);
     // Reject errors at/after the new document's first millisecond. They are not
     // attributable to the old document, even when the wording is identical.

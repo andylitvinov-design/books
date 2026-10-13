@@ -45,7 +45,7 @@ async function fill(page,d,mode,guest,locale){
  await finish.click()
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(d.key==='scs-sf'?1:5)
+ await expect(report.locator('[data-report-block="1"] article')).toHaveCount(d.key==='scs-sf'?1:5)
  for(const detail of await report.locator('details').all())await detail.locator('summary').click()
  await expect(report).toContainText(locale==='ru'?'Среднее ответов (1–5)':'Response mean (1–5)')
  await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { existingAboutIntroVideo } from "@/lib/site-videos/defaults";
 import type { PublishedSiteVideo } from "@/lib/site-videos/model";
 import styles from "./psychic-alchemy-intro-video.module.css";
@@ -14,6 +14,9 @@ const WATCH_URL = `https://app.heygen.com/share/${VIDEO_ID}`;
 
 export function PsychicAlchemyIntroVideo({ video = existingAboutIntroVideo }: { video?: PublishedSiteVideo }) {
   const [active, setActive] = useState(false);
+  // The SSR poster can arrive before React attaches its click handler.
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => { setInteractive(true); }, []);
   const transcript = video.transcript?.split(/\n\n+/).filter(Boolean) ?? [];
   const duration = video.durationSeconds ? `${Math.floor(video.durationSeconds / 60)}:${String(video.durationSeconds % 60).padStart(2, "0")}` : "";
 
@@ -40,11 +43,11 @@ export function PsychicAlchemyIntroVideo({ video = existingAboutIntroVideo }: { 
               referrerPolicy="strict-origin-when-cross-origin"
             />
           ) : (
-            <button type="button" className={styles.poster} onClick={() => setActive(true)} aria-label={`Open video: ${video.title}`}>
+            <button type="button" className={styles.poster} disabled={!interactive} aria-busy={!interactive} onClick={() => setActive(true)} aria-label={`Open video: ${video.title}`}>
               <Image src="/images/holistic-house/andy-about.png" alt="Andy Li" fill sizes="(max-width: 767px) 100vw, 650px" className={styles.image} />
               <span className={styles.shade} aria-hidden="true" />
               <span className={styles.play} aria-hidden="true">▶</span>
-              <span className={styles.label}>Watch introduction <span>{duration ? `${duration} · ` : ""}English</span></span>
+              <span className={styles.label}>{interactive ? "Watch introduction" : "Loading player…"} <span>{duration ? `${duration} · ` : ""}English</span></span>
             </button>
           )}
         </div>

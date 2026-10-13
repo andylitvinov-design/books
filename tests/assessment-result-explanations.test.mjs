@@ -139,15 +139,15 @@ test('new source explanations require exact version, language, hash and dimensio
   for (const value of [undefined, null, '50', NaN, Infinity, -1, 101]) assert.equal(resultDimensionExplanation(result, {...dimension,value}), null)
 })
 
-test('actual shared report places construct, mechanics, score reading and source outside closed details', () => {
-  const ui = read('components/app/compact-assessment-report.jsx')
-  const details = ui.indexOf('<details className={styles.details}>')
-  for (const marker of ['data-scale-construct','data-score-calculation','data-score-reading','data-explanation-source','data-explanation-origin']) {
-    assert.ok(ui.indexOf(marker) > 0 && ui.indexOf(marker) < details, marker)
-  }
-  assert.match(ui, /section\.explanation\?\.mixed/)
+test('shared report exposes five prepared blocks before technical details', () => {
+  const ui=read('components/app/compact-assessment-report.jsx')
+  const positions=[1,2,3,4,5].map(n=>ui.indexOf('{block('+n+','))
+  assert.ok(positions.every((p,i)=>p>0&&(!i||p>positions[i-1])))
+  for(const marker of ['data-scale-construct','data-score-reading','data-explanation-source','data-explanation-origin'])assert.ok(ui.includes(marker))
+  assert.match(ui,/section.bandBasis!=='screening'/)
+  assert.match(ui,/data-technical-report-details/)
   assert.match(read('components/app/personal-result-report.jsx'), /<CompactAssessmentReport/)
-  for (const path of ['components/app/app-workspace.jsx','components/app/cabinet-landing.jsx']) assert.match(read(path), /<PersonalResultReport result=/)
+  for(const path of ['components/app/app-workspace.jsx','components/app/cabinet-landing.jsx'])assert.match(read(path), /<PersonalResultReport result=/)
   assert.match(read('lib/profile/client-report.js'), /const interpretation = buildAssessmentResultReport/)
 })
 

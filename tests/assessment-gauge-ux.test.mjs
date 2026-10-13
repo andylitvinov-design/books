@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 
 const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('result page leads with score gauge, two practical actions and a true retake runner CTA', () => {
+test('result page leads with score gauge, one prepared support suggestion and a true retake runner CTA', () => {
   const page = source('components/app/app-workspace.jsx')
   const report = source('components/app/compact-assessment-report.jsx')
   const gauge = source('components/app/assessment-gauge.jsx')
@@ -19,11 +19,11 @@ test('result page leads with score gauge, two practical actions and a true retak
   assert.match(page, /operationId: crypto.randomUUID\(\)/)
   assert.match(page, /router.push\('\/' \+ locale \+ '\/app\/runs\/'/)
   assert.match(page, /Retake this test/)
-  assert.match(report, /section.steps.slice\(0, 2\)/)
+  assert.match(report, /data-support-recommendation/)
   assert.match(report, /data-compact-assessment-report/)
   assert.match(report, /<ScoreGauge dimension=\{displayDimension\}/)
-  assert.match(report, /section\.explanation\?\.mixed \? \{\.\.\.dimension, direction: 'non-normative'\}/)
-  assert.match(report, /More about this score & sources/)
+  assert.match(report, /section.bandBasis!=='screening'\?\{\.\.\.dimension,direction:'non-normative'\}/)
+  assert.match(report, /Scoring, response anchors, limitations and version/)
   assert.match(gauge, /data-assessment-gauge=\{model.orientation\}/)
   assert.match(css, /\.hh-result-repeat button/)
 })
@@ -39,8 +39,8 @@ test('Insights renders one real measurement gauge per test and filters by date w
   assert.match(dashboard, /'week'/)
   assert.match(dashboard, /'month'/)
   assert.match(dashboard, /'quarter'/)
-  assert.match(dashboard, /<ScoreGauge dimension=\{displayMain\} locale=\{locale\} compact/)
-  assert.match(dashboard, /<ScoreTrend current=\{latest\} previous=\{group.periodPrior\}/)
+  assert.match(dashboard, /<InsightTestScales/); const carousel=source('components/app/insight-test-scales.jsx')
+  assert.match(carousel, /insightScaleOrder/); assert.match(carousel, /data-scale-counter/); assert.match(carousel, /<ScoreTrend descriptive=/)
   assert.match(dashboard, /data-testid="completed-test-insights"/)
   assert.match(dashboard, /<ClientReportActions data=\{data\}/)
   assert.match(dashboard, /group.history.map\(attempt =>/)

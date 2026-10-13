@@ -68,7 +68,7 @@ async function fill(page,d,mode,guest,locale,responseValues){
  await finish.click()
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(4)
+ await expect(report.locator('[data-report-block="1"] article')).toHaveCount(4)
  for(const detail of await report.locator('details').all())await detail.locator('summary').click()
  await expect(report).toContainText(locale==='ru'?'Сумма ответов (0–70)':'Response sum (0–70)')
  await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
