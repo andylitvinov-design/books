@@ -45,6 +45,7 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
     'mhc-sf',
     'scs-sf',
     'compassion-scale',
+    'bfas-100',
     'brcs',
     'erq',
     'gad-2',

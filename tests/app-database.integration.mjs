@@ -1555,3 +1555,42 @@ test('R3 displayed rotated lesson can be saved and read back for EN/RU without c
     } finally { await db.end() }
   }
 })
+
+test('BFAS registration is exact and idempotent, with ID/hash/full-content collision guards', async () => {
+  const {readFile} = await import('node:fs/promises')
+  const {BFAS_100_DEFINITIONS} = await import('../data/assessments/bfas-100-en-v1.js')
+  const d=BFAS_100_DEFINITIONS[0]
+  const sql=await readFile(new URL('../supabase/migrations/20261012045314_hh_bfas_100_author_form.sql',import.meta.url),'utf8')
+  const db=await adminClient()
+  try {
+    await db.query(sql);await db.query(sql)
+    const rows=(await db.query('select id, definition, questions, content_hash, status from app.assessment_versions where definition_key=$1',[d.key])).rows
+    assert.equal(rows.length,1);assert.equal(rows[0].id,d.id)
+    assert.equal(rows[0].content_hash,d.contentHash);assert.equal(rows[0].status,'published')
+    assert.deepEqual(rows[0].definition,d);assert.deepEqual(rows[0].questions,d.questions)
+    for(const broken of [sql.replace(d.id,randomUUID()),sql.replace(d.contentHash,'sha256:'+'0'.repeat(64)),sql.replace(d.questions[0].text,'Changed first item.')]) {
+      await assert.rejects(()=>db.query(broken),/Conflicting professional assessment ID|Different content already published/)
+      await db.query('rollback')
+    }
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[d.id])).rows[0].definition,d)
+  } finally {await db.end()}
+})
+
+test('BFAS guest saves preserve all 15 source means and private result access', async () => {
+  const {buildAssessmentResultReport}=await import('../lib/assessments/result-report.js')
+  const guestRepo=createGuestRepository(config),credential=createGuestCredential(),other=createGuestCredential()
+  for(const who of [credential,other])await guestRepo.createSession(who,{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+  const d=getAssessmentDefinition('bfas-100','v1','en')
+  let run=await guestRepo.startRun(credential,{definitionKey:d.key,definitionVersion:d.version,instrumentLocale:'en',operationId:randomUUID()})
+  run=await guestRepo.saveRun(credential,run.id,{answers:answer(d,1),context:{},progress:100,expectedRevision:run.revision,operationId:randomUUID()})
+  const result=await guestRepo.submitRun(credential,run.id,{expectedRevision:run.revision})
+  assert.deepEqual(result.dimensions.map(s=>s.value),[2.6,3.2,3,2.8,2.6,2.6,2.6,3,3.4,3.4,2.6,3,2.6,2.6,2.6])
+  assert.equal(result.contentHash,d.contentHash)
+  assert.deepEqual((await guestRepo.getResult(credential,result.id)).dimensions,result.dimensions)
+  await assert.rejects(()=>guestRepo.getResult(other,result.id),/NOT_FOUND/)
+  for(const locale of ['en','ru']) {
+    const report=buildAssessmentResultReport(result,locale)
+    assert.equal(report.sections.length,15)
+    assert.ok(report.sections.every(s=>s.source===d.source.scoringUrl&&!s.recommendedReview))
+  }
+})

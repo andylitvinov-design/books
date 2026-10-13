@@ -93,7 +93,10 @@ async function fill(page,d,mode,guest,locale){
  const quick=guest?'.cabinet-quick-question':'.hh-quick-question'
  for(let i=0;i<d.questions.length;i++){
   // Pace synthetic saves within unchanged production account/guest request limits.
-  await page.waitForTimeout(mode==='guided'?750:400)
+  // A guest keeps the same session through all eight short forms. Guided mode
+  // also saves on Next; 1.5 seconds per answer leaves room for plan/bootstrap
+  // reads within the unchanged 120 guest requests/minute allowance.
+  await page.waitForTimeout(guest?1500:mode==='guided'?750:400)
   const scope=mode==='quick'?page.locator(quick).nth(i):page.locator(guest?'.cabinet-guided-question':'.hh-runner-question')
   await expect(scope.getByRole('heading',{name:d.questions[i].text,exact:true})).toBeVisible()
   const buttons=scope.locator(guest?'.cabinet-answer-list button':'.hh-scale button')
@@ -288,9 +291,12 @@ try{
   await file.saveAs(output+'/report-'+locale+'.pdf')
   passed(locale+' PDF download includes persisted experimental relationship report model')
  }
+ // One consented guest completes this battery. Keep each instrument journey,
+ // while avoiding a new session per form against the unchanged 12/IP/hour cap.
+ const guest=await browser.newContext({viewport:{width:390,height:844}})
+ await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
  for(const [i,base] of defs.entries()){
-  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale),guest=await browser.newContext({viewport:{width:390,height:844}})
-  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
+  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale)
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale}],operationId:randomUUID()})
   page=await diagnosticPage(guest,'guest-'+d.key+'-'+locale)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
@@ -301,11 +307,16 @@ try{
   assert.deepEqual(result.dimensions.map(x=>x.value),[1.67,2])
   assert.equal(result.instrumentLocale,locale);assert.equal(result.contentHash,d.contentHash)
   passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
-  navigationMarker(page,'before-guest-context-close')
-  await guest.close()
+  await page.waitForLoadState('networkidle')
+  navigationMarker(page,'before-guest-page-close')
+  await page.close()
  }
+ const guestResults=(await api(guest,'guest/bootstrap')).results
+ assert.deepEqual(guestResults.map(result=>result.definitionKey).sort(),defs.map(d=>d.key).sort())
+ navigationMarker(page,'before-guest-context-close')
+ await guest.close()
  assert.deepEqual(errors,[])
- await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,browser:await browser.version(),checks,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,browser:await browser.version(),checks,guestSessions:1,guestResults:guestResults.length,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
 } catch(error){
  await page?.screenshot({path:output+'/failure.png',fullPage:false}).catch(()=>{})
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message},null,2));throw error

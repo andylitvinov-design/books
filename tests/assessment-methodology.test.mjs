@@ -15,7 +15,7 @@ const defFor = (item, locale) => getAssessmentDefinition(item.key,item.version,i
 const allAnswers = d => Object.fromEntries(d.questions.map(q=>[q.id,q.min??d.answerScale?.min??0]))
 
 test('every active test has a bilingual short purpose/origin/evidence paragraph without changing scoring hashes',()=>{
-  assert.equal(active.length,109)
+  assert.equal(active.length,110)
   for(const locale of ['en','ru']){
     for(const item of active){
       const def=defFor(item,item.instrumentLocale==='dynamic'?locale:'en')
@@ -38,6 +38,27 @@ test('every active test has a bilingual short purpose/origin/evidence paragraph 
       assert.equal(report.methodology,assessmentMethodology({key:item.key,catalog:item,locale}).text)
     }
   }
+})
+
+test('full BFAS explanation keeps author-form origin, mean scoring and honest EN/RU limits',()=>{
+  const catalog=active.find(x=>x.key==='bfas-100')
+  const definition=defFor(catalog,'en')
+  const before=definition.contentHash
+  for(const locale of ['en','ru']){
+    const about=assessmentMethodology({key:'bfas-100',catalog,definition,locale})
+    assert.equal(about.status,'traits')
+    assert.equal(about.sourceUrl,definition.source.url)
+    assert.match(about.text,/DeYoung, Quilty/)
+    assert.match(about.text,/2007/)
+    assert.match(about.text,/100/)
+    assert.match(about.text,locale==='ru'?/Этот интерфейс требует все 100 ответов/:/This interface requires all 100 answers/)
+    assert.match(about.text,locale==='ru'?/английских вопросов/:/original English items/)
+    assert.match(about.text,locale==='ru'?/средние по десяти аспектам и пяти парным доменам/:/ten aspect means and five paired-domain means/)
+    assert.match(about.text,locale==='ru'?/нормы и процентили не присваиваются/:/no norms or percentile ranks are assigned/)
+    assert.match(about.text,locale==='ru'?/не является валидированной русской адаптацией/:/not a validated Russian questionnaire adaptation/)
+    assert.doesNotMatch(about.text,/individual aspect scale|not the complete BFAS|not yet cleared|пока недоступна/)
+  }
+  assert.equal(definition.contentHash,before)
 })
 
 test('MHC-SF explanation preserves accepted source, language and non-diagnostic limits',()=>{
