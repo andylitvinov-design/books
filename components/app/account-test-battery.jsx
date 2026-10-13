@@ -67,8 +67,9 @@ function TestSymbol({topics}) {
   return <span className={styles.iconTile} data-theme={key} aria-hidden="true"><Icon size={23} strokeWidth={1.8}/></span>
 }
 
-async function api(path, body) {
+async function api(path, body, { signal } = {}) {
   const response = await fetch('/api/app/' + path, {
+    signal,
     method: body ? 'POST' : 'GET', cache: 'no-store', credentials: 'same-origin',
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
@@ -172,12 +173,15 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     : (plan.status === 'cancelled' ? null : plan)
   useEffect(() => {
     let active = true
-    api('course').then(course => {
+    const controller = new AbortController()
+    api('course', undefined, { signal: controller.signal }).then(course => {
       if (active) setCourseState(course)
-    }).catch(() => {
-      if (active) setCourseState(null)
+    }).catch(error => {
+      if (active && error.name !== 'AbortError') setCourseState(null)
     })
-    return () => { active = false }
+    // Safari/WebKit can treat an unfinished course fetch as a cross-origin
+    // navigation rejection when a user immediately opens a test. Cancel it.
+    return () => { active = false; controller.abort() }
   }, [data.account?.id, data.results?.length])
   const courseKeys = courseTestKeys(courseState)
   const courseStatusByKey = new Map((courseState?.assessments?.selectedTests || [])
