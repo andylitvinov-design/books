@@ -1,14 +1,14 @@
 {
   "stats": {
-    "version": "2026-10-12.v2",
+    "version": "2026-10-13.v1",
     "recordCount": 356,
     "runnableKeys": 109,
     "scaleLocaleSlots": 464,
     "relatedGeneralPracticeKeys": 73,
     "noRelatedPracticeKeys": 36,
     "directPersonalisedOrAiCourseKeys": 0,
-    "gzipSHA256": "2eb5622ba136dcb33f9110b3dbe87c2b7df4d89634b83aad4e95563ab9975796",
-    "decodedSHA256": "bd0b82b80e08465a1230ace37d632f4e764d5ae45c83dfea1d1fc2fe8972e3d8"
+    "gzipSHA256": "d05968d5e34051a3d8b69e816287b9cb0dd3721f8b6d11aa1ce2487b8866618f",
+    "decodedSHA256": "1de5250f0f0e40aed7b5d12b031f27b16511eac702bb9e72f61d39537b1cb4b2"
   },
   "note": "Public questionnaire identities and synthetic minimum-score examples only. Course matches are existing general-practice tracks, not AI-generated or score-prescribed programmes.",
   "matrix": [
@@ -19,7 +19,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -48,7 +48,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -77,7 +77,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -106,7 +106,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -135,7 +135,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -164,7 +164,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -193,7 +193,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -222,7 +222,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -251,7 +251,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -280,7 +280,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -309,7 +309,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -338,7 +338,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -367,7 +367,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -396,7 +396,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -425,7 +425,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -454,7 +454,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -483,7 +483,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -512,7 +512,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -541,7 +541,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -570,7 +570,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -599,7 +599,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -628,7 +628,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -657,7 +657,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -686,7 +686,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -715,7 +715,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -744,7 +744,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -773,7 +773,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -802,7 +802,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -831,7 +831,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -860,7 +860,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -889,7 +889,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -918,7 +918,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -947,7 +947,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -976,7 +976,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1005,7 +1005,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1034,7 +1034,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1063,7 +1063,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1092,7 +1092,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1121,7 +1121,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1150,7 +1150,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1179,7 +1179,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1208,7 +1208,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1237,7 +1237,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1266,7 +1266,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1295,7 +1295,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1324,7 +1324,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1353,7 +1353,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1382,7 +1382,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1411,7 +1411,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1440,7 +1440,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1469,7 +1469,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1498,7 +1498,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1527,7 +1527,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1556,7 +1556,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1585,7 +1585,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1614,7 +1614,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1643,7 +1643,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1672,7 +1672,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1701,7 +1701,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1730,7 +1730,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1759,7 +1759,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1788,7 +1788,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1817,7 +1817,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1846,7 +1846,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1875,7 +1875,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1904,7 +1904,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1933,7 +1933,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1962,7 +1962,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -1991,7 +1991,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -2020,7 +2020,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -2049,7 +2049,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -2078,7 +2078,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -2107,7 +2107,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -2136,7 +2136,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -2165,7 +2165,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -2194,7 +2194,7 @@
       "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -2223,7 +2223,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2259,7 +2259,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2295,7 +2295,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2331,7 +2331,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2367,7 +2367,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2403,7 +2403,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2439,7 +2439,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2475,7 +2475,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2511,7 +2511,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2547,7 +2547,7 @@
       "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
       "definitionVersion": "v2",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2583,7 +2583,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2614,7 +2614,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2645,7 +2645,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2676,7 +2676,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2707,7 +2707,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2738,7 +2738,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2769,7 +2769,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2800,7 +2800,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2831,7 +2831,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2862,7 +2862,7 @@
       "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -2893,7 +2893,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2929,7 +2929,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -2965,7 +2965,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3001,7 +3001,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3037,7 +3037,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3073,7 +3073,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3109,7 +3109,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3145,7 +3145,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3181,7 +3181,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3217,7 +3217,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3253,7 +3253,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3289,7 +3289,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3325,7 +3325,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3361,7 +3361,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3397,7 +3397,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3433,7 +3433,7 @@
       "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3469,7 +3469,7 @@
       "definitionId": "2c1c78ad-b4f1-4d15-8b18-37e3f2f55a41",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3501,7 +3501,7 @@
       "definitionId": "2c1c78ad-b4f1-4d15-8b18-37e3f2f55a41",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3533,7 +3533,7 @@
       "definitionId": "2c1c78ad-b4f1-4d15-8b18-37e3f2f55a41",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3565,7 +3565,7 @@
       "definitionId": "2c1c78ad-b4f1-4d15-8b18-37e3f2f55a41",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3597,7 +3597,7 @@
       "definitionId": "2c1c78ad-b4f1-4d15-8b18-37e3f2f55a41",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3629,7 +3629,7 @@
       "definitionId": "2c1c78ad-b4f1-4d15-8b18-37e3f2f55a41",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3661,7 +3661,7 @@
       "definitionId": "531f52bf-39df-4149-a0e1-03b89f90aa85",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf",
@@ -3693,7 +3693,7 @@
       "definitionId": "531f52bf-39df-4149-a0e1-03b89f90aa85",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf",
@@ -3725,7 +3725,7 @@
       "definitionId": "a251ab33-c65a-4eaf-a74c-43e4cb219c4c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3757,7 +3757,7 @@
       "definitionId": "a251ab33-c65a-4eaf-a74c-43e4cb219c4c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3789,7 +3789,7 @@
       "definitionId": "b60ae0a9-7cf6-44d8-9e18-3e8d9cbcdd29",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3821,7 +3821,7 @@
       "definitionId": "b60ae0a9-7cf6-44d8-9e18-3e8d9cbcdd29",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -3853,7 +3853,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3889,7 +3889,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3925,7 +3925,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3961,7 +3961,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -3997,7 +3997,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4033,7 +4033,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4069,7 +4069,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4105,7 +4105,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4141,7 +4141,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4177,7 +4177,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4213,7 +4213,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4249,7 +4249,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4285,7 +4285,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4321,7 +4321,7 @@
       "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4357,7 +4357,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4393,7 +4393,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4429,7 +4429,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4465,7 +4465,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4501,7 +4501,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4537,7 +4537,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4573,7 +4573,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4609,7 +4609,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4645,7 +4645,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4681,7 +4681,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4717,7 +4717,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4753,7 +4753,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4789,7 +4789,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4825,7 +4825,7 @@
       "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -4861,7 +4861,7 @@
       "definitionId": "3718f80f-470c-5924-88ca-9a973d1d2cbb",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -4893,7 +4893,7 @@
       "definitionId": "3718f80f-470c-5924-88ca-9a973d1d2cbb",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -4925,7 +4925,7 @@
       "definitionId": "6f9c0e14-46f0-5ac9-9b36-a8ad2a7c6675",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -4957,7 +4957,7 @@
       "definitionId": "6f9c0e14-46f0-5ac9-9b36-a8ad2a7c6675",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -4989,7 +4989,7 @@
       "definitionId": "0fe8f9b7-a114-5808-96b8-922f36ac69d3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf",
@@ -5021,7 +5021,7 @@
       "definitionId": "0fe8f9b7-a114-5808-96b8-922f36ac69d3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://rckessler.scholars.harvard.edu/sites/g/files/omnuum8166/files/2026-03/Scoring_K6_K10.pdf",
@@ -5053,7 +5053,7 @@
       "definitionId": "061fba70-60da-5c1e-99f7-705b7ad2015e",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5089,7 +5089,7 @@
       "definitionId": "061fba70-60da-5c1e-99f7-705b7ad2015e",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5125,7 +5125,7 @@
       "definitionId": "65705916-def2-5159-9530-18f242c42ba8",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5161,7 +5161,7 @@
       "definitionId": "65705916-def2-5159-9530-18f242c42ba8",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5197,7 +5197,7 @@
       "definitionId": "e20cacee-10f4-515f-8280-523c4e5c0d0a",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5233,7 +5233,7 @@
       "definitionId": "e20cacee-10f4-515f-8280-523c4e5c0d0a",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5269,7 +5269,7 @@
       "definitionId": "ce3ecada-28a6-52e7-9bb3-607fa23c8119",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5305,7 +5305,7 @@
       "definitionId": "ce3ecada-28a6-52e7-9bb3-607fa23c8119",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5341,7 +5341,7 @@
       "definitionId": "2057fd15-a115-50fb-b5c4-04234d50c023",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5377,7 +5377,7 @@
       "definitionId": "2057fd15-a115-50fb-b5c4-04234d50c023",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5413,7 +5413,7 @@
       "definitionId": "35700e02-9295-5f9e-87dc-c19ea76e337b",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5449,7 +5449,7 @@
       "definitionId": "35700e02-9295-5f9e-87dc-c19ea76e337b",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5485,7 +5485,7 @@
       "definitionId": "b3cb9fb1-0626-52c6-a678-fc71b1ae34b3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "research-source",
         "reviewed": "2026-10-12",
@@ -5516,7 +5516,7 @@
       "definitionId": "b3cb9fb1-0626-52c6-a678-fc71b1ae34b3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "research-source",
         "reviewed": "2026-10-12",
@@ -5547,7 +5547,7 @@
       "definitionId": "b3cb9fb1-0626-52c6-a678-fc71b1ae34b3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "research-source",
         "reviewed": "2026-10-12",
@@ -5578,7 +5578,7 @@
       "definitionId": "b3cb9fb1-0626-52c6-a678-fc71b1ae34b3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "research-source",
         "reviewed": "2026-10-12",
@@ -5609,7 +5609,7 @@
       "definitionId": "20f3b56b-262e-5712-a0e3-62c365aab031",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -5646,7 +5646,7 @@
       "definitionId": "20f3b56b-262e-5712-a0e3-62c365aab031",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -5683,7 +5683,7 @@
       "definitionId": "f6a8cc1b-7f05-5034-985c-139e4b91fb64",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-publication-abstract",
         "reviewed": "2026-10-12",
@@ -5719,7 +5719,7 @@
       "definitionId": "f6a8cc1b-7f05-5034-985c-139e4b91fb64",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-publication-abstract",
         "reviewed": "2026-10-12",
@@ -5755,7 +5755,7 @@
       "definitionId": "2c74f251-17e9-571a-a319-27826b0768a4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5791,7 +5791,7 @@
       "definitionId": "2c74f251-17e9-571a-a319-27826b0768a4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5827,7 +5827,7 @@
       "definitionId": "3f485eb4-f05a-51f0-b728-b9ca682d0a33",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5863,7 +5863,7 @@
       "definitionId": "3f485eb4-f05a-51f0-b728-b9ca682d0a33",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5899,7 +5899,7 @@
       "definitionId": "45cc15bf-f82e-5479-b5a6-8e45a3438960",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5935,7 +5935,7 @@
       "definitionId": "45cc15bf-f82e-5479-b5a6-8e45a3438960",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -5971,7 +5971,7 @@
       "definitionId": "cc932f6c-2d4b-59a8-a341-783d3bf75ca1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6007,7 +6007,7 @@
       "definitionId": "cc932f6c-2d4b-59a8-a341-783d3bf75ca1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6043,7 +6043,7 @@
       "definitionId": "13ea3326-f27a-532a-87e9-9f43da3991ba",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6079,7 +6079,7 @@
       "definitionId": "13ea3326-f27a-532a-87e9-9f43da3991ba",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6115,7 +6115,7 @@
       "definitionId": "5f4f8e9e-47d5-5831-bef2-fb1701d275dc",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6151,7 +6151,7 @@
       "definitionId": "5f4f8e9e-47d5-5831-bef2-fb1701d275dc",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6187,7 +6187,7 @@
       "definitionId": "9b54d264-cb6d-5d05-ac8c-2fdf8c2d3b62",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6223,7 +6223,7 @@
       "definitionId": "9b54d264-cb6d-5d05-ac8c-2fdf8c2d3b62",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6259,7 +6259,7 @@
       "definitionId": "e74efb49-32ed-501c-9392-c0954627aebd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6295,7 +6295,7 @@
       "definitionId": "e74efb49-32ed-501c-9392-c0954627aebd",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6331,7 +6331,7 @@
       "definitionId": "8634ee78-fb65-5651-a742-3cffc0c1fcf6",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6367,7 +6367,7 @@
       "definitionId": "8634ee78-fb65-5651-a742-3cffc0c1fcf6",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6403,7 +6403,7 @@
       "definitionId": "20dd445b-2c3a-5375-944b-f0cffda1898e",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6439,7 +6439,7 @@
       "definitionId": "20dd445b-2c3a-5375-944b-f0cffda1898e",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6475,7 +6475,7 @@
       "definitionId": "19ea3e6d-147d-5513-a9e7-eb51cab26be0",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6511,7 +6511,7 @@
       "definitionId": "19ea3e6d-147d-5513-a9e7-eb51cab26be0",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6547,7 +6547,7 @@
       "definitionId": "460da1b1-e0c9-5dc2-9598-ff609974e9c9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6583,7 +6583,7 @@
       "definitionId": "460da1b1-e0c9-5dc2-9598-ff609974e9c9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6619,7 +6619,7 @@
       "definitionId": "bad7545e-0152-560d-8c2b-fe633995421e",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6655,7 +6655,7 @@
       "definitionId": "bad7545e-0152-560d-8c2b-fe633995421e",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6691,7 +6691,7 @@
       "definitionId": "33f94ea2-9865-5929-820f-8565f01948f9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6727,7 +6727,7 @@
       "definitionId": "33f94ea2-9865-5929-820f-8565f01948f9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6763,7 +6763,7 @@
       "definitionId": "235b5c19-f0c9-598e-aee7-6663b4167700",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6799,7 +6799,7 @@
       "definitionId": "235b5c19-f0c9-598e-aee7-6663b4167700",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6835,7 +6835,7 @@
       "definitionId": "c3c768fc-00b2-58d1-9f02-1fba03c8b2ff",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6871,7 +6871,7 @@
       "definitionId": "c3c768fc-00b2-58d1-9f02-1fba03c8b2ff",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6907,7 +6907,7 @@
       "definitionId": "d0ec4ef1-2533-5c11-bea6-ae97cea33ca4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6943,7 +6943,7 @@
       "definitionId": "d0ec4ef1-2533-5c11-bea6-ae97cea33ca4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -6979,7 +6979,7 @@
       "definitionId": "70a5cd6d-bfc9-5d8d-902d-5615964534d4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7015,7 +7015,7 @@
       "definitionId": "70a5cd6d-bfc9-5d8d-902d-5615964534d4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7051,7 +7051,7 @@
       "definitionId": "d4cda843-f234-5304-aca0-17dfa59e4c3c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7087,7 +7087,7 @@
       "definitionId": "d4cda843-f234-5304-aca0-17dfa59e4c3c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7123,7 +7123,7 @@
       "definitionId": "78e8bbd2-20d3-5013-9590-fc686744b9e8",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7159,7 +7159,7 @@
       "definitionId": "78e8bbd2-20d3-5013-9590-fc686744b9e8",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7195,7 +7195,7 @@
       "definitionId": "f2076b15-7790-5323-ae66-ca5b31c5d54b",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7231,7 +7231,7 @@
       "definitionId": "f2076b15-7790-5323-ae66-ca5b31c5d54b",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7267,7 +7267,7 @@
       "definitionId": "1828ac5c-4dde-5e30-ad18-7bb46e20dab7",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7303,7 +7303,7 @@
       "definitionId": "1828ac5c-4dde-5e30-ad18-7bb46e20dab7",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7339,7 +7339,7 @@
       "definitionId": "a7275a87-3b07-5a8e-a107-7548bd34eefe",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7375,7 +7375,7 @@
       "definitionId": "a7275a87-3b07-5a8e-a107-7548bd34eefe",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7411,7 +7411,7 @@
       "definitionId": "c35e0b17-f460-5fdb-ad95-c78ae5e3acb0",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7447,7 +7447,7 @@
       "definitionId": "c35e0b17-f460-5fdb-ad95-c78ae5e3acb0",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7483,7 +7483,7 @@
       "definitionId": "aee0184b-a4b3-5d0c-a871-c2f2f3faf2d3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7519,7 +7519,7 @@
       "definitionId": "aee0184b-a4b3-5d0c-a871-c2f2f3faf2d3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7555,7 +7555,7 @@
       "definitionId": "13cbb77f-cf5c-5699-aa29-1295218ec6a8",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7591,7 +7591,7 @@
       "definitionId": "13cbb77f-cf5c-5699-aa29-1295218ec6a8",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7627,7 +7627,7 @@
       "definitionId": "5ebfbbb4-8ce5-58b9-a5bc-dfe8cdc1bfb4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7663,7 +7663,7 @@
       "definitionId": "5ebfbbb4-8ce5-58b9-a5bc-dfe8cdc1bfb4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7699,7 +7699,7 @@
       "definitionId": "d0739c27-8d4b-5c64-a645-c21c0edf8806",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7735,7 +7735,7 @@
       "definitionId": "d0739c27-8d4b-5c64-a645-c21c0edf8806",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7771,7 +7771,7 @@
       "definitionId": "78ae1ce7-168e-5938-ad33-7746bc9b0941",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7807,7 +7807,7 @@
       "definitionId": "78ae1ce7-168e-5938-ad33-7746bc9b0941",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7843,7 +7843,7 @@
       "definitionId": "3297dc76-f225-545e-acdf-f60cdab71e0e",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7879,7 +7879,7 @@
       "definitionId": "3297dc76-f225-545e-acdf-f60cdab71e0e",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7915,7 +7915,7 @@
       "definitionId": "c897c975-620b-5afb-a281-d24ec11878c9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7951,7 +7951,7 @@
       "definitionId": "c897c975-620b-5afb-a281-d24ec11878c9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -7987,7 +7987,7 @@
       "definitionId": "a5fbdff6-e125-5e29-a828-7415938871e9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8023,7 +8023,7 @@
       "definitionId": "a5fbdff6-e125-5e29-a828-7415938871e9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8059,7 +8059,7 @@
       "definitionId": "e4cbe495-d4e6-53a1-aa04-9d39767a2b26",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8095,7 +8095,7 @@
       "definitionId": "e4cbe495-d4e6-53a1-aa04-9d39767a2b26",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8131,7 +8131,7 @@
       "definitionId": "7977d54a-e767-5500-ac9a-462dc45137cb",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8167,7 +8167,7 @@
       "definitionId": "7977d54a-e767-5500-ac9a-462dc45137cb",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8203,7 +8203,7 @@
       "definitionId": "f6e11a76-d3d4-52ec-a634-7d73f20e2d3b",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8239,7 +8239,7 @@
       "definitionId": "f6e11a76-d3d4-52ec-a634-7d73f20e2d3b",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8275,7 +8275,7 @@
       "definitionId": "878ae27c-f7fe-563a-adf8-90687afb1c27",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8311,7 +8311,7 @@
       "definitionId": "878ae27c-f7fe-563a-adf8-90687afb1c27",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8347,7 +8347,7 @@
       "definitionId": "3820ebab-56be-51b4-a38d-f61ecc470507",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8383,7 +8383,7 @@
       "definitionId": "3820ebab-56be-51b4-a38d-f61ecc470507",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8419,7 +8419,7 @@
       "definitionId": "bf2c2015-a1e7-5776-acfa-80b9e50557d3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8455,7 +8455,7 @@
       "definitionId": "bf2c2015-a1e7-5776-acfa-80b9e50557d3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8491,7 +8491,7 @@
       "definitionId": "62341fe0-0d11-5085-a644-5bd0f0555a26",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8527,7 +8527,7 @@
       "definitionId": "62341fe0-0d11-5085-a644-5bd0f0555a26",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8563,7 +8563,7 @@
       "definitionId": "e7d0c40d-dba1-52cd-a35f-7c7cb23cd9d3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8599,7 +8599,7 @@
       "definitionId": "e7d0c40d-dba1-52cd-a35f-7c7cb23cd9d3",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8635,7 +8635,7 @@
       "definitionId": "bc2621b7-5037-55ab-a338-9f3eeb49773c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8671,7 +8671,7 @@
       "definitionId": "bc2621b7-5037-55ab-a338-9f3eeb49773c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8707,7 +8707,7 @@
       "definitionId": "db2fb3e4-3ec6-5dd0-afad-6d5c445cd34f",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8743,7 +8743,7 @@
       "definitionId": "db2fb3e4-3ec6-5dd0-afad-6d5c445cd34f",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8779,7 +8779,7 @@
       "definitionId": "a2e82773-bf51-5cb4-a1b5-c51915b28fa1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8810,7 +8810,7 @@
       "definitionId": "a2e82773-bf51-5cb4-a1b5-c51915b28fa1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8841,7 +8841,7 @@
       "definitionId": "1adbf123-844a-5889-a127-d00c32c749e4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8877,7 +8877,7 @@
       "definitionId": "1adbf123-844a-5889-a127-d00c32c749e4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8913,7 +8913,7 @@
       "definitionId": "c7a00001-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8949,7 +8949,7 @@
       "definitionId": "c7a00001-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -8980,7 +8980,7 @@
       "definitionId": "c7a00001-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9016,7 +9016,7 @@
       "definitionId": "c7a00001-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9047,7 +9047,7 @@
       "definitionId": "c7a00002-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9083,7 +9083,7 @@
       "definitionId": "c7a00002-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9114,7 +9114,7 @@
       "definitionId": "c7a00002-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9150,7 +9150,7 @@
       "definitionId": "c7a00002-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9181,7 +9181,7 @@
       "definitionId": "c7a00003-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9212,7 +9212,7 @@
       "definitionId": "c7a00003-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9243,7 +9243,7 @@
       "definitionId": "c7a00003-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9274,7 +9274,7 @@
       "definitionId": "c7a00003-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9305,7 +9305,7 @@
       "definitionId": "c7a00004-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9336,7 +9336,7 @@
       "definitionId": "c7a00004-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9367,7 +9367,7 @@
       "definitionId": "c7a00004-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9398,7 +9398,7 @@
       "definitionId": "c7a00004-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9429,7 +9429,7 @@
       "definitionId": "c7a00005-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9465,7 +9465,7 @@
       "definitionId": "c7a00005-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9501,7 +9501,7 @@
       "definitionId": "c7a00005-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9537,7 +9537,7 @@
       "definitionId": "c7a00005-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9573,7 +9573,7 @@
       "definitionId": "c7a00006-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9609,7 +9609,7 @@
       "definitionId": "c7a00006-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9645,7 +9645,7 @@
       "definitionId": "c7a00006-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9681,7 +9681,7 @@
       "definitionId": "c7a00006-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9717,7 +9717,7 @@
       "definitionId": "c7a00007-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9753,7 +9753,7 @@
       "definitionId": "c7a00007-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9784,7 +9784,7 @@
       "definitionId": "c7a00007-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9820,7 +9820,7 @@
       "definitionId": "c7a00007-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9851,7 +9851,7 @@
       "definitionId": "c7a00008-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9887,7 +9887,7 @@
       "definitionId": "c7a00008-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9923,7 +9923,7 @@
       "definitionId": "c7a00008-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9959,7 +9959,7 @@
       "definitionId": "c7a00008-7e2d-4a00-8d11-202610110001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -9995,7 +9995,7 @@
       "definitionId": "d0e6183c-0dbd-50ba-a2a6-81fe3887a677",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -10032,7 +10032,7 @@
       "definitionId": "d0e6183c-0dbd-50ba-a2a6-81fe3887a677",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://case.edu/medicine/wellness-pathway/sites/default/files/2018-05/instructions.pdf",
@@ -10069,7 +10069,7 @@
       "definitionId": "1dc07474-20bf-55ac-a3f4-5259a798e915",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
@@ -10106,7 +10106,7 @@
       "definitionId": "1dc07474-20bf-55ac-a3f4-5259a798e915",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
@@ -10143,7 +10143,7 @@
       "definitionId": "8126f9c4-3930-5618-a7ad-4d07a14081ce",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
@@ -10180,7 +10180,7 @@
       "definitionId": "8126f9c4-3930-5618-a7ad-4d07a14081ce",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
@@ -10217,7 +10217,7 @@
       "definitionId": "a5cf2148-cec2-5f6a-a91b-0e1427e7cb17",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
@@ -10254,7 +10254,7 @@
       "definitionId": "a5cf2148-cec2-5f6a-a91b-0e1427e7cb17",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://nfa.dk/media/a4wheblj/cbi-scales.pdf",
@@ -10291,7 +10291,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10327,7 +10327,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10363,7 +10363,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10399,7 +10399,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10435,7 +10435,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10471,7 +10471,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10507,7 +10507,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10543,7 +10543,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10579,7 +10579,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10615,7 +10615,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10651,7 +10651,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10687,7 +10687,7 @@
       "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10723,7 +10723,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10759,7 +10759,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10795,7 +10795,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10831,7 +10831,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10867,7 +10867,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10903,7 +10903,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10939,7 +10939,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -10975,7 +10975,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11011,7 +11011,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11047,7 +11047,7 @@
       "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11083,7 +11083,7 @@
       "definitionId": "cd9f2026-0005-5bc1-8e42-7a912a620005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "reviewed": "2026-10-12",
@@ -11119,7 +11119,7 @@
       "definitionId": "cd9f2026-0005-5bc1-8e42-7a912a620005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "reviewed": "2026-10-12",
@@ -11155,7 +11155,7 @@
       "definitionId": "cd9f2026-0006-5bc1-8e42-7a912a620006",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-publication-abstract",
         "url": "https://journals.sagepub.com/doi/abs/10.1177/014662167700100306",
@@ -11192,7 +11192,7 @@
       "definitionId": "cd9f2026-0006-5bc1-8e42-7a912a620006",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-publication-abstract",
         "url": "https://journals.sagepub.com/doi/abs/10.1177/014662167700100306",
@@ -11229,7 +11229,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11260,7 +11260,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11291,7 +11291,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11322,7 +11322,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11353,7 +11353,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11384,7 +11384,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11415,7 +11415,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11446,7 +11446,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11477,7 +11477,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11508,7 +11508,7 @@
       "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -11539,7 +11539,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11570,7 +11570,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11601,7 +11601,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11632,7 +11632,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11663,7 +11663,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11694,7 +11694,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11725,7 +11725,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11756,7 +11756,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11787,7 +11787,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11818,7 +11818,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11849,7 +11849,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11880,7 +11880,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11911,7 +11911,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11942,7 +11942,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -11973,7 +11973,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12004,7 +12004,7 @@
       "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12035,7 +12035,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12066,7 +12066,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12097,7 +12097,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12128,7 +12128,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12159,7 +12159,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12190,7 +12190,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12221,7 +12221,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12252,7 +12252,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12283,7 +12283,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12314,7 +12314,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12345,7 +12345,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12376,7 +12376,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12407,7 +12407,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12438,7 +12438,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12469,7 +12469,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12500,7 +12500,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12531,7 +12531,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12562,7 +12562,7 @@
       "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12593,7 +12593,7 @@
       "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12624,7 +12624,7 @@
       "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12655,7 +12655,7 @@
       "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12686,7 +12686,7 @@
       "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12717,7 +12717,7 @@
       "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12748,7 +12748,7 @@
       "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12779,7 +12779,7 @@
       "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12810,7 +12810,7 @@
       "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12841,7 +12841,7 @@
       "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12872,7 +12872,7 @@
       "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12903,7 +12903,7 @@
       "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12934,7 +12934,7 @@
       "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12965,7 +12965,7 @@
       "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -12996,7 +12996,7 @@
       "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -13027,7 +13027,7 @@
       "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -13058,7 +13058,7 @@
       "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-hh-definition",
         "reviewed": "2026-10-12",
@@ -13089,7 +13089,7 @@
       "definitionId": "d6277cc3-f343-5576-afc4-2a4717387448",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13120,7 +13120,7 @@
       "definitionId": "d6277cc3-f343-5576-afc4-2a4717387448",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13151,7 +13151,7 @@
       "definitionId": "47f0cced-c738-560f-a260-f5c93c17042c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13182,7 +13182,7 @@
       "definitionId": "47f0cced-c738-560f-a260-f5c93c17042c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13213,7 +13213,7 @@
       "definitionId": "03b38216-fe2a-520a-a9c0-f74e8d204a28",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13244,7 +13244,7 @@
       "definitionId": "03b38216-fe2a-520a-a9c0-f74e8d204a28",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13275,7 +13275,7 @@
       "definitionId": "674407f4-04f2-5cfc-a9a1-2ba8702fe8a4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13306,7 +13306,7 @@
       "definitionId": "674407f4-04f2-5cfc-a9a1-2ba8702fe8a4",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13337,7 +13337,7 @@
       "definitionId": "918240af-eb81-514b-ad1f-a7d9d6f60bff",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13368,7 +13368,7 @@
       "definitionId": "918240af-eb81-514b-ad1f-a7d9d6f60bff",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13399,7 +13399,7 @@
       "definitionId": "fc6dc5c8-3642-53c8-a118-4435f2c9aa6a",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13430,7 +13430,7 @@
       "definitionId": "fc6dc5c8-3642-53c8-a118-4435f2c9aa6a",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13461,7 +13461,7 @@
       "definitionId": "0934a6ef-65e8-58ff-a897-ff021e4a863d",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13492,7 +13492,7 @@
       "definitionId": "0934a6ef-65e8-58ff-a897-ff021e4a863d",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13523,7 +13523,7 @@
       "definitionId": "ac69dd83-0fa4-5ffd-ae46-f86e48edd369",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13554,7 +13554,7 @@
       "definitionId": "ac69dd83-0fa4-5ffd-ae46-f86e48edd369",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13585,7 +13585,7 @@
       "definitionId": "a73591ea-aa21-5dbd-a524-ed04ecbe688f",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13616,7 +13616,7 @@
       "definitionId": "a73591ea-aa21-5dbd-a524-ed04ecbe688f",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13647,7 +13647,7 @@
       "definitionId": "4599d220-c3c1-5a32-acbb-3fce95d4bb4c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13678,7 +13678,7 @@
       "definitionId": "4599d220-c3c1-5a32-acbb-3fce95d4bb4c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13709,7 +13709,7 @@
       "definitionId": "7d57d976-9ac3-5f0f-a1c0-dc6c6ff4cde9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13740,7 +13740,7 @@
       "definitionId": "7d57d976-9ac3-5f0f-a1c0-dc6c6ff4cde9",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13771,7 +13771,7 @@
       "definitionId": "6b803c55-e713-5110-a125-b8bb7e613914",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13802,7 +13802,7 @@
       "definitionId": "6b803c55-e713-5110-a125-b8bb7e613914",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13833,7 +13833,7 @@
       "definitionId": "972393f1-2f84-510b-aeac-b97fe99dd69c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13864,7 +13864,7 @@
       "definitionId": "972393f1-2f84-510b-aeac-b97fe99dd69c",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13895,7 +13895,7 @@
       "definitionId": "39bc7056-3b0e-5377-aac8-34f30bb26676",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13926,7 +13926,7 @@
       "definitionId": "39bc7056-3b0e-5377-aac8-34f30bb26676",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13957,7 +13957,7 @@
       "definitionId": "1833e942-2887-54cf-a1db-270e6c566b05",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -13988,7 +13988,7 @@
       "definitionId": "1833e942-2887-54cf-a1db-270e6c566b05",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -14019,7 +14019,7 @@
       "definitionId": "c1d1b8f4-7e06-53e2-a5f8-539874959f6d",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -14050,7 +14050,7 @@
       "definitionId": "c1d1b8f4-7e06-53e2-a5f8-539874959f6d",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -14081,7 +14081,7 @@
       "definitionId": "c7da129b-23b9-5b9d-a92b-b8b13e6cf482",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -14112,7 +14112,7 @@
       "definitionId": "c7da129b-23b9-5b9d-a92b-b8b13e6cf482",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-form",
         "reviewed": "2026-10-12",
@@ -14143,7 +14143,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14175,7 +14175,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14207,7 +14207,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14239,7 +14239,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14271,7 +14271,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14303,7 +14303,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14335,7 +14335,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14367,7 +14367,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14399,7 +14399,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14431,7 +14431,7 @@
       "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://gosling.psy.utexas.edu/scales-weve-developed/ten-item-personality-measure-tipi/",
@@ -14463,7 +14463,7 @@
       "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
@@ -14500,7 +14500,7 @@
       "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
@@ -14537,7 +14537,7 @@
       "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
@@ -14574,7 +14574,7 @@
       "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
@@ -14611,7 +14611,7 @@
       "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
@@ -14648,7 +14648,7 @@
       "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
@@ -14685,7 +14685,7 @@
       "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
@@ -14722,7 +14722,7 @@
       "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "original-guidance",
         "url": "https://12fab08f-d2d3-ce70-6d1a-9d3fa0d8a67b.filesusr.com/ugd/5119f9_2f88fadcd382463daf5821e8af94a865.pdf#page=2",
@@ -14759,7 +14759,7 @@
       "definitionId": "c2506513-5f3c-599f-a790-506411bc2c05",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -14793,7 +14793,7 @@
       "definitionId": "c2506513-5f3c-599f-a790-506411bc2c05",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -14827,7 +14827,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -14861,7 +14861,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -14895,7 +14895,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -14929,7 +14929,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -14963,7 +14963,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -14997,7 +14997,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15031,7 +15031,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15065,7 +15065,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15099,7 +15099,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15133,7 +15133,7 @@
       "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15167,7 +15167,7 @@
       "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15178,7 +15178,7 @@
       "nextStep": "Choose one of those areas, try a manageable activity in it and note its effect; wellbeing does not rule out a separate mental-health concern.",
       "about": {
         "name": "Corey L. M. Keyes — Adult MHC-SF, December 2011",
-        "purpose": "Corey L.",
+        "purpose": "Corey L. M. Keyes’ 14-item adult MHC-SF, December 2011 English form with revised item 6. Past-month emotional, social and psychological wellbeing; continuous sums only, without diagnoses or norms.",
         "evidence": "Published research measure. The score describes self-report; individual norms are not established here. Flourishing/languishing categories are not computed here: they require item-level frequency conditions, not sums alone.",
         "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6",
         "sourceNote": "Text is a Holistic House explanation; practical steps are authored by Holistic House.",
@@ -15201,7 +15201,7 @@
       "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15212,7 +15212,7 @@
       "nextStep": "Try the activity for a few minutes and note whether it was manageable; if a persistent lack of interest limits daily life, discuss it with a qualified professional.",
       "about": {
         "name": "Corey L. M. Keyes — Adult MHC-SF, December 2011",
-        "purpose": "Corey L.",
+        "purpose": "Corey L. M. Keyes’ 14-item adult MHC-SF, December 2011 English form with revised item 6. Past-month emotional, social and psychological wellbeing; continuous sums only, without diagnoses or norms.",
         "evidence": "Published research measure. The score describes self-report; individual norms are not established here. Flourishing/languishing categories are not computed here: they require item-level frequency conditions, not sums alone.",
         "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6",
         "sourceNote": "Text is a Holistic House explanation; practical steps are authored by Holistic House.",
@@ -15235,7 +15235,7 @@
       "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15246,7 +15246,7 @@
       "nextStep": "If you want, find out about one safe way to participate and decide whether to try it.",
       "about": {
         "name": "Corey L. M. Keyes — Adult MHC-SF, December 2011",
-        "purpose": "Corey L.",
+        "purpose": "Corey L. M. Keyes’ 14-item adult MHC-SF, December 2011 English form with revised item 6. Past-month emotional, social and psychological wellbeing; continuous sums only, without diagnoses or norms.",
         "evidence": "Published research measure. The score describes self-report; individual norms are not established here. Flourishing/languishing categories are not computed here: they require item-level frequency conditions, not sums alone.",
         "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6",
         "sourceNote": "Text is a Holistic House explanation; practical steps are authored by Holistic House.",
@@ -15269,7 +15269,7 @@
       "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15280,7 +15280,7 @@
       "nextStep": "Choose one small action in an area you value, carry it out and note what helps you live in line with that priority.",
       "about": {
         "name": "Corey L. M. Keyes — Adult MHC-SF, December 2011",
-        "purpose": "Corey L.",
+        "purpose": "Corey L. M. Keyes’ 14-item adult MHC-SF, December 2011 English form with revised item 6. Past-month emotional, social and psychological wellbeing; continuous sums only, without diagnoses or norms.",
         "evidence": "Published research measure. The score describes self-report; individual norms are not established here. Flourishing/languishing categories are not computed here: they require item-level frequency conditions, not sums alone.",
         "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6",
         "sourceNote": "Text is a Holistic House explanation; practical steps are authored by Holistic House.",
@@ -15303,7 +15303,7 @@
       "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15314,7 +15314,7 @@
       "nextStep": "Выберите одну из этих сфер, попробуйте посильное действие и отметьте эффект; благополучие не исключает отдельной психологической трудности.",
       "about": {
         "name": "Corey L. M. Keyes — Adult MHC-SF, December 2011",
-        "purpose": "Взрослая MHC-SF Кори Л.",
+        "purpose": "Взрослая MHC-SF Кори Л. М. Киза: 14 английских пунктов, форма декабря 2011 с исправленным пунктом 6. Эмоциональное, социальное и психологическое благополучие за месяц; суммы без диагнозов и норм.",
         "evidence": "Опубликованная исследовательская шкала. Результат описывает самоотчёт; индивидуальные нормы здесь не устанавливаются. Категории flourishing/languishing здесь не вычисляются: для них нужны частотные условия по отдельным ответам, а не только суммы.",
         "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6",
         "sourceNote": "Текст — изложение Holistic House; практические шаги подготовлены Holistic House.",
@@ -15337,7 +15337,7 @@
       "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15348,7 +15348,7 @@
       "nextStep": "Попробуйте занятие на несколько минут и отметьте, было ли оно посильным; если отсутствие интереса устойчиво мешает жизни, обсудите это со специалистом.",
       "about": {
         "name": "Corey L. M. Keyes — Adult MHC-SF, December 2011",
-        "purpose": "Взрослая MHC-SF Кори Л.",
+        "purpose": "Взрослая MHC-SF Кори Л. М. Киза: 14 английских пунктов, форма декабря 2011 с исправленным пунктом 6. Эмоциональное, социальное и психологическое благополучие за месяц; суммы без диагнозов и норм.",
         "evidence": "Опубликованная исследовательская шкала. Результат описывает самоотчёт; индивидуальные нормы здесь не устанавливаются. Категории flourishing/languishing здесь не вычисляются: для них нужны частотные условия по отдельным ответам, а не только суммы.",
         "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6",
         "sourceNote": "Текст — изложение Holistic House; практические шаги подготовлены Holistic House.",
@@ -15371,7 +15371,7 @@
       "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15382,7 +15382,7 @@
       "nextStep": "При желании узнайте об одном безопасном способе участия и решите, хочется ли попробовать.",
       "about": {
         "name": "Corey L. M. Keyes — Adult MHC-SF, December 2011",
-        "purpose": "Взрослая MHC-SF Кори Л.",
+        "purpose": "Взрослая MHC-SF Кори Л. М. Киза: 14 английских пунктов, форма декабря 2011 с исправленным пунктом 6. Эмоциональное, социальное и психологическое благополучие за месяц; суммы без диагнозов и норм.",
         "evidence": "Опубликованная исследовательская шкала. Результат описывает самоотчёт; индивидуальные нормы здесь не устанавливаются. Категории flourishing/languishing здесь не вычисляются: для них нужны частотные условия по отдельным ответам, а не только суммы.",
         "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6",
         "sourceNote": "Текст — изложение Holistic House; практические шаги подготовлены Holistic House.",
@@ -15405,7 +15405,7 @@
       "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
       "definitionVersion": "v1",
       "instrumentLocale": "en",
-      "interpretationVersion": "2026-10-12.v2",
+      "interpretationVersion": "2026-10-13.v1",
       "sourceReview": {
         "status": "preserved-instrument-specific"
       },
@@ -15416,7 +15416,7 @@
       "nextStep": "Выберите маленький шаг в важной сфере, выполните и отметьте, что помогло действовать по своему приоритету.",
       "about": {
         "name": "Corey L. M. Keyes — Adult MHC-SF, December 2011",
-        "purpose": "Взрослая MHC-SF Кори Л.",
+        "purpose": "Взрослая MHC-SF Кори Л. М. Киза: 14 английских пунктов, форма декабря 2011 с исправленным пунктом 6. Эмоциональное, социальное и психологическое благополучие за месяц; суммы без диагнозов и норм.",
         "evidence": "Опубликованная исследовательская шкала. Результат описывает самоотчёт; индивидуальные нормы здесь не устанавливаются. Категории flourishing/languishing здесь не вычисляются: для них нужны частотные условия по отдельным ответам, а не только суммы.",
         "source": "https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6",
         "sourceNote": "Текст — изложение Holistic House; практические шаги подготовлены Holistic House.",

@@ -87,7 +87,10 @@ async function fill(page,d,mode,guest,locale,responseValues){
  await expect(report.locator('[data-report-block="5"]')).toContainText(locale==='ru'
   ?'Категории flourishing/languishing здесь не вычисляются: для них нужны частотные условия по отдельным ответам, а не только суммы.'
   :'Flourishing/languishing categories are not computed here: they require item-level frequency conditions, not sums alone.')
- await expect(technical).toContainText('2026-10-12.v2')
+ await expect(report.locator('[data-report-block="5"]')).toContainText(locale==='ru'
+  ?'Взрослая MHC-SF Кори Л. М. Киза: 14 английских пунктов, форма декабря 2011 с исправленным пунктом 6. Эмоциональное, социальное и психологическое благополучие за месяц; суммы без диагнозов и норм.'
+  :'Corey L. M. Keyes’ 14-item adult MHC-SF, December 2011 English form with revised item 6. Past-month emotional, social and psychological wellbeing; continuous sums only, without diagnoses or norms.')
+ await expect(technical).toContainText('2026-10-13.v1')
  await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
  await expect(report).toContainText(locale==='ru'?'не исключает психическое расстройство':'cannot rule out mental illness')
  await expect(report).toContainText('Corey L. M. Keyes')

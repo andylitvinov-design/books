@@ -68,7 +68,7 @@ The SQL locks only the new content table for insertion, checks the full immutabl
 
 ## Five-block revision
 
-The explicit user-requested order is stored in revision `2026-10-12.v2`: status/score, concrete meaning, one optional support suggestion, next step, and About this test at the end. Selected per-score compact text is prepared in the same immutable record. Full calculations, anchors and source limitations remain accessible without crowding the opening. No official CBI severity bands are invented. Zero endorsements have distinct conditional recommendations. The unpublished first revision is not mutated in any live database; final release seeds v2.
+The explicit user-requested order is stored in revision `2026-10-12.v2`: status/score, concrete meaning, one optional support suggestion, next step, and About this test at the end. Selected per-score compact text is prepared in the same immutable record. Full calculations, anchors and source limitations remain accessible without crowding the opening. No official CBI severity bands are invented. Zero endorsements have distinct conditional recommendations. Previously published source artifacts remain unchanged. The current release candidate pins `2026-10-13.v1`; see the narrow MHC-SF purpose-preservation note below.
 
 
 ### Latest visible support and Insights contract
@@ -85,3 +85,14 @@ The explicit user-requested order is stored in revision `2026-10-12.v2`: status/
 ### Browser regression evidence boundary
 
 The previous exact baseline had green PostgreSQL integration and Chromium, but WebKit failed on two access-control diagnostics during result navigation. A cached report was visible before its independent authorised result refresh completed. The revised verifier awaits that exact GET response and its completed body before the next navigation, logs request lifecycle events, and does not filter those errors. It also injects a genuine HTTP 503 result response, requires a visible error and verifies recovery. Final Chromium/WebKit results must be recorded for the final commit; the baseline is not substituted for them.
+
+
+### MHC-SF purpose preservation, 2026-10-13.v1
+
+The offline first-sentence helper treated the initials in `Corey L. M. Keyes` / `Кори Л. М. Киза` as sentence endings. The v2 compact About-purpose therefore contained only an author-name fragment. The full purpose already existed in the reviewed catalog and technical report.
+
+Revision `2026-10-13.v1` preserves that entire existing purpose for MHC-SF only, including the past-month emotional/social/psychological wellbeing description and the continuous-sums/no-diagnoses/no-norms limit. Instrument questions, instructions, scoring, source attribution and all other explanatory fields are unchanged. The v2 gzip and manifest remain byte-for-byte intact for provenance; never replace immutable v2 database rows.
+
+Permanent tests compare every one of 356 new payloads against v2 after normalizing the interpretation version. Exactly two semantic fields may differ: the English and Russian MHC-SF `report.presentation.about.purpose`. Separate generator, compiled-runtime and bilingual browser assertions require the complete existing purpose. The current coverage and synthetic-example JSON files carry the new revision and its hashes.
+
+Regenerate the offline SQL bundle with the compiler above for this pinned revision. Expected/present/matching must all equal 356 before a coordinated runtime release. Source publication or green CI alone does not authorize live schema, seed, grants, activation or deployment.

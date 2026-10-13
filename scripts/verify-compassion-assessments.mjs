@@ -65,7 +65,7 @@ async function fill(page,d,mode,guest,locale){
  await expect(report.locator('[data-report-block="5"] [data-explanation-origin]')).toHaveText(locale==='ru'
   ?'Текст — изложение Holistic House; практические шаги подготовлены Holistic House.'
   :'Text is a Holistic House explanation; practical steps are authored by Holistic House.')
- await expect(technical).toContainText('2026-10-12.v2')
+ await expect(technical).toContainText('2026-10-13.v1')
  await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
  if(d.key==='scs-sf')await expect(report).toContainText(locale==='ru'?'ненадёжности':'unreliable')
  else await expect(report).toContainText(locale==='ru'?'МЕНЬШЕ безразличия':'LESS indifference')

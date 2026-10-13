@@ -3,7 +3,7 @@
     "synthetic": true,
     "testKey": "cbi-personal",
     "uiLocale": "en",
-    "interpretationVersion": "2026-10-12.v2",
+    "interpretationVersion": "2026-10-13.v1",
     "blocks": [
       {
         "label": "Status and score",
@@ -55,7 +55,7 @@
     "synthetic": true,
     "testKey": "cbi-personal",
     "uiLocale": "ru",
-    "interpretationVersion": "2026-10-12.v2",
+    "interpretationVersion": "2026-10-13.v1",
     "blocks": [
       {
         "label": "Статус и оценка",
@@ -107,7 +107,7 @@
     "synthetic": true,
     "testKey": "phq-9",
     "uiLocale": "en",
-    "interpretationVersion": "2026-10-12.v2",
+    "interpretationVersion": "2026-10-13.v1",
     "blocks": [
       {
         "label": "Status and score",
@@ -154,7 +154,7 @@
     "synthetic": true,
     "testKey": "phq-9",
     "uiLocale": "ru",
-    "interpretationVersion": "2026-10-12.v2",
+    "interpretationVersion": "2026-10-13.v1",
     "blocks": [
       {
         "label": "Статус и оценка",
@@ -201,7 +201,7 @@
     "synthetic": true,
     "testKey": "erq",
     "uiLocale": "en",
-    "interpretationVersion": "2026-10-12.v2",
+    "interpretationVersion": "2026-10-13.v1",
     "blocks": [
       {
         "label": "Status and score",
@@ -257,7 +257,7 @@
     "synthetic": true,
     "testKey": "erq",
     "uiLocale": "ru",
-    "interpretationVersion": "2026-10-12.v2",
+    "interpretationVersion": "2026-10-13.v1",
     "blocks": [
       {
         "label": "Статус и оценка",
