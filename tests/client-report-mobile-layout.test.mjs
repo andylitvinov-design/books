@@ -9,51 +9,52 @@ const sample = {
   dateIssued: '2026-10-13',
   recommendationType: 'homeopathy',
   analysis: Array.from({ length: 44 }, (_, index) =>
-    `MOBILE-OBSERVATION-${index + 1}: synthetic text to verify legible pagination and continuation lines without changing any client medical advice.`
-  ).join('\\n'),
+    'MOBILE-OBSERVATION-' + (index + 1) + ': synthetic notes that exercise comfortable PDF pagination without changing client advice.'
+  ).join('\n'),
   additionalNotes: 'SYNTHETIC-PRACTITIONER-EDITED-NOTES',
   internalNotes: 'PRIVATE-INTERNAL-NOTES-NOT-FOR-CLIENT',
   items: [{ displayName: 'Synthetic Remedy', remedyPath: '/en/homeopathy/remedies/synthetic-remedy' }],
 }
 
-test('large-text client PDF paginates with a compact continuation header and preserves security', () => {
+test('large-text client PDF uses a compact continuation header and preserves privacy', () => {
   const source = buildPrescriptionPdf(sample, 'en', origin).toString('latin1')
-  const pages = (source.match(/\\/Type \\/Page \\/Parent/g) ?? []).length
+  const pages = source.split('/Type /Page /Parent').length - 1
   assert.ok(pages >= 2, 'long report should exercise continuation pages')
-  assert.equal((source.match(/\\/Lighthouse Do Q/g) ?? []).length, 1, 'repeat only the compact text header, not the full-size letterhead')
-  assert.match(source, /190 766 Tm/, 'the cover retains the approved letterhead')
-  assert.match(source, /68 797 Tm/, 'continuation page has a readable running header')
-  assert.match(source, /11\\.7 Tf/, 'analysis uses larger A4 text')
+  assert.equal(source.split('/Lighthouse Do Q').length - 1, 1,
+    'repeat only the compact text header, not the full-size letterhead')
+  assert.ok(source.includes('190 766 Tm'), 'cover retains the approved letterhead')
+  assert.ok(source.includes('68 797 Tm'), 'continuation has an uncluttered running header')
+  assert.ok(source.includes('11.7 Tf'), 'state analysis uses larger A4 text')
   assert.ok(source.includes('MOBILE-OBSERVATION-44'), 'last line is preserved')
-  assert.match(source, /SYNTHETIC-PRACTITIONER-EDITED-NOTES/)
-  assert.match(source, /\\/URI \\(https:\\/\\/example\\.test\\/en\\/homeopathy\\/remedies\\/synthetic-remedy\\)/)
-  assert.doesNotMatch(source, /PRIVATE-INTERNAL-NOTES-NOT-FOR-CLIENT/)
+  assert.ok(source.includes('SYNTHETIC-PRACTITIONER-EDITED-NOTES'))
+  assert.ok(source.includes('/URI (https://example.test/en/homeopathy/remedies/synthetic-remedy)'))
+  assert.ok(!source.includes('PRIVATE-INTERNAL-NOTES-NOT-FOR-CLIENT'))
 })
 
-test('invoice geometry and its original compact font settings remain unchanged', () => {
+test('invoice retains its approved typography and layout', () => {
   const payment = buildPaymentPdf({
     patientName: 'Synthetic Client', dateIssued: '2026-10-13', dateOfService: '2026-10-13',
     currency: 'CAD', amount: 10000, service: 'Synthetic service', paymentStatus: 'unpaid',
   }, 'en', origin).toString('latin1')
-  assert.match(payment, /68 613 459\\.28 44 re f/)
-  assert.match(payment, /190 766 Tm/)
-  assert.doesNotMatch(payment, /68 797 Tm/)
+  assert.ok(payment.includes('68 613 459.28 44 re f'))
+  assert.ok(payment.includes('190 766 Tm'))
+  assert.ok(!payment.includes('68 797 Tm'))
 })
 
-test('mobile styles keep bilingual selection, readable HTML and every result action', async () => {
+test('mobile styles retain language choice, readable HTML and each action', async () => {
   const [studio, language, report, actions] = await Promise.all([
     readFile('components/consultation-studio.css', 'utf8'),
     readFile('components/report-language-picker.css', 'utf8'),
     readFile('components/consultation-report.css', 'utf8'),
     readFile('components/consultation-document-actions.jsx', 'utf8'),
   ])
-  assert.match(studio, /--studio-accent: #692e44/)
-  assert.match(studio, /\\.consultation-studio-progress li/)
-  assert.match(language, /Compact, high-contrast language selector/)
-  assert.match(language, /\\.report-language-picker-choices/)
-  assert.match(report, /Client reading surface: larger body type/)
-  assert.match(report, /\\.canonical-document \\.canonical-report-analysis p/)
+  assert.ok(studio.includes('--studio-accent: #692e44'))
+  assert.ok(studio.includes('.consultation-studio-progress li'))
+  assert.ok(language.includes('Compact, high-contrast language selector'))
+  assert.ok(language.includes('.report-language-picker-choices'))
+  assert.ok(report.includes('Client reading surface: larger body type'))
+  assert.ok(report.includes('.canonical-report-analysis p'))
   for (const action of ['previewPdf', 'open', 'pdf', 'copy', 'print', 'editHref', 'revoke']) {
-    assert.ok(actions.includes(action), `Missing action: ${action}`)
+    assert.ok(actions.includes(action), 'Missing action: ' + action)
   }
 })
