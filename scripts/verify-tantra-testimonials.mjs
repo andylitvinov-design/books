@@ -19,22 +19,60 @@ async function installYoutubeFixture(context) {
     contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
   }));
 }
-async function startVisibleNative(disclosure, index) {
+// WebKit/GStreamer can decode after a seek while play() remains pending until
+// natural end. Observe active media directly; make one request and retain errors.
+function requestNativePlayback(el) {
+  el.muted = true;
+  const request = { state: 'pending', error: null };
+  el.__tantraPlaybackRequest = request;
+  try {
+    el.play().then(() => { request.state = 'fulfilled'; }, error => {
+      request.state = 'rejected';
+      request.error = { name: error.name, message: error.message };
+    });
+  } catch (error) {
+    request.state = 'rejected';
+    request.error = { name: error.name, message: error.message };
+  }
+}
+function nativePlaybackSnapshot(el) {
+  const rect = el.getBoundingClientRect();
+  return {
+    time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames,
+    paused: el.paused, ready: el.readyState, ended: el.ended, duration: el.duration,
+    error: el.error?.code ?? null, connected: el.isConnected, disclosureOpen: el.closest('details')?.open,
+    visible: rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth,
+    rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+    playRequest: el.__tantraPlaybackRequest,
+  };
+}
+async function startVisibleNative(disclosure, index, scenario = {}) {
   const video = disclosure.locator('video').nth(index);
-  await video.scrollIntoViewIfNeeded();
-  await video.evaluate(async el => { el.muted = true; await el.play(); });
-  await expect.poll(() => video.evaluate(el => el.paused)).toBe(false);
-  const initial = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames }));
-  await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
-  await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(initial.frames);
-  const sample = await video.evaluate(el => {
-    const rect = el.getBoundingClientRect();
-    return { time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames, paused: el.paused, ready: el.readyState, error: el.error?.code ?? null, visible: rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth };
-  });
-  assert.equal(sample.paused, false);
-  assert.equal(sample.visible, true);
-  assert.equal(sample.error, null);
-  return { participant: index + 1, initial, sample };
+  const observation = { participant: index + 1, ...scenario, stage: 'scroll' };
+  (result.playbackSetups ??= []).push(observation);
+  try {
+    await video.scrollIntoViewIfNeeded();
+    observation.before = await video.evaluate(nativePlaybackSnapshot);
+    observation.stage = 'request-playback';
+    await video.evaluate(requestNativePlayback);
+    await expect.poll(() => video.evaluate(el => el.paused)).toBe(false);
+    const initial = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames }));
+    observation.initial = initial;
+    observation.stage = 'observe-decoded-playback';
+    await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
+    await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(initial.frames);
+    const sample = await video.evaluate(nativePlaybackSnapshot);
+    observation.sample = sample;
+    assert.equal(sample.paused, false);
+    assert.equal(sample.visible, true);
+    assert.equal(sample.error, null);
+    assert.equal(sample.playRequest.error, null, 'Native playback request must not reject before active decoded playback');
+    observation.stage = 'active';
+    return { participant: index + 1, initial, sample };
+  } catch (error) {
+    observation.failure = { message: error.message, sample: await video.evaluate(nativePlaybackSnapshot).catch(() => null) };
+    throw error;
+  }
 }
 async function focusWithoutScroll(locator) {
   await locator.evaluate(el => el.focus({ preventScroll: true }));
@@ -51,7 +89,7 @@ async function verifyRepeatedClose(page, cycles = 3) {
       await disclosure.locator('button.academy-video-poster').click();
     }
     await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toBeVisible();
-    const active = await startVisibleNative(disclosure, activeIndex);
+    const active = await startVisibleNative(disclosure, activeIndex, { phase: 'close-setup', cycle: cycle + 1 });
     await focusWithoutScroll(disclosure.locator('summary'));
     // Focusing the offscreen summary must not scroll/pause our active video.
     await expect.poll(() => disclosure.locator('video').nth(activeIndex).evaluate(el => el.paused)).toBe(false);
@@ -102,7 +140,7 @@ async function verifyDelayedHydration(browser, engine, locale) {
     // Native HTML controls operate while same-origin external Next.js bundles are held.
     if (!await disclosure.evaluate(el => el.open)) await disclosure.locator('summary').click();
     observed.preHydrationPlayback = [];
-    for (const index of [0, 1]) observed.preHydrationPlayback.push(await startVisibleNative(disclosure, index));
+    for (const index of [0, 1]) observed.preHydrationPlayback.push(await startVisibleNative(disclosure, index, { phase: 'pre-hydration' }));
     observed.beforeHydration = await disclosure.locator('video').evaluateAll(videos => videos.map(el => ({ time: el.currentTime, paused: el.paused })));
     releaseScripts();
     await page.waitForLoadState('load');
@@ -139,7 +177,7 @@ async function verifyLocaleSwitchWhilePlaying(browser, engine) {
       await disclosure.locator('button.academy-video-poster').click();
       await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toBeVisible();
       await page.evaluate(() => { window.__tantraPreviousPlayers = [...document.querySelectorAll('#tantra-russian-video-testimonials video, #tantra-russian-video-testimonials iframe')]; });
-      const active = await startVisibleNative(disclosure, activeIndex);
+      const active = await startVisibleNative(disclosure, activeIndex, { phase: 'locale-navigation', locale });
       const menu = page.locator('.site-language-menu').first();
       if (!await menu.evaluate(el => el.open)) {
         await focusWithoutScroll(menu.locator('summary'));
