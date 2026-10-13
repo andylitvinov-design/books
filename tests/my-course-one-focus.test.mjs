@@ -21,7 +21,7 @@ test('first active course screen focuses on one daily practice, not six competin
   const end=today.indexOf("{view==='details'&&<>",start)
   assert.ok(start>0 && end>start)
   const firstScreen=today.slice(start,end)
-  assert.match(firstScreen,/<header className=\{styles\.questHero\}/)
+  assert.match(firstScreen,/<header className=\{styles\.questHero\} data-course-teal-hero/)
   assert.match(firstScreen,/<div className=\{styles\.heroProgress\}/)
   assert.match(firstScreen,/Начать практику/)
   assert.doesNotMatch(firstScreen,/CourseQuestMap|courseInsights|focusDetails|quoteStrip|journeyPanel|learningEvidence|NotificationSettings/)
