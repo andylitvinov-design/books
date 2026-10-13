@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 
 import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { AcademyCourseCapture } from "@/components/academy-course-capture";
+import { AcademyFreeCourseBanner } from "@/components/academy-free-course-banner";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import {
   academyCopy,
@@ -213,6 +214,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               : "Courses, modules and individual lessons, grouped by program and original audio language."
           : text.lead}</p>
       </header>
+      <AcademyFreeCourseBanner locale={locale} />
       {view === "videos" ? <AcademyVideoCourses locale={locale} /> : <CatalogShowcase items={items} label={text.allPrograms} />}
       {view === "programs" ? (
         <p className="academy-archive-nav">
