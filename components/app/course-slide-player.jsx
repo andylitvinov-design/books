@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, BookmarkCheck, Check, CheckCircle2, ChevronDown,
-  Clock3, Compass, Feather, Heart, Leaf, LockKeyhole, Play, ShieldCheck,
+  Clock3, Compass, Heart, Leaf, LockKeyhole, ShieldCheck,
   SkipForward, Sparkles, Star, Target, Trophy, Waves, X,
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
