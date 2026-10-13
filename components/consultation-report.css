@@ -1,0 +1,106 @@
+/* Private practitioner notes and document preview · Holistic House */
+.consultation-studio .consultation-report-note-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+.consultation-studio .consultation-report-note {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+  padding: 17px;
+  border: 1px solid #c9e4e2;
+  border-radius: 16px;
+  background: linear-gradient(150deg, #f0faf9, #fffdfa 80%);
+}
+.consultation-studio .consultation-report-note > span {
+  color: #215968;
+  font-size: 17px;
+  font-weight: 750;
+}
+.consultation-studio .consultation-report-note > small {
+  min-height: 2.6em;
+  color: #5b797e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.consultation-studio .consultation-report-note textarea {
+  width: 100%;
+  min-height: 132px;
+  padding: 13px 14px;
+  border: 1px solid #badbdc;
+  border-radius: 11px;
+  background: #fff;
+  color: #254d5c;
+  font-size: 16px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.consultation-studio .consultation-report-note textarea:focus-visible {
+  outline: 3px solid #91c9c9;
+  outline-offset: 2px;
+}
+.consultation-report-review-hint {
+  margin: 18px 0;
+  padding: 16px 19px;
+  border: 1px solid #c1dfde;
+  border-left: 4px solid #307b84;
+  border-radius: 14px;
+  background: linear-gradient(110deg, #f0fbfa, #f8fcfb);
+  color: #305e68;
+}
+.consultation-report-review-hint strong {
+  display: block;
+  color: #1c5464;
+  font-size: 17px;
+}
+.consultation-report-review-hint p {
+  margin: 5px 0 0;
+  color: #59797e;
+  line-height: 1.5;
+  font-size: 13px;
+}
+.consultation-document-actions a.consultation-action-primary {
+  min-height: 45px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+.canonical-document .canonical-report-analysis,
+.canonical-document .canonical-report-notes {
+  border: 1px solid #cce4e3;
+  border-left: 4px solid #418991;
+  border-radius: 11px;
+  padding: 14px 18px;
+  background: #f5fbfa;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.canonical-document .canonical-report-analysis h2,
+.canonical-document .canonical-report-notes h2 {
+  margin-top: 0;
+  color: #276873;
+}
+.canonical-document .canonical-report-analysis p,
+.canonical-document .canonical-report-notes p {
+  margin-bottom: 0;
+  color: #2a4e59;
+  line-height: 1.65;
+}
+@media (max-width: 680px) {
+  .consultation-studio .consultation-report-note-grid { grid-template-columns: minmax(0, 1fr); gap: 11px; }
+  .consultation-studio .consultation-report-note { padding: 14px; }
+  .consultation-studio .consultation-report-note > small { min-height: 0; }
+  .consultation-document-actions { flex-wrap: wrap; }
+  .consultation-document-actions a { min-height: 44px; }
+  .consultation-report-review-hint { margin: 13px 0; padding: 15px; }
+}
+@media print {
+  .consultation-report-review-hint { display: none !important; }
+  .canonical-document .canonical-report-analysis,
+  .canonical-document .canonical-report-notes { box-shadow: none; }
+}
