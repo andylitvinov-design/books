@@ -126,12 +126,12 @@ async function saveExistingAccountPlan(items) {
   return result
 }
 
-export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onState,onError,root}) {
+export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onState,onError,root,initialTopic=null}) {
   const t=UI[locale]||UI.en,ru=locale==='ru'
   const router=useRouter()
   const current=state.course||{}, assessment=state.assessments||{}
   const [concerns,setConcerns]=useState(current.concerns||'')
-  const [focusTags,setFocusTags]=useState(current.focusTags||[])
+  const [focusTags,setFocusTags]=useState(current.focusTags?.length ? current.focusTags : (initialTopic ? [initialTopic] : []))
   const [chosenTests,setChosenTests]=useState([])
   const [testsTouched,setTestsTouched]=useState(false)
   const [showAll,setShowAll]=useState(false)
