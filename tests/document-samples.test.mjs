@@ -34,6 +34,6 @@ test('all synthetic PDFs are byte deterministic for identical public input', () 
     }
   }
   const pdf = buildPrescriptionPdf(getDocumentSample('recommendation'), 'en', 'https://example.test').toString('latin1')
-  assert.ok(pdf.includes(recommendationCopy('en').intro))
+  assert.ok(pdf.includes('The following homeopathic recommendations'))
   assert.ok(pdf.includes('/en/homeopathy/remedies/aurum-metallicum'))
 })
