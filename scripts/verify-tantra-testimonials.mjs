@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile, open } from 'node:fs/promises';
 import { chromium, webkit, expect } from '@playwright/test';
 
 // Read-only public Tantra checks. No form submission, account data or live-site default.
@@ -19,6 +19,119 @@ async function installYoutubeFixture(context) {
     contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
   }));
 }
+async function installNativeTimelineDiagnostics(context) {
+  await context.addInitScript(() => {
+    const records = [];
+    const diagnosticErrors = [];
+    const diagnosticError = error => {
+      if (diagnosticErrors.length < 20) diagnosticErrors.push({ at: performance.now(), message: String(error?.message ?? error) });
+    };
+    window.__tantraNativeDiagnosticErrors = diagnosticErrors;
+    const ids = new WeakMap();
+    let nextId = 0;
+    window.__tantraNativeTimeline = records;
+    const relevant = el => el instanceof HTMLVideoElement && (ids.has(el) || el.closest('#tantra-russian-video-testimonials'));
+    const snapshot = el => {
+      if (!ids.has(el)) ids.set(el, ++nextId);
+      return {
+        node: ids.get(el), time: el.currentTime, duration: el.duration,
+        paused: el.paused, seeking: el.seeking, ready: el.readyState,
+        network: el.networkState, ended: el.ended, connected: el.isConnected,
+        source: el.currentSrc, open: el.closest('details')?.open ?? null,
+        frames: el.getVideoPlaybackQuality().totalVideoFrames,
+        presentedFrame: el.__tantraPresentedFrame ?? null,
+      };
+    };
+    const record = (type, el, extra = {}) => {
+      try {
+        if (!relevant(el)) return;
+        records.push({ type, at: performance.now(), ...snapshot(el), ...extra });
+        if (records.length > 1500) records.shift();
+      } catch (error) { diagnosticError(error); }
+    };
+    const trackFrames = el => {
+      if (el.__tantraFrameTracking || !el.requestVideoFrameCallback) return;
+      el.__tantraFrameTracking = true;
+      let count = 0;
+      const observe = (now, metadata) => {
+        try {
+          el.__tantraPresentedFrame = { at: now, mediaTime: metadata.mediaTime, presentedFrames: metadata.presentedFrames };
+          if (++count % 5 === 1) record('presented-frame', el);
+          if (el.isConnected) el.requestVideoFrameCallback(observe);
+          else el.__tantraFrameTracking = false;
+        } catch (error) { el.__tantraFrameTracking = false; diagnosticError(error); }
+      };
+      el.requestVideoFrameCallback(observe);
+    };
+    for (const type of ['loadstart', 'loadedmetadata', 'loadeddata', 'emptied', 'durationchange', 'seeking', 'seeked', 'play', 'playing', 'pause', 'waiting', 'stalled', 'suspend', 'canplay', 'canplaythrough', 'ended', 'error']) {
+      document.addEventListener(type, event => {
+        if (!relevant(event.target)) return;
+        record(type, event.target);
+        trackFrames(event.target);
+      }, true);
+    }
+    // Forward the original APIs unchanged and only retain verifier/app call sites.
+    const currentTime = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'currentTime');
+    if (currentTime?.get && currentTime?.set && currentTime.configurable) {
+      Object.defineProperty(HTMLMediaElement.prototype, 'currentTime', {
+        ...currentTime,
+        set(value) {
+          record('js-set-currentTime', this, { requestedTime: value, stack: new Error().stack });
+          return currentTime.set.call(this, value);
+        },
+      });
+    }
+    for (const name of ['load', 'play', 'pause']) {
+      const original = HTMLMediaElement.prototype[name];
+      HTMLMediaElement.prototype[name] = function (...args) {
+        record('js-' + name, this, { stack: new Error().stack });
+        return Reflect.apply(original, this, args);
+      };
+    }
+    const observer = new MutationObserver(changes => {
+      for (const change of changes) {
+        if (change.type === 'attributes') {
+          const target = change.target;
+          const videos = target instanceof HTMLVideoElement ? [target] : target.matches('#tantra-russian-video-testimonials') ? [...target.querySelectorAll('video')] : target.closest('video') ? [target.closest('video')] : [];
+          for (const video of videos) record('attribute-' + change.attributeName, video, { changedTag: target.tagName, oldValue: change.oldValue, newValue: target.getAttribute(change.attributeName) });
+        } else {
+          const owner = change.target instanceof HTMLVideoElement ? change.target : change.target.closest?.('video');
+          const sources = nodes => [...nodes].filter(node => node instanceof Element && node.matches('source')).map(node => ({ src: node.getAttribute('src'), type: node.getAttribute('type') }));
+          const addedSources = sources(change.addedNodes), removedSources = sources(change.removedNodes);
+          if (owner && (addedSources.length || removedSources.length)) record('source-children', owner, { addedSources, removedSources });
+          for (const [kind, nodes] of [['removed', change.removedNodes], ['added', change.addedNodes]]) {
+            for (const node of nodes) {
+              if (!(node instanceof Element)) continue;
+              for (const video of node instanceof HTMLVideoElement ? [node] : node.querySelectorAll('video')) {
+                record('node-' + kind, video);
+                if (kind === 'added' && relevant(video)) trackFrames(video);
+              }
+            }
+          }
+        }
+      }
+    });
+    observer.observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['src', 'open'], attributeOldValue: true });
+  });
+}
+async function collectNativeTimeline(context) {
+  return Promise.all(context.pages().map(page => page.evaluate(() => ({ events: window.__tantraNativeTimeline ?? [], diagnosticErrors: window.__tantraNativeDiagnosticErrors ?? [] })).catch(error => ({ unavailable: error.message }))));
+}
+
+async function collectWebkitTrace() {
+  let file;
+  try {
+    file = await open('output/tantra-testimonials/webkit-gstreamer.log', 'r');
+    const { size } = await file.stat();
+    const start = Math.max(0, size - 2 * 1024 * 1024);
+    const tail = Buffer.alloc(size - start);
+    const { bytesRead } = await file.read(tail, 0, tail.length, start);
+    return { bytes: size, tailStartByte: start, truncated: start > 0, text: tail.subarray(0, bytesRead).toString('utf8') };
+  } catch (error) {
+    return { unavailable: error.message };
+  } finally { try { await file?.close(); } catch { /* Diagnostics must not replace a verification failure. */ } }
+}
+
 // WebKit/GStreamer can decode after a seek while play() remains pending until
 // natural end. Observe active media directly; make one request and retain errors.
 function requestNativePlayback(el) {
@@ -44,6 +157,7 @@ function nativePlaybackSnapshot(el) {
     visible: rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth,
     rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
     playRequest: el.__tantraPlaybackRequest,
+    presentedFrame: el.__tantraPresentedFrame ?? null, currentSrc: el.currentSrc, seeking: el.seeking,
   };
 }
 async function startVisibleNative(disclosure, index, scenario = {}) {
@@ -123,6 +237,7 @@ async function verifyDelayedHydration(browser, engine, locale) {
   const observed = { engine, locale, kind: 'delayed-hydration-close', ok: false, youtubeFixtureOnly: true };
   result.journeys.push(observed);
   try {
+    await installNativeTimelineDiagnostics(context);
     await installYoutubeFixture(context);
     await context.route(/\/_next\/static\/.*\.js(?:\?.*)?$/, async route => {
       if (new URL(route.request().url()).origin !== target.origin) return route.continue();
@@ -157,6 +272,7 @@ async function verifyDelayedHydration(browser, engine, locale) {
     throw error;
   } finally {
     releaseScripts();
+    observed.nativeTimeline = await collectNativeTimeline(context);
     await context.close();
   }
 }
@@ -166,6 +282,7 @@ async function verifyLocaleSwitchWhilePlaying(browser, engine) {
   const observed = { engine, kind: 'actual-locale-switch-while-playing', ok: false, switches: [], youtubeFixtureOnly: true };
   result.journeys.push(observed);
   try {
+    await installNativeTimelineDiagnostics(context);
     await installYoutubeFixture(context);
     const page = await context.newPage();
     const errors = [];
@@ -207,7 +324,7 @@ async function verifyLocaleSwitchWhilePlaying(browser, engine) {
   } catch (error) {
     observed.failure = { message: error.message, stack: error.stack };
     throw error;
-  } finally { await context.close(); }
+  } finally { observed.nativeTimeline = await collectNativeTimeline(context); await context.close(); }
 }
 
 try {
@@ -237,7 +354,8 @@ try {
     result.assets.push({ url: asset.url, headStatus: 200, rangeStatus: 206, firstParty: false });
   }
   for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]) {
-    const browser = await browserType.launch();
+    await mkdir('output/tantra-testimonials', { recursive: true });
+    const browser = await browserType.launch(engine === 'webkit' ? { env: { ...process.env, GST_DEBUG: 'webkitmediaplayer:6', GST_DEBUG_FILE: `${process.cwd()}/output/tantra-testimonials/webkit-gstreamer.log` } } : {});
     try {
       for (const width of [390, 1365]) {
         for (const locale of ['en', 'ru', 'es']) {
@@ -246,6 +364,7 @@ try {
           const journey = { engine, width, locale, ok: false, nativeDecodedPlayback: [], alenaRendererSynthetic: true, alenaDecodedPlaybackClaimed: false, pageErrors };
           result.journeys.push(journey);
           try {
+            await installNativeTimelineDiagnostics(context);
             // Deterministic renderer/CSP test only; do not claim YouTube decoded playback.
             await context.route('https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1', route => route.fulfill({
               contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
@@ -321,7 +440,7 @@ try {
             journey.failure = { message: error.message, stack: error.stack };
             console.log(JSON.stringify(journey));
             throw error;
-          } finally { await context.close(); }
+          } finally { journey.nativeTimeline = await collectNativeTimeline(context); await context.close(); }
         }
       }
       for (const locale of ['en', 'ru', 'es']) await verifyDelayedHydration(browser, engine, locale);
@@ -330,6 +449,7 @@ try {
   }
 } finally {
   await mkdir('output/tantra-testimonials', { recursive: true });
+  result.webkitGstreamerTrace = await collectWebkitTrace();
   await writeFile('output/tantra-testimonials/verification.json', JSON.stringify(result, null, 2));
 }
 
