@@ -100,3 +100,35 @@
 @media (prefers-reduced-motion: reduce) {
   .report-language-choice { transition: none; }
 }
+
+
+/* Compact, high-contrast language selector: both choices remain fully visible. */
+.report-language-picker {
+  margin: 12px 0 0;
+  padding: 13px 15px;
+  border: 1px solid #e6d8dc;
+  border-radius: 12px;
+  background: #fcf8f7;
+  box-shadow: none;
+}
+.report-language-picker legend { color: #602a40; font-size: 15px; font-weight: 750; }
+.report-language-picker-hint,
+.report-language-picker-scope { margin: 0 0 9px; color: #705f65; font-size: 12px; line-height: 1.35; }
+.report-language-picker-choices { width: 100%; gap: 8px; }
+.report-language-choice {
+  min-height: 43px;
+  padding: 9px 12px;
+  gap: 8px;
+  border-radius: 9px;
+  box-shadow: none;
+}
+.report-language-choice[data-selected="true"] { border-color: #692e44; background: #692e44; box-shadow: none; }
+.report-language-choice-title { font-size: 14px; }
+.report-language-choice-code { padding: 2px 5px; font-size: 10px; }
+.report-language-picker-scope { margin: 9px 0 0; font-size: 11px; line-height: 1.4; }
+@media (max-width: 500px) {
+  .report-language-picker { margin-top: 10px; padding: 11px 12px; }
+  .report-language-picker-hint { font-size: 11px; }
+  .report-language-choice { min-height: 42px; padding: 8px 10px; }
+  .report-language-choice-title { font-size: 14px; }
+}

@@ -64,13 +64,24 @@ for (const [name, build, input, dateY, lineY] of [
     }
     const final = streams.at(-1)
     assert.equal((final.match(/\/Signature Do/g) ?? []).length, 1)
-    assert.match(final, new RegExp(`68 ${dateY} Tm \\(Odesa, Ukraine, 2026-09-18`))
+    // Recommendation signatures flow with the content; invoices retain their
+    // approved fixed geometry. Verify actual spacing rather than old coordinates.
+    const dateMatch = final.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Odesa, Ukraine, 2026-09-18/)
+    assert.ok(dateMatch, 'date is present on the signed final page')
+    const actualDateY = Number(dateMatch[1])
+    if (name === 'recommendation') {
+      assert.ok(actualDateY > 230 && actualDateY < 700, 'flowed signature stays inside a safe A4 text area')
+    } else {
+      assert.equal(actualDateY, dateY, 'invoice/receipt keep the original date position')
+    }
+    const actualLineY = name === 'recommendation' ? actualDateY - 110 : lineY
     const { width, height, offsetX, gap } = DOCUMENT_TEMPLATE.signature
-    assert.ok(final.includes(`q ${width} 0 0 ${height} ${68 + offsetX} ${lineY + gap} cm /Signature Do Q`))
-    assert.ok(dateY - (lineY + gap + height) > 30)
-    const contentBeforeDate = final.slice(0, final.indexOf(`68 ${dateY} Tm`))
+    assert.ok(final.includes('q ' + width + ' 0 0 ' + height + ' ' + (68 + offsetX) + ' ' + (actualLineY + gap) + ' cm /Signature Do Q'))
+    assert.ok(actualDateY - (actualLineY + gap + height) > 30, 'date must not overlap the signature')
+    assert.ok(actualLineY - 72 > 63, 'contact details must not collide with the footer')
+    const contentBeforeDate = final.slice(0, final.indexOf('68 ' + actualDateY + ' Tm'))
     const baselines = [...contentBeforeDate.matchAll(/1 0 0 1 \d+(?:\.\d+)? (\d+(?:\.\d+)?) Tm/g)].map(match => Number(match[1]))
-    assert.ok(baselines.every(baseline => baseline > dateY + 10), 'prior content must end above date and signature')
+    assert.ok(baselines.every(baseline => baseline > actualDateY + 10), 'prior content must end above date and signature')
     assert.match(final, /Tm \(Andrii Litvinov\)/)
     assert.match(final, /Tm \(\+380 93 478 88 27\)/)
   })

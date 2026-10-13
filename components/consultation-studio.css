@@ -1000,3 +1000,129 @@
 .consultation-distance-homeopathy-choice input { accent-color: #752d3f; margin-top: 4px; }
 .consultation-distance-homeopathy-choice strong { color: #612639; }
 .consultation-distance-homeopathy-choice small { display:block; line-height:1.5; margin-top:5px; }
+
+
+/* 2026-10 client-report studio: editorial mobile density, consistent brand. */
+.consultation-studio-shell {
+  --studio-ink: #263b43;
+  --studio-muted: #60757a;
+  --studio-accent: #692e44;
+  --studio-border: #e4d8d1;
+}
+.consultation-studio.prescription-admin-form { gap: 11px; }
+.consultation-studio-progress { gap: 7px; margin: 0 0 2px; }
+.consultation-studio-progress li {
+  min-height: 41px;
+  padding: 8px 10px;
+  border: 1px solid #e5d9d3;
+  border-radius: 11px;
+  background: #fffdfb;
+  color: #5d4d50;
+  font-size: 11px;
+  line-height: 1.25;
+}
+.consultation-studio-progress li span {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border: 1px solid #ead9dd;
+  border-radius: 7px;
+  background: #faf0f3;
+  color: #78354d;
+  font-size: 10px;
+}
+.consultation-studio-progress li:nth-child(2) span,
+.consultation-studio-progress li:nth-child(3) span {
+  border-color: #ead9dd;
+  background: #faf0f3;
+  color: #78354d;
+}
+.consultation-studio-card {
+  padding: clamp(14px, 2.5vw, 22px);
+  border: 1px solid var(--studio-border);
+  border-radius: 16px;
+  background: #fffdfb;
+  box-shadow: 0 3px 12px rgb(66 43 42 / 3%);
+}
+.consultation-studio-section-head { gap: 10px; margin-bottom: 13px; }
+.consultation-studio-section-index {
+  width: 31px;
+  height: 31px;
+  flex-basis: 31px;
+  border: 1px solid #e4d8dc;
+  border-radius: 9px;
+  background: #f8eef1;
+  color: #703049;
+  font-size: 12px;
+}
+.consultation-studio-section-head h2 {
+  color: #293d47;
+  font-size: clamp(22px, 2.75vw, 27px);
+  line-height: 1.15;
+}
+.consultation-studio-section-head p { margin-top: 3px; color: #657b80; line-height: 1.35; }
+.consultation-studio-section-head > svg { color: #926b79; }
+.consultation-studio .consultation-report-note-grid { margin-top: 12px; gap: 11px; }
+.consultation-studio .consultation-report-note { padding: 13px; gap: 5px; background: #fcf9f7; border-color: #e5d8d4; }
+.consultation-studio .consultation-report-note > span { color: #69374a; font-size: 15px; }
+.consultation-studio .consultation-report-note > small { min-height: 0; line-height: 1.35; }
+.consultation-studio .consultation-report-note textarea { min-height: 100px; line-height: 1.42; }
+.consultation-studio .consultation-remedy-row--stacked,
+.consultation-studio .consultation-remedy-row--stacked.consultation-remedy-row--bach {
+  padding: 12px;
+  border-color: #e8ddd7;
+  box-shadow: none;
+}
+.consultation-studio-document-choice {
+  padding: 12px 14px !important;
+  border-radius: 12px;
+}
+.consultation-studio-document-choice[data-selected="true"] {
+  border-color: #cba5b2;
+  background: #fbf1f4;
+}
+.consultation-studio-document-choice input[type="checkbox"] { accent-color: #6b2e46; }
+.consultation-studio-document-choice strong { color: #593544; }
+.consultation-studio .consultation-report-language-note { margin: 8px 0 10px; }
+.consultation-studio-submit {
+  padding: 15px 17px;
+  border-color: #e1cdd5;
+  border-radius: 16px;
+  background: #fbf5f5;
+  box-shadow: none;
+}
+.consultation-studio-submit-copy strong { color: #5c2c40; font-size: 20px; }
+.consultation-studio-submit-copy span { color: #74666a; line-height: 1.4; }
+.consultation-studio-submit .consultation-primary-action {
+  min-height: 46px;
+  background: #692e44;
+  box-shadow: none;
+  color: #fff;
+}
+.consultation-studio-submit .consultation-primary-action:hover:not(:disabled) { background: #542438; }
+@media (max-width: 600px) {
+  .consultation-studio-shell { padding: 10px 12px calc(26px + env(safe-area-inset-bottom)) !important; }
+  .consultation-studio.prescription-admin-form { gap: 10px; margin-top: 8px; }
+  .consultation-studio-progress { gap: 5px; }
+  .consultation-studio-progress li {
+    min-height: 37px;
+    padding: 5px 6px;
+    gap: 5px;
+    border-radius: 9px;
+    font-size: 10px;
+    line-height: 1.18;
+  }
+  .consultation-studio-progress li span { width: 22px; height: 22px; flex-basis: 22px; font-size: 10px; }
+  .consultation-studio-card { padding: 14px; border-radius: 14px; }
+  .consultation-studio-section-head { gap: 9px; margin-bottom: 11px; }
+  .consultation-studio-section-index { width: 28px; height: 28px; flex-basis: 28px; }
+  .consultation-studio-section-head h2 { font-size: 22px; }
+  .consultation-studio-section-head p { font-size: 11px; line-height: 1.32; }
+  .consultation-studio-client-layout { gap: 10px; }
+  .consultation-studio .consultation-quick-meta--date-only input { min-height: 42px; }
+  .consultation-studio .consultation-report-note-grid { grid-template-columns: minmax(0,1fr); }
+  .consultation-studio .consultation-report-note { padding: 12px; }
+  .consultation-studio-document-choices { gap: 8px; margin: 4px 0 9px; }
+  .consultation-studio-submit { padding: 13px; gap: 10px; }
+  .consultation-studio-submit .consultation-primary-action { font-size: 15px !important; }
+}
