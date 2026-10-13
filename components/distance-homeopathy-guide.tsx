@@ -24,7 +24,7 @@ export function DistanceHomeopathyGuide({ locale, embedded = false, report = fal
   const Container = embedded ? "section" : "main";
 
   return (
-    <Container className={`${styles.page} ${embedded ? styles.embedded : ""} ${report ? styles.report : ""}`} lang={locale}>
+    <Container id={embedded && !report ? "distance-homeopathy-guide" : undefined} className={`${styles.page} ${embedded ? styles.embedded : ""} ${report ? styles.report : ""}`} lang={locale}>
       {!embedded && <PublicSiteHeader locale={locale} />}
       {!embedded && <LibraryBackLink locale={locale} />}
 
@@ -38,7 +38,7 @@ export function DistanceHomeopathyGuide({ locale, embedded = false, report = fal
             <Image
               alt={locale === "ru" ? "Флаконы, стакан воды и фотографии на рабочем столе" : locale === "es" ? "Frascos, un vaso de agua y fotografías sobre una mesa" : "Remedy bottles, a glass of water, and photographs on a desk"}
               fill
-              priority
+              priority={!embedded}
               sizes="(max-width: 820px) 100vw, 780px"
               src="/images/holistic-house/distance-homeopathy.webp"
             />
