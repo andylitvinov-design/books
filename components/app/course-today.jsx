@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
@@ -142,19 +142,36 @@ export default function CourseToday({locale='en'}){
  const [feedback,setFeedback]=useState('skip'),[reflection,setReflection]=useState('')
  const [reviewNote,setReviewNote]=useState(''),[reviewDecision,setReviewDecision]=useState('continue')
  const [targetLabel,setTargetLabel]=useState(''),[intention,setIntention]=useState(''),[newGoal,setNewGoal]=useState('calm_regulation')
+ const hydratedDayRef=useRef('')
  const hydrate=useCallback((response)=>{
   setData(response)
-  if(response?.currentSession){
-    setBeforeNow(response.currentSession.beforeNow)
-    setAfterNow(response.currentSession.afterNow)
-    setFeedback(response.currentSession.feedback||'skip')
-    setReflection(response.currentSession.reflection||'')
-  }
-  if(response?.currentCheckin){
-    setSeverity(response.currentCheckin.severity)
-    setInterference(response.currentCheckin.interference)
-    setResource(response.currentCheckin.resource)
-    setDailyNote(response.currentCheckin.note||'')
+  const nextDay=response?.cycle ? response.cycle.id+':'+response.cycle.day : ''
+  if(nextDay!==hydratedDayRef.current){
+    // Change of local day or cycle: never carry an unsaved private answer into
+    // another lesson. Same-day preference changes must preserve draft text.
+    hydratedDayRef.current=nextDay
+    setBeforeNow(response?.currentSession?.beforeNow??null)
+    setAfterNow(response?.currentSession?.afterNow??null)
+    setFeedback(response?.currentSession?.feedback||'skip')
+    setReflection(response?.currentSession?.reflection||'')
+    setSeverity(response?.currentCheckin?.severity??null)
+    setInterference(response?.currentCheckin?.interference??null)
+    setResource(response?.currentCheckin?.resource??null)
+    setDailyNote(response?.currentCheckin?.note||'')
+    setStage(0)
+  }else {
+    if(response?.currentSession){
+      setBeforeNow(response.currentSession.beforeNow)
+      setAfterNow(response.currentSession.afterNow)
+      setFeedback(response.currentSession.feedback||'skip')
+      setReflection(response.currentSession.reflection||'')
+    }
+    if(response?.currentCheckin){
+      setSeverity(response.currentCheckin.severity)
+      setInterference(response.currentCheckin.interference)
+      setResource(response.currentCheckin.resource)
+      setDailyNote(response.currentCheckin.note||'')
+    }
   }
  },[])
  const reload=useCallback(async()=>{
@@ -289,7 +306,7 @@ export default function CourseToday({locale='en'}){
       </aside>}
       <button type="button" className={styles.nextButton} onClick={()=>setExpanded('meditation')}>{t.next}<ArrowRight size={16}/></button>
    </DailyCard>
-   <DailyCard number="meditation" title={'03 · '+t.meditation} subtitle={lesson?Math.ceil(lesson.durationSeconds/60)+' '+t.mins:''} icon={Leaf}
+   <DailyCard number="meditation" title={'03 · '+t.meditation} subtitle={lesson?Math.ceil(guidedSections.reduce((seconds,item)=>seconds+item.seconds,0)/60)+' '+t.mins:''} icon={Leaf}
     expanded={expanded==='meditation'} onToggle={()=>setExpanded(x=>x==='meditation'?'':'meditation')}>
      <p className={styles.hint}>{t.eyes}</p>
      {data.gentleSuggested&&<p className={styles.note}>{t.softerSuggestion}</p>}
