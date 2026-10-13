@@ -277,8 +277,8 @@ export function MyCourse({ data, locale = 'en' }) {
       onState={setState} onError={setError} root={root}
     />}
 
-    {!showDashboard && stage === 4 && <CourseToday
-      key={state.course?.id} locale={locale} courseId={state.course?.id}
+    {!showDashboard && stage === 4 && <CourseToday locale={locale}
+      key={state.course?.id} courseId={state.course?.id}
       onCourseChange={result=>{
         if(result?.cycle?.status==='completed'){setView('list');void refresh()}
         else void refresh(state.course?.id)
