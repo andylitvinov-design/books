@@ -42,9 +42,9 @@ const copy = {
     analysis: 'Анализ',
     analysisHint: 'Замеры состояния, динамика симптомов и наблюдения',
     analysisPlaceholder: 'Например: дата наблюдения, показатели и изменения состояния…',
-    additionalNotes: 'Примечания',
-    additionalNotesHint: 'Ваши дополнительные советы и пояснения клиенту',
-    additionalNotesPlaceholder: 'Что важно делать, наблюдать или обсудить на следующей консультации…',
+    clientNotes: 'Примечания',
+    clientNotesHint: 'Ваши дополнительные советы и пояснения клиенту',
+    clientNotesPlaceholder: 'Что важно делать, наблюдать или обсудить на следующей консультации…',
     payment: 'Оплата',
     prescriptionChoice: 'Рецепт',
     prescriptionChoiceHint: 'Назначения и рекомендации клиенту',
@@ -112,9 +112,9 @@ const copy = {
     analysis: 'Analysis',
     analysisHint: 'State measurements, symptom changes and observations',
     analysisPlaceholder: 'For example: observation date, measured scores and changes…',
-    additionalNotes: 'Notes',
-    additionalNotesHint: 'Additional guidance and practical next steps for the client',
-    additionalNotesPlaceholder: 'Things to do, observe or discuss at follow-up…',
+    clientNotes: 'Notes',
+    clientNotesHint: 'Additional guidance and practical next steps for the client',
+    clientNotesPlaceholder: 'Things to do, observe or discuss at follow-up…',
     payment: 'Payment',
     prescriptionChoice: 'Prescription',
     prescriptionChoiceHint: 'Remedies and client recommendations',
@@ -410,9 +410,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <textarea name="analysis" rows={4} maxLength={5000} value={analysis} onChange={(event) => setAnalysis(event.target.value)} placeholder={labels.analysisPlaceholder} />
         </label>
         <label className="consultation-report-note">
-          <span>{labels.additionalNotes}</span>
-          <small>{labels.additionalNotesHint}</small>
-          <textarea name="additionalNotes" rows={4} maxLength={5000} value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} placeholder={labels.additionalNotesPlaceholder} />
+          <span>{labels.clientNotes}</span>
+          <small>{labels.clientNotesHint}</small>
+          <textarea name="additionalNotes" rows={4} maxLength={5000} value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} placeholder={labels.clientNotesPlaceholder} />
         </label>
       </div>}
     </section>}
