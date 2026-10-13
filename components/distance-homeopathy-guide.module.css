@@ -13,7 +13,6 @@
   padding: 16px 0 60px;
   font-size: clamp(16.5px, 1.45vw, 18px);
   line-height: 1.8;
-  overflow-wrap: anywhere;
 }
 
 .eyebrow {
@@ -194,6 +193,12 @@
   }
 
   .hero { padding-top: 12px; }
+  /* WebKit measured a 339px-wide Cyrillic heading inside a 288px article
+     at 320px viewport. Reduce the mobile type scale instead of clipping it. */
+  .hero h1 {
+    font-size: clamp(32px, 10vw, 43px);
+    overflow-wrap: break-word;
+  }
   .lead { margin-top: 21px; }
   .heroImage { height: 300px; }
   .section { padding: 25px 0 31px; }

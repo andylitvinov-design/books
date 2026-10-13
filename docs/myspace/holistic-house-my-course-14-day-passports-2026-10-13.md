@@ -1,4 +1,192 @@
-# Holistic House · My Course · 14-day course passport & lesson-card passport
+# Holistic House · My Course 2.0 — Psychology-informed 14-day skills workbook
+**Status:** Implemented in feature branch, subject to CI and actual deployment verification.  
+**Date:** 2026-10-13 · **Original author:** Holistic House · **Version:** `hh-workbook-v2-20261013`.
+
+## V2 canonical course passport (supersedes v1 themes, preserves 84 original exercises)
+
+**Goal:** not to change the client through 14 inspirational messages, but to teach a repeatable process of observing an automatic reaction, identifying a rigid thought, finding a flexible response, safely trying a small action, and continuing in ordinary life. This is **original non-clinical psychoeducation** informed by CBT, ACT, DBT mindfulness, self-compassion and action-planning. It is not a licensed protocol or substitute for therapy or medical treatment.
+
+**Personalization:** The client first confirms 3–5 measured scales (or allowed fallback personal areas) from their own account. A separate skill track is selected each day with the existing `coursePracticeFocus` map, and a stable, optional primary-domain grounding anchor provides gentle repetition. The generic workbook scaffolding adds a coherent cross-domain sequence; it does **not** overwrite the 84 unique existing EN/RU domain exercises.
+
+**Daily sequence (six learning operations):**
+1. Optional private 24-hour 0–10 observation (separate from assessment scales; blanks remain missing).
+2. Track-specific thought and teaching; one optional realistic working position, *not a forced affirmation*.
+3. Original guided self-reflection/grounding practice (three nonduplicated timer sections, open eyes/natural breath/short-no-imagery options).
+4. One domain-specific real-world ritual plus one CBT/ACT-style safe voluntary micro-experiment and optional repeated anchor.
+5. One guided original workbook question, EN/RU starter sentence and private reflection (single encrypted account-owned `growth_sessions.reflection_ciphertext`, max 500 characters); feedback and optional before/after immediate ratings.
+6. Explicit save of session. Completion counts **participation**, not symptom improvement; yesterday's unsaved draft must never prefill a new day.
+
+**Course milestones:** Days 1–3 observe/define; 4–6 choose a safe alternative; day 7 review/soften; 8–11 action and context cue; 12–13 integrate/choose independently; day 14 review and plan a further 2–4 weeks. A habit is not guaranteed after 14 days.
+
+### Schedule: day, method, skill, takeaway
+| Day | Workbook method | Skill | Voluntary takeaway |
+|---|---|---|---|
+| 01 | Ценности и поведенческая цель | Посильное направление | Конкретная, самостоятельно выбранная цель развития навыка. |
+| 02 | КПТ: наблюдение за связью событий и реакций | Замечать привычную реакцию | Обычный пусковой сигнал и связанная с ним реакция. |
+| 03 | КПТ: гибкость привычных правил | Узнать правило за реакцией | Одно старое правило, увиденное как гипотеза, а не факт. |
+| 04 | ACT: заземление / навыки осознанности DBT | Создать место для паузы | Одна приемлемая опора или подсказка для возвращения внимания. |
+| 05 | КПТ: взвешенная мысль / ACT: дистанция от мысли | Выбрать правдоподобную альтернативу | Одна гибкая формулировка, которая действительно вам подходит. |
+| 06 | КПТ: безопасный поведенческий эксперимент | Проверять, а не заставлять себя | Одно ожидание и один безопасный проверяемый шаг. |
+| 07 | КПТ: обзор опыта / самосострадание | Обобщать без самооценивания | Итог первой недели и самостоятельно выбранный темп. |
+| 08 | ACT: действия в соответствии с ценностями | Действовать в направлении важного | Наблюдаемое действие, связанное с выбранной ценностью. |
+| 09 | Намерение «если — то» / подсказка контекста | Привязать навык к понятному сигналу | Один конкретный план «если — то». |
+| 10 | КПТ: наблюдение и обучение в действии | Учиться на реальном результате | Ожидание, реальное наблюдение и следующая корректировка. |
+| 11 | Самосострадание / навыки общения | Возвращаться с поддержкой | Бережная фраза возвращения или доступный ресурс. |
+| 12 | Интеграция навыков / планирование препятствий по мотивам WOOP | Собрать навыки и запасной план | Последовательность из 2–3 шагов и более мягкая альтернатива. |
+| 13 | Самостоятельная репетиция / смена контекста | Подбирать навык к ситуации | Реалистичный выбор между знакомыми инструментами. |
+| 14 | КПТ: поддержание навыка / гибкий обзор | Перенести опыт в следующие недели | Самостоятельно выбранный план продолжения на 2–4 недели. |
+
+### Complete lesson-card workbook text (Russian with English original)
+#### День 1: Посильное направление / A doable direction
+- **Метод:** Ценности и поведенческая цель. **Умение:** Посильное направление.
+- **Вопрос workbook:** В какой одной обычной ситуации вы хотели бы реагировать немного иначе? Что можно будет заметить или сделать?
+- **Заготовка ответа:** Когда случается ___, я хочу тренировать ___; мой первый маленький шаг — ___.
+- **Мини-практика:** Выберите один посильный пример из обычной жизни. Цель — ваши действия, а не обещание изменить чувства.
+- **Рабочая установка (не обязательная аффирмация):** Я могу начать с одного небольшого реалистичного выбора.
+- **Итог наблюдения:** Конкретная, самостоятельно выбранная цель развития навыка.
+- **English:** What one ordinary situation would you like to handle a little differently? What could you notice or do? | Choose one manageable example from everyday life. Keep the goal about your actions, not a promise about your feelings.
+
+#### День 2: Замечать привычную реакцию / Notice my pattern
+- **Метод:** КПТ: наблюдение за связью событий и реакций. **Умение:** Замечать привычную реакцию.
+- **Вопрос workbook:** Что произошло, какая мысль или реакция возникла и что вы сделали дальше?
+- **Заготовка ответа:** Ситуация ___ → мысль/сигнал ___ → реакция ___.
+- **Мини-практика:** Составьте одну короткую запись из трёх частей, не пытаясь исправить событие или оценивать себя.
+- **Рабочая установка (не обязательная аффирмация):** Моя реакция — информация, которую можно исследовать.
+- **Итог наблюдения:** Обычный пусковой сигнал и связанная с ним реакция.
+- **English:** What happened, what thought or sensation appeared, and what did you do next? | Make one short three-part note without trying to change the event or evaluate yourself.
+
+#### День 3: Узнать правило за реакцией / Recognize the rule behind my reaction
+- **Метод:** КПТ: гибкость привычных правил. **Умение:** Узнать правило за реакцией.
+- **Вопрос workbook:** Возникает ли автоматическое «надо», «всегда» или «если…, то…»? От чего это правило пытается защитить и чем мешает?
+- **Заготовка ответа:** Иногда мой ум говорит: «___». Возможно, так он пытается ___. Я не обязан(а) выполнять это автоматически.
+- **Мини-практика:** Назовите одно знакомое правило, не разыскивая травматические воспоминания и не пытаясь обязательно объяснить его происхождение.
+- **Рабочая установка (не обязательная аффирмация):** Привычная мысль — не обязательная инструкция.
+- **Итог наблюдения:** Одно старое правило, увиденное как гипотеза, а не факт.
+- **English:** Does an automatic 'must', 'always' or 'if…then…' thought show up? What might this rule be trying to protect, and what does it cost? | Name one familiar rule, but do not search for traumatic memories or force an explanation of its origins.
+
+#### День 4: Создать место для паузы / Make room for a pause
+- **Метод:** ACT: заземление / навыки осознанности DBT. **Умение:** Создать место для паузы.
+- **Вопрос workbook:** Какой нейтральный предмет, звук или доступная опора подходят, когда внимание сужается?
+- **Заготовка ответа:** Когда я замечаю ___, могу обратить внимание на ___ и затем решить, продолжать ли.
+- **Мини-практика:** Попробуйте ненадолго осмотреть комнату с открытыми глазами, сохраняя естественное дыхание. Можно остановиться или заняться нейтральным делом.
+- **Рабочая установка (не обязательная аффирмация):** Я могу дать себе немного пространства перед ответом.
+- **Итог наблюдения:** Одна приемлемая опора или подсказка для возвращения внимания.
+- **English:** What neutral object, sound or supportive contact feels acceptable when attention becomes narrow? | Try a brief eyes-open orientation to the room; keep breathing natural. Stopping or switching to a neutral task is fine.
+
+#### День 5: Выбрать правдоподобную альтернативу / Choose a believable alternative
+- **Метод:** КПТ: взвешенная мысль / ACT: дистанция от мысли. **Умение:** Выбрать правдоподобную альтернативу.
+- **Вопрос workbook:** Что поддерживает старую мысль? Что ей не вполне соответствует? Какую более взвешенную позицию можно попробовать без притворного оптимизма?
+- **Заготовка ответа:** Я замечаю мысль «___». Другой возможный взгляд: «___».
+- **Мини-практика:** Запишите одно нейтральное, правдоподобное предложение. Если переосмысление не подходит, достаточно заметить: «У меня появилась эта мысль».
+- **Рабочая установка (не обязательная аффирмация):** Я могу замечать мысль и всё же выбирать свой ответ.
+- **Итог наблюдения:** Одна гибкая формулировка, которая действительно вам подходит.
+- **English:** What supports the old thought? What does not fully fit it? What more balanced response could you try without pretending all is well? | Write one neutral, believable sentence. If reframing feels wrong, simply notice 'I am having this thought'.
+
+#### День 6: Проверять, а не заставлять себя / Test, don't force
+- **Метод:** КПТ: безопасный поведенческий эксперимент. **Умение:** Проверять, а не заставлять себя.
+- **Вопрос workbook:** Чего вы ожидаете в простой безопасной ситуации? Какой маленький шаг поможет проверить это ожидание?
+- **Заготовка ответа:** Я предполагаю ___. В безопасной обстановке могу попробовать ___. Затем замечу ___.
+- **Мини-практика:** Выберите необязательный эксперимент с небольшой нагрузкой; не подвергайте себя риску и не вызывайте намеренно сильный стресс.
+- **Рабочая установка (не обязательная аффирмация):** Маленький эксперимент может чему-то научить даже при неожиданном результате.
+- **Итог наблюдения:** Одно ожидание и один безопасный проверяемый шаг.
+- **English:** What do you predict might happen in a low-pressure situation? What tiny safe action could help you learn? | Choose an optional low-stakes test; never confront danger or deliberately provoke severe distress.
+
+#### День 7: Обобщать без самооценивания / Review without grading
+- **Метод:** КПТ: обзор опыта / самосострадание. **Умение:** Обобщать без самооценивания.
+- **Вопрос workbook:** Какой сигнал вы заметили? Какая реакция была доступной, а какая некомфортной? Что стоит сделать мягче на следующей неделе?
+- **Заготовка ответа:** Я заметил(а) ___. Хочу сохранить ___. На следующей неделе скорректирую ___.
+- **Мини-практика:** Посмотрите доступные записи; пропуск дня — наблюдение, а не неудача. Выберите продолжение, более мягкую практику или больше отдыха.
+- **Рабочая установка (не обязательная аффирмация):** Обучение включает паузы и разные по сложности дни.
+- **Итог наблюдения:** Итог первой недели и самостоятельно выбранный темп.
+- **English:** Which cue did you notice? Which response felt usable or uncomfortable? What would you make gentler next week? | Use actual notes if available; a missed day is an observation, not a failure. Choose continue, gentler practice or more rest.
+
+#### День 8: Действовать в направлении важного / Act toward what matters
+- **Метод:** ACT: действия в соответствии с ценностями. **Умение:** Действовать в направлении важного.
+- **Вопрос workbook:** Какое качество вы хотите внести в небольшой поступок: заботу, честность, любознательность, устойчивость или другую ценность?
+- **Заготовка ответа:** Мне важно ___. Сегодня я могу выразить это маленьким действием ___.
+- **Мини-практика:** Попробуйте одно добровольное действие согласно выбранной ценности; неприятные чувства не отменяют значимости бережного выбора.
+- **Рабочая установка (не обязательная аффирмация):** Я могу двигаться к важному, не дожидаясь идеального состояния.
+- **Итог наблюдения:** Наблюдаемое действие, связанное с выбранной ценностью.
+- **English:** What quality would you like to bring into a small ordinary action: care, honesty, curiosity, steadiness or another value? | Try one voluntary action aligned with your chosen value; uncomfortable feelings do not invalidate a caring choice.
+
+#### День 9: Привязать навык к понятному сигналу / Give my skill a reliable cue
+- **Метод:** Намерение «если — то» / подсказка контекста. **Умение:** Привязать навык к понятному сигналу.
+- **Вопрос workbook:** Когда может появиться удобный момент или ранний сигнал? Какое действие на 20–60 секунд тогда уместно?
+- **Заготовка ответа:** Если произойдёт ___, тогда я попробую ___ примерно на ___.
+- **Мини-практика:** Свяжите один знакомый сигнал с одним безопасным действием. План должен оставаться добровольным и посильным.
+- **Рабочая установка (не обязательная аффирмация):** Небольшая подсказка может напомнить о возможности выбора.
+- **Итог наблюдения:** Один конкретный план «если — то».
+- **English:** When might an opportunity or early signal naturally arise? What 20–60 second response could fit there? | Connect one familiar cue to one safe response. Keep the plan optional and realistic; a reminder is not a demand.
+
+#### День 10: Учиться на реальном результате / Learn from what actually happened
+- **Метод:** КПТ: наблюдение и обучение в действии. **Умение:** Учиться на реальном результате.
+- **Вопрос workbook:** Чего вы ожидали? Что действительно произошло в посильной ситуации? Что удалось узнать, даже если ощущения не изменились?
+- **Заготовка ответа:** Я ожидал(а) ___. В действительности ___. В следующий раз могу ___.
+- **Мини-практика:** Вспомните небольшой повседневный шаг или безопасно попробуйте его. Сравните наблюдение с ожиданием без оценки «успех/провал».
+- **Рабочая установка (не обязательная аффирмация):** Наблюдение полезнее требования идеального результата.
+- **Итог наблюдения:** Ожидание, реальное наблюдение и следующая корректировка.
+- **English:** What did you expect? What really happened in the manageable situation? What did you learn, even if nothing changed? | Recall a small ordinary action or try one safely. Compare observation with prediction; avoid labeling the result success/failure.
+
+#### День 11: Возвращаться с поддержкой / Return with support
+- **Метод:** Самосострадание / навыки общения. **Умение:** Возвращаться с поддержкой.
+- **Вопрос workbook:** Когда план прервался, что вы сказали себе? Помогли бы более добрые слова, пауза или подходящая просьба о поддержке?
+- **Заготовка ответа:** Когда я застреваю, могу сказать себе ___ и, если подходит, попросить ___ о ___.
+- **Мини-практика:** Потренируйте реалистичную поддерживающую фразу или спокойную просьбу без обязательного раскрытия личных деталей.
+- **Рабочая установка (не обязательная аффирмация):** Пауза и обращение за помощью совместимы с развитием.
+- **Итог наблюдения:** Бережная фраза возвращения или доступный ресурс.
+- **English:** When your plan was interrupted, what did your inner voice say? Could a kinder message, a pause or an appropriate request help? | Practise a realistic compassionate sentence or a respectful low-pressure request. You do not need to disclose personal details.
+
+#### День 12: Собрать навыки и запасной план / Build a toolkit with a plan B
+- **Метод:** Интеграция навыков / планирование препятствий по мотивам WOOP. **Умение:** Собрать навыки и запасной план.
+- **Вопрос workbook:** Какие два-три приёма вам подходят? Что может помешать их повторению? Какая ещё более простая альтернатива доступна?
+- **Заготовка ответа:** Мой набор: 1) ___, 2) ___. Если помешает ___, я могу ___.
+- **Мини-практика:** Запишите последовательность из двух шагов и мягкий запасной вариант. Не пытайтесь преодолевать серьёзные симптомы без подходящей профессиональной помощи.
+- **Рабочая установка (не обязательная аффирмация):** Гибкий запасной вариант — часть хорошего плана.
+- **Итог наблюдения:** Последовательность из 2–3 шагов и более мягкая альтернатива.
+- **English:** Which two or three practices suit you? What predictable obstacle could interrupt them? What smaller alternative is available? | Write a two-step routine and a gentler backup. Do not try to overcome serious symptoms without appropriate professional care.
+
+#### День 13: Подбирать навык к ситуации / Choose a skill for the situation
+- **Метод:** Самостоятельная репетиция / смена контекста. **Умение:** Подбирать навык к ситуации.
+- **Вопрос workbook:** В каких двух обычных ситуациях может пригодиться знакомый навык? Когда вы предпочли бы отказаться от упражнения?
+- **Заготовка ответа:** Когда ___, могу выбрать ___. Когда ___, отдых или поддержка могут подойти лучше.
+- **Мини-практика:** Попробуйте самостоятельно выбирать подходящий приём, не следуя обязательному сценарию. Неудачное упражнение можно пропустить.
+- **Рабочая установка (не обязательная аффирмация):** Я сам(а) выбираю, когда и как применять свои навыки.
+- **Итог наблюдения:** Реалистичный выбор между знакомыми инструментами.
+- **English:** In what two everyday contexts might a familiar skill help? When would you prefer not to practise? | Rehearse choosing between your tools without following a script. You are free to skip an unhelpful exercise.
+
+#### День 14: Перенести опыт в следующие недели / Carry the learning forward
+- **Метод:** КПТ: поддержание навыка / гибкий обзор. **Умение:** Перенести опыт в следующие недели.
+- **Вопрос workbook:** Что изменилось в понимании себя, даже если оценки остались похожими? Какой сигнал, навык и поддержку хотите сохранять в ближайшие 2–4 недели?
+- **Заготовка ответа:** Я понял(а) ___. Если ___, я могу ___. В следующие недели попробую ___ или выберу отдых.
+- **Мини-практика:** Посмотрите записи как описательную информацию и выберите гибкий план. 14 дней — начало, а не гарантия сформированной привычки.
+- **Рабочая установка (не обязательная аффирмация):** Я могу продолжать в собственном темпе после завершения цикла.
+- **Итог наблюдения:** Самостоятельно выбранный план продолжения на 2–4 недели.
+- **English:** What changed in your understanding, even if scores stayed similar? Which cue, response and support will you keep practising over the next 2–4 weeks? | Review recorded data as descriptive only; choose a flexible maintenance plan. A 14-day start is not a guarantee of a lasting habit.
+
+**Private learning history:** The client can open a collapsed day-by-day archive of previously saved, encrypted, account-owned workbook reflections, supporting week-one and day-14 reviews. Historical notes are not misattributed to newly introduced prompts. Unsaved draft state clears when the local day or course cycle changes but persists through same-day preference edits.
+
+## V2 lesson-card passport (UI and data)
+
+- **Hero:** Day N/14, client-selected active scale & skill track, domain-specific lesson title, one-sentence day purpose and *skill of today*.
+- **14-day strip:** 14 compact previews with the day title, developmental phase, skill of day, active domain, practical takeaway and real progress status. Today only has the burgundy CTA.
+- **Thought card:** original aphorism & teaching; a believable alternative position and explicit warning not to force belief or feelings.
+- **Guided practice card:** arrival → domain-specific exercise → closing. Its duration is computed from these timed stages, not from reading/action stages that have their own cards.
+- **Daily action card:** preserved track-specific action, day-specific 1–3 sentence micro-experiment, optional primary resource anchor. Experiments must be low-stakes, never exposure to danger.
+- **Private workbook card:** question, starter sentence, one editable private text input, optional quick ratings and reflection/comfort feedback, clear save. Saved response is readonly on the completed day; no unsaved notes carry into a different day or cycle.
+- **Day 7 and 14:** gentle reflective check-ins and optional choices of softer rhythm, more rest or next-cycle skill. Day 14 includes a continuation suggestion that is **not** a promised improvement.
+- **Privacy:** existing authenticated owner-scoped storage and sealed diary notes; do not use localStorage, publicly accessible resources or create a new health-data channel.
+- **Versioning:** keep `COURSE_CONTENT_VERSION='hh-growth-r2-v1'` / historical lesson IDs for active users; add a separate `COURSE_WORKBOOK_VERSION` for additive prompts. The user's historical measurement data and original tracks are preserved.
+
+## Selected methodological references (inspiration, not reproduced text)
+- Centre for Clinical Interventions, self-help modules, thought diaries and behavioural experiments: https://www.cci.health.wa.gov.au/Resources/Looking-After-Yourself and https://www.cci.health.wa.gov.au/resources/looking-after-yourself/social-anxiety
+- World Health Organization, *Doing What Matters in Times of Stress* (grounding, unhooking, values, kindness): https://tdr.who.int/home/our-work/global-engagement/9789240003927
+- Lally et al., *How are habits formed?* European Journal of Social Psychology (2010), DOI: https://doi.org/10.1002/ejsp.674 — automaticity varies widely; fourteen days alone is not a habit-formation guarantee.
+
+---
+
+## Archived V1 passport (original implementation contract)
+
+# Previous V1 passport — retained for reference
 **Version:** 1.0 · **Date:** 2026-10-13 · **Status:** Implemented proposal / verify in CI & deployment
 **Language:** English interface + Russian interface (original lesson library is bilingual)
 **Project:** `andylitvinov-design/books` · deployed app `holistichouse.vercel.app` · route `/{locale}/app/course`
