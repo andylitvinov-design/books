@@ -1,0 +1,56 @@
+name: Holistic House public TTFB and media audit
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hh-public-performance-audit.yml'
+      - 'scripts/measure-hh-public-ttfb.mjs'
+      - 'components/site-video-player.tsx'
+      - 'components/services-solutions.tsx'
+      - 'components/holistic-house-home.tsx'
+      - 'components/public-consultation-cta.tsx'
+      - 'app/[locale]/services/page.tsx'
+      - 'next.config.ts'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-public-performance-audit.yml'
+      - 'scripts/measure-hh-public-ttfb.mjs'
+      - 'components/site-video-player.tsx'
+      - 'components/services-solutions.tsx'
+      - 'components/holistic-house-home.tsx'
+      - 'components/public-consultation-cta.tsx'
+      - 'app/[locale]/services/page.tsx'
+      - 'next.config.ts'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measure-public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate targeted safety and booking contracts
+        run: node --test tests/holistic-house-speed-and-cta.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs
+      - name: Measure live public TTFB only (no login, no private routes)
+        env:
+          TTFB_SAMPLES: '7'
+        run: |
+          node scripts/measure-hh-public-ttfb.mjs https://holistichouse.vercel.app | tee hh-public-ttfb.txt
+          echo '## Public EN/RU TTFB audit' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The first request and warmed headers are reported separately; not Lighthouse or LCP.' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat hh-public-ttfb.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-public-ttfb-${{ github.run_id }}
+          path: hh-public-ttfb.txt
+          if-no-files-found: ignore
+          retention-days: 7

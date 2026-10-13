@@ -113,6 +113,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   // Compact testimonial cards reliably use the standard HQ still; maxres is often unavailable.
   // Optimized posters load from our own origin to avoid mobile third-party image blocking.
   const [poster, setPoster] = useState<"maxres" | "hq" | "direct" | null>(compact ? "hq" : "maxres");
+  const [localPosterFailed, setLocalPosterFailed] = useState(false);
   const playerRef = useRef<HTMLIFrameElement>(null);
   const titleId = useId();
   const duration = videoDuration(video.durationSeconds);
@@ -145,14 +146,14 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           <iframe ref={playerRef} className="site-video-iframe" src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
           <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
-            {!isHeygen && fallbackPoster && (
-              <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
+            {!isHeygen && fallbackPoster && !localPosterFailed && (
+              <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} onError={() => setLocalPosterFailed(true)} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
             )}
             {approvedPoster && poster ? (
               <Image className="site-video-poster" src={approvedPoster} alt="" fill unoptimized={approvedPoster.endsWith(".webp")} priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
             ) : isHeygen ? (
               <Film aria-hidden="true" className="site-video-generic-poster" strokeWidth={0.8} style={{ position: "absolute", width: "50%", height: "70%", opacity: 0.12 }} />
-            ) : poster ? (
+            ) : poster && (!fallbackPoster || localPosterFailed) ? (
               <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized={poster === "direct"} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
             ) : null}
             <span className="site-video-shade" aria-hidden="true" />

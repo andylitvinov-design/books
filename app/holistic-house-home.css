@@ -185,10 +185,10 @@
   transition: transform .2s ease, background .2s ease;
 }
 .service-home-button:hover { transform: translateY(-2px); }
-.service-home-button--primary { background: var(--hh-accent); color: #fffaf4; }
-.service-home-button--primary:hover { background: #7d482e; }
-.service-home-button--consultation { background: #fffaf4; border-color: #996346; color: #643e2b; box-shadow: 0 2px 10px rgb(92 61 42 / .09); }
-.service-home-button--consultation:hover { background: #eee1d2; }
+.service-home-button--primary { background: rgba(255,250,244,.9); border-color: #a77b5d; color: #73432d; }
+.service-home-button--primary:hover { background: #fffaf4; }
+.service-home-button--consultation { background: #742c42; border-color: #742c42; color: #fffaf4; box-shadow: 0 5px 18px rgb(86 30 49 / .17); }
+.service-home-button--consultation:hover { background: #612238; }
 .service-home-button--secondary { background: rgba(251,247,239,.6); color: #78492f; }
 .service-home-button--secondary:hover { background: #fbf7ef; }
 
@@ -486,7 +486,7 @@ a.service-home-start-card:hover {
   .house-home--services:lang(ru) .service-home-hero h1 { max-width: 350px; font-size: clamp(30px, 7.3vw, 39px); }
   .service-home-hero h1::after { width: 28px; margin-top: 18px; }
   .service-home-intro { max-width: 66%; font-size: 14px; line-height: 1.55; }
-  .service-home-actions { display: grid; gap: 8px; max-width: 218px; margin-top: 20px; }
+  .service-home-actions { display: grid; gap: 8px; max-width: 252px; margin-top: 20px; }
   .service-home-button { min-height: 44px; gap: 10px; padding: 9px 15px; font-size: 13px; }
   .service-home-start { margin-inline: 20px; padding: 34px 0 24px; }
   .service-home-start__heading { margin-bottom: 18px; }

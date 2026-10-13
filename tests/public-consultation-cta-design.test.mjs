@@ -30,3 +30,14 @@ test("public personal and reading CTAs use the compact blue topic selector, whil
   assert.match(css, /background:#e66d50/);
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
 });
+
+test("dedicated Services always exposes paid and express booking choices at the linked hash", () => {
+  const home = read("components", "holistic-house-home.tsx");
+  const page = read("app", "[locale]", "services", "page.tsx");
+  const cta = read("components", "public-consultation-cta.tsx");
+  assert.match(home, /services#consultation/);
+  assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking \/>/);
+  assert.match(cta, /serviceBooking = false/);
+  assert.match(cta, /if \(serviceBooking\) return <ConsultationChoiceCapture locale=\{locale\} variant="service" id=\{id\} \/>/);
+  assert.match(read("components", "consultation-choice-capture.tsx"), /serviceChoices: ServiceChoice\[\] = \["session", "questions", "free"\]/);
+});
