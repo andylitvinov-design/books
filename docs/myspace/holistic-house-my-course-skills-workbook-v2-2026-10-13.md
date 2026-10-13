@@ -26,6 +26,10 @@ A 'new belief' is a **plausible, personally chosen working position**, *never* a
 
 **Evidence boundary:** These sources support elements of the approach, not the efficacy of this exact Holistic House product as a validated treatment. No unsupported claim that a pattern, symptom, trauma memory or deeply held belief must change in 14 days.
 
+### Private reflection archive (v2 enhancement)
+
+The authorized client can open **My saved reflections** inside their private course. It lists only the client’s encrypted, completed daily session notes (day number + text). The backend reads them exclusively from the account-scoped `growth_sessions` collection and decrypts with the same account/record context used for saving. The journal remains collapsed until the client opens it, especially useful before day 7 and day 14 reviews. Previous free-form notes are **not** retroactively labelled as answers to newer workbook prompts. Changing the calendar day or starting a new cycle resets unsaved draft inputs; same-day preference changes preserve drafts. No migration or new local storage.
+
 ## 2. Course passport — the whole arc
 
 **Entry:** client explicitly consents to private saved progress; chooses topics or describes their concern; confirms five proposed questionnaires (editable); completes only missing eligible tests; views real scale results; explicitly chooses 3–5 practice scales; names one personally meaningful, observable challenge. Compatible historical results are reused.
