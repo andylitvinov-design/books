@@ -141,8 +141,10 @@ try {
       assert.equal(state.checkouts.at(-1).body.repeatOrderId, existingOrder)
       state.orders.set(repeatOrder, order(repeatOrder, 'paid'))
       await page.goto(`${origin}${path}?serviceOrder=${repeatOrder}#service-cart`)
-      await h.count(0)
+      // Empty pre-hydration markup is not proof that the owned paid order has
+      // cleared the persisted cart. Wait for its verified status first.
       await cart.getByRole('status').filter({ hasText: /Payment confirmed|Оплата подтверждена|Pago confirmado/ }).waitFor()
+      await h.count(0)
       assert.ok(state.reads.every((read) => read.expected === accountA))
       // Keeping an existing paid order must not submit a second checkout.
       await h.addSession()
