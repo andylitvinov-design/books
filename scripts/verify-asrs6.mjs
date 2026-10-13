@@ -96,6 +96,19 @@ async function assertQuestion(scope, definition, index, guest) {
   assert.notEqual(shaded, plain, 'Shading must be visible as well as text-labelled')
   return buttons
 }
+// Restrict ancestor checks to this report: the page may itself be an article.
+function collectCourseLinkContext(links) {
+  return links.map(link => {
+    const report = link.closest('[data-personal-result-report]')
+    const banner = link.closest('[data-free-course-banner]')
+    const article = link.closest('article')
+    return {
+      href: link.getAttribute('href'),
+      insideBanner: Boolean(report && banner && report.contains(banner)),
+      insideScore: Boolean(report && article && report.contains(article)),
+    }
+  })
+}
 // A generic optional banner is separate from ASRS score-derived guidance.
 function assertCourseLinkBoundary(links, locale) {
   assert.equal(links.length, 1, 'ASRS reports permit only the single optional banner course link')
@@ -137,11 +150,7 @@ async function assertReport(target, definition, locale, expected) {
   await expect(banner).toContainText(locale === 'ru' ? 'требуют вашего согласия' : 'requires your consent')
   await expect(banner).toContainText(locale === 'ru' ? 'а не диагноз, психотерапия или экстренная помощь' : 'not a diagnosis, psychotherapy or emergency support')
   await expect(banner).toContainText(locale === 'ru' ? 'Курс необязателен и не меняет результаты теста' : 'Taking the course is optional and does not change your test results')
-  const courseLinks = await report.locator('a[href$="/app/course"], a[href*="/app/course?"], a[href*="/app/course#"]').evaluateAll(links => links.map(link => ({
-    href: link.getAttribute('href'),
-    insideBanner: Boolean(link.closest('[data-free-course-banner]')),
-    insideScore: Boolean(link.closest('article')),
-  })))
+  const courseLinks = await report.locator('a[href$="/app/course"], a[href*="/app/course?"], a[href*="/app/course#"]').evaluateAll(collectCourseLinkContext)
   assertCourseLinkBoundary(courseLinks, locale)
   assert.ok(await target.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'No horizontal mobile overflow')
 }

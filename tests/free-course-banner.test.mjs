@@ -206,3 +206,49 @@ test('ASRS count-only EN/RU reports allow only a score-independent optional cour
     }
   }
 })
+
+
+test('ASRS browser DOM boundary ignores the outer page article and rejects inner score links', () => {
+  const browserSource = read('scripts/verify-asrs6.mjs')
+  const collector = browserSource.slice(browserSource.indexOf('function collectCourseLinkContext('),
+    browserSource.indexOf('// A generic optional banner'))
+  const boundary = browserSource.slice(browserSource.indexOf('function assertCourseLinkBoundary('),
+    browserSource.indexOf('async function assertReport('))
+  const collect = runInNewContext('(' + collector.trim() + ')')
+  const check = runInNewContext('(' + boundary.trim() + ')', { assert })
+  // Match the real account page: article > result section > score article + banner aside.
+  const element = (tag, attributes = {}, parent = null) => ({
+    tag, attributes, parent,
+    getAttribute(name) { return this.attributes[name] ?? null },
+    closest(selector) {
+      const matches = selector.startsWith('[')
+        ? Object.hasOwn(this.attributes, selector.slice(1, -1)) : this.tag === selector
+      return matches ? this : this.parent?.closest(selector) || null
+    },
+    contains(child) {
+      return child === this || Boolean(child?.parent && this.contains(child.parent))
+    },
+  })
+  for (const locale of ['en', 'ru']) {
+    const outer = element('article')
+    const report = element('section', { 'data-personal-result-report': '' }, outer)
+    const score = element('article', {}, report)
+    const banner = element('aside', { 'data-free-course-banner': '' }, report)
+    const link = element('a', { href: '/' + locale + '/app/course' }, banner)
+    const valid = collect([link])
+    assert.equal(link.closest('article'), outer)
+    assert.equal(valid[0].insideScore, false)
+    check(valid, locale)
+    assert.throws(() => check([{ ...valid[0], insideScore: Boolean(link.closest('article')) }], locale), /outside scored articles/)
+    for (const suffix of ['', '?from=asrs-score', '#practice']) {
+      const badLink = element('a', { href: '/' + locale + '/app/course' + suffix }, score)
+      assert.equal(collect([badLink])[0].insideScore, true)
+      assert.throws(() => check(collect([link, badLink]), locale), /single optional banner/)
+    }
+    const nestedBanner = element('aside', { 'data-free-course-banner': '' }, score)
+    const nestedLink = element('a', { href: '/' + locale + '/app/course' }, nestedBanner)
+    assert.throws(() => check(collect([nestedLink]), locale), /outside scored articles/)
+    const footerLink = element('a', { href: '/' + locale + '/app/course' }, report)
+    assert.throws(() => check(collect([footerLink]), locale), /score-derived course recommendation/)
+  }
+})
