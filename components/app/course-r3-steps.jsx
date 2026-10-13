@@ -271,7 +271,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       </div>
       <p className={styles.small}>{t.saveNotice}</p>
       <div className={styles.selectionActions}><strong>{chosenTests.length} {t.chosen}</strong>
-        <button className={'hh-primary '+styles.cta} type="button" disabled={busy||localBusy||!chosenTests.length}
+        <button className={confirmed ? styles.editSelection : 'hh-primary '+styles.cta}
+          type="button" disabled={busy||localBusy||!chosenTests.length}
           onClick={saveTestSelection}>{confirmed?t.editTests:t.saveTests}<ArrowRight size={17}/></button>
       </div>
       {confirmed&&<section className={styles.progress} aria-label={t.pendingTitle}>
@@ -285,10 +286,10 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           })}
         </div>
         {pending.length===0?<p className={styles.completed}>{t.allDone}</p>:
-          <button type="button" className={styles.ctaLink} disabled={busy||localBusy||openingTest}
+          <button type="button" className={'hh-primary '+styles.ctaLink} disabled={busy||localBusy||openingTest}
             onClick={openFirstCourseTest}>{t.pendingTitle}<ArrowRight size={17}/></button>}
-        <button type="button" disabled={busy||localBusy||pending.length>0}
-          className={'hh-primary '+styles.cta} onClick={()=>onAct('review')}>{t.review}<ArrowRight size={17}/></button>
+        {pending.length===0&&<button type="button" disabled={busy||localBusy}
+          className={'hh-primary '+styles.cta} onClick={()=>onAct('review')}>{t.review}<ArrowRight size={17}/></button>}
         {pending.length>0&&<p className={styles.small}>{t.reviewDisabled}</p>}
       </section>}
     </section>
