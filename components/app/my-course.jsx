@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import CourseToday from './course-today'
+import Course14DayOverview from './course-14-day-overview'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
 
@@ -187,6 +188,7 @@ export function MyCourse({ data, locale = 'en' }) {
       </div>
       <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
     </header>}
+    {stage === 0 && <Course14DayOverview locale={locale} />}
     {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}

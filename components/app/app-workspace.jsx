@@ -39,6 +39,7 @@ import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import MyCourse from '@/components/app/my-course'
 import courseQuizStyles from './course-quiz.module.css'
+import Course14DayOverview from '@/components/app/course-14-day-overview'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -284,14 +285,18 @@ export default function AppWorkspace({ locale, path = [] }) {
       <main className="hh-app">
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
-          <h1>{state === 'unavailable' ? c.unavailable : c.welcome}</h1>
-          <p>{state === 'unavailable' ? c.unavailableText : c.intro}</p>
+          <h1>{state === 'unavailable' ? c.unavailable : page === 'course'
+            ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course') : c.welcome}</h1>
+          <p>{state === 'unavailable' ? c.unavailableText : page === 'course'
+            ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
+              : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
             <button className="hh-primary" onClick={signin} disabled={busy}>
               {c.signin}
             </button>
           )}
+          {page === 'course' && <Course14DayOverview locale={locale} compact />}
           {state === 'error' && <button onClick={load}>{c.retry}</button>}
           {error && state !== 'signed-out' && state !== 'unavailable' && (
             <p role="alert">{message(error, c)}</p>
