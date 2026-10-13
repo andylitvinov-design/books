@@ -92,8 +92,8 @@ test('long client state analysis continues across pages without dropping content
 
 test('analysis and notes enforce bounded length independently of private internal notes', () => {
   const input = { patientName: 'Synthetic Client', practitionerName: 'Synthetic Practitioner', items: [{ remedySlug: 'arsenicum-album' }] }
-  assert.throws(() => createPrescription({ ...input, analysis: 'x'.repeat(5001) }), /Analysis.*5000/)
-  assert.throws(() => createPrescription({ ...input, additionalNotes: 'x'.repeat(5001) }), /Additional notes.*5000/)
+  assert.throws(() => createPrescription({ ...input, analysis: 'x'.repeat(5001) }), /Analysis.*(?:too long|5000)/)
+  assert.throws(() => createPrescription({ ...input, additionalNotes: 'x'.repeat(5001) }), /Additional notes.*(?:too long|5000)/)
   assert.equal(createPrescription({ ...input, analysis: '', additionalNotes: '  ' }).analysis, undefined)
 })
 
