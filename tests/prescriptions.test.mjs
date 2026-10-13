@@ -255,13 +255,30 @@ test('embeds a Unicode Cyrillic font for Russian prescriptions instead of transl
   assert.doesNotMatch(source, /GOMEOPATICHESKOE|Klient|Preparat/)
 })
 
-test('keeps the PDF footer below general instructions instead of overlapping it', () => {
+test('keeps the signed closing below instructions on the same or a later PDF page', () => {
   const record = createPrescription({ ...baseInput, status: 'active' })
   const source = buildPrescriptionPdf(getClientPrescription(record, 'en'), 'en', 'https://books.example.test').toString('latin1')
-  const instructionY = Number(source.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Fixture\/test content only/)?.[1])
-  const signatureY = Number(source.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Andrii Litvinov/)?.[1])
-
-  assert.ok(signatureY <= instructionY - 20)
+  // Coordinates reset at each A4 page: compare baselines only within a page.
+  const pageContentIds = [...source.matchAll(/\/Type \/Page \/Parent[^\n]*?\/Contents (\d+) 0 R/g)]
+    .map((match) => Number(match[1]))
+  const pageStreams = pageContentIds.map((contentId) => {
+    const expression = '\\n' + contentId + ' 0 obj\\n<< /Length (\\d+) >>\\nstream\\n'
+    const header = source.match(new RegExp(expression))
+    assert.ok(header, 'PDF page content stream is present')
+    return source.slice(header.index + header[0].length, header.index + header[0].length + Number(header[1]))
+  })
+  const instructionPattern = /1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Fixture\/test content only/
+  const signaturePattern = /1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Andrii Litvinov/
+  const instructionPage = pageStreams.findIndex((stream) => instructionPattern.test(stream))
+  const signaturePages = pageStreams.flatMap((stream, page) => signaturePattern.test(stream) ? [page] : [])
+  assert.ok(instructionPage >= 0, 'general instructions remain visible')
+  assert.equal(signaturePages.length, 1, 'closing signature appears exactly once')
+  assert.ok(signaturePages[0] >= instructionPage, 'closing must follow instructions')
+  if (signaturePages[0] === instructionPage) {
+    const instructionY = Number(pageStreams[instructionPage].match(instructionPattern)[1])
+    const signatureY = Number(pageStreams[instructionPage].match(signaturePattern)[1])
+    assert.ok(signatureY <= instructionY - 20, 'signature does not overlap instructions')
+  }
 })
 
 test('paginates a long bilingual-safe prescription without dropping items or instructions', () => {
