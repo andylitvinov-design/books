@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { DistanceHomeopathyGuide } from "@/components/distance-homeopathy-guide";
 import { CoreServiceDetail, coreOfferDetailData } from "@/components/core-service-detail";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
@@ -33,6 +34,7 @@ export default async function CoreServicePage({ params }: Props) {
     <>
       <PublicSiteHeader locale={locale as Locale} />
       <CoreServiceDetail locale={locale as Locale} kind={kind} />
+      <DistanceHomeopathyGuide locale={locale as Locale} embedded />
     </>
   );
 }

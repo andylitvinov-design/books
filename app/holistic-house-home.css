@@ -43,6 +43,8 @@
   padding: 0;
   border: 0;
   gap: 22px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .house-header--services .site-navigation > a {

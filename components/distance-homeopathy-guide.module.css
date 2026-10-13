@@ -13,6 +13,7 @@
   padding: 16px 0 60px;
   font-size: clamp(16.5px, 1.45vw, 18px);
   line-height: 1.8;
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
@@ -199,4 +200,31 @@
   .section h3 { margin-top: 28px; }
   .articleLinks { flex-direction: column; align-items: stretch; }
   .articleLinks a { text-align: center; }
+}
+
+/* The same source article also appears below Alchemy of the Soul and in client reports. */
+.embedded {
+  min-height: auto;
+  padding-top: 32px;
+  padding-bottom: 52px;
+}
+.embedded .article {
+  border-top: 1px solid #e0d3c4;
+}
+.report {
+  max-width: 100%;
+  padding: 26px 0 10px;
+}
+.report .article {
+  max-width: 100%;
+  padding-bottom: 10px;
+}
+.report .heroImage {
+  height: clamp(160px, 35vw, 300px);
+}
+@media print {
+  .report { break-before: page; padding: 0; }
+  .report .heroImage { height: 180px; }
+  .report .section { break-inside: auto; }
+  .report .section h2, .report .section h3 { break-after: avoid; }
 }

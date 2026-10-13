@@ -161,6 +161,30 @@ async function openCompletedPlanResult(){
 async function assertPublicViewportFits(target,label){
  const width=await target.evaluate(()=>window.innerWidth)
  const scroll=await target.evaluate(()=>document.documentElement.scrollWidth)
+ if(scroll>width+1){
+  // Failure-only evidence from this loopback public-service fixture. Never
+  // inspect account state, field values, storage, or private routes here.
+  const pathname=new URL(target.url()).pathname
+  assert.match(pathname,/^\/(en|ru)\/services\/(dao-health-profile|alchemy-of-soul|hypnotherapy-course)$/)
+  const diagnostic=await target.evaluate(()=>({
+   viewport:innerWidth,document:document.documentElement.scrollWidth,
+   nodes:Array.from(document.querySelectorAll('header,nav,main,section,article,h1,h2,h3,p,li,a,button,details,summary,figure')).flatMap(el=>{
+    const rect=el.getBoundingClientRect(),style=getComputedStyle(el)
+    if(!rect.width||!rect.height||style.display==='none'||style.visibility==='hidden')return[]
+    const range=document.createRange();range.selectNodeContents(el)
+    const textRect=range.getBoundingClientRect()
+    if(rect.right<=innerWidth+1&&rect.left>=-1&&el.scrollWidth<=el.clientWidth+1&&textRect.right<=innerWidth+1)return[]
+    return [{tag:el.tagName,className:el.className,text:(el.textContent||'').trim().slice(0,120),
+     bounds:{left:rect.left,right:rect.right,width:rect.width},textRight:textRect.right,
+     scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,
+     display:style.display,whiteSpace:style.whiteSpace,overflowWrap:style.overflowWrap,
+     minWidth:style.minWidth,flexWrap:style.flexWrap,flexShrink:style.flexShrink,fontSize:style.fontSize}]
+   }).slice(0,80),
+  }))
+  const stem='public-overflow-'+label.replace(/[^a-z0-9-]+/gi,'-')
+  await writeFile(output+'/'+stem+'.json',JSON.stringify({pathname,label,...diagnostic},null,2))
+  await screenshotEvidence(target,{path:output+'/'+stem+'.png',fullPage:true}).catch(error=>console.log('PUBLIC_OVERFLOW_SCREENSHOT_FAILED',error.message))
+ }
  assert.ok(scroll<=width+1,`Public overflow: ${label} (${scroll} > ${width})`)
 }
 async function verifyPublicServiceConversionJourneys(){
