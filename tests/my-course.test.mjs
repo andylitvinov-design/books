@@ -1,4 +1,6 @@
 import { COURSE_CONTENT_V3, V3_CORE_DAYS, V3_SUPPORT_DAYS, v3FocusChoiceIndex, v3ReturnSuggestion } from '../lib/inner-growth/course-v3.js'
+import { COURSE_CONTENT_V4 } from '../lib/inner-growth/course-v4.js'
+import { SYMBOLIC_LAB_V4, symbolicLabDay } from '../data/inner-growth/symbolic-lab-v4.js'
 import { DEEP_PRACTICE_DAYS, deepPracticeDay } from '../data/inner-growth/deep-practice-v3.js'
 import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.js'
 import { COURSE_JOURNEY, COURSE_PHASES } from '../data/inner-growth/course-journey.js'
@@ -537,8 +539,9 @@ test('V3 persists the chosen content version and uses the exact same lesson ID f
   const service=read('lib/app/growth-daily.js')
   const component=read('components/app/course-today.jsx')
   const css=read('components/app/course-today.module.css')
-  assert.match(service,/goal,COURSE_CONTENT_V3,local,zone/)
-  assert.match(service,/cycle\.content_version===COURSE_CONTENT_V3\?COURSE_CONTENT_V3:COURSE_CONTENT_VERSION/)
+  assert.match(service,/goal,COURSE_CONTENT_V4,local,zone/)
+  assert.match(service,/const resolveCycleVersion = value => value === COURSE_CONTENT_V4/)
+  assert.match(service,/const contentVersion=resolveCycleVersion\(cycle\.content_version\)/)
   assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,dayInfo\.day,locale,contentVersion\)/)
   assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,plannedDay,locale,contentVersion\)/)
   assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,today\.day,locale,version\)/)
@@ -576,4 +579,69 @@ test('client consciously chooses or confirms the V3 main skill before activating
   assert.match(pickerCss,/\.primaryScaleChoice/)
   assert.match(service,/scales = strictArray\(body\.scaleKeys/)
   assert.match(service,/scale_keys=\$3/)
+})
+
+test('V4 optional symbolic laboratory offers 14 distinct original EN/RU exercises without diagnosis or forced imagery', () => {
+  assert.equal(SYMBOLIC_LAB_V4.length,14)
+  assert.equal(new Set(SYMBOLIC_LAB_V4.map(item=>item.key)).size,14)
+  for(let day=1;day<=14;day++){
+    const en=symbolicLabDay(day,'en'),ru=symbolicLabDay(day,'ru')
+    assert.equal(en.day,day);assert.equal(ru.day,day)
+    assert.notEqual(en.symbol,ru.symbol)
+    assert.ok(en.optional && ru.optional)
+    for(const item of [en,ru]){
+      for(const field of ['element','symbol','invitation','withoutImagery','artifact']){
+        assert.ok(typeof item[field]==='string' && item[field].length > 6,field+' '+day)
+      }
+      assert.notEqual(item.invitation,item.withoutImagery)
+      assert.ok(item.source.includes('original'))
+    }
+  }
+  assert.equal(symbolicLabDay(0),null)
+  assert.equal(symbolicLabDay(15),null)
+  assert.equal(symbolicLabDay(3.2),null)
+})
+
+test('V4 pins new cycles while preserving old V2 and V3 lesson IDs, scales, scores and track content', () => {
+  for(const goal of Object.keys(TRACKS))for(let day=1;day<=14;day++){
+    const r2=lessonFor(goal,day,'en','standard',COURSE_CONTENT_VERSION)
+    const r3=lessonFor(goal,day,'en','standard',COURSE_CONTENT_V3)
+    const r4=lessonFor(goal,day,'en','standard',COURSE_CONTENT_V4)
+    const ru=lessonFor(goal,day,'ru','quick',COURSE_CONTENT_V4)
+    assert.equal(r4.version,COURSE_CONTENT_V4)
+    assert.notEqual(r4.id,r3.id)
+    assert.notEqual(r4.id,r2.id)
+    assert.deepEqual(r4.sections,r3.sections)
+    assert.deepEqual(r4.workbook,r3.workbook)
+    assert.deepEqual(r4.practiceV3,r3.practiceV3)
+    assert.equal(r3.practiceV4,undefined)
+    assert.equal(r2.practiceV4,undefined)
+    assert.deepEqual(r4.practiceV4,symbolicLabDay(day,'en'))
+    assert.deepEqual(ru.practiceV4,symbolicLabDay(day,'ru'))
+    assert.equal(r4.id,ru.id)
+  }
+  const keys=['hh-weekly-pulse::weekly.tension','hh-weekly-pulse::weekly.clarity']
+  for(let day=1;day<=14;day++){
+    const old=coursePracticeFocus(keys,'calm_regulation',day,'en',COURSE_CONTENT_V3)
+    const next=coursePracticeFocus(keys,'calm_regulation',day,'en',COURSE_CONTENT_V4)
+    assert.deepEqual(next,old,'V4 must inherit spaced primary-skill schedule')
+  }
+})
+
+test('V4 daily layout offers one primary Today CTA, optional foldable roadmap and non-imagery symbolic practice', () => {
+  const ui=read('components/app/course-today.jsx')
+  const css=read('components/app/course-today.module.css')
+  const server=read('lib/app/growth-daily.js')
+  assert.match(ui,/data-course-today-primary/)
+  assert.match(ui,/<details className=\{styles\.journeyPanel\} data-course-journey>/)
+  assert.match(ui,/data-course-symbolic-lab/)
+  assert.match(ui,/lesson\.practiceV4\.withoutImagery/)
+  assert.match(ui,/cycle\.preferences\?\.imagery==='no_imagery'/)
+  assert.match(ui,/data-course-card=\{number\}/)
+  assert.match(css,/\.todayPrimary\{/)
+  assert.match(css,/\.symbolLab\{/)
+  assert.match(css,/\.journeyPanel>summary\.journeyHeading/)
+  assert.match(server,/const version=resolveCycleVersion\(cycle\.content_version\)/)
+  assert.match(server,/const lesson=lessonFor\(focus\.goal,today\.day,'en','standard',version\)/)
+  assert.doesNotMatch(ui,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
 })

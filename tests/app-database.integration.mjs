@@ -1517,11 +1517,11 @@ test('MHC-SF guest persistence retains zero, source sums and private bilingual r
   }
 })
 
-// Synthetic R3 regression: exercise the real restricted-role repository read and
+// Synthetic V4 regression: exercise the real restricted-role repository read and
 // session insert for the non-primary selected scale. This suite is loopback-only.
-test('R3 displayed rotated lesson can be saved and read back for EN/RU without changing legacy content', async () => {
+test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU session validation', async () => {
   const { createDailyCourseRepository } = await import('../lib/app/growth-daily.js')
-  const { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3 } = await import('../lib/inner-growth/lesson-library.js')
+  const { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CONTENT_V4 } = await import('../lib/inner-growth/lesson-library.js')
   const dailyRepo = createDailyCourseRepository(config)
   for (const locale of ['en','ru']) {
     const who = actor(randomUUID(),randomUUID()), courseId = randomUUID()
@@ -1541,17 +1541,19 @@ test('R3 displayed rotated lesson can be saved and read back for EN/RU without c
       value = await dailyRepo.command(who,'preferences',{expectedRevision:value.cycle.revision,length:'quick',imagery:'optional',checkinFrequency:'daily'},locale)
       assert.equal(value.cycle.day,2)
       assert.equal(value.cycle.activeGoal,'calm_regulation')
-      assert.equal(value.cycle.contentVersion,COURSE_CONTENT_V3)
-      assert.equal(value.lesson.id,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V3).id)
+      assert.equal(value.cycle.contentVersion,COURSE_CONTENT_V4)
+      assert.ok(value.lesson.practiceV4?.symbol)
+      assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V3).sections)
+      assert.equal(value.lesson.id,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id)
       const operationId = randomUUID(), request = {operationId,day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
-      await assert.rejects(dailyRepo.command(who,'session',{...request,lessonId:lessonFor('attention_clarity',2,locale,'quick',COURSE_CONTENT_V3).id},locale),{code:'INVALID_LESSON_ID'})
+      await assert.rejects(dailyRepo.command(who,'session',{...request,lessonId:lessonFor('attention_clarity',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'INVALID_LESSON_ID'})
       const saved = await dailyRepo.command(who,'session',request,locale)
       assert.ok(saved.currentSession.completedAt)
       await dailyRepo.command(who,'session',request,locale)
       const rows = (await db.query('select lesson_id,content_version from app_private.growth_sessions where account_id=$1 and cycle_id=$2',[who.id,value.cycle.id])).rows
       assert.equal(rows.length,1)
       assert.equal(rows[0].lesson_id,value.lesson.id)
-      assert.equal(rows[0].content_version,COURSE_CONTENT_V3)
+      assert.equal(rows[0].content_version,COURSE_CONTENT_V4)
       assert.equal((await dailyRepo.read(who,locale)).lesson.id,value.lesson.id)
     } finally { await db.end() }
   }

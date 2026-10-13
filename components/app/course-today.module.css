@@ -300,3 +300,96 @@
  .recallCard{padding:12px}
 }
 @media print{.recallCard,.transferCard,.reflectionTransfer,.learningEvidence{break-inside:avoid}}
+
+/* V4: the first screen invites the user into TODAY, not a 14-card wall. */
+.todayPrimary{
+ display:inline-flex;align-items:center;justify-content:center;gap:10px;
+ margin:13px 0 2px;padding:11px 17px;min-height:47px;width:max-content;max-width:100%;
+ border:1px solid #b64b31;border-radius:13px;background:#b64b31;color:white!important;
+ font:800 13.5px/1.35 system-ui,-apple-system,sans-serif;text-decoration:none!important;
+ box-shadow:0 4px 12px #8b402024;
+}
+.todayPrimary:hover,.todayPrimary:focus-visible{background:#963a29;color:white!important;border-color:#963a29}
+.todayPrimary:focus-visible{outline:3px solid #d8ab87;outline-offset:3px}
+.journeyPanel>summary.journeyHeading{
+ display:flex;align-items:center;justify-content:space-between;gap:11px;flex-wrap:wrap;
+ cursor:pointer;list-style:none;min-height:54px;border-radius:13px;
+}
+.journeyPanel>summary.journeyHeading::-webkit-details-marker{display:none}
+.journeyPanel>summary.journeyHeading::marker{content:''}
+.journeyPanel>summary.journeyHeading:focus-visible{outline:3px solid #8caf9d;outline-offset:5px}
+.journeyHeading>div{flex:1 1 270px}
+.journeyToggleLabel{
+ display:inline-flex;align-items:center;gap:7px;flex:0 1 auto;
+ font:800 12px/1.4 system-ui,-apple-system,sans-serif;
+ color:#396e5a;background:#edf5eb;border:1px solid #d5e5d9;border-radius:11px;
+ padding:8px 10px
+}
+.journeyPanel:not([open]){padding:14px 18px}
+.journeyPanel:not([open]) .journeyHeading p{display:none}
+.journeyPanel[open] .journeyGrid{margin-top:14px}
+.journeyPanel[open] .journeyToggleLabel svg{transform:rotate(180deg)}
+@media(max-width:620px){
+ .todayPrimary{width:100%;min-height:50px;font-size:14px;padding:12px}
+ .journeyPanel:not([open]){padding:10px 12px}
+ .journeyPanel>summary.journeyHeading{gap:7px}
+ .journeyToggleLabel{order:2;flex:1 0 auto;justify-content:center}
+ .journeyHeading>div{order:1;flex:1 1 100%}
+ .journeyHeading>.journeyCount{order:3}
+ .journeyPanel:not([open]) .journeyHeading h3{font-size:17px}
+}
+/* Optional author-inspired symbolic reflection, never a medical or clinical
+   intervention; existing domain/day learning remains the primary practice. */
+.symbolLab{
+ display:block;max-width:100%;border:1px solid #e1d8c9;border-radius:18px;
+ background:linear-gradient(130deg,#fcfaf4,#eff6ec);overflow:hidden;
+}
+.symbolSummary{
+ display:flex;align-items:center;gap:11px;padding:13px 14px;cursor:pointer;
+ list-style:none;min-height:59px;color:#413e37
+}
+.symbolSummary::-webkit-details-marker{display:none}
+.symbolSummary::marker{content:''}
+.symbolSummary>span:nth-child(2){display:grid;gap:3px;min-width:0;flex:1}
+.symbolSummary strong{font:800 14px/1.35 system-ui,-apple-system,sans-serif;color:#405f4e}
+.symbolSummary small{font:500 11.5px/1.45 system-ui,-apple-system,sans-serif;color:#786e61}
+.symbolTile{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:13px;
+ background:#e2efdf;color:#3f7858}
+.symbolSummary>svg{flex:none;color:#63806b}
+.symbolLab[open] .symbolSummary>svg{transform:rotate(180deg)}
+.symbolSummary:focus-visible{outline:3px solid #94b89f;outline-offset:-3px}
+.symbolContent{
+ display:grid;gap:12px;padding:14px 16px 16px;border-top:1px solid #e0e7db;
+ background:#fffefa
+}
+.symbolContent h4{font:800 clamp(18px,3vw,21px)/1.35 system-ui,-apple-system,sans-serif;
+ margin:0;color:#463e35}
+.symbolContent>p.symbolLens{margin:0!important;color:#557263;font-size:11.5px;line-height:1.5}
+.symbolContent>p.symbolLens strong{font-weight:800}
+.symbolModes{display:flex;gap:7px;flex-wrap:wrap}
+.symbolModes button{
+ display:inline-flex;min-height:37px;align-items:center;justify-content:center;
+ padding:7px 12px;border-radius:10px!important;border:1px solid #d5dfd4!important;
+ background:#fffefa!important;color:#4a6455!important;
+ font:750 12px/1.2 system-ui,-apple-system,sans-serif!important
+}
+.symbolModes button[aria-pressed=true]{background:#e2efe3!important;
+ border-color:#86b19a!important;color:#285842!important}
+.symbolModes button:disabled{opacity:.42}
+.symbolInvitation{font-size:14px!important;line-height:1.7!important;color:#4e473e!important;
+ margin:0!important}
+.symbolArtifact{padding:12px 14px;border:1px solid #e8dccb;border-radius:13px;background:#faf4e9}
+.symbolArtifact strong{font-size:12px;color:#885543}
+.symbolArtifact p{margin:4px 0 0!important;font-size:14px!important;line-height:1.55!important;color:#443e34}
+.symbolContent>small{font-size:11px;line-height:1.5;color:#7e7264}
+.symbolNotebookCue{display:block;margin-top:5px;line-height:1.5;color:#587665;font-size:12px}
+@media(max-width:620px){
+ .symbolSummary{padding:11px 12px}
+ .symbolContent{padding:12px}
+ .symbolModes button{flex:1}
+}
+@media print{
+ .symbolSummary,.symbolModes,.todayPrimary,.journeyToggleLabel{display:none!important}
+ .symbolContent{break-inside:avoid}
+ .journeyPanel{break-inside:avoid}
+}

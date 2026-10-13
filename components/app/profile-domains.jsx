@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, ArrowRight, Brain, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle } from 'lucide-react'
+import { ArrowRight, Brain, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
 import { FreeInsightsPaths } from '@/components/free-insights-paths'
@@ -41,6 +41,7 @@ const WORDS = {
     visibleLimit: 'Recent saved materials are shown here. Your complete archive remains available under Personal analysis.',
     selected: 'selected', emptyLegacyPsy: 'Psychological test reports shared by Andy will appear here. Your Google Cabinet also keeps results from tests you complete yourself.',
     google: 'Open my Google Cabinet',
+    overview: 'Profile at a glance', profileReports: 'Personal reports', remedyRecords: 'Remedy records', discover: 'Explore free services', support: 'Personal support',
   },
   ru: {
     eyebrow: 'ЛИЧНОЕ ПРОСТРАНСТВО · HOLISTIC HOUSE',
@@ -72,6 +73,7 @@ const WORDS = {
     visibleLimit: 'Здесь показаны последние сохранённые материалы. Полный архив — во вкладке «Личный анализ».',
     selected: 'подобрано', emptyLegacyPsy: 'Здесь будут психологические отчёты от Andy. Результаты самостоятельно пройденных тестов сохраняются в вашем Google-кабинете.',
     google: 'Открыть Google-кабинет',
+    overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Бесплатные услуги', support: 'Личная поддержка',
   },
 }
 const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10))
@@ -214,13 +216,27 @@ export function ProfileDomains({
   }))
   const panelTitle = { psychology: t.psyDetail, homeopathy: t.homeoDetail, wu_xing: t.wuDetail, hypnotherapy: t.hypnoDetail }
   const mayBeLimited = !external && (savedReports.filter(r => r.available !== false).length > 30 || savedDocuments.filter(d => d.kind === 'recommendation').length > 20)
+  // Counts come from authorized records only; never turn an absent report into a score.
+  const reportCount = external ? reports.filter(report => report.available !== false).length : savedReports.filter(report => report.available !== false).length
+  const remedyCount = external ? homeopathyUpdates.length : savedDocuments.filter(document => document.kind === 'recommendation').length
+  const latestDate = external ? ordered(assessments)[0]?.occurredOn : recentResults[0]?.occurredOn
+  const glance = [
+    { label: external ? t.profileReports : t.testResults, value: external ? reportCount : recentResults.length },
+    { label: external ? t.remedyRecords : t.profileReports, value: external ? remedyCount : reportCount },
+    { label: t.latest, value: readableDate(latestDate, locale) || '—' },
+  ]
 
   return <section className="hh-profile-domains" data-profile-domains data-profile-interactive={interactive ? "true" : "false"}>
     <header className="hh-domain-hero">
-      <div><p className="hh-domain-eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p className="hh-domain-hero-subtitle">{t.reports}</p><p>{t.intro}</p></div>
-      <span className="hh-domain-hero-symbol" aria-hidden="true"><Activity size={27} /></span>
+      <div className="hh-domain-title">
+        <p className="hh-domain-eyebrow">{t.eyebrow}</p>
+        <h1>{t.title}</h1>
+        <p className="hh-domain-hero-subtitle">{t.reports}</p>
+      </div>
+      <dl className="hh-domain-glance" aria-label={t.overview}>
+        {glance.map(item => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}
+      </dl>
     </header>
-    <FreeInsightsPaths locale={locale} variant="cabinet" testHref={external ? '/' + locale + '/client' : '/' + locale + '/app/tests'} />
     <div className="hh-domain-tabs" role="tablist" aria-label={t.title}>
       {entries.map(({ key, summary }) => {
         const Icon = ICONS[key]
@@ -238,23 +254,21 @@ export function ProfileDomains({
             event.currentTarget.parentElement?.querySelectorAll('[role="tab"]')[next]?.focus()
           }}
           className={active === key ? 'is-current' : ''}>
-          <Icon size={23} strokeWidth={1.7} aria-hidden="true" />
+          <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
           <strong>{t[key]}</strong>
-          <small>{summary ? String(summary) + ' · ' + t.recent : t.unknown}</small>
+          <small aria-label={summary ? String(summary) : undefined}>{summary || '—'}</small>
         </button>
       })}
     </div>
     <div role="tabpanel" id="hh-domain-panel" aria-labelledby={'hh-domain-tab-' + active} className="hh-domain-panel" tabIndex={0}>
-      <ProfileServiceOffer area={active} locale={locale} />
       {active === 'psychology' && <section className="hh-domain-content" data-domain="psychology">
-        <div className="hh-domain-heading"><div><p className="hh-domain-eyebrow">{t.psychology}</p><h2>{t.psyDetail}</h2><p>{t.psyIntro}</p></div></div>
         {external ? <>
+          <div className="hh-domain-heading"><div><p className="hh-domain-eyebrow">{t.psychology}</p><h2>{t.psyDetail}</h2><p>{t.psyIntro}</p></div></div>
           <ReportsHistory reports={psychologicalReports} locale={locale} selector={selector} title={t.reportHistory} empty={t.emptyLegacyPsy} t={t} />
           <Link className="hh-domain-secondary-link" href={'/' + locale + '/app/portrait'} prefetch={false}>{t.google} <ArrowRight size={16} /></Link>
         </> : <>
-          <div className="hh-domain-psy-summary"><span><strong>{recentResults.length}</strong>{t.testResults}</span><span><strong>{readableDate(recentResults[0]?.occurredOn, locale) || '—'}</strong>{t.latest}</span></div>
-          <div className="hh-domain-link-row"><Link href={'/' + locale + '/app/history'} prefetch={false}>{t.compare} <ArrowRight size={16} /></Link><Link href={'/' + locale + '/app/tests'} prefetch={false}>{t.assessments} <ArrowRight size={16} /></Link></div>
           {children}
+          <div className="hh-domain-link-row"><Link href={'/' + locale + '/app/history'} prefetch={false}>{t.compare} <ArrowRight size={16} /></Link><Link href={'/' + locale + '/app/tests'} prefetch={false}>{t.assessments} <ArrowRight size={16} /></Link></div>
           {psychologicalReports.length > 0 && <ReportsHistory reports={psychologicalReports} locale={locale} title={t.reportHistory} empty={t.noPsy} t={t} />}
         </>}
       </section>}
@@ -275,7 +289,15 @@ export function ProfileDomains({
         {fetchState === 'partial' && <p role="status" className="hh-domain-caution">{t.incomplete}</p>}
         {mayBeLimited && <p className="hh-domain-caution">{t.visibleLimit}</p>}
       </section>}
+      <details className="hh-domain-support">
+        <summary><MessageCircle size={17} aria-hidden="true" /><span>{t.support}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+        <ProfileServiceOffer area={active} locale={locale} />
+      </details>
     </div>
-    <p className="hh-domain-private"><LockKeyhole size={16} aria-hidden="true" />{t.private}</p>
+    <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
+    <details className="hh-domain-discover">
+      <summary><Sparkles size={16} aria-hidden="true" /><span>{t.discover}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+      <FreeInsightsPaths locale={locale} variant="cabinet" testHref={external ? '/' + locale + '/client' : '/' + locale + '/app/tests'} />
+    </details>
   </section>
 }
