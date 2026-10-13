@@ -125,8 +125,8 @@ const UI={
   symbolSafety:'Образ используется только для личной рефлексии, не является диагнозом или лечением. Можно перейти к словам или пропустить.',
  }
 }
-async function api(action,locale,body){
-  const response=await fetch('/api/app/course/'+action+'?locale='+locale,{
+async function api(action,locale,body,courseId=null){
+  const response=await fetch('/api/app/course/'+action+'?locale='+locale+(courseId?'&courseId='+encodeURIComponent(courseId):''),{
     method:body?'POST':'GET',cache:'no-store',credentials:'same-origin',
     headers:body?{'Content-Type':'application/json'}:undefined,
     body:body?JSON.stringify(body):undefined,
@@ -158,7 +158,7 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
  </section>
 }
 
-export default function CourseToday({locale='en'}){
+export default function CourseToday({locale='en',courseId=null,onCourseChange}){
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
@@ -207,15 +207,16 @@ export default function CourseToday({locale='en'}){
  },[])
  const reload=useCallback(async()=>{
   setLoading(true);setError('')
-  try{hydrate(await api('today',locale))}catch(e){setError(e.message)}
+  try{hydrate(await api('today',locale,undefined,courseId))}catch(e){setError(e.message)}
   finally{setLoading(false)}
- },[hydrate,locale])
+ },[hydrate,locale,courseId])
  useEffect(()=>{void reload()},[reload])
  async function submit(action,body={},after){
   setBusy(true);setError('')
   try {
-    const result=await api(action,locale,body)
+    const result=await api(action,locale,body,courseId)
     hydrate(result)
+    if(['session','new-cycle','pause','resume'].includes(action)) onCourseChange?.(result)
     if(after)after()
     return result
   }catch(e){setError(e.message);return null}
