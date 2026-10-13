@@ -60,7 +60,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
   }
   for (const locale of ['en', 'ru', 'es']) {
     for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['services', '/' + locale + '/services'], ['library', '/' + locale + '/library']]) {
-      for (const width of [320, 360, 374, 375, 390, 430, 768, 1023]) {
+      for (const width of [320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280]) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         await page.setViewportSize({ width, height: 900 })
         assert.equal((await go(page, path)).status(), 200, label)
@@ -134,7 +134,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
     }
   }
   await page.setViewportSize(originalViewport)
-  pass(engine + ': public header Home/Services/Library EN/RU/ES at 320/360/374/375/390/430/768/1023px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible six-slot mobile bottom navigation and keyboard order')
+  pass(engine + ': public header Home/Services/Library EN/RU/ES at 320/360/374/375/390/430/768/1023/1024/1100/1280px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible six-slot mobile bottom navigation and keyboard order')
 }
 try {
   await redis(['FLUSHDB']) // Dedicated ephemeral service database, not a configured production store.
