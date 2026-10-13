@@ -168,6 +168,10 @@ export function MyCourse({ data, locale = 'en' }) {
 
   function openStartDialog() {
     if (busy) return
+    if (view==='new' && activeCourses.length >= (state?.membership?.maxActiveCourses||1)) {
+      setView('paywall')
+      return
+    }
     setOptIn(false)
     startDialogRef.current?.showModal()
   }
@@ -178,7 +182,7 @@ export function MyCourse({ data, locale = 'en' }) {
   }
 
   const activeCourses=(state?.courses||[]).filter(item=>['active','paused'].includes(item.status))
-  const showDashboard=(state?.courses||[]).length>0&&view==='list'
+  const showDashboard=(state?.courses||[]).length>0&&(view==='list'||view==='paywall')
   const stage = view === 'new' || (state?.course&&!['active','paused'].includes(state.course.status))
     ? 0 : (state?.course?.stage || 0)
   async function openCourse(item) {
@@ -211,7 +215,7 @@ export function MyCourse({ data, locale = 'en' }) {
 
   return <div className={styles.root} data-my-course>
     {showDashboard&&<MyCoursesDashboard
-      courses={state.courses||[]} membership={state.membership||{}}
+      courses={state.courses||[]} membership={state.membership||{}} paywall={view==='paywall'}
       locale={locale} busy={busy} onOpen={openCourse} onNew={startAnother}
       onClose={course=>manageCourse('close',course)}
       onPrimary={course=>manageCourse('make-primary',course)}
