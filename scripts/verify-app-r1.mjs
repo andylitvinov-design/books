@@ -700,7 +700,10 @@ try {
  // It must still be present after the public selector adds another test.
  const savedBeforeSignout=(await api('bootstrap')).data.activeTestPlan
  assert.ok(savedBeforeSignout?.definitionIds?.length>0,'synthetic owner has a saved battery')
- await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ const settingsResponse=await page.goto(origin+'/en/app/settings')
+ assert.match(settingsResponse.headers()['cache-control']||'',/no-store/,'private settings navigation remains non-cacheable')
+ await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
+ await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 

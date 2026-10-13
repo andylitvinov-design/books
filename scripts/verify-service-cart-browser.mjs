@@ -6,60 +6,221 @@ const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright')
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || 'http://127.0.0.1:3100'
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error('Service cart QA requires an isolated loopback server')
 const output = 'artifacts/service-cart'
+const accountA = '11111111-1111-4111-8111-111111111111'
+const accountB = '22222222-2222-4222-8222-222222222222'
+const existingOrder = '33333333-3333-4333-8333-333333333333'
+const repeatOrder = '44444444-4444-4444-8444-444444444444'
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const errors = [], externalNavigations = [], unexpectedCommerce = []
+const order = (id, status, serviceId = 'personal-session-60') => ({ id, status, fulfillmentStatus: status === 'paid' ? 'awaiting_schedule' : 'awaiting_payment', items: [{ serviceId, quantity: 1, amountMinor: 10000, currency: 'EUR' }], currency: 'EUR', totalMinor: 10000 })
+const deferred = () => { let resolve; const promise = new Promise((done) => { resolve = done }); return { promise, resolve } }
+const settle = (page) => page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch()
-const errors = []
+
+async function harness(locale = 'en', width = 360) {
+  // Fresh contexts and blocked service workers are required: no request may
+  // bypass routing through a previously installed worker or another tab.
+  const context = await browser.newContext({ viewport: { width, height: 844 }, serviceWorkers: 'block' })
+  const state = { accountId: accountA, checkouts: [], identities: [], reads: [], orders: new Map(),
+    checkout: async () => ({ status: 503, body: { error: 'SERVICE_CHECKOUT_UNAVAILABLE' } }) }
+  await context.route('**/*', async (route) => {
+    const request = route.request(), url = new URL(request.url())
+    const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', headers: { 'Cache-Control': 'no-store' }, body: JSON.stringify(body) })
+    // This covers popups and payment navigation as well as fetch. Even a broken
+    // redirect guard cannot reach Stripe, WhatsApp or any other external host.
+    if (url.origin !== origin) {
+      if (request.isNavigationRequest()) externalNavigations.push(request.url())
+      return route.abort('blockedbyclient')
+    }
+    const path = url.pathname, expected = request.headers()['x-hh-account-id']
+    if (path === '/api/app/commerce/status') {
+      state.identities.push({ expected, actual: state.accountId })
+      if (!state.accountId) return json({ error: 'SIGN_IN_REQUIRED' }, 401)
+      if (expected && expected !== state.accountId) return json({ error: 'ACCOUNT_CHANGED' }, 409)
+      return json({ available: true, accountId: state.accountId })
+    }
+    if (path === '/api/app/commerce/checkout' && request.method() === 'POST') {
+      const body = request.postDataJSON()
+      state.checkouts.push({ body, expected, actual: state.accountId })
+      if (!state.accountId) return json({ error: 'SIGN_IN_REQUIRED' }, 401)
+      if (expected !== state.accountId) return json({ error: 'ACCOUNT_CHANGED' }, 409)
+      const result = await state.checkout(body)
+      return json(result.body, result.status ?? 200)
+    }
+    if (/^\/api\/app\/commerce\/orders\/[^/]+$/.test(path) && request.method() === 'GET') {
+      const id = path.split('/').at(-1)
+      state.reads.push({ id, expected, actual: state.accountId })
+      if (!state.accountId) return json({ error: 'SIGN_IN_REQUIRED' }, 401)
+      if (expected !== state.accountId) return json({ error: 'ACCOUNT_CHANGED' }, 409)
+      const fixture = state.orders.get(id)
+      if (!fixture) return json({ error: 'SERVICE_ORDER_NOT_FOUND' }, 404)
+      return json({ order: await (typeof fixture === 'function' ? fixture() : fixture) })
+    }
+    if (path.startsWith('/api/app/commerce/')) {
+      unexpectedCommerce.push(`${request.method()} ${path}`)
+      return json({ error: 'UNMOCKED_COMMERCE_REQUEST' }, 501)
+    }
+    // No other API, form submission or server action can mutate even the local
+    // fixture's backing services. Static pages/assets are the only passthrough.
+    if (path.startsWith('/api/')) return json({ error: 'SYNTHETIC_SIGNED_OUT' }, 401)
+    if (!['GET', 'HEAD'].includes(request.method())) return json({ error: 'SYNTHETIC_MUTATION_BLOCKED' }, 405)
+    return route.continue()
+  })
+  const page = await context.newPage()
+  page.on('pageerror', (error) => errors.push(error.message))
+  const path = `/${locale}/services`
+  await page.goto(origin + path)
+  const cart = page.locator('[data-service-cart]'), cards = cart.locator('[data-service-product]')
+  await cart.waitFor({ state: 'visible' })
+  const pay = cart.locator('aside > button')
+  const count = async (expected) => {
+    await page.waitForFunction((value) => document.querySelectorAll('[data-service-cart] aside li').length === value, expected)
+    assert.equal(await cart.locator('aside li').count(), expected)
+  }
+  const addSession = async () => {
+    await cards.locator('button').nth(1).click()
+    // Availability becomes true only after the initial authenticated A binding.
+    // Wait for it before a test changes the simulated cookie account.
+    await page.waitForFunction(() => { const button = document.querySelector('[data-service-cart] aside > button'); return button && !button.disabled })
+  }
+  return { context, page, cart, cards, pay, path, state, count, addSession }
+}
+
 try {
   for (const locale of ['en', 'ru', 'es']) for (const width of [360, 1024]) {
-    const context = await browser.newContext({ viewport: { width, height: 844 } })
-    const page = await context.newPage()
-    page.on('pageerror', (error) => errors.push(error.message))
-    let submitted = null
-    await page.route('**/api/app/commerce/status', (route) => route.fulfill({ contentType: 'application/json', body: '{"available":true,"accountId":"11111111-1111-4111-8111-111111111111"}' }))
-    await page.route('**/api/app/commerce/checkout', (route) => {
-      assert.equal(route.request().headers()['x-hh-account-id'], '11111111-1111-4111-8111-111111111111')
-      submitted = route.request().postDataJSON()
-      return route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"SERVICE_CHECKOUT_UNAVAILABLE"}' })
-    })
-    const path = `/${locale}/services`
-    await page.goto(origin + path)
-    const cart = page.locator('[data-service-cart]')
-    await cart.waitFor({ state: 'visible' })
-    const cards = cart.locator('[data-service-product]')
-    await cards.nth(0).getByRole('button').click()
-    await cards.nth(1).getByRole('button').click()
-    assert.equal(await cart.locator('aside li').count(), 2)
-    assert.match(await cart.locator('aside').innerText(), /150/)
-    await page.reload()
-    await cart.locator('aside li').first().waitFor()
-    assert.equal(await cart.locator('aside li').count(), 2)
-    await cart.locator('aside li').first().getByRole('button').click()
-    assert.equal(await cart.locator('aside li').count(), 1)
-    await cart.locator('aside > button').click()
-    await cart.getByRole('alert').waitFor()
-    assert.deepEqual(Object.keys(submitted).sort(), ['items', 'locale', 'operationId'])
-    assert.deepEqual(submitted.items, [{ serviceId: 'personal-session-60', quantity: 1 }])
-    assert.equal(submitted.locale, locale)
-    assert.equal(await cart.locator('aside li').count(), 1)
-    const viewport = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }))
-    assert.ok(viewport.scroll <= viewport.width + 1, `${locale}/${width} horizontal overflow`)
-    const targets = await cart.locator('button').evaluateAll((buttons) => buttons.map((button) => ({ width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })))
-    assert.ok(targets.every((target) => target.width >= 44 && target.height >= 44))
-    await page.keyboard.press('Tab')
-    assert.ok(await page.evaluate(() => document.activeElement !== document.body))
-    await cart.screenshot({ path: `${output}/${locale}-${width}-selected-error.png` })
-    // A success-looking query never clears the cart without server proof.
-    const orderId = '33333333-3333-4333-8333-333333333333'
-    await page.route('**/api/app/commerce/orders/*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ order: { id: orderId, status: 'processing', items: [{ serviceId: 'personal-session-60' }] } }) }))
-    await page.goto(`${origin}${path}?serviceOrder=${orderId}#service-cart`)
-    await cart.locator('aside li').first().waitFor()
-    assert.equal(await cart.locator('aside li').count(), 1)
-    await page.unroute('**/api/app/commerce/orders/*')
-    await page.route('**/api/app/commerce/orders/*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ order: { id: orderId, status: 'paid', items: [{ serviceId: 'personal-session-60' }] } }) }))
-    await page.reload()
-    await page.waitForFunction(() => document.querySelectorAll('[data-service-cart] aside li').length === 0)
-    await context.close()
+    const h = await harness(locale, width)
+    try {
+      const { page, cart, cards, pay, path, state } = h
+      await cards.nth(0).getByRole('button').click()
+      await cards.nth(1).getByRole('button').click()
+      await h.count(2)
+      assert.match(await cart.locator('aside').innerText(), /150/)
+      await page.reload(); await h.count(2)
+      await cart.locator('aside li').first().getByRole('button').click(); await h.count(1)
+      await pay.click(); await cart.getByRole('alert').waitFor()
+      const first = state.checkouts.at(-1)
+      assert.deepEqual(Object.keys(first.body).sort(), ['items', 'locale', 'operationId'])
+      assert.deepEqual(first.body.items, [{ serviceId: 'personal-session-60', quantity: 1 }])
+      assert.equal(first.body.locale, locale); assert.match(first.body.operationId, uuid)
+      assert.equal(first.expected, accountA); await h.count(1)
+      const viewport = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }))
+      assert.ok(viewport.scroll <= viewport.width + 1, `${locale}/${width} horizontal overflow`)
+      const targets = await cart.locator('button').evaluateAll((buttons) => buttons.map((button) => ({ width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })))
+      assert.ok(targets.every((target) => target.width >= 44 && target.height >= 44))
+      await page.keyboard.press('Tab')
+      assert.ok(await page.evaluate(() => document.activeElement !== document.body))
+      await cart.screenshot({ path: `${output}/${locale}-${width}-selected-error.png` })
+
+      // The durable server barrier must survive reload/new operation IDs. An
+      // existing paid order neither silently buys again nor clears the choice.
+      state.checkout = async () => ({ body: { order: order(existingOrder, 'paid'), repeatPurchaseRequired: true, redirectUrl: null } })
+      state.orders.set(existingOrder, order(existingOrder, 'paid'))
+      await page.reload(); await h.count(1); await pay.click()
+      const repeat = cart.getByRole('group')
+      await repeat.waitFor(); await h.count(1)
+      assert.equal(await pay.isDisabled(), true)
+      assert.equal(state.checkouts.at(-1).body.repeatOrderId, undefined)
+      const barrierOperation = state.checkouts.at(-1).body.operationId
+      await page.reload(); await h.count(1); await pay.click(); await repeat.waitFor()
+      assert.equal(state.checkouts.at(-1).body.repeatOrderId, undefined)
+      assert.notEqual(state.checkouts.at(-1).body.operationId, barrierOperation)
+      await cart.screenshot({ path: `${output}/${locale}-${width}-repeat-confirmation.png` })
+
+      const beforeRepeat = state.checkouts.at(-1).body.operationId
+      state.orders.set(repeatOrder, order(repeatOrder, 'processing'))
+      state.checkout = async (body) => {
+        assert.equal(body.repeatOrderId, existingOrder)
+        assert.notEqual(body.operationId, beforeRepeat)
+        assert.deepEqual(Object.keys(body).sort(), ['items', 'locale', 'operationId', 'repeatOrderId'])
+        return { body: { order: order(repeatOrder, 'processing'), redirectUrl: null } }
+      }
+      // Only the explicit confirmation button adds the repeat reference.
+      await repeat.getByRole('button').first().click()
+      await repeat.waitFor({ state: 'hidden' }); await h.count(1)
+      assert.equal(state.checkouts.at(-1).body.repeatOrderId, existingOrder)
+      state.orders.set(repeatOrder, order(repeatOrder, 'paid'))
+      await page.goto(`${origin}${path}?serviceOrder=${repeatOrder}#service-cart`)
+      await h.count(0)
+      await cart.getByRole('status').filter({ hasText: /Payment confirmed|Оплата подтверждена|Pago confirmado/ }).waitFor()
+      assert.ok(state.reads.every((read) => read.expected === accountA))
+      // Keeping an existing paid order must not submit a second checkout.
+      await h.addSession()
+      state.checkout = async () => ({ body: { order: order(existingOrder, 'paid'), repeatPurchaseRequired: true, redirectUrl: null } })
+      await pay.click(); await repeat.waitFor()
+      const beforeKeep = state.checkouts.length
+      await repeat.getByRole('button').nth(1).click(); await h.count(0)
+      assert.equal(state.checkouts.length, beforeKeep)
+    } finally { await h.context.close() }
   }
+
+  // A stale A page must not place an order as B, silently rebind, or pay after logout.
+  for (const nextAccount of [accountB, null]) {
+    const h = await harness()
+    try {
+      await h.addSession(); h.state.accountId = nextAccount
+      await h.pay.click(); await h.cart.getByRole('alert').waitFor()
+      assert.equal(h.state.checkouts.at(-1).expected, accountA)
+      assert.equal(h.state.checkouts.at(-1).actual, nextAccount)
+      assert.equal(await h.pay.isDisabled(), true); await h.count(1)
+      assert.equal(await h.cart.getByRole('group').count(), 0)
+    } finally { await h.context.close() }
+  }
+
+  // An accepted A response arriving after cookie switch cannot redirect or show
+  // A's order. The only Stripe URL in this test is synthetic and must not load.
+  {
+    const h = await harness(), delayed = deferred()
+    try {
+      h.state.checkout = () => delayed.promise
+      await h.addSession()
+      const requested = h.page.waitForRequest((request) => request.url().endsWith('/commerce/checkout'))
+      await h.pay.click(); await requested
+      h.state.accountId = accountB
+      delayed.resolve({ body: { order: order(existingOrder, 'open'), redirectUrl: 'https://checkout.stripe.com/c/pay/synthetic-never-navigate' } })
+      await h.cart.getByRole('alert').waitFor(); assert.equal(await h.pay.isDisabled(), true)
+      assert.equal(h.page.url(), origin + h.path)
+      assert.ok(h.state.identities.some((read) => read.expected === accountA && read.actual === accountB))
+      assert.equal(await h.cart.getByRole('status').count(), 0); await h.count(1)
+    } finally { delayed.resolve({ status: 503, body: { error: 'TEST_CLEANUP' } }); await h.context.close() }
+  }
+
+  // A private A order response cannot clear B's cart or appear after identity
+  // changes while that response is in flight.
+  {
+    const h = await harness(), delayed = deferred()
+    try {
+      await h.addSession()
+      h.state.orders.set(existingOrder, () => delayed.promise)
+      const requested = h.page.waitForRequest((request) => request.url().endsWith(`/commerce/orders/${existingOrder}`))
+      await h.page.goto(`${origin}${h.path}?serviceOrder=${existingOrder}#service-cart`); await requested
+      h.state.accountId = accountB; delayed.resolve(order(existingOrder, 'paid'))
+      await h.cart.getByRole('alert').waitFor(); await h.count(1)
+      assert.equal(await h.cart.getByRole('status').count(), 0)
+      assert.equal(await h.pay.isDisabled(), true)
+    } finally { delayed.resolve(order(existingOrder, 'processing')); await h.context.close() }
+  }
+
+  // Client-side route unmount invalidates an outstanding checkout generation.
+  {
+    const h = await harness(), delayed = deferred()
+    try {
+      h.state.checkout = () => delayed.promise
+      await h.addSession()
+      const requested = h.page.waitForRequest((request) => request.url().endsWith('/commerce/checkout'))
+      await h.pay.click(); await requested
+      await h.cart.locator('a[href="/en/services/free-situation-review"]').click()
+      await h.page.waitForURL(origin + '/en/services/free-situation-review')
+      await h.cart.waitFor({ state: 'detached' })
+      const response = h.page.waitForResponse((value) => value.url().endsWith('/commerce/checkout'))
+      delayed.resolve({ body: { order: order(existingOrder, 'open'), redirectUrl: 'https://checkout.stripe.com/c/pay/synthetic-unmounted' } })
+      await (await response).finished(); await settle(h.page)
+      assert.equal(h.page.url(), origin + '/en/services/free-situation-review')
+    } finally { delayed.resolve({ status: 503, body: { error: 'TEST_CLEANUP' } }); await h.context.close() }
+  }
+
+  assert.deepEqual(unexpectedCommerce, [], 'Every commerce request must have an explicit synthetic handler')
+  assert.deepEqual(externalNavigations, [], 'A stale or unmounted response attempted external navigation')
   assert.deepEqual(errors, [])
-  console.log('Service cart: RU/EN/ES, 360/1024px, add/remove/persistence, failure recovery, server-paid confirmation passed. No real checkout performed.')
+  console.log('Service cart: RU/EN/ES at 360/1024px, selection/persistence, failure recovery, durable repeat barrier/explicit confirmation, owner binding, delayed account switch/unmount, and server-paid clearing passed. All API/payment traffic was synthetic; service workers and external navigation were blocked.')
 } finally { await browser.close() }

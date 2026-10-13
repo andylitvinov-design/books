@@ -27,7 +27,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
   const requestPolicy = policy(url)
-  if (requestPolicy === 'network-only') { event.respondWith(fetch(request, { cache: 'no-store' })); return }
+  // Do not interpose in authenticated traffic. Native networking retains the
+  // caller's abort/cookie behavior; private server headers already forbid cache.
+  if (requestPolicy === 'network-only') return
   if (requestPolicy === 'public-asset') {
     event.respondWith(caches.open(CACHE_NAME).then(async (cache) => (await cache.match(request)) || fetch(request).then((response) => {
       if (mayCache(response)) cache.put(request, response.clone())

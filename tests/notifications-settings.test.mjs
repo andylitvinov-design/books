@@ -12,6 +12,10 @@ let code = source.replace(/^import .*$/gm, '').replace('export default function'
 code = code.slice(0, code.indexOf('  if (!accountId) return null')) + '  return {enable,disable,save};\n}\nreturn CourseNotificationSettings;'
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no }); return { promise, resolve, reject } }
 const flush = async () => { for (let i = 0; i < 12; i++) await new Promise(resolve => setImmediate(resolve)) }
+const until = async predicate => {
+  const deadline = Date.now() + 5000
+  while (!predicate()) { assert.ok(Date.now() < deadline, 'synthetic handler did not reach its expected phase'); await new Promise(resolve => setTimeout(resolve, 1)) }
+}
 function fixture({ enrolled = false, available = true, stalledDevice = false, pendingReady = false } = {}) {
   const states = [], refs = [], requests = [], stale = deferred(), ready = deferred()
   let stateIndex = 0, refIndex = 0, effect, cleanup, gets = 0, reads = 0, unsubscribeCalls = 0
@@ -42,7 +46,13 @@ function fixture({ enrolled = false, available = true, stalledDevice = false, pe
   const Component = Function(...Object.keys(deps), code)(...Object.values(deps))
   const render = () => { stateIndex = 0; refIndex = 0; return Component({ accountId: '11111111-1111-4111-8111-111111111111' }) }
   return { states, requests, stale, ready, worker, render, initial, get reads() { return reads }, get unsubscribeCalls() { return unsubscribeCalls },
-    async mount() { render(); cleanup = effect(); await flush() }, unmount() { cleanup() }, consent() { states[4] = true } }
+    async mount() {
+      render(); cleanup = effect(); await until(() => states[1] !== null)
+      // Crypto digest uses the asynchronous worker pool. Wait for the actual
+      // deferred request, rather than assuming a fixed number of event-loop ticks.
+      if (!stalledDevice && (available || enrolled)) await until(() => gets === 2)
+      await flush()
+    }, unmount() { cleanup() }, consent() { states[4] = true } }
 }
 for (const withdrawing of [false, true]) test(`late device hydration cannot reverse confirmed ${withdrawing ? 'withdrawal' : 'enrollment'}`, async () => {
   const f = fixture({ enrolled: withdrawing }); await f.mount(); f.consent()

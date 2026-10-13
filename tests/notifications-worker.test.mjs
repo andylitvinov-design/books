@@ -51,3 +51,33 @@ test('course manifest and worker preserve private network-only behavior', () => 
   assert.match(root, /\/api\/app/); assert.match(root, /network-only/)
   assert.doesNotMatch(source, /caches\.|fetch\(/)
 })
+
+function rootWorker() {
+  const listeners = {}, calls = { respond: 0, fetch: 0, cache: 0, put: 0 }
+  const response = { ok: true, headers: { get: () => '' }, clone() { return this } }
+  const self = { location: { origin: 'https://example.test' }, addEventListener: (name, callback) => { listeners[name] = callback } }
+  vm.runInNewContext(readFileSync('public/sw.js', 'utf8'), {
+    self, URL, importScripts() {},
+    fetch: async () => { calls.fetch++; return response },
+    caches: { open: async () => { calls.cache++; return { match: async () => undefined, put: async () => { calls.put++ } } } },
+  })
+  async function request(path, method = 'GET', aborted = false) {
+    let work
+    listeners.fetch({ request: { url: 'https://example.test' + path, method, signal: { aborted } }, respondWith(value) { calls.respond++; work = value } })
+    await work
+  }
+  return { calls, request }
+}
+test('private and cancelled requests bypass service-worker forwarding and caches entirely', async () => {
+  const value = rootWorker()
+  for (const path of ['/en/app/settings', '/ru/app/course', '/es/client', '/api/app/communication-preferences', '/api/app/shared-materials', '/api/app/course', '/api/client/private', '/document-preview/example', '/%65n//app/settings']) {
+    await value.request(path); await value.request(path, 'GET', true)
+  }
+  await value.request('/api/app/notifications', 'DELETE')
+  assert.deepEqual(value.calls, { respond: 0, fetch: 0, cache: 0, put: 0 })
+})
+test('private bypass preserves normal public-asset cache behavior', async () => {
+  const value = rootWorker()
+  await value.request('/icons/public.png')
+  assert.deepEqual(value.calls, { respond: 1, fetch: 1, cache: 1, put: 1 })
+})
