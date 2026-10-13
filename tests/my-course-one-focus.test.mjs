@@ -1,0 +1,66 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+
+const read=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+const today=read('components/app/course-today.jsx')
+const css=read('components/app/course-today.module.css')
+const quest=read('components/app/course-quest.jsx')
+const workspace=read('components/app/app-workspace.jsx')
+const course=read('components/app/my-course.jsx')
+const theme=read('components/app/my-course-theme.css')
+
+test('first active course screen focuses on one daily practice, not six competing cards',()=>{
+  assert.match(today,/const \[view,setView\]=useState\('today'\)/)
+  assert.match(today,/data-course-screen-switch/)
+  assert.match(today,/data-course-view=\{view\}/)
+  assert.match(today,/view==='today'&&<>/)
+  assert.match(today,/data-course-teal-hero/)
+  assert.match(today,/data-course-today-primary/)
+  const start=today.indexOf("{view==='today'&&<>")
+  const end=today.indexOf("{view==='details'&&<>",start)
+  assert.ok(start>0 && end>start)
+  const firstScreen=today.slice(start,end)
+  assert.match(firstScreen,/<header className=\{styles\.questHero\}/)
+  assert.match(firstScreen,/<div className=\{styles\.heroProgress\}/)
+  assert.match(firstScreen,/Начать практику/)
+  assert.doesNotMatch(firstScreen,/CourseQuestMap|courseInsights|focusDetails|quoteStrip|journeyPanel|learningEvidence|NotificationSettings/)
+  assert.equal((firstScreen.match(/data-course-today-primary/g)||[]).length,1,'one primary daily action')
+})
+
+test('route, detailed reading, self monitoring and pause stay reachable but off the first screen',()=>{
+  assert.match(today,/view==='path'&&<CourseQuestMap/)
+  assert.match(today,/view==='details'&&<>/)
+  assert.match(today,/<details className=\{styles\.classicPanel\}>/)
+  assert.match(today,/<details className=\{styles\.courseInsights\} data-course-insights>/)
+  assert.match(today,/data-course-primary-skill/)
+  assert.match(today,/data-course-journey/)
+  assert.match(today,/data-course-journal-history/)
+  assert.match(today,/data-course-learning-evidence/)
+  assert.match(today,/submit\(paused\?'resume':'pause'/)
+  assert.match(today,/completed&&reportDay&&!reviewed/)
+  assert.match(today,/isFinished/)
+  assert.match(quest,/const \[selected, setSelected\] = useState\(null\)/)
+  assert.match(quest,/setSelected\(null\)/)
+  assert.match(course, /\{stage !== 4 && <footer/)
+  assert.match(theme,/\.hh-app:has\(\[data-my-course\]\) > \.hh-footer\{display:none!important\}/)
+})
+
+test('notification setup stays in Settings, not under the daily task',()=>{
+  assert.match(workspace,/page === 'course' && <MyCourse data=\{data\} locale=\{locale\} \/>/)
+  assert.doesNotMatch(workspace,/page === 'course' && <><MyCourse/)
+  assert.match(workspace,/page === 'settings' && \(/)
+  assert.match(workspace,/<NotificationSettings locale=\{locale\} \/>/)
+  assert.doesNotMatch(workspace,/NotificationSettings locale=\{locale\} compact/)
+})
+
+test('navigation is controlled, accessible and mobile-first, with no new storage or scoring',()=>{
+  assert.match(today,/role="group" aria-label=\{ru\?'Экраны моего курса'/)
+  assert.match(today,/aria-pressed=\{view===key\}/)
+  assert.match(css,/\.viewSwitch/)
+  assert.match(css,/\.shell\[data-course-view=today\]/)
+  assert.match(css,/@media\(max-width:620px\)/)
+  assert.match(css,/@media\(max-width:360px\)/)
+  assert.doesNotMatch(today,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
+  assert.match(today,/onSession=\{body=>submit\('session',body\)\}/)
+})
