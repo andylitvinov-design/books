@@ -178,7 +178,7 @@ export function MyCourse({ data, locale = 'en' }) {
   }
 
   const activeCourses=(state?.courses||[]).filter(item=>['active','paused'].includes(item.status))
-  const showDashboard=activeCourses.length>0&&view==='list'
+  const showDashboard=(state?.courses||[]).length>0&&view==='list'
   const stage = view === 'new' || (state?.course&&!['active','paused'].includes(state.course.status))
     ? 0 : (state?.course?.stage || 0)
   async function openCourse(item) {
