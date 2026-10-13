@@ -19,7 +19,7 @@ test('14-day quest map renders a complete 4-chapter personal path with accessibl
   assert.match(quest, /aria-current=\{active \? 'step' : undefined\}/)
   assert.match(quest, /aria-label=\{t\.lesson/)
   assert.match(quest, /data-status=\{STATES\[item\.status\]/)
-  assert.match(quest, /item\.workbookSkill/)
+  assert.match(quest, /journeyScene/)
   assert.match(quest, /item\.outcome/)
   assert.match(questCss, /\.pathRow\[data-side=left\]/)
   assert.match(questCss, /\.pathRow\[data-side=right\]/)
@@ -27,7 +27,7 @@ test('14-day quest map renders a complete 4-chapter personal path with accessibl
 
 test('daily mission is a one-action-at-a-time accessible player with voluntary self-report', () => {
   assert.match(today, /<CourseQuestMap/)
-  assert.match(today, /<CourseQuestPlayer/)
+  assert.match(today, /<CourseSlidePlayer/)
   assert.match(today, /data-course-today-primary/)
   assert.match(quest, /export function CourseQuestPlayer/)
   assert.match(quest, /data-course-quest-player/)
