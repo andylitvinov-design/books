@@ -187,7 +187,7 @@ export function MyCourse({ data, locale = 'en' }) {
           <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
         </div>
       </div>
-      <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
+      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/andy-about.png" alt="" width={118} height={118} loading="lazy" /></div>
     </header>}
     {stage === 0 && <Course14DayOverview locale={locale} />}
     {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
