@@ -1,7 +1,8 @@
 import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.js'
 import { COURSE_JOURNEY, COURSE_PHASES } from '../data/inner-growth/course-journey.js'
+import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.js'
 import { SHARED_DAYS } from '../data/inner-growth/shared-days.js'
-import { TRACKS, lessonFor, isCompleteLibrary } from '../lib/inner-growth/lesson-library.js'
+import { TRACKS, lessonFor, isCompleteLibrary, COURSE_CONTENT_VERSION, COURSE_WORKBOOK_VERSION } from '../lib/inner-growth/lesson-library.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -393,4 +394,64 @@ test('workbook content appears in daily cards while private journal remains owne
   assert.match(css,/\.workbookPrompt/)
   assert.match(css,/\.workbookTask/)
   assert.match(css,/\.anchorBox/)
+})
+
+
+test('workbook v2 covers 14 distinct, progressive, original bilingual skills', () => {
+  assert.equal(WORKBOOK_DAYS.length, 14)
+  assert.deepEqual(WORKBOOK_DAYS.map(day => day.day), Array.from({length:14},(_,i)=>i+1))
+  assert.equal(new Set(WORKBOOK_DAYS.map(day=>day.key)).size,14)
+  assert.equal(COURSE_CONTENT_VERSION,'hh-growth-r2-v1','preserve old lesson IDs on active cycles')
+  assert.match(COURSE_WORKBOOK_VERSION,/hh-workbook-v2/)
+  assert.equal(workbookDay(0,'en'),null)
+  assert.equal(workbookDay(15,'ru'),null)
+  assert.equal(workbookDay(7.5,'en'),null)
+  for (const item of WORKBOOK_DAYS){
+    for(const language of ['en','ru']){
+      const version=workbookDay(item.day,language)
+      assert.equal(version.day,item.day)
+      for(const field of ['method','skill','question','sentenceStarter','microPractice','workingPosition','takeaway']){
+        assert.ok(version[field]?.trim()?.length>=16,field+' '+item.day+' '+language)
+      }
+      assert.ok(!/(cure|guaranteed|diagnos[eis]|change your medicine)/i.test(version.microPractice))
+    }
+    for(const domain of Object.keys(TRACKS)){
+      const en=lessonFor(domain,item.day,'en')
+      const ru=lessonFor(domain,item.day,'ru')
+      assert.equal(en.workbook.key,item.key)
+      assert.equal(ru.workbook.key,item.key)
+      assert.equal(en.workbook.version,COURSE_WORKBOOK_VERSION)
+      assert.equal(ru.workbook.version,COURSE_WORKBOOK_VERSION)
+    }
+  }
+  assert.ok(WORKBOOK_DAYS[5].key.includes('experiment'))
+  assert.ok(WORKBOOK_DAYS[8].key.includes('if-then'))
+  assert.ok(WORKBOOK_DAYS[13].key.includes('maintenance'))
+})
+
+test('workbook personal notes use existing owner scoped encrypted course session with no new public save path', () => {
+  const ui=read('components/app/course-today.jsx')
+  const server=read('lib/app/growth-daily.js')
+  const lesson=read('lib/inner-growth/lesson-library.js')
+  const css=read('components/app/course-today.module.css')
+  assert.match(ui,/data-course-workbook/)
+  assert.match(ui,/data-course-micro-experiment/)
+  assert.match(ui,/lesson\.workbook\.question/)
+  assert.match(ui,/lesson\.workbook\.workingPosition/)
+  assert.match(ui,/lesson\.workbook\.sentenceStarter/)
+  assert.match(ui,/data-course-continuation/)
+  assert.match(ui,/readOnly=\{completed\}/)
+  assert.match(ui,/const hydratedDayRef=useRef\(''\)/)
+  assert.match(ui,/if\(nextDay!==hydratedDayRef\.current\)/)
+  assert.match(ui,/setReflection\(response\?\.currentSession\?\.reflection\|\|''\)/)
+  assert.match(server,/reflection:openSealed\(currentSession\.reflection_ciphertext,context\(actor,currentSession\.id,'course\.session_note'\),config\)/)
+  assert.match(server,/seal\(reflection,context\(actor,id,'course\.session_note'\),config\)/)
+  assert.match(server,/where account_id=\$1 and cycle_id=\$2/)
+  assert.match(server,/workbookSkill:preview\?\.workbook\?\.skill/)
+  assert.match(server,/const anchor=primary\?\{/)
+  assert.match(lesson,/COURSE_WORKBOOK_VERSION/)
+  assert.match(css,/\.workbookPrompt/)
+  assert.match(css,/\.workbookTask/)
+  assert.match(css,/\.workbookFinish/)
+  assert.doesNotMatch(ui,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
 })
