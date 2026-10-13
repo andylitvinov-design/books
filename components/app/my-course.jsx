@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
-import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
+import { COURSE_STEPS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import CourseToday from './course-today'
+import MyCoursesDashboard from './my-courses-dashboard'
 import Course14DayOverview from './course-14-day-overview'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
@@ -104,8 +105,8 @@ const WORDS = {
   },
 }
 
-async function request(body) {
-  const response = await fetch('/api/app/course', {
+async function request(body, courseId = null) {
+  const response = await fetch('/api/app/course' + (!body && courseId ? '?courseId=' + encodeURIComponent(courseId) : ''), {
     method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
@@ -134,14 +135,17 @@ export function MyCourse({ data, locale = 'en' }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
+  const [view,setView] = useState('list')
+  const [selectedTopic,setSelectedTopic] = useState('resources')
   const startDialogRef = useRef(null)
 
-  async function refresh() {
+  async function refresh(courseId=null) {
     setError('')
     try {
-      const response = await request()
+      const response = await request(undefined,courseId)
       setState(response)
-    } catch (e) { setError(e.message) }
+      return response
+    } catch (e) { setError(e.message); return null }
   }
   useEffect(() => { void refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -150,8 +154,14 @@ export function MyCourse({ data, locale = 'en' }) {
     setBusy(true)
     setError('')
     try {
-      const response = await request({ action, ...(action === 'start' ? {} : { expectedRevision: state.course?.revision }), ...values })
+      const response = await request({
+        action, ...(action === 'start' ? {newCourse:view==='new'} : {
+          courseId:state.course?.id,expectedRevision:state.course?.revision,
+        }),...values,
+      })
       setState(response)
+      if(action==='start')setView('setup')
+      return response
     } catch (e) { setError(e.message) }
     finally { setBusy(false) }
   }
@@ -164,10 +174,35 @@ export function MyCourse({ data, locale = 'en' }) {
 
   async function courseCommand(action,values={}) {
     if (!state?.course) throw new Error('COURSE_NOT_STARTED')
-    return request({ action, expectedRevision:state.course.revision, ...values })
+    return request({ action, courseId:state.course.id, expectedRevision:state.course.revision, ...values })
   }
 
-  const stage = state?.course?.stage || 0
+  const activeCourses=(state?.courses||[]).filter(item=>['active','paused'].includes(item.status))
+  const showDashboard=activeCourses.length>0&&view==='list'
+  const stage = view === 'new' || (state?.course&&!['active','paused'].includes(state.course.status))
+    ? 0 : (state?.course?.stage || 0)
+  async function openCourse(item) {
+    const opened=await refresh(item.id)
+    if(opened?.course) setView(opened.course.stage===4?'lesson':'setup')
+  }
+  async function manageCourse(action,item) {
+    const updated=await act(action,{courseId:item.id,expectedRevision:item.revision})
+    if(updated){await refresh();setView('list')}
+  }
+  async function startAnother() {
+    setSelectedTopic('resources')
+    setView('new')
+  }
+  async function checkoutPlan(tier) {
+    const response=await fetch('/api/app/billing/checkout',{
+      method:'POST',credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tier,locale}),
+    })
+    const result=await response.json().catch(()=>({}))
+    if(!response.ok||!result.url)throw new Error(result.error||'CHECKOUT_UNAVAILABLE')
+    window.location.assign(result.url)
+  }
   const visibleStep = stage === 1 ? 2 : stage === 2
     ? ((state?.course?.testKeys || []).length ? 4 : 3) : stage === 3 ? 5 : stage === 4 ? 6 : 1
 
@@ -175,11 +210,29 @@ export function MyCourse({ data, locale = 'en' }) {
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
 
   return <div className={styles.root} data-my-course>
-    {stage === 0 && <header className={styles.hero}>
+    {showDashboard&&<MyCoursesDashboard
+      courses={state.courses||[]} membership={state.membership||{}}
+      locale={locale} busy={busy} onOpen={openCourse} onNew={startAnother}
+      onClose={course=>manageCourse('close',course)}
+      onPrimary={course=>manageCourse('make-primary',course)}
+      onUnlock={course=>manageCourse('unlock',course)}
+      onCheckout={checkoutPlan}
+    />}
+    {!showDashboard&&activeCourses.length>0&&
+      <button type="button" className={styles.backCourses} onClick={()=>{setView('list');void refresh()}}>
+        ← {ru?'Мои курсы':'My courses'}
+      </button>}
+    {!showDashboard && stage === 0 && <header className={styles.hero}>
       <div>
         <p className="hh-kicker">{t.eyebrow}</p>
         <h1>{t.title}</h1>
         <p className={styles.heroLead}>{t.intro}</p>
+        <label className={styles.pickTopic}>
+          <span>{ru?'Выберите актуальную тему':'Choose a theme that matters now'}</span>
+          <select value={selectedTopic} onChange={e=>setSelectedTopic(e.target.value)}>
+            {COURSE_TOPICS.map(topic=><option key={topic.id} value={topic.id}>{topic.title[ru?'ru':'en']}</option>)}
+          </select>
+        </label>
         <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
         <div className={styles.heroActions}>
           <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
@@ -188,13 +241,13 @@ export function MyCourse({ data, locale = 'en' }) {
       </div>
       <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
     </header>}
-    {stage === 0 && <Course14DayOverview locale={locale} />}
-    {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
+    {!showDashboard && stage === 0 && <Course14DayOverview locale={locale} />}
+    {!showDashboard && stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}
     {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
 
-    {stage === 0 && <section className={'hh-panel ' + styles.details} id="course-details">
+    {!showDashboard && stage === 0 && <section className={'hh-panel ' + styles.details} id="course-details">
       <p className="hh-kicker">{t.how}</p>
       <h2>{t.detailTitle}</h2>
       <p>{t.detailIntro}</p>
@@ -203,7 +256,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.note}</p>
     </section>}
 
-    {stage === 0 && <dialog ref={startDialogRef} className={styles.startDialog}
+    {!showDashboard && stage === 0 && <dialog ref={startDialogRef} className={styles.startDialog}
       aria-labelledby="course-consent-heading" onClose={() => setOptIn(false)}>
       <h2 id="course-consent-heading">{t.consentTitle}</h2>
       <p>{t.consentHelp}</p>
@@ -218,13 +271,19 @@ export function MyCourse({ data, locale = 'en' }) {
       </div>
     </dialog>}
 
-    {stage >= 1 && stage <= 3 && <CourseR3Steps
-      stage={stage} locale={locale} data={data} state={state} busy={busy}
-      onAct={act} onCourseCommand={courseCommand}
+    {!showDashboard && stage >= 1 && stage <= 3 && <CourseR3Steps
+      key={state.course?.id} stage={stage} locale={locale} data={data} state={state} busy={busy}
+      initialTopic={selectedTopic} onAct={act} onCourseCommand={courseCommand}
       onState={setState} onError={setError} root={root}
     />}
 
-    {stage === 4 && <CourseToday locale={locale} />}
+    {!showDashboard && stage === 4 && <CourseToday
+      key={state.course?.id} locale={locale} courseId={state.course?.id}
+      onCourseChange={result=>{
+        if(result?.cycle?.status==='completed'){setView('list');void refresh()}
+        else void refresh(state.course?.id)
+      }}
+    />}
 
     <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>
   </div>
