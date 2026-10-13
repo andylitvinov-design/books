@@ -450,7 +450,7 @@ export default function CourseToday({locale='en'}){
       {t.weeklyComparison}: {t.weekOne} {firstWeekMedian}/10 → {t.weekTwo} {secondWeekMedian}/10
     </p>:<p className={styles.hint}>{t.insufficientRatings}</p>}
     <p className={styles.hint}>{t.learningBoundaries}</p>
-  </section>
+  </section>}
   {data.journalHistory?.length>0&&<section className={styles.workbookHistory} data-course-journal-history>
     <details>
       <summary>{t.savedWorkbookHistory} ({data.journalHistory.length})</summary>
