@@ -51,26 +51,23 @@ export function ConsultationDocumentActions({
   }
 
   return <>
-    <div className="consultation-result-actions consultation-document-actions">
+    <div className="consultation-result-actions consultation-document-actions" aria-label={ru ? 'Просмотр и отправка документа' : 'Document preview and sharing'}>
       <a className="consultation-action-primary" href={urls.previewPdf} target="_blank" rel="noopener noreferrer">{labels.previewPdf}</a>
       <a href={urls.open} target="_blank" rel="noopener noreferrer">{labels.open}</a>
       <a href={urls.pdf} download>{labels.pdf}</a>
+      <button className="consultation-copy consultation-share-action" type="button" disabled={!active || copying} onClick={copy}>
+        {copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}
+      </button>
     </div>
 
-    <details className="consultation-document-more">
-      <summary>{ru ? 'Ещё' : 'More'}</summary>
-      <div className="consultation-document-more-grid">
-        <a href={urls.print} target="_blank" rel="noopener noreferrer">{labels.print}</a>
-        <button className="consultation-copy" type="button" disabled={!active || copying} onClick={copy}>
-          {copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}
-        </button>
-        {editHref && <a href={editHref}>{editLabel}</a>}
-        {(revoke || reactivate) && <form action={active ? revoke : reactivate}>
-          {!active && <p>{reactivateHelp}</p>}
-          <button type="submit">{active ? revokeLabel : reactivateLabel}</button>
-        </form>}
-      </div>
-    </details>
+    <div className="consultation-document-secondary-actions" aria-label={ru ? 'Дополнительные действия с документом' : 'Additional document actions'}>
+      <a href={urls.print} target="_blank" rel="noopener noreferrer">{labels.print}</a>
+      {editHref && <a href={editHref}>{editLabel}</a>}
+      {(revoke || reactivate) && <form action={active ? revoke : reactivate}>
+        {!active && <p>{reactivateHelp}</p>}
+        <button className={active ? 'consultation-access-revoke' : 'consultation-access-restore'} type="submit">{active ? revokeLabel : reactivateLabel}</button>
+      </form>}
+    </div>
 
     <p className="consultation-copy-feedback" role="status" aria-live="polite">
       {status ? labels.copyError : copiedLocale === locale ? labels.copiedFeedback : !active ? labels.disabled : ''}
