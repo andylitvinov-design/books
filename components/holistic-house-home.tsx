@@ -132,7 +132,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
             </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--consultation"
-              href="#home-consultation"
+              href={`/${locale}/services#solutions`}
               event="service_request_start"
             >
               {text.heroBook}<span aria-hidden="true">→</span>
