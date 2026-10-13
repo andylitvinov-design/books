@@ -163,6 +163,8 @@
 - **Итог наблюдения:** Самостоятельно выбранный план продолжения на 2–4 недели.
 - **English:** What changed in your understanding, even if scores stayed similar? Which cue, response and support will you keep practising over the next 2–4 weeks? | Review recorded data as descriptive only; choose a flexible maintenance plan. A 14-day start is not a guarantee of a lasting habit.
 
+**Private learning history:** The client can open a collapsed day-by-day archive of previously saved, encrypted, account-owned workbook reflections, supporting week-one and day-14 reviews. Historical notes are not misattributed to newly introduced prompts. Unsaved draft state clears when the local day or course cycle changes but persists through same-day preference edits.
+
 ## V2 lesson-card passport (UI and data)
 
 - **Hero:** Day N/14, client-selected active scale & skill track, domain-specific lesson title, one-sentence day purpose and *skill of today*.
