@@ -75,7 +75,7 @@ const WORDS = {
 
 const SCENE = {
   checkin: Target,
-  idea: Feather,
+  idea: Leaf,
   recall: Compass,
   phrase: Sparkles,
   guided: Waves,
