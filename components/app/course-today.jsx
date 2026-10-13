@@ -174,7 +174,7 @@ export default function CourseToday({locale='en'}){
  const activeName=GROWTH_GOALS[cycle?.activeGoal||cycle?.primaryGoal]?.title?.[locale]||''
  // The thought and everyday action are separate cards; do not make the
  // guided timer repeat their text as additional meditation steps.
- const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind)
+ const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind))
  const beforeValue=v=>v===null||v===undefined?null:v
  if(data.requiresTarget) return <section className={'hh-panel '+styles.shell+' '+styles.activatePanel}
     data-course-activation>
