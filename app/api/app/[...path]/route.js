@@ -3,6 +3,7 @@ import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config
 import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
+import { createCourseCheckout } from '@/lib/app/course-billing'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
@@ -354,6 +355,11 @@ async function handle(request, { params }) {
       if (method === 'POST' && ['activate','checkin','session','review','preferences','pause','resume','new-cycle'].includes(path[1]))
         return json(await daily.command(actor, path[1], await readBody(request), locale, courseId))
       throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'billing/checkout' && method === 'POST') {
+      const body = await readBody(request)
+      onlyKeys(body, ['tier','locale'])
+      return json(await createCourseCheckout(config,actor,body,requestOrigin(request,config)))
     }
     if (joined === 'course') {
       const growth = createGrowthCourseRepository(config)
