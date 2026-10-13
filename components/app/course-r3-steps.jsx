@@ -177,6 +177,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       const saved=await onCourseCommand('confirm-tests',{testKeys:chosenTests})
       onState(saved)
       setTestsTouched(false)
+      setShowCompletedOptions(false)
     } catch(error){onError(error.message||'COURSE_TEST_SELECTION_UNAVAILABLE')}
     finally {setLocalBusy(false)}
   }
