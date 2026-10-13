@@ -38,6 +38,7 @@ import {
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import MyCourse from '@/components/app/my-course'
+import courseQuizStyles from './course-quiz.module.css'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -203,7 +204,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             courseState, key: nextKey, locale, request: appFetch,
           })
           await load()
-          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=quick&course=1')
+          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=guided&course=1')
         } else {
           await load()
           router.push(root + '/course?tests=complete')
@@ -406,7 +407,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               key={recordId}
               id={recordId}
               locale={locale}
-              initialMode={searchParams.get('mode') === 'quick' ? 'quick' : null}
+              initialMode={searchParams.get('mode') === 'quick' ? 'quick' : searchParams.get('mode') === 'guided' ? 'guided' : null}
               courseMode={searchParams.get('course') === '1'}
               onExit={async () => {
                 await load()
@@ -1079,7 +1080,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
     [showDiscard, setShowDiscard] = useState(false),
-    [mode, setMode] = useState(initialMode === 'quick' ? 'quick' : null),
+    [mode, setMode] = useState(initialMode === 'guided' ? 'guided' : initialMode === 'quick' ? 'quick' : null),
     [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
     inflight = useRef(false)
@@ -1317,7 +1318,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     )
 
   return (
-    <section className={`hh-runner hh-panel hh-runner--${mode || 'guided'}`}>
+    <section className={`hh-runner hh-panel hh-runner--${mode || 'guided'} ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-course-quiz={courseMode ? 'true' : undefined}>
       <header className="hh-runner-head">
         <div className="hh-runner-topline">
           <p className="hh-kicker">
