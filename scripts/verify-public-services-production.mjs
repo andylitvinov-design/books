@@ -39,6 +39,13 @@ try {
       page.evaluate(() => window.innerWidth),
       page.evaluate(() => document.documentElement.scrollWidth),
     ]);
+    if (scrollWidth > width + 1) {
+      const offenders = await page.evaluate(() => Array.from(document.querySelectorAll("body *")).map(node => {
+        const rect = node.getBoundingClientRect();
+        return { tag: node.tagName.toLowerCase(), className: String(node.className?.baseVal ?? node.className ?? "").slice(0, 100), x: Math.round(rect.x), right: Math.round(rect.right), width: Math.round(rect.width) };
+      }).filter(item => item.right > innerWidth + 1 && item.width > 0 && item.x < innerWidth).slice(0, 15));
+      console.error("Overflow elements " + label, JSON.stringify(offenders));
+    }
     assert.ok(scrollWidth <= width + 1, "Horizontal overflow: " + label + " (" + scrollWidth + " > " + width + ")");
   };
   const visible = async (locator) => locator.waitFor({ state: "visible", timeout: 30000 });
