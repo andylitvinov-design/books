@@ -131,8 +131,8 @@ test('bilingual practitioner editors expose both separate notes textareas', asyn
   }
   assert.match(studio, /Анализ/)
   assert.match(studio, /Примечания/)
-  assert.match(studio, /useState\(consultation\?\.analysis \?\? ''\)/)
-  assert.match(studio, /useState\(consultation\?\.additionalNotes \?\? ''\)/)
+  assert.match(studio, /useState\(\(\) => consultation\?\.analysis \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.analysis\)/)
+  assert.match(studio, /useState\(\(\) => consultation\?\.additionalNotes \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes\)/)
 })
 
 test('owner-authored consultation example is an editable draft only for new records', async () => {
@@ -152,8 +152,8 @@ test('owner-authored consultation example is an editable draft only for new reco
   assert.match(form, /checked=\{templateReviewed\}/)
   assert.match(form, /required/)
   // Existing consultations still initialize from the persisted patient record.
-  assert.match(form, /useState\(consultation\?\.analysis \?\? ''\)/)
-  assert.match(form, /useState\(consultation\?\.additionalNotes \?\? ''\)/)
+  assert.match(form, /useState\(\(\) => consultation\?\.analysis \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.analysis\)/)
+  assert.match(form, /useState\(\(\) => consultation\?\.additionalNotes \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes\)/)
 })
 
 test('the generated private PDF has a distinct clickable remedy description URL', async () => {
