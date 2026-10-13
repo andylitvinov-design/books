@@ -103,7 +103,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if ((intentId && serviceId) || (continueTo && (continueTo !== 'tests' || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       const destination = intentId
-        ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}`
+        ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
           ? `${origin}/${locale}/app/consultations?service=${encodeURIComponent(serviceId)}`
           : continueTo === 'tests'
