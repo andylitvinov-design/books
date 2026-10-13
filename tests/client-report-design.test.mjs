@@ -86,3 +86,31 @@ test('HTML and print report share the visible client layout and original remedy 
   assert.match(css, /@page \{ size: A4/)
   assert.match(css, /\.canonical-remedy-profile-photo \{ break-inside: avoid/)
 })
+
+test('remedy appendix is concise and the original PDF photo floats at top right', async () => {
+  const report = {
+    ...example,
+    items: [{
+      displayName: 'Colchicum autumnale',
+      remedySlug: 'colchicum-autumnale',
+      remedyPath: '/en/homeopathy/remedies/colchicum-autumnale',
+      itemType: 'homeopathy',
+    }],
+  }
+  const pdf = buildPrescriptionPdf(report, 'en', origin).toString('latin1')
+  assert.match(pdf, /\(APPENDIX\)/)
+  assert.doesNotMatch(pdf, /SELECTED REMEDY PROFILES|Original texts and photographs from the Holistic House library/)
+  const photo = pdf.match(/q (\d+) 0 0 (\d+) ([\d.]+) ([\d.]+) cm \/RemedyPhoto1 Do Q/)
+  assert.ok(photo, 'The approved remedy image should appear in the PDF')
+  assert.ok(Number(photo[3]) > 350, 'Remedy picture must be at the upper right, not the left margin')
+
+  const [jsx, css] = await Promise.all([
+    readFile('components/prescription-document.jsx', 'utf8'),
+    readFile('components/consultation-report.css', 'utf8'),
+  ])
+  assert.match(jsx, /'Приложение' : 'Appendix'/)
+  assert.doesNotMatch(jsx, /Описание выбранных препаратов|About your selected remedies/)
+  assert.doesNotMatch(jsx, /Авторские описания и фотографии из библиотеки Holistic House/)
+  assert.match(css, /\.canonical-shell \.canonical-document \.canonical-remedy-profile-photo \{\s*float: right;/)
+  assert.match(css, /\.canonical-remedy-profile \.remedy-content-body \{[\s\S]*?font: 18\.5px\/1\.36/)
+})
