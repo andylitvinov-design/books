@@ -9,7 +9,7 @@ import { PERSONALITY_TYPE_DEFINITIONS, PERSONALITY_TYPE_CATALOG } from '../data/
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition, getDefinitionById } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 import { personalityTypeHypothesis, SOCIONICS_TYPE_CODES } from '../lib/assessments/personality-type-interpretation.js'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
 import { createProfileSnapshot } from '../lib/profile/history.js'
@@ -168,7 +168,7 @@ test('migration, desktop and phone report paths preserve safety and private repo
  assert.match(helper,/20261011230000_hh_personality_types_original.sql/)
  assert.match(reportUi,/data-personality-type-summary/)
  assert.match(reportUi,/report\.personalityType\.headline/)
- assert.match(pdf,/Personality type hypothesis/)
+ assert.match(pdf,/prepared\.personalityType\.headline/)
  assert.doesNotMatch(reportUi,/localStorage|sessionStorage/)
 })
 

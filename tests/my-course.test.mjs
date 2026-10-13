@@ -153,6 +153,7 @@ test('first-screen free start is separate from optional account-owned course int
   assert.match(r3, /chosenScales/)
   assert.match(r3, /role="alert"/)
   assert.match(battery, /const fromCourse = searchParams\.get\('course'\) === '1'/)
+  assert.match(battery, /accountPicker explicitSelectionOnly/, 'All account paths, including course, require explicit choices')
   assert.match(battery, /action: 'confirm-tests'/)
   assert.match(battery, /testKeys: valid/)
   assert.match(battery, /router\.replace\(fromCourse \? root \+ '\/course'/)
@@ -201,4 +202,24 @@ test('measured profile prioritizes high difficulties and low resources without r
   const wrong=weeklyResult({'weekly.tension':8})
   wrong.dimensions[0].direction='higher-reported-wellbeing'
   assert.equal(courseMeasuredProfile({results:[wrong],testKeys:['hh-weekly-pulse']}).eligible.length,0)
+})
+
+
+test('report Learn more anchor resolves inside canonical course details without replacing its existing anchor', () => {
+  const ui = read('components/app/my-course.jsx')
+  assert.match(ui, /<section[^>]+id="course-details" data-course-information>/)
+  assert.match(ui, /<h2 id="about-course">\{t\.detailTitle\}<\/h2>/)
+  assert.equal((ui.match(/id="about-course"/g) || []).length, 1)
+  assert.match(ui, /href="#course-details"/)
+  assert.match(ui, /const target = document\.getElementById\('about-course'\)/)
+  assert.match(ui, /target\.scrollIntoView\(\{ block: 'start' \}\)/)
+  assert.match(ui, /stage === 0 \|\| informationRequested/)
+  assert.match(ui, /setInformationRequested\(window\.location\.hash === '#about-course'\)/)
+  assert.match(ui, /Journey stage=\{stage === 0 \? 1 : visibleStep\}/)
+  const details = ui.slice(ui.indexOf('id="course-details"'), ui.indexOf('stage === 0 && <dialog'))
+  assert.match(details, /stage === 0 && <button/)
+  assert.doesNotMatch(details, /act\('start'/)
+  const verifier = read('scripts/verify-result-explanations.mjs')
+  assert.match(verifier, /locator\('#about-course'\)\)\.toBeInViewport\(\)/)
+  assert.match(verifier, /assert\.deepEqual\(posts,\[\]\)/)
 })

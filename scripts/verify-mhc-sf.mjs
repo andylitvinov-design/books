@@ -68,9 +68,29 @@ async function fill(page,d,mode,guest,locale,responseValues){
  await finish.click()
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(4)
+ await expect(report.locator('[data-report-block="1"] article')).toHaveCount(4)
  for(const detail of await report.locator('details').all())await detail.locator('summary').click()
- await expect(report).toContainText(locale==='ru'?'Сумма ответов (0–70)':'Response sum (0–70)')
+ // Independently sum the answered item groups, not the response payload.
+ const sum=(from,to)=>responseValues.slice(from,to).reduce((a,b)=>a+b,0)
+ const scores=[sum(0,14),sum(0,3),sum(3,8),sum(8,14)],maxima=[70,15,25,30]
+ await expect(report.locator('[data-report-block="1"] [data-score-reading]')).toHaveText(
+  scores.map((value,i)=>(locale==='ru'?'Баллы: ':'Score: ')+value+' (0–'+maxima[i]+')'))
+ const technical=report.locator('[data-technical-report-details]')
+ for(const text of (locale==='ru'
+  ?['Сумма всех 14 пунктов (0–70)','Сумма пунктов 1–3 (0–15)','Сумма пунктов 4–8 (0–25)','Сумма пунктов 9–14 (0–30)','Обратных пунктов нет','Клинические нормы, пороги и категориальные диагнозы не присваиваются','не являются валидированной русской адаптацией опросника']
+  :['Sum of all 14 items (0–70)','Sum of items 1–3 (0–15)','Sum of items 4–8 (0–25)','Sum of items 9–14 (0–30)','No items are reversed','No clinical norms, cutoffs or categorical diagnoses are assigned','not a validated Russian questionnaire adaptation']))await expect(technical).toContainText(text)
+ await expect(report.locator('[data-report-block="5"] [data-explanation-source]').first()).toHaveAttribute('href',
+  'https://peplab.web.unc.edu/wp-content/uploads/sites/18901/2018/11/MHC-SFoverview.pdf#page=6')
+ await expect(report.locator('[data-report-block="5"] [data-explanation-origin]')).toHaveText(locale==='ru'
+  ?'Текст — изложение Holistic House; практические шаги подготовлены Holistic House.'
+  :'Text is a Holistic House explanation; practical steps are authored by Holistic House.')
+ await expect(report.locator('[data-report-block="5"]')).toContainText(locale==='ru'
+  ?'Категории flourishing/languishing здесь не вычисляются: для них нужны частотные условия по отдельным ответам, а не только суммы.'
+  :'Flourishing/languishing categories are not computed here: they require item-level frequency conditions, not sums alone.')
+ await expect(report.locator('[data-report-block="5"]')).toContainText(locale==='ru'
+  ?'Взрослая MHC-SF Кори Л. М. Киза: 14 английских пунктов, форма декабря 2011 с исправленным пунктом 6. Эмоциональное, социальное и психологическое благополучие за месяц; суммы без диагнозов и норм.'
+  :'Corey L. M. Keyes’ 14-item adult MHC-SF, December 2011 English form with revised item 6. Past-month emotional, social and psychological wellbeing; continuous sums only, without diagnoses or norms.')
+ await expect(technical).toContainText('2026-10-13.v1')
  await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
  await expect(report).toContainText(locale==='ru'?'не исключает психическое расстройство':'cannot rule out mental illness')
  await expect(report).toContainText('Corey L. M. Keyes')

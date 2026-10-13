@@ -1,0 +1,3215 @@
+{
+  "version": "2026-10-13.v1",
+  "format": "gzip-compressed JSON",
+  "records": 356,
+  "definitions": 178,
+  "artifactSha256": "d05968d5e34051a3d8b69e816287b9cb0dd3721f8b6d11aa1ce2487b8866618f",
+  "uncompressedBytes": 6541502,
+  "compressedBytes": 600051,
+  "entries": [
+    {
+      "definitionId": "a4e5e3b7-0b2f-56b6-ae91-44bc577a6c06",
+      "key": "hh-current-state",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:44663efadb69fa36de244e961af992a81d71c722b168de89644ddc64337b19d3",
+      "scales": 5
+    },
+    {
+      "definitionId": "a4e5e3b7-0b2f-56b6-ae91-44bc577a6c06",
+      "key": "hh-current-state",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:a03cef45db97d0f8f3904991777d82f40ff4191e2a3af56013daf93e7e22f838",
+      "scales": 5
+    },
+    {
+      "definitionId": "89938340-0775-59a2-864e-11228113f0db",
+      "key": "hh-current-state",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:74f71b75fbf6015cc590e14c82082ba15abd4ab0c0937fbd1add5a1742155abd",
+      "scales": 5
+    },
+    {
+      "definitionId": "89938340-0775-59a2-864e-11228113f0db",
+      "key": "hh-current-state",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2ae82e9d8e317201e97c25dcf0c91bb7c7d4f3b431724f5cc3798295a81815b9",
+      "scales": 5
+    },
+    {
+      "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
+      "key": "hh-current-state",
+      "definitionVersion": "v2",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:d9b0fee20da2a3954082c426e2ad00e13d98a5febcf8d9c0eb1b2e42dd9194e9",
+      "scales": 5
+    },
+    {
+      "definitionId": "5d365ee9-fc71-5f07-8414-8f5668b43d13",
+      "key": "hh-current-state",
+      "definitionVersion": "v2",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:851bd0a9fae5db950f620e55380c29c7eec523d0881a9f0d3f6fffc3016bc689",
+      "scales": 5
+    },
+    {
+      "definitionId": "7c967f29-90a1-5a87-8dc5-a4be8c4f0194",
+      "key": "hh-current-state",
+      "definitionVersion": "v2",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:e231a97d17d94b0c6700ea63c0a49d6f08161a907daed0440a97e9481a5b84f1",
+      "scales": 5
+    },
+    {
+      "definitionId": "7c967f29-90a1-5a87-8dc5-a4be8c4f0194",
+      "key": "hh-current-state",
+      "definitionVersion": "v2",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b8c97d8aec7c74aff43cb4ddda718cc85d11e101d33595193d24af44f7c97979",
+      "scales": 5
+    },
+    {
+      "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
+      "key": "mini-ipip-20",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:f6ead4c384076949f880d47f5109e8f24fe426f133e29470187d5e6464f497b5",
+      "scales": 5
+    },
+    {
+      "definitionId": "921c3ba9-2c20-5763-867f-29553cd491cd",
+      "key": "mini-ipip-20",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:e0d237bca368a93d8a848c5e8f31edd2a93c4ba994e9a8d90c267bf791614c49",
+      "scales": 5
+    },
+    {
+      "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
+      "key": "hh-weekly-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:30871eca6d4e681ae83f8c1ee603e739aecd2418d3ebb724449e681a4eedd682",
+      "scales": 8
+    },
+    {
+      "definitionId": "7dc3058b-c939-5577-9226-9c5b50aa4aee",
+      "key": "hh-weekly-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b3d596d5544dfd93d96f8d07c906ffaf4dcee97130b879045cf79677d81048e2",
+      "scales": 8
+    },
+    {
+      "definitionId": "7780802c-603b-5382-aebf-8f6c5ef3ddcc",
+      "key": "hh-weekly-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:e87edc6c47b0eb06f438cc86409ecedca14c723207405823c19275f186585a2b",
+      "scales": 8
+    },
+    {
+      "definitionId": "7780802c-603b-5382-aebf-8f6c5ef3ddcc",
+      "key": "hh-weekly-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:870d46dc3992275a8c41c4271d50a72d81bcf04e3b3f9513aa4098bb38814b9b",
+      "scales": 8
+    },
+    {
+      "definitionId": "2c1c78ad-b4f1-4d15-8b18-37e3f2f55a41",
+      "key": "phq-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:cc350a67068aa16e49e37861d45c5ff560d07bd6806803218147a5b1de8dceed",
+      "scales": 3
+    },
+    {
+      "definitionId": "2c1c78ad-b4f1-4d15-8b18-37e3f2f55a41",
+      "key": "phq-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:31e64c51daa6db3a3ca97f50044f7a66268a3b919cc33d329119d4cd9d07cd85",
+      "scales": 3
+    },
+    {
+      "definitionId": "531f52bf-39df-4149-a0e1-03b89f90aa85",
+      "key": "k6",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:09a286408b346a99e4fe17980f8b8906c87f6e058cdf9f83db15484ab0c30426",
+      "scales": 1
+    },
+    {
+      "definitionId": "531f52bf-39df-4149-a0e1-03b89f90aa85",
+      "key": "k6",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:ca4ac82e896ad39a4cc886c856aaf6a71ff49851b821b357639da848739d6314",
+      "scales": 1
+    },
+    {
+      "definitionId": "a251ab33-c65a-4eaf-a74c-43e4cb219c4c",
+      "key": "phq-9",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:e88e4c704bbde730229996c3875c2199fc9e8e84710b5582dca8b13977e98e26",
+      "scales": 1
+    },
+    {
+      "definitionId": "a251ab33-c65a-4eaf-a74c-43e4cb219c4c",
+      "key": "phq-9",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:27f0e481f8f3a1072942f5e52cc97b6ded471e0d77121792f951fbdc16afa171",
+      "scales": 1
+    },
+    {
+      "definitionId": "b60ae0a9-7cf6-44d8-9e18-3e8d9cbcdd29",
+      "key": "gad-7",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:af8c8f56b6add7840a99c5b6933466cdb18b5ccf7c4acc77f11d2c9070c93708",
+      "scales": 1
+    },
+    {
+      "definitionId": "b60ae0a9-7cf6-44d8-9e18-3e8d9cbcdd29",
+      "key": "gad-7",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:ba11b15163179be66605017b83a288c9cc1e5124b0647a80d4e82750a2efed7e",
+      "scales": 1
+    },
+    {
+      "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
+      "key": "hh-resource-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:26258f4785a2e07d7576c1dfb9e3aa1ed31fa3878515ac0a883044d93f1e0eca",
+      "scales": 7
+    },
+    {
+      "definitionId": "435985a5-94fc-4c2b-9a7f-a2e6c33f94be",
+      "key": "hh-resource-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b7706e441cfe5c7ef03e420b99aaeb026ae5cd9c76d7dcd2b9a0ed88583da79a",
+      "scales": 7
+    },
+    {
+      "definitionId": "aa30b3c7-f35a-4b52-a335-9a74366c2927",
+      "key": "hh-resource-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:82399eeeba65cc64a04c6d0dc9a840d508afd22d38db194de0e022662437fbd6",
+      "scales": 7
+    },
+    {
+      "definitionId": "aa30b3c7-f35a-4b52-a335-9a74366c2927",
+      "key": "hh-resource-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:e875e8e38f1b8457b28fe45e021ae3b70913fb2ebdee3324ded530e848a15188",
+      "scales": 7
+    },
+    {
+      "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
+      "key": "hh-monthly-profile",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:1768012a270ea14d231f63d99efa880f31b60e3ddd9902edf3be77f111a4d1ef",
+      "scales": 7
+    },
+    {
+      "definitionId": "b84c55bf-4872-4271-8dd7-261861697bea",
+      "key": "hh-monthly-profile",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:52a2b97efcfefc636221b815251722a30b9c68f56edab289582c8f46ced1b01b",
+      "scales": 7
+    },
+    {
+      "definitionId": "c87d81ea-2ab4-4ad4-923d-5598a9239d08",
+      "key": "hh-monthly-profile",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:fbbb5059b73f27922a9dca264faeb894530b9580803bae5e6de9954c65256a6c",
+      "scales": 7
+    },
+    {
+      "definitionId": "c87d81ea-2ab4-4ad4-923d-5598a9239d08",
+      "key": "hh-monthly-profile",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:8373af106a9a52b682f881e019b9c55345178b8cefed5714bdb4a817434b8272",
+      "scales": 7
+    },
+    {
+      "definitionId": "3718f80f-470c-5924-88ca-9a973d1d2cbb",
+      "key": "phq-2",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:091898dbbc4f323016651ce4fce92c120129ca9b76018a0c8e3dfd5e6c689917",
+      "scales": 1
+    },
+    {
+      "definitionId": "3718f80f-470c-5924-88ca-9a973d1d2cbb",
+      "key": "phq-2",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:8911f1ab7364256224fd4b874a4b5a144835fca81964a78af396bc73317c4a4a",
+      "scales": 1
+    },
+    {
+      "definitionId": "6f9c0e14-46f0-5ac9-9b36-a8ad2a7c6675",
+      "key": "gad-2",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:76d6b6be4034a064d5573d15ba197971da949a8003d489e7ba42531c680f39c7",
+      "scales": 1
+    },
+    {
+      "definitionId": "6f9c0e14-46f0-5ac9-9b36-a8ad2a7c6675",
+      "key": "gad-2",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:46005584e14e5ee5cac3f22d22daa7dc41f1b08adbd4489c17c80abc217c9757",
+      "scales": 1
+    },
+    {
+      "definitionId": "0fe8f9b7-a114-5808-96b8-922f36ac69d3",
+      "key": "k10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:d91a1a596a90bf7eca74e6d174e2314cc87bb8a842d1bb68f761bd5ff0b79b08",
+      "scales": 1
+    },
+    {
+      "definitionId": "0fe8f9b7-a114-5808-96b8-922f36ac69d3",
+      "key": "k10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:dc9b0842f0e34a5f66b17cb99e57e9c3c45e2e941ba5e13cc098b4a4aab1017b",
+      "scales": 1
+    },
+    {
+      "definitionId": "061fba70-60da-5c1e-99f7-705b7ad2015e",
+      "key": "hh-social-battery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:6dd5edc3e719a1ea33b6e01b40b27e645f273418275733bbc118682bb2c26c38",
+      "scales": 1
+    },
+    {
+      "definitionId": "061fba70-60da-5c1e-99f7-705b7ad2015e",
+      "key": "hh-social-battery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:098cea9ec2981b28b62b002d7a0040eaeee1c5b761d24eaad7c73a2db16d3af4",
+      "scales": 1
+    },
+    {
+      "definitionId": "01b4fc18-9ea1-56ec-8543-00061abe3938",
+      "key": "hh-social-battery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7632de6b6c1448faca62e7aafd653ac4339ba8afbd3bd96bc6d495c2aad2e6f0",
+      "scales": 1
+    },
+    {
+      "definitionId": "01b4fc18-9ea1-56ec-8543-00061abe3938",
+      "key": "hh-social-battery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:6220b25f66eac8ecffac462652e9163fe8ce8714ef8b0decf145cf0300a5c64f",
+      "scales": 1
+    },
+    {
+      "definitionId": "65705916-def2-5159-9530-18f242c42ba8",
+      "key": "hh-focus-mode",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5f06d08ec1ae00aed89dc7064c2a9a12d2ca9f7bce9622d573170ab4e6d4fbd2",
+      "scales": 1
+    },
+    {
+      "definitionId": "65705916-def2-5159-9530-18f242c42ba8",
+      "key": "hh-focus-mode",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:27aedd4d0f3928d60b85d46769d260ddfc22e3bb1399612d510205783b4f055c",
+      "scales": 1
+    },
+    {
+      "definitionId": "746aeef1-e5da-5a5c-a7a0-40e3c5edde2d",
+      "key": "hh-focus-mode",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:1d6e6cef3e53a1b9003e98c43430102e4bb7d51687256ffbf104e1ad5298609c",
+      "scales": 1
+    },
+    {
+      "definitionId": "746aeef1-e5da-5a5c-a7a0-40e3c5edde2d",
+      "key": "hh-focus-mode",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:334d9fbc84b444b0bed26aa2b49f6007192e5231ae95a7509d3c7b4fa67ea811",
+      "scales": 1
+    },
+    {
+      "definitionId": "e20cacee-10f4-515f-8280-523c4e5c0d0a",
+      "key": "hh-stress-weather",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:adad888603a5b8b8ea01286644cccae640b70d396aae762dd2d950e9dfc1a83e",
+      "scales": 1
+    },
+    {
+      "definitionId": "e20cacee-10f4-515f-8280-523c4e5c0d0a",
+      "key": "hh-stress-weather",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:6d0be118d47c38412ae011ac57216dcaaaa5a353f8996e62a5ab1c3503bbf62e",
+      "scales": 1
+    },
+    {
+      "definitionId": "6b3f4c1f-4daa-53d1-8b0b-8d0db3d7343a",
+      "key": "hh-stress-weather",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:46190bcfb9c807c9b1dcd0ddbb19b7294ffe0b5ef0647e6a74644d10506b3545",
+      "scales": 1
+    },
+    {
+      "definitionId": "6b3f4c1f-4daa-53d1-8b0b-8d0db3d7343a",
+      "key": "hh-stress-weather",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:ae8c885c16ba43d7bb9827027fb32f7909ee5ab6b3379ec6b20524c24c63d1de",
+      "scales": 1
+    },
+    {
+      "definitionId": "ce3ecada-28a6-52e7-9bb3-607fa23c8119",
+      "key": "hh-recharge-decoder",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:48cb944b10e75654e50c86078a5843ce34f480c31e52d5f1442d32975816d113",
+      "scales": 1
+    },
+    {
+      "definitionId": "ce3ecada-28a6-52e7-9bb3-607fa23c8119",
+      "key": "hh-recharge-decoder",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:3779e9cf54c5098ecb0d39b3c975d44004d341cd5a015dba2ecbb5c0b17836f0",
+      "scales": 1
+    },
+    {
+      "definitionId": "e6669223-402d-5c51-baa3-b214ca24a246",
+      "key": "hh-recharge-decoder",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:f901b64f2f9401de9020da6db51b7aab14595246ac00f5b2118b410e6ecf9747",
+      "scales": 1
+    },
+    {
+      "definitionId": "e6669223-402d-5c51-baa3-b214ca24a246",
+      "key": "hh-recharge-decoder",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:89975968be9c4202e976921725c1db94b5c1caf6ceddf6e0092d32daec29dda9",
+      "scales": 1
+    },
+    {
+      "definitionId": "2057fd15-a115-50fb-b5c4-04234d50c023",
+      "key": "hh-boundary-radar",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:63d2a4c85f1691efc8220dab1f1f38a68a8dfccfccfd15b52b89cc45bcba5237",
+      "scales": 1
+    },
+    {
+      "definitionId": "2057fd15-a115-50fb-b5c4-04234d50c023",
+      "key": "hh-boundary-radar",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:a0f7a4bcc98636ca449faf1c6ce402ee2ff618320152fde3503da568f08dd788",
+      "scales": 1
+    },
+    {
+      "definitionId": "26a4bc4e-c4ef-52e0-a0fd-4fd5d2cca5df",
+      "key": "hh-boundary-radar",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:9ab5b1e630b481578ce46437045913f74e4dbb9e1c378e2c1b40cc52b270d28a",
+      "scales": 1
+    },
+    {
+      "definitionId": "26a4bc4e-c4ef-52e0-a0fd-4fd5d2cca5df",
+      "key": "hh-boundary-radar",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:29ffc443c6638f78b7785eceb214ba960cf0cbbab54f64b08acdda63777e3b2e",
+      "scales": 1
+    },
+    {
+      "definitionId": "35700e02-9295-5f9e-87dc-c19ea76e337b",
+      "key": "hh-tiny-joys",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:42791113ff42c1261994884cf5242805635a6a3436672f5782c204dbf0c3a099",
+      "scales": 1
+    },
+    {
+      "definitionId": "35700e02-9295-5f9e-87dc-c19ea76e337b",
+      "key": "hh-tiny-joys",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:99f7d94e80d560390fea51ea93d50a4d0c1ef103faa13e10022f53b35093abfd",
+      "scales": 1
+    },
+    {
+      "definitionId": "5be3dc94-a3b1-54a3-9e92-95a48db72d16",
+      "key": "hh-tiny-joys",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:3a461f18d1c2546026ae5be60ff7bca8a1a3d868cd4d2a35edbd8674fd96b34e",
+      "scales": 1
+    },
+    {
+      "definitionId": "5be3dc94-a3b1-54a3-9e92-95a48db72d16",
+      "key": "hh-tiny-joys",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:ab32dd35cc4026c436fd4d8a7fd297b84b8d482b29452379a7e153ccc4eef325",
+      "scales": 1
+    },
+    {
+      "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
+      "key": "mspss",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:43cd6028f32c3e9c19fb092f090d0a979000268b0e47ac5e3e4bf15d31159e53",
+      "scales": 4
+    },
+    {
+      "definitionId": "dad93d2a-d4b3-570c-baa1-f509e854a542",
+      "key": "mspss",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:5ca6a52c39a0df14f592f8c092119de0819e59ba765f26258f4854af6a184a96",
+      "scales": 4
+    },
+    {
+      "definitionId": "b3cb9fb1-0626-52c6-a678-fc71b1ae34b3",
+      "key": "erq",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:e55b98e91e3f08134bd00c23207cdec27dbb5c8466ec3fb8b04dd6f1b704070c",
+      "scales": 2
+    },
+    {
+      "definitionId": "b3cb9fb1-0626-52c6-a678-fc71b1ae34b3",
+      "key": "erq",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:4d79a92172e87ac03635be9efcd367b48856d638ce9f1925e8efdaf40b9ade37",
+      "scales": 2
+    },
+    {
+      "definitionId": "20f3b56b-262e-5712-a0e3-62c365aab031",
+      "key": "phq-15",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:67e64e282b142b2b510aec9bf656154ff159b432090d412ab7af06010b477457",
+      "scales": 1
+    },
+    {
+      "definitionId": "20f3b56b-262e-5712-a0e3-62c365aab031",
+      "key": "phq-15",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:283549128415a3d19cc836fa3d9be48fedef079144b71c2a47ab36928717e5c9",
+      "scales": 1
+    },
+    {
+      "definitionId": "f6a8cc1b-7f05-5034-985c-139e4b91fb64",
+      "key": "brcs",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:bc37cbc96887040756d8518e93f2cefd4e6129d2eca68039489d48b31484b7b3",
+      "scales": 1
+    },
+    {
+      "definitionId": "f6a8cc1b-7f05-5034-985c-139e4b91fb64",
+      "key": "brcs",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2d6fe29445a9e0da736248422e000a0529250b5d9838edfdfd891d54a60332a7",
+      "scales": 1
+    },
+    {
+      "definitionId": "2c74f251-17e9-571a-a319-27826b0768a4",
+      "key": "hh-sleep-reset",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:814167a62422a4af1f27116a462f701bc2d40c7223f38c02d326e90749250fd1",
+      "scales": 1
+    },
+    {
+      "definitionId": "2c74f251-17e9-571a-a319-27826b0768a4",
+      "key": "hh-sleep-reset",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:679bd8be33197ea214efa0442b28af0e8091d4278368311a0bc8211422ea976b",
+      "scales": 1
+    },
+    {
+      "definitionId": "09ab59c8-5d85-52b4-a2bd-0391a7864143",
+      "key": "hh-sleep-reset",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:cf600439e23e3be8b1184a565bbe76e078382afa5e9735d301597c149bb7bbce",
+      "scales": 1
+    },
+    {
+      "definitionId": "09ab59c8-5d85-52b4-a2bd-0391a7864143",
+      "key": "hh-sleep-reset",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:0790e8a2b2fc554e06036740be086c84055a62250fd2fdadc3d88ceba2facad9",
+      "scales": 1
+    },
+    {
+      "definitionId": "3f485eb4-f05a-51f0-b728-b9ca682d0a33",
+      "key": "hh-morning-battery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:0c7f16d3d8cfa7ba0af6dfba235bf9b70ec0230730af381bb250ea88fd776853",
+      "scales": 1
+    },
+    {
+      "definitionId": "3f485eb4-f05a-51f0-b728-b9ca682d0a33",
+      "key": "hh-morning-battery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:ceece7f8602616b444d548ab6e90fa9e52c68036ba211cd52b4993777d473ded",
+      "scales": 1
+    },
+    {
+      "definitionId": "fa11aa66-fc63-5686-828b-ac8e827fee43",
+      "key": "hh-morning-battery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8d4076d30097849877eba91a569a432c3a23e27457f146ff2ff9fea55a9615bc",
+      "scales": 1
+    },
+    {
+      "definitionId": "fa11aa66-fc63-5686-828b-ac8e827fee43",
+      "key": "hh-morning-battery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:0dac7a78c8a85b107b739166d45e7a612617446b52ac56b9aed8a991da92b660",
+      "scales": 1
+    },
+    {
+      "definitionId": "45cc15bf-f82e-5479-b5a6-8e45a3438960",
+      "key": "hh-evening-landing",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:fde95d4ef80941033ae19b4d042c0d1ae60ee2f0f2b1455a0bb3c32133529fb7",
+      "scales": 1
+    },
+    {
+      "definitionId": "45cc15bf-f82e-5479-b5a6-8e45a3438960",
+      "key": "hh-evening-landing",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:34cb088bf5a8092bebbfd3e2f231b2aa6a7c1c00c7e00f692e679bbd66ecce51",
+      "scales": 1
+    },
+    {
+      "definitionId": "58eb1a64-0985-5639-b365-0d8385b98369",
+      "key": "hh-evening-landing",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:3d760efda8d72da636cf4abbdf0f7d164445682adb67c69729210234493f10b8",
+      "scales": 1
+    },
+    {
+      "definitionId": "58eb1a64-0985-5639-b365-0d8385b98369",
+      "key": "hh-evening-landing",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:9fc68e4ad35dfb847d1171618440ceaac91eaa4ed5faec77e5e5c761e2fa6690",
+      "scales": 1
+    },
+    {
+      "definitionId": "cc932f6c-2d4b-59a8-a341-783d3bf75ca1",
+      "key": "hh-decision-fog",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:f08358fe6dce360273c2cfbd1d54f30ba09e8d9317d18830198f1cdfc689e898",
+      "scales": 1
+    },
+    {
+      "definitionId": "cc932f6c-2d4b-59a8-a341-783d3bf75ca1",
+      "key": "hh-decision-fog",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2fe43a3640a77e135f6e7aeb2992006a44f9627ace8728e55b63cab4cad16691",
+      "scales": 1
+    },
+    {
+      "definitionId": "021971b1-742e-5aea-852d-a1af99e22883",
+      "key": "hh-decision-fog",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:00328250ca97e4edd969a735fb2b736da3b623b1eb861aba0d09b15b1707573a",
+      "scales": 1
+    },
+    {
+      "definitionId": "021971b1-742e-5aea-852d-a1af99e22883",
+      "key": "hh-decision-fog",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2e595b33d856ba6a1536385665e4df42d2bda7db987af1fedb358f652c9bfdb9",
+      "scales": 1
+    },
+    {
+      "definitionId": "13ea3326-f27a-532a-87e9-9f43da3991ba",
+      "key": "hh-start-button",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:af4068af5c5d042a973dfd036aab56be3010a3a84f99fe7f159a79c8e93136d7",
+      "scales": 1
+    },
+    {
+      "definitionId": "13ea3326-f27a-532a-87e9-9f43da3991ba",
+      "key": "hh-start-button",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:6dac21b12a2ec0943be3a79b99b1d77526c0d99bb75c9df951f96bc32effe148",
+      "scales": 1
+    },
+    {
+      "definitionId": "60aa2f17-6ea1-5f63-b7fc-603061e1aca1",
+      "key": "hh-start-button",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:d543fb452ad530bb0921136b333145745de233112d7e0000d04ffc09ad47328d",
+      "scales": 1
+    },
+    {
+      "definitionId": "60aa2f17-6ea1-5f63-b7fc-603061e1aca1",
+      "key": "hh-start-button",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:4cd656e69b7363a7262dde0a7a386f52ccd96dbb6ebb5f2fe1198d966379e032",
+      "scales": 1
+    },
+    {
+      "definitionId": "5f4f8e9e-47d5-5831-bef2-fb1701d275dc",
+      "key": "hh-screen-saturation",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:3816269e02460c4f1826925a6e9c20dd88e56827a41c918d5d1d567f42aec034",
+      "scales": 1
+    },
+    {
+      "definitionId": "5f4f8e9e-47d5-5831-bef2-fb1701d275dc",
+      "key": "hh-screen-saturation",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:0ad87ad12af03768d7cfa4522f2b60d7f4198a43b7d06c2a4fffb4f8af06db95",
+      "scales": 1
+    },
+    {
+      "definitionId": "0af7c9ec-c349-5a54-84cc-3ca23b9d4b07",
+      "key": "hh-screen-saturation",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:130f32582f2bf8bad5076551f4bc019f3775a94d45673da4817dfb33aa6b88dc",
+      "scales": 1
+    },
+    {
+      "definitionId": "0af7c9ec-c349-5a54-84cc-3ca23b9d4b07",
+      "key": "hh-screen-saturation",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:448ee75961169e58f4004b640229370ab6a925e2531136eb79b51bed12e6ae67",
+      "scales": 1
+    },
+    {
+      "definitionId": "9b54d264-cb6d-5d05-ac8c-2fdf8c2d3b62",
+      "key": "hh-inner-critic",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:f4dbbc32c25f5d1241c4efc2f1ecfcf070787e26afd2027c98d06031bd8c3e78",
+      "scales": 1
+    },
+    {
+      "definitionId": "9b54d264-cb6d-5d05-ac8c-2fdf8c2d3b62",
+      "key": "hh-inner-critic",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:de1d3076bfa5d58e72d3e5bc35a9265dc14aa2edb4e82f921aa4333f4527c241",
+      "scales": 1
+    },
+    {
+      "definitionId": "8d43e1df-fe02-57ee-bec4-802a4231877b",
+      "key": "hh-inner-critic",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:fe42b9ad80503bd7f4dafd68771d924b8e6ecd111823b03d9f07cb24d5384d27",
+      "scales": 1
+    },
+    {
+      "definitionId": "8d43e1df-fe02-57ee-bec4-802a4231877b",
+      "key": "hh-inner-critic",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:7aead60d407dd29572c367bc90b90fb76498c28fbcd92a339fe09538126bc15c",
+      "scales": 1
+    },
+    {
+      "definitionId": "e74efb49-32ed-501c-9392-c0954627aebd",
+      "key": "hh-inner-ally",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5a0d5ea9bc2f776a3580a09048da5fb140c02cf61bd8a1b595922c870617fc12",
+      "scales": 1
+    },
+    {
+      "definitionId": "e74efb49-32ed-501c-9392-c0954627aebd",
+      "key": "hh-inner-ally",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:38525ac7001c2560824cdfefe07e0300742725aea311f900ded8af21337e2d61",
+      "scales": 1
+    },
+    {
+      "definitionId": "6a061a12-0cdc-5860-b237-e7478181b0e2",
+      "key": "hh-inner-ally",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:0ca80ebdea3a78c93f992ea89fbc3229fab3fc71ece860cb4ebe795c771b0cae",
+      "scales": 1
+    },
+    {
+      "definitionId": "6a061a12-0cdc-5860-b237-e7478181b0e2",
+      "key": "hh-inner-ally",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:f6e3d2cd8a99a1f2c498ffdf787253f128b0816e3cff968c25296adff2e9b681",
+      "scales": 1
+    },
+    {
+      "definitionId": "8634ee78-fb65-5651-a742-3cffc0c1fcf6",
+      "key": "hh-meaning-compass",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5430abf0e60120e3e8eea339e9b7a17c49cc06ef892995495ad59fa908f92092",
+      "scales": 1
+    },
+    {
+      "definitionId": "8634ee78-fb65-5651-a742-3cffc0c1fcf6",
+      "key": "hh-meaning-compass",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:8316f6d7a98e08b4ff4df64b1e5cb6f80b9f162e9e279aecf060383f3b37735c",
+      "scales": 1
+    },
+    {
+      "definitionId": "2e6332ec-a9a7-55d1-8e6d-8809251a9c81",
+      "key": "hh-meaning-compass",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:4a27fa5d4c2d8412b96a5a32e6f8a2df1bee3616b9df9ac52ac9005996f31871",
+      "scales": 1
+    },
+    {
+      "definitionId": "2e6332ec-a9a7-55d1-8e6d-8809251a9c81",
+      "key": "hh-meaning-compass",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:6e302b2a662c5c378cb5c44a7c11c3eae75d687016ec02634621f4a21313dae5",
+      "scales": 1
+    },
+    {
+      "definitionId": "20dd445b-2c3a-5375-944b-f0cffda1898e",
+      "key": "hh-motivation-spark",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:4746d679a92665ad320ee2fcdad91cd394278a4cbc2ef5329a75596bd5ee29c2",
+      "scales": 1
+    },
+    {
+      "definitionId": "20dd445b-2c3a-5375-944b-f0cffda1898e",
+      "key": "hh-motivation-spark",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:4c930c2b649918a7a2cf98a98bb2568204b20b7aaa342b9908bdb361cbf42c94",
+      "scales": 1
+    },
+    {
+      "definitionId": "57bc2c90-0672-5ea3-b825-bf583290f94a",
+      "key": "hh-motivation-spark",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:701153204e2b18d3d082d5ad9515687de0ea40fccf4eb49d34b5886144b54b5d",
+      "scales": 1
+    },
+    {
+      "definitionId": "57bc2c90-0672-5ea3-b825-bf583290f94a",
+      "key": "hh-motivation-spark",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:96b12130aa3de9bc97a95e37d8df17a628b3a10d3291e49c3809cc410e20b0ac",
+      "scales": 1
+    },
+    {
+      "definitionId": "19ea3e6d-147d-5513-a9e7-eb51cab26be0",
+      "key": "hh-change-readiness",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:9d5066be7ba65c7f04184fa34eab251aacd736e05d5cc079fe71cdf11890ced7",
+      "scales": 1
+    },
+    {
+      "definitionId": "19ea3e6d-147d-5513-a9e7-eb51cab26be0",
+      "key": "hh-change-readiness",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:62cdca7063db4df1d0991461b3521484f53c575306105ac8e79a3a89feb6452c",
+      "scales": 1
+    },
+    {
+      "definitionId": "fc6a332c-86e3-51b7-9899-1659ffa9b6c5",
+      "key": "hh-change-readiness",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:4592a082824c05983045285b970445af9a43e18da8e56fe373dfd52648a9302e",
+      "scales": 1
+    },
+    {
+      "definitionId": "fc6a332c-86e3-51b7-9899-1659ffa9b6c5",
+      "key": "hh-change-readiness",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:79b1b98c1dbde1bfbecb4bcda9dbf8aa1c599b034c7065ecd3706a926002d8f8",
+      "scales": 1
+    },
+    {
+      "definitionId": "460da1b1-e0c9-5dc2-9598-ff609974e9c9",
+      "key": "hh-workload-weather",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:be7598aa5a24072ba5595ab5667ded3560ea2e2c30dcfcfa56a18d4aa68d6cd2",
+      "scales": 1
+    },
+    {
+      "definitionId": "460da1b1-e0c9-5dc2-9598-ff609974e9c9",
+      "key": "hh-workload-weather",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:852b17d2f7fb8c9fab4099147a6fa5f68b35ef26a54c1534d9178936db5067e6",
+      "scales": 1
+    },
+    {
+      "definitionId": "1f1142d4-34e0-5d21-a480-44d2aff92746",
+      "key": "hh-workload-weather",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:f6e348e98c2afaa5058ce986eb854641f6f73bb1d9366d4c5ef65c8833fc10da",
+      "scales": 1
+    },
+    {
+      "definitionId": "1f1142d4-34e0-5d21-a480-44d2aff92746",
+      "key": "hh-workload-weather",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2d1ea1eda55800399b2e5cbe91d53fff622f822ec79b5e95fb363cb3381a775a",
+      "scales": 1
+    },
+    {
+      "definitionId": "bad7545e-0152-560d-8c2b-fe633995421e",
+      "key": "hh-body-signals",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5233733f807616d2d9b98813b8a905e772bf4e97649ecda82148defaeb789991",
+      "scales": 1
+    },
+    {
+      "definitionId": "bad7545e-0152-560d-8c2b-fe633995421e",
+      "key": "hh-body-signals",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2f289591ff4e702c7321c204d6f35ea66f7ac4f1f11c4a84e91c2e8e528dcb7f",
+      "scales": 1
+    },
+    {
+      "definitionId": "9d5ee46e-35c7-5585-8db0-942db578cf44",
+      "key": "hh-body-signals",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8df3ebe9a44bb6de53be926793299c519f6edf11f63dc710889baa596e40584d",
+      "scales": 1
+    },
+    {
+      "definitionId": "9d5ee46e-35c7-5585-8db0-942db578cf44",
+      "key": "hh-body-signals",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b6cc7c2bb0bbb175758692d44dd3ada36aed719d1b42aa44bf9e1e9bfd428db6",
+      "scales": 1
+    },
+    {
+      "definitionId": "33f94ea2-9865-5929-820f-8565f01948f9",
+      "key": "hh-rest-permission",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8f77c6aeaaa4861ec083db5f4884f675b5e583773986aec70e8bc425fce781a4",
+      "scales": 1
+    },
+    {
+      "definitionId": "33f94ea2-9865-5929-820f-8565f01948f9",
+      "key": "hh-rest-permission",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:baa5706d880acf479c3ea72ad06d39cc275b59fd1401fbfd948ab74f5d868bb7",
+      "scales": 1
+    },
+    {
+      "definitionId": "518cb960-5abb-5921-bba0-c1a3c5bf85ec",
+      "key": "hh-rest-permission",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:97e09d26f3da96f3fddb73452dc2f8c878fdd5a2e456390ebb33ecae644473d8",
+      "scales": 1
+    },
+    {
+      "definitionId": "518cb960-5abb-5921-bba0-c1a3c5bf85ec",
+      "key": "hh-rest-permission",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:003e9018728b973ff64e5fd176d4e60a8e592d72e9b002a6518118e33e635e33",
+      "scales": 1
+    },
+    {
+      "definitionId": "235b5c19-f0c9-598e-aee7-6663b4167700",
+      "key": "hh-closeness-compass",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8e649901390a3b128f5bc697cd9f2fa896c3bad74327faf9713e2cf8dce508d3",
+      "scales": 1
+    },
+    {
+      "definitionId": "235b5c19-f0c9-598e-aee7-6663b4167700",
+      "key": "hh-closeness-compass",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:f1101be6bf4ae04de03222c94e0c1105e5e729bde708a3beb4fc9770451259fa",
+      "scales": 1
+    },
+    {
+      "definitionId": "ddc29eaa-d4de-50d4-879f-a84ad94be944",
+      "key": "hh-closeness-compass",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:910072b57ec3f6777e99d5956e2134f7a49da971ee1f38247c857500b307a585",
+      "scales": 1
+    },
+    {
+      "definitionId": "ddc29eaa-d4de-50d4-879f-a84ad94be944",
+      "key": "hh-closeness-compass",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:250f89ffcf3e5abda34437021cc959a2f0160332533b8172cc508668e37535dc",
+      "scales": 1
+    },
+    {
+      "definitionId": "c3c768fc-00b2-58d1-9f02-1fba03c8b2ff",
+      "key": "hh-confidence-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:79e21b1abc841a6129e2db6c3939b8f4f5099e6f92be90ff6349589acad17562",
+      "scales": 1
+    },
+    {
+      "definitionId": "c3c768fc-00b2-58d1-9f02-1fba03c8b2ff",
+      "key": "hh-confidence-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:cc7326ab612fb2e4b7a2fa7ee7dc8dea46aae9fe0704f95a9c6a30b0df99afdb",
+      "scales": 1
+    },
+    {
+      "definitionId": "74023a68-d475-5b72-92cd-20bccff1629c",
+      "key": "hh-confidence-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:99a4271147a4fd67c407e4bf70db5b18bddd69794d2811c24c3223c75d3a2cea",
+      "scales": 1
+    },
+    {
+      "definitionId": "74023a68-d475-5b72-92cd-20bccff1629c",
+      "key": "hh-confidence-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:c4c905e44eed7ba08c8ef9812632ffae81c333dc97224e873d5a8b52f1532a72",
+      "scales": 1
+    },
+    {
+      "definitionId": "d0ec4ef1-2533-5c11-bea6-ae97cea33ca4",
+      "key": "hh-playfulness-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:b2b957a00655594a5ed58d13f16fb9be025a42fe4ce0b149c2bfcbdf4bff70df",
+      "scales": 1
+    },
+    {
+      "definitionId": "d0ec4ef1-2533-5c11-bea6-ae97cea33ca4",
+      "key": "hh-playfulness-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:46827fb2c79712c69bc2d148911a7c9dc7ac7f27ec74c4d0a4b055f767a6b8bb",
+      "scales": 1
+    },
+    {
+      "definitionId": "b1137f82-a2a5-5e54-bd0f-7bc140958285",
+      "key": "hh-playfulness-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:da51618f42f03a4ef6cd7d94bb7e3522446c41db86a4225fc4a8ef259eddb6db",
+      "scales": 1
+    },
+    {
+      "definitionId": "b1137f82-a2a5-5e54-bd0f-7bc140958285",
+      "key": "hh-playfulness-pulse",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:248689a0895b75e7bb3b67d478450a7049ea31bcd62d684f8cc0859c8ccf264b",
+      "scales": 1
+    },
+    {
+      "definitionId": "70a5cd6d-bfc9-5d8d-902d-5615964534d4",
+      "key": "hh-daily-rhythm",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:222d09d60ff7971c8dcf7852a2c141d1efe419e26a3428b4b67a4e3e51f5e47e",
+      "scales": 1
+    },
+    {
+      "definitionId": "70a5cd6d-bfc9-5d8d-902d-5615964534d4",
+      "key": "hh-daily-rhythm",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:e9047a7a8050bff750d092afffd1c41158ed7f80aaa270492764f826f5760c44",
+      "scales": 1
+    },
+    {
+      "definitionId": "4179a52b-27bf-567f-96b1-c67da0211131",
+      "key": "hh-daily-rhythm",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5577a27b2214691abc471348e93e9f68270a9afa867eafd3eea0c8617a32371d",
+      "scales": 1
+    },
+    {
+      "definitionId": "4179a52b-27bf-567f-96b1-c67da0211131",
+      "key": "hh-daily-rhythm",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:abb334ee99f1dc9a47bebd8c8b48931f6ecc4bf70fdca4c39f94d3dd32689b11",
+      "scales": 1
+    },
+    {
+      "definitionId": "d4cda843-f234-5304-aca0-17dfa59e4c3c",
+      "key": "hh-money-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:4e76930602a6018256ab107d47487a620d8238686d9f0c593e20016a34983026",
+      "scales": 1
+    },
+    {
+      "definitionId": "d4cda843-f234-5304-aca0-17dfa59e4c3c",
+      "key": "hh-money-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:df1c588b10ea8460bdb9d4718993bd192e5f6bddcb57fa37b5b040a24e0b9d2c",
+      "scales": 1
+    },
+    {
+      "definitionId": "13782a7c-a7e3-5daa-a6ac-bab2e78f93ef",
+      "key": "hh-money-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:6dbb98e42c74ce27b2a546c32647c2e33c39b649f56a6e3d7b7beec19a3d749d",
+      "scales": 1
+    },
+    {
+      "definitionId": "13782a7c-a7e3-5daa-a6ac-bab2e78f93ef",
+      "key": "hh-money-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:fdfc491277d073ab296e1b1a6c66566f0dc5b07082fc44aa6fec01e872f3cef1",
+      "scales": 1
+    },
+    {
+      "definitionId": "78e8bbd2-20d3-5013-9590-fc686744b9e8",
+      "key": "hh-overthinking-loop",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:355432f43c6261514960865b65649a3543e43d055cd56c122939032215fd39d9",
+      "scales": 1
+    },
+    {
+      "definitionId": "78e8bbd2-20d3-5013-9590-fc686744b9e8",
+      "key": "hh-overthinking-loop",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:5435639fcb7ecf106feb1be775bf4301635611e401cf3b490282464b79b50edf",
+      "scales": 1
+    },
+    {
+      "definitionId": "14474c94-072c-50a4-b965-e80a3db77455",
+      "key": "hh-overthinking-loop",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:b611546dd3a2f825c304aebefa6e7828af7f8bf232dae5b73e2b38e1d3a36d47",
+      "scales": 1
+    },
+    {
+      "definitionId": "14474c94-072c-50a4-b965-e80a3db77455",
+      "key": "hh-overthinking-loop",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:e875fbadec13dfad7b0940b6e814807a819d30cb6e0d5804c9213e85a0fe8351",
+      "scales": 1
+    },
+    {
+      "definitionId": "f2076b15-7790-5323-ae66-ca5b31c5d54b",
+      "key": "hh-felt-safety",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:557db1fdcf9036eb6dfea888e7a1afbb558ffe769094c48082656b031fa7859d",
+      "scales": 1
+    },
+    {
+      "definitionId": "f2076b15-7790-5323-ae66-ca5b31c5d54b",
+      "key": "hh-felt-safety",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:3169d8c06fbc616a40b38185455062f4f46d1c4ed2fb770283d59ee9a32cb4e5",
+      "scales": 1
+    },
+    {
+      "definitionId": "d02f69c6-a6b2-5c3f-a367-4e3f43427118",
+      "key": "hh-felt-safety",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:b558ce6d89c134c0f2888225a938886eef3f984519e210688177358257c3ec1d",
+      "scales": 1
+    },
+    {
+      "definitionId": "d02f69c6-a6b2-5c3f-a367-4e3f43427118",
+      "key": "hh-felt-safety",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:3ce53d803793a674041fc46468c6af601f574e7d5f7541f6c134293334284c78",
+      "scales": 1
+    },
+    {
+      "definitionId": "1828ac5c-4dde-5e30-ad18-7bb46e20dab7",
+      "key": "hh-emotion-clarity",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8cf6dfd0986522cb295bb01577b9a3d5e6309216db8d3ca88d2a0821c351e9e0",
+      "scales": 1
+    },
+    {
+      "definitionId": "1828ac5c-4dde-5e30-ad18-7bb46e20dab7",
+      "key": "hh-emotion-clarity",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:d58c8de8a46021e81a8411784a0f51089dfa0047183e16fb3da7aa8404a4836a",
+      "scales": 1
+    },
+    {
+      "definitionId": "9daaadc2-6236-5b46-a187-1029dfa1c13d",
+      "key": "hh-emotion-clarity",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:b2e969813e6afcc08508a51017ae97152b4e61196d4652df848f45f14894f877",
+      "scales": 1
+    },
+    {
+      "definitionId": "9daaadc2-6236-5b46-a187-1029dfa1c13d",
+      "key": "hh-emotion-clarity",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:1c419e354d73430d7b21e95f4278df3b96960a9a1f643a8e76b89d6a2e7b1e62",
+      "scales": 1
+    },
+    {
+      "definitionId": "a7275a87-3b07-5a8e-a107-7548bd34eefe",
+      "key": "hh-loss-adjustment",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:60cb8b8e2a4b0a66b0cd57031ea7e5def647662a18c2efb0d69f21e4ec2c7005",
+      "scales": 1
+    },
+    {
+      "definitionId": "a7275a87-3b07-5a8e-a107-7548bd34eefe",
+      "key": "hh-loss-adjustment",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:e17dfde2bec7cd57a6470eaef57adc1a9edbcf0b6ee8d23acdf2a2e2736935c0",
+      "scales": 1
+    },
+    {
+      "definitionId": "ceab5e3f-dac8-5fc2-a303-ea6fb33d2036",
+      "key": "hh-loss-adjustment",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:3734fc65643fc299bbb13d320c9797caaf46f5281e85ff260d4eb938109e7c04",
+      "scales": 1
+    },
+    {
+      "definitionId": "ceab5e3f-dac8-5fc2-a303-ea6fb33d2036",
+      "key": "hh-loss-adjustment",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:d5810ea50b95979794b98184ea1ecbbde917313bd6ff4abf8a9dde4743836aa6",
+      "scales": 1
+    },
+    {
+      "definitionId": "c35e0b17-f460-5fdb-ad95-c78ae5e3acb0",
+      "key": "hh-belonging",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:10e5a24a9b947122577bf18a87b21c72cec011d573172b66bde48bc907396344",
+      "scales": 1
+    },
+    {
+      "definitionId": "c35e0b17-f460-5fdb-ad95-c78ae5e3acb0",
+      "key": "hh-belonging",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:3f3a89e665d73f71b0b0caf828149bfdead5f964ba14cb0686b8f6d2d57b1422",
+      "scales": 1
+    },
+    {
+      "definitionId": "412ea9e7-a00e-565c-aeaa-174191fa10bd",
+      "key": "hh-belonging",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:610809fd2ee3061b8424f35fc834fd55a95d837b2699a35a23f0bbdbac47473e",
+      "scales": 1
+    },
+    {
+      "definitionId": "412ea9e7-a00e-565c-aeaa-174191fa10bd",
+      "key": "hh-belonging",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b8b04f039aa126240b1c00c95b20f3d5c399312d5675ebf9c8f8172310cdfdb7",
+      "scales": 1
+    },
+    {
+      "definitionId": "aee0184b-a4b3-5d0c-a871-c2f2f3faf2d3",
+      "key": "hh-conflict-repair",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:6173090d2b4ba41024017e0a683499e343c252064638eef4cf25e7d074f3e6b5",
+      "scales": 1
+    },
+    {
+      "definitionId": "aee0184b-a4b3-5d0c-a871-c2f2f3faf2d3",
+      "key": "hh-conflict-repair",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:916ac50d8c7c4ec55c8e66a529cceb15a8c422bc10ce78e0fd9e31a1e7bf5ee1",
+      "scales": 1
+    },
+    {
+      "definitionId": "32656416-981e-5710-aaca-adeabb7288c1",
+      "key": "hh-conflict-repair",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:76e593862e0c8614d35e53b58bc24ae6e4c5836173878b39c8d888c731d23871",
+      "scales": 1
+    },
+    {
+      "definitionId": "32656416-981e-5710-aaca-adeabb7288c1",
+      "key": "hh-conflict-repair",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:c0f06caecba4e4f0824a8c1a3ab3641290cbe35fcc088f5dc16a1e1391d1ab96",
+      "scales": 1
+    },
+    {
+      "definitionId": "13cbb77f-cf5c-5699-aa29-1295218ec6a8",
+      "key": "hh-family-roles",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8c76b3a3b6c1d415b6ad9ede8f35b242a24b308a777f72dbc7346d1902a863e0",
+      "scales": 1
+    },
+    {
+      "definitionId": "13cbb77f-cf5c-5699-aa29-1295218ec6a8",
+      "key": "hh-family-roles",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:9cb7045130b533c7e62eda9344de73cbdd67e27e6e28a28959b14458fd40bdea",
+      "scales": 1
+    },
+    {
+      "definitionId": "79bc7b6c-eb6e-568d-a506-010c134f0f87",
+      "key": "hh-family-roles",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:2129a827aa531f1f43e1a0d81cac5b66cb220170f1d1144a062fa505daa76aaa",
+      "scales": 1
+    },
+    {
+      "definitionId": "79bc7b6c-eb6e-568d-a506-010c134f0f87",
+      "key": "hh-family-roles",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:585eddd2a168e61cd207ca8cac2413b604d4243eda2ac7e6d5559e5179fe5d83",
+      "scales": 1
+    },
+    {
+      "definitionId": "5ebfbbb4-8ce5-58b9-a5bc-dfe8cdc1bfb4",
+      "key": "hh-inner-imagery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8656f6f5429d2cebbc6ba0776c7e55e08032022b953808500003dd7c6926685a",
+      "scales": 1
+    },
+    {
+      "definitionId": "5ebfbbb4-8ce5-58b9-a5bc-dfe8cdc1bfb4",
+      "key": "hh-inner-imagery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:5975531d8182e19ce83e6ba520ecc421d1380ddc09ea0e24617f32b50e58b0f0",
+      "scales": 1
+    },
+    {
+      "definitionId": "fb657a43-39cd-5ebc-af98-b25ad72cb5bf",
+      "key": "hh-inner-imagery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7a71c30dc1e2a70771a733e984308f6393843cd3ab16629b5b62166e94fe0049",
+      "scales": 1
+    },
+    {
+      "definitionId": "fb657a43-39cd-5ebc-af98-b25ad72cb5bf",
+      "key": "hh-inner-imagery",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:7597321f31dc4c4283fadfee6fdbbe7cac5c194a6091807407bc1fc3de2cd203",
+      "scales": 1
+    },
+    {
+      "definitionId": "d0739c27-8d4b-5c64-a645-c21c0edf8806",
+      "key": "hh-values-direction",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:c6675f7f2610a52c483ac2ed466d20deb1e1de7bb0ba44b8c880e46029e9052f",
+      "scales": 1
+    },
+    {
+      "definitionId": "d0739c27-8d4b-5c64-a645-c21c0edf8806",
+      "key": "hh-values-direction",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:aa56fd358adb544476d7e3298e02c8f096edaec1dde8f6ad0d82f00e757a7795",
+      "scales": 1
+    },
+    {
+      "definitionId": "319361bc-2c02-52ae-a5b8-77b9e95c3af9",
+      "key": "hh-values-direction",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5090adca856b863d11d785dfaf3c36256eb409007532b4debe79afa4a09d1690",
+      "scales": 1
+    },
+    {
+      "definitionId": "319361bc-2c02-52ae-a5b8-77b9e95c3af9",
+      "key": "hh-values-direction",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:282cc78b8dad447f2ae3d588b1f01cdacbc40d2bce2088a0fda832a79b5e1dd9",
+      "scales": 1
+    },
+    {
+      "definitionId": "78ae1ce7-168e-5938-ad33-7746bc9b0941",
+      "key": "hh-life-transition",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7fa5c220d085cc18b329e1d478d87041bd1d96197c2f65e712c8f6a18f591032",
+      "scales": 1
+    },
+    {
+      "definitionId": "78ae1ce7-168e-5938-ad33-7746bc9b0941",
+      "key": "hh-life-transition",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:c52fc72775c29c77a60514bfe91212382b387bf49d82978dce1452d98ecb1ef7",
+      "scales": 1
+    },
+    {
+      "definitionId": "3f1dd101-1586-5f0d-a02e-e2f4be0dee3f",
+      "key": "hh-life-transition",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:92752f28aac2cbd27087a0719574c51dba6c51fbcb841d8a3a6aa6b47b6c6426",
+      "scales": 1
+    },
+    {
+      "definitionId": "3f1dd101-1586-5f0d-a02e-e2f4be0dee3f",
+      "key": "hh-life-transition",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:0635f753c6f5e23725be6acf5c256cceff3d6bb8d323a625da22859a66e979d5",
+      "scales": 1
+    },
+    {
+      "definitionId": "3297dc76-f225-545e-acdf-f60cdab71e0e",
+      "key": "hh-speaking-up",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5d5e1d2767df914f9d4dfc06ca4457f8682e7233393d9736d8c7fa989ca23668",
+      "scales": 1
+    },
+    {
+      "definitionId": "3297dc76-f225-545e-acdf-f60cdab71e0e",
+      "key": "hh-speaking-up",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:3a9f6117f494130a93f633daea211018cb84db75195a338084c35fd3feb1d374",
+      "scales": 1
+    },
+    {
+      "definitionId": "2aeb8a89-8879-56ad-ac3d-09d5762d61dd",
+      "key": "hh-speaking-up",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:41755657235ed9f5e69db94ad7a0b97b34b9c650b8da4ecaddaa854896b5cd91",
+      "scales": 1
+    },
+    {
+      "definitionId": "2aeb8a89-8879-56ad-ac3d-09d5762d61dd",
+      "key": "hh-speaking-up",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:aa0a452e2fae27322f01029022acfb76804f3e117d7c19630a39faa6bbc7f009",
+      "scales": 1
+    },
+    {
+      "definitionId": "c897c975-620b-5afb-a281-d24ec11878c9",
+      "key": "hh-sustainable-pace",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:cc498e91f86027e21bba5eaf5045d2ebe3173769bef4ae24c5aa9e983e5d5bbc",
+      "scales": 1
+    },
+    {
+      "definitionId": "c897c975-620b-5afb-a281-d24ec11878c9",
+      "key": "hh-sustainable-pace",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:a8d9a44e8574b4a9285d0983ad6cea565432b24b33415045d4facc284fe4f603",
+      "scales": 1
+    },
+    {
+      "definitionId": "804e857a-1568-5ae4-a053-b889a24b225b",
+      "key": "hh-sustainable-pace",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:3f0a11732a37578a70614f4b9fd13e10c9b16ad3001e42b20d6582282f31818e",
+      "scales": 1
+    },
+    {
+      "definitionId": "804e857a-1568-5ae4-a053-b889a24b225b",
+      "key": "hh-sustainable-pace",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:1e36cf89c0acff03efc3ccc05db9df9e100d356332831f7d70ade56ad3fd93c5",
+      "scales": 1
+    },
+    {
+      "definitionId": "a5fbdff6-e125-5e29-a828-7415938871e9",
+      "key": "hh-support-seeking",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:a6920ddd8bab4be63a4e15e036dc54f04c35c33966ed4579e3e379fccce6123e",
+      "scales": 1
+    },
+    {
+      "definitionId": "a5fbdff6-e125-5e29-a828-7415938871e9",
+      "key": "hh-support-seeking",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:26b41e352b72803cd475a51714c6922eed867744d6690dce402cf5a2454c786b",
+      "scales": 1
+    },
+    {
+      "definitionId": "31b95974-1368-5048-a299-27968ce8ae59",
+      "key": "hh-support-seeking",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8fb786e07f7368b6be29af28cc3c0e3afba9b35e1aac6e4f308aeccd445a6e5e",
+      "scales": 1
+    },
+    {
+      "definitionId": "31b95974-1368-5048-a299-27968ce8ae59",
+      "key": "hh-support-seeking",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:f7be483a933141e63ab9ce35d879800d7f9c8444c25820b33718228eb31193be",
+      "scales": 1
+    },
+    {
+      "definitionId": "e4cbe495-d4e6-53a1-aa04-9d39767a2b26",
+      "key": "hh-sensory-comfort",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:f306c40a91179625975fc35cca37b4d88c440c02a951256da37e28a09f431b1e",
+      "scales": 1
+    },
+    {
+      "definitionId": "e4cbe495-d4e6-53a1-aa04-9d39767a2b26",
+      "key": "hh-sensory-comfort",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:1b6b3a6b969f4576e8aaf8c48650655cde492c6251ceedd97f10fde9ade50527",
+      "scales": 1
+    },
+    {
+      "definitionId": "604048de-3ee3-521a-aab0-3c0ee0e3b673",
+      "key": "hh-sensory-comfort",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:903e128208471827dcf927c07bb200e3f3e95bc169dd164db4fa945498921907",
+      "scales": 1
+    },
+    {
+      "definitionId": "604048de-3ee3-521a-aab0-3c0ee0e3b673",
+      "key": "hh-sensory-comfort",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:63b785276992581d20efb50fbef96b207ac0344eb398432e5dd22ca84fc31190",
+      "scales": 1
+    },
+    {
+      "definitionId": "7977d54a-e767-5500-ac9a-462dc45137cb",
+      "key": "hh-goal-obstacles",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:9ad417b5180cffa9ca122c7a072de5d7fc3966a99d5a1ead1af502847dd0eae4",
+      "scales": 1
+    },
+    {
+      "definitionId": "7977d54a-e767-5500-ac9a-462dc45137cb",
+      "key": "hh-goal-obstacles",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:883da85b9847bda8b75d5b204d02e0c409a9a9b5b147816b2223e9a59db4d83b",
+      "scales": 1
+    },
+    {
+      "definitionId": "8f8b5fe4-b555-529a-a91e-75134194d6f8",
+      "key": "hh-goal-obstacles",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:905869658d3e0c69fb112b6ad18b9af93c80513011ec8b144f16be5c8cd8fc42",
+      "scales": 1
+    },
+    {
+      "definitionId": "8f8b5fe4-b555-529a-a91e-75134194d6f8",
+      "key": "hh-goal-obstacles",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:7948eb21210281bb8adbbc8b685aaed9557ca8357bfdc421eb500b9d283db8c1",
+      "scales": 1
+    },
+    {
+      "definitionId": "f6e11a76-d3d4-52ec-a634-7d73f20e2d3b",
+      "key": "hh-body-mind-context",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:12493d3c7ad4f13a86991b4a0abbaa7704a414f03b3d468ad1789801d652f28d",
+      "scales": 1
+    },
+    {
+      "definitionId": "f6e11a76-d3d4-52ec-a634-7d73f20e2d3b",
+      "key": "hh-body-mind-context",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:bf71b88f9d702c88156db729722c90723b0aa3d1799d1e7e0e56e445054cc4c9",
+      "scales": 1
+    },
+    {
+      "definitionId": "c896ca86-5ca0-5e53-aa85-1f165b964efb",
+      "key": "hh-body-mind-context",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:f24f47ba3470b0d156235b69c782ab6c9c6ee2426ebf0c27781a579820a9fa51",
+      "scales": 1
+    },
+    {
+      "definitionId": "c896ca86-5ca0-5e53-aa85-1f165b964efb",
+      "key": "hh-body-mind-context",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:7b46a09174cd2c93e97bf855bab01abbf30b831a5562b2ade732d192fcdcefb5",
+      "scales": 1
+    },
+    {
+      "definitionId": "878ae27c-f7fe-563a-adf8-90687afb1c27",
+      "key": "hh-energy-drains",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:b9b5c9b0cd6a65e657866dc648cecf1adf62fd718d6366fe46f2d31f27ae46b2",
+      "scales": 1
+    },
+    {
+      "definitionId": "878ae27c-f7fe-563a-adf8-90687afb1c27",
+      "key": "hh-energy-drains",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:1080b2e40b9210f734fdb1aa43133a55b166d432ff2aee7d5038e913fddd166b",
+      "scales": 1
+    },
+    {
+      "definitionId": "836b4d07-cd9b-5bd6-a769-c83edf415371",
+      "key": "hh-energy-drains",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:922b9e1f74525e7133ff2e0de9fd7777fa3c80c5cedfa8851bcfa72503f4761e",
+      "scales": 1
+    },
+    {
+      "definitionId": "836b4d07-cd9b-5bd6-a769-c83edf415371",
+      "key": "hh-energy-drains",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:970a459dbb3699aaa770a352bef542bea3dcb11380731e25cd13b5eea781addb",
+      "scales": 1
+    },
+    {
+      "definitionId": "3820ebab-56be-51b4-a38d-f61ecc470507",
+      "key": "hh-social-ease",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:e9f0a69833fa4ca1d0d5cdffd24f5555b46156e58518c5f7659b6f9e4d935626",
+      "scales": 1
+    },
+    {
+      "definitionId": "3820ebab-56be-51b4-a38d-f61ecc470507",
+      "key": "hh-social-ease",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:03b6c411e5048aa326c123fae9dac9f21df2b12ba2098dc3cbfbcdf5a6b18c45",
+      "scales": 1
+    },
+    {
+      "definitionId": "21e1b782-21a9-5545-ae01-c0f8502e6b7c",
+      "key": "hh-social-ease",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:d9c5892dc1924968da3458864e3140e16606031a13a941661857e380f21726bc",
+      "scales": 1
+    },
+    {
+      "definitionId": "21e1b782-21a9-5545-ae01-c0f8502e6b7c",
+      "key": "hh-social-ease",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:c6a16493bc3ea5e81553bc021850b40ec293ff4b3f46e7a9b8749841cdedd78b",
+      "scales": 1
+    },
+    {
+      "definitionId": "bf2c2015-a1e7-5776-acfa-80b9e50557d3",
+      "key": "hh-solitude-choice",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:6be694d3d92d721526baef621c05d661984c4415d6a5baa19e3eee98ae4638d3",
+      "scales": 1
+    },
+    {
+      "definitionId": "bf2c2015-a1e7-5776-acfa-80b9e50557d3",
+      "key": "hh-solitude-choice",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:e8b210d72b25a72411acbe1bc3b62332ceba953f49d7ed3aa5cae9fa0d041cd2",
+      "scales": 1
+    },
+    {
+      "definitionId": "3cd2035a-64d9-5e8e-abcc-e0fb37221f92",
+      "key": "hh-solitude-choice",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:28485f1fc185c6cdbee7e7194f0687d79366212dfe58545faa546ea127b4d863",
+      "scales": 1
+    },
+    {
+      "definitionId": "3cd2035a-64d9-5e8e-abcc-e0fb37221f92",
+      "key": "hh-solitude-choice",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:22da7b4c77cb7cb8299f77ad5fbdef67fdfd50a1ab5c7077d3753628fd2ff69e",
+      "scales": 1
+    },
+    {
+      "definitionId": "62341fe0-0d11-5085-a644-5bd0f0555a26",
+      "key": "hh-relationship-balance",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:029ec5c7c03a384791adc2e11334c70558715072fbdf21e40c29d4a90cd389b9",
+      "scales": 1
+    },
+    {
+      "definitionId": "62341fe0-0d11-5085-a644-5bd0f0555a26",
+      "key": "hh-relationship-balance",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:fc35442f8982df6ad5d9e6d1955c6e3063f6042d45812e855eade01ddecc1ea9",
+      "scales": 1
+    },
+    {
+      "definitionId": "52fcebef-7eb1-5e78-a775-ce95365676d3",
+      "key": "hh-relationship-balance",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:92a376845773f59e64a24cada879ed92fb26045158814d3013bdb8bc23873cb9",
+      "scales": 1
+    },
+    {
+      "definitionId": "52fcebef-7eb1-5e78-a775-ce95365676d3",
+      "key": "hh-relationship-balance",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:4d1e1f28284178ea3c46649e3a91fcedddc3d723feed50262bf3414f6c70322d",
+      "scales": 1
+    },
+    {
+      "definitionId": "e7d0c40d-dba1-52cd-a35f-7c7cb23cd9d3",
+      "key": "hh-approval-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:c7c5206a4d1cf9bc3a35246339718c12b8624129ade7212578756e1b14bfa7e3",
+      "scales": 1
+    },
+    {
+      "definitionId": "e7d0c40d-dba1-52cd-a35f-7c7cb23cd9d3",
+      "key": "hh-approval-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:45b4cab9462fe799f8fc7fe5a977b0d099d4868b5fa369944828e5021d20c8d4",
+      "scales": 1
+    },
+    {
+      "definitionId": "35c70f76-820f-5cbe-ac76-df2003c1910f",
+      "key": "hh-approval-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:6a6a31b87054d5798272366a980b09ba08873e31d14992485d77c40eee92dc7f",
+      "scales": 1
+    },
+    {
+      "definitionId": "35c70f76-820f-5cbe-ac76-df2003c1910f",
+      "key": "hh-approval-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2a80c92744ff529f5542d085b1eac5956521bd3bfcc125dc2232e0aa69dae207",
+      "scales": 1
+    },
+    {
+      "definitionId": "bc2621b7-5037-55ab-a338-9f3eeb49773c",
+      "key": "hh-perfectionism-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7c5a11b16b45679ae448f89f0d165a14c1b3450bfe94284a74c1333e853fee02",
+      "scales": 1
+    },
+    {
+      "definitionId": "bc2621b7-5037-55ab-a338-9f3eeb49773c",
+      "key": "hh-perfectionism-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:c2a864bbcf5323360e09fddefa6ce8748a99a5dad99f9cea94717a9e792b0ee2",
+      "scales": 1
+    },
+    {
+      "definitionId": "8cbbaa9b-7920-5e76-a8ca-62767f8114e4",
+      "key": "hh-perfectionism-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7a0076b8ab3d6261e961b1b30337a26e259a6abfd52a82afb379c1e7ac7d2109",
+      "scales": 1
+    },
+    {
+      "definitionId": "8cbbaa9b-7920-5e76-a8ca-62767f8114e4",
+      "key": "hh-perfectionism-pressure",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:f6f8f39f1510658c646226d8924e2ca307d5ed46e67fcc14ff67ba1ae349083a",
+      "scales": 1
+    },
+    {
+      "definitionId": "db2fb3e4-3ec6-5dd0-afad-6d5c445cd34f",
+      "key": "hh-uncertainty-flexibility",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7c0f535d84be55381695d796c7bf256c95178078767feb749519c80dbb1768b4",
+      "scales": 1
+    },
+    {
+      "definitionId": "db2fb3e4-3ec6-5dd0-afad-6d5c445cd34f",
+      "key": "hh-uncertainty-flexibility",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:fed1be057a41ca4fe2be8836214de4e2c9e7fb37bdb7640f67f6597e78239c75",
+      "scales": 1
+    },
+    {
+      "definitionId": "0a2d7e40-5b6e-5ce5-a239-0e85289cd58d",
+      "key": "hh-uncertainty-flexibility",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8522578dbd246844590abd3bdecbfa809f31abcadbe5a3d3791f07871437e59c",
+      "scales": 1
+    },
+    {
+      "definitionId": "0a2d7e40-5b6e-5ce5-a239-0e85289cd58d",
+      "key": "hh-uncertainty-flexibility",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:29431eff99fcf87bb443c4c48e0724b93614eb3fa6c3143c94bd06a37a39bc99",
+      "scales": 1
+    },
+    {
+      "definitionId": "a2e82773-bf51-5cb4-a1b5-c51915b28fa1",
+      "key": "hh-role-freedom",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:52279d700da06e7daec2a12054757bcc7791369622b741f1bd705f629cea0175",
+      "scales": 1
+    },
+    {
+      "definitionId": "a2e82773-bf51-5cb4-a1b5-c51915b28fa1",
+      "key": "hh-role-freedom",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:0d89908062b4e4c8062464d37c4e3e009937a5e3b0b7cedb4d22c213a27c3829",
+      "scales": 1
+    },
+    {
+      "definitionId": "1b38d89b-4ada-54e6-a7bd-67119d468db6",
+      "key": "hh-role-freedom",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:21dac13409061d4e918ca993f2e85a1f6868588bb0930f9cd661025db581e989",
+      "scales": 1
+    },
+    {
+      "definitionId": "1b38d89b-4ada-54e6-a7bd-67119d468db6",
+      "key": "hh-role-freedom",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:ceeb0b75f6d0070561b21d5963ad6d6e67b1d12b5ba1ed3c3dca9a6b4aa7b71d",
+      "scales": 1
+    },
+    {
+      "definitionId": "1adbf123-844a-5889-a127-d00c32c749e4",
+      "key": "hh-work-boundaries",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7e14f1e099ecd8639c8b5db030f0600832d37ef8020fece249aa6573d2e7c211",
+      "scales": 1
+    },
+    {
+      "definitionId": "1adbf123-844a-5889-a127-d00c32c749e4",
+      "key": "hh-work-boundaries",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:ba059f3a894d0e346bc3338f0bc907a481a83102e9cb1ae4488f7b0d11d334bc",
+      "scales": 1
+    },
+    {
+      "definitionId": "a5765ab7-c063-5dfc-a5f7-34946fbe86f7",
+      "key": "hh-work-boundaries",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:2320283f486e8df519db2fe5b0f2afe23f175efa8dfa93d6bbc6644f647fa721",
+      "scales": 1
+    },
+    {
+      "definitionId": "a5765ab7-c063-5dfc-a5f7-34946fbe86f7",
+      "key": "hh-work-boundaries",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:897ed2ddf6d63658390332c5075ef049db82626726e9e1b121796bdb9be971b0",
+      "scales": 1
+    },
+    {
+      "definitionId": "c7a00001-7e2d-4a00-8d11-202610110001",
+      "key": "hh-love-affection",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:d9d56b15cd0a17b53f550e44615d35a2a6db6adf3a8db3d18e67c520522f92c7",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00001-7e2d-4a00-8d11-202610110001",
+      "key": "hh-love-affection",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b05adc7aae493b5549fef7337c102c40b17dcc9c7351e8517ced26de3d7b69f1",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00001-7e2d-4a00-8d11-202610110002",
+      "key": "hh-love-affection",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7a85abdafacd2a52ba2f3fa604c47ad9e002df66d4cdf97a8cda8bf6ab3eacfc",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00001-7e2d-4a00-8d11-202610110002",
+      "key": "hh-love-affection",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:625f691a3947a40bd6c1ff6551623604032b493922b8a0f1855fb310c03d0040",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00002-7e2d-4a00-8d11-202610110001",
+      "key": "hh-trust-dialogue",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:4f77ef8a3570a5891324da0148936fb74421856fd1588018c03c4faa4a42a61f",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00002-7e2d-4a00-8d11-202610110001",
+      "key": "hh-trust-dialogue",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:3dd6697020515e4b78d9caddda8ec5360716cbf926350af6e0c28547c4b034d6",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00002-7e2d-4a00-8d11-202610110002",
+      "key": "hh-trust-dialogue",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:e837ceb9fa62ebebb09a98573f05e4677c8e8d6837e6832eb5f204fca4313b2b",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00002-7e2d-4a00-8d11-202610110002",
+      "key": "hh-trust-dialogue",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:898cc82cbc07e3b915a82f3f981f71b818ee4d691d46b02e2156f3cee1d5be72",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00003-7e2d-4a00-8d11-202610110001",
+      "key": "hh-emotional-intimacy",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:d08e4299414da57f556b9583d94b77342bb089e2db181c38bb31418f5a5e8108",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00003-7e2d-4a00-8d11-202610110001",
+      "key": "hh-emotional-intimacy",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:17e1828e0ffb2c8023238a4c442f688cc323435d837bff865128668048e6d2b9",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00003-7e2d-4a00-8d11-202610110002",
+      "key": "hh-emotional-intimacy",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:2d5140e088e96350c3634675af6cf7220df4e3c0011c210e67c5fdc14f8e1347",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00003-7e2d-4a00-8d11-202610110002",
+      "key": "hh-emotional-intimacy",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:7b72265e152945f25538bd3b109942c7fb8a1bde4344a8ac8c985a03b3cbf351",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00004-7e2d-4a00-8d11-202610110001",
+      "key": "hh-intimacy-consent",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5a148c7f09a1393cc294a6d0ecdd77adeecca71edcf579f127706b42622d62c3",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00004-7e2d-4a00-8d11-202610110001",
+      "key": "hh-intimacy-consent",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:4b36ab4a22516ce3cf7aaad34362fea2b8bc3e657a75202d2fd288e20d51c26a",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00004-7e2d-4a00-8d11-202610110002",
+      "key": "hh-intimacy-consent",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:2644c91c4983dd995f92c0eca2e07e0debb5e17e461da8a0d85e847eb840b2d2",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00004-7e2d-4a00-8d11-202610110002",
+      "key": "hh-intimacy-consent",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:d8c2633037ae145e7963a86c42b437d76730c2d706284a2135f4a9d8c938b7c1",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00005-7e2d-4a00-8d11-202610110001",
+      "key": "hh-desire-dialogue",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:e1ceae366a5180156b7fec412d56df9be5fa66973f0249e45f71e206d1fe1420",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00005-7e2d-4a00-8d11-202610110001",
+      "key": "hh-desire-dialogue",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:3b79f8f4600b5b6ec6d05b677546546fec60351cd6bea7be3a99a47cc009c984",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00005-7e2d-4a00-8d11-202610110002",
+      "key": "hh-desire-dialogue",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:44f8e2a7dcbe52eb2ddd6fc8de6492158462d78bb71a3a0483923cbf07cc4264",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00005-7e2d-4a00-8d11-202610110002",
+      "key": "hh-desire-dialogue",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b6158829b857d615ce2b15326a6d6b2c167f079dddb3381a1c8c8c1e8bbb0aed",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00006-7e2d-4a00-8d11-202610110001",
+      "key": "hh-sexual-self-kindness",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:dda35181cdd6453e250e1501beda4a6c42f1e78b703e163fc1c71df71a6d2388",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00006-7e2d-4a00-8d11-202610110001",
+      "key": "hh-sexual-self-kindness",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:bb2deb9ab46cfd4289fdf6a7610a10d9a5c756b3528a28405c85cc0304dda937",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00006-7e2d-4a00-8d11-202610110002",
+      "key": "hh-sexual-self-kindness",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:286f55d58ff22d7c86255f5be284b03f6bfa449dbce100f90fcf0b0b7f904780",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00006-7e2d-4a00-8d11-202610110002",
+      "key": "hh-sexual-self-kindness",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:8644d3d16969829b6b45705b7b61f6f172a13cb6e357e297621d483829166580",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00007-7e2d-4a00-8d11-202610110001",
+      "key": "hh-tantra-presence",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:6860b7cfdbe5216668f03919e8aaa4b090edbc7f916e355eeb20d2b5c38847f8",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00007-7e2d-4a00-8d11-202610110001",
+      "key": "hh-tantra-presence",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:f53ee0c2ae136d5f1fd58b2d43af9e3cc173271a19524143b034752d013b98f8",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00007-7e2d-4a00-8d11-202610110002",
+      "key": "hh-tantra-presence",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5a15c60bec721a6d31ebda6bf88043f8ee59f7f6af7be6f6bd5101285bbf0047",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00007-7e2d-4a00-8d11-202610110002",
+      "key": "hh-tantra-presence",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:c1db7880ab2d39a6755978bb87e64ff0aae5f4fe71f07cffd6891a4c6152f211",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00008-7e2d-4a00-8d11-202610110001",
+      "key": "hh-sensual-joy",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:180feb695de0da2b118c21bb29c4a16d936aa8374b33a78257696e69c24b73e7",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00008-7e2d-4a00-8d11-202610110001",
+      "key": "hh-sensual-joy",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:526882a88a0d768a8224068968a7e1561b9ac3afdf967d5f48036303da98800b",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00008-7e2d-4a00-8d11-202610110002",
+      "key": "hh-sensual-joy",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:84667e37966598da670da43403aa1f644a89407a8017b1af0bb3eea2c662452b",
+      "scales": 2
+    },
+    {
+      "definitionId": "c7a00008-7e2d-4a00-8d11-202610110002",
+      "key": "hh-sensual-joy",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:62a353a2910814c1323249d67bd6bf6561e2c0925a858666ff22fea9b9c72f3d",
+      "scales": 2
+    },
+    {
+      "definitionId": "d0e6183c-0dbd-50ba-a2a6-81fe3887a677",
+      "key": "phq-8",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:fca1bfdae66c472260fe7ff4e32b4acc8a7a32ff6e43fb7fb1e3980a45cf0a03",
+      "scales": 1
+    },
+    {
+      "definitionId": "d0e6183c-0dbd-50ba-a2a6-81fe3887a677",
+      "key": "phq-8",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:501727c3411250bdce2a57d9cb19eb0719a297ba9aae6b6a555824882e4bbcee",
+      "scales": 1
+    },
+    {
+      "definitionId": "1dc07474-20bf-55ac-a3f4-5259a798e915",
+      "key": "cbi-personal",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:be5efcaf3419c65a539dca55c0662e896d7006e697f357424c7e1d3474bdb7df",
+      "scales": 1
+    },
+    {
+      "definitionId": "1dc07474-20bf-55ac-a3f4-5259a798e915",
+      "key": "cbi-personal",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:5918aab6ce593d3c9966d3f9768563d6199f6fa7b5812f9b39dc421a2c8b7bd8",
+      "scales": 1
+    },
+    {
+      "definitionId": "8126f9c4-3930-5618-a7ad-4d07a14081ce",
+      "key": "cbi-work",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:62d7d0e6fd97e17a161a88c91955c28c13d8596036e2318f29dd02fc99f224c3",
+      "scales": 1
+    },
+    {
+      "definitionId": "8126f9c4-3930-5618-a7ad-4d07a14081ce",
+      "key": "cbi-work",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:7c322709a91844e331819c856194f3a64b75674fcc0957dd80302394dbedae22",
+      "scales": 1
+    },
+    {
+      "definitionId": "a5cf2148-cec2-5f6a-a91b-0e1427e7cb17",
+      "key": "cbi-client",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:bc89b84c7ae1bd2cc81523537b9a0ab6a6f30a9d26e758c65b3fc341db1a14da",
+      "scales": 1
+    },
+    {
+      "definitionId": "a5cf2148-cec2-5f6a-a91b-0e1427e7cb17",
+      "key": "cbi-client",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:6ad977f4520077fe01c16da56f6859cf511df23268fe4d373309ef9661d5d18a",
+      "scales": 1
+    },
+    {
+      "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
+      "key": "cdc-hrqol-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8142a7fe1d9c5e575cca969d989dc0a12e6d8b9f9385c50bec4f080d4a3ac15c",
+      "scales": 6
+    },
+    {
+      "definitionId": "806b0b4d-3bf2-56bd-ad80-d3f6e4fb7341",
+      "key": "cdc-hrqol-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:e15cf3fdbe18323b2f6c68371f99f8177ae9790812221e8553131c6dc150e6ec",
+      "scales": 6
+    },
+    {
+      "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
+      "key": "cdc-healthy-days-symptoms",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:0980be263ac4bd82887b2b39af8b3b3da961af2d16d6fd49772ed0b7e98e9067",
+      "scales": 5
+    },
+    {
+      "definitionId": "96b0c77e-6431-5bac-a999-0e5ec4fa2250",
+      "key": "cdc-healthy-days-symptoms",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:dfee642abaa1cdd08df0b0e59791b6329a54d169b1b967a9db7cb1e9f951f0e0",
+      "scales": 5
+    },
+    {
+      "definitionId": "cd9f2026-0005-5bc1-8e42-7a912a620005",
+      "key": "rses-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:e3daa3fea4916f04f7afdd424248e39448c3212d57ea15aebf259fadd0b024c4",
+      "scales": 1
+    },
+    {
+      "definitionId": "cd9f2026-0005-5bc1-8e42-7a912a620005",
+      "key": "rses-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:9f791f93c4b96c40c8e1a5019683ccea957881e789452f0d8dd7b06241febc16",
+      "scales": 1
+    },
+    {
+      "definitionId": "cd9f2026-0006-5bc1-8e42-7a912a620006",
+      "key": "ces-d-20",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:0a1c542eefd42394429c8d7c1586fc0ff6de673f43b78eee7b1182b043d5eddf",
+      "scales": 1
+    },
+    {
+      "definitionId": "cd9f2026-0006-5bc1-8e42-7a912a620006",
+      "key": "ces-d-20",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:1134f7d967da2aee8b6a4a5607f48588a2b3bfb519b572eb52ee8110c100b6f2",
+      "scales": 1
+    },
+    {
+      "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
+      "key": "ipip-big-five-50",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:87ba95560bebdae5707fab678a2bde00daaae56751018efcccd1a7ddf49a0040",
+      "scales": 5
+    },
+    {
+      "definitionId": "9b73e2a0-142c-5d14-a9f3-c47114310350",
+      "key": "ipip-big-five-50",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:61d5220b7e14195b63dd9f6a46acf28ea8a3e1dae4a5412365bca8e8c8eeb3cb",
+      "scales": 5
+    },
+    {
+      "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
+      "key": "hh-socionics-32",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7fff915d36f5a1e480e888875378526eda7d29113de1b1a8b490c2bef0bfa138",
+      "scales": 8
+    },
+    {
+      "definitionId": "9721b16c-0101-5a31-8c01-000000000001",
+      "key": "hh-socionics-32",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:f0cb0b1ef30170364cfa11080d94414e4ec67bb67d1b5d9860b60838d5e8bc28",
+      "scales": 8
+    },
+    {
+      "definitionId": "9721b16c-0101-5a31-8c01-000000000002",
+      "key": "hh-socionics-32",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:e5369f8caf695206d491996d33610a490cc406f5e7338a2d58bb345d2b0118d4",
+      "scales": 8
+    },
+    {
+      "definitionId": "9721b16c-0101-5a31-8c01-000000000002",
+      "key": "hh-socionics-32",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:d39da214dd382a4f418346d3e6ef84484bbae4ad6fedd4780b63627d6579d0bb",
+      "scales": 8
+    },
+    {
+      "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
+      "key": "hh-enneagram-36",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:efc56f0d7431ed9eaf5de60fca850c7ecf908e022fc69da0dfda27af2bd0f1e9",
+      "scales": 9
+    },
+    {
+      "definitionId": "9721b16c-0201-5a31-8c01-000000000003",
+      "key": "hh-enneagram-36",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:12bf987c39fbe7ede2875e1199cd909bf010530200ef19906f647c306062f3ee",
+      "scales": 9
+    },
+    {
+      "definitionId": "9721b16c-0201-5a31-8c01-000000000004",
+      "key": "hh-enneagram-36",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:1b83dd4f958bdf1e2ea410847d51fe610cb342f8df907c9d0284fc04cf8aafa6",
+      "scales": 9
+    },
+    {
+      "definitionId": "9721b16c-0201-5a31-8c01-000000000004",
+      "key": "hh-enneagram-36",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b7f853ea8aa0187acf5e16772a4f356c877a305ddbf25db7c67c2ac04a609ef3",
+      "scales": 9
+    },
+    {
+      "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
+      "key": "hh-disc-style-20",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:eb7fcddca783cf118e37c8d3aee08c57bfd92ca37e44b457cbeb6cdafc921bbb",
+      "scales": 4
+    },
+    {
+      "definitionId": "9721b16c-0301-5a31-8c01-000000000005",
+      "key": "hh-disc-style-20",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:1168e5efb0392816fabc4b5f253d423da5eef1aa1b91c597618f9e2fb06863e2",
+      "scales": 4
+    },
+    {
+      "definitionId": "9721b16c-0301-5a31-8c01-000000000006",
+      "key": "hh-disc-style-20",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8dddc43e947688eeeedd11778fd555c7bbceecc33a6ea6a52f1e30dd1a3befad",
+      "scales": 4
+    },
+    {
+      "definitionId": "9721b16c-0301-5a31-8c01-000000000006",
+      "key": "hh-disc-style-20",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:91f8069cc11bd8b729efa4762746fb6a40d220f0fbfac8ddb76eace3f3d9a2f5",
+      "scales": 4
+    },
+    {
+      "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
+      "key": "hh-temperaments-16",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:10f1ce00a4cf70381e55113f518bee83b42e248dcd270900d24083f1cf979a1a",
+      "scales": 4
+    },
+    {
+      "definitionId": "9721b16c-0401-5a31-8c01-000000000007",
+      "key": "hh-temperaments-16",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:8536e55a862df6845bf1a6596e3edae1c881aef7098064c0dda25884bb2345c4",
+      "scales": 4
+    },
+    {
+      "definitionId": "9721b16c-0401-5a31-8c01-000000000008",
+      "key": "hh-temperaments-16",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:767dbe48c6e8e712c5ba5e93dfce2cb72417f369d9c6d5b5ec97b363ec81f7fe",
+      "scales": 4
+    },
+    {
+      "definitionId": "9721b16c-0401-5a31-8c01-000000000008",
+      "key": "hh-temperaments-16",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:e424e00494727db6865b4e67405ee875fef35445adf17916690bbe72360f1d4f",
+      "scales": 4
+    },
+    {
+      "definitionId": "d6277cc3-f343-5576-afc4-2a4717387448",
+      "key": "ipip-aspect-volatility-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:1e6444caef0c22e99df854e97d0b1c33bcd902f3a0ff4a1a6c1771fb76b8141b",
+      "scales": 1
+    },
+    {
+      "definitionId": "d6277cc3-f343-5576-afc4-2a4717387448",
+      "key": "ipip-aspect-volatility-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:1ee637d5f124b30d857e9880a1714eccb8e16a0ddeca6cdfc9d867f6bdfd27fb",
+      "scales": 1
+    },
+    {
+      "definitionId": "47f0cced-c738-560f-a260-f5c93c17042c",
+      "key": "ipip-aspect-withdrawal-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:75732f66a488b2c97e2af368425cb67b7eb04f62d937fc6b32eb36ff9f077734",
+      "scales": 1
+    },
+    {
+      "definitionId": "47f0cced-c738-560f-a260-f5c93c17042c",
+      "key": "ipip-aspect-withdrawal-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:0b5caba7329232a63634b31f51ec81f8f58230d7bc3a3d8f0fc45e6c80cd5ab2",
+      "scales": 1
+    },
+    {
+      "definitionId": "03b38216-fe2a-520a-a9c0-f74e8d204a28",
+      "key": "ipip-aspect-compassion-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:7b28baeeb2ce1b0d2ac5bcaa714a43a25b835f7716b09fd682648ef4b377b427",
+      "scales": 1
+    },
+    {
+      "definitionId": "03b38216-fe2a-520a-a9c0-f74e8d204a28",
+      "key": "ipip-aspect-compassion-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:37149f638501154025baf93fd65cb0f5c67a45adf2719c81864fb122de1bbcbe",
+      "scales": 1
+    },
+    {
+      "definitionId": "674407f4-04f2-5cfc-a9a1-2ba8702fe8a4",
+      "key": "ipip-aspect-industriousness-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:4530ec0e39369837e080edccfc712bca415e1368a00ba65faefd6814fcf1aca4",
+      "scales": 1
+    },
+    {
+      "definitionId": "674407f4-04f2-5cfc-a9a1-2ba8702fe8a4",
+      "key": "ipip-aspect-industriousness-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:406f1b3304c20c09bb617ad0eaa9752eeba2c3aba5f4f8bb502db584f44d2e40",
+      "scales": 1
+    },
+    {
+      "definitionId": "918240af-eb81-514b-ad1f-a7d9d6f60bff",
+      "key": "ipip-aspect-orderliness-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:d6adafacaed46f84e2164eb4581eb6861ada04f92b88b9b7f821671c8d9bb15c",
+      "scales": 1
+    },
+    {
+      "definitionId": "918240af-eb81-514b-ad1f-a7d9d6f60bff",
+      "key": "ipip-aspect-orderliness-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:67c2647dc5005189be421fc921e370955a718e7dda1464ededf4d5171b05e6d9",
+      "scales": 1
+    },
+    {
+      "definitionId": "fc6dc5c8-3642-53c8-a118-4435f2c9aa6a",
+      "key": "ipip-aspect-intellect-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:63b9a7400a7f7bad11db444df68fc5b732143abb9051fba7fd87f8115e4ad611",
+      "scales": 1
+    },
+    {
+      "definitionId": "fc6dc5c8-3642-53c8-a118-4435f2c9aa6a",
+      "key": "ipip-aspect-intellect-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:5ab07f5aa51f6b048c279e964f2d04474af330d9e23ce9d8e10471d3234bd510",
+      "scales": 1
+    },
+    {
+      "definitionId": "0934a6ef-65e8-58ff-a897-ff021e4a863d",
+      "key": "ipip-aspect-openness-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:a2aef53664ce8e6192a344287eb05a2d86c4ae4ff281b06856f2b0f2b1fe155c",
+      "scales": 1
+    },
+    {
+      "definitionId": "0934a6ef-65e8-58ff-a897-ff021e4a863d",
+      "key": "ipip-aspect-openness-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:688a62cc21b084e29ec8d041aad0e12cade07f38e27812a372dc2cd1616c8f46",
+      "scales": 1
+    },
+    {
+      "definitionId": "ac69dd83-0fa4-5ffd-ae46-f86e48edd369",
+      "key": "ipip-via-r-capacity-for-love-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:18c84ba18d8e9a3b916dd410a0eced15445a4db9e0249af9d689e8cc59050b9e",
+      "scales": 1
+    },
+    {
+      "definitionId": "ac69dd83-0fa4-5ffd-ae46-f86e48edd369",
+      "key": "ipip-via-r-capacity-for-love-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:c280271838e5551e9754ced7fe34294e699ded09e00a0072a23aea81f4bb431c",
+      "scales": 1
+    },
+    {
+      "definitionId": "a73591ea-aa21-5dbd-a524-ed04ecbe688f",
+      "key": "ipip-via-r-curiosity-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:30d7de1d5e21f1c1d3214067b9c8cb8a05076feac6ec068c3c70a529692cfcca",
+      "scales": 1
+    },
+    {
+      "definitionId": "a73591ea-aa21-5dbd-a524-ed04ecbe688f",
+      "key": "ipip-via-r-curiosity-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:604034aa04b90751b154f4fd844915644a6949825991ce0ef6e026513432472a",
+      "scales": 1
+    },
+    {
+      "definitionId": "4599d220-c3c1-5a32-acbb-3fce95d4bb4c",
+      "key": "ipip-via-r-forgiveness-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:398c6d3742d964c1d0e6f6a4709a0b10eb29021f1151ae0a064be6b7031dc5fe",
+      "scales": 1
+    },
+    {
+      "definitionId": "4599d220-c3c1-5a32-acbb-3fce95d4bb4c",
+      "key": "ipip-via-r-forgiveness-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b5540f2498fa6bcc5cfb7e7f876a3b73f7fd33623e1343d91e114c458fe1d647",
+      "scales": 1
+    },
+    {
+      "definitionId": "7d57d976-9ac3-5f0f-a1c0-dc6c6ff4cde9",
+      "key": "ipip-via-r-gratitude-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:2fab74682d517f023f43666d6aeb3b88dc3bba59fdb97684712d05ee9a3f956e",
+      "scales": 1
+    },
+    {
+      "definitionId": "7d57d976-9ac3-5f0f-a1c0-dc6c6ff4cde9",
+      "key": "ipip-via-r-gratitude-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:60824e95983a0db8e6d328822a8780cd81bc996754c620a4edc9e57a32eeae21",
+      "scales": 1
+    },
+    {
+      "definitionId": "6b803c55-e713-5110-a125-b8bb7e613914",
+      "key": "ipip-via-r-hope-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:8a7fd19a59e4400733ec7b0cb5e1601b571e531c6e31b736e608ec5ba0f4481d",
+      "scales": 1
+    },
+    {
+      "definitionId": "6b803c55-e713-5110-a125-b8bb7e613914",
+      "key": "ipip-via-r-hope-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:7fd0d9f098d6f0ee965c1f228d304a011bea23aec15545659551c93c99897535",
+      "scales": 1
+    },
+    {
+      "definitionId": "972393f1-2f84-510b-aeac-b97fe99dd69c",
+      "key": "ipip-via-r-humor-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:36134c9b4efafa541706ee74ca9f98acf75d02d0b58f1b3855f44ea1515c08c5",
+      "scales": 1
+    },
+    {
+      "definitionId": "972393f1-2f84-510b-aeac-b97fe99dd69c",
+      "key": "ipip-via-r-humor-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2e47c528de09b310394cee18df0c8169d8bdb88cab1258b148b1e93ae34bb0d2",
+      "scales": 1
+    },
+    {
+      "definitionId": "39bc7056-3b0e-5377-aac8-34f30bb26676",
+      "key": "ipip-via-r-perseverance-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:1758089b3481696680b65f1a39cc78a213b1a3d027be1aa613976b773d7623e2",
+      "scales": 1
+    },
+    {
+      "definitionId": "39bc7056-3b0e-5377-aac8-34f30bb26676",
+      "key": "ipip-via-r-perseverance-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:a2b94349919eacefccc7ba2e03011e527d1f28eda1a51ce44a9a2b433e472a89",
+      "scales": 1
+    },
+    {
+      "definitionId": "1833e942-2887-54cf-a1db-270e6c566b05",
+      "key": "ipip-via-r-creativity-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:65a9c3fa680acd10a3c012129354c4506429083b87514a5fc560778373123a6c",
+      "scales": 1
+    },
+    {
+      "definitionId": "1833e942-2887-54cf-a1db-270e6c566b05",
+      "key": "ipip-via-r-creativity-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:82feeb35db156c8648309e822aff1e5a6cbbbc981a561034085c1aab35e46f23",
+      "scales": 1
+    },
+    {
+      "definitionId": "c1d1b8f4-7e06-53e2-a5f8-539874959f6d",
+      "key": "ipip-via-r-social-intelligence-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:b5d28a4b1ef5484ad7d1bef7598fb9254335c2527be00ae58feab27c001161a6",
+      "scales": 1
+    },
+    {
+      "definitionId": "c1d1b8f4-7e06-53e2-a5f8-539874959f6d",
+      "key": "ipip-via-r-social-intelligence-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b8c562ba76271a14692621ee70bc4fc289b6b7fe8a8cb2c01ccf34cae2f1a3f0",
+      "scales": 1
+    },
+    {
+      "definitionId": "c7da129b-23b9-5b9d-a92b-b8b13e6cf482",
+      "key": "ipip-via-r-zest-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:729af0286199e9cf4007a498dfc9fb172871f19cda34b1f5c0a5e26128981b06",
+      "scales": 1
+    },
+    {
+      "definitionId": "c7da129b-23b9-5b9d-a92b-b8b13e6cf482",
+      "key": "ipip-via-r-zest-4",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:4a3d73c3bb71cdb0541710bc780881f69e099b920ca342520af0a0862f4d4cde",
+      "scales": 1
+    },
+    {
+      "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
+      "key": "tipi-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:c2b21219ff3dcc1219108793b7e31b9876f8bf53a1a6e9b0dfd908ba9f9d0002",
+      "scales": 5
+    },
+    {
+      "definitionId": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
+      "key": "tipi-10",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:f6c02e261b44440a6cb226c96fbd7c4fc18f7cde9f66a485d110af821caabe25",
+      "scales": 5
+    },
+    {
+      "definitionId": "c2506513-5f3c-599f-a790-506411bc2c05",
+      "key": "scs-sf",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:2beaaa2c048a437ea490f58f282ec0dc29d21e9be8adcdd6d0255459d45f8ca1",
+      "scales": 1
+    },
+    {
+      "definitionId": "c2506513-5f3c-599f-a790-506411bc2c05",
+      "key": "scs-sf",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2e2e2c9da74a32b90f290370801007a3c0c17dad6e1300f8fb46e00f273351c3",
+      "scales": 1
+    },
+    {
+      "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
+      "key": "compassion-scale",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:f6c3ce9666611ed7c8e7383d576828159668d2c4f9b4000ed65670a9dd41588c",
+      "scales": 5
+    },
+    {
+      "definitionId": "a5cb84ed-75bd-59e0-adba-64bfa1626cca",
+      "key": "compassion-scale",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:b45e990d7f61988257eda8897dd4de4956af726b92d222f052c01ce094d13b7f",
+      "scales": 5
+    },
+    {
+      "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
+      "key": "mhc-sf",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:046c0adc547d2a5eae014dd216dcc9c670f3e28593392407678a651109c0f622",
+      "scales": 4
+    },
+    {
+      "definitionId": "fe2feb75-6428-52a1-a9a6-ea45f0e43242",
+      "key": "mhc-sf",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:2c665de2277bdadcd4f7aac7a94114d7d8caf377b0d4eda5b94b22726952c985",
+      "scales": 4
+    },
+    {
+      "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
+      "key": "hh-bach-flower-profile",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "en",
+      "payloadHash": "sha256:c32d66bf501b2f8748542591f843a614b716468a054e7d0bca7183b4246665d8",
+      "scales": 38
+    },
+    {
+      "definitionId": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
+      "key": "hh-bach-flower-profile",
+      "definitionVersion": "v1",
+      "instrumentLocale": "en",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:5fca7d7e7f906461f8d1c5e6a9c52a79f5ed04b7d9693a034babf96e9f4f4fe7",
+      "scales": 38
+    },
+    {
+      "definitionId": "e8b77564-9d17-422e-8c3d-0467c7a2f9ba",
+      "key": "hh-bach-flower-profile",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "en",
+      "payloadHash": "sha256:5b2bbe13e2fb07e0c3023a10c1bbd07f703dc9033123cd9b86d0d20eb4b70298",
+      "scales": 38
+    },
+    {
+      "definitionId": "e8b77564-9d17-422e-8c3d-0467c7a2f9ba",
+      "key": "hh-bach-flower-profile",
+      "definitionVersion": "v1",
+      "instrumentLocale": "ru",
+      "uiLocale": "ru",
+      "payloadHash": "sha256:7cc25c0b042b20fed242cee855393bec553892a840ade2587c87e3704873fc60",
+      "scales": 38
+    }
+  ]
+}

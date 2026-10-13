@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
-import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
+import { GROWTH_GOALS, COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import CourseToday from './course-today'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
+
+const asLocale = (value, locale) => value?.[locale] || value?.en || ''
 
 const WORDS = {
   en: {
@@ -125,7 +127,7 @@ function Journey({ stage, locale }) {
   </ol>
 }
 
-export function MyCourse({ data, locale = 'en' }) {
+export function MyCourse({ data, locale = 'en', requestedSupport = null }) {
   const ru = locale === 'ru'
   const t = WORDS[locale] || WORDS.en
   const root = '/' + locale + '/app'
@@ -133,7 +135,10 @@ export function MyCourse({ data, locale = 'en' }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
+  const [informationRequested, setInformationRequested] = useState(false)
   const startDialogRef = useRef(null)
+  const courseInfoScrolled = useRef(false)
+  const requestedGoal = typeof requestedSupport === 'string' && Object.hasOwn(GROWTH_GOALS, requestedSupport) ? requestedSupport : null
 
   async function refresh() {
     setError('')
@@ -142,7 +147,19 @@ export function MyCourse({ data, locale = 'en' }) {
       setState(response)
     } catch (e) { setError(e.message) }
   }
-  useEffect(() => { void refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (state && !courseInfoScrolled.current && window.location.hash === '#about-course') {
+      const target = document.getElementById('about-course')
+      if (target) {
+        target.scrollIntoView({ block: 'start' })
+        courseInfoScrolled.current = true
+      }
+    }
+  }, [state, informationRequested])
+  useEffect(() => {
+    setInformationRequested(window.location.hash === '#about-course')
+    void refresh()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function act(action, values = {}) {
     if (busy) return
@@ -187,17 +204,18 @@ export function MyCourse({ data, locale = 'en' }) {
       </div>
       <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
     </header>}
+    {requestedGoal && <section className={'hh-panel ' + styles.chapter} data-requested-support-topic={requestedGoal}><h2>{ru ? 'Направление из вашего отчёта' : 'A direction from your report'}</h2><p>{asLocale(GROWTH_GOALS[requestedGoal].title, locale)} — {asLocale(GROWTH_GOALS[requestedGoal].description, locale)}</p><p>{ru ? 'Это общая практика по выбранной теме. Вы сами выбираете тесты и направления в шагах курса.' : 'This is general practice for the chosen topic. You choose tests and directions in the course steps.'}</p></section>}
     {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}
     {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
 
-    {stage === 0 && <section className={'hh-panel ' + styles.details} id="course-details">
+    {(stage === 0 || informationRequested) && <section className={'hh-panel ' + styles.details} id="course-details" data-course-information>
       <p className="hh-kicker">{t.how}</p>
-      <h2>{t.detailTitle}</h2>
+      <h2 id="about-course">{t.detailTitle}</h2>
       <p>{t.detailIntro}</p>
-      <Journey stage={1} locale={locale}/>
-      <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+      <Journey stage={stage === 0 ? 1 : visibleStep} locale={locale}/>
+      {stage === 0 && <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>}
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.note}</p>
     </section>}
 

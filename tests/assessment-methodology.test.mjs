@@ -6,7 +6,7 @@ import { MIND_BODY_MONITOR_REGISTRY } from '../data/assessments/mind-body-monito
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { assessmentExplanation, assessmentMethodology } from '../lib/assessments/assessment-methodology.js'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 
 const active = MONITORING_CATALOG.filter(item => item.startable && item.rightsStatus === 'cleared')
@@ -112,6 +112,6 @@ test('purpose/origin/evidence explanations render in public explorer, prelogin s
   assert.match(savedBattery,/assessmentMethodology/)
   assert.match(savedBattery,/row\.methodology/)
   assert.match(report,/report\.methodology/)
-  assert.match(pdf,/test\.interpretation\?\.methodology/)
+  assert.match(pdf,/p\.about\.evidence/)
   for(const file of [explorer,picker,workspace,report])assert.doesNotMatch(file,/consultancyScore\s*=|diagnosis\s*=\s*true/i)
 })

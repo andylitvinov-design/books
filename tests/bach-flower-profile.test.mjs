@@ -8,7 +8,7 @@ import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition, validateAnswers } from
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { validateResult, compareResults } from '../lib/profile/history.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport } from './helpers/interpretation-fixture.mjs'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { readFileSync } from 'node:fs'
@@ -122,8 +122,8 @@ test('every Bach result has human-readable bilingual guidance and all-zero answe
       }
     }
   }
-  const ui = read('components/app/personal-result-report.jsx')
+  const ui = read('components/app/compact-assessment-report.jsx')
   assert.match(ui, /report\.highlightedCount/)
-  assert.match(ui, /<details className=\{styles\.more\}>/)
+  assert.match(ui, /<details className=\{styles\.details\}>/)
   assert.match(ui, /data-bach-profile/)
 })

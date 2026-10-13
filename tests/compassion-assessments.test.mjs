@@ -8,7 +8,7 @@ import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
-import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { buildFixtureReport as buildAssessmentResultReport, withInterpretationFixture } from './helpers/interpretation-fixture.mjs'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { interpretationForDimension, interpretationPlan } from '../lib/assessments/interpretation-registry.js'
 
@@ -139,7 +139,7 @@ test('confidential EN/RU PDF model retains both tests, scale explanations and co
  const results=defs.map((d,i)=>({...scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,3]))),id:'synthetic-'+i,measurementAt:'2026-10-12T02:00:00Z'}))
  results.push({...results[0],id:'synthetic-repeat',measurementAt:'2026-10-12T03:00:00Z'})
  for(const locale of ['en','ru']){
-  const report=buildClientReport({results,locale,now:new Date('2026-10-12T04:00:00Z')})
+  const report=buildClientReport({results:results.map(withInterpretationFixture),locale,now:new Date('2026-10-12T04:00:00Z')})
   assert.equal(report.counts.tests,2)
   assert.equal(report.counts.attempts,3)
   const scs=report.tests.find(t=>t.key==='scs-sf'),cs=report.tests.find(t=>t.key==='compassion-scale')

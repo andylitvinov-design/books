@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, Check, ChevronDown, Clock3, Compass, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
+import { TestRatingSummary, TestRatingSort } from './test-rating'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 
@@ -91,17 +92,26 @@ function iconFor(entry) {
 }
 
 export function SimpleTestPicker({
-  locale = 'en',
+  locale = 'en', accountMode = false, onBack, onResetFilters, activeFilterLabels = [],
   focus, onToggleFocus,
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   professionalOnly, onProfessional,
+  ratingData = { summaries: {}, loading: false, unavailable: false }, sort = 'recommended', onSort, onChooseTop, topCount = 0,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
   matchCount, onStart, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
-  const c = TEXT[locale] || TEXT.en
+  const base = TEXT[locale] || TEXT.en
+  const c = accountMode ? { ...base,
+    kicker: locale === 'ru' ? 'ДОБАВИТЬ В МОИ ТЕСТЫ' : 'ADD TO MY TESTS',
+    title: locale === 'ru' ? 'Подберите новые тесты' : 'Choose more tests',
+    build: locale === 'ru' ? 'Добавить выбранные тесты' : 'Add selected tests',
+    buildHelp: locale === 'ru' ? 'Ваши прежние тесты, ответы и прогресс сохранятся' : 'Keep your existing tests, answers and progress',
+    privacy: locale === 'ru' ? 'Новые тесты добавятся в ваш текущий набор только после подтверждения.' : 'New tests are added to your current set only when you confirm.',
+    reset: locale === 'ru' ? 'Очистить выбор' : 'Clear selection',
+  } : base
   const [visibleCount, setVisibleCount] = useState(5)
   const [showAllProblems, setShowAllProblems] = useState(false)
   const focusKey = [...focus].sort().join('|')
@@ -123,7 +133,8 @@ export function SimpleTestPicker({
   const minutes = activeBattery.reduce((total, item) => total + (item.durationMinutes || 0), 0)
   const hasExtraFilters = maxMinutes > 0 || professionalOnly || depth !== 'balanced'
 
-  return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker>
+  return <section className={`${styles.shell} ${accountMode ? styles.accountShell : ''}`} aria-label={c.title} data-prelogin-test-picker data-modern-test-picker={accountMode ? 'account' : 'public'}>
+    {onBack && <button type="button" className={styles.fullDatabase} onClick={onBack}>{locale === 'ru' ? '← Назад к моим тестам' : '← Back to My tests'}</button>}
     <header className={styles.hero}>
       <div>
         <p className={styles.eyebrow}>{c.kicker}</p>
@@ -150,6 +161,11 @@ export function SimpleTestPicker({
         })}
       </div>
     </section>
+
+    {onResetFilters && <div className={styles.filterState} data-picker-filter-state>
+      {activeFilterLabels.length > 0 && <p>{activeFilterLabels.join(' · ')}</p>}
+      <button type="button" className={styles.clearFilters} onClick={onResetFilters}>{locale === 'ru' ? 'Сбросить все фильтры' : 'Reset all filters'}</button>
+    </div>}
 
     <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
       <div className={styles.sectionHeader}>
@@ -215,6 +231,7 @@ export function SimpleTestPicker({
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
+      <TestRatingSort value={sort} onChange={onSort} locale={locale} unavailable={ratingData.unavailable} loading={ratingData.loading} onChooseTop={onChooseTop} topCount={topCount} />
       <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
       <details className={styles.why}>
         <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
@@ -242,7 +259,7 @@ export function SimpleTestPicker({
               <small><Clock3 size={14} aria-hidden="true"/> ~{entry.durationMinutes ?? '—'} min</small>
             </span>
           </label>
-          <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>
+          <div className={styles.testGuide}><TestRatingSummary summary={ratingData.summaries[entry.definition?.id]} locale={locale} unavailable={ratingData.unavailable} loading={ratingData.loading} /><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>
           </div>
         })}
       </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
@@ -280,6 +297,6 @@ export function SimpleTestPicker({
         <Compass size={20} aria-hidden="true"/>{c.browse}<ChevronDown size={17} aria-hidden="true" className={styles.browseArrow}/>
       </button>
     </section>
-    <p className={styles.privacy}>{c.privacy} <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/app`} prefetch={false}>{c.saved} →</Link></p>
+    <p className={styles.privacy}>{c.privacy} {!accountMode && <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/app`} prefetch={false}>{c.saved} →</Link>}</p>
   </section>
 }

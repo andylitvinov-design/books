@@ -155,3 +155,8 @@
   .hh-app .hh-insights-category-filter{font-size:.77rem!important}
   .hh-app .hh-insights-category-filter svg{width:17px}
 }
+
+.hh-app .hh-insights-explanation{padding:0 16px 15px;overflow-wrap:anywhere}
+.hh-app .hh-insights-explanation p{font-size:.9rem!important;line-height:1.5!important;margin:9px 0!important;color:#485a4c}
+.hh-app .hh-insights-explanation small{display:block;font-size:.78rem;line-height:1.4;color:#6b7268}
+.hh-insights-scale-switch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 14px;padding:8px;border:1px solid #dddcd3;border-radius:12px}.hh-insights-scale-switch button{flex:0 0 44px;min-height:44px;border:1px solid #cdd8c9;border-radius:10px;background:#f3f7ee;font-size:1.2rem;color:#315640}.hh-insights-scale-switch span{font-size:.85rem;text-align:center;overflow-wrap:anywhere}

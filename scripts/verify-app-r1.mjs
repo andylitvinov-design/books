@@ -69,6 +69,8 @@ async function ready(){
  }
 }
 async function chooseVisibleTest(testPage,name){
+ const modern=testPage.locator('[data-modern-test-picker="account"]')
+ if(await modern.isVisible().catch(()=>false)) await modern.getByRole('button',{name:'Browse full database',exact:true}).click()
  const customizer=testPage.getByRole('button',{name:/Choose my own tests and filters/})
  if(!(await customizer.count())){
   const toggle=testPage.getByRole('button',{name:'Choose or change tests',exact:true})
@@ -105,7 +107,7 @@ async function enterTest(name='Current State Check',mode='Guided'){
   const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
   if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
-  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+  await page.getByRole('button',{name:'Add selected tests',exact:true}).first().click()
   await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
   await expect(page.locator('#my-tests-list')).toBeVisible()
  }
@@ -801,4 +803,3 @@ try {
  await other.close();await admin.close()
 } catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
 finally{await browser.close()}
-

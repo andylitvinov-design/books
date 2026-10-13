@@ -11,6 +11,9 @@ import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOP
 import { TestExplorerVisual } from './test-explorer-visual'
 import { normalizeProblemsForTopics } from '@/lib/assessments/test-problems'
 import { SimpleTestPicker } from './simple-test-picker'
+import { useTestRatings } from './use-test-ratings'
+import { TestRatingSummary } from './test-rating'
+import { compareTestRatings, ratingCopy, topRatedSelection } from '@/lib/assessments/test-ratings'
 import { TestScaleGuide } from './test-scale-guide'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import styles from './test-explorer.module.css'
@@ -101,10 +104,17 @@ const GUIDED_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null, accountPicker = false, onBack, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
+  const ratings = useTestRatings(), ratingText = ratingCopy(locale)
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
-  const quick = QUICK_COPY[locale] || QUICK_COPY.en
+  const quickBase = QUICK_COPY[locale] || QUICK_COPY.en
+  const quick = accountPicker ? { ...quickBase,
+    title: locale === 'ru' ? 'Подберите новые тесты' : 'Choose more tests',
+    intro: locale === 'ru' ? 'Выберите нужные тесты и добавьте их к своему набору. Прежние тесты и прогресс сохранятся.' : 'Choose tests to add to your set. Your existing tests and progress stay safe.',
+    resetSet: locale === 'ru' ? 'Очистить выбор' : 'Clear selection',
+    summary: locale === 'ru' ? 'выбрано тестов' : 'selected tests',
+  } : quickBase
   const [availability, setAvailability] = useState('available')
   const [concern, setConcern] = useState('')
   const [voiceSupported, setVoiceSupported] = useState(false)
@@ -160,7 +170,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const [depth, setDepth] = useState(() => initialPreferences?.depth ?? 'balanced')
   const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
   const [details, setDetails] = useState(() => initialPreferences?.details ?? [])
-  const [axes, setAxes] = useState(() => simpleMode ? [] : (initialPreferences?.axes ?? []))
+  const [axes, setAxes] = useState(() => initialPreferences?.axes ?? [])
   const [maxMinutes, setMaxMinutes] = useState(() => initialPreferences?.maxMinutes ?? 0)
   const [language, setLanguage] = useState(() => initialPreferences?.language ?? 'any')
   const [tracking, setTracking] = useState(() => initialPreferences?.tracking ?? 'any')
@@ -210,17 +220,26 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const visible = useMemo(() => ranked.filter((entry) => !axisFilter || selectedKeys.includes(entry.key) || entry.measurementAxes?.includes(axisFilter)).sort((a, b) => {
     const aSelected = selectedKeys.includes(a.key), bSelected = selectedKeys.includes(b.key)
     if (aSelected !== bSelected) return aSelected ? -1 : 1
+    if (sort === 'rating') return compareTestRatings(a, b, ratings.summaries)
     if (sort === 'shortest') return (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity)
     if (sort === 'deepest') return (b.durationMinutes ?? 0) - (a.durationMinutes ?? 0)
     if (sort === 'alphabetic') return a.title.localeCompare(b.title, locale)
     return 0
-  }), [ranked, sort, locale, axisFilter, selectedKeys])
+  }), [ranked, sort, locale, axisFilter, selectedKeys, ratings.summaries])
   const selected = entries.filter((entry) => selectedKeys.includes(entry.key) && entry.selectable)
   // Public browsing uses its own match-based order, unaffected by checkbox toggles.
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
     matching.filter((entry) => entry.selectable),
     { focus, problems, details, axes, depth, styles: stylesFilter, lengths },
   ), [matching, focus, problems, details, axes, depth, stylesFilter, lengths])
+  const displayRecommendations = useMemo(() => sort === 'rating'
+    ? [...simpleRecommendations].sort((a, b) => compareTestRatings(a, b, ratings.summaries))
+    : simpleRecommendations, [simpleRecommendations, sort, ratings.summaries])
+  const topRated = useMemo(() => topRatedSelection(matching.filter(entry => !axisFilter || entry.measurementAxes?.includes(axisFilter)), ratings.summaries), [matching, axisFilter, ratings.summaries])
+  const chooseTopRated = () => {
+    if (!topRated.length || ratings.loading || ratings.unavailable) return
+    setSelectedKeys(topRated.map(entry => entry.key)); setSimpleSelectionChanged(true)
+  }
   const simpleAuto = useMemo(() => buildPublicStarterBattery(simpleRecommendations), [simpleRecommendations])
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
@@ -229,11 +248,9 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)),
     { focus, details, axes, depth, styles: stylesFilter, lengths },
   ), [matching, axisFilter, focus, details, axes, depth, stylesFilter, lengths])
-  const activeBattery = explicitSelectionOnly
-    ? selected // A course visitor must explicitly select tests; never fall back to an automatic set.
-    : simpleMode
-      ? (simpleSelectionChanged ? selected : simpleAuto)
-      : (selected.length ? selected : autoBattery)
+  const activeBattery = explicitSelectionOnly ? selected : simpleMode
+    ? (simpleSelectionChanged ? selected : simpleAuto)
+    : (selected.length ? selected : autoBattery)
   const activeCoverage = selected.length ? coverage : coverageForSelection(entries, activeBattery.map((entry) => entry.key))
   const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes }), [entries, focus, details, axes])
   const showingCoverage = selectedKeys.length > 0
@@ -264,7 +281,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
     setSelectedKeys((current) => {
-      const baseline = simpleMode && !simpleSelectionChanged && !current.length
+      const baseline = simpleMode && !explicitSelectionOnly && !simpleSelectionChanged && !current.length
         ? simpleAuto.map((entry) => entry.key) : current
       return baseline.includes(key)
         ? baseline.filter((item) => item !== key)
@@ -275,7 +292,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     // In the uncomplicated initial view, the automatically recommended plan is
     // already selected. The first manual click edits the full suggested set.
     setSelectedKeys((current) => {
-      const baseline = !simpleSelectionChanged && !current.length
+      const baseline = !explicitSelectionOnly && !simpleSelectionChanged && !current.length
         ? simpleAuto.map((entry) => entry.key) : current
       return baseline.includes(key)
         ? baseline.filter((item) => item !== key)
@@ -295,6 +312,14 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
       locale={locale}
+      accountMode={accountPicker}
+      onBack={onBack}
+      onResetFilters={resetFilters}
+      activeFilterLabels={[
+        ...focus.map(key => TEST_RECOMMENDATION_FOCUS.find(item => item.key === key)?.label?.[locale === 'ru' ? 'ru' : 'en'] || key),
+        ...areas.map(key => MONITOR_AREAS.find(item => item.key === key)?.[locale === 'ru' ? 'ru' : 'en'] || key),
+        ...axes.map(key => TEST_EXPLORER_AXIS_LABELS[key]?.[locale === 'ru' ? 'ru' : 'en'] || key),
+      ]}
       focus={focus}
       onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
       problems={problems}
@@ -312,16 +337,21 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       onMaxMinutes={setMaxMinutes}
       professionalOnly={stylesFilter.length === 1 && stylesFilter[0] === 'professional'}
       onProfessional={() => setStylesFilter((current) => current.length === 1 && current[0] === 'professional' ? [] : ['professional'])}
-      recommendations={simpleRecommendations}
+      recommendations={displayRecommendations}
+      ratingData={ratings}
+      sort={sort}
+      onSort={setSort}
+      onChooseTop={chooseTopRated}
+      topCount={topRated.length}
       activeBattery={activeBattery}
       onToggleTest={toggleSimpleSelected}
-      onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
+      onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(explicitSelectionOnly) }}
       matchCount={simpleRecommendations.length}
       onStart={start}
       onBrowseCore={() => { setBrowseFull(true); setAvailability('core') }}
       onBrowseFull={() => {
         // Carry the three implicit selections into the full catalog editor.
-        if (!simpleSelectionChanged) {
+        if (!explicitSelectionOnly && !simpleSelectionChanged) {
           setSelectedKeys(simpleAuto.map((entry) => entry.key))
           setSimpleSelectionChanged(true)
         }
@@ -334,7 +364,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   }
 
   return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
-    {simpleMode && browseFull && <button type="button" className={styles.simpleBack} onClick={() => { setAxes([]); setBrowseFull(false); setCustomizeOpen(false) }}>
+    {simpleMode && browseFull && <button type="button" className={styles.simpleBack} onClick={() => { setBrowseFull(false); setCustomizeOpen(false) }}>
       ← {locale === 'ru' ? 'Назад к простому подбору' : locale === 'es' ? 'Volver al selector sencillo' : 'Back to easy selection'}
     </button>}
     <div className={styles.explorerHero}>
@@ -344,7 +374,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       <p className={styles.quickIntro}>{quick.intro}</p>
       {activePlan?.status === 'active' && <button className={styles.resumeButton} type="button" onClick={() => onResume?.(activePlan)}>{locale === 'ru' ? `Продолжить набор: шаг ${activePlan.currentIndex + 1}` : locale === 'es' ? `Continuar selección: paso ${activePlan.currentIndex + 1}` : `Resume set: step ${activePlan.currentIndex + 1}`}</button>}
       <div className={styles.quickActions}>
-        <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : explicitSelectionOnly ? (locale === 'ru' ? 'Сохранить выбранные тесты' : 'Save my chosen tests') : c.start}</button>
+        <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : accountPicker ? (locale === 'ru' ? 'Добавить выбранные тесты' : 'Add selected tests') : c.start}</button>
         <span>{activeBattery.length} {quick.summary} · {questions} {c.questions} · ~{minutes} {c.minutes}</span>
       </div>
       {actionError && <p role="alert" className={styles.quickError}>{actionError.code || actionError.message}</p>}
@@ -473,15 +503,17 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
           <span>{locale === 'ru' ? 'Найти тест' : locale === 'es' ? 'Buscar pruebas' : 'Search tests'}</span>
       <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={c.search} aria-label={c.search} />
         </label>
-      <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option></select></label>
+      {(sort === 'rating' || ratings.unavailable) && <p role="status">{ratings.unavailable ? ratingText.unavailable : ratingText.method}</p>}
+      {sort === 'rating' && <><button type="button" onClick={chooseTopRated} disabled={ratings.loading || ratings.unavailable || !topRated.length}>{ratingText.chooseTop}</button>{!ratings.loading && !ratings.unavailable && !topRated.length && <p>{ratingText.notEnough}</p>}</>}
+      <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="rating" disabled={ratings.loading || ratings.unavailable}>{ratingText.top}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option></select></label>
       </div>
     </section>
     <div className={styles.workspace}><div className={styles.database}><div className={styles.databaseHeader}><div className={styles.countBlock}><strong role="status" aria-live="polite">{matchCount} {c.matching}</strong><small>{c.of} {availability === 'available' ? entries.filter((entry) => entry.selectable).length : availability === 'core' ? entries.filter((entry) => entry.psychotherapyCore).length : entries.length} · {c.totalAvailable}{selectedKeys.length > 0 && ` · ${selectedKeys.length} ${c.kept}`}</small></div><button type="button" onClick={chooseSuggested}>{c.suggested}</button></div>
       {visible.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
-      <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
+      <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article data-test-key={entry.key} key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <TestArtwork entry={entry} />
-        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}<TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
+        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2>{sort === 'recommended' && index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}<TestRatingSummary summary={ratings.summaries[entry.definition?.id]} locale={locale} unavailable={ratings.unavailable} loading={ratings.loading} /><TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
 
       </article>)}</div>
         {visible.length > 8 && <button className={styles.showMore} type="button" onClick={() => setShowAll((value) => !value)}>{showAll ? quick.showLess : `${quick.showAll} (${visible.length})`}</button>}
@@ -495,7 +527,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
         </div>
         <div>
           <button type="button" onClick={() => setSelectedKeys([])}>{quick.resetSet}</button>
-          <button className={styles.primary} type="button" disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : explicitSelectionOnly ? (locale === 'ru' ? 'Сохранить выбранные тесты' : 'Save my chosen tests') : c.start}</button>
+          <button className={styles.primary} type="button" disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : accountPicker ? (locale === 'ru' ? 'Добавить выбранные тесты' : 'Add selected tests') : c.start}</button>
         </div>
       </footer>
   </section>
