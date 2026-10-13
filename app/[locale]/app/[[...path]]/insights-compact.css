@@ -1,0 +1,95 @@
+/* Compact Insights: all-time counters, collapsed filters, and scan-friendly rows. */
+.hh-app .hh-insights-page{max-width:1040px;padding-bottom:22px}
+.hh-app .hh-insights-intro{display:block;margin:0 0 12px!important}
+.hh-app .hh-insights-intro .hh-kicker{font-size:.67rem;letter-spacing:.14em;margin:0 0 4px!important;color:#806f60}
+.hh-app .hh-insights-intro h1{font-size:clamp(1.75rem,3.8vw,2.3rem)!important;line-height:1.12;margin:0 0 5px!important}
+.hh-app .hh-insights-intro p:not(.hh-kicker){font-size:.86rem!important;line-height:1.35!important;margin:0!important;max-width:none}
+.hh-app .hh-insights-quickstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0;padding:0}
+.hh-app .hh-insights-quickstats>div{min-width:0;border:1px solid #e3dacc;border-radius:14px;background:#fffdf9;padding:12px 15px;box-shadow:0 2px 8px #42302408}
+.hh-app .hh-insights-quickstats dt{font:650 .75rem/1.25 system-ui,sans-serif;color:#75695f}
+.hh-app .hh-insights-quickstats dd{font:800 1.7rem/1.1 system-ui,sans-serif;color:#276d58;letter-spacing:-.035em;margin:4px 0 0;font-variant-numeric:tabular-nums}
+.hh-app .hh-insights-last-date{font-size:.75rem!important;margin:7px 2px 12px!important;color:#786f63}
+.hh-app .hh-insights-last-date time{font-weight:750;color:#506c5c}
+.hh-app .hh-insights-filter-disclosure{margin:12px 0 18px;border:1px solid #ded6c9;border-radius:14px;background:#fffdf9;overflow:hidden}
+.hh-app .hh-insights-filter-toggle{display:flex;align-items:center;gap:9px;min-height:47px;padding:10px 13px;list-style:none;cursor:pointer;color:#385548;font-size:.88rem}
+.hh-app .hh-insights-filter-toggle::-webkit-details-marker{display:none}
+.hh-app .hh-insights-filter-toggle::marker{content:""}
+.hh-app .hh-insights-filter-toggle small{font-size:.72rem;color:#807467;font-weight:600;margin-left:auto;text-align:right;line-height:1.25}
+.hh-app .hh-insights-filter-toggle strong{font-weight:800}
+.hh-app .hh-insights-filter-toggle>svg:first-child{color:#286e5a;flex:none}
+.hh-app .hh-insights-filter-chevron{flex:none;transition:transform .18s;color:#67796f}
+.hh-app .hh-insights-filter-disclosure[open] .hh-insights-filter-chevron{transform:rotate(180deg)}
+.hh-app .hh-insights-filter-toggle:focus-visible{outline:3px solid #478979;outline-offset:-3px}
+.hh-app .hh-insights-active-count{display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:50px;background:#286d59;color:#fff;font-size:.7rem}
+.hh-app .hh-insights-filter-panel{padding:12px 13px;border-top:1px solid #ece4db}
+.hh-app .hh-insights-filter-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 9px;font-size:.8rem;font-weight:780;color:#685b50}
+.hh-app .hh-insights-reset{min-height:30px!important;padding:4px 8px!important;border:0!important;background:transparent!important;color:#276c59!important;font-size:.78rem!important;text-decoration:underline}
+.hh-app .hh-insights-category-filters{display:flex!important;flex-wrap:wrap;grid-template-columns:none!important;gap:7px!important;margin:0 0 13px!important}
+.hh-app .hh-insights-category-filter{flex:0 1 auto;min-height:35px!important;padding:7px 10px!important;gap:5px!important;border-radius:999px!important;font-size:.77rem!important;line-height:1.2}
+.hh-app .hh-insights-category-filter svg{width:16px;height:16px}
+.hh-app .hh-insights-category-filter span{flex:0 1 auto}
+.hh-app .hh-insights-category-filter small{font-size:.7rem!important;margin-left:3px}
+.hh-app .hh-insights-period{gap:6px;margin:2px 0 8px}
+.hh-app .hh-insights-period>span{font-size:.82rem}
+.hh-app .hh-insights-period button{min-height:34px!important;padding:6px 10px!important;font-size:.76rem!important}
+.hh-app .hh-insights-period-guide{font-size:.74rem!important;line-height:1.38!important;margin:7px 0 0!important}
+.hh-app .hh-insights-filter-status{font-size:.77rem!important;font-weight:750;color:#567366;margin:-9px 0 16px!important}
+.hh-app .hh-insights-categories{gap:17px}
+.hh-app .hh-insights-category-heading{margin:0 0 9px;gap:7px;padding-bottom:8px;flex-wrap:wrap}
+.hh-app .hh-insights-category-heading-title{gap:8px}
+.hh-app .hh-insights-category-icon{width:31px;height:31px;border-radius:10px}
+.hh-app .hh-insights-category-icon svg{width:18px;height:18px}
+.hh-app .hh-insights-category-heading h2{font-size:clamp(1.2rem,2.4vw,1.44rem)!important}
+.hh-app .hh-insights-category-tools{display:flex;align-items:center;gap:8px;margin-left:auto}
+.hh-app .hh-insights-category-tools>span{font-size:.72rem;white-space:nowrap;color:#817567}
+.hh-app .hh-insights-add-test{display:inline-flex!important;align-items:center!important;gap:5px!important;width:auto!important;min-height:30px;padding:4px 9px!important;margin:0!important;border:1px solid #cadfd1!important;border-radius:999px!important;background:#f1f7f1!important;color:#286e58!important;font-size:.72rem;font-weight:800;white-space:nowrap}
+.hh-app .hh-insights-add-test span{font-size:1rem;line-height:1}
+.hh-app .hh-insights-test-list{gap:9px!important}
+.hh-app .hh-insights-test-card{border-radius:15px!important;box-shadow:0 2px 10px #5540290a!important}
+.hh-app .hh-insights-test-link{display:flex!important;align-items:center!important;gap:12px!important;min-height:117px;padding:11px 13px!important}
+.hh-app .hh-insights-test-gauge{width:102px;flex:0 0 102px}
+.hh-app .hh-insights-test-gauge figure{width:98px!important;margin:0}
+.hh-app .hh-insights-test-gauge figure strong{font-size:1.13rem!important}
+.hh-app .hh-insights-test-gauge figure figcaption{font-size:.6rem!important;line-height:1.2}
+.hh-app .hh-insights-test-body{min-width:0;gap:4px!important}
+.hh-app .hh-insights-test-meta time{font-size:.71rem!important}
+.hh-app .hh-insights-test-card h2{font-size:1.07rem!important;line-height:1.2!important;font-weight:600!important;margin:0!important;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.hh-app .hh-insights-test-card .hh-insights-test-summary{font-size:.76rem!important;line-height:1.25!important;color:#5d675f;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.hh-app .hh-insights-test-scores{font-size:.7rem!important;padding:0!important;margin:0!important}
+.hh-app .hh-insights-test-body [data-gauge-trend]{font-size:.68rem!important;padding:3px 7px!important;gap:3px;line-height:1.25!important}
+.hh-app .hh-insights-test-body [data-gauge-trend] span:first-child{font-size:.95rem}
+.hh-app .hh-insights-test-card .hh-insights-open{width:auto;align-self:stretch;justify-content:flex-start;gap:8px;border:0!important;margin:0!important;padding:1px 0 0!important;font-size:.73rem!important}
+.hh-app .hh-insights-history{padding:0 13px!important}
+.hh-app .hh-insights-history summary{padding:9px 0;font-size:.78rem!important}
+.hh-app .hh-insights-scale-note{font-size:.75rem!important;line-height:1.35!important;margin:13px 2px 8px!important;color:#796f65}
+.hh-app .hh-insights-export,.hh-app .hh-insights-advanced{margin:11px 0;padding:0 13px;border-radius:13px}
+.hh-app .hh-insights-export>summary,.hh-app .hh-insights-advanced>summary{padding:11px 0;font-size:.81rem}
+.hh-app .hh-insights-links{margin:12px 0;gap:7px}
+.hh-app .hh-insights-links a{padding:8px 12px;font-size:.77rem}
+@media(max-width:620px){
+ .hh-app .hh-insights-intro h1{font-size:1.78rem!important}
+ .hh-app .hh-insights-intro p:not(.hh-kicker){font-size:.81rem!important}
+ .hh-app .hh-insights-quickstats{gap:6px}
+ .hh-app .hh-insights-quickstats>div{padding:10px 8px;border-radius:12px}
+ .hh-app .hh-insights-quickstats dt{font-size:.66rem;line-height:1.2;min-height:29px}
+ .hh-app .hh-insights-quickstats dd{font-size:1.43rem;margin-top:2px}
+ .hh-app .hh-insights-filter-toggle{gap:7px;padding:9px 10px}
+ .hh-app .hh-insights-filter-toggle small{font-size:.67rem}
+ .hh-app .hh-insights-category-tools{gap:6px}
+ .hh-app .hh-insights-category-tools>span{font-size:.68rem}
+ .hh-app .hh-insights-add-test{padding:4px 7px!important;font-size:.69rem}
+ .hh-app .hh-insights-test-list{grid-template-columns:minmax(0,1fr)!important}
+ .hh-app .hh-insights-test-link{gap:9px!important;padding:10px 11px!important;min-height:112px}
+ .hh-app .hh-insights-test-gauge{width:92px;flex-basis:92px}
+ .hh-app .hh-insights-test-gauge figure{width:90px!important}
+ .hh-app .hh-insights-test-gauge figure strong{font-size:1.05rem!important}
+ .hh-app .hh-insights-test-gauge figure figcaption{font-size:.56rem!important}
+ .hh-app .hh-insights-test-card h2{font-size:1.02rem!important}
+}
+@media(max-width:360px){
+ .hh-app .hh-insights-quickstats dt{font-size:.61rem}
+ .hh-app .hh-insights-test-link{gap:7px!important;padding:10px 8px!important}
+ .hh-app .hh-insights-test-gauge{width:85px;flex-basis:85px}
+ .hh-app .hh-insights-test-gauge figure{width:83px!important}
+}
+@media(prefers-reduced-motion:reduce){.hh-app .hh-insights-filter-chevron{transition:none}}
