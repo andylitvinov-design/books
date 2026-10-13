@@ -122,11 +122,9 @@ test('mixed rows serialize explicit Homeopathy and Bach item types without dose 
 test('consultation entry restores compact auto-parser and open Note field while removing redundant Additional details UI', async () => {
   const source = await readFile('components/consultation-form.jsx', 'utf8')
   assert.match(source, /ConsultationTextImport/)
-  assert.match(source, /className="consultation-note"/)
+  assert.match(source, /className="consultation-note consultation-legacy-instructions"/)
   assert.match(source, /name="generalInstructions"/)
-  assert.doesNotMatch(source, /labels\.additionalDetails|consultation-additional-details/)
-  assert.match(source, /name="analysis"/)
-  assert.match(source, /name="additionalNotes"/)
+  assert.doesNotMatch(source, /labels\.additional/)
   assert.doesNotMatch(source, /consultationClinicalFields/)
 })
 

@@ -59,6 +59,10 @@ export function middleware(request: NextRequest) {
   // Public video pages use only these two reviewed embed providers. Keep the
   // cabinet, reports, APIs and document previews on the restrictive policy.
   const publicVideoDocument = publicDocument || videoManager
+  // Only the practitioner consultation editor may frame a locally generated PDF blob.
+  // Client cabinets and every other private page keep frame-src 'none'.
+  const practitionerDraftPreview = pathname === '/admin/consultations/new'
+    || /^\/admin\/consultations\/[^/]+\/edit\/?$/.test(pathname)
   const cspClass = videoManager ? 'video-manager'
     : privateDocument ? 'private'
       : tantraReikiPage ? 'tantra-media'
@@ -67,7 +71,7 @@ export function middleware(request: NextRequest) {
   const csp = [
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
-    publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : "frame-src 'none'",
+    publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
     tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'",
     "font-src 'self'", "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')

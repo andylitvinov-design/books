@@ -2,8 +2,10 @@
 
 import { ConsultationClientSelector } from './consultation-client-selector'
 import './consultation-studio.css'
+import './consultation-report.css'
 import { ClipboardList, FileCheck2, UsersRound } from 'lucide-react'
 import { ConsultationTextImport } from './consultation-text-import'
+import { ConsultationDraftPreview } from './consultation-draft-preview'
 import { useActionState, useEffect, useMemo, useState } from 'react'
 import { initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
@@ -37,14 +39,13 @@ const copy = {
     reportBach: 'Бах',
     reportMixed: 'Гомеопатия + Бах',
     note: 'Общие инструкции (дополнительно)',
-    notePlaceholder: 'Общие инструкции к рекомендациям…',
-    reportNotesHeading: 'Анализ и примечания',
-    analysisLabel: 'Анализ',
-    analysisHelp: 'Замеры состояния, жалобы и динамика изменений',
-    analysisPlaceholder: 'Например: уровень напряжения до практики 7/10, после 4/10; качество сна 6/10…',
-    additionalNotesLabel: 'Примечания',
-    additionalNotesHelp: 'Дополнительные подсказки клиенту — что делать дальше',
-    additionalNotesPlaceholder: 'На что обратить внимание, упражнения, личные рекомендации и следующие шаги…',
+    notePlaceholder: 'Общие указания для клиента…',
+    analysis: 'Анализ',
+    analysisHint: 'Замеры состояния, динамика симптомов и наблюдения',
+    analysisPlaceholder: 'Например: дата наблюдения, показатели и изменения состояния…',
+    clientNotes: 'Примечания',
+    clientNotesHint: 'Ваши дополнительные советы и пояснения клиенту',
+    clientNotesPlaceholder: 'Что важно делать, наблюдать или обсудить на следующей консультации…',
     payment: 'Оплата',
     prescriptionChoice: 'Рецепт',
     prescriptionChoiceHint: 'Назначения и рекомендации клиенту',
@@ -108,14 +109,13 @@ const copy = {
     reportBach: 'Bach',
     reportMixed: 'Homeopathy + Bach',
     note: 'General instructions (optional)',
-    notePlaceholder: 'General instructions for the recommendations…',
-    reportNotesHeading: 'Analysis and notes',
-    analysisLabel: 'Analysis',
-    analysisHelp: 'State measurements, observations and change over time',
-    analysisPlaceholder: 'Example: tension before an exercise 7/10, afterwards 4/10; sleep quality 6/10…',
-    additionalNotesLabel: 'Notes',
-    additionalNotesHelp: 'Additional guidance and next steps for your client',
-    additionalNotesPlaceholder: 'What to focus on, exercises, personal guidance and next steps…',
+    notePlaceholder: 'General client instructions…',
+    analysis: 'Analysis',
+    analysisHint: 'State measurements, symptom changes and observations',
+    analysisPlaceholder: 'For example: observation date, measured scores and changes…',
+    clientNotes: 'Notes',
+    clientNotesHint: 'Additional guidance and practical next steps for the client',
+    clientNotesPlaceholder: 'Things to do, observe or discuss at follow-up…',
     payment: 'Payment',
     prescriptionChoice: 'Prescription',
     prescriptionChoiceHint: 'Remedies and client recommendations',
@@ -277,6 +277,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       setError('')
     }
   }}>
+    <input type="hidden" name="consultationId" value={consultation?.id ?? ''} />
     <input type="hidden" name="recommendationRevision" value={consultation?.updatedAt ?? ''} />
     <input type="hidden" name="paymentRevision" value={payment?.updatedAt ?? ''} />
     <input type="hidden" name="requestId" value={requestId ?? ''} />
@@ -404,18 +405,28 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
 
       <ConsultationTextImport remedies={remedies} onApply={applyParsed} uiLocale={uiLocale} />
       <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Проверьте рекомендации самостоятельно. Потенция и схема приёма остаются пустыми до вашего решения.' : 'Review recommendations yourself. Potency and dosing stay blank until you enter them.'}</p>
-      {includeRecommendation && <div className="consultation-report-notes-grid" role="group" aria-label={labels.reportNotesHeading}>
-        <label className="consultation-report-note-card">
-          <strong>{labels.analysisLabel}</strong>
-          <small>{labels.analysisHelp}</small>
-          <textarea name="analysis" value={analysis} onChange={(event) => setAnalysis(event.target.value)} rows={4} maxLength={5000} placeholder={labels.analysisPlaceholder} />
+    </section>}
+
+    {includeRecommendation && <section className="consultation-studio-card consultation-report-notes-panel" aria-label={labels.analysis + ' & ' + labels.clientNotes}>
+      <div className="consultation-review-notes-title">
+        <h2>{uiLocale === 'ru' ? 'Анализ и примечания' : 'Analysis & notes'}</h2>
+        <p>{uiLocale === 'ru' ? 'Добавьте замеры состояния и персональные указания, которые войдут в PDF-отчёт.' : 'Record state measurements and personalized guidance for the client PDF.'}</p>
+      </div>
+      <div className="consultation-report-note-grid">
+        <label className="consultation-report-note">
+          <span>{labels.analysis}</span>
+          <small>{labels.analysisHint}</small>
+          <textarea name="analysis" rows={4} maxLength={5000} value={analysis} onChange={(event) => setAnalysis(event.target.value)} placeholder={labels.analysisPlaceholder} />
         </label>
-        <label className="consultation-report-note-card">
-          <strong>{labels.additionalNotesLabel}</strong>
-          <small>{labels.additionalNotesHelp}</small>
-          <textarea name="additionalNotes" value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} rows={4} maxLength={5000} placeholder={labels.additionalNotesPlaceholder} />
+        <label className="consultation-report-note">
+          <span>{labels.clientNotes}</span>
+          <small>{labels.clientNotesHint}</small>
+          <textarea name="additionalNotes" rows={4} maxLength={5000} value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} placeholder={labels.clientNotesPlaceholder} />
         </label>
-      </div>}
+      </div>
+      <label className="consultation-note consultation-legacy-instructions">{labels.note}
+        <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
+      </label>
     </section>}
 
     <section className="consultation-studio-card" aria-labelledby="consultation-documents-heading">
@@ -427,8 +438,6 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         </div>
         <FileCheck2 aria-hidden="true" size={21} strokeWidth={1.5} />
       </div>
-
-      {includeRecommendation && <label className="consultation-note">{labels.note}<textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} /></label>}
 
     <div className="consultation-studio-document-choices" role="group" aria-label={labels.documentsHeading}>
       <label className="consultation-studio-document-choice" data-selected={includeRecommendation}>
@@ -472,7 +481,10 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
             : labels.noDocumentError}</span>
       </div>
       {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
-      <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>{pending ? labels.saving : consultation ? labels.save : labels.create}</button>
+      <div className="consultation-studio-submit-buttons">
+        <ConsultationDraftPreview locale={uiLocale} includeRecommendation={includeRecommendation} includeInvoice={includeInvoice} disabled={pending} />
+        <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>{pending ? labels.saving : consultation ? labels.save : labels.create}</button>
+      </div>
     </div>
   </form>
 }

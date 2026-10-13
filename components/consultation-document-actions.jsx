@@ -64,11 +64,11 @@ export function ConsultationDocumentActions({
         <button className="consultation-copy" type="button" disabled={!active || copying} onClick={copy}>
           {copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}
         </button>
-        <a href={editHref}>{editLabel}</a>
-        <form action={active ? revoke : reactivate}>
+        {editHref && <a href={editHref}>{editLabel}</a>}
+        {(revoke || reactivate) && <form action={active ? revoke : reactivate}>
           {!active && <p>{reactivateHelp}</p>}
           <button type="submit">{active ? revokeLabel : reactivateLabel}</button>
-        </form>
+        </form>}
       </div>
     </details>
 
