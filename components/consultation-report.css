@@ -546,3 +546,25 @@
   outline: 3px solid #a87591;
   outline-offset: 3px;
 }
+
+/* Original remedy descriptions and optional guide in client HTML/print reports. */
+.canonical-remedy-profiles {
+  margin-top: 48px;
+  padding-top: 28px;
+  border-top: 2px solid #9b6976;
+}
+.canonical-remedy-profiles > h2 { color: #6d3042; margin-bottom: 9px; }
+.canonical-remedy-profiles > p { color: #5c5655; margin-bottom: 22px; }
+.canonical-remedy-profile { border-top: 1px solid #e5d8d8; padding: 26px 0 32px; }
+.canonical-remedy-profile > h3 { color: #643147; font-size: 22px; margin: 0 0 14px; }
+.canonical-remedy-profile-photo { margin: 16px 0 21px; }
+.canonical-remedy-profile-photo img { display: block; width: auto; max-width: 100%; max-height: 340px; object-fit: contain; border-radius: 14px; }
+.canonical-remedy-profile .remedy-content-pair { display: block; }
+.canonical-remedy-profile .remedy-content-section { margin: 16px 0; }
+.canonical-remedy-profile-link a { text-decoration: underline; text-underline-offset: 3px; }
+@media print {
+  .canonical-remedy-profiles { break-before: page; }
+  .canonical-remedy-profile { break-inside: auto; }
+  .canonical-remedy-profile h3 { break-after: avoid; }
+  .canonical-remedy-profile-photo { break-inside: avoid; }
+}
