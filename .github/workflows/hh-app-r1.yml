@@ -21,7 +21,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run test:app
       - name: Client report HTML/PDF, privacy and long-content regressions
-        run: node --test tests/canonical-pdf.test.mjs tests/client-report-notes-preview.test.mjs tests/distance-homeopathy-report.test.mjs tests/client-report-design.test.mjs
+        run: node --test tests/canonical-pdf.test.mjs tests/client-report-notes-preview.test.mjs tests/distance-homeopathy-report.test.mjs tests/client-report-design.test.mjs tests/consultation-draft-preview.test.mjs tests/consultation-report-language.test.mjs
       - name: Real SDK PKCE and callback cookie regressions
         run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: Lint complete repository including literal App Router paths
