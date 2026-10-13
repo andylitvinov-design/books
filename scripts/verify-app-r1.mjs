@@ -416,6 +416,8 @@ try {
    await expect(target.locator('[data-profile-domains][data-profile-interactive="true"]')).toBeVisible({timeout:20000})
    for (const [area, slug, service] of profileOfferCases) {
      await target.locator('#hh-domain-tab-'+area).click()
+     const support=target.locator('.hh-domain-support')
+     if (await support.getAttribute('open') === null) await support.locator('summary').click()
      const promo=target.locator('[data-profile-service-cta="'+area+'"]')
      await expect(promo).toBeVisible()
      const order=promo.locator('a[data-contact-channel="whatsapp"]')
