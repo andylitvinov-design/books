@@ -81,4 +81,5 @@ export function ConsultationResult({ clientId, patientName, dateIssued, language
     </div>
     {clientId && <section aria-label={ru ? 'Кабинет клиента' : 'Client cabinet'}><CabinetLinkActions clientId={clientId} locale={locale} /></section>}
   </>
+}
 
