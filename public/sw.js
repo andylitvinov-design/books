@@ -20,6 +20,35 @@ self.addEventListener('message', (event) => {
     if (mayCache(response)) await cache.put(url, response.clone())
   }))
 })
+// Push contains fixed, public reminders only. Private App URLs remain network-only.
+self.addEventListener('push', (event) => {
+  let payload = {}
+  try { payload = event.data?.json() || {} } catch { /* generic fallback */ }
+  const ru = payload.locale === 'ru'
+  const path = ru ? '/ru/app/course' : '/en/app/course'
+  event.waitUntil(self.registration.showNotification(
+    ru ? 'Holistic House · Мой курс' : 'Holistic House · My course',
+    { body:ru ? 'Небольшая практика на сегодня ждёт вас. 5–12 минут в удобном ритме.'
+      : 'Your gentle daily practice is ready. Take 5–12 minutes when it suits you.',
+      icon:'/icon.svg',badge:'/icon.svg',tag:'hh-course-reminder',
+      renotify:false,data:{path} }
+  ))
+})
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.path === '/ru/app/course' ?
+    '/ru/app/course' : '/en/app/course'
+  event.waitUntil((async () => {
+    const open = await self.clients.matchAll({type:'window',includeUncontrolled:true})
+    for(const client of open) {
+      if(new URL(client.url).origin === self.location.origin) {
+        if(client.navigate)await client.navigate(url)
+        return client.focus()
+      }
+    }
+    return self.clients.openWindow(url)
+  })())
+})
 self.addEventListener('fetch', (event) => {
   const request = event.request
   if (request.method !== 'GET') return

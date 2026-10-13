@@ -3,6 +3,7 @@ import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config
 import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
+import { createNotificationRepository } from '@/lib/app/notification-repository'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
@@ -343,6 +344,23 @@ async function handle(request, { params }) {
         json({ saved: true, sourceKind: intent.sourceKind, resource }, 201),
         path[1],
       )
+    }
+    if (path[0] === 'notifications') {
+      const notifications = createNotificationRepository(config)
+      if (joined === 'notifications' && method === 'GET')
+        return json(await notifications.state(actor))
+      if (joined === 'notifications/subscribe' && method === 'POST')
+        return json(await notifications.subscribe(actor, await readBody(request)), 201)
+      if (joined === 'notifications/unsubscribe' && method === 'POST')
+        return json(await notifications.unsubscribe(actor, await readBody(request)))
+      if (joined === 'notifications/preferences' && method === 'POST')
+        return json(await notifications.preferences(actor, await readBody(request)))
+      if (joined === 'notifications/test' && method === 'POST') {
+        onlyKeys(await readBody(request), [])
+        await consumeRate(config, {op:'push-test',actor:actor.id}, 2, 3600)
+        return json(await notifications.sendTest(actor))
+      }
+      throw new AppError('NOT_FOUND', 404)
     }
     if (path[0] === 'course' && path.length === 2) {
       const daily = createDailyCourseRepository(config)
