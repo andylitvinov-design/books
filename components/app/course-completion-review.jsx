@@ -34,10 +34,13 @@ export default function CourseCompletionReview({
               prefetch={false}>{t.report}<ArrowRight size={13} aria-hidden="true"/></Link>}
           </div>
           {scales.length ? <ul className={styles.briefScales}>
-            {scales.map(scale => <li key={scale.id}>
+            {scales.map(scale => <li key={scale.id}
+              data-course-screening-scale={scale.testKey === 'asrs-6' && scale.type === 'screening_count' ? 'true' : undefined}>
               <span>{scale.label}</span>
-              <meter min={scale.min} max={scale.max} value={scale.score}
-                aria-label={scale.label+': '+scale.score+' ('+scale.min+'–'+scale.max+')'}/>
+              {scale.testKey === 'asrs-6' && scale.type === 'screening_count'
+                ? <span data-course-screening-count>{scale.observation} {t.noMedical}</span>
+                : <meter min={scale.min} max={scale.max} value={scale.score}
+                    aria-label={scale.label+': '+scale.score+' ('+scale.min+'–'+scale.max+')'}/>}
               <strong>{scale.score}<small> / {scale.min}–{scale.max}</small></strong>
             </li>)}
           </ul> : <p className={styles.small}>{t.noMeasuredScales}</p>}

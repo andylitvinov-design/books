@@ -15,6 +15,14 @@ export function ScoreGauge({ dimension, locale = 'en', compact = false }) {
   const model = gaugeModel(dimension)
   const ru = locale === 'ru'
   if (!model) return <span className={styles.unavailable}>{ru ? 'Нет числовой шкалы' : 'No numeric scale'}</span>
+  if (model.displayKind === 'screening-count') return <figure className={styles.gauge + (compact ? ' ' + styles.compact : '')}
+    data-assessment-gauge="screening-count">
+    <strong className={styles.value}>{numeral(dimension.value, locale)} <span>/ 6</span></strong>
+    <figcaption>{model.screenPositive
+      ? ru ? 'На уровне или выше скринингового порога (4)' : 'At or above screening threshold (4)'
+      : ru ? 'Ниже скринингового порога (4)' : 'Below screening threshold (4)'}</figcaption>
+    <small>{ru ? 'Скрининг, не диагноз' : 'Screening, not a diagnosis'}</small>
+  </figure>
   const colors = model.orientation === 'neutral' ? neutral : favorable
   const angle = (1 - model.fraction) * Math.PI
   const tip = coordinate(angle, 65)

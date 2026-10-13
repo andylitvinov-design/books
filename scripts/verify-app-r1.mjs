@@ -740,7 +740,36 @@ try {
   await clientContext.close()
   passed('Master creates synthetic client, attaches study link and recipient opens private cabinet')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Cancel request'}).click();await expect(page.locator('.hh-badge')).toHaveText('Cancelled');passed('user cancels contacted request')
- const other=await browser.newContext();await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}]);const otherPage=await other.newPage();await otherPage.goto(origin+'/en/app');await otherPage.getByRole('button',{name:'Continue with Google'}).click();await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible();await otherPage.getByLabel('I am 18 or older.').check();await otherPage.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0);await otherPage.getByRole('button',{name:'Create my private space'}).click();await expect(otherPage.locator('.hh-nav')).toBeVisible();await expect(otherPage).toHaveURL(/\/en\/app$/,{timeout:15000});assert.equal((await api('results/'+first.id,null,other)).status,404);assert.equal((await api('bootstrap',null,other)).data.results.length,0);passed('browser A/B cross-user result denial')
+ const other=await browser.newContext()
+ await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}])
+ const otherPage=await other.newPage()
+ await otherPage.goto(origin+'/en/app')
+ await otherPage.getByRole('button',{name:'Continue with Google'}).click()
+ await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible()
+ // These old readiness signals are already true before consent is submitted.
+ // Prove the 403 gate here; never retry it until it happens to become a 404.
+ await expect(otherPage.locator('.hh-nav')).toBeVisible()
+ await expect(otherPage).toHaveURL(/\/en\/app$/,{timeout:15000})
+ const beforeConsent=await api('results/'+first.id,null,other)
+ assert.equal(beforeConsent.status,403)
+ assert.equal(beforeConsent.data.error,'CONSENT_REQUIRED')
+ passed('browser B is denied before consent despite visible nav and app URL')
+ await otherPage.getByLabel('I am 18 or older.').check()
+ await otherPage.getByLabel('I agree to private processing',{exact:false}).check()
+ assert.equal(await otherPage.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
+ const [onboardingResponse]=await Promise.all([
+  otherPage.waitForResponse(response=>new URL(response.url()).pathname==='/api/app/onboarding'&&response.request().method()==='POST'),
+  otherPage.getByRole('button',{name:'Create my private space'}).click(),
+ ])
+ assert.equal(onboardingResponse.status(),200)
+ assert.equal((await onboardingResponse.json()).onboardingState,'active')
+ await expect(otherPage.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:15000})
+ const otherBootstrap=await api('bootstrap',null,other)
+ assert.equal(otherBootstrap.status,200)
+ assert.equal(otherBootstrap.data.account.onboardingState,'active')
+ assert.equal((await api('results/'+first.id,null,other)).status,404)
+ assert.equal(otherBootstrap.data.results.length,0)
+ passed('browser A/B cross-user result denial after committed consent')
  // The public Start free monitoring button must transfer the exact selection into an existing Google account.
  // Open a fresh tab in the same authenticated cookie context: the onboarding page
  // can still have a queued router.replace('/en/app') after its nav becomes visible.
@@ -904,4 +933,5 @@ try {
  await other.close();await admin.close()
 } catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
 finally{await browser.close()}
+
 

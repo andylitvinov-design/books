@@ -8,6 +8,7 @@ import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
@@ -296,8 +297,10 @@ function GuestAnswerChoices({ definition, question, selected, onChoose, disabled
       <div className={words ? 'cabinet-answer-list' : 'cabinet-answer-scale'}>
         {answerLabels(definition, question).map(option => (
           <button type="button" key={option.value} aria-pressed={selected === option.value}
+            className={asrs6ChoiceClass(definition, question, option.value)}
             disabled={disabled} onClick={() => void onChoose(option.value)}>
-            {words ? <><strong>{option.value}</strong><span>{option.label}</span></> : option.label}
+            {words ? <>{definition.key !== 'asrs-6' && <strong>{option.value}</strong>}<span lang={definition.instrumentLocale}>{option.label}</span></> : option.label}
+            <Asrs6ChoiceMarker definition={definition} question={question} value={option.value} />
           </button>
         ))}
       </div>
@@ -828,6 +831,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             </div>
 
             {definition.instructions && <p className="cabinet-test-note" lang={definition.instrumentLocale}>{definition.instructions}</p>}
+            <Asrs6SourceNotice definition={definition} startedAt={run.startedAt} locale={locale} />
             {mode === 'quick' ? (
               <div className="cabinet-quick-form">
                 {definition.questions.map((item, step) => (
