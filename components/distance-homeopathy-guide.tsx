@@ -24,10 +24,13 @@ export function DistanceHomeopathyGuide({ locale, embedded = false, report = fal
   const Container = embedded ? "section" : "main";
 
   return (
-    <Container id={embedded && !report ? "distance-homeopathy-guide" : undefined} className={`${styles.page} ${embedded ? styles.embedded : ""} ${report ? styles.report : ""}`} lang={locale}>
+    <Container id={embedded && !report ? "distance-homeopathy-guide" : undefined} className={`${styles.page} ${embedded ? styles.embedded : ""} ${report ? styles.report : ""}`} lang={locale} data-report-appendix={report ? "distance-homeopathy" : undefined}>
       {!embedded && <PublicSiteHeader locale={locale} />}
       {!embedded && <LibraryBackLink locale={locale} />}
 
+      {report && <p className={styles.reportAppendixLabel}>
+        {locale === "ru" ? "Приложение · Дистанционная гомеопатия" : locale === "es" ? "Apéndice · Homeopatía a distancia" : "Appendix · Distance homeopathy"}
+      </p>}
       <article className={styles.article}>
         <header className={styles.hero}>
           <p className={styles.eyebrow}>{text.kicker}</p>

@@ -494,8 +494,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         <span>
           <strong>{uiLocale === 'ru' ? 'Дистанционная гомеопатия' : 'Distance homeopathy'}</strong>
           <small>{uiLocale === 'ru'
-            ? 'Приложить полную иллюстрированную инструкцию по работе с препаратами в самый конец клиентского отчёта и PDF.'
-            : 'Append the full illustrated guide to working with remedies at the end of the client report and PDF.'}</small>
+            ? 'Добавить полный текст статьи последним приложением к отчёту клиента и PDF — без ссылки на сайт.'
+            : 'Add the full article as the final appendix in the client report and PDF, without a website link.'}</small>
         </span>
       </label>
     </section>}

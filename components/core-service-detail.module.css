@@ -31,30 +31,3 @@
 @media(max-width:760px){.main{width:calc(100% - 24px);margin-bottom:34px}.breadcrumb{margin:13px 0}.hero{gap:12px;padding:12px;border-radius:20px}.intro{padding:12px 10px 3px}.eyebrow{font-size:10px;margin-bottom:10px}.intro h1{font-size:clamp(35px,9vw,45px)}.lead{font-size:14px;line-height:1.5;margin-top:11px}.benefit{font-size:12px;margin-top:12px}.primary{width:100%;min-height:51px;font-size:13px;margin-top:16px}.note{font-size:11px}.photo{height:170px;min-height:170px;border-radius:14px}.outcomes{padding-top:25px}.outcomes h2{font-size:30px}.items{gap:9px}.items article{padding:18px 17px}.items h3{font-size:21px}.items p{font-size:12px;margin-top:7px}.footer{margin-top:18px;padding:17px}.links{display:grid;gap:10px}}
 
 .andrey{display:grid;gap:5px;width:100%;margin:16px 0 0;padding:12px 13px;border-left:3px solid #9b8263;background:#fffaf3;color:#645a50;font:12px/1.5 Arial,Helvetica,sans-serif}.andrey strong{color:#3b4f42;font:750 12px/1.35 Arial,Helvetica,sans-serif}.andrey a{display:inline-flex;align-items:center;gap:5px;width:max-content;color:#305c47;font:750 12px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}.footerCta{display:inline-flex;align-items:center;gap:6px;color:#305c47;font:750 13px/1.45 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:4px}.freeAlternative{margin-top:15px}.freeAlternative summary{cursor:pointer;color:#41604b;font:750 13px/1.45 Arial,Helvetica,sans-serif}.freeAlternative a{display:inline-flex;align-items:center;gap:6px;margin-top:9px;color:#305c47;font:750 13px/1.45 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:4px}
-
-.homeopathyGuideLink {
-  display: flex;
-  /* A column-flex child with align-items:flex-start otherwise uses its
-     intrinsic max-content width and overflows at 320px in WebKit. */
-  align-self: stretch;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  align-items: center;
-  gap: 10px;
-  margin: 10px 0 20px;
-  color: #722b42;
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 5px;
-  line-height: 1.45;
-}
-.homeopathyGuideLink span {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.homeopathyGuideLink svg {
-  flex: 0 0 auto;
-}
-.homeopathyGuideLink:hover { color: #9c4a63; }

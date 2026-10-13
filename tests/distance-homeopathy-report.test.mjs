@@ -81,9 +81,10 @@ test('selected full guide is appended after remedy profiles, and disabled guide 
   assert.equal(off.includes(marker), false)
   assert.equal(on.includes(marker), true)
   assert.ok(on.indexOf(marker) > on.indexOf('APPENDIX'))
-  // The visible link caption uses a Unicode arrow and is correctly CID-encoded in PDF.
-  // Check its real clickable URI instead of searching for an unencoded glyph stream.
-  assert.match(on, /\/URI \(https:\/\/example\.test\/en\/library\/distance-homeopathy\)/)
+  // The complete appendix is now in the PDF itself: no external article URI.
+  // Hyperlinks to individual remedies remain part of the primary report.
+  assert.doesNotMatch(on, /\/URI \(https:\/\/example\.test\/en\/library\/distance-homeopathy\)/)
+  assert.match(on, /\/URI \(https:\/\/example\.test\/en\/homeopathy\/remedies\/colchicum-autumnale\)/)
   assert.ok(on.length > off.length)
 
   const noOrigin = buildPrescriptionPdf(clientDocument(true), 'en')
