@@ -383,6 +383,10 @@ export default function CourseToday({locale='en'}){
       {lesson?.workbook&&<section className={styles.workbookTask} data-course-micro-experiment>
         <h4>{t.todayExperiment}</h4><p>{lesson.workbook.microPractice}</p>
       </section>}
+      {isV3&&<details className={styles.transferCard} data-course-skill-transfer>
+        <summary>{t.transferPrompt}</summary>
+        <p>{lesson.practiceV3.microAction}</p><small>{t.transferHint}</small>
+      </details>}
       {data.anchor&&<details className={styles.anchorBox}>
         <summary>{t.anchorTitle}: {data.anchor.title}</summary>
         <p className={styles.hint}>{t.anchorIntro}</p><p>{data.anchor.practice}</p>
@@ -399,6 +403,9 @@ export default function CourseToday({locale='en'}){
       <h4>{lesson.workbook.question}</h4>
       <p><strong>{t.sentenceStarter}:</strong> {lesson.workbook.sentenceStarter}</p>
     </section>}
+    {isV3&&<p className={styles.reflectionTransfer} data-course-reflection-transfer>
+      <strong>{t.reflectionV3}:</strong> {lesson.practiceV3.review}
+    </p>}
     <div className={styles.ratingPair}>
       <Rating optional label={t.beforeNow} value={beforeNow} onChange={setBeforeNow}/>
       <Rating optional label={t.afterNow} value={afterNow} onChange={setAfterNow}/>
@@ -432,6 +439,17 @@ export default function CourseToday({locale='en'}){
      <small> ({progress.comparison.change>0?'+':''}{progress.comparison.change})</small>
    </p>:<p className={styles.hint}>{t.noChange}</p>}
    <p className={styles.hint}>{t.changeText}</p>
+  </section>
+  {isV3&&<section className={styles.learningEvidence} data-course-learning-evidence>
+    <h3>{t.progressThree}</h3>
+    <div className={styles.learningEvidenceGrid}>
+      <div><strong>{progress.practiceCount||0} / 14</strong><span>{t.participation}</span></div>
+      <div><strong>{progress.helpful||0}</strong><span>{t.helpfulCount}</span></div>
+    </div>
+    {hasComparableWeeks?<p className={styles.weekComparison}>
+      {t.weeklyComparison}: {t.weekOne} {firstWeekMedian}/10 → {t.weekTwo} {secondWeekMedian}/10
+    </p>:<p className={styles.hint}>{t.insufficientRatings}</p>}
+    <p className={styles.hint}>{t.learningBoundaries}</p>
   </section>
   {data.journalHistory?.length>0&&<section className={styles.workbookHistory} data-course-journal-history>
     <details>
