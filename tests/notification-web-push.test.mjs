@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createDecipheriv,createECDH,hkdfSync,randomBytes} from 'node:crypto'
-import {encryptedPushBody} from '../lib/app/web-push.js'
+import {encryptedPushBody} from '../lib/app/web-push-crypto.js'
 import {coursePushPayload} from '../lib/app/notification-contract.js'
 test('RFC8291 ciphertext decrypts on the browser subscription key',()=>{
   const user=createECDH('prime256v1');user.generateKeys()
