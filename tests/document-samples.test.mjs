@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { samplesEnabled, getDocumentSample } from '../lib/documents/samples.js'
 import { buildPaymentPdf, buildPrescriptionPdf } from '../lib/prescriptions/pdf.js'
-import { recommendationCopy } from '../lib/documents/recommendation.js'
 test('synthetic review is disabled in production and never reads private records', () => {
   assert.equal(samplesEnabled({ NODE_ENV: 'production' }), false)
   assert.equal(samplesEnabled({ NODE_ENV: 'production', VERCEL_ENV: 'production' }), false)
