@@ -19,28 +19,46 @@ async function installYoutubeFixture(context) {
     contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
   }));
 }
-async function startBothNative(disclosure) {
-  for (let index = 0; index < 2; index++) {
-    const video = disclosure.locator('video').nth(index);
-    await video.evaluate(async el => { el.muted = true; await el.play(); });
-    await expect.poll(() => video.evaluate(el => el.paused)).toBe(false);
-    await expect.poll(() => video.evaluate(el => el.currentTime)).toBeGreaterThan(0.1);
-  }
+async function startVisibleNative(disclosure, index) {
+  const video = disclosure.locator('video').nth(index);
+  await video.scrollIntoViewIfNeeded();
+  await video.evaluate(async el => { el.muted = true; await el.play(); });
+  await expect.poll(() => video.evaluate(el => el.paused)).toBe(false);
+  const initial = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames }));
+  await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
+  await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(initial.frames);
+  const sample = await video.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    return { time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames, paused: el.paused, ready: el.readyState, error: el.error?.code ?? null, visible: rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth };
+  });
+  assert.equal(sample.paused, false);
+  assert.equal(sample.visible, true);
+  assert.equal(sample.error, null);
+  return { participant: index + 1, initial, sample };
+}
+async function focusWithoutScroll(locator) {
+  await locator.evaluate(el => el.focus({ preventScroll: true }));
 }
 async function verifyRepeatedClose(page, cycles = 3) {
   const disclosure = page.locator('#tantra-russian-video-testimonials');
   if (!await disclosure.evaluate(el => el.open)) await disclosure.locator('summary').click();
   const observations = [];
-  for (let cycle = 0; cycle < cycles; cycle++) {
-    await startBothNative(disclosure);
+  await expect(disclosure.locator('video')).toHaveCount(2);
+  // Exercise each tall native player while visible. Do not require simultaneous
+  // offscreen muted autoplay, and never count an already-paused player as active.
+  for (const activeIndex of [0, 1]) for (let cycle = 0; cycle < cycles; cycle++) {
     if (await disclosure.locator('button.academy-video-poster').count()) {
       await disclosure.locator('button.academy-video-poster').click();
     }
     await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toBeVisible();
+    const active = await startVisibleNative(disclosure, activeIndex);
+    await focusWithoutScroll(disclosure.locator('summary'));
+    // Focusing the offscreen summary must not scroll/pause our active video.
+    await expect.poll(() => disclosure.locator('video').nth(activeIndex).evaluate(el => el.paused)).toBe(false);
     const before = await disclosure.locator('video').evaluateAll(videos => videos.map(el => el.currentTime));
-    await disclosure.locator('summary').focus();
     await page.keyboard.press(cycle % 2 === 0 ? 'Enter' : 'Space');
     await expect.poll(() => disclosure.evaluate(el => el.open)).toBe(false);
+    for (const index of [0, 1]) await expect(disclosure.locator('video').nth(index)).not.toBeVisible();
     await expect.poll(() => disclosure.locator('video').evaluateAll(videos => videos.every(el => el.paused))).toBe(true);
     await expect(disclosure.locator('iframe')).toHaveCount(0);
     const paused = await disclosure.locator('video').evaluateAll(videos => videos.map(el => el.currentTime));
@@ -50,10 +68,11 @@ async function verifyRepeatedClose(page, cycles = 3) {
     after.forEach((time, index) => assert.ok(Math.abs(time - paused[index]) < 0.05, 'Closed player must stay paused'));
     await page.keyboard.press(cycle % 2 === 0 ? 'Enter' : 'Space');
     await expect.poll(() => disclosure.evaluate(el => el.open)).toBe(true);
+    for (const index of [0, 1]) await expect(disclosure.locator('video').nth(index)).toBeVisible();
     await expect.poll(() => disclosure.locator('video').evaluateAll(videos => videos.every(el => el.paused))).toBe(true);
     await expect(disclosure.locator('iframe')).toHaveCount(0);
     await expect(disclosure.locator('button.academy-video-poster')).toBeVisible();
-    observations.push({ cycle: cycle + 1, before, paused, after, youtubeFixtureOnly: true });
+    observations.push({ participant: activeIndex + 1, cycle: cycle + 1, active, before, paused, after, youtubeFixtureOnly: true });
   }
   return observations;
 }
@@ -82,7 +101,8 @@ async function verifyDelayedHydration(browser, engine, locale) {
     await expect.poll(() => deferredScripts).toBeGreaterThan(0);
     // Native HTML controls operate while same-origin external Next.js bundles are held.
     if (!await disclosure.evaluate(el => el.open)) await disclosure.locator('summary').click();
-    await startBothNative(disclosure);
+    observed.preHydrationPlayback = [];
+    for (const index of [0, 1]) observed.preHydrationPlayback.push(await startVisibleNative(disclosure, index));
     observed.beforeHydration = await disclosure.locator('video').evaluateAll(videos => videos.map(el => ({ time: el.currentTime, paused: el.paused })));
     releaseScripts();
     await page.waitForLoadState('load');
@@ -113,16 +133,23 @@ async function verifyLocaleSwitchWhilePlaying(browser, engine) {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(origin + '/en/academy/reiki/tantra-reiki', { waitUntil: 'load' });
-    for (const locale of ['ru', 'es', 'en']) {
+    for (const activeIndex of [0, 1]) for (const locale of ['ru', 'es', 'en']) {
       const disclosure = page.locator('#tantra-russian-video-testimonials');
       if (!await disclosure.evaluate(el => el.open)) await disclosure.locator('summary').click();
-      await startBothNative(disclosure);
       await disclosure.locator('button.academy-video-poster').click();
       await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toBeVisible();
       await page.evaluate(() => { window.__tantraPreviousPlayers = [...document.querySelectorAll('#tantra-russian-video-testimonials video, #tantra-russian-video-testimonials iframe')]; });
+      const active = await startVisibleNative(disclosure, activeIndex);
       const menu = page.locator('.site-language-menu').first();
-      if (!await menu.evaluate(el => el.open)) await menu.locator('summary').click();
-      await menu.locator(`a[lang="${locale}"]`).click();
+      if (!await menu.evaluate(el => el.open)) {
+        await focusWithoutScroll(menu.locator('summary'));
+        await page.keyboard.press('Enter');
+      }
+      const languageLink = menu.locator(`a[lang="${locale}"]`);
+      await expect(languageLink).toHaveAttribute('href', `/${locale}/academy/reiki/tantra-reiki`);
+      await focusWithoutScroll(languageLink);
+      await expect.poll(() => disclosure.locator('video').nth(activeIndex).evaluate(el => el.paused)).toBe(false);
+      await page.keyboard.press('Enter');
       await expect(page).toHaveURL(origin + `/${locale}/academy/reiki/tantra-reiki`);
       await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
       await expect.poll(() => disclosure.evaluate(el => el.open)).toBe(locale !== 'en');
@@ -135,7 +162,7 @@ async function verifyLocaleSwitchWhilePlaying(browser, engine) {
         assert.equal(player.connected, false);
         if (player.tag === 'VIDEO') assert.equal(player.paused, true);
       }
-      observed.switches.push({ locale, previousDocumentPlayers: previous, newPlayersPaused: true, iframeAbsent: true });
+      observed.switches.push({ participant: activeIndex + 1, active, locale, previousDocumentPlayers: previous, newPlayersPaused: true, iframeAbsent: true });
     }
     assert.deepEqual(errors, []);
     observed.ok = true;
@@ -245,41 +272,9 @@ try {
             await expect(alena).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1');
             await expect(alena).toHaveAttribute('title', /Alena|Алёна/);
             await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toHaveText('Allowed YouTube renderer');
-            // Regression: the application must stop active playback on close.
-            // Never manually pause this player before the close assertion.
-            const activeVideos = russian.locator('video');
-            const beforeClose = [];
-            for (let index = 0; index < 2; index++) {
-              const activeVideo = activeVideos.nth(index);
-              await activeVideo.evaluate(async el => { el.muted = true; await el.play(); });
-              await expect.poll(() => activeVideo.evaluate(el => el.paused)).toBe(false);
-              beforeClose.push(await activeVideo.evaluate(el => el.currentTime));
-            }
-            await russian.locator('summary').click();
-            const pausedAt = [];
-            for (let index = 0; index < 2; index++) {
-              const activeVideo = activeVideos.nth(index);
-              await expect(activeVideo).not.toBeVisible();
-              await expect.poll(() => activeVideo.evaluate(el => el.paused)).toBe(true);
-              pausedAt.push(await activeVideo.evaluate(el => el.currentTime));
-              assert.ok(pausedAt[index] >= beforeClose[index], "Closing must not reset Participant " + (index + 1));
-            }
-            await expect(russian.locator('iframe')).toHaveCount(0);
-            await page.waitForTimeout(350);
-            for (let index = 0; index < 2; index++) {
-              assert.ok(Math.abs(await activeVideos.nth(index).evaluate(el => el.currentTime) - pausedAt[index]) < 0.05);
-            }
-            await russian.locator('summary').focus();
-            await page.keyboard.press('Enter');
-            for (let index = 0; index < 2; index++) {
-              await expect(activeVideos.nth(index)).toBeVisible();
-              await expect.poll(() => activeVideos.nth(index).evaluate(el => el.paused)).toBe(true);
-            }
-            await expect(russian.locator('iframe')).toHaveCount(0);
-            await expect(russian.locator('button.academy-video-poster')).toBeVisible();
-            await russian.locator('button.academy-video-poster').click();
-            await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toHaveText('Allowed YouTube renderer');
-            journey.closeCleanup = { participantsVerified: [1, 2], nativePaused: true, nativePositionRetained: true, youtubeIframeRemoved: true, reopenRequiresClick: true, youtubeFixtureOnly: true };
+            journey.stage = { phase: 'per-participant-close-cleanup' };
+            const closeCycles = await verifyRepeatedClose(page, 1);
+            journey.closeCleanup = { participantsVerified: [1, 2], closeCycles, nativePaused: true, nativePositionRetained: true, youtubeIframeRemoved: true, reopenRequiresClick: true, youtubeFixtureOnly: true };
             assert.deepEqual(pageErrors, []);
             journey.ok = true;
             journey.stage = { phase: 'complete' };
