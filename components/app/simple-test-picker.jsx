@@ -118,6 +118,7 @@ export function SimpleTestPicker({
   const [showAllProblems, setShowAllProblems] = useState(false)
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
+  const testKindsKey = [...testKinds].sort().join('|')
   const allProblems = problemsForTopics(focus)
   const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
     ...allProblems.filter((item) => !problems.includes(item.key))]
@@ -126,7 +127,7 @@ export function SimpleTestPicker({
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
     setShowAllProblems(false)
-  }, [focusKey, depth, maxMinutes, testKinds.join('|'), problemKey])
+  }, [focusKey, depth, maxMinutes, testKindsKey, problemKey])
   const visibleRecommendations = recommendations.slice(0, visibleCount)
   const remainingCount = Math.max(0, recommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
