@@ -51,6 +51,7 @@ async function go(page, path) {
 }
 
 async function verifyPublicHeaderMatrix(page, engine) {
+  const originalViewport = page.viewportSize()
   const inViewport = async (locator, label) => {
     await expect(locator).toBeVisible()
     const box = await locator.boundingBox()
@@ -102,6 +103,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
       }
     }
   }
+  await page.setViewportSize(originalViewport)
   pass(engine + ': public header Home/Services/Library EN/RU/ES at 374/375/390/768/1023px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return')
 }
 try {
