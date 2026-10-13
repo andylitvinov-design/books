@@ -13,6 +13,6 @@ export default async function EditConsultation({ params }) {
   const store = getPrescriptionStore()
   const consultation = store ? await store.findById(id) : undefined
   const payment = consultation?.paymentDocumentId ? await store.findById(consultation.paymentDocumentId) : undefined
-  if (!consultation || consultation.kind === 'payment' || !payment) notFound()
+  if (!consultation || consultation.kind === 'payment' || (consultation.paymentDocumentId && payment?.kind !== 'payment')) notFound()
   return <main className="prescription-admin-shell consultation-edit-shell consultation-studio-shell"><PrescriptionAdminHeader title="Edit consultation" /><ConsultationForm action={updateConsultationAction.bind(null, id)} remedies={getConsultationRemedyOptions()} consultation={consultation} payment={payment} /></main>
 }
