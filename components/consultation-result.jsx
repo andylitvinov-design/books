@@ -51,6 +51,8 @@ export function ConsultationResult({ clientId, patientName, dateIssued, language
 
     {clientId && <section aria-label={ru ? 'Кабинет клиента' : 'Client cabinet'}><CabinetLinkActions clientId={clientId} locale={locale} /></section>}
 
+    <div className="consultation-report-review-hint" role="note"><strong>{ru ? 'Проверьте отчёт перед отправкой' : 'Review your report before sharing'}</strong><p>{labels.reviewHint}</p></div>
+
     <div className="consultation-result-documents">
       {documents.map(document => {
         const text = resultDocumentText(document, locale)

@@ -30,5 +30,6 @@ export async function GET(request, { params }) {
   if (!document) return new NextResponse(null, { status: 404, headers: privateHeaders })
   const pdf = await (payment ? buildPaymentPdf : buildPrescriptionPdf)(document, locale, metadataBaseFor().origin)
   const filename = payment ? (record.paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : 'homeopathic-recommendation.pdf'
-  return new NextResponse(pdf, { headers: { ...privateHeaders, 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${filename}"` } })
+  const disposition = new URL(request.url).searchParams.get('preview') === '1' ? 'inline' : 'attachment'
+  return new NextResponse(pdf, { headers: { ...privateHeaders, 'Content-Type': 'application/pdf', 'Content-Disposition': `${disposition}; filename="${filename}"` } })
 }
