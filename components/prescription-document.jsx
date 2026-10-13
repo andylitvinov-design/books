@@ -12,8 +12,13 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
+  const seenProfiles = new Set()
   const selectedProfiles = document.items.map(item => ({ item, remedy: item.remedySlug ? getRemedy(locale, item.remedySlug) : undefined }))
-    .filter(({ remedy }) => Boolean(remedy))
+    .filter(({ item, remedy }) => {
+      if (!remedy || seenProfiles.has(item.remedySlug)) return false
+      seenProfiles.add(item.remedySlug)
+      return true
+    })
   const mixed = document.recommendationType === 'mixed'
   const groups = mixed
     ? [
@@ -81,11 +86,11 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           : 'Original descriptions and photographs from the Holistic House library. Educational material for reflection, not medical instructions.'}</p>
         {selectedProfiles.map(({ item, remedy }) => <section className="canonical-remedy-profile" key={item.remedySlug}>
           <h3>{remedy.canonical_latin_name}</h3>
-          {remedy.primary_image && <figure className="canonical-remedy-profile-photo">
+          {remedy.primary_image ? <figure className="canonical-remedy-profile-photo">
             {/* The published original image is retained rather than substituted or generated. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={remedy.primary_image} alt={remedy.primary_image_alt || remedy.canonical_latin_name} loading="lazy" decoding="async" />
-          </figure>}
+          </figure> : <p className="canonical-remedy-photo-unavailable">{locale === 'ru' ? 'Исходная фотография отсутствует в базе.' : 'No source photograph is available in the library.'}</p>}
           <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url} variant="book" showEssence={false} expandSupplementary />
           {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
             {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open full remedy profile →'}
