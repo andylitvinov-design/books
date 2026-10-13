@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { buildPersonalPortraitSummary, approvedCourseFocus } from '../lib/profile/personal-portrait.js'
 
 const definition = getAssessmentDefinition('cbi-personal','v1','en')
@@ -52,4 +53,11 @@ test('course focus is shown only for actual consented course stage and known sel
   assert.deepEqual(approvedCourseFocus({stage:2,focusTags:['stress','resources','stress','unknown','__proto__']},'en'),['Stress','Resources'])
   assert.deepEqual(approvedCourseFocus({stage:2,focusTags:['relationships']},'ru'),['Отношения'])
   assert.deepEqual(approvedCourseFocus({stage:2,focusTags:'private narrative'},'en'),[])
+  assert.deepEqual(approvedCourseFocus({stage:4,scaleKeys:['nonexistent::__proto__'],focusTags:['mood']},'en'),['Mood'])
+  const guide=getTestScaleGuide('hh-current-state','en')
+  const eligible=guide?.scales.find(scale=>scale.canChooseSkill)
+  if (eligible) {
+    const selected=approvedCourseFocus({stage:4,scaleKeys:[guide.key+'::'+eligible.key],focusTags:['stress']},'en')
+    assert.deepEqual(selected,[eligible.label])
+  }
 })
