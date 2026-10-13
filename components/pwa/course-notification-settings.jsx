@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useId, useRef, useState } from 'react'
-import { detectPushCapability, endpointFingerprint, requestPushPermission, registerDevicePush } from '../../lib/notifications/browser'
+import { detectPushCapability, endpointFingerprint, requestPushPermission, registerDevicePush, boundedNotificationWork } from '../../lib/notifications/browser'
 import { defaultNotificationPreferences, validateNotificationPreferences, NOTIFICATION_CONSENT_VERSION } from '../../lib/notifications/contracts'
 import { NOTIFICATION_COPY } from './notification-copy'
 import styles from './course-notification-settings.module.css'
@@ -19,8 +19,9 @@ export default function CourseNotificationSettings({ locale = 'en', accountId })
   }
   useEffect(() => {
     if (!accountId) return
-    const controller = new AbortController(), session = { accountId, controller }
+    const controller = new AbortController(), session = { accountId, controller, revision: 0 }
     active.current = session
+    registration.current = null
     working.current = false
     setBusy(false); setConsent(false); setMessage(''); setSettings(null); setWorkerReady(false)
     setCapability(detectPushCapability())
@@ -29,22 +30,42 @@ export default function CourseNotificationSettings({ locale = 'en', accountId })
     window.addEventListener('beforeinstallprompt', receiveInstall)
     window.addEventListener('appinstalled', installed)
     async function load() {
-      let fingerprint
-      if (window.isSecureContext && 'serviceWorker' in navigator) {
-        try {
-          registration.current = await navigator.serviceWorker.register('/sw.js')
-          const subscription = await registration.current.pushManager?.getSubscription()
-          if (subscription) fingerprint = await endpointFingerprint(subscription.endpoint)
-          navigator.serviceWorker.ready.then(ready => { if (active.current === session) { registration.current = ready; setWorkerReady(true) } })
-        } catch { registration.current = null }
-      }
-      const value = await api('GET', undefined, fingerprint, controller.signal)
+      // Configuration is authoritative and must render before browser-worker
+      // work. A disabled feature never waits on PushManager or registers again.
+      let value = await api('GET', undefined, undefined, controller.signal)
       if (active.current !== session) return
       setSettings(value)
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
       setPreferences(value.preferencesStored ? value.preferences : { ...value.preferences, timezone, locale: NOTIFICATION_COPY[locale] ? locale : 'en' })
+      if (!value.available && !(value.deviceCount > 0)) return
+      const revision = session.revision
+      const hydrationCurrent = () => active.current === session && session.revision === revision
+      let fingerprint
+      if (window.isSecureContext && 'serviceWorker' in navigator) {
+        if (value.available) {
+          // Observe eventual readiness without holding initial rendering or
+          // overriding the result of a newer account action.
+          const ready = navigator.serviceWorker.ready
+          Promise.resolve(ready).then(worker => { if (active.current === session) { registration.current = worker; setWorkerReady(true) } }).catch(() => {})
+          boundedNotificationWork(ready).catch(() => { if (hydrationCurrent()) setMessage(words.issue) })
+        }
+        try {
+          let worker = await boundedNotificationWork(navigator.serviceWorker.getRegistration('/'))
+          if (active.current !== session) return
+          if (!worker && value.available) worker = await boundedNotificationWork(navigator.serviceWorker.register('/sw.js'))
+          if (active.current !== session) return
+          registration.current = worker || null
+          const subscription = await boundedNotificationWork(worker?.pushManager?.getSubscription())
+          if (active.current !== session) return
+          if (subscription) fingerprint = await endpointFingerprint(subscription.endpoint)
+        } catch { if (hydrationCurrent()) setMessage(words.issue) }
+      }
+      if (!fingerprint || !hydrationCurrent()) return
+      value = await api('GET', undefined, fingerprint, controller.signal)
+      if (!hydrationCurrent()) return
+      setSettings(value)
     }
-    load().catch(error => { if (!controller.signal.aborted) setMessage(error.message === 'REMINDER_WITHIN_QUIET_HOURS' ? words.quietError : words.issue) })
+    load().catch(error => { if (active.current === session && session.revision === 0) setMessage(error.message === 'REMINDER_WITHIN_QUIET_HOURS' ? words.quietError : words.issue) })
     return () => { controller.abort(); if (active.current === session) active.current = null; window.removeEventListener('beforeinstallprompt', receiveInstall); window.removeEventListener('appinstalled', installed) }
     // Account/locale changes create a fresh state; no settings cross accounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,6 +73,7 @@ export default function CourseNotificationSettings({ locale = 'en', accountId })
   async function action(task) {
     if (working.current || !active.current) return
     const session = active.current
+    session.revision++
     working.current = true; setBusy(true); setMessage('')
     try { await task(session) } catch (error) { if (active.current === session) setMessage(error.message === 'REMINDER_WITHIN_QUIET_HOURS' ? words.quietError : words.issue) }
     finally { if (active.current === session) { working.current = false; setBusy(false); setCapability(detectPushCapability()) } }
@@ -73,7 +95,7 @@ export default function CourseNotificationSettings({ locale = 'en', accountId })
         if (!ready?.active) throw new Error('PUSH_UNAVAILABLE')
         if (active.current !== session) return
         device = await registerDevicePush(settings.publicKey, ready)
-        if (active.current !== session) { if (device.created) await device.subscription.unsubscribe(); return }
+        if (active.current !== session) { if (device.created) await boundedNotificationWork(device.subscription.unsubscribe()).catch(() => false); return }
         await api('POST', { subscription: device.subscription.toJSON(), consentVersion: NOTIFICATION_CONSENT_VERSION }, undefined, session.controller.signal)
         if (active.current !== session) return
         setSettings(value => ({ ...value, currentDevice: true, deviceCount: Math.max(1, value.deviceCount) }))
@@ -81,19 +103,36 @@ export default function CourseNotificationSettings({ locale = 'en', accountId })
       } catch (error) {
         // New browser subscriptions are rolled back if the server rejects storage.
         // A timeout may have committed: never assert server unsubscribe succeeded.
-        if (device?.created) await device.subscription.unsubscribe().catch(() => false)
+        if (device?.created) await boundedNotificationWork(device.subscription.unsubscribe()).catch(() => false)
         throw error
       }
     })
   }
   function disable(scope) {
     action(async session => {
-      const subscription = await registration.current?.pushManager?.getSubscription()
+      // Revoking all devices is server-first, so a stalled local PushManager can
+      // never prevent the owner withdrawing consent. Browser cleanup is best effort.
+      if (scope === 'all') {
+        await api('DELETE', { scope }, undefined, session.controller.signal)
+        if (active.current !== session) return
+        setSettings(value => ({ ...value, currentDevice: false, deviceCount: 0 }))
+        setPreferences(value => ({ ...value, enabled: false })); setConsent(false)
+        let removed = true
+        try {
+          const device = await boundedNotificationWork(registration.current?.pushManager?.getSubscription())
+          if (active.current !== session) return
+          if (device) removed = await boundedNotificationWork(device.unsubscribe())
+        } catch { removed = false }
+        if (active.current === session) setMessage(removed ? words.off : words.partial)
+        return
+      }
+      const subscription = await boundedNotificationWork(registration.current?.pushManager?.getSubscription())
       const fingerprint = subscription ? await endpointFingerprint(subscription.endpoint) : null
       if (active.current !== session) return
       if (scope === 'device' && !fingerprint) throw new Error('PUSH_DEVICE_UNKNOWN')
       await api('DELETE', { scope, ...(fingerprint ? { fingerprint } : {}) }, undefined, session.controller.signal)
-      const removed = subscription ? await subscription.unsubscribe() : true
+      if (active.current !== session) return
+      const removed = subscription ? await boundedNotificationWork(subscription.unsubscribe()).catch(() => false) : true
       if (active.current !== session) return
       setSettings(value => ({ ...value, currentDevice: false, deviceCount: scope === 'all' ? 0 : Math.max(0, value.deviceCount - 1) }))
       if (scope === 'all') setPreferences(value => ({ ...value, enabled: false }))

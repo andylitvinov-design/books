@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFileSync } from 'node:fs'
 import { defaultNotificationPreferences, validateNotificationPreferences, validateNotificationPatch, validatePushSubscription, validatePushEndpoint, inQuietHours } from '../lib/notifications/contracts.js'
 import { getNotificationConfig } from '../lib/notifications/config.js'
 import { localNotificationTime, notificationDeliveryDecision, privateNotificationPayload, pushResponseDisposition } from '../lib/notifications/delivery.js'
-import { detectPushCapability, requestPushPermission, registerDevicePush, endpointFingerprint } from '../lib/notifications/browser.js'
+import { detectPushCapability, requestPushPermission, registerDevicePush, endpointFingerprint, boundedNotificationWork } from '../lib/notifications/browser.js'
 import { NOTIFICATION_COPY } from '../components/pwa/notification-copy.js'
 const key = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 1)]).toString('base64url')
 const subscription = () => ({ endpoint: 'https://fcm.googleapis.com/fcm/send/synthetic-fixture', keys: { p256dh: key, auth: Buffer.alloc(16, 1).toString('base64url') }, expirationTime: null })
@@ -101,4 +102,22 @@ test('existing subscription reuse avoids duplicate device creation', async () =>
 test('EN/RU/ES settings have matching copy keys and no empty labels', () => {
   for (const locale of ['ru', 'es']) assert.deepEqual(Object.keys(NOTIFICATION_COPY[locale]).sort(), Object.keys(NOTIFICATION_COPY.en).sort())
   for (const copy of Object.values(NOTIFICATION_COPY)) for (const value of Object.values(copy)) assert.ok(value.trim().length)
+})
+
+
+test('stalled browser push APIs time out without blocking account settings', async () => {
+  await assert.rejects(boundedNotificationWork(new Promise(() => {}), 5), /PUSH_BROWSER_TIMEOUT/)
+  assert.equal(await boundedNotificationWork(Promise.resolve('ready'), 10), 'ready')
+  await assert.rejects(boundedNotificationWork(Promise.reject(Error('denied')), 10), /denied/)
+})
+test('notification settings load server configuration before optional device work and all-device withdrawal is server-first', () => {
+  const source = readFileSync('components/pwa/course-notification-settings.jsx', 'utf8')
+  const load = source.slice(source.indexOf('async function load()'), source.indexOf('load().catch'))
+  assert.ok(load.indexOf("await api('GET'") < load.indexOf('serviceWorker.getRegistration'))
+  assert.ok(load.indexOf('setSettings(value)') < load.indexOf('serviceWorker.getRegistration'))
+  assert.ok(load.indexOf('if (!value.available && !(value.deviceCount > 0)) return') < load.indexOf('serviceWorker.getRegistration'))
+  const revoke = source.slice(source.indexOf("if (scope === 'all')"), source.indexOf("const subscription = await boundedNotificationWork", source.indexOf('function disable')))
+  assert.ok(revoke.indexOf("await api('DELETE'") < revoke.indexOf('getSubscription'))
+  assert.match(revoke, /active.current !== session/)
+  assert.match(load, /boundedNotificationWork/)
 })

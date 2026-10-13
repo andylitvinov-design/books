@@ -9,6 +9,7 @@ import { ConsultationDraftPreview } from './consultation-draft-preview'
 import { useActionState, useEffect, useMemo, useState } from 'react'
 import { initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
+import { OWNER_REPORT_TEXT_TEMPLATE } from '@/lib/consultations/owner-report-template'
 import { readUiLocale } from '@/lib/ui-locale'
 
 const copy = {
@@ -172,8 +173,18 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
   const [analysis, setAnalysis] = useState(consultation?.analysis ?? '')
+  const [templateReviewed, setTemplateReviewed] = useState(Boolean(consultation))
   const [additionalNotes, setAdditionalNotes] = useState(consultation?.additionalNotes ?? '')
   const [uiLocale, setUiLocale] = useState('en')
+
+  useEffect(() => {
+    // Only prefill unsaved new consultations. Editing an existing document
+    // always uses its stored text, including intentionally empty fields.
+    if (!consultation) {
+      setAnalysis((current) => current || OWNER_REPORT_TEXT_TEMPLATE.analysis)
+      setAdditionalNotes((current) => current || OWNER_REPORT_TEXT_TEMPLATE.additionalNotes)
+    }
+  }, [consultation])
 
   useEffect(() => {
     setUiLocale(readUiLocale(document.cookie))
@@ -412,6 +423,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         <h2>{uiLocale === 'ru' ? 'Анализ и примечания' : 'Analysis & notes'}</h2>
         <p>{uiLocale === 'ru' ? 'Добавьте замеры состояния и персональные указания, которые войдут в PDF-отчёт.' : 'Record state measurements and personalized guidance for the client PDF.'}</p>
       </div>
+      {!consultation && <p className="consultation-template-notice" role="note">{uiLocale === 'ru'
+        ? 'Поля заполнены вашим примером как редактируемым шаблоном. Проверьте и замените замеры, выводы и инструкции для этого клиента перед сохранением.'
+        : 'Your saved example is loaded as an editable draft. Review and replace all client-specific measurements and guidance before saving.'}</p>}
       <div className="consultation-report-note-grid">
         <label className="consultation-report-note">
           <span>{labels.analysis}</span>
@@ -424,6 +438,17 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <textarea name="additionalNotes" rows={4} maxLength={5000} value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} placeholder={labels.clientNotesPlaceholder} />
         </label>
       </div>
+      {!consultation && <label className="consultation-template-review">
+        <input
+          type="checkbox"
+          checked={templateReviewed}
+          onChange={(event) => setTemplateReviewed(event.target.checked)}
+          required
+        />
+        <span>{uiLocale === 'ru'
+          ? 'Я проверил(а) и отредактировал(а) шаблон для этого клиента. Это персональные рекомендации, а не готовое назначение.'
+          : 'I have reviewed and adapted this template for this client. This is personal guidance, not a ready-made prescription.'}</span>
+      </label>}
       <label className="consultation-note consultation-legacy-instructions">{labels.note}
         <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
       </label>

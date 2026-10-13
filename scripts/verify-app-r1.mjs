@@ -11,6 +11,12 @@ const output='artifacts/app-r1'
 await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{}),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
+// Synthetic-only diagnostics preserve the readiness assertion. Never log
+// request headers, bodies, query strings, cookies, or auth handoff URLs.
+const pendingRequests=new Map()
+context.on('request',request=>{const url=new URL(request.url());if(url.origin===origin)pendingRequests.set(request,{path:url.pathname,type:request.resourceType()})})
+context.on('requestfinished',request=>pendingRequests.delete(request))
+context.on('requestfailed',request=>pendingRequests.delete(request))
 let page=await context.newPage()
 const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
 page.on('pageerror',capturePageError)
@@ -54,6 +60,7 @@ async function ready(){
    await page.waitForLoadState('networkidle')
    return
   } catch(error) {
+   console.log('SYNTHETIC_READINESS_PENDING_REQUESTS',JSON.stringify([...pendingRequests.values()]))
    if(attempt===2)throw error
    // The isolated actor can hit its genuine sliding quota during hundreds of
    // synthetic test answers. Only retry a signed-in app error, never weaken the
