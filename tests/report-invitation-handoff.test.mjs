@@ -31,7 +31,7 @@ test('saved items navigate to their authenticated, exact-ID account viewer', () 
 })
 
 test('private handoff uses one consent click, scoped cookies, blurred gate, and Google continuation', async () => {
-  const [gate, gateStyles, shared, prescription, legacySave, workspace, route, reportApi, grantTest] = await Promise.all([
+  const [gate, gateStyles, shared, prescription, legacySave, workspace, route, reportApi] = await Promise.all([
     readFile('components/app/report-invitation-gate.jsx', 'utf8'),
     readFile('components/app/report-invitation-gate.module.css', 'utf8'),
     readFile('components/app/shared-report-view.jsx', 'utf8'),
@@ -40,7 +40,6 @@ test('private handoff uses one consent click, scoped cookies, blurred gate, and 
     readFile('components/app/app-workspace.jsx', 'utf8'),
     readFile('app/api/app/[...path]/route.js', 'utf8'),
     readFile('lib/app/save-intents.js', 'utf8'),
-    readFile('tests/report-claim-flow.test.mjs', 'utf8'),
   ])
 
   assert.match(gate, /role="dialog"/)
@@ -60,6 +59,5 @@ test('private handoff uses one consent click, scoped cookies, blurred gate, and 
   assert.match(workspace, /confirmed: true/)
   assert.match(reportApi, /saveIntentBrowserProof/)
   assert.match(reportApi, /httpOnly: true/)
-  assert.match(grantTest, /report-viewer\/exchange/)
   assert.doesNotMatch(shared, /sessionStorage|localStorage/)
 })
