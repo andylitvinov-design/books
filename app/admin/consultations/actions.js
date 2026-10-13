@@ -8,7 +8,7 @@ import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
 
 function input(formData) {
-  const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'followUp']
+  const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'analysis', 'additionalNotes', 'followUp']
   const data = Object.fromEntries(fields.map((key) => [key, formData.get(key) ?? undefined]))
   data.includeRecommendation = formData.get('includeRecommendation') === 'on'
   data.includeInvoice = formData.get('includeInvoice') === 'on'
