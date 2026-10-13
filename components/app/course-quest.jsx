@@ -132,8 +132,8 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
   const [selected, setSelected] = useState(cycle.day)
   useEffect(() => { setSelected(cycle.day) }, [cycle.id, cycle.day])
   const count = Number(progress.practiceCount) || 0
-  const observations = Number(progress.observations) || 0
-  const xp = 20 * count + 5 * observations
+  // Do not incentivize recording sensitive symptoms: only saved lessons earn XP.
+  const xp = 20 * count
 
   return <section className={styles.mapShell} data-course-quest-map aria-label={t.map}>
     <header className={styles.mapHeader}>
