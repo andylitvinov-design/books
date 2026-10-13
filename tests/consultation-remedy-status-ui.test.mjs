@@ -124,7 +124,9 @@ test('consultation entry restores compact auto-parser and open Note field while 
   assert.match(source, /ConsultationTextImport/)
   assert.match(source, /className="consultation-note"/)
   assert.match(source, /name="generalInstructions"/)
-  assert.doesNotMatch(source, /labels\.additional/)
+  assert.doesNotMatch(source, /labels\.additionalDetails|consultation-additional-details/)
+  assert.match(source, /name="analysis"/)
+  assert.match(source, /name="additionalNotes"/)
   assert.doesNotMatch(source, /consultationClinicalFields/)
 })
 
