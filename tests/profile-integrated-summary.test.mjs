@@ -33,6 +33,7 @@ test('Profile reads actual saved professional scales and honors withdrawn practi
   assert.equal(value.savedReportCount,1)
   assert.deepEqual(value.measuredResourceLabels,[])
   assert.equal(value.comparableAxes,0)
+  assert.ok(!value.unmeasuredAreaLabels.includes('Stress & load'), 'the real measured professional category must be covered')
   assert.ok(!JSON.stringify(value).includes('100% healthy'))
 })
 
