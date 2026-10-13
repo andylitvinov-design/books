@@ -24,6 +24,7 @@ const copy = {
     heroTitle: "Найдите больше ясности и внутренней опоры",
     heroIntro: "Три бесплатных способа начать: анализ ситуации, профиль У-Син и тесты стресса и личности. Личные консультации — по желанию.",
     heroPrimary: "Бесплатный разбор ситуации",
+    heroBook: "Записаться на консультацию",
     heroSecondary: "Четыре предложения",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте самостоятельно",
@@ -56,6 +57,7 @@ const copy = {
     heroTitle: "Explore your question. Find a clearer way forward.",
     heroIntro: "Three free ways to begin: a situation review, a Wu Xing resource profile, or stress and personality tests. Personal sessions are optional.",
     heroPrimary: "Free situation review",
+    heroBook: "Book a consultation",
     heroSecondary: "Explore four services",
     startKicker: "Other ways to explore",
     startTitle: "Explore at your own pace",
@@ -128,6 +130,13 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <div className="service-home-actions">
             <AcquisitionEventLink className="service-home-button service-home-button--primary" href={`/${locale}/services/free-situation-review`} event="service_request_start">
               {text.heroPrimary}<span aria-hidden="true">→</span>
+            </AcquisitionEventLink>
+            <AcquisitionEventLink
+              className="service-home-button service-home-button--consultation"
+              href="#home-consultation"
+              event="service_request_start"
+            >
+              {text.heroBook}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--secondary"
