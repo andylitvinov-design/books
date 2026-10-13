@@ -145,6 +145,7 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
     </header>
     <div className={styles.mapProgress}><span>{t.progress}: <strong>{count}/{cycle.durationDays || 14}</strong></span>
       <progress max={cycle.durationDays || 14} value={count} aria-label={t.progress}/></div>
+    <img className={styles.journeyScene} src="/images/holistic-house/course-journey-landscape.svg" alt="" width={860} height={245} loading="lazy" aria-hidden="true"/>
     <ol className={styles.path}>
       {roadmap.map((item, index) => {
         const Icon = ICONS[index % ICONS.length]
@@ -167,16 +168,13 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
             <small>{t.lesson} {String(item.day).padStart(2, '0')}</small>
             <strong>{item.title}</strong>
           </span>
-          {expanded && <div className={styles.pathPreview}>
-            <div className={styles.previewMeta}><span>{t.lesson} {item.day} / 14</span>
+          {expanded && <div className={styles.pathPreview} data-course-day-preview>
+            <div className={styles.previewMeta}><span>{t.lesson} {String(item.day).padStart(2,'0')}</span>
               <span>{complete ? t.done : active ? t.today : item.status === 'past' ? t.missed : t.later}</span></div>
-            <h4>{item.title}</h4>
-            <p>{item.heading}</p>
-            {item.workbookSkill && <p className={styles.previewSkill}>{item.workbookSkill}</p>}
-            <p><strong>{t.preview}:</strong> {item.outcome}</p>
+            <p className={styles.journeySummary}>{item.outcome}</p>
             {(active || (complete && item.day === cycle.day)) && <button type="button"
               className={styles.primaryButton} disabled={paused} onClick={onPlay}>
-              {complete ? t.revisit : t.launch}<ArrowRight size={18}/></button>}
+              {complete ? t.revisit : t.launch}<ArrowRight size={17}/></button>}
             {!active && !complete && <small className={styles.previewHint}>
               {item.status === 'past' ? t.past : t.locked}</small>}
           </div>}
