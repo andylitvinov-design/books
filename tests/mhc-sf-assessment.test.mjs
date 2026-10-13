@@ -112,7 +112,7 @@ test('one MHC-SF replaces its research reference in EN/RU guest/account filters 
   assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,109)
   assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,42)
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
-  const prior=ASSESSMENT_DEFINITIONS.filter(x=>x.key!=='mhc-sf'&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
+  const prior=ASSESSMENT_DEFINITIONS.filter(x=>!['ipip-via-r-teamwork-4','ipip-neo-self-efficacy-10'].includes(x.key)&&x.key!=='mhc-sf'&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
   assert.equal(prior.length,169)
   assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
   const relationshipIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))

@@ -115,5 +115,16 @@ test('PHQ-9 explicit risk answer triggers safety but zero does not', () => {
 test('licensed and uncleared professional references remain non-startable', () => {
   const planned = MONITORING_CATALOG.filter((item) => !item.startable)
   assert.ok(planned.length > 0)
-  assert.ok(planned.every((item) => item.rightsStatus !== 'cleared'))
+  const preparedKeys = ['ipip-via-r-teamwork-4', 'ipip-neo-self-efficacy-10']
+  const prepared = planned.filter(item => preparedKeys.includes(item.key))
+  assert.deepEqual(prepared.map(item => item.key).sort(), [...preparedKeys].sort())
+  for (const item of prepared) {
+    assert.equal(item.rightsStatus, 'cleared')
+    assert.equal(item.releaseStatus, 'prepared-not-published')
+    assert.equal(item.startable, false)
+    assert.equal(item.guestEligible, false)
+    assert.equal(item.starterEligible, false)
+  }
+  // Rights clearance does not authorize activation; all other planned references retain their rights gate.
+  assert.ok(planned.filter(item => !preparedKeys.includes(item.key)).every(item => item.rightsStatus !== 'cleared'))
 })
