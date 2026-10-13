@@ -64,7 +64,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </section>}
 
       {document.additionalNotes && <section className="canonical-general canonical-report-notes"><h2>{labels.additionalNotes}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.additionalNotes}</p></section>}
-      {document.generalInstructions && <section className="canonical-general"><h2>{labels.general}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.generalInstructions}</p></section>
+      {document.generalInstructions && <section className="canonical-general"><h2>{labels.general}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.generalInstructions}</p></section>}
       {document.followUp && <p className="canonical-follow-up">{labels.followUp}: {document.followUp}</p>}
       <DocumentSignature date={document.dateIssued} locale={locale} />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
