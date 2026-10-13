@@ -1576,11 +1576,11 @@ test('push subscriptions and preferences are account-owned, RLS-protected and re
   const changed=await push.preferences(a,{enabled:true,courseReminders:false,
     reminderHour:20,timeZone:'America/Toronto',locale:'ru'})
   assert.equal(changed.reminderHour,20);assert.equal(changed.courseReminders,false)
-  assert.equal((await transaction(config,b,db=>db.query('select id from app_private.push_subscriptions'))).rows.length,0)
-  assert.equal((await transaction(config,b,db=>db.query('select account_id from app_private.notification_preferences'))).rows.length,0)
+  assert.equal((await transaction(config,v2Actor,db=>db.query('select id from app_private.push_subscriptions'))).rows.length,0)
+  assert.equal((await transaction(config,v2Actor,db=>db.query('select account_id from app_private.notification_preferences'))).rows.length,0)
   await assert.rejects(()=>rawAs(a,'authenticated',db=>db.query('select * from app_private.push_subscriptions')),
     error=>error.code==='42501')
-  await assert.rejects(()=>push.subscribe(b,{subscription,locale:'ru',timeZone:'America/Toronto'}),
+  await assert.rejects(()=>push.subscribe(v2Actor,{subscription,locale:'ru',timeZone:'America/Toronto'}),
     error=>error.code==='DEVICE_ALREADY_REGISTERED')
   const removed=await push.unsubscribe(a,{endpoint:null})
   assert.equal(removed.enabled,false);assert.equal(removed.deviceCount,0)
