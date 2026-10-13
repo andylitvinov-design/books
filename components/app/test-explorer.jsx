@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Activity, ArrowLeft, Brain, ChevronRight, Clock3, Compass, Heart, Languages, Layers, MessageCircle, Moon, Shield, Sparkles, Zap } from 'lucide-react'
+import { Activity, ArrowLeft, Brain, ChevronRight, Clock3, Compass, Heart, Languages, Layers, MessageCircle, Moon, Shield, Sparkles, Zap, GraduationCap } from 'lucide-react'
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
+import { TEST_KINDS } from '@/lib/assessments/test-kinds'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import { PSYCHOTHERAPY_CORE_CATEGORIES } from '@/data/assessments/psychotherapy-core-100'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, buildPublicStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries, rankPublicTestMatches } from '@/lib/assessments/test-explorer'
@@ -79,6 +80,35 @@ function TestArtwork({ entry }) {
   return <span className={styles.testArtwork} data-theme={theme} aria-hidden="true"><Icon size={25} strokeWidth={1.85} /><span className={styles.testArtworkOrb} /></span>
 }
 const QUICK_ICONS = { stress: '⚡', anxiety: '☁', sleep: '☾', mood: '♡', body: '✦', relationships: '♧' }
+const TEST_KIND_ICONS = { professional: GraduationCap, monitoring: Activity, hobby: Sparkles }
+const TEST_KIND_ORDER = { professional: 0, monitoring: 1, hobby: 2 }
+
+function KindCheckboxFilters({ locale, selected, onToggle }) {
+  return <fieldset className={styles.kindFilters} data-test-kind-filter>
+    <legend>{locale === 'ru' ? 'Типы тестов' : locale === 'es' ? 'Tipos de pruebas' : 'Types of tests'}</legend>
+    <div className={styles.kindChoices}>
+      {TEST_KINDS.map((kind) => {
+        const Icon = TEST_KIND_ICONS[kind.key]
+        return <label key={kind.key} className={styles.kindChoice} data-checked={selected.includes(kind.key)}>
+          <input type="checkbox" data-test-kind-checkbox value={kind.key}
+            checked={selected.includes(kind.key)} onChange={() => onToggle(kind.key)} />
+          <Icon size={16} aria-hidden="true" />
+          <span>{kind.label[locale] || kind.label.en}</span>
+        </label>
+      })}
+    </div>
+  </fieldset>
+}
+
+function TestKindBadge({ entry, locale }) {
+  const kind = TEST_KINDS.find((item) => item.key === entry.testKind)
+  if (!kind) return null
+  const Icon = TEST_KIND_ICONS[kind.key]
+  return <span className={styles.testKindBadge} data-test-kind-badge={kind.key}
+    title={kind.description[locale] || kind.description.en}>
+    <Icon size={14} aria-hidden="true" />{kind.label[locale] || kind.label.en}
+  </span>
+}
 
 const GUIDED_FILTER_GROUPS = [
   { key:'topics', icon:Heart, label:{en:'Topics that matter',ru:'Что меня беспокоит',es:'Temas que importan'}, detail:{en:'Stress, sleep, mood and relationships',ru:'Стресс, сон, настроение и отношения',es:'Estrés, sueño, ánimo y relaciones'} },
@@ -86,7 +116,7 @@ const GUIDED_FILTER_GROUPS = [
   { key:'areas', icon:Compass, label:{en:'Area of life',ru:'Область жизни',es:'Área de la vida'}, detail:{en:'Mind, body and everyday life',ru:'Психика, тело, повседневная жизнь',es:'Mente, cuerpo y vida diaria'} },
   { key:'scales', icon:Activity, label:{en:'What to measure',ru:'Что измерять',es:'Qué medir'}, detail:{en:'Choose the scales for your profile',ru:'Выберите шкалы для портрета',es:'Escalas para tu perfil'} },
   { key:'timing', icon:Clock3, label:{en:'Time & depth',ru:'Время и глубина',es:'Tiempo y profundidad'}, detail:{en:'A quick check or a deeper look',ru:'Быстрый тест или подробный разбор',es:'Revisión rápida o detallada'} },
-  { key:'format', icon:Layers, label:{en:'Test type',ru:'Формат теста',es:'Tipo de prueba'}, detail:{en:'Professional, engaging or free',ru:'Профессиональный, лёгкий или бесплатный',es:'Profesional, sencillo o gratuito'} },
+  { key:'format', icon:Layers, label:{en:'Test type',ru:'Тип теста',es:'Tipo de prueba'}, detail:{en:'Professional, state scales or hobby; choose with checkboxes',ru:'Профессиональные, шкалы состояния или хобби — отметьте галочками',es:'Profesionales, escalas de estado o aficiones'} },
   { key:'language', icon:Languages, label:{en:'Questionnaire language',ru:'Язык теста',es:'Idioma del cuestionario'}, detail:{en:'Choose the available language version',ru:'На каком языке отвечать',es:'Idioma de las preguntas'} },
   { key:'goal', icon:Shield, label:{en:'Monitoring goal',ru:'Цель тестирования',es:'Objetivo de seguimiento'}, detail:{en:'One-time check or track changes',ru:'Разово или для наблюдения динамики',es:'Una vez o seguir cambios'} },
   { key:'describe', icon:Sparkles, label:{en:'Describe in my own words',ru:'Описать своими словами',es:'Describir con mis palabras'}, detail:{en:'Suggest topics from your words',ru:'Поможем подобрать темы по вашему тексту',es:'Sugerir temas a partir de tu texto'} },
@@ -156,6 +186,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     })
   }, [focus])
   const [stylesFilter, setStylesFilter] = useState(() => initialPreferences?.styles ?? [])
+  const [kinds, setKinds] = useState(() => initialPreferences?.kinds ?? [])
   const [lengths, setLengths] = useState(() => initialPreferences?.lengths ?? [])
   const [depth, setDepth] = useState(() => initialPreferences?.depth ?? 'balanced')
   const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
@@ -192,18 +223,18 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     setAvailability('available')
     setFocus([entry.topics.includes('sexuality') ? 'sexuality' : entry.topics.includes('tantra') ? 'tantra' : 'intimacy'])
   }, [entries])
-  const facets = { availability, focus, problems, styles: stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
-  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
+  const facets = { availability, focus, problems, styles: stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
+  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
   // Facet counts reflect the whole eligible catalog and every *other* active
   // criterion. Exclude the facet's own current selection (multi-choice OR).
-  const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, problems, stylesFilter, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
-  const areaCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, areas: [] }), [entries, availability, focus, problems, stylesFilter, lengths, details, axes, maxMinutes, language, tracking, freeOnly, query])
-  const axisCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, axes: [] }), [entries, availability, focus, problems, stylesFilter, lengths, areas, details, maxMinutes, language, tracking, freeOnly, query])
+  const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
+  const areaCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, areas: [] }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, details, axes, maxMinutes, language, tracking, freeOnly, query])
+  const axisCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, axes: [] }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, maxMinutes, language, tracking, freeOnly, query])
   const detailCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_DETAIL_TOPICS.map((item) => [item.key, detailCandidates.filter((entry) => entry.topics.includes(item.key)).length])), [detailCandidates])
   const areaCounts = useMemo(() => Object.fromEntries(MONITOR_AREAS.map((item) => [item.key, areaCandidates.filter((entry) => entry.areas?.includes(item.key)).length])), [areaCandidates])
   const axisCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_AXES.map((key) => [key, axisCandidates.filter((entry) => entry.measurementAxes?.includes(key)).length])), [axisCandidates])
   // A selected test stays visible even if new filters no longer match it.
-  const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, problems, stylesFilter, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
+  const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
   const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, axes, depth, stylesFilter, lengths, selectedKeys])
   // Keep checked tests above the shortened discovery list. Re-ranking after
   // a checkbox change must never make that same checkbox disappear mid-click.
@@ -213,6 +244,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     if (sort === 'shortest') return (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity)
     if (sort === 'deepest') return (b.durationMinutes ?? 0) - (a.durationMinutes ?? 0)
     if (sort === 'alphabetic') return a.title.localeCompare(b.title, locale)
+    if (sort === 'type') return (TEST_KIND_ORDER[a.testKind] ?? 9) - (TEST_KIND_ORDER[b.testKind] ?? 9) || a.title.localeCompare(b.title, locale)
     return 0
   }), [ranked, sort, locale, axisFilter, selectedKeys])
   const selected = entries.filter((entry) => selectedKeys.includes(entry.key) && entry.selectable)
@@ -239,12 +271,12 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   const showingCoverage = selectedKeys.length > 0
   const displayedCoverage = showingCoverage ? coverage : topicCoverage
   const matchCount = matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)).length
-  const appliedFilters = stylesFilter.length + lengths.length + areas.length + details.length + problems.length + axes.length + (maxMinutes ? 1 : 0) + (language !== 'any' ? 1 : 0) + (tracking !== 'any' ? 1 : 0) + (freeOnly ? 1 : 0) + (query.trim() ? 1 : 0) + (axisFilter ? 1 : 0)
+  const appliedFilters = stylesFilter.length + kinds.length + lengths.length + areas.length + details.length + problems.length + axes.length + (maxMinutes ? 1 : 0) + (language !== 'any' ? 1 : 0) + (tracking !== 'any' ? 1 : 0) + (freeOnly ? 1 : 0) + (query.trim() ? 1 : 0) + (axisFilter ? 1 : 0)
   const guidedCopy = GUIDED_COPY[locale] || GUIDED_COPY.en
   const guidedCounts = {
     topics: focus.length, concerns: details.length + problems.length, areas: areas.length, scales: axes.length,
     timing: lengths.length + (maxMinutes ? 1 : 0) + (depth !== 'balanced' ? 1 : 0),
-    format: stylesFilter.length + (freeOnly ? 1 : 0),
+    format: stylesFilter.length + kinds.length + (freeOnly ? 1 : 0),
     language: language !== 'any' ? 1 : 0, goal: tracking !== 'any' ? 1 : 0, describe: 0,
   }
   const guidedCount = Object.values(guidedCounts).reduce((sum, value) => sum + value, 0)
@@ -260,7 +292,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     }
     setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
   }
-  const resetFilters = () => { setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
+  const resetFilters = () => { setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setKinds([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
     setSelectedKeys((current) => {
@@ -287,7 +319,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
     if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
     try { await onStart(activeBattery, {
-      focus, problems, details, axes, areas, styles: stylesFilter, lengths,
+      focus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
       depth, maxMinutes, language, tracking, freeOnly,
     }) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
@@ -310,8 +342,9 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       onDepth={setDepth}
       maxMinutes={maxMinutes}
       onMaxMinutes={setMaxMinutes}
-      professionalOnly={stylesFilter.length === 1 && stylesFilter[0] === 'professional'}
-      onProfessional={() => setStylesFilter((current) => current.length === 1 && current[0] === 'professional' ? [] : ['professional'])}
+      testKinds={kinds}
+      onToggleTestKind={(key) => setKinds((current) => toggle(current, key))}
+      onClearTestKinds={() => setKinds([])}
       recommendations={simpleRecommendations}
       activeBattery={activeBattery}
       onToggleTest={toggleSimpleSelected}
@@ -376,9 +409,10 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
             return <button key={key} type="button" aria-label={`${locale === 'ru' ? 'Быстрый фильтр' : locale === 'es' ? 'Filtro rápido' : 'Quick filter'}: ${item.label[locale] || item.label.en}`} aria-pressed={checked} onClick={() => setFocus((current) => toggle(current, key))}><span className={styles.quickChipIcon} aria-hidden="true">{checked ? '✓' : QUICK_ICONS[key]}</span><span>{item.label[locale] || item.label.en}</span></button>
           })}
         </div>
+        <KindCheckboxFilters locale={locale} selected={kinds} onToggle={(key) => setKinds((current) => toggle(current, key))} />
         <div className={styles.quickFilterExtras}>
           <button type="button" aria-pressed={maxMinutes === 5} onClick={() => setMaxMinutes((current) => current === 5 ? 0 : 5)}>{locale === 'ru' ? 'До 5 минут' : locale === 'es' ? 'Hasta 5 min' : 'Under 5 min'}</button>
-          <button type="button" aria-pressed={stylesFilter.includes('professional')} onClick={() => setStylesFilter((current) => current.includes('professional') ? current.filter((key) => key !== 'professional') : ['professional'])}>{locale === 'ru' ? 'Профессиональные' : locale === 'es' ? 'Profesionales' : 'Professional'}</button>
+          <button type="button" aria-pressed={kinds.length === 1 && kinds[0] === 'professional'} onClick={() => setKinds((current) => current.length === 1 && current[0] === 'professional' ? [] : ['professional'])}>{locale === 'ru' ? 'Только профессиональные' : locale === 'es' ? 'Solo profesionales' : 'Professional only'}</button>
           {(focus.length > 0 || appliedFilters > 0) && <button className={styles.quickFilterReset} type="button" onClick={resetFilters}>{locale === 'ru' ? 'Сбросить всё ×' : locale === 'es' ? 'Borrar todo ×' : 'Clear all ×'}</button>}
         </div>
       </div>
@@ -425,6 +459,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
                 <Filter label={c.depth} items={depthOptions.map((key) => ({ key, label: { en: key[0].toUpperCase() + key.slice(1), ru: key === 'quick' ? 'Быстро' : key === 'balanced' ? 'Сбалансированно' : 'Глубоко', es: key === 'quick' ? 'Breve' : key === 'balanced' ? 'Equilibrada' : 'Profunda' } }))} selected={[depth]} onToggle={setDepth} locale={locale} single />
               </div>}
               {activeFilterGroup === 'format' && <div className={styles.guidedOptionStack}>
+                <KindCheckboxFilters locale={locale} selected={kinds} onToggle={(key) => setKinds((current) => toggle(current, key))} />
                 <Filter label={c.style} items={TEST_STYLE_FILTERS} selected={stylesFilter} onToggle={(key) => setStylesFilter((value) => toggle(value, key))} locale={locale} />
                 <label className={styles.check}><input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />{c.free}</label>
               </div>}
@@ -473,7 +508,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
           <span>{locale === 'ru' ? 'Найти тест' : locale === 'es' ? 'Buscar pruebas' : 'Search tests'}</span>
       <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={c.search} aria-label={c.search} />
         </label>
-      <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option></select></label>
+      <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option><option value="type">{locale === "ru" ? "По типу теста" : locale === "es" ? "Por tipo" : "By type"}</option></select></label>
       </div>
     </section>
     <div className={styles.workspace}><div className={styles.database}><div className={styles.databaseHeader}><div className={styles.countBlock}><strong role="status" aria-live="polite">{matchCount} {c.matching}</strong><small>{c.of} {availability === 'available' ? entries.filter((entry) => entry.selectable).length : availability === 'core' ? entries.filter((entry) => entry.psychotherapyCore).length : entries.length} · {c.totalAvailable}{selectedKeys.length > 0 && ` · ${selectedKeys.length} ${c.kept}`}</small></div><button type="button" onClick={chooseSuggested}>{c.suggested}</button></div>
@@ -481,7 +516,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <TestArtwork entry={entry} />
-        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2>{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}<TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
+        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2><TestKindBadge entry={entry} locale={locale} />{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}<TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
 
       </article>)}</div>
         {visible.length > 8 && <button className={styles.showMore} type="button" onClick={() => setShowAll((value) => !value)}>{showAll ? quick.showLess : `${quick.showAll} (${visible.length})`}</button>}
