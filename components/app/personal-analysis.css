@@ -400,3 +400,45 @@
 @media (prefers-reduced-motion: reduce) {
   .hh-analysis-offer-photo img { transition: none; }
 }
+
+/* Integrated Profile archive: the old Analysis promotional page is not duplicated. */
+.hh-profile-domains .hh-personal-analysis--embedded {
+  width:100%;max-width:none;margin:0;padding:0;background:transparent;
+  --ana-ink:#34493f;--ana-muted:#677a6f;--ana-border:#d6e3da;
+}
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-reports {
+  background:#fffefa;border-color:#d6e3da;border-radius:14px;
+  padding:clamp(12px,2vw,17px);box-shadow:none;
+}
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-reports-head {
+  gap:9px;margin:0 0 12px;
+}
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-reports-head h2 {
+  color:#285b4d;font-size:clamp(18px,2.3vw,23px);margin:0;
+}
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-reports-pin,
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-report-icon {
+  background:#e4f1ea;color:#297667;border-radius:10px;
+}
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-report {
+  padding:11px 12px;gap:11px;border-color:#dbe8de;border-radius:11px;background:#fff;
+}
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-reports-count {
+  background:#e7f2eb;color:#2b6856;border-color:#c5ddd0;
+}
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-report-actions a,
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-report-actions button {
+  color:#297667!important;border-color:#b4d2c3!important;
+}
+.hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-reports-empty {
+  background:#f5faf6;border-color:#d6e3da;
+}
+.hh-profile-domains .hh-personal-analysis--embedded a:focus-visible,
+.hh-profile-domains .hh-personal-analysis--embedded button:focus-visible {
+  outline:3px solid #297667;outline-offset:2px;
+}
+@media(max-width:620px){
+  .hh-profile-domains .hh-personal-analysis--embedded {padding-bottom:0}
+  .hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-reports {padding:12px}
+  .hh-profile-domains .hh-personal-analysis--embedded .hh-analysis-reports-head h2 {font-size:19px}
+}
