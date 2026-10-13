@@ -1080,7 +1080,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
     [showDiscard, setShowDiscard] = useState(false),
-    [mode, setMode] = useState(initialMode === 'guided' ? 'guided' : initialMode === 'quick' ? 'quick' : null),
+    [mode, setMode] = useState(initialMode === 'guided' && courseMode ? 'guided' : initialMode === 'quick' ? 'quick' : null),
     [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
     inflight = useRef(false)
