@@ -74,7 +74,7 @@ test('mobile report and print use adaptive layouts without static page counts', 
     assert.ok(view.includes(marker), marker+' is rendered from client data')
     assert.ok(styles.includes(marker), marker+' has responsive styling')
   }
-  assert.match(styles, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(styles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/)
   assert.match(styles, /@media print/)
   assert.match(styles, /break-inside:avoid/)
   assert.match(view, /<DocumentSignature date=\{document\.dateIssued\} locale=\{locale\} compact/)
